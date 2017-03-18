@@ -236,7 +236,7 @@ public class SyncManager {
 	/**
 	 * Run a sync
 	 * @param sync
-	 * @param callback 
+	 * @param callback
 	 */
 	public void runSync(final SyncState sync, final SyncUpdateCallback callback) {
 		updateSync(sync, SyncState.Status.RUNNING, 0, callback);
@@ -300,19 +300,29 @@ public class SyncManager {
         final SyncDownTarget target = (SyncDownTarget) sync.getTarget();
 
         // Ask target to clean up ghosts
-        int localIdSize = target.cleanGhosts(this, soupName);
-        final JSONObject attributes = new JSONObject();
-        if (localIdSize > 0) {
-            attributes.put("numRecords", localIdSize);
-        }
-        attributes.put("syncId", sync.getId());
-        attributes.put("syncTarget", target.getClass().getName());
-        EventBuilderHelper.createAndStoreEvent("cleanResyncGhosts", null, TAG, attributes);
+        final int localIdSize = target.cleanGhosts(this, soupName);
+        threadPool.execute(new Runnable() {
+            @Override
+            public void run() {
+                final JSONObject attributes = new JSONObject();
+                if (localIdSize > 0) {
+                    try {
+                        attributes.put("numRecords", localIdSize);
+                        attributes.put("syncId", sync.getId());
+                        attributes.put("syncTarget", target.getClass().getName());
+                        EventBuilderHelper.createAndStoreEventSync("cleanResyncGhosts", null, TAG, attributes);
+                    } catch (JSONException e) {
+                        Log.e(TAG, "Unexpected json error for cleanResyncGhosts sync tag: " + sync.getId(), e);
+                    }
+                }
+            }
+        });
+
     }
 
 	/**
      * Update sync with new status, progress, totalSize
-     * @param sync 
+     * @param sync
 	 * @param status
 	 * @param progress pass -1 to keep the current value
 	 * @param callback

@@ -80,6 +80,8 @@ import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Helper class to manage a WebView instance that is going through the OAuth login process.
@@ -103,6 +105,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     public static final String RESPONSE_ERROR_DESCRIPTION_INTENT = "com.salesforce.auth.intent.RESPONSE_ERROR_DESCRIPTION";
     private static final String TAG = "OAuthWebViewHelper";
     private static final String ACCOUNT_OPTIONS = "accountOptions";
+    // background executor
+    private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
 
     /**
      * the host activity/fragment should pass in an implementation of this
@@ -212,7 +216,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     protected WebViewClient makeWebViewClient() {
     	return new AuthWebViewClient();
     }
-    
+
     /** Factory method for the WebChromeClient, you can replace this with something else if you need to */
     protected WebChromeClient makeWebChromeClient() {
         return new AuthWebChromeClient();
@@ -304,7 +308,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     protected String getOAuthClientId() {
     	return loginOptions.getOauthClientId();
     }
-    
+
     protected URI getAuthorizationUrl(Boolean jwtFlow) throws URISyntaxException {
         if (jwtFlow) {
             return OAuth2.getAuthorizationUrl(
@@ -328,7 +332,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         return getAuthorizationUrl(false);
     }
 
-   	/** 
+   	/**
    	 * Override this to replace the default login webview's display param with
    	 * your custom display param. You can override this by either subclassing this class,
    	 * or adding "<string name="sf__oauth_display_type">desiredDisplayParam</string>"
@@ -340,7 +344,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     protected String getAuthorizationDisplayType() {
     	return this.getContext().getString(R.string.oauth_display_type);
     }
-    
+
     /**
      * Override this method to customize the login url.
      * @return login url
@@ -598,12 +602,12 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
     protected void addAccount() {
         ClientManager clientManager = new ClientManager(getContext(),
-        		SalesforceSDKManager.getInstance().getAccountType(),
-        		loginOptions, SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
+                SalesforceSDKManager.getInstance().getAccountType(),
+                loginOptions, SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
 
         // Create account name (shown in Settings -> Accounts & sync)
         String accountName = buildAccountName(accountOptions.username,
-        		accountOptions.instanceUrl);
+                accountOptions.instanceUrl);
 
         // New account
         Bundle extras = clientManager.createNewAccount(accountName,
@@ -633,8 +637,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     	 * This step needs to happen after the account has been added by client
     	 * manager, so that the push service has all the account info it needs.
     	 */
-    	final Context appContext = SalesforceSDKManager.getInstance().getAppContext();
-    	final String pushNotificationId = BootConfig.getBootConfig(appContext).getPushNotificationClientId();
+        final Context appContext = SalesforceSDKManager.getInstance().getAppContext();
+        final String pushNotificationId = BootConfig.getBootConfig(appContext).getPushNotificationClientId();
         final UserAccount account = new UserAccount(accountOptions.authToken,
                 accountOptions.refreshToken, loginOptions.getLoginUrl(),
                 accountOptions.identityUrl, accountOptions.instanceUrl,
@@ -644,9 +648,9 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 accountOptions.communityUrl, accountOptions.firstName,
                 accountOptions.lastName, accountOptions.displayName, accountOptions.email,
                 accountOptions.photoUrl, accountOptions.thumbnailUrl, accountOptions.additionalOauthValues);
-    	if (!TextUtils.isEmpty(pushNotificationId)) {
-        	PushMessaging.register(appContext, account);
-    	}
+        if (!TextUtils.isEmpty(pushNotificationId)) {
+            PushMessaging.register(appContext, account);
+        }
 
         // Logs analytics event for new user.
         final JSONObject userAttr = new JSONObject();
@@ -656,27 +660,32 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         } catch (JSONException e) {
             Log.e(TAG, "Exception thrown while creating JSON", e);
         }
-        EventBuilderHelper.createAndStoreEvent("addUser", account, TAG, userAttr);
 
-        // Logs analytics event for servers.
-        final JSONObject serverAttr = new JSONObject();
-        try {
-            final List<LoginServerManager.LoginServer> servers = SalesforceSDKManager.getInstance().getLoginServerManager().getLoginServers();
-            serverAttr.put("numLoginServers", (servers == null) ? 0 : servers.size());
-            if (servers != null) {
-                final JSONArray serversJson = new JSONArray();
-                for (final LoginServerManager.LoginServer server : servers) {
-                    if (server != null) {
-                        serversJson.put(server.url);
-                    }
-                }
-                serverAttr.put("loginServers", serversJson);
-            }
-        } catch (JSONException e) {
-            Log.e(TAG, "Exception thrown while creating JSON", e);
-        }
-        EventBuilderHelper.createAndStoreEvent("addUser", account, TAG, serverAttr);
         callback.onAccountAuthenticatorResult(extras);
+
+        threadPool.execute(new Runnable() {
+            @Override
+            public void run() {
+                // Logs analytics event for servers.
+                final JSONObject serverAttr = new JSONObject();
+                try {
+                    final List<LoginServerManager.LoginServer> servers = SalesforceSDKManager.getInstance().getLoginServerManager().getLoginServers();
+                    serverAttr.put("numLoginServers", (servers == null) ? 0 : servers.size());
+                    if (servers != null) {
+                        final JSONArray serversJson = new JSONArray();
+                        for (final LoginServerManager.LoginServer server : servers) {
+                            if (server != null) {
+                                serversJson.put(server.url);
+                            }
+                        }
+                        serverAttr.put("loginServers", serversJson);
+                    }
+                    EventBuilderHelper.createAndStoreEventSync("addUser", account, TAG, serverAttr);
+                } catch (JSONException e) {
+                    Log.e(TAG, "Exception thrown while creating JSON", e);
+                }
+            }
+        });
     }
 
     /**

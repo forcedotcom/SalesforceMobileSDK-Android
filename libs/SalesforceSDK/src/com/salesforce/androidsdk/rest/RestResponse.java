@@ -39,12 +39,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
+import okhttp3.MediaType;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 /**
  * RestResponse: Class to represent any REST response.
- * 
+ *
  */
 public class RestResponse {
 
@@ -71,6 +72,7 @@ public class RestResponse {
 	 */
 	public RestResponse(Response response) {
 		this.response = response;
+		consumeQuietly();
 	}
 
 	/**
@@ -106,22 +108,28 @@ public class RestResponse {
 	/**
 	 * Fully consume response entity content and closes content stream
 	 * Must be called before returning control to the UI thread
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	public void consume() throws IOException {
 		if (!consumed && response != null) {
-			ResponseBody body = response.body();
-			if (body != null) {
-				responseAsBytes = body.bytes();
-				responseCharSet = body.contentType() == null || body.contentType().charset() == null ? StandardCharsets.UTF_8 : body.contentType().charset();
-				body.close();
-			}
-			else {
-				responseAsBytes = new byte[0];
-				responseCharSet = StandardCharsets.UTF_8;
-			}
+			try {
+				ResponseBody body = response.body();
+				if (body != null) {
+					MediaType mType = body.contentType();
+					responseAsBytes = body.bytes();
+					responseCharSet = mType == null || mType.charset() == null ? StandardCharsets.UTF_8 : mType.charset();
+					if (responseAsBytes != null && responseAsBytes.length > 0) {
+						responseAsString = new String(responseAsBytes, responseCharSet);
+					}
+				} else {
+					responseAsBytes = new byte[0];
+					responseCharSet = StandardCharsets.UTF_8;
+				}
 
-			consumed = true;
+				consumed = true;
+			} finally {
+				response.close();
+			}
 		}
 	}
 
