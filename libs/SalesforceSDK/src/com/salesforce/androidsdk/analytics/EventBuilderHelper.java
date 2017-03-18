@@ -75,6 +75,10 @@ public class EventBuilderHelper {
      */
     public static void createAndStoreEvent(final String name, final UserAccount userAccount, final String className,
             final JSONObject attributes) {
+        // Do nothing if not enabled
+        if (!enabled)
+            return;
+        
         // don't run on background if this is a test run
         if (SalesforceSDKManager.getInstance().getIsTestRun()) {
             createAndStore(name, userAccount, className, attributes);
@@ -98,7 +102,6 @@ public class EventBuilderHelper {
      */
     public static void createAndStoreEventSync(String name, UserAccount userAccount, String className,
                                            JSONObject attributes) {
-
         createAndStore(name, userAccount, className, attributes);
     }
 
