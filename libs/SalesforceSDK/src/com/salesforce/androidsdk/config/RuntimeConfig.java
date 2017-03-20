@@ -40,6 +40,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Classes responsible for reading runtime configurations (from MDM provider).
@@ -52,6 +54,9 @@ public class RuntimeConfig {
 	private static final String FEATURE_MDM = "MM";
 
 	private static final String FEATURE_CERT_AUTH = "CT";
+
+	// background executor
+	private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
 
 	public enum ConfigKey {
 
@@ -67,7 +72,7 @@ public class RuntimeConfig {
 
     private boolean isManaged = false;
 	private Bundle configurations = null;
-	
+
 	private static RuntimeConfig INSTANCE = null;
 
 	private RuntimeConfig(Context ctx) {
@@ -84,21 +89,27 @@ public class RuntimeConfig {
 			}
 
             // Logs analytics event for MDM.
-            final JSONObject attributes = new JSONObject();
-            try {
-                attributes.put("mdmIsActive", isManaged);
-                if (configurations != null) {
-                    final JSONObject mdmValues = new JSONObject();
-                    final Set<String> keys = configurations.keySet();
-                    for (final String key : keys) {
-                        mdmValues.put(key, JSONObject.wrap(configurations.get(key)));
-                    }
-                    attributes.put("mdmConfigs", mdmValues);
-                }
-            } catch (JSONException e) {
-                Log.e(TAG, "Exception thrown while creating JSON", e);
-            }
-            EventBuilderHelper.createAndStoreEvent("mdmConfiguration", null, TAG, attributes);
+			threadPool.execute(new Runnable() {
+				@Override
+				public void run() {
+					final JSONObject attributes = new JSONObject();
+					try {
+						attributes.put("mdmIsActive", isManaged);
+						if (configurations != null) {
+							final JSONObject mdmValues = new JSONObject();
+							final Set<String> keys = configurations.keySet();
+							for (final String key : keys) {
+								mdmValues.put(key, JSONObject.wrap(configurations.get(key)));
+							}
+							attributes.put("mdmConfigs", mdmValues);
+						}
+					} catch (JSONException e) {
+						Log.e(TAG, "Exception thrown while creating JSON", e);
+					}
+					EventBuilderHelper.createAndStoreEventSync("mdmConfiguration", null, TAG, attributes);
+				}
+			});
+
         }
 	}
 
@@ -149,8 +160,8 @@ public class RuntimeConfig {
 	public Boolean getBoolean(ConfigKey configKey) {
 		return (configurations == null ? false : configurations.getBoolean(configKey.name()));
 	}
-	
-	@TargetApi(Build.VERSION_CODES.LOLLIPOP) 
+
+	@TargetApi(Build.VERSION_CODES.LOLLIPOP)
 	private Bundle getRestrictions(Context ctx) {
 		RestrictionsManager restrictionsManager = (RestrictionsManager) ctx.getSystemService(Context.RESTRICTIONS_SERVICE);
 		return restrictionsManager.getApplicationRestrictions();

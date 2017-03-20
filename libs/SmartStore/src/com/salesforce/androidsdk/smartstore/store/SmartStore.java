@@ -32,6 +32,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.store.LongOperation.LongOperationType;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
@@ -47,6 +48,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Smart store
@@ -77,7 +80,7 @@ public class SmartStore  {
 
 	// Table to keep track of soup's index specs
     protected static final String SOUP_INDEX_MAP_TABLE = "soup_index_map";
-    
+
     // Table to keep track of status of long operations in flight
     protected static final String LONG_OPERATIONS_STATUS_TABLE = "long_operations_status";
 
@@ -100,7 +103,7 @@ public class SmartStore  {
 	protected static final String TYPE_COL = "type";
     protected static final String DETAILS_COL = "details";
 	protected static final String STATUS_COL = "status";
-	
+
     // JSON fields added to soup element on insert/update
     public static final String SOUP_ENTRY_ID = "_soupEntryId";
     public static final String SOUP_LAST_MODIFIED_DATE = "_soupLastModifiedDate";
@@ -118,6 +121,9 @@ public class SmartStore  {
 
 	// FTS extension to use
 	protected FtsExtension ftsExtension = FtsExtension.fts5;
+
+	// background executor
+	private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
 
 	/**
      * Changes the encryption key on the smartstore.
@@ -155,7 +161,7 @@ public class SmartStore  {
 	        db.execSQL(sb.toString());
 	        // Add index on soup_name column
 	        db.execSQL(String.format("CREATE INDEX %s on %s ( %s )", SOUP_INDEX_MAP_TABLE + "_0", SOUP_INDEX_MAP_TABLE, SOUP_NAME_COL));
-	
+
 	        // Create soup_names table
 	        // The table name for the soup will simply be table_<soupId>
 	        sb = new StringBuilder();
@@ -177,7 +183,7 @@ public class SmartStore  {
 	        createLongOperationsStatusTable(db);
     	}
     }
-    
+
     /**
      * Create long_operations_status table
      * @param db
@@ -253,7 +259,7 @@ public class SmartStore  {
     	}
     	return size;
     }
-    
+
     /**
      * Start transaction
 	 * NB: to avoid deadlock, caller should have synchronized(store.getDatabase()) around the whole transaction
@@ -298,31 +304,16 @@ public class SmartStore  {
 	 * @param soupSpec
 	 * @param indexSpecs
 	 */
-	public void registerSoupWithSpec(SoupSpec soupSpec, IndexSpec[] indexSpecs) {
+	public void registerSoupWithSpec(final SoupSpec soupSpec, final IndexSpec[] indexSpecs) {
 		final SQLiteDatabase db = getDatabase();
-		synchronized(db) {
+		synchronized (db) {
 			String soupName = soupSpec.getSoupName();
 			if (soupName == null) throw new SmartStoreException("Bogus soup name:" + soupName);
-			if (indexSpecs.length == 0) throw new SmartStoreException("No indexSpecs specified for soup: " + soupName);
-			if (IndexSpec.hasJSON1(indexSpecs) && soupSpec.getFeatures().contains(SoupSpec.FEATURE_EXTERNAL_STORAGE))  throw new SmartStoreException("Can't have JSON1 index specs in externally stored soup:" + soupName);
+			if (indexSpecs.length == 0)
+				throw new SmartStoreException("No indexSpecs specified for soup: " + soupName);
+			if (IndexSpec.hasJSON1(indexSpecs) && soupSpec.getFeatures().contains(SoupSpec.FEATURE_EXTERNAL_STORAGE))
+				throw new SmartStoreException("Can't have JSON1 index specs in externally stored soup:" + soupName);
 			if (hasSoup(soupName)) return; // soup already exist - do nothing
-			final JSONArray features = new JSONArray();
-			if (IndexSpec.hasJSON1(indexSpecs)) {
-				features.put("JSON1");
-			}
-			if (IndexSpec.hasFTS(indexSpecs)) {
-				features.put("FTS");
-			}
-			if (soupSpec.getFeatures().contains(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
-				features.put("ExternalStorage");
-			}
-			final JSONObject attributes = new JSONObject();
-			try {
-				attributes.put("features", features);
-			} catch (JSONException e) {
-				Log.e(TAG, "Exception thrown while building page object", e);
-			}
-			EventBuilderHelper.createAndStoreEvent("registerSoup", null, TAG, attributes);
 
 			// First get a table name
 			String soupTableName = null;
@@ -346,7 +337,42 @@ public class SmartStore  {
 			} finally {
 				db.endTransaction();
 			}
+			if (SalesforceSDKManager.getInstance().getIsTestRun()) {
+				logRegisterSoupEvent(soupSpec, indexSpecs);
+			} else {
+				threadPool.execute(new Runnable() {
+					@Override
+					public void run() {
+						logRegisterSoupEvent(soupSpec, indexSpecs);
+					}
+				});
+			}
 		}
+	}
+
+	/**
+	 * Log the soup event.
+	 * @param soupSpec
+	 * @param indexSpecs
+	 */
+	private void logRegisterSoupEvent(final SoupSpec soupSpec, final IndexSpec[] indexSpecs) {
+		final JSONArray features = new JSONArray();
+		if (IndexSpec.hasJSON1(indexSpecs)) {
+			features.put("JSON1");
+		}
+		if (IndexSpec.hasFTS(indexSpecs)) {
+			features.put("FTS");
+		}
+		if (soupSpec.getFeatures().contains(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
+			features.put("ExternalStorage");
+		}
+		final JSONObject attributes = new JSONObject();
+		try {
+			attributes.put("features", features);
+		} catch (JSONException e) {
+			Log.e(TAG, "Exception thrown while building page object", e);
+		}
+		EventBuilderHelper.createAndStoreEventSync("registerSoup", null, TAG, attributes);
 	}
 
 	/**
@@ -459,7 +485,7 @@ public class SmartStore  {
             db.endTransaction();
         }
     }
-    
+
 	/**
 	 * Finish long operations that were interrupted
 	 */
@@ -475,7 +501,7 @@ public class SmartStore  {
 			}
 		}
 	}
-	
+
 	/**
 	 * @return unfinished long operations
 	 */
@@ -510,14 +536,14 @@ public class SmartStore  {
 		}
 		return longOperations.toArray(new LongOperation[0]);
 	}
-    
+
 	/**
 	 * Alter soup using only soup name without extra soup features.
-	 * 
+	 *
 	 * @param soupName
 	 * @param indexSpecs array of index specs
 	 * @param reIndexData
-	 * @throws JSONException 
+	 * @throws JSONException
 	 */
 	public void alterSoup(String soupName, IndexSpec[] indexSpecs,
 			boolean reIndexData) throws JSONException {
@@ -542,7 +568,7 @@ public class SmartStore  {
 	/**
 	 * Re-index all soup elements for passed indexPaths
 	 * NB: only indexPath that have IndexSpec on them will be indexed
-	 * 
+	 *
 	 * @param soupName
 	 * @param indexPaths
 	 * @param handleTx
@@ -574,7 +600,7 @@ public class SmartStore  {
 			}
 
 			boolean hasFts = IndexSpec.hasFTS(indexSpecs);
-			
+
 			if (handleTx) {
 				db.beginTransaction();
 			}
@@ -612,7 +638,7 @@ public class SmartStore  {
 			        	}
 			        	catch (JSONException e) {
 			        		Log.w("SmartStore.alterSoup", "Could not parse soup element " + soupEntryId, e);
-			        		// Should not have happen - just keep going 
+			        		// Should not have happen - just keep going
 			        	}
 			        }
 			        while (cursor.moveToNext());
@@ -629,7 +655,7 @@ public class SmartStore  {
 
 	/**
 	 * Return indexSpecs of soup
-	 * 
+	 *
 	 * @param soupName
 	 * @return
 	 */
@@ -641,7 +667,7 @@ public class SmartStore  {
 	        return DBHelper.getInstance(db).getIndexSpecs(db, soupName);
     	}
 	}
-	
+
 	/**
 	 * Clear all rows from a soup
 	 * @param soupName
@@ -666,7 +692,7 @@ public class SmartStore  {
 			}
     	}
 	}
-	
+
     /**
      * Check if soup exists
      *
@@ -767,14 +793,14 @@ public class SmartStore  {
 	 * Run a query given by its query Spec, only returned results from selected page
 	 * @param querySpec
 	 * @param pageIndex
-     * @throws JSONException 
+     * @throws JSONException
 	 */
 	public JSONArray query(QuerySpec querySpec, int pageIndex) throws JSONException {
 		final SQLiteDatabase db = getDatabase();
     	synchronized(db) {
 			QueryType qt = querySpec.queryType;
 	    	String sql = convertSmartSql(querySpec.smartSql);
-	
+
 	        // Page
 	        int offsetRows = querySpec.pageSize * pageIndex;
 	        int numberRows = querySpec.pageSize;
@@ -787,7 +813,7 @@ public class SmartStore  {
 	                do {
 	                	// Smart queries
 	                	if (qt == QueryType.smart || querySpec.selectPaths != null) {
-	                		results.put(getDataFromRow(cursor));	
+	                		results.put(getDataFromRow(cursor));
 	                	}
 	            		// Exact/like/range queries
 	                	else {
@@ -849,7 +875,7 @@ public class SmartStore  {
 		}
 		return row;
 	}
-	
+
 	/**
 	 * @param querySpec
 	 * @return count of results for a query
@@ -910,7 +936,7 @@ public class SmartStore  {
 	            }
 	            long now = System.currentTimeMillis();
 	            long soupEntryId = DBHelper.getInstance(db).getNextId(db, soupTableName);
-	
+
 	            // Adding fields to soup element
 	            soupElt.put(SOUP_ENTRY_ID, soupEntryId);
 	            soupElt.put(SOUP_LAST_MODIFIED_DATE, now);
@@ -1199,7 +1225,7 @@ public class SmartStore  {
 	                entryId = lookupSoupEntryId(soupName, externalIdPath, externalIdObj + "");
 	            }
 	        }
-	
+
 	        // If we have an entryId, let's do an update, otherwise let's do a create
 	        if (entryId != -1) {
 	            return update(soupName, soupElt, entryId, handleTx);
@@ -1226,7 +1252,7 @@ public class SmartStore  {
 	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 	        String columnName = DBHelper.getInstance(db).getColumnNameForPath(db, soupName, fieldPath);
-	
+
 	        Cursor cursor = null;
 	        try {
 	            cursor = db.query(soupTableName, new String[] {ID_COL}, columnName + " = ?", new String[] { fieldValue }, null, null, null);
