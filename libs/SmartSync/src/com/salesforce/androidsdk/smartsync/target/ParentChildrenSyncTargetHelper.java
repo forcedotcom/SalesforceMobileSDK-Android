@@ -75,11 +75,10 @@ public class ParentChildrenSyncTargetHelper {
                     target.cleanRecord(parent);
                     target.cleanAndSaveInSmartStore(smartStore, parentInfo.soupName, parent, false);
 
-                    // Put server id / local id of parent in children
+                    // Put server id of parent in children
                     if (children != null) {
                         for (int j = 0; j < children.length(); j++) {
                             JSONObject child = children.getJSONObject(j);
-                            child.put(childrenInfo.parentLocalIdFieldName, parent.get(SmartStore.SOUP_ENTRY_ID));
                             child.put(childrenInfo.parentIdFieldName, parent.get(parentInfo.idFieldName));
 
                             // Saving child
@@ -98,28 +97,28 @@ public class ParentChildrenSyncTargetHelper {
         }
     }
 
-    public static String getDirtyRecordIdsSql(String soupName, String idField, ChildrenInfo childrenInfo) {
+    public static String getDirtyRecordIdsSql(ParentInfo parentInfo, ChildrenInfo childrenInfo, String parentFieldToSelect) {
         return String.format(
                 "SELECT DISTINCT {%s:%s} FROM {%s} WHERE {%s:%s} = 'true' OR EXISTS (SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = {%s:%s} AND {%s:%s} = 'true')",
-                soupName, idField, soupName, soupName, SyncTarget.LOCAL,
-                childrenInfo.soupName, childrenInfo.idFieldName, childrenInfo.soupName, childrenInfo.soupName, childrenInfo.parentLocalIdFieldName, soupName, SmartStore.SOUP_ENTRY_ID, childrenInfo.soupName, SyncTarget.LOCAL);
+                parentInfo.soupName, parentFieldToSelect, parentInfo.soupName, parentInfo.soupName, SyncTarget.LOCAL,
+                childrenInfo.soupName, childrenInfo.idFieldName, childrenInfo.soupName, childrenInfo.soupName, childrenInfo.parentIdFieldName, parentInfo.soupName, parentInfo.idFieldName, childrenInfo.soupName, SyncTarget.LOCAL);
     }
 
-    public static String getNonDirtyRecordIdsSql(String soupName, String idField, ChildrenInfo childrenInfo) {
+    public static String getNonDirtyRecordIdsSql(ParentInfo parentInfo, ChildrenInfo childrenInfo, String parentFieldToSelect) {
         return String.format(
                 "SELECT DISTINCT {%s:%s} FROM {%s} WHERE {%s:%s} = 'false' AND NOT EXISTS (SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = {%s:%s} AND {%s:%s} = 'true')",
-                soupName, idField, soupName, soupName, SyncTarget.LOCAL,
-                childrenInfo.soupName, childrenInfo.idFieldName, childrenInfo.soupName, childrenInfo.soupName, childrenInfo.parentLocalIdFieldName, soupName, SmartStore.SOUP_ENTRY_ID, childrenInfo.soupName, SyncTarget.LOCAL);
+                parentInfo.soupName, parentFieldToSelect, parentInfo.soupName, parentInfo.soupName, SyncTarget.LOCAL,
+                childrenInfo.soupName, childrenInfo.idFieldName, childrenInfo.soupName, childrenInfo.soupName, childrenInfo.parentIdFieldName, parentInfo.soupName, parentInfo.idFieldName, childrenInfo.soupName, SyncTarget.LOCAL);
     }
 
 
-    public static void deleteChildrenFromLocalStore(SmartStore smartStore, String parentSoupName, ChildrenInfo childrenInfo, Long... parentLocalIds) {
-        QuerySpec querySpec = getQueryForChildren(childrenInfo, parentSoupName, SmartStore.SOUP_ENTRY_ID, parentLocalIds);
+    public static void deleteChildrenFromLocalStore(SmartStore smartStore, ParentInfo parentInfo, ChildrenInfo childrenInfo, String... parentIds) {
+        QuerySpec querySpec = getQueryForChildren(parentInfo, childrenInfo, SmartStore.SOUP_ENTRY_ID, parentIds);
         smartStore.deleteByQuery(childrenInfo.soupName, querySpec);
     }
 
-    public static JSONArray getChildrenFromLocalStore(SmartStore smartStore, String parentSoupName, ChildrenInfo childrenInfo, JSONObject parent) throws JSONException {
-        QuerySpec  querySpec = getQueryForChildren(childrenInfo, parentSoupName, SmartSqlHelper.SOUP, parent.getLong(SmartStore.SOUP_ENTRY_ID));
+    public static JSONArray getChildrenFromLocalStore(SmartStore smartStore, ParentInfo parentInfo, ChildrenInfo childrenInfo, JSONObject parent) throws JSONException {
+        QuerySpec  querySpec = getQueryForChildren(parentInfo, childrenInfo, SmartSqlHelper.SOUP, parent.getString(parentInfo.idFieldName));
         JSONArray rows = smartStore.query(querySpec, 0);
         JSONArray children = new JSONArray();
         for (int i=0; i<rows.length(); i++) {
@@ -129,15 +128,15 @@ public class ParentChildrenSyncTargetHelper {
         return children;
     }
 
-    protected static QuerySpec getQueryForChildren(ChildrenInfo childrenInfo, String parentSoupName, String childFieldToSelect, Long... parentLocalIds) {
+    protected static QuerySpec getQueryForChildren(ParentInfo parentInfo, ChildrenInfo childrenInfo, String childFieldToSelect, String... parentIds) {
         String smartSql = String.format(
                 "SELECT {%s:%s} FROM {%s},{%s} WHERE {%s:%s} = {%s:%s} AND {%s:%s} IN (%s)",
                 childrenInfo.soupName, childFieldToSelect,
-                childrenInfo.soupName, parentSoupName,
-                childrenInfo.soupName, childrenInfo.parentLocalIdFieldName,
-                parentSoupName, SmartStore.SOUP_ENTRY_ID,
-                parentSoupName, SmartStore.SOUP_ENTRY_ID,
-                TextUtils.join(", ", parentLocalIds));
+                childrenInfo.soupName, parentInfo.soupName,
+                childrenInfo.soupName, childrenInfo.parentIdFieldName,
+                parentInfo.soupName, parentInfo.idFieldName,
+                parentInfo.soupName, parentInfo.idFieldName,
+                "'" + TextUtils.join("', '", parentIds) + "'");
 
         return QuerySpec.buildSmartQuerySpec(smartSql, Integer.MAX_VALUE);
     }

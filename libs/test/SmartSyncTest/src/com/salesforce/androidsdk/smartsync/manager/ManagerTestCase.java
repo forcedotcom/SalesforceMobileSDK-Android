@@ -165,7 +165,7 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
         Map<String, Map <String, Object>> idToFields = createRecordsOnServerReturnFields(count, objectType, null);
         Map<String, String> idToNames = new HashMap<>();
         for (String id : idToFields.keySet()) {
-            idToNames.put(id, (String) idToFields.get(id).get(Constants.NAME));
+            idToNames.put(id, (String) idToFields.get(id).get(objectType == Constants.CONTACT ? Constants.LAST_NAME : Constants.NAME));
         }
         return idToNames;
     }

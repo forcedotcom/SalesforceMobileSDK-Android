@@ -310,12 +310,12 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
 
     @Override
     protected String getDirtyRecordIdsSql(String soupName, String idField) {
-        return ParentChildrenSyncTargetHelper.getDirtyRecordIdsSql(soupName, idField, childrenInfo);
+        return ParentChildrenSyncTargetHelper.getDirtyRecordIdsSql(parentInfo, childrenInfo, idField);
     }
 
     @Override
     protected String getNonDirtyRecordIdsSql(String soupName, String idField) {
-        return ParentChildrenSyncTargetHelper.getNonDirtyRecordIdsSql(soupName, idField, childrenInfo);
+        return ParentChildrenSyncTargetHelper.getNonDirtyRecordIdsSql(parentInfo, childrenInfo, idField);
     }
 
     @Override

@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.smartsync.target;
 
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.target.ParentChildrenSyncTargetHelper.RelationshipType;
 import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
@@ -113,7 +112,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
 
     @Override
     protected String getDirtyRecordIdsSql(String soupName, String idField) {
-        return ParentChildrenSyncTargetHelper.getDirtyRecordIdsSql(soupName, idField, childrenInfo);
+        return ParentChildrenSyncTargetHelper.getDirtyRecordIdsSql(parentInfo, childrenInfo, idField);
     }
 
     @Override
@@ -143,10 +142,10 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                 // so no need to actually do any work on the children
                 ? new JSONArray()
                 : ParentChildrenSyncTargetHelper.getChildrenFromLocalStore(
-                syncManager.getSmartStore(),
-                parentInfo.soupName,
-                childrenInfo, record
-        );
+                    syncManager.getSmartStore(),
+                    parentInfo,
+                    childrenInfo,
+                    record);
 
         syncUpRecord(syncManager, record, children, fieldlist, mergeMode);
     }
@@ -234,7 +233,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                 || statusCode == HttpURLConnection.HTTP_NOT_FOUND) // or the record was already deleted on the server
             {
                 if (relationshipType == RelationshipType.MASTER_DETAIL) {
-                    ParentChildrenSyncTargetHelper.deleteChildrenFromLocalStore(syncManager.getSmartStore(), soupName, childrenInfo, record.getLong(SmartStore.SOUP_ENTRY_ID));
+                    ParentChildrenSyncTargetHelper.deleteChildrenFromLocalStore(syncManager.getSmartStore(), parentInfo, childrenInfo, record.getString(idFieldName));
                 }
 
                 deleteFromLocalStore(syncManager, soupName, record);
@@ -246,7 +245,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
             // Success case
             if (RestResponse.isSuccess(statusCode))
             {
-                // Replace local id by server id
+                // Plugging server id in id field
                 updateReferences(record, idFieldName, refIdToServerId);
 
                 // Clean and save
@@ -299,10 +298,10 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
             // Success case
             if (RestResponse.isSuccess(statusCode))
             {
-                // Replace local id by server id
+                // Plugging server id in id field
                 updateReferences(record, idFieldName, refIdToServerId);
 
-                // Replace parent local id by server id
+                // Plugging server id in parent id field
                 updateReferences(record, childrenInfo.parentIdFieldName, refIdToServerId);
 
                 // Clean and save
@@ -402,8 +401,8 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
     }
 
     protected void updateReferences(JSONObject record, String fieldWithRefId, Map<String, String> refIdToServerId) throws JSONException {
-        String refId = record.getString(fieldWithRefId);
-        if (refIdToServerId.containsKey(refId)) {
+        String refId = JSONObjectHelper.optString(record, fieldWithRefId);
+        if (refId != null && refIdToServerId.containsKey(refId)) {
             record.put(fieldWithRefId, refIdToServerId.get(refId));
         }
     }
@@ -454,7 +453,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
 
         JSONArray children = ParentChildrenSyncTargetHelper.getChildrenFromLocalStore(
                 syncManager.getSmartStore(),
-                parentInfo.soupName,
+                parentInfo,
                 childrenInfo,
                 record
         );

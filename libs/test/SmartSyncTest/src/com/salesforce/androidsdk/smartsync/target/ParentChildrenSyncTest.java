@@ -66,7 +66,6 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
     private static final String CONTACTS_SOUP = "contacts";
     private static final String ACCOUNT_ID = "AccountId";
-    private static final String ACCOUNT_LOCAL_ID = "AccountLocalId";
 
     protected Map<String, Map<String, Object>> accountIdToFields;
     protected Map<String, Map<String, Map<String, Object>>> accountIdContactIdToFields;
@@ -106,7 +105,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 new ParentInfo("Parent", "parentsSoup", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
-                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId", "ChildId", "ChildLastModifiedDate"),
+                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
 
@@ -117,7 +116,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 new ParentInfo("Parent", "parentsSoup"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
-                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId"),
+                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
 
@@ -138,7 +137,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 new ParentInfo("Parent", "parentsSoup", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
-                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId", "ChildId", "ChildLastModifiedDate"),
+                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
 
@@ -149,7 +148,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 new ParentInfo("Parent", "parentsSoup"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
-                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId"),
+                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
 
@@ -166,7 +165,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 new ParentInfo("Parent", "parentsSoup", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
-                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId", "ChildId", "ChildLastModifiedDate"),
+                new ChildrenInfo("Child", "Children", "childrenSoup", "ChildParentId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
 
@@ -177,7 +176,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 new ParentInfo("Parent", "parentsSoup"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
-                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId"),
+                new ChildrenInfo("Child", "Children", "childrenSoup", "ChildParentId"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
 
@@ -192,11 +191,12 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 new ParentInfo("Parent", "parentsSoup", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
-                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId", "ChildId", "ChildLastModifiedDate"),
+                new ChildrenInfo("Child", "Children", "childrenSoup", "ChildParentId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
 
-        assertEquals("SELECT DISTINCT {ParentSoup:IdForQuery} FROM {ParentSoup} WHERE {ParentSoup:__local__} = 'true' OR EXISTS (SELECT {childrenSoup:ChildId} FROM {childrenSoup} WHERE {childrenSoup:parentLocalId} = {ParentSoup:_soupEntryId} AND {childrenSoup:__local__} = 'true')", target.getDirtyRecordIdsSql("ParentSoup", "IdForQuery"));
+        assertEquals("SELECT DISTINCT {parentsSoup:IdForQuery} FROM {parentsSoup} WHERE {parentsSoup:__local__} = 'true' OR EXISTS (SELECT {childrenSoup:ChildId} FROM {childrenSoup} WHERE {childrenSoup:ChildParentId} = {parentsSoup:ParentId} AND {childrenSoup:__local__} = 'true')",
+                target.getDirtyRecordIdsSql("parentsSoup", "IdForQuery"));
     }
 
 
@@ -208,11 +208,12 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 new ParentInfo("Parent", "parentsSoup", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
-                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId", "ChildId", "ChildLastModifiedDate"),
+                new ChildrenInfo("Child", "Children", "childrenSoup", "ChildParentId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
 
-        assertEquals("SELECT DISTINCT {ParentSoup:IdForQuery} FROM {ParentSoup} WHERE {ParentSoup:__local__} = 'false' AND NOT EXISTS (SELECT {childrenSoup:ChildId} FROM {childrenSoup} WHERE {childrenSoup:parentLocalId} = {ParentSoup:_soupEntryId} AND {childrenSoup:__local__} = 'true')", target.getNonDirtyRecordIdsSql("ParentSoup", "IdForQuery"));
+        assertEquals("SELECT DISTINCT {parentsSoup:IdForQuery} FROM {parentsSoup} WHERE {parentsSoup:__local__} = 'false' AND NOT EXISTS (SELECT {childrenSoup:ChildId} FROM {childrenSoup} WHERE {childrenSoup:ChildParentId} = {parentsSoup:ParentId} AND {childrenSoup:__local__} = 'true')",
+                target.getNonDirtyRecordIdsSql("parentsSoup", "IdForQuery"));
 
     }
 
@@ -344,7 +345,6 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 assertEquals(false, contactFromDb.getBoolean(SyncTarget.LOCALLY_DELETED));
                 assertEquals(false, contactFromDb.getBoolean(SyncTarget.LOCALLY_UPDATED));
                 assertEquals(accountFromDb.getString(Constants.ID), contactFromDb.getString(ACCOUNT_ID));
-                assertEquals(accountFromDb.getString(SmartStore.SOUP_ENTRY_ID), contactFromDb.getString(ACCOUNT_LOCAL_ID));
             }
 
         }
@@ -475,8 +475,6 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
             Map<String, Map<String, Object>> contactIdToFields = accountIdContactIdToFields.get(accountId);
             for (String contactId : contactIdToFields.keySet()) {
                 Map<String, Object> fields = contactIdToFields.get(contactId);
-                // we expect to find the accountLocalId populated
-                fields.put(ACCOUNT_LOCAL_ID, "" + accountLocalId);
             }
             checkDb(contactIdToFields, CONTACTS_SOUP);
         }
@@ -701,6 +699,120 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      */
     public void testSyncUpWithLocallyCreatedRecordsWithoutOverwrite() throws Exception {
         trySyncUpWithLocallyCreatedRecords(SyncState.MergeMode.LEAVE_IF_CHANGED);
+    }
+
+    /**
+     * Create contacts on server, sync down
+     * Create accounts locally, update contacts locally to be associated with them
+     * Run sync up
+     * Check smartstore and server afterwards
+     */
+    public void testSyncUpWithLocallyCreatedParentRecords() throws Exception {
+        // Create contacts on server
+        final Map<String, String> contactIdToName = createRecordsOnServer(6, Constants.CONTACT);
+
+        // Sync down remote contacts
+        final SyncDownTarget contactSyncDownTarget = new SoqlSyncDownTarget("SELECT Id, LastName, LastModifiedDate FROM Contact WHERE Id IN " + makeInClause(contactIdToName.keySet()));
+        trySyncDown(SyncState.MergeMode.OVERWRITE, contactSyncDownTarget, CONTACTS_SOUP, contactIdToName.size(), 1);
+
+        // Create a few accounts locally
+        String[] accountNames = new String[]{
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT),
+        };
+        JSONObject[] localAccounts = createAccountsLocally(accountNames);
+
+        // Build account name to id map
+        Map<String, String> accountNameToServerId = new HashMap<>();
+        for (JSONObject localAccount : localAccounts) {
+            accountNameToServerId.put(localAccount.getString(Constants.NAME), localAccount.getString(Constants.ID));
+        }
+
+        // Update contacts locally to use locally created accounts
+        Map<String, String> contactIdToAccountName = new HashMap<>();
+        Map<String, Map<String, Object>> idToFieldsLocallyUpdated = new HashMap<>();
+        int i=0;
+        for (String contactId : contactIdToName.keySet()) {
+            Map<String, Object> fieldsLocallyUpdated = new HashMap<>();
+            String accountName = accountNames[i % accountNames.length];
+            fieldsLocallyUpdated.put(ACCOUNT_ID, accountNameToServerId.get(accountName));
+            idToFieldsLocallyUpdated.put(contactId, fieldsLocallyUpdated);
+            contactIdToAccountName.put(contactId, accountName);
+        }
+        updateRecordsLocally(idToFieldsLocallyUpdated, CONTACTS_SOUP);
+
+        // Sync up
+        ParentChildrenSyncUpTarget target = getAccountContactsSyncUpTarget();
+        trySyncUp(target, accountNames.length, SyncState.MergeMode.OVERWRITE);
+
+        // Check that db doesn't show account entries as locally created anymore and that they use sfdc id
+        Map<String, Map<String, Object>> accountIdToFieldsCreated = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{Constants.NAME, Constants.DESCRIPTION}, Constants.NAME, accountNames);
+        checkDbStateFlags(accountIdToFieldsCreated.keySet(), false, false, false, ACCOUNTS_SOUP);
+
+        // Updated account name to server id map
+        for (String accountId : accountIdToFieldsCreated.keySet()) {
+            accountNameToServerId.put((String) accountIdToFieldsCreated.get(accountId).get(Constants.NAME), accountId);
+        }
+
+        // Check accounts on server
+        checkServer(accountIdToFieldsCreated, Constants.ACCOUNT);
+
+        // Check that db doesn't show contact entries as locally updated anymore
+        Map<String, Map<String, Object>> contactIdToFieldsUpdated= getIdToFieldsByName(CONTACTS_SOUP, new String[]{Constants.LAST_NAME, ACCOUNT_ID}, Constants.LAST_NAME, contactIdToName.values().toArray(new String[0]));
+        checkDbStateFlags(contactIdToFieldsUpdated.keySet(), false, false, false, CONTACTS_SOUP);
+
+        // Check that contact use server account id in accountId field
+        for (String contactId : contactIdToFieldsUpdated.keySet()) {
+            assertEquals("Wrong accountId", accountNameToServerId.get(contactIdToAccountName.get(contactId)), contactIdToFieldsUpdated.get(contactId).get(ACCOUNT_ID));
+        }
+
+        // Check contacts on server
+        checkServer(contactIdToFieldsUpdated, Constants.CONTACT);
+
+        // Cleanup
+        deleteRecordsOnServer(accountIdToFieldsCreated.keySet(), Constants.ACCOUNT);
+        deleteRecordsOnServer(contactIdToFieldsUpdated.keySet(), Constants.CONTACT);
+    }
+
+    /**
+     * Create accounts on server, sync down
+     * Create contacts locally associated the accounts with them and run sync up
+     * Check smartstore and server afterwards
+     */
+    public void testSyncUpWithLocallyCreatedChildrenRecords() throws Exception {
+        // Create accounts on server
+        final Map<String, String> accountIdToName = createRecordsOnServer(2, Constants.ACCOUNT);
+        String[] accountNames = accountIdToName.values().toArray(new String[0]);
+
+        // Sync down remote accounts
+        final SyncDownTarget accountSyncDownTarget = new SoqlSyncDownTarget("SELECT Id, Name, LastModifiedDate FROM Account WHERE Id IN " + makeInClause(accountIdToName.keySet()));
+        trySyncDown(SyncState.MergeMode.OVERWRITE, accountSyncDownTarget, ACCOUNTS_SOUP, accountIdToName.size(), 1);
+
+        // Create a few contacts locally associated with existing accounts
+        Map<String, Map<String, Object>> accountIdToFieldsCreated = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{Constants.NAME}, Constants.NAME, accountNames);
+        final Map<String, JSONObject[]> contactsForAccountsLocally = createContactsForAccountsLocally(3, accountIdToFieldsCreated.keySet().toArray(new String[0]));
+        List<String> contactNamesList = new ArrayList<>();
+        for (JSONObject[] contacts : contactsForAccountsLocally.values()) {
+            for (JSONObject contact : contacts) {
+                contactNamesList.add(contact.getString(Constants.LAST_NAME));
+            }
+        }
+        String[] contactNames = contactNamesList.toArray(new String[0]);
+
+        // Sync up
+        ParentChildrenSyncUpTarget target = getAccountContactsSyncUpTarget();
+        trySyncUp(target, accountNames.length, SyncState.MergeMode.OVERWRITE);
+
+        // Check that db doesn't show contact entries as locally created anymore
+        Map<String, Map<String, Object>> contactIdToFieldsCreated = getIdToFieldsByName(CONTACTS_SOUP, new String[]{Constants.LAST_NAME, ACCOUNT_ID}, Constants.LAST_NAME, contactNames);
+        checkDbStateFlags(contactIdToFieldsCreated.keySet(), false, false, false, ACCOUNTS_SOUP);
+
+        // Check contacts on server
+        checkServer(contactIdToFieldsCreated, Constants.CONTACT);
+
+        // Cleanup
+        deleteRecordsOnServer(accountIdToFieldsCreated.keySet(), Constants.ACCOUNT);
+        deleteRecordsOnServer(contactIdToFieldsCreated.keySet(), Constants.CONTACT);
     }
 
     /**
@@ -1462,7 +1574,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         Map<String, Map<String, Object>> contactIdToFieldsCreated = getIdToFieldsByName(CONTACTS_SOUP, new String[]{Constants.LAST_NAME, ACCOUNT_ID}, Constants.LAST_NAME, contactNames);
         checkDbStateFlags(contactIdToFieldsCreated.keySet(), false, false, false, CONTACTS_SOUP);
 
-        // Check accounts on server
+        // Check contacts on server
         checkServer(contactIdToFieldsCreated, Constants.CONTACT);
 
         // Cleanup
@@ -1507,8 +1619,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 new IndexSpec(Constants.ID, SmartStore.Type.string),
                 new IndexSpec(Constants.LAST_NAME, SmartStore.Type.string),
                 new IndexSpec(SyncTarget.LOCAL, SmartStore.Type.string),
-                new IndexSpec(ACCOUNT_ID, SmartStore.Type.string),
-                new IndexSpec(ACCOUNT_LOCAL_ID, SmartStore.Type.integer)
+                new IndexSpec(ACCOUNT_ID, SmartStore.Type.string)
         };
         smartStore.registerSoup(CONTACTS_SOUP, contactsIndexSpecs);
     }
@@ -1530,8 +1641,8 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 new ParentInfo(Constants.ACCOUNT, ACCOUNTS_SOUP, Constants.ID, accountModificationDateFieldName),
                 Arrays.asList(Constants.ID, Constants.NAME, Constants.DESCRIPTION),
                 parentSoqlFilter,
-                new ChildrenInfo(Constants.CONTACT, Constants.CONTACT + "s", CONTACTS_SOUP, ACCOUNT_ID, ACCOUNT_LOCAL_ID, Constants.ID, contactModificationDateFieldName),
-                Arrays.asList(Constants.LAST_NAME),
+                new ChildrenInfo(Constants.CONTACT, Constants.CONTACT + "s", CONTACTS_SOUP, ACCOUNT_ID, Constants.ID, contactModificationDateFieldName),
+                Arrays.asList(Constants.LAST_NAME, ACCOUNT_ID),
                 RelationshipType.MASTER_DETAIL); // account-contacts are master-detail
     }
 
@@ -1540,45 +1651,56 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     }
 
     private ParentChildrenSyncUpTarget getAccountContactsSyncUpTarget(String parentSoqlFilter) {
-        return getAccountContactsSyncUpTarget(Constants.LAST_MODIFIED_DATE, Constants.LAST_MODIFIED_DATE, parentSoqlFilter);
+        return getAccountContactsSyncUpTarget(Constants.LAST_MODIFIED_DATE, Constants.LAST_MODIFIED_DATE);
     }
 
-    private ParentChildrenSyncUpTarget getAccountContactsSyncUpTarget(String accountModificationDateFieldName, String contactModificationDateFieldName, String parentSoqlFilter) {
+    private ParentChildrenSyncUpTarget getAccountContactsSyncUpTarget(String accountModificationDateFieldName, String contactModificationDateFieldName) {
         return new ParentChildrenSyncUpTarget(
                 new ParentInfo(Constants.ACCOUNT, ACCOUNTS_SOUP, Constants.ID, accountModificationDateFieldName),
                 Arrays.asList(Constants.ID, Constants.NAME, Constants.DESCRIPTION),
                 Arrays.asList(Constants.NAME, Constants.DESCRIPTION),
-                new ChildrenInfo(Constants.CONTACT, Constants.CONTACT + "s", CONTACTS_SOUP, ACCOUNT_ID, ACCOUNT_LOCAL_ID, Constants.ID, contactModificationDateFieldName),
-                Arrays.asList(Constants.LAST_NAME),
-                Arrays.asList(Constants.LAST_NAME),
+                new ChildrenInfo(Constants.CONTACT, Constants.CONTACT + "s", CONTACTS_SOUP, ACCOUNT_ID, Constants.ID, contactModificationDateFieldName),
+                Arrays.asList(Constants.LAST_NAME, ACCOUNT_ID),
+                Arrays.asList(Constants.LAST_NAME, ACCOUNT_ID),
                 RelationshipType.MASTER_DETAIL); // account-contacts are master-detail
     }
 
     private Map<JSONObject, JSONObject[]> createAccountsAndContactsLocally(String[] names, int numberOfContactsPerAccount) throws JSONException {
-        Map<JSONObject, JSONObject[]> mapAccountContacts = new HashMap<>();
         JSONObject[] accounts = createAccountsLocally(names);
+        String[] accountIds = JSONObjectHelper.pluck(accounts, Constants.ID).toArray(new String[0]);
+
+        Map<String, JSONObject[]> accountIdsToContacts = createContactsForAccountsLocally(numberOfContactsPerAccount, accountIds);
+
+        Map<JSONObject, JSONObject[]> accountToContacts = new HashMap<>();
+        for (JSONObject account : accounts) {
+            accountToContacts.put(account, accountIdsToContacts.get(account.getString(Constants.ID)));
+        }
+        return accountToContacts;
+    }
+
+    private Map<String, JSONObject[]> createContactsForAccountsLocally(int numberOfContactsPerAccount, String... accountIds) throws JSONException {
+        Map<String, JSONObject[]> accountIdToContacts = new HashMap<>();
 
         JSONObject attributes = new JSONObject();
         attributes.put(TYPE, Constants.CONTACT);
 
-        for (JSONObject account : accounts) {
+        for (String accountId : accountIds) {
             JSONObject[] contacts = new JSONObject[numberOfContactsPerAccount];
             for (int i = 0; i < numberOfContactsPerAccount; i++) {
                 JSONObject contact = new JSONObject();
                 contact.put(Constants.ID, createLocalId());
-                contact.put(Constants.LAST_NAME, "Contact_" + account.get(Constants.NAME) + "_" + i);
+                contact.put(Constants.LAST_NAME, createRecordName(Constants.CONTACT));
                 contact.put(Constants.ATTRIBUTES, attributes);
                 contact.put(SyncTarget.LOCAL, true);
                 contact.put(SyncTarget.LOCALLY_CREATED, true);
                 contact.put(SyncTarget.LOCALLY_DELETED, false);
                 contact.put(SyncTarget.LOCALLY_UPDATED, false);
-                contact.put(ACCOUNT_ID, account.get(Constants.ID));
-                contact.put(ACCOUNT_LOCAL_ID, account.get(SmartStore.SOUP_ENTRY_ID));
+                contact.put(ACCOUNT_ID, accountId);
                 contacts[i] = smartStore.create(CONTACTS_SOUP, contact);
             }
-            mapAccountContacts.put(account, contacts);
+            accountIdToContacts.put(accountId, contacts);
         }
-        return mapAccountContacts;
+        return accountIdToContacts;
     }
 
     private JSONObject[] queryWithInClause(String soupName, String fieldName, String[] values, String orderBy) throws JSONException {
