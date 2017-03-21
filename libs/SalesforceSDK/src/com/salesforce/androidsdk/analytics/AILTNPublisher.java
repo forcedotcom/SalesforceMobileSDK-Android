@@ -138,7 +138,6 @@ public class AILTNPublisher implements AnalyticsPublisher {
         return false;
     }
 
-    /** https://github.com/square/okhttp/issues/350 */
     private RequestBody setContentLength(final RequestBody requestBody) throws IOException {
         final Buffer buffer = new Buffer();
         requestBody.writeTo(buffer);
