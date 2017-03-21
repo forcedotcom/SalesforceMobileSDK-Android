@@ -45,7 +45,6 @@ import android.webkit.WebView;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.accounts.UserAccountManager.UserSwitchType;
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.RuntimeConfig;
@@ -312,16 +311,16 @@ public class LoginActivity extends AccountAuthenticatorActivity
         final List<UserAccount> authenticatedUsers = userAccountManager.getAuthenticatedUsers();
         final int numAuthenticatedUsers = authenticatedUsers == null ? 0 : authenticatedUsers.size();
 
-        final @UserSwitchType int userSwitchType;
+        final int userSwitchType;
         if (numAuthenticatedUsers == 1) {
             // We've already authenticated the first user, so there should be one
-            userSwitchType = UserSwitchType.FIRST_LOGIN;
+            userSwitchType = UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN;
         } else if (numAuthenticatedUsers > 1) {
             // Otherwise we're logging in with an additional user
-            userSwitchType = UserSwitchType.LOGIN;
+            userSwitchType = UserAccountManager.USER_SWITCH_TYPE_LOGIN;
         } else {
             // This should never happen but if it does, pass in the "unknown" value
-            userSwitchType = UserSwitchType.SWITCH;
+            userSwitchType = UserAccountManager.USER_SWITCH_TYPE_DEFAULT;
         }
 
         userAccountManager.sendUserSwitchIntent(userSwitchType);

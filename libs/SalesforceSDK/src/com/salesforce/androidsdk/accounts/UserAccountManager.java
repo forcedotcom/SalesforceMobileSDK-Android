@@ -34,7 +34,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
-import android.support.annotation.IntDef;
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -75,48 +74,40 @@ public class UserAccountManager {
 	public static final String USER_SWITCH_INTENT_ACTION = "com.salesforce.USERSWITCHED";
 
 	/**
-	 * Found in an intent with action {@link #USER_SWITCH_INTENT_ACTION}, this extra specifies how a user is switching.
-	 * {@link UserSwitchType} can be used to annotate extra values retrieved from an intent's bundle.
-	 *
-	 * @see UserSwitchType
-	 */
-	public static final String EXTRA_USER_SWITCH_TYPE = "com.salesforce.USER_SWITCH_TYPE";
-
-	/**
 	 * Represents how the current user has been switched to, as found in an intent sent to a {@link android.content.BroadcastReceiver}
 	 * filtering {@link #USER_SWITCH_INTENT_ACTION}. User switching including logging in, logging out and switching between authenticated
 	 * users. For backwards compatibility, the case where the last user has logged out is not included, as this currently does not
 	 * send a broadcast.
-	 *
-	 * @author cliban
 	 */
-	@IntDef({
-			UserSwitchType.FIRST_LOGIN,
-			UserSwitchType.LOGIN,
-			UserSwitchType.LOGOUT,
-			UserSwitchType.SWITCH
-	})
-	public @interface UserSwitchType {
-		/**
-		 * The first user has logged in and is being switched to.
-		 */
-		int FIRST_LOGIN = 0;
+	public static final String EXTRA_USER_SWITCH_TYPE = "com.salesforce.USER_SWITCH_TYPE";
 
-		/**
-		 * An additional user has logged in and is being switched to.
-		 */
-		int LOGIN = 1;
+	/**
+	 * A switch has occurred between two authenticated users.
+	 *
+	 * <p>Use this constant with {@link #EXTRA_USER_SWITCH_TYPE}.</p>
+	 */
+	public static final int USER_SWITCH_TYPE_DEFAULT = -1;
 
-		/**
-		 * An additional user has a logged out and another user is being switched to.
-		 */
-		int LOGOUT = 2;
+	/**
+	 * The first user has logged in and is being switched to. There were no users authenticated before this switch.
+	 *
+	 * <p>Use this constant with {@link #EXTRA_USER_SWITCH_TYPE}.</p>
+	 */
+	public static final int USER_SWITCH_TYPE_FIRST_LOGIN = 0;
 
-		/**
-		 * A user switch is occurring but the details are unknown.
-		 */
-		int SWITCH = 3;
-	}
+	/**
+	 * An additional user has logged in and is being switched to. There was at least one user authenticated before this switch.
+	 *
+	 * <p>Use this constant with {@link #EXTRA_USER_SWITCH_TYPE}.</p>
+	 */
+	public static final int USER_SWITCH_TYPE_LOGIN = 1;
+
+	/**
+	 * A user has a logged out and another authenticated user is being switched to.
+	 *
+	 * <p>Use this constant with {@link #EXTRA_USER_SWITCH_TYPE}.</p>
+	 */
+	public static final int USER_SWITCH_TYPE_LOGOUT = 2;
 
 	private static UserAccountManager INSTANCE;
 
@@ -281,18 +272,18 @@ public class UserAccountManager {
 	 */
 	public void switchToUser(UserAccount user) {
 		// All that's known is that the user is being switched
-		switchToUser(user, UserSwitchType.SWITCH);
+		switchToUser(user, USER_SWITCH_TYPE_DEFAULT);
 	}
 
 	/**
 	 * Switches to the specified user account.
 	 *
 	 * @param user the user account to switch to
-	 * @param userSwitchType how the user account is being switched
+	 * @param userSwitchType a {@code USER_SWITCH_TYPE} constant
 	 *
 	 * @see #switchToUser(UserAccount)
 	 */
-	public void switchToUser(UserAccount user, @UserSwitchType int userSwitchType) {
+	public void switchToUser(UserAccount user, int userSwitchType) {
 		if (user == null || !doesUserAccountExist(user)) {
 			switchToNewUser();
 			return;
@@ -512,16 +503,16 @@ public class UserAccountManager {
 	 */
 	public void sendUserSwitchIntent() {
 		// By default, the type of switch is not known
-		sendUserSwitchIntent(UserSwitchType.SWITCH);
+		sendUserSwitchIntent(USER_SWITCH_TYPE_DEFAULT);
 	}
 
 	/**
 	 * Broadcasts an intent that a user switch has occurred.
 	 *
 	 * @param userSwitchType
-	 *         the type of user switch
+	 *         a {@code USER_SWITCH_TYPE} constant
 	 */
-	public final void sendUserSwitchIntent(@UserSwitchType int userSwitchType) {
+	public final void sendUserSwitchIntent(int userSwitchType) {
 		final Intent intent = new Intent(USER_SWITCH_INTENT_ACTION);
 		intent.setPackage(context.getPackageName());
 		intent.putExtra(EXTRA_USER_SWITCH_TYPE, userSwitchType);

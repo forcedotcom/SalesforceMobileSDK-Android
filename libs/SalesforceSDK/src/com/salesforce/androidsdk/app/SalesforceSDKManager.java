@@ -50,7 +50,6 @@ import android.webkit.CookieSyncManager;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.accounts.UserAccountManager.UserSwitchType;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
@@ -710,10 +709,9 @@ public class SalesforceSDKManager {
         if (accounts == null || accounts.size() == 0) {
         	startLoginPage();
         } else if (accounts.size() == 1) {
-        	userAccMgr.switchToUser(accounts.get(0), UserSwitchType.LOGOUT);
+        	userAccMgr.switchToUser(accounts.get(0), UserAccountManager.USER_SWITCH_TYPE_LOGOUT);
         } else {
         	final Intent i = new Intent(context, switcherActivityClass);
-            i.putExtra(UserAccountManager.EXTRA_USER_SWITCH_TYPE, UserSwitchType.LOGOUT);
     		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
     		context.startActivity(i);
         }
