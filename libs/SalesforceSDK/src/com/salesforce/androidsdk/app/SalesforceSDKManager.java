@@ -709,7 +709,7 @@ public class SalesforceSDKManager {
         if (accounts == null || accounts.size() == 0) {
         	startLoginPage();
         } else if (accounts.size() == 1) {
-        	userAccMgr.switchToUser(accounts.get(0));
+        	userAccMgr.switchToUser(accounts.get(0), UserAccountManager.USER_SWITCH_TYPE_LOGOUT);
         } else {
         	final Intent i = new Intent(context, switcherActivityClass);
     		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
