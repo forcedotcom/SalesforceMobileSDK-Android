@@ -41,10 +41,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 import okio.Buffer;
 
@@ -59,9 +58,9 @@ public class RestRequestTest extends TestCase {
 	private static final String TEST_QUERY = "testQuery";
 	private static final String TEST_SEARCH = "testSearch";
 	private static final String TEST_FIELDS_STRING = "{\"fieldX\":\"value with spaces\",\"name\":\"testAccount\"}";
-	private static final List<String> TEST_FIELDS_LIST = Collections.unmodifiableList(Arrays.asList(new String[]{"name", "fieldX"}));
+	private static final List<String> TEST_FIELDS_LIST = Collections.unmodifiableList(Arrays.asList("name", "fieldX"));
 	private static final String TEST_FIELDS_LIST_STRING = "name%2CfieldX";
-	private static final List<String> TEST_OBJECTS_LIST = Collections.unmodifiableList(Arrays.asList(new String[]{"Account", "Contact"}));
+	private static final List<String> TEST_OBJECTS_LIST = Collections.unmodifiableList(Arrays.asList("Account", "Contact"));
 	private static final String TEST_OBJECTS_LIST_STRING = "Account%2CContact";
     private static final String TEST_OTHER_OBJECT_TYPE_PLURAL = "testOtherObjectTypes";
 	public static final String TEST_REF_PARENT = "testRefParent";
@@ -270,7 +269,7 @@ public class RestRequestTest extends TestCase {
      * @throws JSONException
      */
     public void testGetCompositeRequest() throws JSONException, IOException {
-        SortedMap<String, RestRequest> requests = new TreeMap<>();
+        LinkedHashMap<String, RestRequest> requests = new LinkedHashMap<>();
         requests.put("ref1", RestRequest.getRequestForUpdate(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_OBJECT_ID, TEST_FIELDS));
         requests.put("ref2", RestRequest.getRequestForDelete(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_OBJECT_ID));
 
@@ -314,7 +313,7 @@ public class RestRequestTest extends TestCase {
                 RestRequest.getRequestForDelete(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_OBJECT_ID)
         };
 
-        RestRequest request = RestRequest.getBatchRequest(TEST_API_VERSION, true, requests);
+        RestRequest request = RestRequest.getBatchRequest(TEST_API_VERSION, true, Arrays.asList(requests));
         assertEquals("Wrong method", RestMethod.POST, request.getMethod());
         assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/composite/batch", request.getPath());
         assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());

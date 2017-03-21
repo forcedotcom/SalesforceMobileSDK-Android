@@ -36,16 +36,19 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncTarget;
+import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncUpdateCallbackQueue;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Formatter;
@@ -62,12 +65,11 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
 
     protected static final String TYPE = "type";
     protected static final String RECORDS = "records";
-    protected static final String LID = "id"; // lower case id in create response
-
-    // Local
     protected static final String LOCAL_ID_PREFIX = "local_";
     protected static final String ACCOUNTS_SOUP = "accounts";
     protected static final int TOTAL_SIZE_UNKNOWN = -2;
+    protected static final String REMOTELY_UPDATED = "_r_upd";
+    protected static final String LOCALLY_UPDATED = "_l_upd";
 
     /**
      * Create soup for accounts
@@ -173,6 +175,24 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         assertEquals("All records should have been returned from smartstore", ids.length, records.length());
     }
 
+    /**
+     * Check relationships field of children
+     * @param childrenIds
+     * @param expectedParentId
+     * @param soupName
+     * @param idFieldName
+     * @param parentIdFieldName
+     */
+    protected void checkDbRelationships(Collection<String> childrenIds, String expectedParentId, String soupName, String idFieldName, String parentIdFieldName) throws JSONException {
+        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":_soup} FROM {" + soupName + "} WHERE {" + soupName + ":" + idFieldName + "} IN " + makeInClause(childrenIds), childrenIds.size());
+        JSONArray rows = smartStore.query(smartStoreQuery, 0);
+        assertEquals("All records should have been returned from smartstore", childrenIds.size(), rows.length());
+        for (int i=0; i<rows.length(); i++) {
+            JSONObject childRecord = rows.getJSONArray(i).getJSONObject(0);
+            assertEquals("Wrong parent id", expectedParentId, childRecord.getString(parentIdFieldName));
+        }
+    }
+
 
     protected String makeInClause(String[] values) {
         return makeInClause(Arrays.asList(values));
@@ -271,21 +291,6 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
     }
 
     /**
-     * Update records on server
-     * @param idToFieldsUpdated
-     * @param sObjectType
-     * @throws Exception
-     */
-    protected void updateRecordsOnServer(Map<String, Map<String, Object>> idToFieldsUpdated, String sObjectType) throws Exception {
-        for (String id : idToFieldsUpdated.keySet()) {
-            RestRequest request = RestRequest.getRequestForUpdate(ApiVersionStrings.getVersionNumber(targetContext), sObjectType, id, idToFieldsUpdated.get(id));
-            // Response
-            RestResponse response = restClient.sendSync(request);
-            assertTrue("Updated failed", response.isSuccess());
-        }
-    }
-
-    /**
      * Make remote changes
      * @throws JSONException
      * @param idToFields
@@ -307,7 +312,7 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
      * @throws Exception
      */
     protected Map<String, Map<String, Object>> makeRemoteChanges(Map<String, Map<String, Object>> idToFields, String sObjectType, String[] idsToUpdate) throws Exception {
-        Map<String, Map<String, Object>> idToFieldsUpdated = prepareSomeChanges(idToFields, idsToUpdate);
+        Map<String, Map<String, Object>> idToFieldsUpdated = prepareSomeChanges(idToFields, idsToUpdate, REMOTELY_UPDATED);
         Thread.sleep(1000); // time stamp precision is in seconds
         updateRecordsOnServer(idToFieldsUpdated, sObjectType);
         return idToFieldsUpdated;
@@ -318,13 +323,14 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
      * Helper method to prepare updated maps of field name to field value
      * @param idToFields
      * @param idsToUpdate
+     * @param suffix
      * @return
      */
-    protected Map<String, Map<String, Object>> prepareSomeChanges(Map<String, Map<String, Object>> idToFields, String[] idsToUpdate) {
+    protected Map<String, Map<String, Object>> prepareSomeChanges(Map<String, Map<String, Object>> idToFields, String[] idsToUpdate, String suffix) {
         Map<String, Map<String, Object>> idToFieldsUpdated = new HashMap<>();
 
         for (String idToUpdate : idsToUpdate) {
-            idToFieldsUpdated.put(idToUpdate, updatedFields(idToFields.get(idToUpdate)));
+            idToFieldsUpdated.put(idToUpdate, updatedFields(idToFields.get(idToUpdate), suffix));
         }
         return idToFieldsUpdated;
     }
@@ -332,15 +338,16 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
     /**
      * Helper method to update fields in a map of field name to field value
      * @param fields
+     * @param suffix
      * @return
      */
-    protected Map<String, Object> updatedFields(Map<String, Object> fields) {
+    protected Map<String, Object> updatedFields(Map<String, Object> fields, String suffix) {
         Set<String> fieldNamesUpdatable = new HashSet<>(Arrays.asList(new String[] {Constants.NAME, Constants.DESCRIPTION, Constants.LAST_NAME}));
 
         Map<String, Object> updatedFields = new HashMap<>();
         for (String fieldName : fields.keySet()) {
             if (fieldNamesUpdatable.contains(fieldName)) {
-                updatedFields.put(fieldName, fields.get(fieldName) + "_updated");
+                updatedFields.put(fieldName, fields.get(fieldName) + suffix);
             }
         }
         return updatedFields;
@@ -389,7 +396,7 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
      * @throws JSONException
      */
     protected Map<String, Map<String, Object>> makeLocalChanges(Map<String, Map<String, Object>> idToFields, String soupName, String[] idsToUpdate) throws JSONException {
-        Map<String, Map<String, Object>> idToFieldsUpdated = prepareSomeChanges(idToFields, idsToUpdate);
+        Map<String, Map<String, Object>> idToFieldsUpdated = prepareSomeChanges(idToFields, idsToUpdate, LOCALLY_UPDATED);
         updateRecordsLocally(idToFieldsUpdated, soupName);
         return idToFieldsUpdated;
     }
@@ -410,11 +417,182 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
             JSONArray row = accountsFromDb.getJSONArray(i);
             JSONObject soupElt = row.getJSONObject(0);
             String id = soupElt.getString(Constants.ID);
+
             assertEquals("Wrong local flag", expectLocallyCreated || expectLocallyUpdated || expectLocallyDeleted, soupElt.getBoolean(SyncTarget.LOCAL));
             assertEquals("Wrong local flag", expectLocallyCreated, soupElt.getBoolean(SyncTarget.LOCALLY_CREATED));
             assertEquals("Id was not updated", expectLocallyCreated, id.startsWith(LOCAL_ID_PREFIX));
             assertEquals("Wrong local flag", expectLocallyUpdated, soupElt.getBoolean(SyncTarget.LOCALLY_UPDATED));
             assertEquals("Wrong local flag", expectLocallyDeleted, soupElt.getBoolean(SyncTarget.LOCALLY_DELETED));
         }
+    }
+
+    /**
+     * Check records on server
+     * @param idToFields
+     * @param sObjectType
+     * @throws IOException
+     * @throws JSONException
+     */
+    protected void checkServer(Map<String, Map<String, Object>> idToFields, String sObjectType) throws IOException, JSONException {
+        String[] fieldNames = idToFields.get(idToFields.keySet().toArray(new String[0])[0]).keySet().toArray(new String[0]);
+        String soql = String.format("SELECT %s, %s FROM %s WHERE %s IN %s", Constants.ID, TextUtils.join(",", fieldNames), sObjectType, Constants.ID, makeInClause(idToFields.keySet()));
+        RestRequest request = RestRequest.getRequestForQuery(ApiVersionStrings.getVersionNumber(targetContext), soql);
+        RestResponse response = restClient.sendSync(request);
+        JSONArray records = response.asJSONObject().getJSONArray(RECORDS);
+        assertEquals("Wrong number of records", idToFields.size(), records.length());
+        for (int i=0; i<records.length(); i++) {
+            JSONObject row = records.getJSONObject(i);
+            Map<String, Object> expectedFields = idToFields.get(row.get(Constants.ID));
+            for (String fieldName : fieldNames) {
+                assertEquals("Wrong value for field: " + fieldName, expectedFields.get(fieldName), JSONObjectHelper.opt(row, fieldName));
+            }
+        }
+    }
+
+    /**
+     * Check that records were deleted from server
+     * @param ids
+     * @param sObjectType
+     * @throws IOException
+     */
+    protected void checkServerDeleted(String[] ids, String sObjectType) throws IOException, JSONException {
+        String soql = String.format("SELECT %s FROM %s WHERE %s IN %s", Constants.ID, sObjectType, Constants.ID, makeInClause(ids));
+        RestRequest request = RestRequest.getRequestForQuery(ApiVersionStrings.getVersionNumber(targetContext), soql);
+        RestResponse response = restClient.sendSync(request);
+        JSONArray records = response.asJSONObject().getJSONArray(RECORDS);
+        assertEquals("No accounts should have been returned from server", 0, records.length());
+    }
+
+    /**
+     * Sync up helper
+     * @oaram target
+     * @param numberChanges
+     * @param mergeMode
+     * @throws JSONException
+     */
+    protected void trySyncUp(SyncUpTarget target, int numberChanges, SyncState.MergeMode mergeMode) throws JSONException {
+        trySyncUp(target, numberChanges, mergeMode, false);
+    }
+
+    /**
+     * Sync up helper
+     * @param target
+     * @param numberChanges
+     * @param mergeMode
+     * @param expectSyncFailure - if true, we expect the sync to end up in the FAILED state
+     * @throws JSONException
+     */
+    protected void trySyncUp(SyncUpTarget target, int numberChanges, SyncState.MergeMode mergeMode, boolean expectSyncFailure) throws JSONException {
+        SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(new String[] { Constants.NAME, Constants.DESCRIPTION }), mergeMode);
+        trySyncUp(target, numberChanges, options, expectSyncFailure);
+    }
+
+    /**
+     * Sync up helper
+     * @param target
+     * @param numberChanges
+     * @param options
+     * @param expectSyncFailure - if true, we expect the sync to end up in the FAILED state
+     * @throws JSONException
+     */
+    protected void trySyncUp(SyncUpTarget target, int numberChanges, SyncOptions options, boolean expectSyncFailure) throws JSONException {
+        // Create sync
+		SyncState sync = SyncState.createSyncUp(smartStore, target, options, ACCOUNTS_SOUP);
+		long syncId = sync.getId();
+		checkStatus(sync, SyncState.Type.syncUp, syncId, target, options, SyncState.Status.NEW, 0, -1);
+
+		// Run sync
+		SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+		syncManager.runSync(sync, queue);
+
+		// Check status updates
+		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.RUNNING, 0, numberChanges);
+
+        if (expectSyncFailure) {
+            checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.FAILED, 0, numberChanges);
+        }
+        else {
+            for (int i = 1; i < numberChanges; i++) {
+                checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.RUNNING, i * 100 / numberChanges, numberChanges);
+            }
+            checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.DONE, 100, numberChanges);
+        }
+	}
+
+    /**
+     * Return map of id to fields given records names
+     * @param soupName
+     * @param fieldNames
+     * @param nameField
+     * @param names
+     * @throws JSONException
+     */
+    protected Map<String, Map<String, Object>> getIdToFieldsByName(String soupName, String[] fieldNames, String nameField, String[] names) throws JSONException {
+        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec(String.format("SELECT {%s:_soup} FROM {%s} WHERE {%s:%s} IN %s", soupName, soupName, soupName, nameField, makeInClause(names)), names.length);
+        JSONArray recordsFromDb = smartStore.query(smartStoreQuery, 0);
+        Map<String, Map<String, Object>> idToFields = new HashMap<>();
+        for (int i=0; i<recordsFromDb.length(); i++) {
+            JSONArray row = recordsFromDb.getJSONArray(i);
+            JSONObject soupElt = row.getJSONObject(0);
+            String id = soupElt.getString(Constants.ID);
+            Map<String, Object> fields = new HashMap<>();
+            for (String fieldName : fieldNames) {
+                fields.put(fieldName, soupElt.get(fieldName));
+            }
+            idToFields.put(id, fields);
+        }
+        return idToFields;
+    }
+
+    /**
+	 * Delete records locally
+	 *
+     * @param soupName
+     * @param ids
+     * @throws JSONException
+	 */
+    protected void deleteRecordsLocally(String soupName, String... ids) throws JSONException {
+		for (String id : ids) {
+			JSONObject record = smartStore.retrieve(soupName, smartStore.lookupSoupEntryId(soupName, Constants.ID, id)).getJSONObject(0);
+			record.put(SyncTarget.LOCAL, true);
+			record.put(SyncTarget.LOCALLY_CREATED, false);
+			record.put(SyncTarget.LOCALLY_DELETED, true);
+			record.put(SyncTarget.LOCALLY_UPDATED, false);
+			smartStore.upsert(soupName, record);
+		}
+	}
+
+    /**
+     * Helper method to update a single record on the server
+     *
+     * @param objectType
+     * @param id
+     * @param fields
+     * @return
+     */
+    protected Map<String, Map<String, Object>> updateRecordOnServer(String objectType, String id, Map<String, Object> fields) throws Exception {
+        Map<String, Map<String, Object>> idToFieldsRemotelyUpdated = new HashMap<>();
+        Map<String, Object> updatedFields = updatedFields(fields, REMOTELY_UPDATED);
+        idToFieldsRemotelyUpdated.put(id, updatedFields);
+        updateRecordsOnServer(idToFieldsRemotelyUpdated, objectType);
+        return idToFieldsRemotelyUpdated;
+    }
+
+    /**
+     * Helper method to update a single record locally
+     *
+     * @param soupName
+     * @param id
+     * @param fields
+     * @return
+     * @throws JSONException
+     */
+    protected Map<String, Map<String, Object>> updateRecordLocally(String soupName, String id, Map<String, Object> fields) throws JSONException {
+        Map<String, Map<String, Object>> idToFieldsLocallyUpdated = new HashMap<>();
+        Map<String, Object> updatedFields = updatedFields(fields, LOCALLY_UPDATED);
+        idToFieldsLocallyUpdated.put(id, updatedFields);
+        updateRecordsLocally(idToFieldsLocallyUpdated, soupName);
+        return idToFieldsLocallyUpdated;
     }
 }

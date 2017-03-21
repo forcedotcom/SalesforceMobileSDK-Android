@@ -28,9 +28,8 @@ package com.salesforce.androidsdk.smartsync.target;
 
 import android.text.TextUtils;
 
-import com.salesforce.androidsdk.smartstore.store.QuerySpec;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.target.ParentChildrenSyncTargetHelper.RelationshipType;
 import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.ParentInfo;
@@ -55,10 +54,6 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
 
     private static final String TAG = "ParentChildrenSyncDownTarget";
 
-    public static final String PARENT = "parent";
-    public static final String CHILDREN = "children";
-    public static final String RELATIONSHIP_TYPE = "relationshipType";
-
     public static final String PARENT_FIELDLIST = "parentFieldlist";
     public static final String PARENT_SOQL_FILTER = "parentSoqlFilter";
     public static final String CHILDREN_FIELDLIST = "childrenFieldlist";
@@ -71,28 +66,20 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
     private RelationshipType relationshipType;
 
     /**
-     * Enum for relationship types
-     */
-    public enum RelationshipType {
-        MASTER_DETAIL,
-        LOOKUP;
-    }
-
-    /**
      * Construct ParentChildrenSyncDownTarget from json
      * @param target
      * @throws JSONException
      */
     public ParentChildrenSyncDownTarget(JSONObject target) throws JSONException {
         this(
-                new ParentInfo(target.getJSONObject(PARENT)),
+                new ParentInfo(target.getJSONObject(ParentChildrenSyncTargetHelper.PARENT)),
                 JSONObjectHelper.<String>toList(target.optJSONArray(PARENT_FIELDLIST)),
                 target.getString(PARENT_SOQL_FILTER),
 
-                new ChildrenInfo(target.getJSONObject(CHILDREN)),
+                new ChildrenInfo(target.getJSONObject(ParentChildrenSyncTargetHelper.CHILDREN)),
                 JSONObjectHelper.<String>toList(target.optJSONArray(CHILDREN_FIELDLIST)),
 
-                RelationshipType.valueOf(target.getString(RELATIONSHIP_TYPE))
+                RelationshipType.valueOf(target.getString(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE))
         );
     }
 
@@ -124,12 +111,12 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
      */
     public JSONObject asJSON() throws JSONException {
         JSONObject target = super.asJSON();
-        target.put(PARENT, parentInfo.asJSON());
+        target.put(ParentChildrenSyncTargetHelper.PARENT, parentInfo.asJSON());
         target.put(PARENT_FIELDLIST, new JSONArray(parentFieldlist));
         target.put(PARENT_SOQL_FILTER, parentSoqlFilter);
-        target.put(CHILDREN, childrenInfo.asJSON());
+        target.put(ParentChildrenSyncTargetHelper.CHILDREN, childrenInfo.asJSON());
         target.put(CHILDREN_FIELDLIST, new JSONArray(childrenFieldlist));
-        target.put(RELATIONSHIP_TYPE, relationshipType.name());
+        target.put(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE, relationshipType.name());
         return target;
     }
 
@@ -323,90 +310,18 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
 
     @Override
     protected String getDirtyRecordIdsSql(String soupName, String idField) {
-        return String.format(
-                "SELECT DISTINCT {%s:%s} FROM {%s},{%s} WHERE {%s:%s} = {%s:%s} AND ({%s:%s} = 'true' OR {%s:%s} = 'true')",
-                soupName, idField,
-                childrenInfo.soupName, soupName,
-                childrenInfo.soupName, childrenInfo.parentLocalIdFieldName,
-                soupName, SmartStore.SOUP_ENTRY_ID,
-                soupName, LOCAL,
-                childrenInfo.soupName, LOCAL);
+        return ParentChildrenSyncTargetHelper.getDirtyRecordIdsSql(parentInfo, childrenInfo, idField);
     }
 
     @Override
     protected String getNonDirtyRecordIdsSql(String soupName, String idField) {
-        return String.format(
-                "SELECT {%s:%s} FROM {%s} WHERE {%s:%s} NOT IN (%s)",
-                soupName, idField,
-                soupName,
-                soupName, SmartStore.SOUP_ENTRY_ID,
-                getDirtyRecordIdsSql(soupName, SmartStore.SOUP_ENTRY_ID)
-        );
+        return ParentChildrenSyncTargetHelper.getNonDirtyRecordIdsSql(parentInfo, childrenInfo, idField);
     }
 
     @Override
     public void saveRecordsToLocalStore(SyncManager syncManager, String soupName, JSONArray records) throws JSONException {
         // NB: method is called during sync down so for this target records contain parent and children
-        SmartStore smartStore = syncManager.getSmartStore();
-        synchronized(smartStore.getDatabase()) {
-            try {
-                smartStore.beginTransaction();
-
-                for (int i=0; i<records.length(); i++) {
-                    JSONObject record = records.getJSONObject(i);
-                    JSONObject parent = new JSONObject(record.toString());
-
-                    // Separating parent from children
-                    JSONArray children = (JSONArray) parent.remove(childrenInfo.sobjectTypePlural);
-
-                    // Saving parent
-                    cleanAndSaveInLocalStore(syncManager, soupName, parent, false);
-
-                    // Put server id / local id of parent in children
-                    for (int j = 0; j < children.length(); j++) {
-                        JSONObject child = children.getJSONObject(j);
-                        child.put(childrenInfo.parentLocalIdFieldName, parent.get(SmartStore.SOUP_ENTRY_ID));
-                        child.put(childrenInfo.parentIdFieldName, parent.get(getIdFieldName()));
-
-                        // Saving child
-                        cleanAndSaveInLocalStore(syncManager, childrenInfo.soupName, child, false);
-                    }
-                }
-
-                smartStore.setTransactionSuccessful();
-
-            }
-            finally {
-                smartStore.endTransaction();
-            }
-        }
+        ParentChildrenSyncTargetHelper.saveRecordTreesToLocalStore(syncManager, this, parentInfo, childrenInfo, records);
     }
 
-    @Override
-    public void deleteFromLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
-        if (relationshipType == RelationshipType.MASTER_DETAIL) {
-            deleteChildrenFromLocalStore(syncManager, soupName, new String[]{record.getString(SmartStore.SOUP_ENTRY_ID)}, SmartStore.SOUP_ENTRY_ID);
-        }
-        super.deleteFromLocalStore(syncManager, soupName, record);
-    }
-
-    @Override
-    public void deleteRecordsFromLocalStore(SyncManager syncManager, String soupName, Set<String> ids, String idField) {
-        if (relationshipType == RelationshipType.MASTER_DETAIL) {
-            deleteChildrenFromLocalStore(syncManager, soupName, ids.toArray(new String[0]), idField);
-        }
-        super.deleteRecordsFromLocalStore(syncManager, soupName, ids, idField);
-    }
-
-    protected void deleteChildrenFromLocalStore(SyncManager syncManager, String soupName, String[] ids, String idField) {
-        String smartSql = String.format(
-                "SELECT {%s:%s} FROM {%s},{%s} WHERE {%s:%s} = {%s:%s} AND {%s:%s} IN (%s)",
-                childrenInfo.soupName, SmartStore.SOUP_ENTRY_ID,
-                childrenInfo.soupName, soupName,
-                childrenInfo.soupName, childrenInfo.parentLocalIdFieldName,
-                soupName, SmartStore.SOUP_ENTRY_ID,
-                soupName, idField,
-                "'" + TextUtils.join("', '", ids) + "'");
-        syncManager.getSmartStore().deleteByQuery(childrenInfo.soupName, QuerySpec.buildSmartQuerySpec(smartSql, Integer.MAX_VALUE));
-    }
 }

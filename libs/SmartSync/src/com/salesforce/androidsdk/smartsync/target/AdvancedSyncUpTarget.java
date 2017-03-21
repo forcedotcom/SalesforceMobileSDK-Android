@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-present, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,29 +24,30 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.phonegap;
+package com.salesforce.androidsdk.smartsync.target;
 
-import java.util.Arrays;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.util.SyncState;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
 import java.util.List;
 
-import com.salesforce.androidsdk.phonegap.util.test.JSTestCase;
-
-
 /**
- * Running javascript tests for SDKInfo plugin
+ * Interface for advanced sync up target where records are not simply created/updated/deleted
+ * With advanced sync up target, sync manager simply calls the method: syncUpRecord
  */
-public class SDKInfoJSTest extends JSTestCase {
-
-    public SDKInfoJSTest() {
-        super("SDKInfoTestSuite");
-    }
-
-    @Override
-    public List<String> getTestNames() {
-    	return Arrays.asList("testGetInfo");
-    }
-    
-    public void testGetInfo()  {
-    	runTest("testGetInfo");
-    }
+public interface AdvancedSyncUpTarget {
+    /**
+     *
+     * @param syncManager
+     * @param record
+     * @param fieldlist
+     * @param mergeMode
+     * @throws JSONException
+     * @throws IOException
+     */
+    void syncUpRecord(SyncManager syncManager, JSONObject record, List<String> fieldlist, SyncState.MergeMode mergeMode) throws JSONException, IOException;
 }

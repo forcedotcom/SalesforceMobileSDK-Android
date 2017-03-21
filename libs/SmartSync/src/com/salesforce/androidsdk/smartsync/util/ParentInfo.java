@@ -38,6 +38,7 @@ public class ParentInfo {
 
     // Constants
     public static final String SOBJECT_TYPE = "sobjectType";
+    public static final String SOUP_NAME = "soupName";
     public static final String ID_FIELD_NAME = "idFieldName";
     public static final String MODIFICATION_DATE_FIELD_NAME = "modificationDateFieldName";
 
@@ -45,27 +46,29 @@ public class ParentInfo {
     public final String sobjectType;
     public final String idFieldName;
     public final String modificationDateFieldName;
+    public final String soupName;
 
     public ParentInfo(JSONObject json) throws JSONException {
         this(
                 json.getString(SOBJECT_TYPE),
-                JSONObjectHelper.optString(json, ID_FIELD_NAME),
-                JSONObjectHelper.optString(json, MODIFICATION_DATE_FIELD_NAME)
+                json.getString(SOUP_NAME), JSONObjectHelper.optString(json, ID_FIELD_NAME), JSONObjectHelper.optString(json, MODIFICATION_DATE_FIELD_NAME)
         );
     }
 
-    public ParentInfo(String sobjectType) {
-        this(sobjectType, null, null);
+    public ParentInfo(String sobjectType, String soupName) {
+        this(sobjectType, soupName, null, null);
     }
 
-    public ParentInfo(String sobjectType, String idFieldName, String modificationDateFieldName) {
+    public ParentInfo(String sobjectType, String soupName, String idFieldName, String modificationDateFieldName) {
         this.sobjectType = sobjectType;
+        this.soupName = soupName;
         this.idFieldName = idFieldName != null ? idFieldName : Constants.ID;
         this.modificationDateFieldName = modificationDateFieldName != null ? modificationDateFieldName : Constants.LAST_MODIFIED_DATE;
     }
 
     public JSONObject asJSON() throws JSONException {
         JSONObject json = new JSONObject();
+        json.put(SOUP_NAME, soupName);
         json.put(SOBJECT_TYPE, sobjectType);
         json.put(ID_FIELD_NAME, idFieldName);
         json.put(modificationDateFieldName, modificationDateFieldName);

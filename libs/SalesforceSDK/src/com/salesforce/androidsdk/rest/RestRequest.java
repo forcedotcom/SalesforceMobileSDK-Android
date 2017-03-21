@@ -36,11 +36,15 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
+import java.util.TimeZone;
 
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
@@ -97,10 +101,18 @@ public class RestRequest {
     public static final String REFERENCE_ID = "referenceId";
     public static final String TYPE = "type";
     public static final String ATTRIBUTES = "attributes";
+    public static final String IF_UNMODIFIED_SINCE = "If-Unmodified-Since";
+
+    /**
+     * HTTP date format
+     */
+    public static final DateFormat HTTP_DATE_FORMAT = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z");
+    static {
+        HTTP_DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
+    }
 
     /**
 	 * Enumeration for all HTTP methods.
-	 *
 	 */
 	public enum RestMethod {
 		GET, POST, PUT, DELETE, HEAD, PATCH
@@ -383,9 +395,25 @@ public class RestRequest {
 	 * @throws IOException 
 	 */
 	public static RestRequest getRequestForUpdate(String apiVersion, String objectType, String objectId, Map<String, Object> fields) throws IOException  {
-		return new RestRequest(RestMethod.PATCH, RestAction.UPDATE.getPath(apiVersion, objectType, objectId), fields == null ? null : new JSONObject(fields));
+        return getRequestForUpdate(apiVersion, objectType, objectId, fields, null);
 	}
-	
+
+    /**
+     * Request to update a record.
+     * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm
+     *
+     * @param apiVersion
+     * @param objectType
+     * @param objectId
+     * @param fields
+     * @param ifUnmodifiedSinceDate
+     * @return
+     * @throws IOException
+     */
+    public static RestRequest getRequestForUpdate(String apiVersion, String objectType, String objectId, Map<String, Object> fields, Date ifUnmodifiedSinceDate) throws IOException  {
+        Map<String, String> additionalHttpHeaders = prepareConditionalHeader(IF_UNMODIFIED_SINCE, ifUnmodifiedSinceDate);
+        return new RestRequest(RestMethod.PATCH, RestAction.UPDATE.getPath(apiVersion, objectType, objectId), fields == null ? null : new JSONObject(fields), additionalHttpHeaders);
+    }
 	
 	/**
 	 * Request to upsert (update or insert) a record. 
@@ -400,8 +428,15 @@ public class RestRequest {
 	 * @throws IOException 
 	 */
 	public static RestRequest getRequestForUpsert(String apiVersion, String objectType, String externalIdField, String externalId, Map<String, Object> fields) throws IOException  {
-    	return new RestRequest(RestMethod.PATCH, RestAction.UPSERT.getPath(apiVersion, objectType, externalIdField, externalId), fields == null ? null : new JSONObject(fields));
-	}
+        return new RestRequest(
+                externalId == null ? RestMethod.POST : RestMethod.PATCH,
+                RestAction.UPSERT.getPath(
+                        apiVersion,
+                        objectType,
+                        externalIdField,
+                        externalId == null ? "" : externalId),
+                fields == null ? null : new JSONObject(fields));
+    }
 	
 	/**
 	 * Request to delete a record. 
@@ -413,10 +448,10 @@ public class RestRequest {
 	 * @return a RestRequest
 	 */
 	public static RestRequest getRequestForDelete(String apiVersion, String objectType, String objectId)  {
-		return new RestRequest(RestMethod.DELETE, RestAction.DELETE.getPath(apiVersion, objectType, objectId));
+        return new RestRequest(RestMethod.DELETE, RestAction.DELETE.getPath(apiVersion, objectType, objectId));
 	}
 
-	/**
+    /**
 	 * Request to execute the specified SOSL search. 
 	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search.htm
 	 * 
@@ -482,20 +517,15 @@ public class RestRequest {
 	 *
      * @param apiVersion
      * @param allOrNone
-	 * @param refIdToRequests    Sorted map of reference id to refIdToRequests
+	 * @param refIdToRequests    Linked map of reference id to refIdToRequests (will be played in order requests were added)
 	 * @return
 	 */
-	public static RestRequest getCompositeRequest(String apiVersion, boolean allOrNone, SortedMap<String, RestRequest> refIdToRequests) throws JSONException {
+	public static RestRequest getCompositeRequest(String apiVersion, boolean allOrNone, LinkedHashMap<String, RestRequest> refIdToRequests) throws JSONException {
 		JSONArray requestsArrayJson = new JSONArray();
         for(Map.Entry<String,RestRequest> entry : refIdToRequests.entrySet()) {
             String referenceId = entry.getKey();
             RestRequest request = entry.getValue();
-            Map<String, String> headers = request.getAdditionalHttpHeaders();
-			JSONObject requestJson = new JSONObject();
-            requestJson.put(METHOD, request.getMethod().toString());
-            requestJson.put(URL, request.getPath());
-            requestJson.put(BODY, request.getRequestBodyAsJson());
-            if (headers != null) requestJson.put(HTTP_HEADERS, new JSONObject(headers));
+            JSONObject requestJson = request.asJSON();
             requestJson.put(REFERENCE_ID, referenceId);
 			requestsArrayJson.put(requestJson);
 		}
@@ -506,15 +536,33 @@ public class RestRequest {
 		return new RestRequest(RestMethod.POST, RestAction.COMPOSITE.getPath(apiVersion), compositeRequestJson);
 	}
 
+    @Override
+    public String toString() {
+        try {
+            return asJSON().toString(2);
+        } catch (JSONException e) {
+            return super.toString();
+        }
+    }
+
+    protected JSONObject asJSON() throws JSONException {
+        JSONObject requestJson = new JSONObject();
+        requestJson.put(METHOD, getMethod().toString());
+        requestJson.put(URL, getPath());
+        requestJson.put(BODY, getRequestBodyAsJson());
+        if (getAdditionalHttpHeaders() != null) requestJson.put(HTTP_HEADERS, new JSONObject(getAdditionalHttpHeaders()));
+        return requestJson;
+    }
+
     /**
      * Batch request
      * See https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_batch.htm
-     *
      * @param apiVersion
      * @param haltOnError
-     *@param requests  @return
+     * @param requests
+     * @return
      */
-    public static RestRequest getBatchRequest(String apiVersion, boolean haltOnError, RestRequest[] requests) throws JSONException {
+    public static RestRequest getBatchRequest(String apiVersion, boolean haltOnError, List<RestRequest> requests) throws JSONException {
         JSONArray requestsArrayJson = new JSONArray();
         for (RestRequest request : requests) {
             // Note: unfortunately batch sub request and composite sub request differ
@@ -553,6 +601,24 @@ public class RestRequest {
         RequestBody body = RequestBody.create(MEDIA_TYPE_JSON, JSONObjectHelper.makeJSONObject(RECORDS, jsonTrees).toString());
         return new RestRequest(RestMethod.POST, RestAction.SOBJECT_TREE.getPath(apiVersion, objectType), body);
     }
+
+    /**
+     * Helper method
+     *
+     * @param headerName
+     * @param date
+     * @return
+     */
+    private static Map<String, String> prepareConditionalHeader(String headerName, Date date) {
+        if (date != null) {
+            Map<String, String> additionalHttpHeaders = new HashMap<>();
+            additionalHttpHeaders.put(headerName, HTTP_DATE_FORMAT.format(date));
+            return additionalHttpHeaders;
+        } else {
+            return null;
+        }
+    }
+
 
     /**
      * Helper class for getRequestForSObjectTree
@@ -622,4 +688,5 @@ public class RestRequest {
             return jsonForRecord;
         }
     }
+
 }
