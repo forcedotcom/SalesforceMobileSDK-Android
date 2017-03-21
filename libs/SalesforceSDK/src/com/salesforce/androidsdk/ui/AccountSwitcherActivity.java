@@ -35,6 +35,7 @@ import android.widget.RadioGroup;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.accounts.UserAccountManager.UserSwitchType;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
@@ -76,7 +77,7 @@ public class AccountSwitcherActivity extends Activity {
 		final SalesforceAccountRadioButton rb = (SalesforceAccountRadioButton) radioGroup.findViewById(checkedId);
 		if (rb != null) {
 			final UserAccount account = rb.getAccount();
-			userAccMgr.switchToUser(account);
+			userAccMgr.switchToUser(account, UserSwitchType.SWITCH);
 		}
 		finish();
 	}
