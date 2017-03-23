@@ -508,6 +508,7 @@ public class PasscodeManager  {
      * @return true if a passcode change is required and the app is entering a locked state.
      */
     public boolean setMinPasscodeLength(Context ctx, int minPasscodeLength) {
+        boolean passcodeChangeRequired = false;
     	if (minPasscodeLength > this.minPasscodeLength) {
             this.minPasscodeLength = minPasscodeLength;
 
@@ -520,12 +521,12 @@ public class PasscodeManager  {
             if (hasStoredPasscode(SalesforceSDKManager.getInstance().getAppContext())) {
                 setEnabled(true);
                 showLockActivity(ctx, true);
-                return true;
+                passcodeChangeRequired = true;
             }
     	}
         this.minPasscodeLength = minPasscodeLength;
         storeMobilePolicy(SalesforceSDKManager.getInstance().getAppContext());
-        return false;
+        return passcodeChangeRequired;
     }
 
     public boolean shouldLock() {
