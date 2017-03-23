@@ -397,9 +397,7 @@ public class PasscodeManager  {
      * @param ctx
      */
     public void lock(Context ctx) {
-        locked = true;
         showLockActivity(ctx, false);
-        EventsObservable.get().notifyEvent(EventType.AppLocked);
     }
 
     /**
@@ -500,7 +498,17 @@ public class PasscodeManager  {
         return minPasscodeLength;
     }
 
-    public void setMinPasscodeLength(int minPasscodeLength) {
+    public boolean setMinPasscodeLength(int minPasscodeLength) {
+        return setMinPasscodeLength(SalesforceSDKManager.getInstance().getAppContext(), minPasscodeLength);
+    }
+
+    /**
+     * @param ctx
+     * @param minPasscodeLength
+     * @return true if a passcode change is required and the app is entering a locked state.
+     */
+    public boolean setMinPasscodeLength(Context ctx, int minPasscodeLength) {
+        boolean passcodeChangeRequired = false;
     	if (minPasscodeLength > this.minPasscodeLength) {
             this.minPasscodeLength = minPasscodeLength;
 
@@ -510,13 +518,14 @@ public class PasscodeManager  {
              * the minimum length in memory. The 'Create Passcode' flow is
              * triggered later from OAuthWebviewHelper.
              */
-            if (hasStoredPasscode(SalesforceSDKManager.getInstance().getAppContext())) {
-        		showLockActivity(SalesforceSDKManager.getInstance().getAppContext(),
-        				true);
+            if (hasStoredPasscode(ctx)) {
+                showLockActivity(ctx, true);
+                passcodeChangeRequired = true;
             }
     	}
         this.minPasscodeLength = minPasscodeLength;
-        storeMobilePolicy(SalesforceSDKManager.getInstance().getAppContext());
+        storeMobilePolicy(ctx);
+        return passcodeChangeRequired;
     }
 
     public boolean shouldLock() {
@@ -524,9 +533,8 @@ public class PasscodeManager  {
     }
 
     public void showLockActivity(Context ctx, boolean changePasscodeFlow) {
-        if (ctx == null) {
-        	return;
-        }
+        locked = true;
+        if (ctx != null) {
         final Intent i = new Intent(ctx, SalesforceSDKManager.getInstance().getPasscodeActivity());
         i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
@@ -540,6 +548,8 @@ public class PasscodeManager  {
         } else {
             ctx.startActivity(i);
         }
+    }
+        EventsObservable.get().notifyEvent(EventType.AppLocked);
     }
 
     public void unlock(String passcode) {
