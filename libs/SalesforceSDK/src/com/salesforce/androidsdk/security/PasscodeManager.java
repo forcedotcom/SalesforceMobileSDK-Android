@@ -518,14 +518,13 @@ public class PasscodeManager  {
              * the minimum length in memory. The 'Create Passcode' flow is
              * triggered later from OAuthWebviewHelper.
              */
-            if (hasStoredPasscode(SalesforceSDKManager.getInstance().getAppContext())) {
-                setEnabled(true);
+            if (hasStoredPasscode(ctx)) {
                 showLockActivity(ctx, true);
                 passcodeChangeRequired = true;
             }
     	}
         this.minPasscodeLength = minPasscodeLength;
-        storeMobilePolicy(SalesforceSDKManager.getInstance().getAppContext());
+        storeMobilePolicy(ctx);
         return passcodeChangeRequired;
     }
 
