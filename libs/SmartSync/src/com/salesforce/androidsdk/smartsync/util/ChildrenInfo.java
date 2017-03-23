@@ -38,46 +38,36 @@ public class ChildrenInfo extends ParentInfo {
 
     // Constants
     public static final String SOBJECT_TYPE_PLURAL = "sobjectTypePlural";
-    public static final String SOUP_NAME = "soupName";
     public static final String PARENT_ID_FIELD_NAME = "parentIdFieldName"; // name of field on  holding parent server id
-    public static final String PARENT_LOCAL_ID_FIELD_NAME = "parentLocalIdFieldName"; // name of field on  holding parent local id
 
     // Fields
     public final String sobjectTypePlural;
-    public final String soupName;
     public final String parentIdFieldName;
-    public final String parentLocalIdFieldName;
 
     public ChildrenInfo(JSONObject json) throws JSONException {
         this(
                 json.getString(SOBJECT_TYPE),
                 json.getString(SOBJECT_TYPE_PLURAL),
+                json.getString(SOUP_NAME), json.getString(PARENT_ID_FIELD_NAME),
                 JSONObjectHelper.optString(json, ID_FIELD_NAME),
-                JSONObjectHelper.optString(json, MODIFICATION_DATE_FIELD_NAME),
-                json.getString(SOUP_NAME),
-                json.getString(PARENT_ID_FIELD_NAME),
-                json.getString(PARENT_LOCAL_ID_FIELD_NAME)
+                JSONObjectHelper.optString(json, MODIFICATION_DATE_FIELD_NAME)
         );
     }
 
-    public ChildrenInfo(String sobjectType, String sobjectTypePlural, String soupName, String parentIdFieldName, String parentLocalIdFieldName) {
-        this(sobjectType, sobjectTypePlural, null, null, soupName, parentIdFieldName, parentLocalIdFieldName);
+    public ChildrenInfo(String sobjectType, String sobjectTypePlural, String soupName, String parentIdFieldName) {
+        this(sobjectType, sobjectTypePlural, soupName, parentIdFieldName, null, null);
     }
 
-    public ChildrenInfo(String sobjectType, String sobjectTypePlural, String idFieldName, String modificationDateFieldName, String soupName, String parentIdFieldName, String parentLocalIdFieldName) {
-        super(sobjectType, idFieldName, modificationDateFieldName);
+    public ChildrenInfo(String sobjectType, String sobjectTypePlural, String soupName, String parentIdFieldName, String idFieldName, String modificationDateFieldName) {
+        super(sobjectType, soupName, idFieldName, modificationDateFieldName);
         this.sobjectTypePlural = sobjectTypePlural;
-        this.soupName = soupName;
         this.parentIdFieldName = parentIdFieldName;
-        this.parentLocalIdFieldName = parentLocalIdFieldName;
     }
 
     public JSONObject asJSON() throws JSONException {
         JSONObject json = super.asJSON();
         json.put(SOBJECT_TYPE_PLURAL, sobjectTypePlural);
-        json.put(SOUP_NAME, soupName);
         json.put(PARENT_ID_FIELD_NAME, parentIdFieldName);
-        json.put(PARENT_LOCAL_ID_FIELD_NAME, parentLocalIdFieldName);
         return json;
     }
 }

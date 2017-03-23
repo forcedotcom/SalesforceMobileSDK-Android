@@ -538,7 +538,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 final PasscodeManager passcodeManager = mgr.getPasscodeManager();
                 passcodeManager.storeMobilePolicyForOrg(account, id.screenLockTimeout * 1000 * 60, id.pinLength);
                 passcodeManager.setTimeoutMs(id.screenLockTimeout * 1000 * 60);
-                passcodeManager.setMinPasscodeLength(id.pinLength);
+                boolean changeRequired = passcodeManager.setMinPasscodeLength((Activity) getContext(), id.pinLength);
 
                 /*
                  * Checks if a passcode already exists. If a passcode has NOT
@@ -551,9 +551,9 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                  */
                 if (!passcodeManager.hasStoredPasscode(mgr.getAppContext())) {
                     // This will bring up the create passcode screen - we will create the account in onResume
-                    mgr.getPasscodeManager().setEnabled(true);
-                    mgr.getPasscodeManager().lockIfNeeded((Activity) getContext(), true);
-                } else {
+                    passcodeManager.setEnabled(true);
+                    passcodeManager.lockIfNeeded((Activity) getContext(), true);
+                } else if (!changeRequired) { // If a passcode change is required, the lock screen will have already been set in setMinPasscodeLength
                     loginOptions.setPasscodeHash(mgr.getPasscodeHash());
                     addAccount();
                     callback.finish();

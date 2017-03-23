@@ -202,7 +202,7 @@ public class MetadataManager {
     }
 
     /**
-     * Sets the API version to be used (for example, 'v36.0').
+     * Sets the API version to be used (for example, 'v39.0').
      *
      * @param apiVer API version to be used.
      */
@@ -607,7 +607,7 @@ public class MetadataManager {
         // Makes a live server call to fetch the object layout.
         RestResponse response = null;
         try {
-        	response = restClient.sendSync(RestRequest.getRequestForSearchResultLayout(apiVersion, Arrays.asList(new String[] {objectTypeName})));
+        	response = restClient.sendSync(RestRequest.getRequestForSearchResultLayout(apiVersion, Arrays.asList(objectTypeName)));
         } catch(IOException e) {
         	Log.e(TAG, "IOException occurred while sending request", e);
         }

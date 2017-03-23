@@ -46,6 +46,7 @@ import java.util.Map;
 
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
+import okio.Buffer;
 import okio.BufferedSink;
 import okio.GzipSink;
 import okio.Okio;
@@ -65,6 +66,7 @@ public class AILTNPublisher implements AnalyticsPublisher {
     private static final String PAYLOAD = "payload";
     private static final String API_PATH = "/services/data/%s/connect/proxy/app-analytics-logging";
     private static final String CONTENT_ENCODING = "Content-Encoding";
+    private static final String CONTENT_LENGTH = "Content-Length";
     private static final String GZIP = "gzip";
 
     @Override
@@ -111,10 +113,17 @@ public class AILTNPublisher implements AnalyticsPublisher {
             final String apiPath = String.format(API_PATH,
                     ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()));
             final RestClient restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient();
-            final RequestBody requestBody = gzipCompressedBody(RequestBody.create(RestRequest.MEDIA_TYPE_JSON,
-                    body.toString()));
+
+            /*
+             * There's no easy way to get content length using GZIP interceptors. Some trickery is
+             * required to achieve this by adding an additional interceptor to determine content length.
+             * See this post for more details: https://github.com/square/okhttp/issues/350#issuecomment-123105641.
+             */
+            final RequestBody requestBody = setContentLength(gzipCompressedBody(RequestBody.create(RestRequest.MEDIA_TYPE_JSON,
+                    body.toString())));
             final Map<String, String> requestHeaders = new HashMap<>();
             requestHeaders.put(CONTENT_ENCODING, GZIP);
+            requestHeaders.put(CONTENT_LENGTH, Long.toString(requestBody.contentLength()));
             final RestRequest restRequest = new RestRequest(RestRequest.RestMethod.POST, apiPath,
                     requestBody, requestHeaders);
             restResponse = restClient.sendSync(restRequest);
@@ -127,6 +136,28 @@ public class AILTNPublisher implements AnalyticsPublisher {
             return true;
         }
         return false;
+    }
+
+    private RequestBody setContentLength(final RequestBody requestBody) throws IOException {
+        final Buffer buffer = new Buffer();
+        requestBody.writeTo(buffer);
+        return new RequestBody() {
+
+            @Override
+            public MediaType contentType() {
+                return requestBody.contentType();
+            }
+
+            @Override
+            public long contentLength() {
+                return buffer.size();
+            }
+
+            @Override
+            public void writeTo(BufferedSink sink) throws IOException {
+                sink.write(buffer.snapshot());
+            }
+        };
     }
 
     private RequestBody gzipCompressedBody(final RequestBody body) {

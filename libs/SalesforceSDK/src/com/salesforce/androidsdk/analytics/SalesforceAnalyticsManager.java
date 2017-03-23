@@ -407,7 +407,7 @@ public class SalesforceAnalyticsManager {
         try {
             final PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
             appVersion = packageInfo.versionName;
-            appName = context.getString(packageInfo.applicationInfo.labelRes);
+            appName = SalesforceSDKManager.getAiltnAppName();
         } catch (PackageManager.NameNotFoundException e) {
             Log.w(TAG, e);
         } catch (Resources.NotFoundException nfe) {

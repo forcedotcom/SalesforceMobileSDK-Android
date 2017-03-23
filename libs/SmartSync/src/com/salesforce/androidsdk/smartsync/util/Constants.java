@@ -54,6 +54,7 @@ public class Constants {
 	public static final String TOTAL_SIZE = "totalSize";
 	public static final String RECENT_ITEMS = "recentItems";
     public static final String LAST_MODIFIED_DATE = "LastModifiedDate";
+    public static final String CONTACTS = "Contacts";
 
     /**
      * Salesforce object types.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-present, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,49 +24,30 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.rest;
+package com.salesforce.androidsdk.smartsync.target;
 
-import android.content.Context;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.util.SyncState;
 
-import com.salesforce.androidsdk.R;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.List;
 
 /**
- * This is where all the API version info lives. This allows us to change one
- * line here and affect all our api calls.
+ * Interface for advanced sync up target where records are not simply created/updated/deleted
+ * With advanced sync up target, sync manager simply calls the method: syncUpRecord
  */
-public class ApiVersionStrings {
-
-    public static final String VERSION_NUMBER = "v39.0";
-    public static final String API_PREFIX = "/services/data/";
-
-    public static String getBasePath() {
-        return API_PREFIX + getVersionNumber(SalesforceSDKManager.getInstance().getAppContext());
-    }
-
-    public static String getBaseChatterPath() {
-        return getBasePath() + "/chatter/";
-    }
-
-    public static String getBaseConnectPath() {
-        return getBasePath() + "/connect/";
-    }
-
-    public static String getBaseSObjectPath() {
-        return getBasePath() + "/sobjects/";
-    }
-
+public interface AdvancedSyncUpTarget {
     /**
-     * Returns the API version number to be used.
      *
-     * @param context Context. Could be null in some test runs.
-     * @return API version number to be used.
+     * @param syncManager
+     * @param record
+     * @param fieldlist
+     * @param mergeMode
+     * @throws JSONException
+     * @throws IOException
      */
-    public static String getVersionNumber(Context context) {
-        String apiVersion = VERSION_NUMBER;
-        if (context != null) {
-            apiVersion = context.getString(R.string.api_version);
-        }
-        return apiVersion;
-    }
+    void syncUpRecord(SyncManager syncManager, JSONObject record, List<String> fieldlist, SyncState.MergeMode mergeMode) throws JSONException, IOException;
 }

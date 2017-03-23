@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.smartsync.target;
 
-import android.util.Log;
-
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
@@ -46,8 +44,8 @@ import java.util.Set;
 public class SoslSyncDownTarget extends SyncDownTarget {
 	
 	public static final String QUERY = "query";
-    private static final String TAG = "SoslSyncDownTarget";
-	private String query;
+    public static final String SEARCH_RECORDS = "searchRecords";
+    private String query;
 
     /**
      * Construct SoslSyncDownTarget from json
@@ -87,7 +85,7 @@ public class SoslSyncDownTarget extends SyncDownTarget {
     private JSONArray startFetch(SyncManager syncManager, long maxTimeStamp, String queryRun) throws IOException, JSONException {
         RestRequest request = RestRequest.getRequestForSearch(syncManager.apiVersion, queryRun);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
-        JSONArray records = response.asJSONArray();
+        JSONArray records = response.asJSONObject().getJSONArray(SEARCH_RECORDS);
 
         // Recording total size
         totalSize = records.length();

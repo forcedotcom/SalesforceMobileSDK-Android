@@ -40,9 +40,10 @@ import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.smartsync.target.AdvancedSyncUpTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
-import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.SyncManagerLogger;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
@@ -85,6 +86,7 @@ public class SyncManager {
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
 	private SmartStore smartStore;
 	private RestClient restClient;
+    private SyncManagerLogger logger;
 
     /**
      * Private constructor
@@ -94,6 +96,7 @@ public class SyncManager {
         apiVersion = ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext());
         this.smartStore = smartStore;
         this.restClient = restClient;
+        this.logger = new SyncManagerLogger(Log.INFO);
         SyncState.setupSyncsSoupIfNeeded(smartStore);
     }
 
@@ -207,7 +210,8 @@ public class SyncManager {
      */
     public SyncState syncDown(SyncDownTarget target, SyncOptions options, String soupName, SyncUpdateCallback callback) throws JSONException {
     	SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName);
-		runSync(sync, callback);
+        logger.d(this, "syncDown:", sync);
+        runSync(sync, callback);
 		return sync;
     }
 
@@ -229,6 +233,7 @@ public class SyncManager {
             throw new SmartSyncException("Cannot run reSync:" + syncId + ": wrong type:" + sync.getType());
         }
         sync.setTotalSize(-1);
+        logger.d(this, "reSync:", sync);
         runSync(sync, callback);
         return sync;
     }
@@ -254,7 +259,7 @@ public class SyncManager {
                     }
                     updateSync(sync, SyncState.Status.DONE, 100, callback);
                 } catch (Exception e) {
-                    Log.e("SmartSyncMgr:runSync", "Error during sync: " + sync.getId(), e);
+                    logger.e(this, "runSync", e);
                     // Update status to failed
                     updateSync(sync, SyncState.Status.FAILED, UNCHANGED, callback);
                 }
@@ -273,6 +278,7 @@ public class SyncManager {
      */
     public SyncState syncUp(SyncUpTarget target, SyncOptions options, String soupName, SyncUpdateCallback callback) throws JSONException {
     	SyncState sync = SyncState.createSyncUp(smartStore, target, options, soupName);
+        logger.d(this, "syncUp:", sync);
     	runSync(sync, callback);
     	return sync;
     }
@@ -296,6 +302,9 @@ public class SyncManager {
         if (sync.getType() != SyncState.Type.syncDown) {
             throw new SmartSyncException("Cannot run cleanResyncGhosts:" + syncId + ": wrong type:" + sync.getType());
         }
+
+        logger.d(this, "cleanResyncGhosts:", sync);
+
         final String soupName = sync.getSoupName();
         final SyncDownTarget target = (SyncDownTarget) sync.getTarget();
 
@@ -350,7 +359,7 @@ public class SyncManager {
                         attributes.put("syncId", sync.getId());
                         attributes.put("syncTarget", sync.getTarget().getClass().getName());
                     } catch (JSONException e) {
-                        Log.e(TAG, "Exception thrown while building attributes", e);
+                        logger.e(this, "Exception thrown while building attributes", e);
                     }
                     EventBuilderHelper.createAndStoreEvent(sync.getType().name(), null, TAG, attributes);
                     runningSyncIds.remove(sync.getId());
@@ -358,9 +367,9 @@ public class SyncManager {
             }
             sync.save(smartStore);
     	} catch (JSONException e) {
-    		Log.e(TAG, "Unexpected json error for sync: " + sync.getId(), e);
+    		logger.e(this, "Unexpected json error for sync: " + sync.getId(), e);
     	} catch (SmartStoreException e) {
-            Log.e(TAG, "Unexpected smart store error for sync: " + sync.getId(), e);
+            logger.e(this, "Unexpected smart store error for sync: " + sync.getId(), e);
         }
         finally {
             callback.onUpdate(sync);
@@ -377,7 +386,7 @@ public class SyncManager {
         updateSync(sync, SyncState.Status.RUNNING, 0, callback);
         int i = 0;
         for (final String id : dirtyRecordIds) {
-            JSONObject record = smartStore.retrieve(soupName, Long.valueOf(id)).getJSONObject(0);
+            JSONObject record = target.getFromLocalStore(this, soupName, id);
             syncUpOneRecord(target, soupName, record, options);
 
             // Updating status
@@ -391,30 +400,31 @@ public class SyncManager {
         }
 	}
 
-    private boolean isNewerThanServer(SyncUpTarget target, JSONObject record) throws JSONException, IOException {
-        final String lastModStr = record.optString(target.getModificationDateFieldName());
-
-        if (lastModStr == null) {
-            // We didn't capture the last modified date so we can't really enforce merge mode, returning true so that we will behave like an "overwrite" merge mode
-            return true;
-        }
-        try {
-            String serverLastModStr = target.fetchLastModifiedDate(this, record);
-            if (serverLastModStr == null) {
-                // We were unable to get the last modified date from the server
-                return true;
-            }
-            long lastModifiedDate = Constants.TIMESTAMP_FORMAT.parse(lastModStr).getTime();
-            long serverLastModifiedDate = Constants.TIMESTAMP_FORMAT.parse(serverLastModStr).getTime();
-            return (serverLastModifiedDate <= lastModifiedDate);
-        } catch (Exception e) {
-            Log.e(TAG, "Couldn't figure out last modified date", e);
-            throw new SmartSyncException(e);
-        }
-    }
-
     private void syncUpOneRecord(SyncUpTarget target, String soupName,
                                  JSONObject record, SyncOptions options) throws JSONException, IOException {
+
+        logger.d(this, "syncUpOneRecord", record);
+
+        /*
+         * Checks if we are attempting to sync up a record that has been updated
+         * on the server AFTER the client's last sync down. If the merge mode
+         * passed in tells us to leave the record alone under these
+         * circumstances, we will do nothing and return here.
+         */
+        final MergeMode mergeMode = options.getMergeMode();
+        if (mergeMode == MergeMode.LEAVE_IF_CHANGED &&
+                !target.isNewerThanServer(this, record)) {
+
+            // Nothing to do for this record
+            logger.d(this, "syncUpOneRecord: Record not synced since client does not have the latest from server:", record);
+            return;
+        }
+
+        // Advanced sync up target take it from here
+        if (target instanceof AdvancedSyncUpTarget) {
+            ((AdvancedSyncUpTarget) target).syncUpRecord(this, record, options.getFieldlist(), options.getMergeMode());
+            return;
+        }
 
         // Do we need to do a create, update or delete
         boolean locallyDeleted = target.isLocallyDeleted(record);
@@ -430,25 +440,8 @@ public class SyncManager {
             action = Action.update;
 
         if (action == null) {
-
             // Nothing to do for this record
             return;
-        }
-
-        /*
-         * Checks if we are attempting to update a record that has been updated
-         * on the server AFTER the client's last sync down. If the merge mode
-         * passed in tells us to leave the record alone under these
-         * circumstances, we will do nothing and return here.
-         */
-        final MergeMode mergeMode = options.getMergeMode();
-        if (mergeMode == MergeMode.LEAVE_IF_CHANGED &&
-        		!locallyCreated &&
-        		!isNewerThanServer(target, record)) {
-
-        	// Nothing to do for this record
-    		Log.i(TAG, "Record not synced since client does not have the latest from server");
-        	return;
         }
 
         // Create/update/delete record on server and update smartstore
@@ -509,6 +502,7 @@ public class SyncManager {
         if (mergeMode == MergeMode.LEAVE_IF_CHANGED) {
             idsToSkip = target.getIdsToSkip(this, soupName);
         }
+
         while (records != null) {
             // Figure out records to save
             JSONArray recordsToSave = idsToSkip == null ? records : removeWithIds(records, idsToSkip, idField);
@@ -550,7 +544,15 @@ public class SyncManager {
 	 * @throws IOException
 	 */
 	public RestResponse sendSyncWithSmartSyncUserAgent(RestRequest restRequest) throws IOException {
-        return restClient.sendSync(restRequest, new HttpAccess.UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(SMART_SYNC)));
+        logger.d(this, "sendSyncWithSmartSyncUserAgent:request", restRequest);
+        RestResponse restResponse = restClient.sendSync(restRequest, new HttpAccess.UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(SMART_SYNC)));
+        if (restResponse.isSuccess()) {
+            logger.d(this, "sendSyncWithSmartSyncUserAgent:response", restResponse);
+        }
+        else {
+            logger.w(this, "sendSyncWithSmartSyncUserAgent:response", restResponse);
+        }
+        return restResponse;
     }
 
     /**
@@ -558,6 +560,13 @@ public class SyncManager {
      */
     public SmartStore getSmartStore() {
         return smartStore;
+    }
+
+    /**
+     * return SyncManagerLogger used by this SyncManager
+     */
+    public SyncManagerLogger getLogger() {
+        return logger;
     }
 
     /**
