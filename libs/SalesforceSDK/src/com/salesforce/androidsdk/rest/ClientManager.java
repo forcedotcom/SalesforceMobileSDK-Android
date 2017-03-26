@@ -606,12 +606,12 @@ public class ClientManager {
      */
     public static class AccMgrAuthTokenProvider implements RestClient.AuthTokenProvider {
 
-        private static boolean gettingAuthToken;
-        private static final Object lock = new Object();
+        private boolean gettingAuthToken;
+        private final Object lock = new Object();
         private final ClientManager clientManager;
-        private static String lastNewAuthToken;
+        private String lastNewAuthToken;
         private final String refreshToken;
-        private static String lastNewInstanceUrl;
+        private String lastNewInstanceUrl;
         private long lastRefreshTime = -1 /* never refreshed */;
 
         /**
