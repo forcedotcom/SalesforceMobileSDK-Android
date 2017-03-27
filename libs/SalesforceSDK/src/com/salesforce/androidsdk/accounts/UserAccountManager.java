@@ -272,7 +272,7 @@ public class UserAccountManager {
 	 */
 	public void switchToUser(UserAccount user) {
 		// All that's known is that the user is being switched
-		switchToUser(user, USER_SWITCH_TYPE_DEFAULT);
+		switchToUser(user, USER_SWITCH_TYPE_DEFAULT, null);
 	}
 
 	/**
@@ -280,10 +280,12 @@ public class UserAccountManager {
 	 *
 	 * @param user the user account to switch to
 	 * @param userSwitchType a {@code USER_SWITCH_TYPE} constant
+	 * @param extras a optional Bundle of extras to pass additional
+	 *               information during user switch
 	 *
 	 * @see #switchToUser(UserAccount)
 	 */
-	public void switchToUser(UserAccount user, int userSwitchType) {
+	public void switchToUser(UserAccount user, int userSwitchType, Bundle extras) {
 		if (user == null || !doesUserAccountExist(user)) {
 			switchToNewUser();
 			return;
@@ -302,7 +304,7 @@ public class UserAccountManager {
 		final Account account = cm.getAccountByName(user.getAccountName());
 		storeCurrentUserInfo(user.getUserId(), user.getOrgId());
 		cm.peekRestClient(account);
-		sendUserSwitchIntent(userSwitchType);
+		sendUserSwitchIntent(userSwitchType, extras);
 	}
 
 	/**
@@ -503,7 +505,7 @@ public class UserAccountManager {
 	 */
 	public void sendUserSwitchIntent() {
 		// By default, the type of switch is not known
-		sendUserSwitchIntent(USER_SWITCH_TYPE_DEFAULT);
+		sendUserSwitchIntent(USER_SWITCH_TYPE_DEFAULT, null);
 	}
 
 	/**
@@ -511,11 +513,16 @@ public class UserAccountManager {
 	 *
 	 * @param userSwitchType
 	 *         a {@code USER_SWITCH_TYPE} constant
+	 * @param extras
+	 *         an optional Bundle of extras to add to the broadcast intent
 	 */
-	public final void sendUserSwitchIntent(int userSwitchType) {
+	public final void sendUserSwitchIntent(int userSwitchType, Bundle extras) {
 		final Intent intent = new Intent(USER_SWITCH_INTENT_ACTION);
 		intent.setPackage(context.getPackageName());
 		intent.putExtra(EXTRA_USER_SWITCH_TYPE, userSwitchType);
+        if (extras != null) {
+            intent.putExtras(extras);
+        }
 		SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
 	}
 }

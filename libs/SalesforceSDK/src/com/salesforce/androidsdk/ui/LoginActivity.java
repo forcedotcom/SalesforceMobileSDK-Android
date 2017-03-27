@@ -323,7 +323,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
             userSwitchType = UserAccountManager.USER_SWITCH_TYPE_DEFAULT;
         }
 
-        userAccountManager.sendUserSwitchIntent(userSwitchType);
+        userAccountManager.sendUserSwitchIntent(userSwitchType, null);
         super.finish();
 	}
 
