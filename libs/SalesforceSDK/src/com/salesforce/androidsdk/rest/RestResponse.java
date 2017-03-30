@@ -26,12 +26,6 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import android.util.Log;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
@@ -39,9 +33,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import okhttp3.MediaType;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+
+import android.util.Log;
 
 /**
  * RestResponse: Class to represent any REST response.
@@ -63,7 +63,6 @@ public class RestResponse {
 	private String responseAsString;
 	private JSONObject responseAsJSONObject;
 	private JSONArray responseAsJSONArray;
-	private Map<String, String> headers;
 
 	/**
 	 * Constructor
@@ -72,7 +71,6 @@ public class RestResponse {
 	 */
 	public RestResponse(Response response) {
 		this.response = response;
-		consumeQuietly();
 	}
 
 	/**

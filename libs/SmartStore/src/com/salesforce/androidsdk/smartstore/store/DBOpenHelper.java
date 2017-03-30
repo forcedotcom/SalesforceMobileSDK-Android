@@ -26,9 +26,21 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
-import android.content.Context;
-import android.text.TextUtils;
-import android.util.Log;
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
@@ -38,19 +50,9 @@ import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteDatabaseHook;
 import net.sqlcipher.database.SQLiteOpenHelper;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import android.content.Context;
+import android.text.TextUtils;
+import android.util.Log;
 
 /**
  * Helper class to manage SmartStore's database creation and version management.
@@ -67,6 +69,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	private static final String DB_NAME_SUFFIX = ".db";
 	private static final String ORG_KEY_PREFIX = "00D";
 	private static final String EXTERNAL_BLOBS_SUFFIX = "_external_soup_blobs/";
+	private static final String UTF8 = "UTF-8";
 	private static String dataDir;
 	private String dbName;
 
@@ -167,12 +170,12 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 	/**
 	 * Returns the DBOpenHelper instance for the given database name.
-	 * 
+	 *
 	 * @param ctx Context.
-	 * @param dbNamePrefix The database name. This must be a valid file name without a 
+	 * @param dbNamePrefix The database name. This must be a valid file name without a
      *                     filename extension such as ".db".
 	 * @param account User account. If this method is called before authentication,
-	 * 				we will simply return the smart store DB, which is not associated 
+	 * 				we will simply return the smart store DB, which is not associated
 	 * 				with any user account. Otherwise, we will return a unique
 	 * 				database at the community level.
 	 * @param communityId Community ID.
@@ -265,7 +268,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
                     SmartStore.SOUP_ATTRS_TABLE, new String[] { SoupSpec.FEATURE_EXTERNAL_STORAGE });
 		}
 	}
-	
+
 	@Override
 	@SuppressWarnings("deprecation")
 	public void onOpen(SQLiteDatabase db) {
@@ -298,7 +301,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * Deletes the underlying database for the specified user and community.
 	 *
 	 * @param ctx Context.
-	 * @param dbNamePrefix The database name. This must be a valid file name without a 
+	 * @param dbNamePrefix The database name. This must be a valid file name without a
      *                     filename extension such as ".db".
 	 * @param account User account.
 	 * @param communityId Community ID.
@@ -359,7 +362,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 	/**
 	 * Determines if a smart store currently exists for the given account and/or community id.
-	 * 
+	 *
 	 * @param ctx Context.
 	 * @param account User account.
 	 * @param communityId Community ID.
@@ -371,11 +374,11 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	}
 
 	/**
-	 * Determines if a smart store currently exists for the given database name, account 
+	 * Determines if a smart store currently exists for the given database name, account
 	 * and/or community id.
-	 * 
+	 *
 	 * @param ctx Context.
-	 * @param dbNamePrefix The database name. This must be a valid file name without a 
+	 * @param dbNamePrefix The database name. This must be a valid file name without a
 	 *                     filename extension such as ".db".
 	 * @param account User account.
 	 * @param communityId Community ID.
@@ -394,7 +397,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 	static class DBHook implements SQLiteDatabaseHook {
 		public void preKey(SQLiteDatabase database) {
-			database.execSQL("PRAGMA cipher_default_kdf_iter = '4000'"); 
+			database.execSQL("PRAGMA cipher_default_kdf_iter = '4000'");
 			// the new default for sqlcipher 3.x (64000) is too slow
             // also that way we can open 2.x databases without any migration
 		}
@@ -678,17 +681,14 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @return The blob from file storage represented as String. Returns null if there was an error.
 	 */
 	public String loadSoupBlobAsString(String soupTableName, long soupEntryId, String passcode) {
-		File file = getSoupBlobFile(soupTableName, soupEntryId);
-		StringBuilder json = new StringBuilder();
 		String result = null;
 		try {
-			BufferedReader br = new BufferedReader(new FileReader(file));
-			String line;
-			while ((line = br.readLine()) != null) {
-				json.append(line).append('\n');
-			}
-			br.close();
-			result = Encryptor.decrypt(json.toString(), passcode);
+			File file = getSoupBlobFile(soupTableName, soupEntryId);
+			FileInputStream f = new FileInputStream(file);
+			DataInputStream data = new DataInputStream(f);
+			byte[] bytes = new byte[(int)file.length()];
+			data.readFully(bytes);
+			result = Encryptor.decrypt(bytes, passcode);
 
 		} catch (IOException ex) {
 			Log.e(TAG, "Exception occurred while attempting to read external soup blob.", ex);

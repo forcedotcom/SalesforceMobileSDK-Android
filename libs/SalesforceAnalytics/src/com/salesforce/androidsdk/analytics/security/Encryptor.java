@@ -131,6 +131,13 @@ public class Encryptor {
         if (TextUtils.isEmpty(key) || data == null) {
             return data;
         }
+        return decrypt(data.getBytes(), key);
+    }
+
+    public static String decrypt(byte[] data, String key) {
+        if (data == null || data.length == 0) {
+            return null;
+        }
         try {
 
             // Decodes with Base64.
