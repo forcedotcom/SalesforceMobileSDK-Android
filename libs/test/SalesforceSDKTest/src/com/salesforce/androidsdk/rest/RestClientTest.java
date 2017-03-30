@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.rest;
 
 import android.test.InstrumentationTestCase;
-import android.util.Log;
 
 import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -427,7 +426,6 @@ public class RestClientTest extends InstrumentationTestCase {
         String accountName = ENTITY_NAME_PREFIX + "-" + System.nanoTime();
         fields.put(NAME, accountName);
         RestResponse response = restClient.sendSync(RestRequest.getRequestForUpsert(TestCredentials.API_VERSION, ACCOUNT, "Id", null, fields));
-        Log.i("--response-->", response.toString());
         assertTrue("Create with upsert failed", response.isSuccess());
         String accountId = response.asJSONObject().getString("id");
 
@@ -436,7 +434,6 @@ public class RestClientTest extends InstrumentationTestCase {
         String updatedAccountName = ENTITY_NAME_PREFIX + "-" + System.nanoTime();
         fields.put(NAME, updatedAccountName);
         response = restClient.sendSync(RestRequest.getRequestForUpsert(TestCredentials.API_VERSION, ACCOUNT, "Id", accountId, fields));
-        Log.i("--response-->", response.toString());
         assertTrue("Update with upsert failed", response.isSuccess());
 
         // Retrieve - expect updated name
@@ -895,7 +892,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * - creates an account,
      * - creates two children contacts
      *
-     * Then queries that should return newly created account and contacts
+     * Then run queries that should return newly created account and contacts
      *
      * @throws IOException
      * @throws JSONException
@@ -946,7 +943,7 @@ public class RestClientTest extends InstrumentationTestCase {
         assertEquals("Account id not returned by query", accountId, queryRecords.getJSONObject(0).getString("AccountId"));
         assertEquals("Contact id not returned by query", contactId, queryRecords.getJSONObject(0).getString("Id"));
 
-        // Running other query that should match first contact and its parent
+        // Running other query that should match other contact and its parent
         RestRequest otherQueryRequest = RestRequest.getRequestForQuery(TestCredentials.API_VERSION, "select Id, AccountId from Contact where LastName = '" + otherContactName + "'");
         RestResponse otherQueryResponse = restClient.sendSync(otherQueryRequest);
         JSONArray otherQueryRecords = otherQueryResponse.asJSONObject().getJSONArray("records");
@@ -1037,12 +1034,22 @@ public class RestClientTest extends InstrumentationTestCase {
         try {
             RestResponse response = restClient.sendSync(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + ENTITY_NAME_PREFIX + "}"));
             JSONArray jsonResults = response.asJSONObject().getJSONArray("searchRecords");
+            List<RestRequest> requests = new ArrayList<>();
             for (int i = 0; i < jsonResults.length(); i++) {
                 JSONObject jsonResult = jsonResults.getJSONObject(i);
                 String objectType = jsonResult.getJSONObject("attributes").getString("type");
                 String id = jsonResult.getString("Id");
-                restClient.sendSync(RestRequest.getRequestForDelete(TestCredentials.API_VERSION, objectType, id));
+                RestRequest deleteRequest = RestRequest.getRequestForDelete(TestCredentials.API_VERSION, objectType, id);
+                requests.add(deleteRequest);
+                if (requests.size() == 25) {
+                    restClient.sendSync(RestRequest.getBatchRequest(TestCredentials.API_VERSION, false, requests));
+                    requests.clear();
+                }
             }
+            if (requests.size() > 0) {
+                restClient.sendSync(RestRequest.getBatchRequest(TestCredentials.API_VERSION, false, requests));
+            }
+
         }
         catch(Exception e) {
             // We tried our best :-(
