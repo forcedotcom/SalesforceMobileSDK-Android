@@ -65,7 +65,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	public static final int DB_VERSION = 3;
 	public static final String DEFAULT_DB_NAME = "smartstore";
 	public static final String SOUP_ELEMENT_PREFIX = "soupelt_";
-    private static final String TAG = "DBOpenHelper";
+	private static final String TAG = "DBOpenHelper";
 	private static final String DB_NAME_SUFFIX = ".db";
 	private static final String ORG_KEY_PREFIX = "00D";
 	private static final String EXTERNAL_BLOBS_SUFFIX = "_external_soup_blobs/";
@@ -94,7 +94,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @return List of Database names(prefixes).
 	 */
 	public static synchronized List<String> getUserDatabasePrefixList(Context ctx,
-																	  UserAccount account, String communityId) {
+			UserAccount account, String communityId) {
 		List<String> result = new ArrayList<>();
 		if(account==null) return  result;
 
@@ -120,16 +120,16 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @return List of Database names(prefixes).
 	 */
 	public static synchronized List<String> getGlobalDatabasePrefixList(Context ctx,
-																	  UserAccount account, String communityId) {
+			UserAccount account, String communityId) {
 		List<String> result = new ArrayList<>();
-        String accountSuffix = null;
+		String accountSuffix = null;
 		String orgId = null;
-        if (account != null) {
-            accountSuffix = account.getCommunityLevelFilenameSuffix(communityId);
+		if (account != null) {
+			accountSuffix = account.getCommunityLevelFilenameSuffix(communityId);
 			orgId = account.getOrgId();
-        }
+		}
 		SmartStoreGlobalFileFilter globalFileFilter = new SmartStoreGlobalFileFilter(accountSuffix,
-                orgId);
+																					 orgId);
 		final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
 		final File dir = new File(dbPath);
 		String[] fileNames = dir.list(globalFileFilter);
@@ -173,7 +173,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 *
 	 * @param ctx Context.
 	 * @param dbNamePrefix The database name. This must be a valid file name without a
-     *                     filename extension such as ".db".
+	 *                     filename extension such as ".db".
 	 * @param account User account. If this method is called before authentication,
 	 * 				we will simply return the smart store DB, which is not associated
 	 * 				with any user account. Otherwise, we will return a unique
@@ -196,25 +196,25 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		final String fullDBName = dbName.toString();
 		DBOpenHelper helper = openHelpers.get(fullDBName);
 		if (helper == null) {
-            List<String> numDbs = null;
-            String key = "numGlobalStores";
-            String eventName = "globalSmartStoreInit";
-            if (account == null) {
-                numDbs = getGlobalDatabasePrefixList(ctx, account, communityId);
-            } else {
-                key = "numUserStores";
-                eventName = "userSmartStoreInit";
-                numDbs = getUserDatabasePrefixList(ctx, account, communityId);
-            }
-            int numStores = (numDbs == null) ? 0 : numDbs.size();
-            final JSONObject storeAttributes = new JSONObject();
-            try {
-                storeAttributes.put(key, numStores);
-            } catch (JSONException e) {
-                Log.e(TAG, "Error occurred while creating JSON", e);
-            }
-            EventBuilderHelper.createAndStoreEvent(eventName, account, TAG, storeAttributes);
-            helper = new DBOpenHelper(ctx, fullDBName);
+			List<String> numDbs = null;
+			String key = "numGlobalStores";
+			String eventName = "globalSmartStoreInit";
+			if (account == null) {
+				numDbs = getGlobalDatabasePrefixList(ctx, account, communityId);
+			} else {
+				key = "numUserStores";
+				eventName = "userSmartStoreInit";
+				numDbs = getUserDatabasePrefixList(ctx, account, communityId);
+			}
+			int numStores = (numDbs == null) ? 0 : numDbs.size();
+			final JSONObject storeAttributes = new JSONObject();
+			try {
+				storeAttributes.put(key, numStores);
+			} catch (JSONException e) {
+				Log.e(TAG, "Error occurred while creating JSON", e);
+			}
+			EventBuilderHelper.createAndStoreEvent(eventName, account, TAG, storeAttributes);
+			helper = new DBOpenHelper(ctx, fullDBName);
 			openHelpers.put(fullDBName, helper);
 		}
 		return helper;
@@ -227,9 +227,9 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		dataDir = context.getApplicationInfo().dataDir;
 	}
 
-    protected void loadLibs(Context context) {
-        SqliteLibraryLoader.loadSqlCipher(context);
-    }
+	protected void loadLibs(Context context) {
+		SqliteLibraryLoader.loadSqlCipher(context);
+	}
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
@@ -265,7 +265,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		if (oldVersion < 3) {
 			// DB versions before 3 used soup_names, which has changed to soup_attrs
 			SmartStore.updateTableNameAndAddColumns(db, SmartStore.SOUP_NAMES_TABLE,
-                    SmartStore.SOUP_ATTRS_TABLE, new String[] { SoupSpec.FEATURE_EXTERNAL_STORAGE });
+													SmartStore.SOUP_ATTRS_TABLE, new String[] { SoupSpec.FEATURE_EXTERNAL_STORAGE });
 		}
 	}
 
@@ -302,7 +302,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 *
 	 * @param ctx Context.
 	 * @param dbNamePrefix The database name. This must be a valid file name without a
-     *                     filename extension such as ".db".
+	 *                     filename extension such as ".db".
 	 * @param account User account.
 	 * @param communityId Community ID.
 	 */
@@ -336,7 +336,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 				StringBuffer communityDBNamePrefix = new StringBuffer(dbNamePrefix);
 				String accountSuffix = account.getUserLevelFilenameSuffix();
 				communityDBNamePrefix.append(accountSuffix);
-		    	deleteFiles(ctx, communityDBNamePrefix.toString());
+				deleteFiles(ctx, communityDBNamePrefix.toString());
 			}
 
 			// Delete external blobs directory
@@ -399,7 +399,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		public void preKey(SQLiteDatabase database) {
 			database.execSQL("PRAGMA cipher_default_kdf_iter = '4000'");
 			// the new default for sqlcipher 3.x (64000) is too slow
-            // also that way we can open 2.x databases without any migration
+			// also that way we can open 2.x databases without any migration
 		}
 
 		public void postKey(SQLiteDatabase database) {
@@ -408,38 +408,38 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 	private static void deleteFiles(Context ctx, String prefix) {
 		final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
-    	final File dir = new File(dbPath);
-    	if (dir != null) {
-        	final SmartStoreFileFilter fileFilter = new SmartStoreFileFilter(prefix);
-        	final File[] fileList = dir.listFiles();
-        	if (fileList != null) {
-            	for (final File file : fileList) {
-            		if (file != null && fileFilter.accept(dir, file.getName())) {
-            			file.delete();
-            			openHelpers.remove(file.getName());
-            		}
-            	}
-        	}
-    	}
+		final File dir = new File(dbPath);
+		if (dir != null) {
+			final SmartStoreFileFilter fileFilter = new SmartStoreFileFilter(prefix);
+			final File[] fileList = dir.listFiles();
+			if (fileList != null) {
+				for (final File file : fileList) {
+					if (file != null && fileFilter.accept(dir, file.getName())) {
+						file.delete();
+						openHelpers.remove(file.getName());
+					}
+				}
+			}
+		}
 	}
 
-    /**
-     * This class acts as a filter to identify only the relevant SmartStore files.
-     *
-     * @author bhariharan
-     */
-    private static class SmartStoreFileFilter implements FilenameFilter {
+	/**
+	 * This class acts as a filter to identify only the relevant SmartStore files.
+	 *
+	 * @author bhariharan
+	 */
+	private static class SmartStoreFileFilter implements FilenameFilter {
 
-    	private String dbNamePrefix;
+		private String dbNamePrefix;
 
-    	/**
-    	 * Parameterized constructor.
-    	 *
-    	 * @param dbNamePrefix Database name prefix pattern.
-    	 */
-    	public SmartStoreFileFilter(String dbNamePrefix) {
-    		this.dbNamePrefix = dbNamePrefix;
-    	}
+		/**
+		 * Parameterized constructor.
+		 *
+		 * @param dbNamePrefix Database name prefix pattern.
+		 */
+		public SmartStoreFileFilter(String dbNamePrefix) {
+			this.dbNamePrefix = dbNamePrefix;
+		}
 
 		@Override
 		public boolean accept(File dir, String filename) {
@@ -452,7 +452,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		String getDbNamePrefix(){
 			return  dbNamePrefix;
 		}
-    }
+	}
 
 	private static class SmartStoreGlobalFileFilter extends SmartStoreFileFilter {
 
@@ -494,7 +494,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @param subDir Subdirectory to determine size of. Use null for top-level directory.
 	 *
 	 * @return Size of all files in all subdirectories.
-     */
+	 */
 	public int getSizeOfDir(File subDir) {
 		int size = 0;
 		if (subDir == null) {
@@ -521,7 +521,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 *
 	 * @param dir Directory to remove all files and folders recursively.
 	 * @return True if all delete operations were successful. False otherwise.
-     */
+	 */
 	public static boolean removeAllFiles(File dir) {
 		if (dir != null && dir.exists()) {
 			boolean success = true;
@@ -621,33 +621,32 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @return True if operation was successful, false otherwise.
 	 */
 	public boolean saveSoupBlob(String soupTableName, long soupEntryId, JSONObject soupElt, String passcode) {
-        return saveSoupBlobFromString(soupTableName, soupEntryId, soupElt.toString(), passcode);
+		return saveSoupBlobFromString(soupTableName, soupEntryId, soupElt.toString(), passcode);
 	}
 
-    /**
-     * Places the soup blob on file storage. The name and folder are determined by the soup and soup entry id.
-     *
-     * @param soupTableName Name of the soup that the blob belongs to.
-     * @param soupEntryId Entry id for the soup blob.
-     * @param soupEltStr Blob to store on file storage as a String.
-     * @param passcode Key with which to encrypt the data.
-     *
-     * @return True if operation was successful, false otherwise.
-     */
-    public boolean saveSoupBlobFromString(String soupTableName, long soupEntryId, String soupEltStr, String passcode) {
-        FileOutputStream outputStream;
-        File file = getSoupBlobFile(soupTableName, soupEntryId);
-
-        try {
-            outputStream = new FileOutputStream(file, false);
-            outputStream.write(Encryptor.encrypt(soupEltStr, passcode).getBytes());
-            outputStream.close();
-            return true;
-        } catch (IOException ex) {
-            Log.e(TAG, "Exception occurred while attempting to write external soup blob.", ex);
-        }
-        return false;
-    }
+	/**
+	 * Places the soup blob on file storage. The name and folder are determined by the soup and soup entry id.
+	 *
+	 * @param soupTableName Name of the soup that the blob belongs to.
+	 * @param soupEntryId Entry id for the soup blob.
+	 * @param soupEltStr Blob to store on file storage as a String.
+	 * @param passcode Key with which to encrypt the data.
+	 *
+	 * @return True if operation was successful, false otherwise.
+	 */
+	public boolean saveSoupBlobFromString(String soupTableName, long soupEntryId, String soupEltStr, String passcode) {
+		File file = getSoupBlobFile(soupTableName, soupEntryId);
+		try (FileOutputStream outputStream = new FileOutputStream(file, false)) {
+			byte[] data = Encryptor.encryptBytes(soupEltStr, passcode);
+			if (data != null) {
+				outputStream.write(data);
+				return true;
+			}
+		} catch (IOException ex) {
+			Log.e(TAG, "Exception occurred while attempting to write external soup blob.", ex);
+		}
+		return false;
+	}
 
 	/**
 	 * Retrieves the soup blob for the given soup entry id from file storage.
@@ -681,19 +680,17 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @return The blob from file storage represented as String. Returns null if there was an error.
 	 */
 	public String loadSoupBlobAsString(String soupTableName, long soupEntryId, String passcode) {
-		String result = null;
-		try {
-			File file = getSoupBlobFile(soupTableName, soupEntryId);
-			FileInputStream f = new FileInputStream(file);
+		File file = getSoupBlobFile(soupTableName, soupEntryId);
+		try (FileInputStream f = new FileInputStream(file)) {
 			DataInputStream data = new DataInputStream(f);
-			byte[] bytes = new byte[(int)file.length()];
+			byte[] bytes = new byte[(int) file.length()];
 			data.readFully(bytes);
-			result = Encryptor.decrypt(bytes, passcode);
+			return Encryptor.decrypt(bytes, passcode);
 
 		} catch (IOException ex) {
 			Log.e(TAG, "Exception occurred while attempting to read external soup blob.", ex);
 		}
-		return result;
+		return null;
 	}
 
 	/**
