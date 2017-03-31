@@ -26,13 +26,8 @@
  */
 package com.salesforce.androidsdk.analytics.security;
 
-import android.app.Service;
-import android.app.admin.DevicePolicyManager;
-import android.content.Context;
-import android.text.TextUtils;
-import android.util.Base64;
-import android.util.Log;
-
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -42,6 +37,13 @@ import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
+import android.app.Service;
+import android.app.admin.DevicePolicyManager;
+import android.content.Context;
+import android.text.TextUtils;
+import android.util.Base64;
+import android.util.Log;
 
 /**
  * Helper class for encryption/decryption/hash computations.
@@ -131,8 +133,18 @@ public class Encryptor {
         if (TextUtils.isEmpty(key) || data == null) {
             return data;
         }
-        try {
+        return decrypt(data.getBytes(), key);
+    }
 
+    public static String decrypt(byte[] data, String key) {
+        if (TextUtils.isEmpty(key)) {
+            if (data != null) {
+                return new String(data, Charset.forName(UTF8));
+            } else {
+                return null;
+            }
+        }
+        try {
             // Decodes with Base64.
             byte[] keyBytes = Base64.decode(key, Base64.DEFAULT);
             byte[] dataBytes = Base64.decode(data, Base64.DEFAULT);
@@ -157,19 +169,42 @@ public class Encryptor {
         if (TextUtils.isEmpty(key) || data == null) {
             return data;
         }
+        byte[] bytes = encryptBytes(data, key);
+        if (bytes == null) {
+            return null;
+        }
         try {
+            // do as Base64.encodeToString does... return US-ASCII string with the already Base64 encoded bytes.
+            return new String(bytes, "US-ASCII");
+        } catch (UnsupportedEncodingException e) {
+            Log.w(TAG, "Error during encryption", e);
+        }
+        return null;
+    }
 
+    /**
+     * Encrypts data with key using AES-256. Returns Base64 byte[] array.
+     * @param data
+     * @param key
+     * @return
+     */
+    public static byte[] encryptBytes(String data, String key) {
+        if (TextUtils.isEmpty(key)) {
+            if (data == null) {
+                return null;
+            } else {
+                return data.getBytes();
+            }
+        }
+        try {
             // Encrypts with our preferred cipher.
             byte[] keyBytes = Base64.decode(key, Base64.DEFAULT);
             byte[] dataBytes = data.getBytes(UTF8);
-            byte[] encryptedData = encrypt(dataBytes, keyBytes);
-
-            // Encodes with Base64.
-            return Base64.encodeToString(encryptedData, Base64.DEFAULT);
+            return Base64.encode(encrypt(dataBytes, keyBytes), Base64.DEFAULT);
         } catch (Exception ex) {
             Log.w(TAG, "Error during encryption", ex);
-            return null;
         }
+        return null;
     }
 
     /**
