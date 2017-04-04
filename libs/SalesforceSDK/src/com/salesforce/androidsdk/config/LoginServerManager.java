@@ -201,6 +201,11 @@ public class LoginServerManager {
 		edit = runtimePrefs.edit();
 		edit.clear();
 		edit.commit();
+        final SharedPreferences selectedServerPrefs = ctx.getSharedPreferences(SERVER_SELECTION_FILE,
+                Context.MODE_PRIVATE);
+        edit = selectedServerPrefs.edit();
+        edit.clear();
+        edit.commit();
 		initSharedPrefFile();
 	}
 
