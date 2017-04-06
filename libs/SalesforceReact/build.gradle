@@ -15,7 +15,6 @@ apply plugin: 'com.jfrog.bintray'
 
 dependencies {
   compile project(':libs:SmartSync')
-  compile 'com.android.support:appcompat-v7:25.0.0'
   compile 'com.facebook.react:react-native:0.43.1'
 }
 
