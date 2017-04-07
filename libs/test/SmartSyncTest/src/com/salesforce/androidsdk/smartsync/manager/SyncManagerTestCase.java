@@ -148,65 +148,6 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
     }
 
     /**
-     * Check that records were deleted from db
-     *
-     * @param soupName
-     * @param ids
-     * @param idField
-     * @throws JSONException
-     */
-    protected void checkDbDeleted(String soupName, String[] ids, String idField) throws JSONException {
-        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":_soup} FROM {" + soupName + "} WHERE {" + soupName + ":" + idField + "} IN " + makeInClause(ids), ids.length);
-        JSONArray records = smartStore.query(smartStoreQuery, 0);
-        assertEquals("No records should have been returned from smartstore", 0, records.length());
-    }
-
-    /**
-     * Check that records exist in db
-     *
-     * @param soupName
-     * @param ids
-     * @param idField
-     * @throws JSONException
-     */
-    protected void checkDbExist(String soupName, String[] ids, String idField) throws JSONException {
-        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":_soup} FROM {" + soupName + "} WHERE {" + soupName + ":" + idField + "} IN " + makeInClause(ids), ids.length);
-        JSONArray records = smartStore.query(smartStoreQuery, 0);
-        assertEquals("All records should have been returned from smartstore", ids.length, records.length());
-    }
-
-    /**
-     * Check relationships field of children
-     * @param childrenIds
-     * @param expectedParentId
-     * @param soupName
-     * @param idFieldName
-     * @param parentIdFieldName
-     */
-    protected void checkDbRelationships(Collection<String> childrenIds, String expectedParentId, String soupName, String idFieldName, String parentIdFieldName) throws JSONException {
-        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":_soup} FROM {" + soupName + "} WHERE {" + soupName + ":" + idFieldName + "} IN " + makeInClause(childrenIds), childrenIds.size());
-        JSONArray rows = smartStore.query(smartStoreQuery, 0);
-        assertEquals("All records should have been returned from smartstore", childrenIds.size(), rows.length());
-        for (int i=0; i<rows.length(); i++) {
-            JSONObject childRecord = rows.getJSONArray(i).getJSONObject(0);
-            assertEquals("Wrong parent id", expectedParentId, childRecord.getString(parentIdFieldName));
-        }
-    }
-
-
-    protected String makeInClause(String[] values) {
-        return makeInClause(Arrays.asList(values));
-    }
-
-    protected String makeInClause(Collection<String> values) {
-        return "('" + TextUtils.join("', '", values) + "')";
-    }
-
-    protected long trySyncDown(SyncState.MergeMode mergeMode, SyncDownTarget target, String soupName) throws JSONException {
-        return trySyncDown(mergeMode, target, soupName, TOTAL_SIZE_UNKNOWN, 1);
-    }
-
-    /**
      * Sync down helper.
      *
      * @param mergeMode     Merge mode.
@@ -238,6 +179,65 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
             checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100);
         }
         return syncId;
+    }
+
+    /**
+     * Check that records were deleted from db
+     *
+     * @param soupName
+     * @param ids
+     * @param idField
+     * @throws JSONException
+     */
+    protected void checkDbDeleted(String soupName, String[] ids, String idField) throws JSONException {
+        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":_soup} FROM {" + soupName + "} WHERE {" + soupName + ":" + idField + "} IN " + makeInClause(ids), ids.length);
+        JSONArray records = smartStore.query(smartStoreQuery, 0);
+        assertEquals("No records should have been returned from smartstore", 0, records.length());
+    }
+
+    /**
+     * Check that records exist in db
+     *
+     * @param soupName
+     * @param ids
+     * @param idField
+     * @throws JSONException
+     */
+    protected void checkDbExist(String soupName, String[] ids, String idField) throws JSONException {
+        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":_soup} FROM {" + soupName + "} WHERE {" + soupName + ":" + idField + "} IN " + makeInClause(ids), ids.length);
+        JSONArray records = smartStore.query(smartStoreQuery, 0);
+        assertEquals("All records should have been returned from smartstore", ids.length, records.length());
+    }
+
+
+    /**
+     * Check relationships field of children
+     * @param childrenIds
+     * @param expectedParentId
+     * @param soupName
+     * @param idFieldName
+     * @param parentIdFieldName
+     */
+    protected void checkDbRelationships(Collection<String> childrenIds, String expectedParentId, String soupName, String idFieldName, String parentIdFieldName) throws JSONException {
+        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":_soup} FROM {" + soupName + "} WHERE {" + soupName + ":" + idFieldName + "} IN " + makeInClause(childrenIds), childrenIds.size());
+        JSONArray rows = smartStore.query(smartStoreQuery, 0);
+        assertEquals("All records should have been returned from smartstore", childrenIds.size(), rows.length());
+        for (int i=0; i<rows.length(); i++) {
+            JSONObject childRecord = rows.getJSONArray(i).getJSONObject(0);
+            assertEquals("Wrong parent id", expectedParentId, childRecord.getString(parentIdFieldName));
+        }
+    }
+
+    protected String makeInClause(String[] values) {
+        return makeInClause(Arrays.asList(values));
+    }
+
+    protected String makeInClause(Collection<String> values) {
+        return "('" + TextUtils.join("', '", values) + "')";
+    }
+
+    protected long trySyncDown(SyncState.MergeMode mergeMode, SyncDownTarget target, String soupName) throws JSONException {
+        return trySyncDown(mergeMode, target, soupName, TOTAL_SIZE_UNKNOWN, 1);
     }
 
     /**
