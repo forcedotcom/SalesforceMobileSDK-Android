@@ -269,7 +269,7 @@ public class SyncUpTarget extends SyncTarget {
     }
 
     /**
-     * Return true record is more recent than corresponding record on server
+     * Return true if record is more recent than corresponding record on server
      * NB: also return true if both were deleted or if local mod date is missing
      *
      * Used to decide whether a record should be synced up or not when using merge mode leave-if-changed

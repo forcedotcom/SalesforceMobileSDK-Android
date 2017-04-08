@@ -68,7 +68,6 @@ import java.util.concurrent.Executors;
 public class SyncManager {
 
     // Constants
-    public static final int PAGE_SIZE = 2000;
     private static final int UNCHANGED = -1;
     private static final String TAG = "SyncManager";
 
