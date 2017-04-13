@@ -27,6 +27,8 @@
 package com.salesforce.androidsdk.push;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -71,6 +73,9 @@ public class PushMessaging {
     private static final String IN_PROGRESS = "inprogress";
     private static final long DEFAULT_BACKOFF = 30000;
 
+    // background executor
+    private static final ExecutorService threadPool = Executors.newFixedThreadPool(2);
+
     /**
      * Initiates push registration, if the application is not already registered.
      * Otherwise, this method initiates registration/re-registration to the
@@ -111,12 +116,19 @@ public class PushMessaging {
     public static void unregister(Context context, UserAccount account) {
         if (isRegistered(context, account)) {
             setInProgress(context, true, account);
-            InstanceID instanceID = InstanceID.getInstance(context);
-            try {
-                instanceID.deleteInstanceID();
-            } catch (IOException e) {
-                Log.e(TAG, "Error deleting InstanceID", e);
-            }
+            final InstanceID instanceID = InstanceID.getInstance(context);
+
+            threadPool.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        // avoid running on main thread
+                        instanceID.deleteInstanceID();
+                    } catch (IOException e) {
+                        Log.e(TAG, "Error deleting InstanceID", e);
+                    }
+                }
+            });
 
             unregisterSFDCPush(context, account);
         }
