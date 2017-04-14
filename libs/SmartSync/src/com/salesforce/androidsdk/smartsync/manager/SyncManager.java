@@ -257,6 +257,10 @@ public class SyncManager {
                             break;
                     }
                     updateSync(sync, SyncState.Status.DONE, 100, callback);
+                } catch (RestClient.RefreshTokenRevokedException re) {
+                    logger.e(this, "runSync", re);
+                    // Do not do anything - let the logout go through!
+
                 } catch (Exception e) {
                     logger.e(this, "runSync", e);
                     // Update status to failed
