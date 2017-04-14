@@ -155,10 +155,6 @@ public abstract class SalesforceExpandableListActivity extends ExpandableListAct
      * Performs actions on logout complete.
      */
     protected void logoutCompleteActions() {
-		// If refresh token is revoked - ClientManager does a logout that doesn't finish top activity activity or show login
-		if (!isChild()) {
-			recreate();
-		}
     }
 
     /**
