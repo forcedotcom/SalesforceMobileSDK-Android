@@ -65,6 +65,7 @@ public class ServerPickerActivity extends Activity implements
     private void clearCustomUrlSetting() {
     	loginServerManager.reset();
     	rebuildDisplay();
+        urlEditDialog = new CustomServerUrlEditor();
     }
 
     /**
