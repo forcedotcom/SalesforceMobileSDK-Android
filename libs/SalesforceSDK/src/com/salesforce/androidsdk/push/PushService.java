@@ -209,7 +209,7 @@ public class PushService extends IntentService {
 			final Bundle pushMessage = intent.getExtras();
 			final PushNotificationInterface pnInterface = SalesforceSDKManager.getInstance().getPushNotificationReceiver();
 			if (pnInterface != null && pushMessage != null) {
-				pnInterface.onPushMessageReceived(pushMessage);
+				pnInterface.onPushMessageReceived(this, pushMessage);
 			}
 		}
 	}
