@@ -45,6 +45,7 @@ Introduction
 
 **New Distribution Channel**
 - Mobile SDK is now available on jCenter, in our Maven repo [here](https://bintray.com/forcedotcom/salesforcemobilesdk).
+- See [this](https://rwhitleysfdc.wordpress.com/2017/02/14/consuming-mobile-sdk-for-android-through-gradle) blog post for more information.
 
 **Other Technical Improvements**
 - Updated our push notification implementation to conform with the latest GCM standards.
