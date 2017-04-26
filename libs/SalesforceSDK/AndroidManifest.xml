@@ -2,8 +2,8 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.salesforce.androidsdk" 
-	android:versionCode="56"
-	android:versionName="5.1.0">
+	android:versionCode="57"
+	android:versionName="5.2.0.dev">
 
     <uses-sdk android:minSdkVersion="19"
         android:targetSdkVersion="25" />
