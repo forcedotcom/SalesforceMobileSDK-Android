@@ -27,6 +27,7 @@ com.salesforce.androidsdk.smartsync.accounts
 com.salesforce.androidsdk.smartsync.app
 com.salesforce.androidsdk.smartsync.manager
 com.salesforce.androidsdk.smartsync.model
+com.salesforce.androidsdk.smartsync.target
 com.salesforce.androidsdk.smartsync.util
 com.salesforce.androidsdk.ui
 com.salesforce.androidsdk.util
