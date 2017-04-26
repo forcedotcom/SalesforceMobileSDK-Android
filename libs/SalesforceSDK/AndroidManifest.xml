@@ -3,7 +3,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.salesforce.androidsdk" 
 	android:versionCode="56"
-	android:versionName="5.1.0.dev">
+	android:versionName="5.1.0">
 
     <uses-sdk android:minSdkVersion="19"
         android:targetSdkVersion="25" />
