@@ -123,7 +123,7 @@ public class JSONObjectHelper {
 	}
 
 	/**
-	 * Given JSONArray of JSONObject, return list made of values for key
+	 * Given a JSONArray of JSONObject, return list made of values for key
 	 * @param jsonArray
 	 * @param key
 	 * @param <T>
@@ -137,6 +137,35 @@ public class JSONObjectHelper {
 			arr.add((T) jsonArray.getJSONObject(i).get(key));
 		}
 		return arr;
+	}
+
+	/**
+	 * Given an array of JSONObject, return list made of values for key
+	 * @param jsonObjects
+	 * @param key
+	 * @param <T>
+	 * @return
+	 * @throws JSONException
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> List<T> pluck(JSONObject[] jsonObjects, String key) throws JSONException {
+		List<T> arr = new ArrayList<T>();
+		for (JSONObject jsonObject : jsonObjects) {
+			arr.add((T) jsonObject.get(key));
+		}
+		return arr;
+	}
+
+	/**
+	 *
+	 * @param key
+	 * @param value
+	 * @return JSONObject with value for key
+	 */
+	public static JSONObject makeJSONObject(String key, Object value) throws JSONException {
+		JSONObject result = new JSONObject();
+		result.put(key, value);
+		return result;
 	}
 
 }

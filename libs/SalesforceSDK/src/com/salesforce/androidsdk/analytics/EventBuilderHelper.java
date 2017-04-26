@@ -37,6 +37,9 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 /**
  * A simple helper class to facilitate creation of common types of events.
  */
@@ -44,6 +47,9 @@ public class EventBuilderHelper {
 
     private static final String TAG = "EventBuilderHelper";
     private static boolean enabled = true;
+
+    // background executor
+    private static final ExecutorService threadPool = Executors.newFixedThreadPool(2);
 
     /**
      * This method allows event creation/storage to be disabled across the board.
@@ -59,6 +65,34 @@ public class EventBuilderHelper {
     }
 
     /**
+     * Creates and stores an analytics event with the supplied parameters.  By default all createAndStoreEvent's are placed
+     * into a background thread pool for posting.
+     *
+     * @param name Event name.
+     * @param userAccount User account.
+     * @param className Class name or context where the event was generated.
+     * @param attributes Addiitonal attributes.
+     */
+    public static void createAndStoreEvent(final String name, final UserAccount userAccount, final String className,
+            final JSONObject attributes) {
+        // Do nothing if not enabled
+        if (!enabled)
+            return;
+        
+        // don't run on background if this is a test run
+        if (SalesforceSDKManager.getInstance().getIsTestRun()) {
+            createAndStore(name, userAccount, className, attributes);
+        } else {
+            threadPool.execute(new Runnable() {
+                @Override
+                public void run() {
+                    createAndStore(name, userAccount, className, attributes);
+                }
+            });
+        }
+    }
+
+    /**
      * Creates and stores an analytics event with the supplied parameters.
      *
      * @param name Event name.
@@ -66,11 +100,17 @@ public class EventBuilderHelper {
      * @param className Class name or context where the event was generated.
      * @param attributes Addiitonal attributes.
      */
-    public static void createAndStoreEvent(String name, UserAccount userAccount, String className,
+    public static void createAndStoreEventSync(String name, UserAccount userAccount, String className,
                                            JSONObject attributes) {
+        createAndStore(name, userAccount, className, attributes);
+    }
+
+    private static void createAndStore(String name, UserAccount userAccount, String className,
+            JSONObject attributes) {
 
         // Do nothing if not enabled
-        if (!enabled) return;
+        if (!enabled)
+            return;
 
         UserAccount account = userAccount;
         if (account == null) {
@@ -81,7 +121,7 @@ public class EventBuilderHelper {
         }
         final SalesforceAnalyticsManager manager = SalesforceAnalyticsManager.getInstance(account);
         final InstrumentationEventBuilder builder = InstrumentationEventBuilder.getInstance(manager.getAnalyticsManager(),
-                SalesforceSDKManager.getInstance().getAppContext());
+                                                                                            SalesforceSDKManager.getInstance().getAppContext());
         builder.name(name);
         builder.startTime(System.currentTimeMillis());
         final JSONObject page = new JSONObject();

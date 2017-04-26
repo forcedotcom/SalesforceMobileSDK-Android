@@ -138,7 +138,7 @@ public class SmartStorePlugin extends ForcePlugin {
 			public void run() {
 
 				// All smart store action need to be serialized
-				synchronized (SmartStorePlugin.class) {
+				synchronized (this) {
 					try {
 						switch (action) {
 		        		  case pgAlterSoup:             alterSoup(args, callbackContext); break;
@@ -319,7 +319,7 @@ public class SmartStorePlugin extends ForcePlugin {
 		String soupName = arg0.getString(SOUP_NAME);
         final SmartStore smartStore = getSmartStore(arg0);
 
-		// Run upsert
+		// Run hasSoup
 		boolean exists = smartStore.hasSoup(soupName);
 		PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, exists);
 		callbackContext.sendPluginResult(pluginResult);

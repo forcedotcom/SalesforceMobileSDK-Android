@@ -33,7 +33,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -42,11 +41,13 @@ import java.util.List;
 public class SyncOptions {
 
     public static final String MERGEMODE = "mergeMode";
+
+	// Fieldlist really belongs in sync up/down target - keeping it here for backwards compatibility
 	public static final String FIELDLIST = "fieldlist";
 
     private MergeMode mergeMode;
 	private List<String> fieldlist;
-	
+
 	/**
 	 * Build SyncOptions from json
 	 * @param options as json
@@ -59,7 +60,7 @@ public class SyncOptions {
 
         String mergeModeStr = JSONObjectHelper.optString(options, MERGEMODE);
         MergeMode mergeMode = mergeModeStr == null ? null : MergeMode.valueOf(mergeModeStr);
-		List<String> fieldlist = toList(options.optJSONArray(FIELDLIST));
+		List<String> fieldlist = JSONObjectHelper.toList(options.optJSONArray(FIELDLIST));
 		return new SyncOptions(fieldlist, mergeMode);
 	}
 
@@ -116,16 +117,5 @@ public class SyncOptions {
     public MergeMode getMergeMode() {
         return mergeMode;
     }
-	
-	@SuppressWarnings("unchecked")
-	private static <T> List<T> toList(JSONArray jsonArray) throws JSONException {
-		if (jsonArray == null) {
-			return null;
-		}
-		List<T> arr = new ArrayList<T>();
-		for (int i=0; i<jsonArray.length(); i++) {
-			arr.add((T) jsonArray.get(i));
-		}
-		return arr;
-	}
+
 }

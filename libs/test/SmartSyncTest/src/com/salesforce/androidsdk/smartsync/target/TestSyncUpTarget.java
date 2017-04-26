@@ -24,9 +24,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.smartsync.manager;
+package com.salesforce.androidsdk.smartsync.target;
 
-import com.salesforce.androidsdk.smartsync.util.SyncUpTarget;
+import android.util.Pair;
+
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.util.Constants;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -34,6 +37,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -92,33 +96,31 @@ public class TestSyncUpTarget extends SyncUpTarget {
     }
 
     @Override
-    public int deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws JSONException, IOException {
+    public int deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws IOException {
         switch (syncBehavior) {
             case SOFT_FAIL_ON_SYNC:
-                return HttpURLConnection.HTTP_BAD_REQUEST;
+                return HttpURLConnection.HTTP_NOT_FOUND;
             case HARD_FAIL_ON_SYNC:
                 throw new RuntimeException("delete hard fail");
             default: // case NO_FAIL:
                 if (actionCollector != null) {
                     actionCollector.deletedRecordIds.add(objectId);
                 }
-
                 return HttpURLConnection.HTTP_OK;
         }
     }
 
     @Override
-    public int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws JSONException, IOException {
+    public int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws IOException {
         switch (syncBehavior) {
             case SOFT_FAIL_ON_SYNC:
-                return HttpURLConnection.HTTP_BAD_REQUEST;
+                return HttpURLConnection.HTTP_NOT_FOUND;
             case HARD_FAIL_ON_SYNC:
                 throw new RuntimeException("update hard fail");
             default: // case NO_FAIL:
                 if (actionCollector != null) {
                     actionCollector.updatedRecordIds.add(objectId);
                 }
-
                 return HttpURLConnection.HTTP_OK;
         }
     }
@@ -131,11 +133,10 @@ public class TestSyncUpTarget extends SyncUpTarget {
         actionCollector = collector;
     }
 
-    static class ActionCollector {
+    public static class ActionCollector {
         public List<String> createdRecordIds = new ArrayList<String>();
         public List<String> updatedRecordIds = new ArrayList<String>();
         public List<String> deletedRecordIds = new ArrayList<String>();
-        public List<String> fetchLastModifiedDateRecordIds = new ArrayList<String>();
     }
 
 }

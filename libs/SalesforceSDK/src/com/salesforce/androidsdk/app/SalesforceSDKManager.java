@@ -91,7 +91,7 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "5.0.1";
+    public static final String SDK_VERSION = "5.1.0";
 
     /**
      * Intent action that specifies that logout was completed.
@@ -103,6 +103,7 @@ public class SalesforceSDKManager {
      */
     private static final String DEFAULT_APP_DISPLAY_NAME = "Salesforce";
     private static final String TAG = "SalesforceSDKManager";
+    protected static String AILTN_APP_NAME;
 
     /**
      * Instance of the SalesforceSDKManager to use for this process.
@@ -164,6 +165,26 @@ public class SalesforceSDKManager {
     }
 
     /**
+     * Sets the app name to be used by the analytics framework.
+     *
+     * @param appName App name.
+     */
+    public static void setAiltnAppName(String appName) {
+        if (!TextUtils.isEmpty(appName)) {
+            AILTN_APP_NAME = appName;
+        }
+    }
+
+    /**
+     * Returns the app name being used by the analytics framework.
+     *
+     * @return App name.
+     */
+    public static String getAiltnAppName() {
+        return AILTN_APP_NAME;
+    }
+
+    /**
      * Protected constructor.
      * @param context Application context.
      * @param keyImpl Implementation for KeyInterface.
@@ -180,6 +201,24 @@ public class SalesforceSDKManager {
             this.loginActivityClass = loginActivity;	
     	}
         this.features  = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+
+        /*
+         * Checks if an analytics app name has already been set by the app.
+         * If not, fetches the default app name to be used and sets it.
+         */
+        final String currentAiltnAppName = getAiltnAppName();
+        if (TextUtils.isEmpty(currentAiltnAppName)) {
+            String ailtnAppName = null;
+            try {
+                final PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+                ailtnAppName = context.getString(packageInfo.applicationInfo.labelRes);
+            } catch (NameNotFoundException e) {
+                Log.e(TAG, "Package not found", e);
+            }
+            if (!TextUtils.isEmpty(ailtnAppName)) {
+                setAiltnAppName(ailtnAppName);
+            }
+        }
     }
 
     /**
@@ -333,6 +372,7 @@ public class SalesforceSDKManager {
     		INSTANCE = new SalesforceSDKManager(context, keyImpl, mainActivity, loginActivity);
     	}
     	initInternal(context);
+        EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
     }
 
 	/**
@@ -351,7 +391,6 @@ public class SalesforceSDKManager {
 
         // Upgrades to the latest version.
         SalesforceSDKUpgradeManager.getInstance().upgrade();
-        EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
     }
 
     /**
@@ -670,7 +709,7 @@ public class SalesforceSDKManager {
         if (accounts == null || accounts.size() == 0) {
         	startLoginPage();
         } else if (accounts.size() == 1) {
-        	userAccMgr.switchToUser(accounts.get(0));
+        	userAccMgr.switchToUser(accounts.get(0), UserAccountManager.USER_SWITCH_TYPE_LOGOUT, null);
         } else {
         	final Intent i = new Intent(context, switcherActivityClass);
     		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

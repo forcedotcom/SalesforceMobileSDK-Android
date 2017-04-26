@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-present, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,28 +24,30 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.push;
+package com.salesforce.androidsdk.smartsync.target;
 
-import android.app.Activity;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.util.SyncState;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.List;
 
 /**
- * This class receives GCM messages. The actual processing of the messages
- * occurs in a service, to avoid blocking the UI thread.
- *
- * @author bhariharan
- * @author ktanna
+ * Interface for advanced sync up target where records are not simply created/updated/deleted
+ * With advanced sync up target, sync manager simply calls the method: syncUpRecord
  */
-public class PushBroadcastReceiver extends BroadcastReceiver {
-
-    @Override
-    public final void onReceive(Context context, Intent intent) {
-        if (intent.getAction().equals(PushService.GCM_REGISTRATION_CALLBACK_INTENT)
-                || intent.getAction().equals(PushService.GCM_RECEIVE_INTENT)) {
-            PushService.runIntentInService(intent);
-            setResult(Activity.RESULT_OK, null, null);
-        }
-    }
+public interface AdvancedSyncUpTarget {
+    /**
+     *
+     * @param syncManager
+     * @param record
+     * @param fieldlist
+     * @param mergeMode
+     * @throws JSONException
+     * @throws IOException
+     */
+    void syncUpRecord(SyncManager syncManager, JSONObject record, List<String> fieldlist, SyncState.MergeMode mergeMode) throws JSONException, IOException;
 }

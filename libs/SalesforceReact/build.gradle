@@ -1,16 +1,26 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.5'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
+    }
+}
+
 apply plugin: 'com.android.library'
 apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 
 dependencies {
   compile project(':libs:SmartSync')
-  compile 'com.android.support:appcompat-v7:23.0.1'
-  compile 'com.facebook.react:react-native:0.35.0'
+  compile 'com.facebook.react:react-native:0.43.1'
 }
 
 android {
   compileSdkVersion 25
-  buildToolsVersion '23.0.1'
+  buildToolsVersion '25.0.0'
 
   sourceSets {
     main {
@@ -99,9 +109,9 @@ bintray {
         licenses = ['Apache-2.0']
         labels = ['android', 'salesforce', 'mobilesdk']
         version {
-            name = '5.0.1'
+            name = '5.1.0'
             released  = new Date()
-            vcsTag = 'v5.0.1'
+            vcsTag = 'v5.1.0'
         }
     }
 }

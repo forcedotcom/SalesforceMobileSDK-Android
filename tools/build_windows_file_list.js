@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var repoUtils = require('../external/shared/node/repoUtils');
+var repoUtils = require('./repoUtils');
 var fs = require('fs');
 var path = require('path');
 
