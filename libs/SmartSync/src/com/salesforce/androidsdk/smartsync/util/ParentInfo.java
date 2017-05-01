@@ -26,10 +26,10 @@
  */
 package com.salesforce.androidsdk.smartsync.util;
 
-import com.salesforce.androidsdk.util.JSONObjectHelper;
-
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 /**
  * Simple object to capture details of parent in parent-child relationship
@@ -71,7 +71,7 @@ public class ParentInfo {
         json.put(SOUP_NAME, soupName);
         json.put(SOBJECT_TYPE, sobjectType);
         json.put(ID_FIELD_NAME, idFieldName);
-        json.put(modificationDateFieldName, modificationDateFieldName);
+        json.put(MODIFICATION_DATE_FIELD_NAME, modificationDateFieldName);
         return json;
     }
 }
