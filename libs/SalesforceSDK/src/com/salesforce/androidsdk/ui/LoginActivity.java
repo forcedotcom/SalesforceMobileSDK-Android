@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import java.util.List;
+
 import android.accounts.AccountAuthenticatorActivity;
 import android.app.ActionBar;
 import android.app.Activity;
@@ -305,13 +307,31 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	@Override
 	public void finish() {
         initAnalyticsManager();
-        SalesforceSDKManager.getInstance().getUserAccountManager().sendUserSwitchIntent();
+        final UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
+        final List<UserAccount> authenticatedUsers = userAccountManager.getAuthenticatedUsers();
+        final int numAuthenticatedUsers = authenticatedUsers == null ? 0 : authenticatedUsers.size();
+
+        final int userSwitchType;
+        if (numAuthenticatedUsers == 1) {
+            // We've already authenticated the first user, so there should be one
+            userSwitchType = UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN;
+        } else if (numAuthenticatedUsers > 1) {
+            // Otherwise we're logging in with an additional user
+            userSwitchType = UserAccountManager.USER_SWITCH_TYPE_LOGIN;
+        } else {
+            // This should never happen but if it does, pass in the "unknown" value
+            userSwitchType = UserAccountManager.USER_SWITCH_TYPE_DEFAULT;
+        }
+
+        userAccountManager.sendUserSwitchIntent(userSwitchType, null);
         super.finish();
 	}
 
     private void initAnalyticsManager() {
         final UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
         final SalesforceAnalyticsManager analyticsManager = SalesforceAnalyticsManager.getInstance(account);
-        analyticsManager.updateLoggingPrefs();
+	if (analyticsManager != null) {
+            analyticsManager.updateLoggingPrefs();
+	}
     }
 }

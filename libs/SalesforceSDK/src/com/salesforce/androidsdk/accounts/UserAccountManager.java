@@ -73,6 +73,42 @@ public class UserAccountManager {
 
 	public static final String USER_SWITCH_INTENT_ACTION = "com.salesforce.USERSWITCHED";
 
+	/**
+	 * Represents how the current user has been switched to, as found in an intent sent to a {@link android.content.BroadcastReceiver}
+	 * filtering {@link #USER_SWITCH_INTENT_ACTION}. User switching including logging in, logging out and switching between authenticated
+	 * users. For backwards compatibility, the case where the last user has logged out is not included, as this currently does not
+	 * send a broadcast.
+	 */
+	public static final String EXTRA_USER_SWITCH_TYPE = "com.salesforce.USER_SWITCH_TYPE";
+
+	/**
+	 * A switch has occurred between two authenticated users.
+	 *
+	 * <p>Use this constant with {@link #EXTRA_USER_SWITCH_TYPE}.</p>
+	 */
+	public static final int USER_SWITCH_TYPE_DEFAULT = -1;
+
+	/**
+	 * The first user has logged in and is being switched to. There were no users authenticated before this switch.
+	 *
+	 * <p>Use this constant with {@link #EXTRA_USER_SWITCH_TYPE}.</p>
+	 */
+	public static final int USER_SWITCH_TYPE_FIRST_LOGIN = 0;
+
+	/**
+	 * An additional user has logged in and is being switched to. There was at least one user authenticated before this switch.
+	 *
+	 * <p>Use this constant with {@link #EXTRA_USER_SWITCH_TYPE}.</p>
+	 */
+	public static final int USER_SWITCH_TYPE_LOGIN = 1;
+
+	/**
+	 * A user has a logged out and another authenticated user is being switched to.
+	 *
+	 * <p>Use this constant with {@link #EXTRA_USER_SWITCH_TYPE}.</p>
+	 */
+	public static final int USER_SWITCH_TYPE_LOGOUT = 2;
+
 	private static UserAccountManager INSTANCE;
 
 	private Context context;
@@ -235,6 +271,21 @@ public class UserAccountManager {
 	 * @param user User account to switch to.
 	 */
 	public void switchToUser(UserAccount user) {
+		// All that's known is that the user is being switched
+		switchToUser(user, USER_SWITCH_TYPE_DEFAULT, null);
+	}
+
+	/**
+	 * Switches to the specified user account.
+	 *
+	 * @param user the user account to switch to
+	 * @param userSwitchType a {@code USER_SWITCH_TYPE} constant
+	 * @param extras a optional Bundle of extras to pass additional
+	 *               information during user switch
+	 *
+	 * @see #switchToUser(UserAccount)
+	 */
+	public void switchToUser(UserAccount user, int userSwitchType, Bundle extras) {
 		if (user == null || !doesUserAccountExist(user)) {
 			switchToNewUser();
 			return;
@@ -253,7 +304,7 @@ public class UserAccountManager {
 		final Account account = cm.getAccountByName(user.getAccountName());
 		storeCurrentUserInfo(user.getUserId(), user.getOrgId());
 		cm.peekRestClient(account);
-		sendUserSwitchIntent();
+		sendUserSwitchIntent(userSwitchType, extras);
 	}
 
 	/**
@@ -453,8 +504,25 @@ public class UserAccountManager {
 	 * Broadcasts an intent that a user switch has occurred.
 	 */
 	public void sendUserSwitchIntent() {
+		// By default, the type of switch is not known
+		sendUserSwitchIntent(USER_SWITCH_TYPE_DEFAULT, null);
+	}
+
+	/**
+	 * Broadcasts an intent that a user switch has occurred.
+	 *
+	 * @param userSwitchType
+	 *         a {@code USER_SWITCH_TYPE} constant
+	 * @param extras
+	 *         an optional Bundle of extras to add to the broadcast intent
+	 */
+	public final void sendUserSwitchIntent(int userSwitchType, Bundle extras) {
 		final Intent intent = new Intent(USER_SWITCH_INTENT_ACTION);
 		intent.setPackage(context.getPackageName());
+		intent.putExtra(EXTRA_USER_SWITCH_TYPE, userSwitchType);
+        if (extras != null) {
+            intent.putExtras(extras);
+        }
 		SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
 	}
 }

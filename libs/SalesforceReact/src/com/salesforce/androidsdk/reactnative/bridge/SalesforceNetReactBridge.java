@@ -134,7 +134,7 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
         // Preparing request
         Map<String, String> additionalHeaders = ReactBridgeHelper.toJavaStringStringMap(headerParams);
-        Map<String, String> queryParamsMap = ReactBridgeHelper.toJavaStringStringMap(queryParams);
+        Map<String, Object> queryParamsMap = ReactBridgeHelper.toJavaMap(queryParams);
         Map<String, Map<String, String>> fileParamsMap = ReactBridgeHelper.toJavaStringMapMap(fileParams);
 
         String urlParams = "";
@@ -159,22 +159,22 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
         return currentActivity != null ? currentActivity.getRestClient() : null;
     }
 
-    private static String buildQueryString(Map<String, String> params) throws UnsupportedEncodingException {
+    private static String buildQueryString(Map<String, Object> params) throws UnsupportedEncodingException {
         StringBuilder sb = new StringBuilder();
-        for(Map.Entry<String, String> entry : params.entrySet()) {
-            sb.append(entry.getKey()).append("=").append(URLEncoder.encode(entry.getValue(), RestRequest.UTF_8)).append("&");
+        for(Map.Entry<String, Object> entry : params.entrySet()) {
+            sb.append(entry.getKey()).append("=").append(URLEncoder.encode(entry.getValue().toString(), RestRequest.UTF_8)).append("&");
         }
         return sb.toString();
     }
 
-    private static RequestBody buildRequestBody(Map<String, String> params, Map<String, Map<String, String>> fileParams) throws URISyntaxException {
+    private static RequestBody buildRequestBody(Map<String, Object> params, Map<String, Map<String, String>> fileParams) throws URISyntaxException {
         if (fileParams.isEmpty()) {
             return RequestBody.create(RestRequest.MEDIA_TYPE_JSON, new JSONObject(params).toString());
         }
         else {
             MultipartBody.Builder builder = new MultipartBody.Builder().setType(MultipartBody.FORM);
-            for (Map.Entry<String, String> entry : params.entrySet()) {
-                builder.addFormDataPart(entry.getKey(), entry.getValue());
+            for (Map.Entry<String, Object> entry : params.entrySet()) {
+                builder.addFormDataPart(entry.getKey(), entry.getValue().toString());
             }
 
             // File params expected to be of the form:

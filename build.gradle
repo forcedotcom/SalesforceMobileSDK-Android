@@ -4,19 +4,18 @@ buildscript {
   }
 
   dependencies {
-    classpath 'com.android.tools.build:gradle:2.2.2'
+    classpath 'com.android.tools.build:gradle:2.3.0'
   }
 }
 
 allprojects {
-  group = 'com.salesforce.androidsdk'
-
+  group = 'com.salesforce.mobilesdk'
+  version = '5.1.0'
   repositories {
     maven {
       // All of React Native (JS, Android binaries) is installed from npm
       url "$rootProject.projectDir/node_modules/react-native/android"
     }
-
     jcenter()
   }
 }

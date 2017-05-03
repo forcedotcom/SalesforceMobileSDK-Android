@@ -130,6 +130,7 @@ public class OAuth2 {
     private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize?display=";
     private static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
     private static final String OAUTH_REVOKE_PATH = "/services/oauth2/revoke?token=";
+    public static final String EMPTY_STRING = "";
 
     /**
      * Build the URL to the authorization web page for this login server.
@@ -149,17 +150,55 @@ public class OAuth2 {
      *
      */
     public static URI getAuthorizationUrl(URI loginServer, String clientId,
-            String callbackUrl, String[] scopes) {
-       return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes, null, null);
+                                          String callbackUrl, String[] scopes) {
+        return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes, null, null);
     }
 
+    /**
+     * Build the URL to the authorization web page for this login server.
+     * @param loginServer
+     * @param clientId
+     * @param callbackUrl
+     * @param scopes
+     * @param clientSecret
+     * @return
+     */
     public static URI getAuthorizationUrl(URI loginServer, String clientId,
-            String callbackUrl, String[] scopes, String clientSecret) {
-    	return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes, clientSecret, null);
+                                          String callbackUrl, String[] scopes, String clientSecret) {
+        return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes, clientSecret, null);
     }
-    
+
+    /**
+     * Build the URL to the authorization web page for this login server.
+     * @param loginServer
+     * @param clientId
+     * @param callbackUrl
+     * @param scopes
+     * @param clientSecret
+     * @param displayType
+     * @return
+     */
+
     public static URI getAuthorizationUrl(URI loginServer, String clientId,
-            String callbackUrl, String[] scopes, String clientSecret, String displayType) {
+                                          String callbackUrl, String[] scopes, String clientSecret, String displayType) {
+        return getAuthorizationUrl(loginServer, clientId,
+                callbackUrl, scopes, clientSecret, displayType,null);
+    }
+
+    /**
+     * Build the URL to the authorization web page for this login server.
+     * @param loginServer
+     * @param clientId
+     * @param callbackUrl
+     * @param scopes
+     * @param clientSecret
+     * @param displayType
+     * @param addlParams
+     * @return
+     */
+    public static URI getAuthorizationUrl(URI loginServer, String clientId,
+                                          String callbackUrl, String[] scopes, String clientSecret, String displayType,
+                                          Map<String,String> addlParams) {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
         sb.append(OAUTH_AUTH_PATH).append(displayType == null ? TOUCH : displayType);
         sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(clientSecret == null ? TOKEN : ACTIVATED_CLIENT_CODE);
@@ -167,20 +206,67 @@ public class OAuth2 {
         if (scopes != null && scopes.length > 0)
             sb.append(AND).append(SCOPE).append(EQUAL).append(Uri.encode(computeScopeParameter(scopes)));
         sb.append(AND).append(REDIRECT_URI).append(EQUAL).append(callbackUrl);
+
+        if(addlParams !=null && addlParams.size() > 0) {
+            for(Map.Entry<String,String> entry : addlParams.entrySet()) {
+                String value = entry.getValue()==null?EMPTY_STRING :entry.getValue();
+                sb.append(AND).append(entry.getKey()).append(EQUAL).append(Uri.encode(value));
+            }
+        }
         return URI.create(sb.toString());
     }
 
+    /**
+     * Build the URL to the authorization web page for this login server.
+     * @param loginServer
+     * @param clientId
+     * @param callbackUrl
+     * @param scopes
+     * @param clientSecret
+     * @param displayType
+     * @param accessToken
+     * @param instanceURL
+     * @return
+     */
     public static URI getAuthorizationUrl(URI loginServer, String clientId,
                                           String callbackUrl, String[] scopes, String clientSecret,
                                           String displayType, String accessToken, String instanceURL) {
+        return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes, clientSecret,
+                displayType, accessToken, instanceURL,null);
+    }
+
+    /**
+     * Build the URL to the authorization web page for this login server.
+     * @param loginServer
+     * @param clientId
+     * @param callbackUrl
+     * @param scopes
+     * @param clientSecret
+     * @param displayType
+     * @param accessToken
+     * @param instanceURL
+     * @param addlParams
+     * @return
+     */
+    public static URI getAuthorizationUrl(URI loginServer, String clientId,
+                                          String callbackUrl, String[] scopes, String clientSecret,
+                                          String displayType, String accessToken, String instanceURL,
+                                          Map<String,String> addlParams) {
         if(accessToken == null || instanceURL == null) {
-            return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes, clientSecret, displayType);
+            return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes, clientSecret, displayType, addlParams);
         }
         final StringBuilder sb = new StringBuilder(instanceURL);
         sb.append(FRONTDOOR);
         sb.append(SID).append(EQUAL).append(accessToken);
         sb.append(AND).append(RETURL).append(EQUAL).append(Uri.encode(getAuthorizationUrl(loginServer,clientId,callbackUrl,
                 scopes, clientSecret, displayType).toString()));
+
+        if(addlParams != null && addlParams.size() > 0) {
+            for(Map.Entry<String,String> entry : addlParams.entrySet()) {
+                String value = entry.getValue()==null? EMPTY_STRING :entry.getValue();
+                sb.append(AND).append(entry.getKey()).append(EQUAL).append(Uri.encode(value));
+            }
+        }
         return URI.create(sb.toString());
     }
 
@@ -223,8 +309,27 @@ public class OAuth2 {
     public static TokenEndpointResponse refreshAuthToken(
             HttpAccess httpAccessor, URI loginServer, String clientId,
             String refreshToken, String clientSecret) throws OAuthFailedException, IOException {
+        return  refreshAuthToken(httpAccessor, loginServer, clientId, refreshToken, clientSecret,null);
+    }
+
+    /**
+     * Get a new auth token using the refresh token.
+     *
+     * @param httpAccessor
+     * @param loginServer
+     * @param clientId
+     * @param refreshToken
+     * @param clientSecret
+     * @param addlParams
+     * @return
+     * @throws OAuthFailedException
+     * @throws IOException
+     */
+    public static TokenEndpointResponse refreshAuthToken(
+            HttpAccess httpAccessor, URI loginServer, String clientId,
+            String refreshToken, String clientSecret,Map<String,String> addlParams) throws OAuthFailedException, IOException {
         FormBody.Builder formBodyBuilder = makeTokenEndpointParams(REFRESH_TOKEN,
-                clientId, clientSecret);
+                clientId, clientSecret, addlParams);
         formBodyBuilder.add(REFRESH_TOKEN, refreshToken);
         formBodyBuilder.add(FORMAT, JSON);
         TokenEndpointResponse tr = makeTokenEndpointRequest(httpAccessor, loginServer, formBodyBuilder);
@@ -362,14 +467,33 @@ public class OAuth2 {
      */
     private static FormBody.Builder makeTokenEndpointParams(
             String grantType, String clientId, String clientSecret) {
+        return makeTokenEndpointParams(grantType, clientId, clientSecret, null);
+    }
+
+    /**
+     *
+     * @param grantType
+     * @param clientId
+     * @param clientSecret
+     * @param addlParams
+     * @return
+     */
+    private static FormBody.Builder makeTokenEndpointParams(
+            String grantType, String clientId, String clientSecret, Map<String,String> addlParams) {
         FormBody.Builder builder = new FormBody.Builder()
                 .add(GRANT_TYPE, grantType)
                 .add(CLIENT_ID, clientId);
         if (clientSecret != null) {
             builder.add(CLIENT_SECRET, clientSecret);
         }
+        if(addlParams != null ) {
+            for(Map.Entry<String,String> entry : addlParams.entrySet()) {
+                builder.add(entry.getKey(),entry.getValue());
+            }
+        }
         return builder;
     }
+
 
     /**
      * Exception thrown when refresh fails.

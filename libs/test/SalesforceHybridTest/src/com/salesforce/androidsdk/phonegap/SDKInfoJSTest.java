@@ -43,7 +43,7 @@ public class SDKInfoJSTest extends JSTestCase {
 
     @Override
     public List<String> getTestNames() {
-    	return Arrays.asList(new String[] {"testGetInfo"});
+    	return Arrays.asList("testGetInfo");
     }
     
     public void testGetInfo()  {
