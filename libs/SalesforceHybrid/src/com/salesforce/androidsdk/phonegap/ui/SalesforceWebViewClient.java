@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.phonegap.ui;
 
+import android.content.Context;
 import android.net.Uri;
 import android.util.Log;
 import android.webkit.WebResourceResponse;
@@ -52,7 +53,7 @@ public class SalesforceWebViewClient extends SystemWebViewClient {
 
     // The first non-reserved URL that's loaded will be considered the app's "home page", for caching purposes.
     protected boolean foundHomeUrl = false;
-    protected SalesforceDroidGapActivity ctx;
+    protected Context ctx;
     protected CordovaWebView cordovaWebView;
 
 	/**
@@ -65,7 +66,7 @@ public class SalesforceWebViewClient extends SystemWebViewClient {
     	cordovaWebView = parentEngine.getCordovaWebView();
     	final CordovaInterface cordova = parentEngine.getCordovaInterface();
     	if (cordova != null) {
-        	ctx = (SalesforceDroidGapActivity) cordova.getActivity();
+        	ctx = cordova.getActivity();
     	}
         final SystemWebView webView = (SystemWebView) parentEngine.getView();
     	final String uaStr = SalesforceSDKManager.getInstance().getUserAgent();
@@ -103,7 +104,7 @@ public class SalesforceWebViewClient extends SystemWebViewClient {
         }
         super.onPageFinished(view, url);
     }
-    
+
     @Override
     public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
     	WebResourceResponse response = super.shouldInterceptRequest(view, url);
@@ -135,12 +136,12 @@ public class SalesforceWebViewClient extends SystemWebViewClient {
 				Log.i(TAG, "Loading local file:" + localUri);
 				return new WebResourceResponse(result.mimeType, "UTF-8", result.inputStream);
 			}
-		} catch (IOException e) {    	
+		} catch (IOException e) {
 			Log.e(TAG, "Invalid localhost url:" + url, e);
-			return new WebResourceResponse("text/plain", "UTF-8", null); 
+			return new WebResourceResponse("text/plain", "UTF-8", null);
 		}
     }
-    
+
     private boolean isFileUnder(String filePath, String dirPath) throws IOException {
     	File file = new File(filePath);
     	File dir = new File(dirPath);
