@@ -26,17 +26,6 @@
  */
 package com.salesforce.androidsdk.phonegap.ui;
 
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
-import android.net.Uri;
-import android.util.Log;
-import android.webkit.WebView;
-
-import com.salesforce.androidsdk.util.EventsObservable;
-import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import com.salesforce.androidsdk.util.UriFragmentParser;
-
 import java.io.File;
 import java.net.HttpURLConnection;
 import java.util.Arrays;
@@ -44,9 +33,20 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.UriFragmentParser;
+
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.net.Uri;
+import android.util.Log;
+import android.webkit.WebView;
+
 /**
  * Helper class for SalesforceWebViewClient.
- * 
+ *
  */
 public class SalesforceWebViewClientHelper {
 
@@ -60,17 +60,17 @@ public class SalesforceWebViewClientHelper {
 
     /**
      * To be called from shouldOverrideUrlLoading.
-     * 
+     *
      * @param ctx
      * @param view
      * @param url
      * @return
      */
-    public static boolean shouldOverrideUrlLoading(SalesforceDroidGapActivity ctx,
+    public static boolean shouldOverrideUrlLoading(Context ctx,
     		WebView view, String url) {
     	final String startURL = SalesforceWebViewClientHelper.isLoginRedirect(url);
-        if (startURL != null && ctx != null) {
-        	ctx.refresh(startURL);
+        if (startURL != null && ctx instanceof SalesforceDroidGapActivity) {
+            ((SalesforceDroidGapActivity) ctx).refresh(startURL);
         	return true;
         } else {
         	return false;
@@ -80,7 +80,7 @@ public class SalesforceWebViewClientHelper {
     /**
      * To be called from onPageFinished.
      * Return true if we have arrived on the actual home page and false otherwise.
-     * 
+     *
      * @param ctx			Context.
      * @param view          The webview initiating the callback.
      * @param url           The url of the page.
@@ -100,7 +100,7 @@ public class SalesforceWebViewClientHelper {
         	return false;
         }
     }
-    
+
     /**
      * @return app's home page
      */
@@ -118,7 +118,7 @@ public class SalesforceWebViewClientHelper {
     	String cachedAppHomeUrl = getAppHomeUrl(ctx);
     	return cachedAppHomeUrl != null && (new File(cachedAppHomeUrl)).exists();
     }
-    
+
     /**
      * Whether the given URL is one of the expected URLs used in the bootstrapping process
      * of the app.  Used for determining the app's "home page" URL.
