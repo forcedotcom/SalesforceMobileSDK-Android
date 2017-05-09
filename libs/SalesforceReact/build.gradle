@@ -15,8 +15,7 @@ apply plugin: 'com.jfrog.bintray'
 
 dependencies {
   compile project(':libs:SmartSync')
-  compile 'com.android.support:appcompat-v7:23.0.1'
-  compile 'com.facebook.react:react-native:0.35.0'
+  compile 'com.facebook.react:react-native:0.43.1'
 }
 
 android {
@@ -110,9 +109,9 @@ bintray {
         licenses = ['Apache-2.0']
         labels = ['android', 'salesforce', 'mobilesdk']
         version {
-            name = '5.1.0'
+            name = '5.2.0'
             released  = new Date()
-            vcsTag = 'v5.1.0'
+            vcsTag = 'v5.2.0'
         }
     }
 }

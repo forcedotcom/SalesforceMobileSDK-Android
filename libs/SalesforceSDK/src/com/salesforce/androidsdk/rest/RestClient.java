@@ -708,15 +708,16 @@ public class RestClient {
             // Then let's try to get a new authToken
             if (authTokenProvider != null) {
                 final String newAuthToken = authTokenProvider.getNewAuthToken();
-                if (newAuthToken != null) {
-                    setAuthToken(newAuthToken);
+
+				if (newAuthToken == null || authTokenProvider.getInstanceUrl() == null) {
+                    throw new RefreshTokenRevokedException("Could not refresh token");
                 }
+
+                // Use new token
+                setAuthToken(newAuthToken);
 
                 // Check if the instanceUrl changed
                 String instanceUrl = authTokenProvider.getInstanceUrl();
-                if (instanceUrl == null) {
-                    throw new IOException("Instance URL is null");
-                }
                 if (!clientInfo.instanceUrl.toString().equalsIgnoreCase(instanceUrl)) {
                     try {
                         // Create a new ClientInfo
@@ -738,4 +739,21 @@ public class RestClient {
             this.clientInfo = clientInfo;
         }
     }
+
+	/**
+	 * Exception thrown when refresh token was found to be revoked
+	 */
+	public static class RefreshTokenRevokedException extends IOException {
+
+		private static final long serialVersionUID = 2L;
+
+		RefreshTokenRevokedException(String msg) {
+			super(msg);
+		}
+
+		public RefreshTokenRevokedException(String msg, Throwable cause) {
+			super(msg, cause);
+		}
+	}
+
 }

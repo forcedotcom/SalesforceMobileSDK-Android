@@ -67,6 +67,7 @@ public class LoginServerManager {
 	private static final String SERVER_NAME = "server_name_%d";
 	private static final String SERVER_URL = "server_url_%d";
 	private static final String IS_CUSTOM = "is_custom_%d";
+    private static final String SERVER_SELECTION_FILE = "server_selection_file";
 
 	private Context ctx;
 	private LoginServer selectedServer;
@@ -85,14 +86,7 @@ public class LoginServerManager {
 		runtimePrefs = ctx.getSharedPreferences(RUNTIME_PREFS_FILE,
 				Context.MODE_PRIVATE);
     	initSharedPrefFile();
-    	final List<LoginServer> allServers = getLoginServers();
-    	selectedServer = new LoginServer("Production", PRODUCTION_LOGIN_URL, false);
-    	if (allServers != null) {
-    		final LoginServer server = allServers.get(0);
-    		if (server != null) {
-    			selectedServer = server;
-    		}
-    	}
+    	selectedServer = getSelectedLoginServer();
     }
 
     /**
@@ -122,6 +116,35 @@ public class LoginServerManager {
      * @return LoginServer instance.
      */
     public LoginServer getSelectedLoginServer() {
+        final SharedPreferences selectedServerPrefs = ctx.getSharedPreferences(SERVER_SELECTION_FILE,
+                Context.MODE_PRIVATE);
+        final String name = selectedServerPrefs.getString(SERVER_NAME, null);
+        final String url = selectedServerPrefs.getString(SERVER_URL, null);
+        boolean isCustom = selectedServerPrefs.getBoolean(IS_CUSTOM, false);
+
+        // Selection has been saved before.
+        if (name != null && url != null) {
+            final LoginServer server = new LoginServer(name, url, isCustom);
+            selectedServer = server;
+        } else {
+
+            // First time selection defaults to the first server on the list.
+            final List<LoginServer> allServers = getLoginServers();
+            if (allServers != null) {
+                final LoginServer server = allServers.get(0);
+                if (server != null) {
+                    selectedServer = server;
+                }
+            }
+
+            // For some reason, if it's still not set, sets it to the default.
+            if (selectedServer == null) {
+                selectedServer = new LoginServer("Production", PRODUCTION_LOGIN_URL, false);
+            }
+
+            // Stores the selection for the future.
+            setSelectedLoginServer(selectedServer);
+        }
     	return selectedServer;
     }
 
@@ -134,6 +157,14 @@ public class LoginServerManager {
     	if (server == null) {
     		return;
     	}
+        final SharedPreferences selectedServerPrefs = ctx.getSharedPreferences(SERVER_SELECTION_FILE,
+                Context.MODE_PRIVATE);
+        final Editor edit = selectedServerPrefs.edit();
+        edit.clear();
+        edit.putString(SERVER_NAME, server.name);
+        edit.putString(SERVER_URL, server.url);
+        edit.putBoolean(IS_CUSTOM, server.isCustom);
+        edit.commit();
     	selectedServer = server;
     }
 
@@ -170,6 +201,11 @@ public class LoginServerManager {
 		edit = runtimePrefs.edit();
 		edit.clear();
 		edit.commit();
+        final SharedPreferences selectedServerPrefs = ctx.getSharedPreferences(SERVER_SELECTION_FILE,
+                Context.MODE_PRIVATE);
+        edit = selectedServerPrefs.edit();
+        edit.clear();
+        edit.commit();
 		initSharedPrefFile();
 	}
 

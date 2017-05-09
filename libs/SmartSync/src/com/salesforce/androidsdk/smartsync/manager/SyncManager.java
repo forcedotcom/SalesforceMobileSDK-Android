@@ -68,7 +68,6 @@ import java.util.concurrent.Executors;
 public class SyncManager {
 
     // Constants
-    public static final int PAGE_SIZE = 2000;
     private static final int UNCHANGED = -1;
     private static final String TAG = "SyncManager";
 
@@ -258,6 +257,10 @@ public class SyncManager {
                             break;
                     }
                     updateSync(sync, SyncState.Status.DONE, 100, callback);
+                } catch (RestClient.RefreshTokenRevokedException re) {
+                    logger.e(this, "runSync", re);
+                    // Do not do anything - let the logout go through!
+
                 } catch (Exception e) {
                     logger.e(this, "runSync", e);
                     // Update status to failed

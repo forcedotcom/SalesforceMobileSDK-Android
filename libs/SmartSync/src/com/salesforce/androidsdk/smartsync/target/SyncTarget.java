@@ -196,7 +196,6 @@ public abstract class SyncTarget {
                 smartStore.beginTransaction();
                 for (int i = 0; i < records.length(); i++) {
                     JSONObject record = new JSONObject(records.getJSONObject(i).toString());
-                    cleanRecord(record);
                     cleanAndSaveInSmartStore(syncManager.getSmartStore(), soupName, record, false);
                 }
                 smartStore.setTransactionSuccessful();
