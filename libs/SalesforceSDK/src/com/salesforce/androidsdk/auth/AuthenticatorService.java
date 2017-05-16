@@ -76,6 +76,7 @@ public class AuthenticatorService extends Service {
     public static final String KEY_DISPLAY_NAME = "display_name";
     public static final String KEY_PHOTO_URL = "photoUrl";
     public static final String KEY_THUMBNAIL_URL = "thumbnailUrl";
+    private static final String FEATURE_REFRESH_TOKEN_FLOW = "RT";
 
     private Authenticator getAuthenticator() {
         if (authenticator == null)
@@ -240,6 +241,7 @@ public class AuthenticatorService extends Service {
             final Bundle resBundle = new Bundle();
             try {
                 final TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT, new URI(loginServer), clientId, refreshToken, clientSecret, addlParamsMap);
+                SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_REFRESH_TOKEN_FLOW);
 
                 // Handle the case where the org has been migrated to a new instance, or has turned on my domains.
                 if (!instServer.equalsIgnoreCase(tr.instanceUrl)) {
