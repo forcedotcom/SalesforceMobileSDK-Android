@@ -26,15 +26,16 @@
  */
 package com.salesforce.androidsdk.push;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.json.JSONObject;
+import android.app.AlarmManager;
+import android.app.IntentService;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
+import android.os.PowerManager;
+import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
@@ -48,16 +49,15 @@ import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 
-import android.app.AlarmManager;
-import android.app.IntentService;
-import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.os.Bundle;
-import android.os.PowerManager;
-import android.util.Log;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This class houses functionality related to push notifications.
@@ -71,6 +71,7 @@ import android.util.Log;
 public class PushService extends IntentService {
 
 	private static final String TAG = "PushService";
+	private static final String FEATURE_PUSH_NOTIFICATIONS = "PN";
 
     // Intent actions.
     public static final String SFDC_REGISTRATION_RETRY_INTENT = "com.salesforce.mobilesdk.c2dm.intent.RETRY";
@@ -286,6 +287,7 @@ public class PushService extends IntentService {
             		id = NOT_ENABLED;
             	}
             	res.consume();
+                SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_PUSH_NOTIFICATIONS);
             	return id;
         	}
     	} catch (Exception e) {
