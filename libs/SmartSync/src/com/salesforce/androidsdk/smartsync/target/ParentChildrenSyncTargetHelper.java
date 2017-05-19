@@ -32,6 +32,7 @@ import android.text.TextUtils;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
 import com.salesforce.androidsdk.smartsync.util.ParentInfo;
@@ -49,6 +50,7 @@ public class ParentChildrenSyncTargetHelper {
     public static final String PARENT = "parent";
     public static final String CHILDREN = "children";
     public static final String RELATIONSHIP_TYPE = "relationshipType";
+    private static final String FEATURE_RELATED_RECORDS = "RR";
 
     /**
      * Enum for relationship types
@@ -60,10 +62,10 @@ public class ParentChildrenSyncTargetHelper {
 
     public static void saveRecordTreesToLocalStore(SyncManager syncManager, SyncTarget target, ParentInfo parentInfo, ChildrenInfo childrenInfo, JSONArray recordTrees) throws JSONException {
         SmartStore smartStore = syncManager.getSmartStore();
+        SmartSyncSDKManager.getInstance().registerUsedAppFeature(FEATURE_RELATED_RECORDS);
         synchronized(smartStore.getDatabase()) {
             try {
                 smartStore.beginTransaction();
-
                 for (int i=0; i<recordTrees.length(); i++) {
                     JSONObject record = recordTrees.getJSONObject(i);
                     JSONObject parent = new JSONObject(record.toString());
@@ -87,11 +89,8 @@ public class ParentChildrenSyncTargetHelper {
                         }
                     }
                 }
-
                 smartStore.setTransactionSuccessful();
-
-            }
-            finally {
+            } finally {
                 smartStore.endTransaction();
             }
         }
@@ -140,5 +139,4 @@ public class ParentChildrenSyncTargetHelper {
 
         return QuerySpec.buildSmartQuerySpec(smartSql, Integer.MAX_VALUE);
     }
-
 }
