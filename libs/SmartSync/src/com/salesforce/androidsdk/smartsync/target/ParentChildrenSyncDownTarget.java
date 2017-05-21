@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.smartsync.target;
 
 import android.text.TextUtils;
 
+import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.target.ParentChildrenSyncTargetHelper.RelationshipType;
 import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
@@ -52,8 +53,6 @@ import java.util.Set;
  */
 public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
 
-    private static final String TAG = "ParentChildrenSyncDownTarget";
-
     public static final String PARENT_FIELDLIST = "parentFieldlist";
     public static final String PARENT_SOQL_FILTER = "parentSoqlFilter";
     public static final String CHILDREN_FIELDLIST = "childrenFieldlist";
@@ -75,10 +74,8 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
                 new ParentInfo(target.getJSONObject(ParentChildrenSyncTargetHelper.PARENT)),
                 JSONObjectHelper.<String>toList(target.optJSONArray(PARENT_FIELDLIST)),
                 target.getString(PARENT_SOQL_FILTER),
-
                 new ChildrenInfo(target.getJSONObject(ParentChildrenSyncTargetHelper.CHILDREN)),
                 JSONObjectHelper.<String>toList(target.optJSONArray(CHILDREN_FIELDLIST)),
-
                 RelationshipType.valueOf(target.getString(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE))
         );
     }
@@ -95,6 +92,7 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
         this.childrenInfo = childrenInfo;
         this.childrenFieldlist = childrenFieldlist;
         this.relationshipType = relationshipType;
+        SmartSyncSDKManager.getInstance().registerUsedAppFeature(ParentChildrenSyncTargetHelper.FEATURE_RELATED_RECORDS);
     }
 
     /**
