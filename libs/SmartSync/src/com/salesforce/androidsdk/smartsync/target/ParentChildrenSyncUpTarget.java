@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.smartsync.target;
 
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.target.ParentChildrenSyncTargetHelper.RelationshipType;
 import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
@@ -57,7 +58,6 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
     // Constants
     public static final String CHILDREN_CREATE_FIELDLIST = "childrenCreateFieldlist";
     public static final String CHILDREN_UPDATE_FIELDLIST = "childrenUpdateFieldlist";
-
     public static final String COMPOSITE_RESPONSE = "compositeResponse";
     public static final String REFERENCE_ID = "referenceId";
     public static final String BODY = "body";
@@ -74,11 +74,9 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                 new ParentInfo(target.getJSONObject(ParentChildrenSyncTargetHelper.PARENT)),
                 JSONObjectHelper.<String>toList(target.optJSONArray(CREATE_FIELDLIST)),
                 JSONObjectHelper.<String>toList(target.optJSONArray(UPDATE_FIELDLIST)),
-
                 new ChildrenInfo(target.getJSONObject(ParentChildrenSyncTargetHelper.CHILDREN)),
                 JSONObjectHelper.<String>toList(target.optJSONArray(CHILDREN_CREATE_FIELDLIST)),
                 JSONObjectHelper.<String>toList(target.optJSONArray(CHILDREN_UPDATE_FIELDLIST)),
-
                 RelationshipType.valueOf(target.getString(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE))
         );
     }
@@ -90,13 +88,13 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                                       List<String> childrenCreateFieldlist,
                                       List<String> childrenUpdateFieldlist,
                                       RelationshipType relationshipType) {
-
         super(parentCreateFieldlist, parentUpdateFieldlist);
         this.parentInfo = parentInfo;
         this.childrenInfo = childrenInfo;
         this.childrenCreateFieldlist = childrenCreateFieldlist;
         this.childrenUpdateFieldlist = childrenUpdateFieldlist;
         this.relationshipType = relationshipType;
+        SmartSyncSDKManager.getInstance().registerUsedAppFeature(ParentChildrenSyncTargetHelper.FEATURE_RELATED_RECORDS);
     }
 
     @Override
