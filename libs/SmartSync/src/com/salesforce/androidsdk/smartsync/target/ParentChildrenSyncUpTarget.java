@@ -449,7 +449,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                 isParentDeleted
         );
 
-        idToLocalTimestamps.put(record.getString(childrenInfo.idFieldName), parentModDate);
+        idToLocalTimestamps.put(record.getString(getIdFieldName()), parentModDate);
 
         JSONArray children = ParentChildrenSyncTargetHelper.getChildrenFromLocalStore(
                 syncManager.getSmartStore(),
