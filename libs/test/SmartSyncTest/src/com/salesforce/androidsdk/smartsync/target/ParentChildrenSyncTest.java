@@ -471,12 +471,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         // Check that db was correctly populated
         checkDb(accountIdToFields, ACCOUNTS_SOUP);
         for (String accountId : accountIdToFields.keySet()) {
-            long accountLocalId = syncManager.getSmartStore().lookupSoupEntryId(ACCOUNTS_SOUP, Constants.ID, accountId);
-            Map<String, Map<String, Object>> contactIdToFields = accountIdContactIdToFields.get(accountId);
-            for (String contactId : contactIdToFields.keySet()) {
-                Map<String, Object> fields = contactIdToFields.get(contactId);
-            }
-            checkDb(contactIdToFields, CONTACTS_SOUP);
+            checkDb(accountIdContactIdToFields.get(accountId), CONTACTS_SOUP);
         }
     }
 
@@ -1556,6 +1551,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         for (JSONObject[] contacts : mapAccountToContacts.values()) {
             for (JSONObject contact : contacts) {
                 contactNames[i] = contact.getString(Constants.LAST_NAME);
+                i++;
             }
         }
 

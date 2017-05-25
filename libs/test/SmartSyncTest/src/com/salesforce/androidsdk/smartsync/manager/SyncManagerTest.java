@@ -1081,6 +1081,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
             expectedFields.put(Constants.DESCRIPTION, idToFields.get(id).get(Constants.DESCRIPTION));
             idToFieldsExpectedOnServer.put(id, expectedFields);
         }
+        checkServer(idToFieldsExpectedOnServer, Constants.ACCOUNT);
     }
 
     /**
