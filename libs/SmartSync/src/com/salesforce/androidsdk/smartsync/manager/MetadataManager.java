@@ -115,7 +115,7 @@ public class MetadataManager {
             return null;
         }
         String uniqueId = account.getUserId();
-        if (UserAccount.INTERNAL_COMMUNITY_ID.equals(communityId)) {
+        if (TextUtils.isEmpty(communityId) || communityId.startsWith(UserAccount.INTERNAL_COMMUNITY_ID)) {
             communityId = null;
         }
         if (!TextUtils.isEmpty(communityId)) {
@@ -157,7 +157,7 @@ public class MetadataManager {
         }
         if (account != null) {
             String uniqueId = account.getUserId();
-            if (UserAccount.INTERNAL_COMMUNITY_ID.equals(communityId)) {
+            if (TextUtils.isEmpty(communityId) || communityId.startsWith(UserAccount.INTERNAL_COMMUNITY_ID)) {
                 communityId = null;
             }
             if (!TextUtils.isEmpty(communityId)) {
