@@ -800,7 +800,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
         // Check that db doesn't show contact entries as locally created anymore
         Map<String, Map<String, Object>> contactIdToFieldsCreated = getIdToFieldsByName(CONTACTS_SOUP, new String[]{Constants.LAST_NAME, ACCOUNT_ID}, Constants.LAST_NAME, contactNames);
-        checkDbStateFlags(contactIdToFieldsCreated.keySet(), false, false, false, ACCOUNTS_SOUP);
+        checkDbStateFlags(contactIdToFieldsCreated.keySet(), false, false, false, CONTACTS_SOUP);
 
         // Check contacts on server
         checkServer(contactIdToFieldsCreated, Constants.CONTACT);
