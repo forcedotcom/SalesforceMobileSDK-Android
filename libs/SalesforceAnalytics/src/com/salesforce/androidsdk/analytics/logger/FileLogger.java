@@ -152,4 +152,27 @@ public class FileLogger {
             addLogLine(logLine);
         }
     }
+
+    /**
+     * Removes the first log line in the file.
+     */
+    public void removeLogLine() {
+        try {
+            file.remove();
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to remove log line", e);
+        }
+    }
+
+    /**
+     * Removes the specified number of log lines from the file in FIFO.
+     *
+     * @param numLines Number of log lines.
+     */
+    public void removeLogLines(int numLines) {
+        int linesToRemove = (getSize() < numLines) ? getSize() : numLines;
+        for (int i = 0; i < linesToRemove; i++) {
+            removeLogLine();
+        }
+    }
 }
