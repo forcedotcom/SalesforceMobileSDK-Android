@@ -733,6 +733,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
             fieldsLocallyUpdated.put(ACCOUNT_ID, accountNameToServerId.get(accountName));
             idToFieldsLocallyUpdated.put(contactId, fieldsLocallyUpdated);
             contactIdToAccountName.put(contactId, accountName);
+            i++;
         }
         updateRecordsLocally(idToFieldsLocallyUpdated, CONTACTS_SOUP);
 
