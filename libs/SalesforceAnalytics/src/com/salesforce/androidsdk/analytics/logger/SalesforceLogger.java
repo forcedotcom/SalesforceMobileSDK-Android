@@ -32,8 +32,11 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.util.Log;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * A simple logger that allows components to log statements of different log levels. This class
@@ -44,6 +47,10 @@ import java.util.Map;
  */
 public class SalesforceLogger {
 
+    private static final String TAG = "SalesforceLogger";
+    private static final String LOG_LINE_FORMAT = "LEVEL: %s, TAG: %s, MESSAGE: %s";
+    private static final String LOG_LINE_FORMAT_WITH_EXCEPTION = "LEVEL: %s, TAG: %s, MESSAGE: %s, EXCEPTION: %s";
+    private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(3);
     private static Map<String, SalesforceLogger> LOGGERS;
 
     /**
@@ -58,7 +65,7 @@ public class SalesforceLogger {
         VERBOSE
     }
 
-    private String componentName;
+    private FileLogger fileLogger;
     private Context context;
     private Level logLevel;
 
@@ -81,12 +88,16 @@ public class SalesforceLogger {
     }
 
     private SalesforceLogger(String componentName, Context context) {
-        this.componentName = componentName;
         this.context = context;
         if (isDebugMode()) {
             logLevel = Level.DEBUG;
         } else {
             logLevel = Level.ERROR;
+        }
+        try {
+            fileLogger = new FileLogger(context, componentName);
+        } catch (IOException e) {
+            Log.e(TAG, "Couldn't create file logger", e);
         }
     }
 
@@ -156,7 +167,9 @@ public class SalesforceLogger {
             default:
                 Log.d(tag, message);
         }
-        logToFile(level, tag, message, null);
+        if (level != Level.OFF) {
+            logToFile(level, tag, message, null);
+        }
     }
 
     /**
@@ -189,10 +202,24 @@ public class SalesforceLogger {
             default:
                 Log.d(tag, message, e);
         }
-        logToFile(level, tag, message, e);
+        if (level != Level.OFF) {
+            logToFile(level, tag, message, e);
+        }
     }
 
-    private void logToFile(Level level, String tag, String message, Throwable e) {
-        // TODO:
+    private void logToFile(final Level level, final String tag, final String message, final Throwable e) {
+        THREAD_POOL.execute(new Runnable() {
+
+            @Override
+            public void run() {
+                if (fileLogger != null) {
+                    if (e != null) {
+                        String.format(LOG_LINE_FORMAT_WITH_EXCEPTION, level, tag, message, Log.getStackTraceString(e));
+                    } else {
+                        String.format(LOG_LINE_FORMAT, level, tag, message);
+                    }
+                }
+            }
+        });
     }
 }
