@@ -35,6 +35,7 @@ import android.util.Log;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -85,6 +86,29 @@ public class SalesforceLogger {
             LOGGERS.put(componentName, logger);
         }
         return LOGGERS.get(componentName);
+    }
+
+    /**
+     * Returns the set of components that have loggers associated with them.
+     *
+     * @return Set of components being logged.
+     */
+    public synchronized static Set<String> getComponents() {
+        if (LOGGERS == null || LOGGERS.size() == 0) {
+            return null;
+        }
+        Set<String> components = LOGGERS.keySet();
+        if (components.size() == 0) {
+            components = null;
+        }
+        return components;
+    }
+
+    /**
+     * Wipes all components currently being logged. Used only by tests.
+     */
+    public synchronized static void flushComponents() {
+        LOGGERS = null;
     }
 
     private SalesforceLogger(String componentName, Context context) {
