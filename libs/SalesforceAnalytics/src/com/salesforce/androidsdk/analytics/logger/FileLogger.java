@@ -30,11 +30,11 @@ import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.squareup.tape.ObjectQueue;
 import com.squareup.tape.QueueFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -46,11 +46,11 @@ public class FileLogger {
 
     private static final String LOG_SUFFIX = "_log";
     private static final String UTF8 = "UTF-8";
+    private static final String ASCII = "US-ASCII";
     private static final String TAG = "FileLogger";
     private static final int MAX_SIZE = 1000;
 
     private QueueFile file;
-    private ObjectQueue<String> queue;
     private int maxSize;
 
     /**
@@ -134,9 +134,9 @@ public class FileLogger {
         if (logLines == null || logLines.size() == 0) {
             return;
         }
-        for (final String logLine : logLines) {
-            addLogLine(logLine);
-        }
+        String[] logLinesArray = new String[logLines.size()];
+        logLines.toArray(logLinesArray);
+        addLogLines(logLinesArray);
     }
 
     /**
@@ -151,6 +151,60 @@ public class FileLogger {
         for (final String logLine : logLines) {
             addLogLine(logLine);
         }
+    }
+
+    /**
+     * Returns a single log line in FIFO.
+     *
+     * @return Log line.
+     */
+    public String readLogLine() {
+        String logLine = null;
+        try {
+            byte[] logLineBytes = file.peek();
+            if (logLineBytes != null && logLineBytes.length > 0) {
+                logLine = new String(logLineBytes, ASCII);
+            }
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to read log line", e);
+        }
+        return logLine;
+    }
+
+    /**
+     * Returns a list of log lines in FIFO and removes them as they are being read.
+     *
+     * @return List of log lines.
+     */
+    public List<String> readAndRemoveLogLinesAsList(int numLines) {
+        List<String> logLines = new ArrayList<>();
+        int linesToRead = (getSize() < numLines) ? getSize() : numLines;
+        for (int i = 0; i < linesToRead; i++) {
+            final String logLine = readLogLine();
+            removeLogLine();
+            if (logLine != null) {
+                logLines.add(logLine);
+            }
+        }
+        if (logLines.size() == 0) {
+            logLines = null;
+        }
+        return logLines;
+    }
+
+    /**
+     * Returns an array of log lines in FIFO and removes them as they are being read.
+     *
+     * @return Array of log lines.
+     */
+    public String[] readAndRemoveLogLinesAsArray(int numLines) {
+        String[] logLinesArray = null;
+        final List<String> logLines = readAndRemoveLogLinesAsList(numLines);
+        if (logLines != null && logLines.size() > 0) {
+            logLinesArray = new String[logLines.size()];
+            logLines.toArray(logLinesArray);
+        }
+        return logLinesArray;
     }
 
     /**
