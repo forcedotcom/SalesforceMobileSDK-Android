@@ -174,6 +174,7 @@ public class FileLogger {
     /**
      * Returns a list of log lines in FIFO and removes them as they are being read.
      *
+     * @param numLines Number of lines to be read.
      * @return List of log lines.
      */
     public List<String> readAndRemoveLogLinesAsList(int numLines) {
@@ -195,6 +196,7 @@ public class FileLogger {
     /**
      * Returns an array of log lines in FIFO and removes them as they are being read.
      *
+     * @param numLines Number of lines to be read.
      * @return Array of log lines.
      */
     public String[] readAndRemoveLogLinesAsArray(int numLines) {
@@ -205,6 +207,24 @@ public class FileLogger {
             logLines.toArray(logLinesArray);
         }
         return logLinesArray;
+    }
+
+    /**
+     * Returns all log lines stored in FIFO and removes them as they are being read.
+     *
+     * @return List of all log lines stored in this file.
+     */
+    public List<String> readAndRemoveFileAsList() {
+        return readAndRemoveLogLinesAsList(getSize());
+    }
+
+    /**
+     * Returns all log lines stored in FIFO and removes them as they are being read.
+     *
+     * @return Array of all log lines stored in this file.
+     */
+    public String[] readAndRemoveFileAsArray() {
+        return readAndRemoveLogLinesAsArray(getSize());
     }
 
     /**

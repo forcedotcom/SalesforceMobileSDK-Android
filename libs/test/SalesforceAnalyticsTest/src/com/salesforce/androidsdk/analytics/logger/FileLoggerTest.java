@@ -225,6 +225,45 @@ public class FileLoggerTest extends InstrumentationTestCase {
     }
 
     /**
+     * Test for reading and removing all log lines as a list in FIFO.
+     *
+     * @throws Exception
+     */
+    public void testReadAndRemoveFileAsList() throws Exception {
+        final List<String> logLines = new ArrayList<>();
+        logLines.add(TEST_LOG_LINE_1);
+        logLines.add(TEST_LOG_LINE_2);
+        logLines.add(TEST_LOG_LINE_3);
+        fileLogger.addLogLines(logLines);
+        int size = fileLogger.getSize();
+        assertEquals("Log file should have 3 entries", 3, size);
+        final List<String> logLinesRead = fileLogger.readAndRemoveFileAsList();
+        assertEquals("Number of log lines read should be 3", 3, logLinesRead.size());
+        assertEquals("Log lines read are different from expected log lines", logLines, logLinesRead);
+        size = fileLogger.getSize();
+        assertEquals("Log file should have no entries", 0, size);
+    }
+
+    /**
+     * Test for reading and removing all log lines as an array in FIFO.
+     *
+     * @throws Exception
+     */
+    public void testReadAndRemoveFileAsArray() throws Exception {
+        final String[] logLines = new String[] {TEST_LOG_LINE_1, TEST_LOG_LINE_2, TEST_LOG_LINE_3};
+        fileLogger.addLogLines(logLines);
+        int size = fileLogger.getSize();
+        assertEquals("Log file should have 3 entries", 3, size);
+        final String[] logLinesRead = fileLogger.readAndRemoveFileAsArray();
+        assertEquals("Number of log lines read should be 3", 3, logLinesRead.length);
+        assertEquals("Log line read is different from expected log line", TEST_LOG_LINE_1, logLinesRead[0]);
+        assertEquals("Log line read is different from expected log line", TEST_LOG_LINE_2, logLinesRead[1]);
+        assertEquals("Log line read is different from expected log line", TEST_LOG_LINE_3, logLinesRead[2]);
+        size = fileLogger.getSize();
+        assertEquals("Log file should have no entries", 0, size);
+    }
+
+    /**
      * Test for the order of reading of log lines.
      *
      * @throws Exception
