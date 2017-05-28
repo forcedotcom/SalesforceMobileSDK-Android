@@ -297,4 +297,22 @@ public class FileLoggerTest extends InstrumentationTestCase {
         final String logLineRead = fileLogger.readLogLine();
         assertEquals("Incorrect log line read", TEST_LOG_LINE_4, logLineRead);
     }
+
+    /**
+     * Test for writing a log line if max size has been set to 0.
+     *
+     * @throws Exception
+     */
+    public void testWriteForMaxSizeZero() throws Exception {
+        final String[] logLines = new String[] {TEST_LOG_LINE_1, TEST_LOG_LINE_2, TEST_LOG_LINE_3};
+        fileLogger.addLogLines(logLines);
+        int size = fileLogger.getSize();
+        assertEquals("Log file should have 3 entries", 3, size);
+        fileLogger.setMaxSize(0);
+        int maxSize = fileLogger.getMaxSize();
+        assertEquals("Max size should be 0", 0, maxSize);
+        fileLogger.addLogLine(TEST_LOG_LINE_4);
+        size = fileLogger.getSize();
+        assertEquals("Log file should have no entries", 0, size);
+    }
 }

@@ -103,6 +103,9 @@ public class FileLogger {
      * @param size Maximum number of log lines.
      */
     public synchronized void setMaxSize(int size) {
+        if (size < 0) {
+            size = 0;
+        }
         maxSize = size;
     }
 
@@ -119,7 +122,9 @@ public class FileLogger {
             while (getSize() >= maxSize) {
                 file.remove();
             }
-            file.add(logLine.getBytes(UTF8));
+            if (maxSize > 0) {
+                file.add(logLine.getBytes(UTF8));
+            }
         } catch (Exception e) {
             Log.e(TAG, "Failed to write log line", e);
         }

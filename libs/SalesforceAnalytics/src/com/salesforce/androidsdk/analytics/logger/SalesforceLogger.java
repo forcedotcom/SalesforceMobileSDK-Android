@@ -121,6 +121,15 @@ public class SalesforceLogger {
     }
 
     /**
+     * Returns the instance of FileLogger associated with this component.
+     *
+     * @return FileLogger instance.
+     */
+    public FileLogger getFileLogger() {
+        return fileLogger;
+    }
+
+    /**
      * Returns the log level currently being used.
      *
      * @return Log level.
@@ -136,6 +145,39 @@ public class SalesforceLogger {
      */
     public synchronized void setLogLevel(Level level) {
         this.logLevel = level;
+    }
+
+    /**
+     * Disables file logging.
+     */
+    public synchronized void disableFileLogging() {
+        if (fileLogger != null) {
+            fileLogger.setMaxSize(0);
+        }
+    }
+
+    /**
+     * Enables file logging.
+     *
+     * @param maxSize Maximum number of log lines allowed to be stored at a time.
+     */
+    public synchronized void enableFileLogging(int maxSize) {
+        if (fileLogger != null) {
+            fileLogger.setMaxSize(maxSize);
+        }
+    }
+
+    /**
+     * Returns if file logging is enabled or not.
+     *
+     * @return True - if enabled, False - otherwise.
+     */
+    public boolean isFileLoggingEnabled() {
+        int maxSize = 0;
+        if (fileLogger != null) {
+            maxSize = fileLogger.getMaxSize();
+        }
+        return (maxSize > 0);
     }
 
     /**
