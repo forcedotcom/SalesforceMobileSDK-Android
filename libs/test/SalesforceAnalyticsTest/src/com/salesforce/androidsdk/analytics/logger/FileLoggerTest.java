@@ -43,6 +43,7 @@ public class FileLoggerTest extends InstrumentationTestCase {
     private static final String TEST_LOG_LINE_1 = "This is test log line 1!";
     private static final String TEST_LOG_LINE_2 = "This is test log line 2!";
     private static final String TEST_LOG_LINE_3 = "This is test log line 3!";
+    private static final String TEST_LOG_LINE_4 = "This is test log line 4!";
     private static final int DEFAULT_MAX_SIZE = 1000;
 
     private Context targetContext;
@@ -275,5 +276,25 @@ public class FileLoggerTest extends InstrumentationTestCase {
         assertEquals("Log file should have 3 entries", 3, size);
         final String logLineRead = fileLogger.readLogLine();
         assertEquals("Incorrect log line was read", TEST_LOG_LINE_1, logLineRead);
+    }
+
+    /**
+     * Test for writing a log line after max size has been reached.
+     *
+     * @throws Exception
+     */
+    public void testWriteAfterMaxSizeReached() throws Exception {
+        final String[] logLines = new String[] {TEST_LOG_LINE_1, TEST_LOG_LINE_2, TEST_LOG_LINE_3};
+        fileLogger.addLogLines(logLines);
+        int size = fileLogger.getSize();
+        assertEquals("Log file should have 3 entries", 3, size);
+        fileLogger.setMaxSize(1);
+        int maxSize = fileLogger.getMaxSize();
+        assertEquals("Max size should be 1", 1, maxSize);
+        fileLogger.addLogLine(TEST_LOG_LINE_4);
+        size = fileLogger.getSize();
+        assertEquals("Log file should have 1 entry", 1, size);
+        final String logLineRead = fileLogger.readLogLine();
+        assertEquals("Incorrect log line read", TEST_LOG_LINE_4, logLineRead);
     }
 }

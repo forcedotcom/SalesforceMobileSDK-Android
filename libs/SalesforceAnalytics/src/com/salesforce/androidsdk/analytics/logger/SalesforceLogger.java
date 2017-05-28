@@ -134,7 +134,7 @@ public class SalesforceLogger {
      *
      * @param level Log level.
      */
-    public void setLogLevel(Level level) {
+    public synchronized void setLogLevel(Level level) {
         this.logLevel = level;
     }
 
@@ -213,11 +213,13 @@ public class SalesforceLogger {
             @Override
             public void run() {
                 if (fileLogger != null) {
+                    String logLine;
                     if (e != null) {
-                        String.format(LOG_LINE_FORMAT_WITH_EXCEPTION, level, tag, message, Log.getStackTraceString(e));
+                        logLine = String.format(LOG_LINE_FORMAT_WITH_EXCEPTION, level, tag, message, Log.getStackTraceString(e));
                     } else {
-                        String.format(LOG_LINE_FORMAT, level, tag, message);
+                        logLine = String.format(LOG_LINE_FORMAT, level, tag, message);
                     }
+                    fileLogger.addLogLine(logLine);
                 }
             }
         });
