@@ -54,7 +54,7 @@ public class SalesforceLogger {
     private static final String TAG = "SalesforceLogger";
     private static final String LOG_LINE_FORMAT = "TIME: %s, LEVEL: %s, TAG: %s, MESSAGE: %s";
     private static final String LOG_LINE_FORMAT_WITH_EXCEPTION = "TIME: %s, LEVEL: %s, TAG: %s, MESSAGE: %s, EXCEPTION: %s";
-    private static final String US_DATE_FORMAT = "yyyy.MM.dd G 'at' HH:mm:ss z";
+    private static final String US_DATE_FORMAT = "MM-dd HH:mm:ss.SSS";
     private static final String SF_LOGGER_PREFS = "sf_logger_prefs";
     private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(1);
     private static Map<String, SalesforceLogger> LOGGERS;
