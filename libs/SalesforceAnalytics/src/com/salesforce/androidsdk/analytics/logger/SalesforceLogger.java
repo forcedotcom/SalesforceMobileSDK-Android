@@ -33,6 +33,8 @@ import android.content.pm.PackageManager;
 import android.util.Log;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -49,8 +51,9 @@ import java.util.concurrent.Executors;
 public class SalesforceLogger {
 
     private static final String TAG = "SalesforceLogger";
-    private static final String LOG_LINE_FORMAT = "LEVEL: %s, TAG: %s, MESSAGE: %s";
-    private static final String LOG_LINE_FORMAT_WITH_EXCEPTION = "LEVEL: %s, TAG: %s, MESSAGE: %s, EXCEPTION: %s";
+    private static final String LOG_LINE_FORMAT = "TIME: %s, LEVEL: %s, TAG: %s, MESSAGE: %s";
+    private static final String LOG_LINE_FORMAT_WITH_EXCEPTION = "TIME: %s, LEVEL: %s, TAG: %s, MESSAGE: %s, EXCEPTION: %s";
+    private static final String US_DATE_FORMAT = "yyyy.MM.dd G 'at' HH:mm:ss z";
     private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(3);
     private static Map<String, SalesforceLogger> LOGGERS;
 
@@ -234,7 +237,7 @@ public class SalesforceLogger {
                 Log.d(tag, message);
         }
         if (level != Level.OFF) {
-            logToFile(level, tag, message, null);
+            logToFile(getTimeFromUTC(), level, tag, message, null);
         }
     }
 
@@ -269,11 +272,11 @@ public class SalesforceLogger {
                 Log.d(tag, message, e);
         }
         if (level != Level.OFF) {
-            logToFile(level, tag, message, e);
+            logToFile(getTimeFromUTC(), level, tag, message, e);
         }
     }
 
-    private void logToFile(final Level level, final String tag, final String message, final Throwable e) {
+    private void logToFile(final String curTime, final Level level, final String tag, final String message, final Throwable e) {
         THREAD_POOL.execute(new Runnable() {
 
             @Override
@@ -281,13 +284,20 @@ public class SalesforceLogger {
                 if (fileLogger != null) {
                     String logLine;
                     if (e != null) {
-                        logLine = String.format(LOG_LINE_FORMAT_WITH_EXCEPTION, level, tag, message, Log.getStackTraceString(e));
+                        logLine = String.format(LOG_LINE_FORMAT_WITH_EXCEPTION, curTime, level, tag, message, Log.getStackTraceString(e));
                     } else {
-                        logLine = String.format(LOG_LINE_FORMAT, level, tag, message);
+                        logLine = String.format(LOG_LINE_FORMAT, curTime, level, tag, message);
                     }
                     fileLogger.addLogLine(logLine);
                 }
             }
         });
+    }
+
+    private String getTimeFromUTC() {
+        long curTime = System.currentTimeMillis();
+        final Date date = new Date(curTime);
+        final SimpleDateFormat dateFormat = new SimpleDateFormat(US_DATE_FORMAT);
+        return dateFormat.format(date);
     }
 }
