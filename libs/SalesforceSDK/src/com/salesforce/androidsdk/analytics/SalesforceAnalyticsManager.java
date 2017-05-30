@@ -109,7 +109,7 @@ public class SalesforceAnalyticsManager {
             return null;
         }
         String uniqueId = account.getUserId();
-        if (UserAccount.INTERNAL_COMMUNITY_ID.equals(communityId)) {
+        if (TextUtils.isEmpty(communityId) || communityId.startsWith(UserAccount.INTERNAL_COMMUNITY_ID)) {
             communityId = null;
         }
         if (!TextUtils.isEmpty(communityId)) {
@@ -157,7 +157,7 @@ public class SalesforceAnalyticsManager {
         }
         if (account != null) {
             String uniqueId = account.getUserId();
-            if (UserAccount.INTERNAL_COMMUNITY_ID.equals(communityId)) {
+            if (TextUtils.isEmpty(communityId) || communityId.startsWith(UserAccount.INTERNAL_COMMUNITY_ID)) {
                 communityId = null;
             }
             if (!TextUtils.isEmpty(communityId)) {
@@ -192,7 +192,7 @@ public class SalesforceAnalyticsManager {
                     final SalesforceAnalyticsManager sfAnalyticsManager = INSTANCES.get(key);
                     if (sfAnalyticsManager != null) {
                         sfAnalyticsManager.analyticsManager.changeEncryptionKey(oldEncryptionKey,
-                                newEncryptionKey);
+                                                                                newEncryptionKey);
                     }
                 }
             }
@@ -374,7 +374,7 @@ public class SalesforceAnalyticsManager {
      * @param publisher Publisher class.
      */
     public void addRemotePublisher(Class<? extends Transform> transformer,
-                                   Class<? extends AnalyticsPublisher> publisher) {
+            Class<? extends AnalyticsPublisher> publisher) {
         if (transformer == null || publisher == null) {
             Log.w(TAG, "Invalid transformer and/or publisher");
             return;
@@ -387,9 +387,9 @@ public class SalesforceAnalyticsManager {
         final DeviceAppAttributes deviceAppAttributes = buildDeviceAppAttributes();
         final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
         analyticsManager = new AnalyticsManager(account.getCommunityLevelFilenameSuffix(),
-                sdkManager.getAppContext(),
-                sdkManager.getEncryptionKeyForPasscode(sdkManager.getPasscodeHash()),
-                deviceAppAttributes);
+                                                sdkManager.getAppContext(),
+                                                sdkManager.getEncryptionKeyForPasscode(sdkManager.getPasscodeHash()),
+                                                deviceAppAttributes);
         eventStoreManager = analyticsManager.getEventStoreManager();
         remotes = new HashMap<Class<? extends Transform>, Class<? extends AnalyticsPublisher>>();
         remotes.put(AILTNTransform.class, AILTNPublisher.class);
@@ -423,7 +423,7 @@ public class SalesforceAnalyticsManager {
         final String deviceId = sdkManager.getDeviceId();
         final String clientId = BootConfig.getBootConfig(context).getRemoteAccessConsumerKey();
         return new DeviceAppAttributes(appVersion, appName, osVersion, osName, appType,
-                mobileSdkVersion, deviceModel, deviceId, clientId);
+                                       mobileSdkVersion, deviceModel, deviceId, clientId);
     }
 
     private synchronized void storeAnalyticsPolicy(boolean enabled) {

@@ -59,7 +59,7 @@ public class UserAccount {
 	public static final String CLIENT_ID = "clientId";
 	public static final String COMMUNITY_ID = "communityId";
 	public static final String COMMUNITY_URL = "communityUrl";
-	public static final String INTERNAL_COMMUNITY_ID = "000000000000000000";
+	public static final String INTERNAL_COMMUNITY_ID = "000000000000000";
 	public static final String INTERNAL_COMMUNITY_PATH = "internal";
     public static final String EMAIL = "email";
     public static final String FIRST_NAME = "first_name";
@@ -452,7 +452,7 @@ public class UserAccount {
 	 */
 	public String getCommunityLevelStoragePath() {
 		String leafDir = INTERNAL_COMMUNITY_PATH;
-		if (!TextUtils.isEmpty(communityId) && !communityId.equals(INTERNAL_COMMUNITY_ID)) {
+		if (!TextUtils.isEmpty(communityId) && !communityId.startsWith(INTERNAL_COMMUNITY_ID)) {
 			leafDir = communityId;
 		}
 		return getCommunityLevelStoragePath(leafDir);
@@ -476,7 +476,7 @@ public class UserAccount {
 		sb.append(userId);
 		sb.append(FORWARD_SLASH);
 		String leafDir = INTERNAL_COMMUNITY_PATH;
-		if (!TextUtils.isEmpty(communityId) && !communityId.equals(INTERNAL_COMMUNITY_ID)) {
+		if (!TextUtils.isEmpty(communityId) && !communityId.startsWith(INTERNAL_COMMUNITY_ID)) {
 			leafDir = communityId;
 		}
 		sb.append(leafDir);
@@ -528,7 +528,7 @@ public class UserAccount {
 	 */
 	public String getCommunityLevelFilenameSuffix() {
 		String leafDir = INTERNAL_COMMUNITY_PATH;
-		if (!TextUtils.isEmpty(communityId) && !communityId.equals(INTERNAL_COMMUNITY_ID)) {
+		if (!TextUtils.isEmpty(communityId) && !communityId.startsWith(INTERNAL_COMMUNITY_ID)) {
 			leafDir = communityId;
 		}
 		return getCommunityLevelFilenameSuffix(leafDir);
@@ -552,7 +552,7 @@ public class UserAccount {
 		sb.append(userId);
 		sb.append(UNDERSCORE);
 		String leafDir = INTERNAL_COMMUNITY_PATH;
-		if (!TextUtils.isEmpty(communityId) && !communityId.equals(INTERNAL_COMMUNITY_ID)) {
+		if (!TextUtils.isEmpty(communityId) && !communityId.startsWith(INTERNAL_COMMUNITY_ID)) {
 			leafDir = communityId;
 		}
 		sb.append(leafDir);
