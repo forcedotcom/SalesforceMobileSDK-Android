@@ -59,7 +59,7 @@ public class UserAccount {
 	public static final String CLIENT_ID = "clientId";
 	public static final String COMMUNITY_ID = "communityId";
 	public static final String COMMUNITY_URL = "communityUrl";
-	public static final String INTERNAL_COMMUNITY_ID = "000000000000000000";
+	public static final String INTERNAL_COMMUNITY_ID = "000000000000000AAA";
 	public static final String INTERNAL_COMMUNITY_PATH = "internal";
     public static final String EMAIL = "email";
     public static final String FIRST_NAME = "first_name";
