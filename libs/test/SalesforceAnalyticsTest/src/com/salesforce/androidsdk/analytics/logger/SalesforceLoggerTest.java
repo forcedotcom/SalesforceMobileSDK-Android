@@ -40,9 +40,8 @@ public class SalesforceLoggerTest extends InstrumentationTestCase {
 
     private static final String TEST_COMPONENT_1 = "TestComponent1";
     private static final String TEST_COMPONENT_2 = "TestComponent2";
-    private static final String TEST_COMPONENT_3 = "TestComponent3";
+
     private Context targetContext;
-    private SalesforceLogger logger;
 
     @Override
     public void setUp() throws Exception {
