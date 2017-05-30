@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.analytics.logger;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -54,6 +55,7 @@ public class SalesforceLogger {
     private static final String LOG_LINE_FORMAT = "TIME: %s, LEVEL: %s, TAG: %s, MESSAGE: %s";
     private static final String LOG_LINE_FORMAT_WITH_EXCEPTION = "TIME: %s, LEVEL: %s, TAG: %s, MESSAGE: %s, EXCEPTION: %s";
     private static final String US_DATE_FORMAT = "yyyy.MM.dd G 'at' HH:mm:ss z";
+    private static final String SF_LOGGER_PREFS = "sf_logger_prefs";
     private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(3);
     private static Map<String, SalesforceLogger> LOGGERS;
 
@@ -71,6 +73,7 @@ public class SalesforceLogger {
 
     private FileLogger fileLogger;
     private Context context;
+    private String componentName;
     private Level logLevel;
 
     /**
@@ -116,11 +119,8 @@ public class SalesforceLogger {
 
     private SalesforceLogger(String componentName, Context context) {
         this.context = context;
-        if (isDebugMode()) {
-            logLevel = Level.DEBUG;
-        } else {
-            logLevel = Level.ERROR;
-        }
+        this.componentName = componentName;
+        readLoggerPrefs();
         try {
             fileLogger = new FileLogger(context, componentName);
         } catch (IOException e) {
@@ -170,8 +170,8 @@ public class SalesforceLogger {
      *
      * @param level Log level.
      */
-    public synchronized void setLogLevel(Level level) {
-        this.logLevel = level;
+    public void setLogLevel(Level level) {
+        storeLoggerPrefs(level);
     }
 
     /**
@@ -299,5 +299,26 @@ public class SalesforceLogger {
         final Date date = new Date(curTime);
         final SimpleDateFormat dateFormat = new SimpleDateFormat(US_DATE_FORMAT);
         return dateFormat.format(date);
+    }
+
+    private synchronized void storeLoggerPrefs(Level level) {
+        final SharedPreferences sp = context.getSharedPreferences(SF_LOGGER_PREFS, Context.MODE_PRIVATE);
+        final SharedPreferences.Editor e = sp.edit();
+        e.putString(componentName, level.toString());
+        e.commit();
+        logLevel = level;
+    }
+
+    private void readLoggerPrefs() {
+        final SharedPreferences sp = context.getSharedPreferences(SF_LOGGER_PREFS, Context.MODE_PRIVATE);
+        Level level = Level.DEBUG;
+        if (!isDebugMode()) {
+            level = Level.ERROR;
+        }
+        if (!sp.contains(componentName)) {
+            storeLoggerPrefs(level);
+        }
+        final String logLevelString = sp.getString(componentName, level.toString());
+        logLevel = Level.valueOf(logLevelString);
     }
 }
