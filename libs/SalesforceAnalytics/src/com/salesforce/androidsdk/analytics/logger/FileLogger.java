@@ -48,7 +48,7 @@ public class FileLogger {
     private static final String UTF8 = "UTF-8";
     private static final String ASCII = "US-ASCII";
     private static final String TAG = "FileLogger";
-    private static final int MAX_SIZE = 1000;
+    private static final int MAX_SIZE = 10000;
 
     private QueueFile file;
     private int maxSize;
