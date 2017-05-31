@@ -276,4 +276,16 @@ public class FileLogger {
         }
         maxSize = sp.getInt(componentName, MAX_SIZE);
     }
+
+    /**
+     * Resets the stored file logger prefs. Should be used ONLY by tests.
+     *
+     * @param context Context.
+     */
+    public synchronized static void resetFileLoggerPrefs(Context context) {
+        final SharedPreferences sp = context.getSharedPreferences(FILE_LOGGER_PREFS, Context.MODE_PRIVATE);
+        final SharedPreferences.Editor e = sp.edit();
+        e.clear();
+        e.commit();
+    }
 }

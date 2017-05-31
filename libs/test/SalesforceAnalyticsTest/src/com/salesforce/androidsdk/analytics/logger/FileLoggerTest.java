@@ -53,6 +53,7 @@ public class FileLoggerTest extends InstrumentationTestCase {
     public void setUp() throws Exception {
         super.setUp();
         targetContext = getInstrumentation().getTargetContext();
+        FileLogger.resetFileLoggerPrefs(targetContext);
         fileLogger = new FileLogger(targetContext, COMPONENT_NAME);
         fileLogger.flushLog();
         int size = fileLogger.getSize();
@@ -61,6 +62,7 @@ public class FileLoggerTest extends InstrumentationTestCase {
 
     @Override
     public void tearDown() throws Exception {
+        FileLogger.resetFileLoggerPrefs(targetContext);
         fileLogger.flushLog();
         super.tearDown();
     }

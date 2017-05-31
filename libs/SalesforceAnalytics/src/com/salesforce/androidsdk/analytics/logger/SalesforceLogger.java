@@ -321,4 +321,16 @@ public class SalesforceLogger {
         final String logLevelString = sp.getString(componentName, level.toString());
         logLevel = Level.valueOf(logLevelString);
     }
+
+    /**
+     * Resets the stored logger prefs. Should be used ONLY by tests.
+     *
+     * @param context Context.
+     */
+    public synchronized static void resetLoggerPrefs(Context context) {
+        final SharedPreferences sp = context.getSharedPreferences(SF_LOGGER_PREFS, Context.MODE_PRIVATE);
+        final SharedPreferences.Editor e = sp.edit();
+        e.clear();
+        e.commit();
+    }
 }

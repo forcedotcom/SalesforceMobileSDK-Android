@@ -48,6 +48,7 @@ public class SalesforceLoggerTest extends InstrumentationTestCase {
         super.setUp();
         targetContext = getInstrumentation().getTargetContext();
         SalesforceLogger.flushComponents();
+        SalesforceLogger.resetLoggerPrefs(targetContext);
         final Set<String> components = SalesforceLogger.getComponents();
         assertNull("No components should be returned", components);
     }
@@ -55,6 +56,7 @@ public class SalesforceLoggerTest extends InstrumentationTestCase {
     @Override
     public void tearDown() throws Exception {
         SalesforceLogger.flushComponents();
+        SalesforceLogger.resetLoggerPrefs(targetContext);
         super.tearDown();
     }
 
