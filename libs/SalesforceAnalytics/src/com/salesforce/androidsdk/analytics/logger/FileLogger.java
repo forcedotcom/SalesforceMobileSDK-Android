@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.analytics.logger;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -47,9 +48,12 @@ public class FileLogger {
     private static final String LOG_SUFFIX = "_log";
     private static final String UTF8 = "UTF-8";
     private static final String ASCII = "US-ASCII";
+    private static final String FILE_LOGGER_PREFS = "sf_file_logger_prefs";
     private static final String TAG = "FileLogger";
     private static final int MAX_SIZE = 10000;
 
+    private Context context;
+    private String componentName;
     private QueueFile file;
     private int maxSize;
 
@@ -61,9 +65,11 @@ public class FileLogger {
      * @throws IOException If file initialization was unsuccessful.
      */
     public FileLogger(Context context, String componentName) throws IOException {
+        this.context = context;
+        this.componentName = componentName;
+        readFileLoggerPrefs();
         final File filename = new File(context.getFilesDir(), componentName + LOG_SUFFIX);
         file = new QueueFile(filename);
-        maxSize = MAX_SIZE;
     }
 
     /**
@@ -102,11 +108,11 @@ public class FileLogger {
      *
      * @param size Maximum number of log lines.
      */
-    public synchronized void setMaxSize(int size) {
+    public void setMaxSize(int size) {
         if (size < 0) {
             size = 0;
         }
-        maxSize = size;
+        storeFileLoggerPrefs(size);
     }
 
     /**
@@ -253,5 +259,33 @@ public class FileLogger {
         for (int i = 0; i < linesToRemove; i++) {
             removeLogLine();
         }
+    }
+
+    private synchronized void storeFileLoggerPrefs(int maxSize) {
+        final SharedPreferences sp = context.getSharedPreferences(FILE_LOGGER_PREFS, Context.MODE_PRIVATE);
+        final SharedPreferences.Editor e = sp.edit();
+        e.putInt(componentName, maxSize);
+        e.commit();
+        this.maxSize = maxSize;
+    }
+
+    private void readFileLoggerPrefs() {
+        final SharedPreferences sp = context.getSharedPreferences(FILE_LOGGER_PREFS, Context.MODE_PRIVATE);
+        if (!sp.contains(componentName)) {
+            storeFileLoggerPrefs(MAX_SIZE);
+        }
+        maxSize = sp.getInt(componentName, MAX_SIZE);
+    }
+
+    /**
+     * Resets the stored file logger prefs. Should be used ONLY by tests.
+     *
+     * @param context Context.
+     */
+    public synchronized static void resetFileLoggerPrefs(Context context) {
+        final SharedPreferences sp = context.getSharedPreferences(FILE_LOGGER_PREFS, Context.MODE_PRIVATE);
+        final SharedPreferences.Editor e = sp.edit();
+        e.clear();
+        e.commit();
     }
 }

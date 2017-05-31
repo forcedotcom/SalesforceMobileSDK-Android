@@ -40,15 +40,15 @@ public class SalesforceLoggerTest extends InstrumentationTestCase {
 
     private static final String TEST_COMPONENT_1 = "TestComponent1";
     private static final String TEST_COMPONENT_2 = "TestComponent2";
-    private static final String TEST_COMPONENT_3 = "TestComponent3";
+
     private Context targetContext;
-    private SalesforceLogger logger;
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
         targetContext = getInstrumentation().getTargetContext();
         SalesforceLogger.flushComponents();
+        SalesforceLogger.resetLoggerPrefs(targetContext);
         final Set<String> components = SalesforceLogger.getComponents();
         assertNull("No components should be returned", components);
     }
@@ -56,6 +56,7 @@ public class SalesforceLoggerTest extends InstrumentationTestCase {
     @Override
     public void tearDown() throws Exception {
         SalesforceLogger.flushComponents();
+        SalesforceLogger.resetLoggerPrefs(targetContext);
         super.tearDown();
     }
 

@@ -27,12 +27,15 @@
 package com.salesforce.androidsdk.analytics.logger;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.util.Log;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -49,9 +52,11 @@ import java.util.concurrent.Executors;
 public class SalesforceLogger {
 
     private static final String TAG = "SalesforceLogger";
-    private static final String LOG_LINE_FORMAT = "LEVEL: %s, TAG: %s, MESSAGE: %s";
-    private static final String LOG_LINE_FORMAT_WITH_EXCEPTION = "LEVEL: %s, TAG: %s, MESSAGE: %s, EXCEPTION: %s";
-    private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(3);
+    private static final String LOG_LINE_FORMAT = "TIME: %s, LEVEL: %s, TAG: %s, MESSAGE: %s";
+    private static final String LOG_LINE_FORMAT_WITH_EXCEPTION = "TIME: %s, LEVEL: %s, TAG: %s, MESSAGE: %s, EXCEPTION: %s";
+    private static final String US_DATE_FORMAT = "MM-dd HH:mm:ss.SSS";
+    private static final String SF_LOGGER_PREFS = "sf_logger_prefs";
+    private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(1);
     private static Map<String, SalesforceLogger> LOGGERS;
 
     /**
@@ -68,6 +73,7 @@ public class SalesforceLogger {
 
     private FileLogger fileLogger;
     private Context context;
+    private String componentName;
     private Level logLevel;
 
     /**
@@ -113,11 +119,8 @@ public class SalesforceLogger {
 
     private SalesforceLogger(String componentName, Context context) {
         this.context = context;
-        if (isDebugMode()) {
-            logLevel = Level.DEBUG;
-        } else {
-            logLevel = Level.ERROR;
-        }
+        this.componentName = componentName;
+        readLoggerPrefs();
         try {
             fileLogger = new FileLogger(context, componentName);
         } catch (IOException e) {
@@ -167,8 +170,8 @@ public class SalesforceLogger {
      *
      * @param level Log level.
      */
-    public synchronized void setLogLevel(Level level) {
-        this.logLevel = level;
+    public void setLogLevel(Level level) {
+        storeLoggerPrefs(level);
     }
 
     /**
@@ -234,7 +237,7 @@ public class SalesforceLogger {
                 Log.d(tag, message);
         }
         if (level != Level.OFF) {
-            logToFile(level, tag, message, null);
+            logToFile(getTimeFromUTC(), level, tag, message, null);
         }
     }
 
@@ -269,11 +272,11 @@ public class SalesforceLogger {
                 Log.d(tag, message, e);
         }
         if (level != Level.OFF) {
-            logToFile(level, tag, message, e);
+            logToFile(getTimeFromUTC(), level, tag, message, e);
         }
     }
 
-    private void logToFile(final Level level, final String tag, final String message, final Throwable e) {
+    private void logToFile(final String curTime, final Level level, final String tag, final String message, final Throwable e) {
         THREAD_POOL.execute(new Runnable() {
 
             @Override
@@ -281,13 +284,53 @@ public class SalesforceLogger {
                 if (fileLogger != null) {
                     String logLine;
                     if (e != null) {
-                        logLine = String.format(LOG_LINE_FORMAT_WITH_EXCEPTION, level, tag, message, Log.getStackTraceString(e));
+                        logLine = String.format(LOG_LINE_FORMAT_WITH_EXCEPTION, curTime, level, tag, message, Log.getStackTraceString(e));
                     } else {
-                        logLine = String.format(LOG_LINE_FORMAT, level, tag, message);
+                        logLine = String.format(LOG_LINE_FORMAT, curTime, level, tag, message);
                     }
                     fileLogger.addLogLine(logLine);
                 }
             }
         });
+    }
+
+    private String getTimeFromUTC() {
+        long curTime = System.currentTimeMillis();
+        final Date date = new Date(curTime);
+        final SimpleDateFormat dateFormat = new SimpleDateFormat(US_DATE_FORMAT);
+        return dateFormat.format(date);
+    }
+
+    private synchronized void storeLoggerPrefs(Level level) {
+        final SharedPreferences sp = context.getSharedPreferences(SF_LOGGER_PREFS, Context.MODE_PRIVATE);
+        final SharedPreferences.Editor e = sp.edit();
+        e.putString(componentName, level.toString());
+        e.commit();
+        logLevel = level;
+    }
+
+    private void readLoggerPrefs() {
+        final SharedPreferences sp = context.getSharedPreferences(SF_LOGGER_PREFS, Context.MODE_PRIVATE);
+        Level level = Level.DEBUG;
+        if (!isDebugMode()) {
+            level = Level.ERROR;
+        }
+        if (!sp.contains(componentName)) {
+            storeLoggerPrefs(level);
+        }
+        final String logLevelString = sp.getString(componentName, level.toString());
+        logLevel = Level.valueOf(logLevelString);
+    }
+
+    /**
+     * Resets the stored logger prefs. Should be used ONLY by tests.
+     *
+     * @param context Context.
+     */
+    public synchronized static void resetLoggerPrefs(Context context) {
+        final SharedPreferences sp = context.getSharedPreferences(SF_LOGGER_PREFS, Context.MODE_PRIVATE);
+        final SharedPreferences.Editor e = sp.edit();
+        e.clear();
+        e.commit();
     }
 }

@@ -44,7 +44,7 @@ public class FileLoggerTest extends InstrumentationTestCase {
     private static final String TEST_LOG_LINE_2 = "This is test log line 2!";
     private static final String TEST_LOG_LINE_3 = "This is test log line 3!";
     private static final String TEST_LOG_LINE_4 = "This is test log line 4!";
-    private static final int DEFAULT_MAX_SIZE = 1000;
+    private static final int DEFAULT_MAX_SIZE = 10000;
 
     private Context targetContext;
     private FileLogger fileLogger;
@@ -53,6 +53,7 @@ public class FileLoggerTest extends InstrumentationTestCase {
     public void setUp() throws Exception {
         super.setUp();
         targetContext = getInstrumentation().getTargetContext();
+        FileLogger.resetFileLoggerPrefs(targetContext);
         fileLogger = new FileLogger(targetContext, COMPONENT_NAME);
         fileLogger.flushLog();
         int size = fileLogger.getSize();
@@ -61,6 +62,7 @@ public class FileLoggerTest extends InstrumentationTestCase {
 
     @Override
     public void tearDown() throws Exception {
+        FileLogger.resetFileLoggerPrefs(targetContext);
         fileLogger.flushLog();
         super.tearDown();
     }
