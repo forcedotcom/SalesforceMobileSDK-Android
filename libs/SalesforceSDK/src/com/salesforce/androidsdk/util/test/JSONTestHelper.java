@@ -35,7 +35,6 @@ import org.json.JSONObject;
 
 public class JSONTestHelper {
 
-
 	/**
 	 * Compare two JSON
 	 * @param message

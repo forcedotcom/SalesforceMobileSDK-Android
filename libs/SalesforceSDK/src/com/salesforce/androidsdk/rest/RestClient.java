@@ -26,8 +26,7 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import android.util.Log;
-
+import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
@@ -66,6 +65,7 @@ public class RestClient {
 	private static final String ACCESS_TOKEN = "accessToken";
 	private static final String COMMUNITY_ID = "communityId";
 	private static final String COMMUNITY_URL = "communityUrl";
+	private static final String TAG = "RestClient";
 
 	private static Map<String, OkHttpClient.Builder> OK_CLIENT_BUILDERS;
     private static Map<String, OkHttpClient> OK_CLIENTS;
@@ -484,8 +484,9 @@ public class RestClient {
 				try {
 					uri = new URI(communityUrl);
 				} catch (URISyntaxException e) {
-					Log.e("ClientInfo: getCommunityInstanceUrl",
-							"URISyntaxException thrown on URL: " + communityUrl);
+                    SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
+                            SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                            TAG, "Exception thrown while parsing URL: " + communityUrl, e);
 				}
 				return uri;
 			}
@@ -523,8 +524,9 @@ public class RestClient {
 			try {
 				uri = new URI(resolvedPathStr);
 			} catch (URISyntaxException e) {
-				Log.e("ClientInfo: resolveUrl",
-						"URISyntaxException thrown on URL: " + resolvedPathStr);
+                SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
+                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                        TAG, "Exception thrown while parsing URL: " + resolvedPathStr, e);
 			}
 			return uri;
 		}
@@ -560,10 +562,10 @@ public class RestClient {
                 uri = new URI(path);
             }
             catch (URISyntaxException e) {
-                Log.e("UnauthenticatedC...Info",
-                        "resolveUrl URISyntaxException thrown on URL: " + path);
+                SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
+                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                        TAG, "Exception thrown while parsing URL: " + path, e);
             }
-
             return uri;
         }
     }
@@ -729,7 +731,9 @@ public class RestClient {
                                 clientInfo.displayName, clientInfo.email, clientInfo.photoUrl,
                                 clientInfo.thumbnailUrl, clientInfo.additionalOauthValues);
                     } catch (URISyntaxException ex) {
-                        Log.w("RestClient", "Invalid server URL", ex);
+                        SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
+                                SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                                TAG, "Invalid server URL", ex);
                     }
                 }
             }

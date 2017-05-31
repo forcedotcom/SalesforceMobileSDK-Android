@@ -32,7 +32,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.Handler;
-import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
@@ -596,11 +595,9 @@ public class PasscodeManager  {
     private class LockChecker implements Runnable {
         public void run() {
             try {
-            	if (isEnabled()) {
-            		Log.d("LockChecker:run",  "isLocked:" + locked + " elapsedSinceLastActivity:" + ((now() - lastActivity)/1000) + " timeout:" + (timeoutMs / 1000));
-            	}
-                if (!locked)
+                if (!locked) {
                     lockIfNeeded(null, false);
+                }
             } finally {
                 if (handler != null) {
                     handler.postDelayed(this, 20 * 1000);

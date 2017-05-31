@@ -39,7 +39,6 @@ import android.security.KeyChain;
 import android.security.KeyChainAliasCallback;
 import android.security.KeyChainException;
 import android.text.TextUtils;
-import android.util.Log;
 import android.webkit.ClientCertRequest;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
@@ -52,6 +51,7 @@ import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
+import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
@@ -235,7 +235,9 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
      * @param e Exception.
      */
     protected void onAuthFlowError(String error, String errorDesc, Exception e) {
-        Log.w(TAG, error + ":" + errorDesc);
+        SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
+                SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                TAG, error + ": " + errorDesc, e);
 
         // look for deny. kick them back to login, so clear cookies and repoint browser
         if ("access_denied".equals(error)
@@ -491,7 +493,9 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
             // Failure cases.
             if (backgroundException != null) {
-                Log.w(TAG, backgroundException);
+                SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
+                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                        TAG, "Exception thrown while retrieving token response", backgroundException);
                 onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
                         getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorBody()), backgroundException);
                 callback.finish();
@@ -571,7 +575,9 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
         protected void handleException(Exception ex) {
             if (ex.getMessage() != null) {
-                Log.w(TAG, "handleException", ex);
+                SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
+                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                        TAG, "Exception thrown", ex);
             }
             backgroundException = ex;
         }
@@ -658,7 +664,9 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             final List<UserAccount> users = UserAccountManager.getInstance().getAuthenticatedUsers();
             userAttr.put("numUsers", (users == null) ? 0 : users.size());
         } catch (JSONException e) {
-            Log.e(TAG, "Exception thrown while creating JSON", e);
+            SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
+                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                    TAG, "Exception thrown while creating JSON", e);
         }
 
         callback.onAccountAuthenticatorResult(extras);
@@ -695,7 +703,9 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             }
             EventBuilderHelper.createAndStoreEventSync("addUser", account, TAG, serverAttr);
         } catch (JSONException e) {
-            Log.e(TAG, "Exception thrown while creating JSON", e);
+            SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
+                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                    TAG, "Exception thrown while creating JSON", e);
         }
     }
 

@@ -26,8 +26,7 @@
  */
 package com.salesforce.androidsdk.analytics;
 
-import android.util.Log;
-
+import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
 import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
@@ -93,7 +92,9 @@ public class AILTNPublisher implements AnalyticsPublisher {
                 }
             }
         } catch (JSONException e) {
-            Log.e(TAG, "Exception thrown while constructing event payload", e);
+            SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
+                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                    TAG, "Exception thrown while constructing event payload", e);
             return false;
         }
         return publishLogLines(logLines);
@@ -104,7 +105,9 @@ public class AILTNPublisher implements AnalyticsPublisher {
         try {
             body.put(LOG_LINES, logLines);
         } catch (JSONException e) {
-            Log.e(TAG, "Exception thrown while constructing event payload", e);
+            SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
+                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                    TAG, "Exception thrown while constructing event payload", e);
             return false;
         }
 
@@ -128,9 +131,13 @@ public class AILTNPublisher implements AnalyticsPublisher {
                     requestBody, requestHeaders);
             restResponse = restClient.sendSync(restRequest);
         } catch (ClientManager.AccountInfoNotFoundException e) {
-            Log.e(TAG, "Exception thrown while constructing rest client", e);
+            SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
+                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                    TAG, "Exception thrown while constructing rest client", e);
         } catch (IOException e) {
-            Log.e(TAG, "Exception thrown while making network request", e);
+            SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
+                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                    TAG, "Exception thrown while making network request", e);
         }
         if (restResponse != null && restResponse.isSuccess()) {
             return true;

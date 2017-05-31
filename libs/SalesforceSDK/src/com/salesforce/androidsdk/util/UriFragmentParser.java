@@ -27,19 +27,23 @@
 
 package com.salesforce.androidsdk.util;
 
+import android.net.Uri;
+
+import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
-
-import android.net.Uri;
-import android.util.Log;
 
 /**
  * This parses a Uri fragment that uses a queryString style foo=bar&bar=foo
  * parameter passing (e.g. OAuth2)
  */
 public class UriFragmentParser {
+
+    private static final String TAG = "UriFragmentParser";
 
 	/**
 	 * look for # error fragments and standard url param errors, like the
@@ -70,7 +74,9 @@ public class UriFragmentParser {
 				res.put(URLDecoder.decode(parts[0], "UTF-8"),
 						parts.length > 1 ? URLDecoder.decode(parts[1], "UTF-8") : "");
 			} catch (UnsupportedEncodingException e) {
-				Log.e("UriFragmentParser:parse", "Unsupported encoding", e);
+				SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
+						SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+						TAG, "Unsupported encoding", e);
 			}
 		}
 		return res;

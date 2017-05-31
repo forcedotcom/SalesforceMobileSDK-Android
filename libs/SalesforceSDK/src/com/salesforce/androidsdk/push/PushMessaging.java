@@ -26,15 +26,6 @@
  */
 package com.salesforce.androidsdk.push;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.iid.InstanceID;
-import com.salesforce.androidsdk.accounts.UserAccount;
-
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -43,7 +34,17 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
 import android.os.Bundle;
-import android.util.Log;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.iid.InstanceID;
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+
+import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * This class provides utility functions related to push notifications,
@@ -125,7 +126,9 @@ public class PushMessaging {
                         // avoid running on main thread
                         instanceID.deleteInstanceID();
                     } catch (IOException e) {
-                        Log.e(TAG, "Error deleting InstanceID", e);
+                        SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
+                                SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                                TAG, "Error deleting InstanceID", e);
                     }
                 }
             });
