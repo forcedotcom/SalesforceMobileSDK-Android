@@ -196,7 +196,7 @@ public class SalesforceSDKManager {
     	this.keyImpl = keyImpl;
     	this.mainActivityClass = mainActivity;
     	if (loginActivity != null) {
-            this.loginActivityClass = loginActivity;	
+            this.loginActivityClass = loginActivity;
     	}
         this.features  = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
 
