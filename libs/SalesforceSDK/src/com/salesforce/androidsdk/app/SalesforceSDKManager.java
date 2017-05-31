@@ -44,7 +44,6 @@ import android.os.Build;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.text.TextUtils;
-import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 
@@ -52,6 +51,7 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
+import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
@@ -99,6 +99,11 @@ public class SalesforceSDKManager {
     public static final String LOGOUT_COMPLETE_INTENT_ACTION = "com.salesforce.LOGOUT_COMPLETE";
 
     /**
+     * Component name used by the logger for SalesforceSDK library.
+     */
+    public static final String SF_SDK_COMPONENT_NAME = "SalesforceSDK";
+
+    /**
      * Default app name.
      */
     private static final String DEFAULT_APP_DISPLAY_NAME = "Salesforce";
@@ -118,6 +123,7 @@ public class SalesforceSDKManager {
     protected Context context;
     protected KeyInterface keyImpl;
     protected LoginOptions loginOptions;
+    protected SalesforceLogger logger;
     protected Class<? extends Activity> mainActivityClass;
     protected Class<? extends Activity> loginActivityClass = LoginActivity.class;
     protected Class<? extends PasscodeActivity> passcodeActivityClass = PasscodeActivity.class;
@@ -198,7 +204,8 @@ public class SalesforceSDKManager {
     	if (loginActivity != null) {
             this.loginActivityClass = loginActivity;
     	}
-        this.features  = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+        this.features  = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        this.logger = SalesforceLogger.getLogger(SF_SDK_COMPONENT_NAME, context);
 
         /*
          * Checks if an analytics app name has already been set by the app.
@@ -211,7 +218,7 @@ public class SalesforceSDKManager {
                 final PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
                 ailtnAppName = context.getString(packageInfo.applicationInfo.labelRes);
             } catch (NameNotFoundException e) {
-                Log.e(TAG, "Package not found", e);
+                logger.log(SalesforceLogger.Level.ERROR, TAG, "Package not found", e);
             }
             if (!TextUtils.isEmpty(ailtnAppName)) {
                 setAiltnAppName(ailtnAppName);
@@ -791,7 +798,7 @@ public class SalesforceSDKManager {
             try {
                 context.unregisterReceiver(pushReceiver);
             } catch (Exception e) {
-            	Log.e("SalesforceSDKManager", "Exception occurred while un-registering.", e);
+                logger.log(SalesforceLogger.Level.ERROR, TAG, "Exception occurred while unregistering", e);
             }
     		removeAccount(clientMgr, showLoginPage, refreshToken, clientId, loginServer, account, frontActivity);
         }
@@ -963,11 +970,11 @@ public class SalesforceSDKManager {
             appName = context.getString(packageInfo.applicationInfo.labelRes);
             appVersion = packageInfo.versionName;
         } catch (NameNotFoundException e) {
-            Log.w("SalesforceSDKManager", e);
+            logger.log(SalesforceLogger.Level.WARN, TAG, "Package info could not be retrieved", e);
         } catch (Resources.NotFoundException nfe) {
 
     	   	// A test harness such as Gradle does NOT have an application name.
-            Log.w("SalesforceSDKManager", nfe);
+            logger.log(SalesforceLogger.Level.WARN, TAG, "Package info could not be retrieved", nfe);
         }
         String appTypeWithQualifier = getAppType() + qualifier;
         return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s",
@@ -1074,7 +1081,7 @@ public class SalesforceSDKManager {
 	        try {
 	        	OAuth2.revokeRefreshToken(HttpAccess.DEFAULT, new URI(loginServer), refreshToken);
 	        } catch (Exception e) {
-	        	Log.w("SalesforceSDKManager", e);
+                logger.log(SalesforceLogger.Level.WARN, TAG, "Revoking token failed", e);
 	        }
 	        return null;
 		}
