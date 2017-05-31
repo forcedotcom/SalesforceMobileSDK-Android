@@ -141,7 +141,7 @@ public class MapUtil {
                     jsonObject.put(key, map.get(key));
                 } catch (JSONException e) {
                     SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                            SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                            SalesforceSDKManager.getInstance().getAppContext()).e(
                             TAG, "Exception thrown while creating JSON object", e);
                 }
             }

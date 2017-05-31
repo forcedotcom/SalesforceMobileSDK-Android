@@ -357,7 +357,7 @@ public class OAuth2 {
             httpAccessor.getOkHttpClient().newCall(request).execute();
         } catch (IOException e) {
             SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                    SalesforceSDKManager.getInstance().getAppContext()).w(
                     TAG, "Exception thrown while revoking refresh token", e);
         }
     }
@@ -582,7 +582,7 @@ public class OAuth2 {
                 }
             } catch (Exception e) {
                 SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                        SalesforceSDKManager.getInstance().getAppContext()).w(
                         TAG, "Could not parse identity response", e);
             }
         }
@@ -604,7 +604,7 @@ public class OAuth2 {
                         .getString(ERROR_DESCRIPTION);
             } catch (Exception e) {
                 SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                        SalesforceSDKManager.getInstance().getAppContext()).w(
                         TAG, "Could not parse token error response", e);
             }
         }
@@ -660,7 +660,7 @@ public class OAuth2 {
                 }
             } catch (Exception e) {
                 SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                        SalesforceSDKManager.getInstance().getAppContext()).w(
                         TAG, "Could not parse token endpoint response", e);
             }
         }
@@ -702,7 +702,7 @@ public class OAuth2 {
                 }
             } catch (Exception e) {
                 SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                        SalesforceSDKManager.getInstance().getAppContext()).w(
                         TAG, "Could not parse token endpoint response", e);
             }
         }

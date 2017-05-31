@@ -75,7 +75,7 @@ public class UriFragmentParser {
 						parts.length > 1 ? URLDecoder.decode(parts[1], "UTF-8") : "");
 			} catch (UnsupportedEncodingException e) {
 				SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-						SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+						SalesforceSDKManager.getInstance().getAppContext()).e(
 						TAG, "Unsupported encoding", e);
 			}
 		}

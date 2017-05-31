@@ -110,7 +110,7 @@ public class SalesforceSDKUpgradeManager {
             }
         } catch (NumberFormatException e) {
             SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                    SalesforceSDKManager.getInstance().getAppContext()).e(
                     TAG, "Failed to parse installed version", e);
         }
     }

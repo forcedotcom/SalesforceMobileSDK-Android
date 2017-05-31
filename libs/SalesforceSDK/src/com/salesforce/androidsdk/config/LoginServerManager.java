@@ -239,7 +239,7 @@ public class LoginServerManager {
 			mdmLoginServers = runtimeConfig.getStringArray(ConfigKey.AppServiceHosts);
 		} catch (Exception e) {
 			SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-					SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+					SalesforceSDKManager.getInstance().getAppContext()).w(
 					TAG, "Exception thrown while attempting to read array, attempting to read string value instead", e);
 		}
 		if (mdmLoginServers == null) {
@@ -255,7 +255,7 @@ public class LoginServerManager {
 				mdmLoginServersLabels = runtimeConfig.getStringArray(ConfigKey.AppServiceHostLabels);
 			} catch (Exception e) {
                 SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                        SalesforceSDKManager.getInstance().getAppContext()).w(
                         TAG, "Exception thrown while attempting to read array, attempting to read string value instead", e);
 			}
 			if (mdmLoginServersLabels == null) {
@@ -266,7 +266,7 @@ public class LoginServerManager {
 			}
 			if (mdmLoginServersLabels == null || mdmLoginServersLabels.length != mdmLoginServers.length) {
                 SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                        SalesforceSDKManager.getInstance().getAppContext()).w(
                         TAG, "No login servers labels provided or wrong number of login servers labels provided - Using URLs for the labels");
 				mdmLoginServersLabels = mdmLoginServers;
 			}
@@ -335,11 +335,11 @@ public class LoginServerManager {
 					eventType = xml.next();
 				} catch (XmlPullParserException e) {
                     SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                            SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                            SalesforceSDKManager.getInstance().getAppContext()).w(
                             TAG, "Exception thrown while parsing XML", e);
 				} catch (IOException e) {
                     SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                            SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                            SalesforceSDKManager.getInstance().getAppContext()).w(
                             TAG, "Exception thrown while parsing XML", e);
 				}
 			}

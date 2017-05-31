@@ -218,7 +218,7 @@ public class SalesforceSDKManager {
                 final PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
                 ailtnAppName = context.getString(packageInfo.applicationInfo.labelRes);
             } catch (NameNotFoundException e) {
-                logger.log(SalesforceLogger.Level.ERROR, TAG, "Package not found", e);
+                logger.e(TAG, "Package not found", e);
             }
             if (!TextUtils.isEmpty(ailtnAppName)) {
                 setAiltnAppName(ailtnAppName);
@@ -798,7 +798,7 @@ public class SalesforceSDKManager {
             try {
                 context.unregisterReceiver(pushReceiver);
             } catch (Exception e) {
-                logger.log(SalesforceLogger.Level.ERROR, TAG, "Exception occurred while unregistering", e);
+                logger.e(TAG, "Exception occurred while unregistering", e);
             }
     		removeAccount(clientMgr, showLoginPage, refreshToken, clientId, loginServer, account, frontActivity);
         }
@@ -970,11 +970,11 @@ public class SalesforceSDKManager {
             appName = context.getString(packageInfo.applicationInfo.labelRes);
             appVersion = packageInfo.versionName;
         } catch (NameNotFoundException e) {
-            logger.log(SalesforceLogger.Level.WARN, TAG, "Package info could not be retrieved", e);
+            logger.w(TAG, "Package info could not be retrieved", e);
         } catch (Resources.NotFoundException nfe) {
 
     	   	// A test harness such as Gradle does NOT have an application name.
-            logger.log(SalesforceLogger.Level.WARN, TAG, "Package info could not be retrieved", nfe);
+            logger.w(TAG, "Package info could not be retrieved", nfe);
         }
         String appTypeWithQualifier = getAppType() + qualifier;
         return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s",
@@ -1081,7 +1081,7 @@ public class SalesforceSDKManager {
 	        try {
 	        	OAuth2.revokeRefreshToken(HttpAccess.DEFAULT, new URI(loginServer), refreshToken);
 	        } catch (Exception e) {
-                logger.log(SalesforceLogger.Level.WARN, TAG, "Revoking token failed", e);
+                logger.w(TAG, "Revoking token failed", e);
 	        }
 	        return null;
 		}

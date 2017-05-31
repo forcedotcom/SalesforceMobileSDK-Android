@@ -142,7 +142,7 @@ public class RestResponse {
 			consume();
 		} catch (IOException e) {
 			SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-					SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+					SalesforceSDKManager.getInstance().getAppContext()).e(
 					TAG, "Content could not be written to a byte array", e);
 		}
 	}
@@ -261,7 +261,7 @@ public class RestResponse {
 			return asString();
 		} catch (Exception e) {
             SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                    SalesforceSDKManager.getInstance().getAppContext()).e(
                     TAG, "Exception thrown while converting to string", e);
 			return ((response == null) ? "" : response.toString());
 		}

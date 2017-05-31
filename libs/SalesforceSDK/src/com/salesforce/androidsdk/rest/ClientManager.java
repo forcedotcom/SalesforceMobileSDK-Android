@@ -107,7 +107,7 @@ public class ClientManager {
         // No account found - let's add one - the AuthenticatorService add account method will start the login activity
         if (acc == null) {
             SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.INFO,
+                    SalesforceSDKManager.getInstance().getAppContext()).i(
                     TAG, "No account of type " + accountType + " found");
             accountManager.addAccount(getAccountType(),
                     AccountManager.KEY_AUTHTOKEN, null /*required features*/, options,
@@ -118,7 +118,7 @@ public class ClientManager {
         // Account found
         else {
             SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.INFO,
+                    SalesforceSDKManager.getInstance().getAppContext()).i(
                     TAG, "Found account of type " + accountType);
             accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN,
                     options, activityContext, new AccMgrCallback(restClientCallback), null /* handler */);
@@ -163,14 +163,14 @@ public class ClientManager {
         if (acc == null) {
             AccountInfoNotFoundException e = new AccountInfoNotFoundException("No user account found");
             SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.INFO,
+                    SalesforceSDKManager.getInstance().getAppContext()).i(
                     TAG, "No user account found", e);
             throw e;
         }
         if (SalesforceSDKManager.getInstance().isLoggingOut()) {
         	AccountInfoNotFoundException e = new AccountInfoNotFoundException("User is logging out");
             SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.INFO,
+                    SalesforceSDKManager.getInstance().getAppContext()).i(
                     TAG, "User is logging out", e);
             throw e;
         }
@@ -250,7 +250,7 @@ public class ClientManager {
             return new RestClient(clientInfo, authToken, HttpAccess.DEFAULT, authTokenProvider);
         } catch (URISyntaxException e) {
             SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                    SalesforceSDKManager.getInstance().getAppContext()).w(
                     TAG, "Invalid server URL", e);
             throw new AccountInfoNotFoundException("invalid server url", e);
         }
@@ -310,7 +310,7 @@ public class ClientManager {
                 f.getResult();
             } catch (Exception ex) {
                 SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                        SalesforceSDKManager.getInstance().getAppContext()).w(
                         TAG, "Exception removing old account", ex);
             }
         }
@@ -591,15 +591,15 @@ public class ClientManager {
                 client = peekRestClient();
             } catch (AccountsException e) {
                 SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                        SalesforceSDKManager.getInstance().getAppContext()).w(
                         TAG, "Exception thrown while creating rest client", e);
             } catch (IOException e) {
                 SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                        SalesforceSDKManager.getInstance().getAppContext()).w(
                         TAG, "Exception thrown while creating rest client", e);
             } catch (AccountInfoNotFoundException e) {
                 SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                        SalesforceSDKManager.getInstance().getAppContext()).w(
                         TAG, "Exception thrown while creating rest client", e);
             }
 
@@ -652,7 +652,7 @@ public class ClientManager {
         @Override
         public String getNewAuthToken() {
             SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.INFO,
+                    SalesforceSDKManager.getInstance().getAppContext()).i(
                     TAG, "Need new access token");
             Account acc = clientManager.getAccount();
             if (acc == null)
@@ -665,7 +665,7 @@ public class ClientManager {
                         lock.wait();
                     } catch (InterruptedException e) {
                         SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                                SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                                SalesforceSDKManager.getInstance().getAppContext()).w(
                                 TAG, "Exception thrown while getting new auth token", e);
                     }
                     return lastNewAuthToken;
@@ -682,7 +682,7 @@ public class ClientManager {
                 final Bundle bundle = clientManager.accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN, null, false, null, null).getResult();
                 if (bundle == null) {
                     SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                            SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                            SalesforceSDKManager.getInstance().getAppContext()).w(
                             TAG, "Bundle was null while getting auth token");
                 } else {
                     final String encryptedAuthToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
@@ -721,7 +721,7 @@ public class ClientManager {
                 }
             } catch (Exception e) {
                 SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                        SalesforceSDKManager.getInstance().getAppContext()).w(
                         TAG, "Exception thrown while getting auth token", e);
             } finally {
                 synchronized (lock) {

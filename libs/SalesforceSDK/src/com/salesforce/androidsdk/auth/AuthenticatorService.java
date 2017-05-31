@@ -319,18 +319,18 @@ public class AuthenticatorService extends Service {
                 resBundle.putString(AuthenticatorService.KEY_COMMUNITY_URL, encrCommunityUrl);
             } catch (IOException e) {
                 SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                        SalesforceSDKManager.getInstance().getAppContext()).w(
                         TAG, "Exception thrown while getting new auth token", e);
                 throw new NetworkErrorException(e);
             } catch (URISyntaxException ex) {
                 SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                        SalesforceSDKManager.getInstance().getAppContext()).w(
                         TAG, "Exception thrown while getting new auth token", ex);
                 throw new NetworkErrorException(ex);
             } catch (OAuthFailedException ofe) {
                 if (ofe.isRefreshTokenInvalid()) {
                     SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                            SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.INFO,
+                            SalesforceSDKManager.getInstance().getAppContext()).i(
                             TAG, "Invalid Refresh Token: (Error: " + ofe.response.error + ", Status Code: " + ofe.httpStatusCode + ")", ofe);
                     return makeAuthIntentBundle(response, options);
                 }

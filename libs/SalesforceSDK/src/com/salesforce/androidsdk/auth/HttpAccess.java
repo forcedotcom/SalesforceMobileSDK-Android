@@ -121,11 +121,11 @@ public class HttpAccess {
                 builder.sslSocketFactory(SalesforceTLSSocketFactory.getInstance());
             } catch (KeyManagementException e) {
                 SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                        SalesforceSDKManager.getInstance().getAppContext()).e(
                         TAG, "Exception thrown while setting SSL socket factory", e);
             } catch (NoSuchAlgorithmException ne) {
                 SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                        SalesforceSDKManager.getInstance().getAppContext()).e(
                         TAG, "Exception thrown while setting SSL socket factory", ne);
             }
         }

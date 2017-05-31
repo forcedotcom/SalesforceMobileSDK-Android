@@ -611,7 +611,7 @@ public class UserAccount {
                     SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), object);
     	} catch (JSONException e) {
 			SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                    SalesforceSDKManager.getInstance().getAppContext()).e(
                     TAG, "Unable to convert to JSON", e);
     	}
     	return object;

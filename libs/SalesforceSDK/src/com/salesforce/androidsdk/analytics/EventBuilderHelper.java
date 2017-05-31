@@ -128,7 +128,7 @@ public class EventBuilderHelper {
             page.put("context", className);
         } catch (JSONException e) {
             SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                    SalesforceSDKManager.getInstance().getAppContext()).e(
                     TAG, "Exception thrown while building page object", e);
         }
         builder.page(page);
@@ -142,7 +142,7 @@ public class EventBuilderHelper {
             manager.getAnalyticsManager().getEventStoreManager().storeEvent(event);
         } catch (InstrumentationEventBuilder.EventBuilderException e) {
             SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                    SalesforceSDKManager.getInstance().getAppContext()).e(
                     TAG, "Exception thrown while building event", e);
         }
     }

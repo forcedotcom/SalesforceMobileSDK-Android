@@ -93,7 +93,7 @@ public class AILTNPublisher implements AnalyticsPublisher {
             }
         } catch (JSONException e) {
             SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                    SalesforceSDKManager.getInstance().getAppContext()).e(
                     TAG, "Exception thrown while constructing event payload", e);
             return false;
         }
@@ -106,7 +106,7 @@ public class AILTNPublisher implements AnalyticsPublisher {
             body.put(LOG_LINES, logLines);
         } catch (JSONException e) {
             SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                    SalesforceSDKManager.getInstance().getAppContext()).e(
                     TAG, "Exception thrown while constructing event payload", e);
             return false;
         }
@@ -132,11 +132,11 @@ public class AILTNPublisher implements AnalyticsPublisher {
             restResponse = restClient.sendSync(restRequest);
         } catch (ClientManager.AccountInfoNotFoundException e) {
             SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                    SalesforceSDKManager.getInstance().getAppContext()).e(
                     TAG, "Exception thrown while constructing rest client", e);
         } catch (IOException e) {
             SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                    SalesforceSDKManager.getInstance().getAppContext()).e(
                     TAG, "Exception thrown while making network request", e);
         }
         if (restResponse != null && restResponse.isSuccess()) {

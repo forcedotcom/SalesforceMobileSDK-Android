@@ -485,7 +485,7 @@ public class RestClient {
 					uri = new URI(communityUrl);
 				} catch (URISyntaxException e) {
                     SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                            SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                            SalesforceSDKManager.getInstance().getAppContext()).e(
                             TAG, "Exception thrown while parsing URL: " + communityUrl, e);
 				}
 				return uri;
@@ -525,7 +525,7 @@ public class RestClient {
 				uri = new URI(resolvedPathStr);
 			} catch (URISyntaxException e) {
                 SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                        SalesforceSDKManager.getInstance().getAppContext()).e(
                         TAG, "Exception thrown while parsing URL: " + resolvedPathStr, e);
 			}
 			return uri;
@@ -563,7 +563,7 @@ public class RestClient {
             }
             catch (URISyntaxException e) {
                 SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                        SalesforceSDKManager.getInstance().getAppContext()).e(
                         TAG, "Exception thrown while parsing URL: " + path, e);
             }
             return uri;
@@ -732,7 +732,7 @@ public class RestClient {
                                 clientInfo.thumbnailUrl, clientInfo.additionalOauthValues);
                     } catch (URISyntaxException ex) {
                         SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                                SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                                SalesforceSDKManager.getInstance().getAppContext()).w(
                                 TAG, "Invalid server URL", ex);
                     }
                 }

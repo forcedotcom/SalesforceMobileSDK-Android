@@ -58,7 +58,7 @@ public class SFDCRegistrationIntentService extends IntentService {
             PushMessaging.registerSFDCPush(this, account);
         } catch (Exception e) {
             SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                    SalesforceSDKManager.getInstance().getAppContext()).e(
                     TAG, "Error during GCM registration", e);
         }
     }

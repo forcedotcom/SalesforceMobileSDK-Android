@@ -105,7 +105,7 @@ public class RuntimeConfig {
 						}
 					} catch (JSONException e) {
 						SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-								SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+								SalesforceSDKManager.getInstance().getAppContext()).e(
 								TAG, "Exception thrown while creating JSON", e);
 					}
 					EventBuilderHelper.createAndStoreEventSync("mdmConfiguration", null, TAG, attributes);

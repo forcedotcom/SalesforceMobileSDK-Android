@@ -311,7 +311,7 @@ public class SalesforceAnalyticsManager {
                 transformer = transformClass.newInstance();
             } catch (Exception e) {
                 SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                        SalesforceSDKManager.getInstance().getAppContext()).e(
                         TAG, "Exception thrown while instantiating class", e);
             }
             if (transformer != null) {
@@ -328,7 +328,7 @@ public class SalesforceAnalyticsManager {
                     networkPublisher = remotes.get(transformClass).newInstance();
                 } catch (Exception e) {
                     SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                            SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.ERROR,
+                            SalesforceSDKManager.getInstance().getAppContext()).e(
                             TAG, "Exception thrown while instantiating class", e);
                 }
                 if (networkPublisher != null) {
@@ -381,7 +381,7 @@ public class SalesforceAnalyticsManager {
                                    Class<? extends AnalyticsPublisher> publisher) {
         if (transformer == null || publisher == null) {
             SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                    SalesforceSDKManager.getInstance().getAppContext()).w(
                     TAG, "Invalid transformer and/or publisher");
             return;
         }
@@ -416,13 +416,13 @@ public class SalesforceAnalyticsManager {
             appName = SalesforceSDKManager.getAiltnAppName();
         } catch (PackageManager.NameNotFoundException e) {
             SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                    SalesforceSDKManager.getInstance().getAppContext()).w(
                     TAG, "Could not read package info", e);
         } catch (Resources.NotFoundException nfe) {
 
             // A test harness such as Gradle does NOT have an application name.
             SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).log(SalesforceLogger.Level.WARN,
+                    SalesforceSDKManager.getInstance().getAppContext()).w(
                     TAG, "Could not read package info", nfe);
         }
         final String osVersion = Build.VERSION.RELEASE;
