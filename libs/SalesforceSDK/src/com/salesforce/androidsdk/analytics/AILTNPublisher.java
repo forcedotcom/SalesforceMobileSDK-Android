@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.analytics;
 
-import android.util.Log;
-
 import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
@@ -35,6 +33,7 @@ import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -93,7 +92,7 @@ public class AILTNPublisher implements AnalyticsPublisher {
                 }
             }
         } catch (JSONException e) {
-            Log.e(TAG, "Exception thrown while constructing event payload", e);
+            SalesforceSDKLogger.e(TAG, "Exception thrown while constructing event payload", e);
             return false;
         }
         return publishLogLines(logLines);
@@ -104,7 +103,7 @@ public class AILTNPublisher implements AnalyticsPublisher {
         try {
             body.put(LOG_LINES, logLines);
         } catch (JSONException e) {
-            Log.e(TAG, "Exception thrown while constructing event payload", e);
+            SalesforceSDKLogger.e(TAG, "Exception thrown while constructing event payload", e);
             return false;
         }
 
@@ -128,9 +127,9 @@ public class AILTNPublisher implements AnalyticsPublisher {
                     requestBody, requestHeaders);
             restResponse = restClient.sendSync(restRequest);
         } catch (ClientManager.AccountInfoNotFoundException e) {
-            Log.e(TAG, "Exception thrown while constructing rest client", e);
+            SalesforceSDKLogger.e(TAG, "Exception thrown while constructing rest client", e);
         } catch (IOException e) {
-            Log.e(TAG, "Exception thrown while making network request", e);
+            SalesforceSDKLogger.e(TAG, "Exception thrown while making network request", e);
         }
         if (restResponse != null && restResponse.isSuccess()) {
             return true;

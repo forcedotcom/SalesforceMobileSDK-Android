@@ -208,13 +208,111 @@ public class SalesforceLogger {
     }
 
     /**
-     * Logs the message passed in at the level specified.
+     * Logs an error log line.
      *
-     * @param level Log level.
      * @param tag Log tag.
      * @param message Log message.
      */
-    public void log(Level level, String tag, String message) {
+    public void e(String tag, String message) {
+        log(Level.ERROR, tag, message);
+    }
+
+    /**
+     * Logs an error log line.
+     *
+     * @param tag Log tag.
+     * @param message Log message.
+     * @param e Exception to be logged.
+     */
+    public void e(String tag, String message, Throwable e) {
+        log(Level.ERROR, tag, message, e);
+    }
+
+    /**
+     * Logs a warning log line.
+     *
+     * @param tag Log tag.
+     * @param message Log message.
+     */
+    public void w(String tag, String message) {
+        log(Level.WARN, tag, message);
+    }
+
+    /**
+     * Logs a warning log line.
+     *
+     * @param tag Log tag.
+     * @param message Log message.
+     * @param e Exception to be logged.
+     */
+    public void w(String tag, String message, Throwable e) {
+        log(Level.WARN, tag, message, e);
+    }
+
+    /**
+     * Logs an info log line.
+     *
+     * @param tag Log tag.
+     * @param message Log message.
+     */
+    public void i(String tag, String message) {
+        log(Level.INFO, tag, message);
+    }
+
+    /**
+     * Logs an info log line.
+     *
+     * @param tag Log tag.
+     * @param message Log message.
+     * @param e Exception to be logged.
+     */
+    public void i(String tag, String message, Throwable e) {
+        log(Level.INFO, tag, message, e);
+    }
+
+    /**
+     * Logs a debug log line.
+     *
+     * @param tag Log tag.
+     * @param message Log message.
+     */
+    public void d(String tag, String message) {
+        log(Level.DEBUG, tag, message);
+    }
+
+    /**
+     * Logs a debug log line.
+     *
+     * @param tag Log tag.
+     * @param message Log message.
+     * @param e Exception to be logged.
+     */
+    public void d(String tag, String message, Throwable e) {
+        log(Level.DEBUG, tag, message, e);
+    }
+
+    /**
+     * Logs a verbose log line.
+     *
+     * @param tag Log tag.
+     * @param message Log message.
+     */
+    public void v(String tag, String message) {
+        log(Level.VERBOSE, tag, message);
+    }
+
+    /**
+     * Logs a verbose log line.
+     *
+     * @param tag Log tag.
+     * @param message Log message.
+     * @param e Exception to be logged.
+     */
+    public void v(String tag, String message, Throwable e) {
+        log(Level.VERBOSE, tag, message, e);
+    }
+
+    private void log(Level level, String tag, String message) {
         switch (level) {
             case OFF:
                 break;
@@ -241,15 +339,7 @@ public class SalesforceLogger {
         }
     }
 
-    /**
-     * Logs the message and throwable passed in at the level specified.
-     *
-     * @param level Log level.
-     * @param tag Log tag.
-     * @param message Log message.
-     * @param e Throwable to be logged.
-     */
-    public void log(Level level, String tag, String message, Throwable e) {
+    private void log(Level level, String tag, String message, Throwable e) {
         switch (level) {
             case OFF:
                 break;
