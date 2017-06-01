@@ -24,20 +24,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.util;
+package com.salesforce.androidsdk.smartstore.util;
 
 import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 
 /**
- * A simple logger util class for the SalesforceSDK library. This class simply acts
- * as a wrapper around SalesforceLogger specific to the SalesforceSDK library.
+ * A simple logger util class for the SmartStore library. This class simply acts
+ * as a wrapper around SalesforceLogger specific to the SmartStoreO library.
  *
  * @author bhariharan
  */
-public class SalesforceSDKLogger {
+public class SmartStoreLogger {
 
-    private static final String COMPONENT_NAME = "SalesforceSDK";
+    private static final String COMPONENT_NAME = "SmartStore";
 
     /**
      * Logs an error log line.
@@ -47,7 +47,7 @@ public class SalesforceSDKLogger {
      */
     public static void e(String tag, String message) {
         SalesforceLogger.getLogger(COMPONENT_NAME,
-                SalesforceSDKManager.getInstance().getAppContext()).e(
+                SmartStoreSDKManager.getInstance().getAppContext()).e(
                 tag, message);
     }
 
@@ -60,7 +60,7 @@ public class SalesforceSDKLogger {
      */
     public static void e(String tag, String message, Throwable e) {
         SalesforceLogger.getLogger(COMPONENT_NAME,
-                SalesforceSDKManager.getInstance().getAppContext()).e(
+                SmartStoreSDKManager.getInstance().getAppContext()).e(
                 tag, message, e);
     }
 
@@ -72,7 +72,7 @@ public class SalesforceSDKLogger {
      */
     public static void w(String tag, String message) {
         SalesforceLogger.getLogger(COMPONENT_NAME,
-                SalesforceSDKManager.getInstance().getAppContext()).w(
+                SmartStoreSDKManager.getInstance().getAppContext()).w(
                 tag, message);
     }
 
@@ -85,7 +85,7 @@ public class SalesforceSDKLogger {
      */
     public static void w(String tag, String message, Throwable e) {
         SalesforceLogger.getLogger(COMPONENT_NAME,
-                SalesforceSDKManager.getInstance().getAppContext()).w(
+                SmartStoreSDKManager.getInstance().getAppContext()).w(
                 tag, message, e);
     }
 
@@ -97,7 +97,7 @@ public class SalesforceSDKLogger {
      */
     public static void i(String tag, String message) {
         SalesforceLogger.getLogger(COMPONENT_NAME,
-                SalesforceSDKManager.getInstance().getAppContext()).i(
+                SmartStoreSDKManager.getInstance().getAppContext()).i(
                 tag, message);
     }
 
@@ -110,7 +110,7 @@ public class SalesforceSDKLogger {
      */
     public static void i(String tag, String message, Throwable e) {
         SalesforceLogger.getLogger(COMPONENT_NAME,
-                SalesforceSDKManager.getInstance().getAppContext()).i(
+                SmartStoreSDKManager.getInstance().getAppContext()).i(
                 tag, message, e);
     }
 
@@ -122,7 +122,7 @@ public class SalesforceSDKLogger {
      */
     public static void d(String tag, String message) {
         SalesforceLogger.getLogger(COMPONENT_NAME,
-                SalesforceSDKManager.getInstance().getAppContext()).d(
+                SmartStoreSDKManager.getInstance().getAppContext()).d(
                 tag, message);
     }
 
@@ -135,7 +135,7 @@ public class SalesforceSDKLogger {
      */
     public static void d(String tag, String message, Throwable e) {
         SalesforceLogger.getLogger(COMPONENT_NAME,
-                SalesforceSDKManager.getInstance().getAppContext()).d(
+                SmartStoreSDKManager.getInstance().getAppContext()).d(
                 tag, message, e);
     }
 
@@ -147,7 +147,7 @@ public class SalesforceSDKLogger {
      */
     public static void v(String tag, String message) {
         SalesforceLogger.getLogger(COMPONENT_NAME,
-                SalesforceSDKManager.getInstance().getAppContext()).v(
+                SmartStoreSDKManager.getInstance().getAppContext()).v(
                 tag, message);
     }
 
@@ -160,7 +160,7 @@ public class SalesforceSDKLogger {
      */
     public static void v(String tag, String message, Throwable e) {
         SalesforceLogger.getLogger(COMPONENT_NAME,
-                SalesforceSDKManager.getInstance().getAppContext()).v(
+                SmartStoreSDKManager.getInstance().getAppContext()).v(
                 tag, message, e);
     }
 }
