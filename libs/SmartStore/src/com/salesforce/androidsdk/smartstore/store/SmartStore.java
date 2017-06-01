@@ -29,12 +29,12 @@ package com.salesforce.androidsdk.smartstore.store;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.store.LongOperation.LongOperationType;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
+import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import net.sqlcipher.database.SQLiteDatabase;
@@ -370,7 +370,7 @@ public class SmartStore  {
 		try {
 			attributes.put("features", features);
 		} catch (JSONException e) {
-			Log.e(TAG, "Exception thrown while building page object", e);
+            SmartStoreLogger.e(TAG, "Exception thrown while building page object", e);
 		}
 		EventBuilderHelper.createAndStoreEventSync("registerSoup", null, TAG, attributes);
 	}
@@ -496,7 +496,7 @@ public class SmartStore  {
 				try {
 					longOperation.run();
 				} catch (Exception e) {
-	        		Log.e("SmartStore.resumeLongOp", "Unexpected error", e);
+					SmartStoreLogger.e(TAG, "Unexpected error", e);
 				}
 			}
 		}
@@ -525,7 +525,7 @@ public class SmartStore  {
 				        	longOperations.add(operationType.getOperation(this, rowId, details, statusStr));
 			        	}
 			        	catch (Exception e) {
-			        		Log.e("SmartStore.getLongOp", "Unexpected error", e);
+                            SmartStoreLogger.e(TAG, "Unexpected error", e);
 			        	}
 			        }
 			        while (cursor.moveToNext());
@@ -590,7 +590,7 @@ public class SmartStore  {
 					}
 				}
 				else {
-					Log.w("SmartStore.reIndexSoup", "Cannot re-index " + indexPath + " - it does not have an index");
+                    SmartStoreLogger.w(TAG, "Can not re-index " + indexPath + " - it does not have an index");
 				}
 			}
 			IndexSpec[] indexSpecs = indexSpecsList.toArray(new IndexSpec[0]);
@@ -637,7 +637,7 @@ public class SmartStore  {
 							}
 			        	}
 			        	catch (JSONException e) {
-			        		Log.w("SmartStore.alterSoup", "Could not parse soup element " + soupEntryId, e);
+                            SmartStoreLogger.w(TAG, "Could not parse soup element " + soupEntryId, e);
 			        		// Should not have happen - just keep going
 			        	}
 			        }
@@ -1026,7 +1026,7 @@ public class SmartStore  {
             }
             catch (Exception e) {
                 // Ignore and use the null value
-                Log.e("SmartStore.projIdxPaths", "Unexpected error", e);
+                SmartStoreLogger.e(TAG, "Unexpected error", e);
             }
             contentValues.put(indexSpec.columnName, longValToUse);
             break;
@@ -1040,7 +1040,7 @@ public class SmartStore  {
             }
             catch (Exception e) {
                 // Ignore and use the null value
-                Log.e("SmartStore.projIdxPaths", "Unexpected error", e);
+                SmartStoreLogger.e(TAG, "Unexpected error", e);
             }
             contentValues.put(indexSpec.columnName, doubleValToUse); break;
         }

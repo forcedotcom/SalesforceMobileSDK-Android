@@ -26,6 +26,21 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
+import android.content.Context;
+import android.text.TextUtils;
+
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.analytics.EventBuilderHelper;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
+import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
+
+import net.sqlcipher.database.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteDatabaseHook;
+import net.sqlcipher.database.SQLiteOpenHelper;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
@@ -38,21 +53,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.analytics.EventBuilderHelper;
-import com.salesforce.androidsdk.analytics.security.Encryptor;
-
-import net.sqlcipher.database.SQLiteDatabase;
-import net.sqlcipher.database.SQLiteDatabaseHook;
-import net.sqlcipher.database.SQLiteOpenHelper;
-
-import android.content.Context;
-import android.text.TextUtils;
-import android.util.Log;
 
 /**
  * Helper class to manage SmartStore's database creation and version management.
@@ -211,7 +211,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 			try {
 				storeAttributes.put(key, numStores);
 			} catch (JSONException e) {
-				Log.e(TAG, "Error occurred while creating JSON", e);
+                SmartStoreLogger.e(TAG, "Error occurred while creating JSON", e);
 			}
 			EventBuilderHelper.createAndStoreEvent(eventName, account, TAG, storeAttributes);
 			helper = new DBOpenHelper(ctx, fullDBName);
@@ -344,7 +344,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 			blobsDbPath.append("/databases/").append(fullDBName).append(EXTERNAL_BLOBS_SUFFIX);
 			removeAllFiles(new File(blobsDbPath.toString()));
 		} catch (Exception e) {
-			Log.e("DBOpenHelper:deleteDB", "Exception occurred while attempting to delete database.", e);
+            SmartStoreLogger.e(TAG, "Exception occurred while attemption to delete database", e);
 		}
 	}
 
@@ -601,7 +601,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 								outputStream.write(Encryptor.encrypt(result, newKey).getBytes());
 								outputStream.close();
 							} catch (IOException ex) {
-								Log.e(TAG, "Exception occurred while rekeying external files.", ex);
+                                SmartStoreLogger.e(TAG, "Exception occurred while rekeying external files", ex);
 							}
 						}
 					}
@@ -643,7 +643,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 				return true;
 			}
 		} catch (IOException ex) {
-			Log.e(TAG, "Exception occurred while attempting to write external soup blob.", ex);
+            SmartStoreLogger.e(TAG, "Exception occurred while attempting to write external soup blob", ex);
 		}
 		return false;
 	}
@@ -665,7 +665,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 				result = new JSONObject(soupBlobString);
 			}
 		} catch (JSONException ex) {
-			Log.e(TAG, "Exception occurred while attempting to read external soup blob.", ex);
+            SmartStoreLogger.e(TAG, "Exception occurred while attempting to read external soup blob", ex);
 		}
 		return result;
 	}
@@ -686,9 +686,8 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 			byte[] bytes = new byte[(int) file.length()];
 			data.readFully(bytes);
 			return Encryptor.decrypt(bytes, passcode);
-
 		} catch (IOException ex) {
-			Log.e(TAG, "Exception occurred while attempting to read external soup blob.", ex);
+            SmartStoreLogger.e(TAG, "Exception occurred while attempting to read external soup blob", ex);
 		}
 		return null;
 	}

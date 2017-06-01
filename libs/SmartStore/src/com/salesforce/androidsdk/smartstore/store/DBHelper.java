@@ -26,30 +26,31 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
+import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
+import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
+import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
+
+import net.sqlcipher.DatabaseUtils.InsertHelper;
+import net.sqlcipher.database.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteDoneException;
+import net.sqlcipher.database.SQLiteStatement;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import net.sqlcipher.DatabaseUtils.InsertHelper;
-import net.sqlcipher.database.SQLiteDatabase;
-import net.sqlcipher.database.SQLiteDoneException;
-import net.sqlcipher.database.SQLiteStatement;
-import android.content.ContentValues;
-import android.content.Context;
-import android.database.Cursor;
-import android.util.Log;
-
-import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
-import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
-import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 /**
  * SmartStore Database Helper
@@ -298,10 +299,9 @@ public class DBHelper {
 				rows.put(row);
 			}
 			lastExplain.put(EXPLAIN_ROWS, rows);
-			Log.d(EXPLAIN_TAG, lastExplain.toString(2));
-
+			SmartStoreLogger.d(EXPLAIN_TAG, lastExplain.toString(2));
 		} catch (JSONException e) {
-			Log.d(EXPLAIN_TAG, "Exception", e);
+            SmartStoreLogger.d(EXPLAIN_TAG, "Exception", e);
 		} finally {
 			safeClose(c);
 		}
