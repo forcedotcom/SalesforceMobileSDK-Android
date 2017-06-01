@@ -34,12 +34,12 @@ import android.content.SharedPreferences.Editor;
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.config.AdminSettingsManager;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.security.PasscodeManager;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.io.File;
 import java.util.Map;
@@ -109,9 +109,7 @@ public class SalesforceSDKUpgradeManager {
             	upgradeTo2Dot2();
             }
         } catch (NumberFormatException e) {
-            SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).e(
-                    TAG, "Failed to parse installed version", e);
+            SalesforceSDKLogger.e(TAG, "Failed to parse installed version", e);
         }
     }
 

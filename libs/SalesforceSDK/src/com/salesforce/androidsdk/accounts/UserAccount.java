@@ -29,9 +29,9 @@ package com.salesforce.androidsdk.accounts;
 import android.os.Bundle;
 import android.text.TextUtils;
 
-import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.util.MapUtil;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -610,9 +610,7 @@ public class UserAccount {
             object = MapUtil.addMapToJSONObject(additionalOauthValues,
                     SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), object);
     	} catch (JSONException e) {
-			SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).e(
-                    TAG, "Unable to convert to JSON", e);
+			SalesforceSDKLogger.e(TAG, "Unable to convert to JSON", e);
     	}
     	return object;
     }

@@ -33,8 +33,8 @@ import android.os.Build;
 import android.os.Bundle;
 
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
-import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -104,9 +104,7 @@ public class RuntimeConfig {
 							attributes.put("mdmConfigs", mdmValues);
 						}
 					} catch (JSONException e) {
-						SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-								SalesforceSDKManager.getInstance().getAppContext()).e(
-								TAG, "Exception thrown while creating JSON", e);
+						SalesforceSDKLogger.e(TAG, "Exception thrown while creating JSON", e);
 					}
 					EventBuilderHelper.createAndStoreEventSync("mdmConfiguration", null, TAG, attributes);
 				}

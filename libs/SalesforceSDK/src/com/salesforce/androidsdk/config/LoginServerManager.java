@@ -32,10 +32,10 @@ import android.content.SharedPreferences.Editor;
 import android.content.res.XmlResourceParser;
 import android.text.TextUtils;
 
-import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 import com.salesforce.androidsdk.ui.SalesforceR;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -238,9 +238,7 @@ public class LoginServerManager {
 		try {
 			mdmLoginServers = runtimeConfig.getStringArray(ConfigKey.AppServiceHosts);
 		} catch (Exception e) {
-			SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-					SalesforceSDKManager.getInstance().getAppContext()).w(
-					TAG, "Exception thrown while attempting to read array, attempting to read string value instead", e);
+			SalesforceSDKLogger.w(TAG, "Exception thrown while attempting to read array, attempting to read string value instead", e);
 		}
 		if (mdmLoginServers == null) {
 			final String loginServer = runtimeConfig.getString(ConfigKey.AppServiceHosts);
@@ -254,9 +252,7 @@ public class LoginServerManager {
 			try {
 				mdmLoginServersLabels = runtimeConfig.getStringArray(ConfigKey.AppServiceHostLabels);
 			} catch (Exception e) {
-                SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).w(
-                        TAG, "Exception thrown while attempting to read array, attempting to read string value instead", e);
+                SalesforceSDKLogger.w(TAG, "Exception thrown while attempting to read array, attempting to read string value instead", e);
 			}
 			if (mdmLoginServersLabels == null) {
 				final String loginServerLabel = runtimeConfig.getString(ConfigKey.AppServiceHostLabels);
@@ -265,9 +261,7 @@ public class LoginServerManager {
 				}
 			}
 			if (mdmLoginServersLabels == null || mdmLoginServersLabels.length != mdmLoginServers.length) {
-                SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).w(
-                        TAG, "No login servers labels provided or wrong number of login servers labels provided - Using URLs for the labels");
+                SalesforceSDKLogger.w(TAG, "No login servers labels provided or wrong number of login servers labels provided - Using URLs for the labels");
 				mdmLoginServersLabels = mdmLoginServers;
 			}
             final List<LoginServer> storedServers = getLoginServersFromPreferences(runtimePrefs);
@@ -334,13 +328,9 @@ public class LoginServerManager {
 				try {
 					eventType = xml.next();
 				} catch (XmlPullParserException e) {
-                    SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                            SalesforceSDKManager.getInstance().getAppContext()).w(
-                            TAG, "Exception thrown while parsing XML", e);
+                    SalesforceSDKLogger.w(TAG, "Exception thrown while parsing XML", e);
 				} catch (IOException e) {
-                    SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                            SalesforceSDKManager.getInstance().getAppContext()).w(
-                            TAG, "Exception thrown while parsing XML", e);
+                    SalesforceSDKLogger.w(TAG, "Exception thrown while parsing XML", e);
 				}
 			}
 		}

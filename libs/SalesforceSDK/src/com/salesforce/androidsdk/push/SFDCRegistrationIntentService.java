@@ -32,9 +32,9 @@ import android.content.Intent;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 import com.google.android.gms.iid.InstanceID;
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.BootConfig;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 public class SFDCRegistrationIntentService extends IntentService {
 
@@ -57,9 +57,7 @@ public class SFDCRegistrationIntentService extends IntentService {
             // Send it to SFDC
             PushMessaging.registerSFDCPush(this, account);
         } catch (Exception e) {
-            SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).e(
-                    TAG, "Error during GCM registration", e);
+            SalesforceSDKLogger.e(TAG, "Error during GCM registration", e);
         }
     }
 }

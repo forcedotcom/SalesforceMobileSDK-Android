@@ -51,7 +51,6 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
-import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
@@ -71,6 +70,7 @@ import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.net.URI;
 import java.util.List;
@@ -118,7 +118,6 @@ public class SalesforceSDKManager {
     protected Context context;
     protected KeyInterface keyImpl;
     protected LoginOptions loginOptions;
-    protected SalesforceLogger logger;
     protected Class<? extends Activity> mainActivityClass;
     protected Class<? extends Activity> loginActivityClass = LoginActivity.class;
     protected Class<? extends PasscodeActivity> passcodeActivityClass = PasscodeActivity.class;
@@ -200,7 +199,6 @@ public class SalesforceSDKManager {
             this.loginActivityClass = loginActivity;
     	}
         this.features  = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-        this.logger = SalesforceLogger.getLogger(SF_SDK_COMPONENT_NAME, context);
 
         /*
          * Checks if an analytics app name has already been set by the app.
@@ -213,7 +211,7 @@ public class SalesforceSDKManager {
                 final PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
                 ailtnAppName = context.getString(packageInfo.applicationInfo.labelRes);
             } catch (NameNotFoundException e) {
-                logger.e(TAG, "Package not found", e);
+                SalesforceSDKLogger.e(TAG, "Package not found", e);
             }
             if (!TextUtils.isEmpty(ailtnAppName)) {
                 setAiltnAppName(ailtnAppName);
@@ -793,7 +791,7 @@ public class SalesforceSDKManager {
             try {
                 context.unregisterReceiver(pushReceiver);
             } catch (Exception e) {
-                logger.e(TAG, "Exception occurred while unregistering", e);
+                SalesforceSDKLogger.e(TAG, "Exception occurred while unregistering", e);
             }
     		removeAccount(clientMgr, showLoginPage, refreshToken, clientId, loginServer, account, frontActivity);
         }
@@ -965,11 +963,11 @@ public class SalesforceSDKManager {
             appName = context.getString(packageInfo.applicationInfo.labelRes);
             appVersion = packageInfo.versionName;
         } catch (NameNotFoundException e) {
-            logger.w(TAG, "Package info could not be retrieved", e);
+            SalesforceSDKLogger.w(TAG, "Package info could not be retrieved", e);
         } catch (Resources.NotFoundException nfe) {
 
     	   	// A test harness such as Gradle does NOT have an application name.
-            logger.w(TAG, "Package info could not be retrieved", nfe);
+            SalesforceSDKLogger.w(TAG, "Package info could not be retrieved", nfe);
         }
         String appTypeWithQualifier = getAppType() + qualifier;
         return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s",
@@ -1076,7 +1074,7 @@ public class SalesforceSDKManager {
 	        try {
 	        	OAuth2.revokeRefreshToken(HttpAccess.DEFAULT, new URI(loginServer), refreshToken);
 	        } catch (Exception e) {
-                logger.w(TAG, "Revoking token failed", e);
+                SalesforceSDKLogger.w(TAG, "Revoking token failed", e);
 	        }
 	        return null;
 		}

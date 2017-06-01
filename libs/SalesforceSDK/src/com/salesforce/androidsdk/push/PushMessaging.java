@@ -39,8 +39,7 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.iid.InstanceID;
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
@@ -126,9 +125,7 @@ public class PushMessaging {
                         // avoid running on main thread
                         instanceID.deleteInstanceID();
                     } catch (IOException e) {
-                        SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                                SalesforceSDKManager.getInstance().getAppContext()).e(
-                                TAG, "Error deleting InstanceID", e);
+                        SalesforceSDKLogger.e(TAG, "Error deleting InstanceID", e);
                     }
                 }
             });

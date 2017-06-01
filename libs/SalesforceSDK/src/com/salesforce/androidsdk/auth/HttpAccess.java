@@ -31,8 +31,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
 
-import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.io.IOException;
 import java.security.KeyManagementException;
@@ -120,13 +119,9 @@ public class HttpAccess {
             try {
                 builder.sslSocketFactory(SalesforceTLSSocketFactory.getInstance());
             } catch (KeyManagementException e) {
-                SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).e(
-                        TAG, "Exception thrown while setting SSL socket factory", e);
+                SalesforceSDKLogger.e(TAG, "Exception thrown while setting SSL socket factory", e);
             } catch (NoSuchAlgorithmException ne) {
-                SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).e(
-                        TAG, "Exception thrown while setting SSL socket factory", ne);
+                SalesforceSDKLogger.e(TAG, "Exception thrown while setting SSL socket factory", ne);
             }
         }
 

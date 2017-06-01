@@ -38,7 +38,6 @@ import android.os.PowerManager;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
@@ -48,6 +47,7 @@ import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import org.json.JSONObject;
 
@@ -111,9 +111,7 @@ public class PushService extends IntentService {
         intent.setClassName(context, PushService.class.getName());
         final ComponentName name = context.startService(intent);
         if (name == null) {
-            SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).w(
-                    TAG, "Could not start GCM service");
+            SalesforceSDKLogger.w(TAG, "Could not start GCM service");
         }
     }
 
@@ -215,9 +213,7 @@ public class PushService extends IntentService {
      */
     private void onRegistered(String registrationId, UserAccount account) {
         if (account == null) {
-            SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).e(
-                    TAG, "Account is null, will retry registration later");
+            SalesforceSDKLogger.e(TAG, "Account is null, will retry registration later");
             return;
         }
     	long retryInterval = SFDC_REGISTRATION_RETRY;
@@ -231,9 +227,7 @@ public class PushService extends IntentService {
             	PushMessaging.setRegistrationId(context, registrationId, account);
         	}
     	} catch (Exception e) {
-            SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).e(
-                    TAG, "Error occurred during SFDC registration", e);
+            SalesforceSDKLogger.e(TAG, "Error occurred during SFDC registration", e);
     	} finally {
             scheduleSFDCRegistrationRetry(retryInterval, null);
     	}
@@ -249,9 +243,7 @@ public class PushService extends IntentService {
         	final String id = PushMessaging.getDeviceId(context, account);
         	unregisterSFDCPushNotification(id, account);
     	} catch (Exception e) {
-            SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).e(
-                    TAG, "Error occurred during SFDC unregistration", e);
+            SalesforceSDKLogger.e(TAG, "Error occurred during SFDC unregistration", e);
     	} finally {
         	PushMessaging.clearRegistrationInfo(context, account);
             context.sendBroadcast((new Intent(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT)).setPackage(context.getPackageName()));
@@ -299,9 +291,7 @@ public class PushService extends IntentService {
             	return id;
         	}
     	} catch (Exception e) {
-            SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).e(
-                    TAG, "Push notification registration failed", e);
+            SalesforceSDKLogger.e(TAG, "Push notification registration failed", e);
     	}
     	return null;
     }
@@ -327,9 +317,7 @@ public class PushService extends IntentService {
             	res.consume();
     		}
     	} catch (IOException e) {
-			SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-					SalesforceSDKManager.getInstance().getAppContext()).e(
-					TAG, "Push notification unregistration failed", e);
+			SalesforceSDKLogger.e(TAG, "Push notification unregistration failed", e);
     	}
     	return false;
     }
@@ -364,9 +352,7 @@ public class PushService extends IntentService {
                 client = new RestClient(clientInfo, account.getAuthToken(),
                 		HttpAccess.DEFAULT, authTokenProvider);
     		} catch (Exception e) {
-                SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).e(
-                        TAG, "Failed to get rest client", e);
+                SalesforceSDKLogger.e(TAG, "Failed to get rest client", e);
     		}
     	}
     	return client;

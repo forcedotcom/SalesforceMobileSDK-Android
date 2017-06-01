@@ -29,9 +29,6 @@ package com.salesforce.androidsdk.util;
 
 import android.net.Uri;
 
-import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.HashMap;
@@ -74,9 +71,7 @@ public class UriFragmentParser {
 				res.put(URLDecoder.decode(parts[0], "UTF-8"),
 						parts.length > 1 ? URLDecoder.decode(parts[1], "UTF-8") : "");
 			} catch (UnsupportedEncodingException e) {
-				SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-						SalesforceSDKManager.getInstance().getAppContext()).e(
-						TAG, "Unsupported encoding", e);
+				SalesforceSDKLogger.e(TAG, "Unsupported encoding", e);
 			}
 		}
 		return res;

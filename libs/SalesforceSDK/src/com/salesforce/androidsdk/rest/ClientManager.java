@@ -39,11 +39,11 @@ import android.os.Looper;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
-import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -106,9 +106,7 @@ public class ClientManager {
 
         // No account found - let's add one - the AuthenticatorService add account method will start the login activity
         if (acc == null) {
-            SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).i(
-                    TAG, "No account of type " + accountType + " found");
+            SalesforceSDKLogger.i(TAG, "No account of type " + accountType + " found");
             accountManager.addAccount(getAccountType(),
                     AccountManager.KEY_AUTHTOKEN, null /*required features*/, options,
                     activityContext, new AccMgrCallback(restClientCallback),
@@ -117,9 +115,7 @@ public class ClientManager {
         }
         // Account found
         else {
-            SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).i(
-                    TAG, "Found account of type " + accountType);
+            SalesforceSDKLogger.i(TAG, "Found account of type " + accountType);
             accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN,
                     options, activityContext, new AccMgrCallback(restClientCallback), null /* handler */);
 
@@ -162,16 +158,12 @@ public class ClientManager {
     public RestClient peekRestClient(Account acc) {
         if (acc == null) {
             AccountInfoNotFoundException e = new AccountInfoNotFoundException("No user account found");
-            SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).i(
-                    TAG, "No user account found", e);
+            SalesforceSDKLogger.i(TAG, "No user account found", e);
             throw e;
         }
         if (SalesforceSDKManager.getInstance().isLoggingOut()) {
         	AccountInfoNotFoundException e = new AccountInfoNotFoundException("User is logging out");
-            SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).i(
-                    TAG, "User is logging out", e);
+            SalesforceSDKLogger.i(TAG, "User is logging out", e);
             throw e;
         }
         String passcodeHash = (SalesforceSDKManager.getInstance().getIsTestRun() ? loginOptions.passcodeHash : SalesforceSDKManager.getInstance().getPasscodeHash());
@@ -249,9 +241,7 @@ public class ClientManager {
                     firstName, lastName, displayName, email, photoUrl, thumbnailUrl, values);
             return new RestClient(clientInfo, authToken, HttpAccess.DEFAULT, authTokenProvider);
         } catch (URISyntaxException e) {
-            SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).w(
-                    TAG, "Invalid server URL", e);
+            SalesforceSDKLogger.w(TAG, "Invalid server URL", e);
             throw new AccountInfoNotFoundException("invalid server url", e);
         }
     }
@@ -309,9 +299,7 @@ public class ClientManager {
             try {
                 f.getResult();
             } catch (Exception ex) {
-                SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).w(
-                        TAG, "Exception removing old account", ex);
+                SalesforceSDKLogger.w(TAG, "Exception removing old account", ex);
             }
         }
     }
@@ -590,17 +578,11 @@ public class ClientManager {
                 f.getResult();
                 client = peekRestClient();
             } catch (AccountsException e) {
-                SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).w(
-                        TAG, "Exception thrown while creating rest client", e);
+                SalesforceSDKLogger.w(TAG, "Exception thrown while creating rest client", e);
             } catch (IOException e) {
-                SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).w(
-                        TAG, "Exception thrown while creating rest client", e);
+                SalesforceSDKLogger.w(TAG, "Exception thrown while creating rest client", e);
             } catch (AccountInfoNotFoundException e) {
-                SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).w(
-                        TAG, "Exception thrown while creating rest client", e);
+                SalesforceSDKLogger.w(TAG, "Exception thrown while creating rest client", e);
             }
 
             // response. if we failed, null
@@ -651,9 +633,7 @@ public class ClientManager {
          */
         @Override
         public String getNewAuthToken() {
-            SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).i(
-                    TAG, "Need new access token");
+            SalesforceSDKLogger.i(TAG, "Need new access token");
             Account acc = clientManager.getAccount();
             if (acc == null)
                 return null;
@@ -664,9 +644,7 @@ public class ClientManager {
                     try {
                         lock.wait();
                     } catch (InterruptedException e) {
-                        SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                                SalesforceSDKManager.getInstance().getAppContext()).w(
-                                TAG, "Exception thrown while getting new auth token", e);
+                        SalesforceSDKLogger.w(TAG, "Exception thrown while getting new auth token", e);
                     }
                     return lastNewAuthToken;
                 }
@@ -681,9 +659,7 @@ public class ClientManager {
             try {
                 final Bundle bundle = clientManager.accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN, null, false, null, null).getResult();
                 if (bundle == null) {
-                    SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                            SalesforceSDKManager.getInstance().getAppContext()).w(
-                            TAG, "Bundle was null while getting auth token");
+                    SalesforceSDKLogger.w(TAG, "Bundle was null while getting auth token");
                 } else {
                     final String encryptedAuthToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
                     if (encryptedAuthToken != null) {
@@ -720,9 +696,7 @@ public class ClientManager {
                     SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(broadcastIntent);
                 }
             } catch (Exception e) {
-                SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                        SalesforceSDKManager.getInstance().getAppContext()).w(
-                        TAG, "Exception thrown while getting auth token", e);
+                SalesforceSDKLogger.w(TAG, "Exception thrown while getting auth token", e);
             } finally {
                 synchronized (lock) {
                     gettingAuthToken = false;

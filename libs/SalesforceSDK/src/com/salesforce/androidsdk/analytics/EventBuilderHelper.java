@@ -28,10 +28,10 @@ package com.salesforce.androidsdk.analytics;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
 import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
 import com.salesforce.androidsdk.analytics.model.InstrumentationEventBuilder;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -127,9 +127,7 @@ public class EventBuilderHelper {
         try {
             page.put("context", className);
         } catch (JSONException e) {
-            SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).e(
-                    TAG, "Exception thrown while building page object", e);
+            SalesforceSDKLogger.e(TAG, "Exception thrown while building page object", e);
         }
         builder.page(page);
         if (attributes != null) {
@@ -141,9 +139,7 @@ public class EventBuilderHelper {
             final InstrumentationEvent event = builder.buildEvent();
             manager.getAnalyticsManager().getEventStoreManager().storeEvent(event);
         } catch (InstrumentationEventBuilder.EventBuilderException e) {
-            SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                    SalesforceSDKManager.getInstance().getAppContext()).e(
-                    TAG, "Exception thrown while building event", e);
+            SalesforceSDKLogger.e(TAG, "Exception thrown while building event", e);
         }
     }
 }

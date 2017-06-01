@@ -29,9 +29,6 @@ package com.salesforce.androidsdk.util;
 import android.os.Bundle;
 import android.text.TextUtils;
 
-import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -140,9 +137,7 @@ public class MapUtil {
                 try {
                     jsonObject.put(key, map.get(key));
                 } catch (JSONException e) {
-                    SalesforceLogger.getLogger(SalesforceSDKManager.SF_SDK_COMPONENT_NAME,
-                            SalesforceSDKManager.getInstance().getAppContext()).e(
-                            TAG, "Exception thrown while creating JSON object", e);
+                    SalesforceSDKLogger.e(TAG, "Exception thrown while creating JSON object", e);
                 }
             }
         }
