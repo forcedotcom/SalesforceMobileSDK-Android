@@ -24,20 +24,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.util;
+package com.salesforce.androidsdk.smartstore.util;
 
 import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 
 /**
- * A simple logger util class for the SalesforceSDK library. This class simply acts
- * as a wrapper around SalesforceLogger specific to the SalesforceSDK library.
+ * A simple logger util class for the SmartStore library. This class simply acts
+ * as a wrapper around SalesforceLogger specific to the SmartStoreO library.
  *
  * @author bhariharan
  */
-public class SalesforceSDKLogger {
+public class SmartStoreLogger {
 
-    private static final String COMPONENT_NAME = "SalesforceSDK";
+    private static final String COMPONENT_NAME = "SmartStore";
 
     /**
      * Logs an error log line.
@@ -146,6 +146,6 @@ public class SalesforceSDKLogger {
 
     private static SalesforceLogger getLogger() {
         return SalesforceLogger.getLogger(COMPONENT_NAME,
-                SalesforceSDKManager.getInstance().getAppContext());
+                SmartStoreSDKManager.getInstance().getAppContext());
     }
 }
