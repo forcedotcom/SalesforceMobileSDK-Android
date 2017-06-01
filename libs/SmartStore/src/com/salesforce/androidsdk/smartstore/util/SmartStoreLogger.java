@@ -46,9 +46,7 @@ public class SmartStoreLogger {
      * @param message Log message.
      */
     public static void e(String tag, String message) {
-        SalesforceLogger.getLogger(COMPONENT_NAME,
-                SmartStoreSDKManager.getInstance().getAppContext()).e(
-                tag, message);
+        getLogger().e(tag, message);
     }
 
     /**
@@ -59,9 +57,7 @@ public class SmartStoreLogger {
      * @param e Exception to be logged.
      */
     public static void e(String tag, String message, Throwable e) {
-        SalesforceLogger.getLogger(COMPONENT_NAME,
-                SmartStoreSDKManager.getInstance().getAppContext()).e(
-                tag, message, e);
+        getLogger().e(tag, message, e);
     }
 
     /**
@@ -71,9 +67,7 @@ public class SmartStoreLogger {
      * @param message Log message.
      */
     public static void w(String tag, String message) {
-        SalesforceLogger.getLogger(COMPONENT_NAME,
-                SmartStoreSDKManager.getInstance().getAppContext()).w(
-                tag, message);
+        getLogger().w(tag, message);
     }
 
     /**
@@ -84,9 +78,7 @@ public class SmartStoreLogger {
      * @param e Exception to be logged.
      */
     public static void w(String tag, String message, Throwable e) {
-        SalesforceLogger.getLogger(COMPONENT_NAME,
-                SmartStoreSDKManager.getInstance().getAppContext()).w(
-                tag, message, e);
+        getLogger().w(tag, message, e);
     }
 
     /**
@@ -96,9 +88,7 @@ public class SmartStoreLogger {
      * @param message Log message.
      */
     public static void i(String tag, String message) {
-        SalesforceLogger.getLogger(COMPONENT_NAME,
-                SmartStoreSDKManager.getInstance().getAppContext()).i(
-                tag, message);
+        getLogger().i(tag, message);
     }
 
     /**
@@ -109,9 +99,7 @@ public class SmartStoreLogger {
      * @param e Exception to be logged.
      */
     public static void i(String tag, String message, Throwable e) {
-        SalesforceLogger.getLogger(COMPONENT_NAME,
-                SmartStoreSDKManager.getInstance().getAppContext()).i(
-                tag, message, e);
+        getLogger().i(tag, message, e);
     }
 
     /**
@@ -121,9 +109,7 @@ public class SmartStoreLogger {
      * @param message Log message.
      */
     public static void d(String tag, String message) {
-        SalesforceLogger.getLogger(COMPONENT_NAME,
-                SmartStoreSDKManager.getInstance().getAppContext()).d(
-                tag, message);
+        getLogger().d(tag, message);
     }
 
     /**
@@ -134,9 +120,7 @@ public class SmartStoreLogger {
      * @param e Exception to be logged.
      */
     public static void d(String tag, String message, Throwable e) {
-        SalesforceLogger.getLogger(COMPONENT_NAME,
-                SmartStoreSDKManager.getInstance().getAppContext()).d(
-                tag, message, e);
+        getLogger().d(tag, message, e);
     }
 
     /**
@@ -146,9 +130,7 @@ public class SmartStoreLogger {
      * @param message Log message.
      */
     public static void v(String tag, String message) {
-        SalesforceLogger.getLogger(COMPONENT_NAME,
-                SmartStoreSDKManager.getInstance().getAppContext()).v(
-                tag, message);
+        getLogger().v(tag, message);
     }
 
     /**
@@ -159,8 +141,11 @@ public class SmartStoreLogger {
      * @param e Exception to be logged.
      */
     public static void v(String tag, String message, Throwable e) {
-        SalesforceLogger.getLogger(COMPONENT_NAME,
-                SmartStoreSDKManager.getInstance().getAppContext()).v(
-                tag, message, e);
+        getLogger().v(tag, message, e);
+    }
+
+    private static SalesforceLogger getLogger() {
+        return SalesforceLogger.getLogger(COMPONENT_NAME,
+                SmartStoreSDKManager.getInstance().getAppContext());
     }
 }
