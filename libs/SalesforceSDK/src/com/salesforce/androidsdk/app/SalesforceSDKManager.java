@@ -99,11 +99,6 @@ public class SalesforceSDKManager {
     public static final String LOGOUT_COMPLETE_INTENT_ACTION = "com.salesforce.LOGOUT_COMPLETE";
 
     /**
-     * Component name used by the logger for SalesforceSDK library.
-     */
-    public static final String SF_SDK_COMPONENT_NAME = "SalesforceSDK";
-
-    /**
      * Default app name.
      */
     private static final String DEFAULT_APP_DISPLAY_NAME = "Salesforce";
