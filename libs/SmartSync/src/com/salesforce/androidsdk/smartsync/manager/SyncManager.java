@@ -43,6 +43,7 @@ import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.target.AdvancedSyncUpTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
+import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
 import com.salesforce.androidsdk.smartsync.util.SyncManagerLogger;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
@@ -324,7 +325,7 @@ public class SyncManager {
                         attributes.put("syncTarget", target.getClass().getName());
                         EventBuilderHelper.createAndStoreEventSync("cleanResyncGhosts", null, TAG, attributes);
                     } catch (JSONException e) {
-                        Log.e(TAG, "Unexpected json error for cleanResyncGhosts sync tag: " + sync.getId(), e);
+                        SmartSyncLogger.e(TAG, "Unexpected JSON error for cleanResyncGhosts sync tag: " + sync.getId(), e);
                     }
                 }
             }

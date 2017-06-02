@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.smartsync.util;
 
 import android.util.Log;
 
-import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 
 import org.json.JSONArray;
@@ -77,7 +76,19 @@ public class SyncManagerLogger {
         if (priority >= minPriority) {
             String originStr = origin.getClass().getSimpleName();
             String objStr = toString(obj);
-            Log.println(priority, TAG, originStr + ":" + msg + ":" + objStr);
+            switch (priority) {
+                case Log.DEBUG:
+                    SmartSyncLogger.d(TAG, originStr + ": " + msg + ": " + objStr);
+                    break;
+                case Log.INFO:
+                    SmartSyncLogger.i(TAG, originStr + ": " + msg + ": " + objStr);
+                    break;
+                case Log.WARN:
+                    SmartSyncLogger.w(TAG, originStr + ": " + msg + ": " + objStr);
+                    break;
+                case Log.ERROR:
+                    SmartSyncLogger.e(TAG, originStr + ": " + msg + ": " + objStr);
+            }
         }
     }
 

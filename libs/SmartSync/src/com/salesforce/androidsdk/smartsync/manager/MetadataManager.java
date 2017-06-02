@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.smartsync.manager;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -44,6 +43,7 @@ import com.salesforce.androidsdk.smartsync.model.SalesforceObjectType;
 import com.salesforce.androidsdk.smartsync.model.SalesforceObjectTypeLayout;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
+import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -354,7 +354,7 @@ public class MetadataManager {
         try {
         	response = restClient.sendSync(RestRequest.getRequestForDescribeGlobal(apiVersion));
         } catch(IOException e) {
-        	Log.e(TAG, "IOException occurred while sending request", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while attempting to send request", e);
         }
         
         if (response != null && response.isSuccess()) {
@@ -380,9 +380,9 @@ public class MetadataManager {
                     }
                 }
             } catch (IOException e) {
-                Log.e(TAG, "IOException occurred while reading data", e);
+                SmartSyncLogger.e(TAG, "Exception occurred while attempting to read data", e);
             } catch (JSONException e) {
-                Log.e(TAG, "JSONException occurred while parsing", e);
+                SmartSyncLogger.e(TAG, "Exception occurred while attempting to read data", e);
             }
         } else if (shouldFallBackOnCache(cachePolicy)) {
             return cachedData;
@@ -404,7 +404,7 @@ public class MetadataManager {
     public SalesforceObjectType loadObjectType(String objectTypeName,
             CachePolicy cachePolicy, long refreshCacheIfOlderThan) {
         if (objectTypeName == null || Constants.EMPTY_STRING.equals(objectTypeName)) {
-            Log.e(TAG, "Cannot load recently accessed objects for invalid object type");
+            SmartSyncLogger.e(TAG, "Can not load recently accessed objects for invalid object type");
             return null;
         }
         if (cachePolicy == CachePolicy.INVALIDATE_CACHE_DONT_RELOAD) {
@@ -437,7 +437,7 @@ public class MetadataManager {
         try {
         	response = restClient.sendSync(RestRequest.getRequestForDescribe(apiVersion, objectTypeName));
         } catch(IOException e) {
-        	Log.e(TAG, "IOException occurred while sending request", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while attempting to send request", e);
         }
         
         if (response != null && response.isSuccess()) {
@@ -454,9 +454,9 @@ public class MetadataManager {
                     return objType;
                 }
             } catch (IOException e) {
-                Log.e(TAG, "IOException occurred while reading data", e);
+                SmartSyncLogger.e(TAG, "Exception occurred while attempting to read data", e);
             } catch (JSONException e) {
-                Log.e(TAG, "JSONException occurred while parsing", e);
+                SmartSyncLogger.e(TAG, "Exception occurred while attempting to read data", e);
             }
         } else if (shouldFallBackOnCache(cachePolicy)) {
             return cachedData;
@@ -557,12 +557,12 @@ public class MetadataManager {
     public SalesforceObjectTypeLayout loadObjectTypeLayout(SalesforceObjectType objectType,
             CachePolicy cachePolicy, long refreshCacheIfOlderThan) {
         if (objectType == null) {
-            Log.e(TAG, "Cannot load object layout with an invalid object type");
+            SmartSyncLogger.e(TAG, "Can not load object layout with an invalid object type");
             return null;
         }
         final String objectTypeName = objectType.getName();
         if (objectTypeName == null || Constants.EMPTY_STRING.equals(objectTypeName)) {
-            Log.e(TAG, "Cannot load object layout with an invalid object type");
+            SmartSyncLogger.e(TAG, "Can not load object layout with an invalid object type");
             return null;
         }
         if (cachePolicy == CachePolicy.INVALIDATE_CACHE_DONT_RELOAD) {
@@ -609,7 +609,7 @@ public class MetadataManager {
         try {
         	response = restClient.sendSync(RestRequest.getRequestForSearchResultLayout(apiVersion, Arrays.asList(objectTypeName)));
         } catch(IOException e) {
-        	Log.e(TAG, "IOException occurred while sending request", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while attempting to send request", e);
         }
         if (response != null && response.isSuccess()) {
             try {
@@ -630,9 +630,9 @@ public class MetadataManager {
                     }
                 }
             } catch (IOException e) {
-                Log.e(TAG, "IOException occurred while reading data", e);
+                SmartSyncLogger.e(TAG, "Exception occurred while attempting to read data", e);
             } catch (JSONException e) {
-                Log.e(TAG, "JSONException occurred while parsing", e);
+                SmartSyncLogger.e(TAG, "Exception occurred while attempting to read data", e);
             }
         } else if (shouldFallBackOnCache(cachePolicy)) {
             if (cachedData != null && cachedData.size() > 0) {
@@ -704,7 +704,7 @@ public class MetadataManager {
                 || Constants.EMPTY_STRING.equals(objectType)
                 || Constants.CONTENT_VERSION.equals(objectType)
                 || Constants.CONTENT.equals(objectType)) {
-            Log.w(TAG, "Cannot mark object as viewed");
+            SmartSyncLogger.w(TAG, "Could not mark object as viewed");
             return;
         }
         final SalesforceObjectType result = loadObjectType(objectType,
@@ -729,21 +729,21 @@ public class MetadataManager {
             try {
             	response = restClient.sendSync(RestRequest.getRequestForQuery(apiVersion, queryString));
             } catch(IOException e) {
-            	Log.e(TAG, "IOException occurred while sending request", e);
+                SmartSyncLogger.e(TAG, "Exception occurred while attempting to send request", e);
             }
             if (response != null && response.isSuccess()) {
                 final JSONObject responseJSON = response.asJSONObject();
                 if (responseJSON != null) {
                     final JSONArray records = responseJSON.optJSONArray("records");
                     if (records == null || records.length() == 0) {
-                        Log.e(TAG, "Failed to mark object " + objectId + " as viewed, since object no longer exists");
+                        SmartSyncLogger.e(TAG, "Failed to mark object " + objectId + " as viewed, since object no longer exists");
                     }
                 }
             }
         } catch (JSONException e) {
-            Log.e(TAG, "Error occurred while attempting to mark object " + objectId + " as viewed", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while attempting to mark object " + objectId + " as viewed", e);
         } catch (IOException e) {
-            Log.e(TAG, "Error occurred while attempting to mark object " + objectId + " as viewed", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while attempting to mark object " + objectId + " as viewed", e);
         }
     }
 
@@ -1001,7 +1001,7 @@ public class MetadataManager {
         try {
         	response = restClient.sendSync(RestRequest.getRequestForSearchScopeAndOrder(apiVersion));
         } catch(IOException e) {
-        	Log.e(TAG, "IOException occurred while sending request", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while attempting to send request", e);
         }
         
         List<SalesforceObjectType> recentItems = new ArrayList<SalesforceObjectType>();
@@ -1023,9 +1023,9 @@ public class MetadataManager {
                     }
                 }
             } catch (IOException e) {
-                Log.e(TAG, "IOException occurred while reading data", e);
+                SmartSyncLogger.e(TAG, "Exception occurred while attempting to read data", e);
             } catch (JSONException e) {
-                Log.e(TAG, "JSONException occurred while parsing", e);
+                SmartSyncLogger.e(TAG, "Exception occurred while attempting to read data", e);
             }
         } else if (shouldFallBackOnCache(cachePolicy)) {
             recentItems = getCachedObjectTypes(cachePolicy, MRU_CACHE_TYPE,
@@ -1114,7 +1114,7 @@ public class MetadataManager {
         try {
         	response = restClient.sendSync(RestRequest.getRequestForQuery(apiVersion, query));
         } catch(IOException e) {
-        	Log.e(TAG, "IOException occurred while sending request", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while attempting to send request", e);
         }
         
         if (response != null && response.isSuccess()) {
@@ -1158,9 +1158,9 @@ public class MetadataManager {
                     }
                 }
             } catch (IOException e) {
-                Log.e(TAG, "IOException occurred while reading data", e);
+                SmartSyncLogger.e(TAG, "Exception occurred while attempting to read data", e);
             } catch (JSONException e) {
-                Log.e(TAG, "JSONException occurred while parsing", e);
+                SmartSyncLogger.e(TAG, "Exception occurred while attempting to read data", e);
             }
             if (recentItems.size() > 0) {
                 if (shouldCacheData(cachePolicy)) {
