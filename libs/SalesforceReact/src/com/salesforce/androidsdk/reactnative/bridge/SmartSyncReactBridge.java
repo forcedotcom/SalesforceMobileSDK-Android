@@ -26,19 +26,18 @@
  */
 package com.salesforce.androidsdk.reactnative.bridge;
 
-import android.util.Log;
-
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
+import com.salesforce.androidsdk.reactnative.util.SalesforceReactLogger;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
+import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
-import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 
 import org.json.JSONObject;
 
@@ -51,7 +50,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
     static final String SYNC_ID = "syncId";
     static final String IS_GLOBAL_STORE = "isGlobalStore";
     static final String STORE_NAME = "storeName";
-    public static final String LOG_TAG = "SmartSyncReactBridge";
+    public static final String TAG = "SmartSyncReactBridge";
 
     public SmartSyncReactBridge(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -59,7 +58,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
 
     @Override
     public String getName() {
-        return LOG_TAG;
+        return TAG;
     }
 
     /**
@@ -84,7 +83,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                 }
             });
         } catch (Exception e) {
-            Log.e(LOG_TAG, "syncUp", e);
+            SalesforceReactLogger.e(TAG, "syncUp call failed", e);
             errorCallback.invoke(e.toString());
         }
     }
@@ -111,7 +110,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                 }
             });
         } catch (Exception e) {
-            Log.e(LOG_TAG, "syncDown", e);
+            SalesforceReactLogger.e(TAG, "syncDown call failed", e);
             errorCallback.invoke(e.toString());
         }
     }
@@ -132,7 +131,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
             SyncState sync = syncManager.getSyncStatus(syncId);
             ReactBridgeHelper.invokeSuccess(successCallback, sync.asJSON());
         } catch (Exception e) {
-            Log.e(LOG_TAG, "getSyncStatus", e);
+            SalesforceReactLogger.e(TAG, "getSyncStatus call failed", e);
             errorCallback.invoke(e.toString());
         }
     }
@@ -157,7 +156,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                 }
             });
         } catch (Exception e) {
-            Log.e(LOG_TAG, "reSync", e);
+            SalesforceReactLogger.e(TAG, "reSync call failed", e);
             errorCallback.invoke(e.toString());
         }
     }
@@ -178,7 +177,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
             syncManager.cleanResyncGhosts(syncId);
             successCallback.invoke();
         } catch (Exception e) {
-            Log.e(LOG_TAG, "reSync", e);
+            SalesforceReactLogger.e(TAG, "cleanResyncGhosts call failed", e);
             errorCallback.invoke(e.toString());
         }
     }
@@ -203,7 +202,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                     break;
             }
         } catch (Exception e) {
-            Log.e(LOG_TAG, "handleSyncUpdate", e);
+            SalesforceReactLogger.e(TAG, "handleSyncUpdate call failed", e);
         }
     }
 
