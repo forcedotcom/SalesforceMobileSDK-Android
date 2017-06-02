@@ -224,7 +224,6 @@ public class AuthenticatorService extends Service {
                 }
             }
             Map<String,String> addlParamsMap = SalesforceSDKManager.getInstance().getLoginOptions().getAdditionalParameters();
-
             final String encCommunityId = mgr.getUserData(account, AuthenticatorService.KEY_COMMUNITY_ID);
             String communityId = null;
             if (encCommunityId != null) {
@@ -291,6 +290,7 @@ public class AuthenticatorService extends Service {
                             if (newValue != null) {
                                 final String encrNewValue = SalesforceSDKManager.encryptWithPasscode(newValue, passcodeHash);
                                 resBundle.putString(key, encrNewValue);
+                                mgr.setUserData(account, key, encrNewValue);
                             }
                         } else if (values != null && values.containsKey(key)) {
                             final String value = values.get(key);
