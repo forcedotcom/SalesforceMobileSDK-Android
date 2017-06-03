@@ -27,9 +27,9 @@
 package com.salesforce.androidsdk.phonegap.plugin;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.salesforce.androidsdk.phonegap.ui.SalesforceDroidGapActivity;
+import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
@@ -104,7 +104,6 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
      * @throws JSONException
      */
     protected void sendRequest(JSONArray args, final CallbackContext callbackContext) {
-        Log.i(TAG, "sendRequest called");
         try {
             final RestRequest request = prepareRestRequest(args);
 
@@ -128,7 +127,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                                 final JSONObject responseAsJSONObject = response.asJSONObject();
                                 callbackContext.success(responseAsJSONObject);
                             } catch (Exception ex) {
-                                Log.e(TAG, "Error while parsing response", ex);
+                                SalesforceHybridLogger.e(TAG, "Error while parsing response", ex);
                                 final JSONArray responseAsJSONArray = response.asJSONArray();
                                 callbackContext.success(responseAsJSONArray);
                             }
@@ -136,7 +135,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                             callbackContext.success();
                         }
                     } catch (Exception e) {
-                        Log.e(TAG, "Error while parsing response", e);
+                        SalesforceHybridLogger.e(TAG, "Error while parsing response", e);
                         if (response.isSuccess()) {
                             callbackContext.success();
                         } else {

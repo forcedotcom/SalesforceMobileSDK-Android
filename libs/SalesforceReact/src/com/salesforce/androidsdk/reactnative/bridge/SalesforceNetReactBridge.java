@@ -27,16 +27,14 @@
 package com.salesforce.androidsdk.reactnative.bridge;
 
 import android.support.annotation.NonNull;
-import android.util.Log;
 
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
-import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.reactnative.ui.SalesforceReactActivity;
+import com.salesforce.androidsdk.reactnative.util.SalesforceReactLogger;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
@@ -66,9 +64,9 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
     public static final String FILE_MIME_TYPE_KEY = "fileMimeType";
     public static final String FILE_URL_KEY = "fileUrl";
     public static final String FILE_NAME_KEY = "fileName";
+    private static final String TAG = "SalesforceNetReactBridge";
 
     private RestClient restClient;
-
 
     public SalesforceNetReactBridge(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -76,7 +74,7 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
     @Override
     public String getName() {
-        return "SalesforceNetReactBridge";
+        return TAG;
     }
 
     @ReactMethod
@@ -106,7 +104,7 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
                         //     - one that expects array back from the server
                         successCallback.invoke(responseAsString);
                     } catch (IOException e) {
-                        Log.e("NetReactBridge", "sendRequest", e);
+                        SalesforceReactLogger.e(TAG, "sendRequest failed", e);
                         onError(e);
                     }
                 }

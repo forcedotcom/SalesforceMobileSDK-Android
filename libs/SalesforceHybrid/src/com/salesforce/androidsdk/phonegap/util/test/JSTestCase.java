@@ -29,12 +29,12 @@ package com.salesforce.androidsdk.phonegap.util.test;
 import android.app.Instrumentation;
 import android.content.Intent;
 import android.test.InstrumentationTestCase;
-import android.util.Log;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.phonegap.plugin.TestRunnerPlugin;
 import com.salesforce.androidsdk.phonegap.plugin.TestRunnerPlugin.TestResult;
 import com.salesforce.androidsdk.phonegap.ui.SalesforceDroidGapActivity;
+import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
@@ -49,6 +49,8 @@ import java.util.concurrent.TimeUnit;
  * Extend this class to run tests written in JavaScript
  */
 public abstract class JSTestCase extends InstrumentationTestCase {
+
+	private static final String TAG = "JSTestCase";
 
     private String jsSuite;
     private static Map<String, Map<String, TestResult>> testResults; 
@@ -99,7 +101,7 @@ public abstract class JSTestCase extends InstrumentationTestCase {
                         }
                     });
 				}
-				Log.i(getClass().getSimpleName(), "running test:" + testName);
+                SalesforceHybridLogger.i(TAG, "Running test: " + testName);
 		        
 		        // Block until test completes or times out
 		        TestResult result = null;
@@ -113,7 +115,7 @@ public abstract class JSTestCase extends InstrumentationTestCase {
 		        catch (Exception e) {
 	            	result = new TestResult(testName, false, "Test failed", timeout);
 		        }
-		        Log.i(getClass().getSimpleName(), "done running test:" + testName);
+                SalesforceHybridLogger.i(TAG, "Finished running test: " + testName);
 		        
 		        // Save result
 		        testResults.get(jsSuite).put(testName, result);

@@ -28,12 +28,12 @@ package com.salesforce.androidsdk.phonegap.ui;
 
 import android.content.Context;
 import android.net.Uri;
-import android.util.Log;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaResourceApi;
@@ -133,11 +133,11 @@ public class SalesforceWebViewClient extends SystemWebViewClient {
 				Uri localUri = Uri.parse("file://" + localPath);
 				CordovaResourceApi resourceApi = cordovaWebView.getResourceApi();
 				OpenForReadResult result = resourceApi.openForRead(localUri, true);
-				Log.i(TAG, "Loading local file:" + localUri);
+				SalesforceHybridLogger.i(TAG, "Loading local file: " + localUri);
 				return new WebResourceResponse(result.mimeType, "UTF-8", result.inputStream);
 			}
 		} catch (IOException e) {
-			Log.e(TAG, "Invalid localhost url:" + url, e);
+            SalesforceHybridLogger.e(TAG, "Invalid localhost URL: " + url, e);
 			return new WebResourceResponse("text/plain", "UTF-8", null);
 		}
     }
