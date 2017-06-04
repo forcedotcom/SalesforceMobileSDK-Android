@@ -1077,10 +1077,11 @@ public class SyncManagerTest extends SyncManagerTestCase {
         for (String id : idToFieldsLocallyUpdated.keySet()) {
             // Should have modified name but original description
             Map<String, Object> expectedFields = new HashMap<>();
-            expectedFields.put(Constants.NAME, idToFieldsLocallyUpdated.get(id).get(Constants.NAME));
-            expectedFields.put(Constants.DESCRIPTION, idToFields.get(id).get(Constants.DESCRIPTION));
+            expectedFields.put(Constants.NAME, idToFields.get(id).get(Constants.NAME));
+            expectedFields.put(Constants.DESCRIPTION, idToFieldsLocallyUpdated.get(id).get(Constants.DESCRIPTION));
             idToFieldsExpectedOnServer.put(id, expectedFields);
         }
+        checkServer(idToFieldsExpectedOnServer, Constants.ACCOUNT);
     }
 
     /**
