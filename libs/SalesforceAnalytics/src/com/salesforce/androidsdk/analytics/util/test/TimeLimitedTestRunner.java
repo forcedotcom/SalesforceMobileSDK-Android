@@ -28,8 +28,10 @@
 package com.salesforce.androidsdk.analytics.util.test;
 
 import android.test.AndroidTestRunner;
-import android.util.Log;
 
+import com.salesforce.androidsdk.analytics.util.SalesforceAnalyticsLogger;
+
+import java.util.Locale;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -65,10 +67,10 @@ public class TimeLimitedTestRunner extends AndroidTestRunner {
         try {
             f.get(maxRuntime, maxRuntimeUnit);
         } catch (TimeoutException ex) {
-            Log.e(TAG, String.format("TestRunner has timed out after: %d %s.",
+            SalesforceAnalyticsLogger.e(null, TAG, String.format(Locale.US, "TestRunner has timed out after: %d %s.",
                     maxRuntime, maxRuntimeUnit.name()), ex);
         } catch (Exception ex){
-            Log.e(TAG, "TestRunner did not complete successfully, check the exception logged above.", ex);
+            SalesforceAnalyticsLogger.e(null, TAG, "TestRunner did not complete successfully, check the exception logged above", ex);
         }
     }
 }
