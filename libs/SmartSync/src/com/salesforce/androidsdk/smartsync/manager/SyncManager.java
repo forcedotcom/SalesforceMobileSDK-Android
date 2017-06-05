@@ -205,7 +205,7 @@ public class SyncManager {
      */
     public SyncState syncDown(SyncDownTarget target, SyncOptions options, String soupName, SyncUpdateCallback callback) throws JSONException {
     	SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName);
-        SmartSyncLogger.d(TAG, this, "syncDown called", sync);
+        SmartSyncLogger.d(TAG, "syncDown called", sync);
         runSync(sync, callback);
 		return sync;
     }
@@ -228,7 +228,7 @@ public class SyncManager {
             throw new SmartSyncException("Cannot run reSync:" + syncId + ": wrong type:" + sync.getType());
         }
         sync.setTotalSize(-1);
-        SmartSyncLogger.d(TAG, this, "reSync called", sync);
+        SmartSyncLogger.d(TAG, "reSync called", sync);
         runSync(sync, callback);
         return sync;
     }
@@ -254,10 +254,10 @@ public class SyncManager {
                     }
                     updateSync(sync, SyncState.Status.DONE, 100, callback);
                 } catch (RestClient.RefreshTokenRevokedException re) {
-                    SmartSyncLogger.e(TAG, this, "Exception thrown in runSync", re);
+                    SmartSyncLogger.e(TAG, "Exception thrown in runSync", re);
                     // Do not do anything - let the logout go through!
                 } catch (Exception e) {
-                    SmartSyncLogger.e(TAG, this, "Exception thrown in runSync", e);
+                    SmartSyncLogger.e(TAG, "Exception thrown in runSync", e);
                     // Update status to failed
                     updateSync(sync, SyncState.Status.FAILED, UNCHANGED, callback);
                 }
@@ -276,7 +276,7 @@ public class SyncManager {
      */
     public SyncState syncUp(SyncUpTarget target, SyncOptions options, String soupName, SyncUpdateCallback callback) throws JSONException {
     	SyncState sync = SyncState.createSyncUp(smartStore, target, options, soupName);
-        SmartSyncLogger.d(TAG, this, "syncUp called", sync);
+        SmartSyncLogger.d(TAG, "syncUp called", sync);
         runSync(sync, callback);
     	return sync;
     }
@@ -300,7 +300,7 @@ public class SyncManager {
         if (sync.getType() != SyncState.Type.syncDown) {
             throw new SmartSyncException("Cannot run cleanResyncGhosts:" + syncId + ": wrong type:" + sync.getType());
         }
-        SmartSyncLogger.d(TAG, this, "cleanResyncGhosts called", sync);
+        SmartSyncLogger.d(TAG, "cleanResyncGhosts called", sync);
         final String soupName = sync.getSoupName();
         final SyncDownTarget target = (SyncDownTarget) sync.getTarget();
 
@@ -397,7 +397,7 @@ public class SyncManager {
 
     private void syncUpOneRecord(SyncUpTarget target, String soupName,
                                  JSONObject record, SyncOptions options) throws JSONException, IOException {
-        SmartSyncLogger.d(TAG, this, "syncUpOneRecord called", record);
+        SmartSyncLogger.d(TAG, "syncUpOneRecord called", record);
 
         /*
          * Checks if we are attempting to sync up a record that has been updated
@@ -410,7 +410,7 @@ public class SyncManager {
                 !target.isNewerThanServer(this, record)) {
 
             // Nothing to do for this record
-            SmartSyncLogger.d(TAG, this, "syncUpOneRecord: Record not synched since client does not have the latest from server", record);
+            SmartSyncLogger.d(TAG, "syncUpOneRecord: Record not synched since client does not have the latest from server", record);
             return;
         }
 
@@ -538,12 +538,12 @@ public class SyncManager {
 	 * @throws IOException
 	 */
 	public RestResponse sendSyncWithSmartSyncUserAgent(RestRequest restRequest) throws IOException {
-        SmartSyncLogger.d(TAG, this, "sendSyncWithSmartSyncUserAgent called with request: ", restRequest);
+        SmartSyncLogger.d(TAG, "sendSyncWithSmartSyncUserAgent called with request: ", restRequest);
         RestResponse restResponse = restClient.sendSync(restRequest, new HttpAccess.UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(SMART_SYNC)));
         if (restResponse.isSuccess()) {
-            SmartSyncLogger.d(TAG, this, "sendSyncWithSmartSyncUserAgent received response: ", restResponse);
+            SmartSyncLogger.d(TAG, "sendSyncWithSmartSyncUserAgent received response: ", restResponse);
         } else {
-            SmartSyncLogger.w(TAG, this, "sendSyncWithSmartSyncUserAgent received response: ", restResponse);
+            SmartSyncLogger.w(TAG, "sendSyncWithSmartSyncUserAgent received response: ", restResponse);
         }
         return restResponse;
     }

@@ -73,14 +73,12 @@ public class SmartSyncLogger {
      * Logs an error log line.
      *
      * @param tag Log tag.
-     * @param origin Origin class.
      * @param msg Log message.
      * @param obj Object to be logged.
      */
-    public static void e(String tag, Object origin, String msg, Object obj) {
-        final String originStr = origin.getClass().getSimpleName();
+    public static void e(String tag, String msg, Object obj) {
         final String objStr = toString(obj);
-        e(tag, originStr + ": " + msg + ": " + objStr);
+        e(tag, msg + ": " + objStr);
     }
 
     /**
@@ -108,14 +106,12 @@ public class SmartSyncLogger {
      * Logs a warning log line.
      *
      * @param tag Log tag.
-     * @param origin Origin class.
      * @param msg Log message.
      * @param obj Object to be logged.
      */
-    public static void w(String tag, Object origin, String msg, Object obj) {
-        final String originStr = origin.getClass().getSimpleName();
+    public static void w(String tag, String msg, Object obj) {
         final String objStr = toString(obj);
-        w(tag, originStr + ": " + msg + ": " + objStr);
+        w(tag, msg + ": " + objStr);
     }
 
     /**
@@ -143,14 +139,12 @@ public class SmartSyncLogger {
      * Logs an info log line.
      *
      * @param tag Log tag.
-     * @param origin Origin class.
      * @param msg Log message.
      * @param obj Object to be logged.
      */
-    public static void i(String tag, Object origin, String msg, Object obj) {
-        final String originStr = origin.getClass().getSimpleName();
+    public static void i(String tag, String msg, Object obj) {
         final String objStr = toString(obj);
-        i(tag, originStr + ": " + msg + ": " + objStr);
+        i(tag, msg + ": " + objStr);
     }
 
     /**
@@ -178,14 +172,12 @@ public class SmartSyncLogger {
      * Logs a debug log line.
      *
      * @param tag Log tag.
-     * @param origin Origin class.
      * @param msg Log message.
      * @param obj Object to be logged.
      */
-    public static void d(String tag, Object origin, String msg, Object obj) {
-        final String originStr = origin.getClass().getSimpleName();
+    public static void d(String tag, String msg, Object obj) {
         final String objStr = toString(obj);
-        d(tag, originStr + ": " + msg + ": " + objStr);
+        d(tag, msg + ": " + objStr);
     }
 
     /**
@@ -213,14 +205,12 @@ public class SmartSyncLogger {
      * Logs a verbose log line.
      *
      * @param tag Log tag.
-     * @param origin Origin class.
      * @param msg Log message.
      * @param obj Object to be logged.
      */
-    public static void v(String tag, Object origin, String msg, Object obj) {
-        final String originStr = origin.getClass().getSimpleName();
+    public static void v(String tag, String msg, Object obj) {
         final String objStr = toString(obj);
-        v(tag, originStr + ": " + msg + ": " + objStr);
+        v(tag, msg + ": " + objStr);
     }
 
     private static SalesforceLogger getLogger() {
