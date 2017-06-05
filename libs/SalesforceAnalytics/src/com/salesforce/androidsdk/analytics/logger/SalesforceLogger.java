@@ -312,7 +312,14 @@ public class SalesforceLogger {
         log(Level.VERBOSE, tag, message, e);
     }
 
-    private void log(Level level, String tag, String message) {
+    /**
+     * Logs a log line of the specified level.
+     *
+     * @param level Log level.
+     * @param tag Log tag.
+     * @param message Log message.
+     */
+    public void log(Level level, String tag, String message) {
         switch (level) {
             case OFF:
                 break;
@@ -339,7 +346,15 @@ public class SalesforceLogger {
         }
     }
 
-    private void log(Level level, String tag, String message, Throwable e) {
+    /**
+     * Logs a log line of the specified level.
+     *
+     * @param level Log level.
+     * @param tag Log tag.
+     * @param message Log message.
+     * @param e Exception to be logged.
+     */
+    public void log(Level level, String tag, String message, Throwable e) {
         switch (level) {
             case OFF:
                 break;
