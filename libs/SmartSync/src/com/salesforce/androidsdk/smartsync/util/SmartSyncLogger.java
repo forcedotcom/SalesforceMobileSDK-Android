@@ -27,7 +27,16 @@
 package com.salesforce.androidsdk.smartsync.util;
 
 import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
+import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 /**
  * A simple logger util class for the SmartSync library. This class simply acts
@@ -61,6 +70,18 @@ public class SmartSyncLogger {
     }
 
     /**
+     * Logs an error log line.
+     *
+     * @param tag Log tag.
+     * @param msg Log message.
+     * @param obj Object to be logged.
+     */
+    public static void e(String tag, String msg, Object obj) {
+        final String objStr = toString(obj);
+        e(tag, msg + ": " + objStr);
+    }
+
+    /**
      * Logs a warning log line.
      *
      * @param tag Log tag.
@@ -79,6 +100,18 @@ public class SmartSyncLogger {
      */
     public static void w(String tag, String message, Throwable e) {
         getLogger().w(tag, message, e);
+    }
+
+    /**
+     * Logs a warning log line.
+     *
+     * @param tag Log tag.
+     * @param msg Log message.
+     * @param obj Object to be logged.
+     */
+    public static void w(String tag, String msg, Object obj) {
+        final String objStr = toString(obj);
+        w(tag, msg + ": " + objStr);
     }
 
     /**
@@ -103,6 +136,18 @@ public class SmartSyncLogger {
     }
 
     /**
+     * Logs an info log line.
+     *
+     * @param tag Log tag.
+     * @param msg Log message.
+     * @param obj Object to be logged.
+     */
+    public static void i(String tag, String msg, Object obj) {
+        final String objStr = toString(obj);
+        i(tag, msg + ": " + objStr);
+    }
+
+    /**
      * Logs a debug log line.
      *
      * @param tag Log tag.
@@ -121,6 +166,18 @@ public class SmartSyncLogger {
      */
     public static void d(String tag, String message, Throwable e) {
         getLogger().d(tag, message, e);
+    }
+
+    /**
+     * Logs a debug log line.
+     *
+     * @param tag Log tag.
+     * @param msg Log message.
+     * @param obj Object to be logged.
+     */
+    public static void d(String tag, String msg, Object obj) {
+        final String objStr = toString(obj);
+        d(tag, msg + ": " + objStr);
     }
 
     /**
@@ -144,8 +201,62 @@ public class SmartSyncLogger {
         getLogger().v(tag, message, e);
     }
 
+    /**
+     * Logs a verbose log line.
+     *
+     * @param tag Log tag.
+     * @param msg Log message.
+     * @param obj Object to be logged.
+     */
+    public static void v(String tag, String msg, Object obj) {
+        final String objStr = toString(obj);
+        v(tag, msg + ": " + objStr);
+    }
+
     private static SalesforceLogger getLogger() {
         return SalesforceLogger.getLogger(COMPONENT_NAME,
                 SmartSyncSDKManager.getInstance().getAppContext());
+    }
+
+    private static String toString(Object obj) {
+        if (obj == null) {
+            return "null";
+        } else if (obj instanceof Throwable) {
+            final StringWriter sw = new StringWriter();
+            final PrintWriter pw = new PrintWriter(sw);
+            final Throwable err = (Throwable) obj;
+            pw.print(err.getMessage());
+            err.printStackTrace(pw);
+            return sw.toString();
+        } else if (obj instanceof RestResponse) {
+            final RestResponse response = (RestResponse) obj;
+            try {
+                return toString(response.asJSONObject());
+            } catch (Exception e) {
+                try {
+                    return toString(response.asJSONArray());
+                } catch (Exception e1) {
+                    try {
+                        return response.asString();
+                    } catch (IOException e2) {
+                        return obj.toString();
+                    }
+                }
+            }
+        } else if (obj instanceof JSONObject) {
+            try {
+                return ((JSONObject) obj).toString(2);
+            } catch (JSONException e) {
+                return obj.toString();
+            }
+        } else if (obj instanceof JSONArray) {
+            try {
+                return ((JSONArray) obj).toString(2);
+            } catch (JSONException e) {
+                return obj.toString();
+            }
+        } else {
+            return obj.toString();
+        }
     }
 }
