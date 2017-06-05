@@ -32,6 +32,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
@@ -60,6 +61,7 @@ public abstract class SyncTarget {
     public static final String LOCALLY_UPDATED = "__locally_updated__";
     public static final String LOCALLY_DELETED = "__locally_deleted__";
     public static final String LOCAL = "__local__";
+    private static final String TAG = "SyncTarget";
 
     // Page size used when reading from smartstore
     private static final int PAGE_SIZE = 2000;
@@ -158,7 +160,7 @@ public abstract class SyncTarget {
      */
     public void cleanAndSaveInLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
         cleanAndSaveInSmartStore(syncManager.getSmartStore(), soupName, record, true);
-        syncManager.getLogger().d(this, "cleanAndSaveInLocalStore", record);
+        SmartSyncLogger.d(TAG, "cleanAndSaveInLocalStore", record);
     }
 
     protected void cleanAndSaveInSmartStore(SmartStore smartStore, String soupName, JSONObject record, boolean handleTx) throws JSONException {
@@ -289,7 +291,7 @@ public abstract class SyncTarget {
      * @param record
      */
     public void deleteFromLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
-        syncManager.getLogger().d(this, "deleteFromLocalStore", record);
+        SmartSyncLogger.d(TAG, "deleteFromLocalStore", record);
         syncManager.getSmartStore().delete(soupName, record.getLong(SmartStore.SOUP_ENTRY_ID));
     }
 }
