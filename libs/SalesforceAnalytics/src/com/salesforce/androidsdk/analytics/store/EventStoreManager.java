@@ -28,10 +28,10 @@ package com.salesforce.androidsdk.analytics.store;
 
 import android.content.Context;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
+import com.salesforce.androidsdk.analytics.util.SalesforceAnalyticsLogger;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -86,7 +86,7 @@ public class EventStoreManager {
      */
     public void storeEvent(InstrumentationEvent event) {
         if (event == null || TextUtils.isEmpty(event.toJson().toString())) {
-            Log.d(TAG, "Invalid event");
+            SalesforceAnalyticsLogger.d(context, TAG, "Invalid event");
             return;
         }
         if (!shouldStoreEvent()) {
@@ -99,7 +99,7 @@ public class EventStoreManager {
             outputStream.write(encrypt(event.toJson().toString()).getBytes());
             outputStream.close();
         } catch (Exception e) {
-            Log.e(TAG, "Exception occurred while saving event to filesystem", e);
+            SalesforceAnalyticsLogger.e(context, TAG, "Exception occurred while saving event to filesystem", e);
         }
     }
 
@@ -110,7 +110,7 @@ public class EventStoreManager {
      */
     public void storeEvents(List<InstrumentationEvent> events) {
         if (events == null || events.size() == 0) {
-            Log.d(TAG, "No events to store");
+            SalesforceAnalyticsLogger.d(context, TAG, "No events to store");
             return;
         }
         if (!shouldStoreEvent()) {
@@ -129,7 +129,7 @@ public class EventStoreManager {
      */
     public InstrumentationEvent fetchEvent(String eventId) {
         if (TextUtils.isEmpty(eventId)) {
-            Log.e(TAG, "Invalid event ID supplied: " + eventId);
+            SalesforceAnalyticsLogger.e(context, TAG, "Invalid event ID supplied: " + eventId);
             return null;
         }
         final String filename = eventId + filenameSuffix;
@@ -162,7 +162,7 @@ public class EventStoreManager {
      */
     public boolean deleteEvent(String eventId) {
         if (TextUtils.isEmpty(eventId)) {
-            Log.e(TAG, "Invalid event ID supplied: " + eventId);
+            SalesforceAnalyticsLogger.e(context, TAG, "Invalid event ID supplied: " + eventId);
             return false;
         }
         final String filename = eventId + filenameSuffix;
@@ -175,7 +175,7 @@ public class EventStoreManager {
      */
     public void deleteEvents(List<String> eventIds) {
         if (eventIds == null || eventIds.size() == 0) {
-            Log.d(TAG, "No events to delete");
+            SalesforceAnalyticsLogger.d(context, TAG, "No events to delete");
             return;
         }
         for (final String eventId : eventIds) {
@@ -269,7 +269,7 @@ public class EventStoreManager {
 
     private InstrumentationEvent fetchEvent(File file) {
         if (file == null || !file.exists()) {
-            Log.e(TAG, "File does not exist");
+            SalesforceAnalyticsLogger.e(context, TAG, "File does not exist");
             return null;
         }
         InstrumentationEvent event = null;
@@ -284,14 +284,14 @@ public class EventStoreManager {
             br.close();
             eventString = decrypt(json.toString());
         } catch (Exception ex) {
-            Log.e(TAG, "Exception occurred while attempting to read file contents", ex);
+            SalesforceAnalyticsLogger.e(context, TAG, "Exception occurred while attempting to read file contents", ex);
         }
         if (!TextUtils.isEmpty(eventString)) {
             try {
                 final JSONObject jsonObject = new JSONObject(eventString);
                 event = new InstrumentationEvent(jsonObject);
             } catch (JSONException e) {
-                Log.e(TAG, "Exception occurred while attempting to convert to JSON", e);
+                SalesforceAnalyticsLogger.e(context, TAG, "Exception occurred while attempting to convert to JSON", e);
             }
         }
         return event;

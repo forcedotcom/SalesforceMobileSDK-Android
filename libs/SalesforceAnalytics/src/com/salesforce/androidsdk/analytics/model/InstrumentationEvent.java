@@ -27,7 +27,8 @@
 package com.salesforce.androidsdk.analytics.model;
 
 import android.text.TextUtils;
-import android.util.Log;
+
+import com.salesforce.androidsdk.analytics.util.SalesforceAnalyticsLogger;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -369,7 +370,7 @@ public class InstrumentationEvent {
                 json.put(MARKS_KEY, marks);
             }
         } catch (JSONException e) {
-            Log.e(TAG, "Exception thrown while attempting to convert to JSON", e);
+            SalesforceAnalyticsLogger.e(null, TAG, "Exception thrown while attempting to convert to JSON", e);
         }
         return json;
     }

@@ -35,6 +35,7 @@ import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.ParentInfo;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
+import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
@@ -210,7 +211,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
 
         // Re-run if required
         if (needReRun) {
-            syncManager.getLogger().d(this, "syncUpOneRecord", record);
+            SmartSyncLogger.d(TAG, "syncUpOneRecord", record);
             syncUpRecord(syncManager, record, children, fieldlist, mergeMode);
         }
     }

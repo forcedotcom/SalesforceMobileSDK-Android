@@ -26,6 +26,14 @@
  */
 package com.salesforce.androidsdk.analytics.security;
 
+import android.app.Service;
+import android.app.admin.DevicePolicyManager;
+import android.content.Context;
+import android.text.TextUtils;
+import android.util.Base64;
+
+import com.salesforce.androidsdk.analytics.util.SalesforceAnalyticsLogger;
+
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
@@ -37,13 +45,6 @@ import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-
-import android.app.Service;
-import android.app.admin.DevicePolicyManager;
-import android.content.Context;
-import android.text.TextUtils;
-import android.util.Base64;
-import android.util.Log;
 
 /**
  * Helper class for encryption/decryption/hash computations.
@@ -74,7 +75,7 @@ public class Encryptor {
         try {
             getBestCipher();
         } catch (GeneralSecurityException gex) {
-            Log.e(TAG, "Security exception thrown", gex);
+            SalesforceAnalyticsLogger.e(ctx, TAG, "Security exception thrown", gex);
         }
         if (bestCipherAvailable == null) {
             return false;
@@ -82,7 +83,7 @@ public class Encryptor {
         try {
             Mac.getInstance(MAC_TRANSFORMATION, "BC");
         } catch (GeneralSecurityException e) {
-            Log.e(TAG, "No MAC transformation available", e);
+            SalesforceAnalyticsLogger.e(ctx, TAG, "No MAC transformation available", e);
             return false;
         }
         return true;
@@ -105,10 +106,10 @@ public class Encryptor {
                 bestCipherAvailable = PREFER_CIPHER_TRANSFORMATION;
             }
         } catch (GeneralSecurityException gex1) {
-            Log.e(TAG, "Preferred combo not available", gex1);
+            SalesforceAnalyticsLogger.e(null, TAG, "Preferred combo not available", gex1);
         }
         if (bestCipherAvailable == null) {
-            Log.e(TAG, "No cipher transformation available");
+            SalesforceAnalyticsLogger.e(null, TAG, "No cipher transformation available");
         }
         return cipher;
     }
@@ -153,7 +154,7 @@ public class Encryptor {
             byte[] decryptedData = decrypt(dataBytes, 0, dataBytes.length, keyBytes);
             return new String(decryptedData, 0, decryptedData.length, UTF8);
         } catch (Exception ex) {
-            Log.w(TAG, "Error during decryption", ex);
+            SalesforceAnalyticsLogger.w(null, TAG, "Error during decryption", ex);
         }
         return null;
     }
@@ -177,7 +178,7 @@ public class Encryptor {
             // do as Base64.encodeToString does... return US-ASCII string with the already Base64 encoded bytes.
             return new String(bytes, "US-ASCII");
         } catch (UnsupportedEncodingException e) {
-            Log.w(TAG, "Error during encryption", e);
+            SalesforceAnalyticsLogger.w(null, TAG, "Error during encryption", e);
         }
         return null;
     }
@@ -202,7 +203,7 @@ public class Encryptor {
             byte[] dataBytes = data.getBytes(UTF8);
             return Base64.encode(encrypt(dataBytes, keyBytes), Base64.DEFAULT);
         } catch (Exception ex) {
-            Log.w(TAG, "Error during encryption", ex);
+            SalesforceAnalyticsLogger.w(null, TAG, "Error during encryption", ex);
         }
         return null;
     }
@@ -243,7 +244,7 @@ public class Encryptor {
             // Encodes with Base64.
             return Base64.encodeToString(sig, Base64.NO_WRAP);
         } catch (Exception ex) {
-            Log.w(TAG, "Error during hashing", ex);
+            SalesforceAnalyticsLogger.w(null, TAG, "Error during hashing", ex);
             return null;
         }
     }
