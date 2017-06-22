@@ -30,8 +30,8 @@ import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.test.InstrumentationTestCase;
-import android.util.Log;
 
+import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
@@ -47,6 +47,7 @@ import com.salesforce.androidsdk.smartsync.TestCredentials;
 import com.salesforce.androidsdk.smartsync.TestForceApp;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
@@ -119,7 +120,7 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
         syncManager.setRestClient(restClient);
         smartStore = cacheManager.getSmartStore();
         // Debug logs during tests
-        syncManager.getLogger().setLogLevel(Log.DEBUG);
+        SmartSyncLogger.setLogLevel(SalesforceLogger.Level.DEBUG);
     }
 
     @Override

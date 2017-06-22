@@ -213,6 +213,16 @@ public class SmartSyncLogger {
         v(tag, msg + ": " + objStr);
     }
 
+    /**
+     * Sets the log level to be used.
+     *
+     * @param level Log level.
+     */
+    public static void setLogLevel(SalesforceLogger.Level level) {
+        getLogger().setLogLevel(level);
+    }
+
+
     private static SalesforceLogger getLogger() {
         return SalesforceLogger.getLogger(COMPONENT_NAME,
                 SmartSyncSDKManager.getInstance().getAppContext());
