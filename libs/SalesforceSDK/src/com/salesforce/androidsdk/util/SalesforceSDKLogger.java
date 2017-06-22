@@ -144,6 +144,15 @@ public class SalesforceSDKLogger {
         getLogger().v(tag, message, e);
     }
 
+    /**
+     * Sets the log level to be used.
+     *
+     * @param level Log level.
+     */
+    public static void setLogLevel(SalesforceLogger.Level level) {
+        getLogger().setLogLevel(level);
+    }
+
     private static SalesforceLogger getLogger() {
         return SalesforceLogger.getLogger(COMPONENT_NAME,
                 SalesforceSDKManager.getInstance().getAppContext());

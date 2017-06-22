@@ -222,7 +222,6 @@ public class SmartSyncLogger {
         getLogger().setLogLevel(level);
     }
 
-
     private static SalesforceLogger getLogger() {
         return SalesforceLogger.getLogger(COMPONENT_NAME,
                 SmartSyncSDKManager.getInstance().getAppContext());

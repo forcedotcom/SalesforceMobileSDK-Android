@@ -144,6 +144,15 @@ public class SalesforceReactLogger {
         getLogger().v(tag, message, e);
     }
 
+    /**
+     * Sets the log level to be used.
+     *
+     * @param level Log level.
+     */
+    public static void setLogLevel(SalesforceLogger.Level level) {
+        getLogger().setLogLevel(level);
+    }
+
     private static SalesforceLogger getLogger() {
         return SalesforceLogger.getLogger(COMPONENT_NAME,
                 SalesforceReactSDKManager.getInstance().getAppContext());
