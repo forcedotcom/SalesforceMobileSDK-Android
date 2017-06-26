@@ -599,18 +599,7 @@ public class SalesforceSDKManager {
      * @return Branded login path.
      */
     public synchronized void setBrandedLoginPath(String loginPath) {
-        if (loginPath == null || loginPath.trim().isEmpty()) {
-            brandedLoginPath = "";
-        } else {
-            final String forwardSlash = "/";
-            if (loginPath.startsWith(forwardSlash)) {
-                loginPath = loginPath.substring(1);
-            }
-            if (loginPath.endsWith(forwardSlash)) {
-                loginPath = loginPath.substring(0, loginPath.length() - 1);
-            }
-            brandedLoginPath = loginPath;
-        }
+        brandedLoginPath = loginPath;
     }
 
     /**

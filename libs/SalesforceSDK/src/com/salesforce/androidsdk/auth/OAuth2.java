@@ -201,10 +201,7 @@ public class OAuth2 {
                                           String callbackUrl, String[] scopes, String clientSecret, String displayType,
                                           Map<String,String> addlParams) {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
-        sb.append(OAUTH_AUTH_PATH);
-        if (!TextUtils.isEmpty(SalesforceSDKManager.getInstance().getBrandedLoginPath())) {
-            sb.append("/").append(SalesforceSDKManager.getInstance().getBrandedLoginPath());
-        }
+        sb.append(OAUTH_AUTH_PATH).append(getBrandedLoginPath());
         sb.append(OAUTH_DISPLAY_PARAM).append(displayType == null ? TOUCH : displayType);
         sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(clientSecret == null ? TOKEN : ACTIVATED_CLIENT_CODE);
         sb.append(AND).append(CLIENT_ID).append(EQUAL).append(Uri.encode(clientId));
@@ -219,6 +216,22 @@ public class OAuth2 {
             }
         }
         return URI.create(sb.toString());
+    }
+
+    private static String getBrandedLoginPath() {
+        String brandedLoginPath = SalesforceSDKManager.getInstance().getBrandedLoginPath();
+        if (brandedLoginPath == null || brandedLoginPath.trim().isEmpty()) {
+            brandedLoginPath = "";
+        } else {
+            final String forwardSlash = "/";
+            if (!brandedLoginPath.startsWith(forwardSlash)) {
+                brandedLoginPath = forwardSlash + brandedLoginPath;
+            }
+            if (brandedLoginPath.endsWith(forwardSlash)) {
+                brandedLoginPath = brandedLoginPath.substring(0, brandedLoginPath.length() - 1);
+            }
+        }
+        return brandedLoginPath;
     }
 
     /**
