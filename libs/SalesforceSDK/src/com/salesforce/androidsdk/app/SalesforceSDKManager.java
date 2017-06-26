@@ -135,6 +135,7 @@ public class SalesforceSDKManager {
     private volatile boolean loggedOut = false;
     private SortedSet<String> features;
     private List<String> additionalOauthKeys;
+    private String brandedLoginPath;
 
     /**
      * PasscodeManager object lock.
@@ -198,6 +199,7 @@ public class SalesforceSDKManager {
     	if (loginActivity != null) {
             this.loginActivityClass = loginActivity;
     	}
+        brandedLoginPath = "";
         this.features  = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 
         /*
@@ -582,12 +584,42 @@ public class SalesforceSDKManager {
     }
 
     /**
+     * Returns the branded login path.
+     *
+     * @return Branded login path, or empty string if not configured.
+     */
+    public String getBrandedLoginPath() {
+    	return brandedLoginPath;
+    }
+
+    /**
+     * Sets the branded login path. In the following example, "<brand>" should be set here.
+     * https://community.force.com/services/oauth2/authorize/<brand>?response_type=code&...
+     *
+     * @return Branded login path.
+     */
+    public synchronized void setBrandedLoginPath(String loginPath) {
+        if (loginPath == null || loginPath.trim().isEmpty()) {
+            brandedLoginPath = "";
+        } else {
+            final String forwardSlash = "/";
+            if (loginPath.startsWith(forwardSlash)) {
+                loginPath = loginPath.substring(1);
+            }
+            if (loginPath.endsWith(forwardSlash)) {
+                loginPath = loginPath.substring(0, loginPath.length() - 1);
+            }
+            brandedLoginPath = loginPath;
+        }
+    }
+
+    /**
      * Returns the app display name used by the passcode dialog.
      *
      * @return App display string.
      */
     public String getAppDisplayString() {
-    	return DEFAULT_APP_DISPLAY_NAME;
+        return DEFAULT_APP_DISPLAY_NAME;
     }
 
     /**

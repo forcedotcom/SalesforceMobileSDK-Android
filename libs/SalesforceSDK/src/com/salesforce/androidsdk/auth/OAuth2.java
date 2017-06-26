@@ -127,7 +127,8 @@ public class OAuth2 {
     private static final String TAG = "OAuth2";
 
     // Login paths
-    private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize?display=";
+    private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize";
+    private static final String OAUTH_DISPLAY_PARAM = "?display=";
     private static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
     private static final String OAUTH_REVOKE_PATH = "/services/oauth2/revoke?token=";
     public static final String EMPTY_STRING = "";
@@ -200,7 +201,11 @@ public class OAuth2 {
                                           String callbackUrl, String[] scopes, String clientSecret, String displayType,
                                           Map<String,String> addlParams) {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
-        sb.append(OAUTH_AUTH_PATH).append(displayType == null ? TOUCH : displayType);
+        sb.append(OAUTH_AUTH_PATH);
+        if (!TextUtils.isEmpty(SalesforceSDKManager.getInstance().getBrandedLoginPath())) {
+            sb.append("/").append(SalesforceSDKManager.getInstance().getBrandedLoginPath());
+        }
+        sb.append(OAUTH_DISPLAY_PARAM).append(displayType == null ? TOUCH : displayType);
         sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(clientSecret == null ? TOKEN : ACTIVATED_CLIENT_CODE);
         sb.append(AND).append(CLIENT_ID).append(EQUAL).append(Uri.encode(clientId));
         if (scopes != null && scopes.length > 0)
