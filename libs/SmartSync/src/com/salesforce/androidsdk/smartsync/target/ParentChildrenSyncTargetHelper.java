@@ -73,7 +73,7 @@ public class ParentChildrenSyncTargetHelper {
 
                     // Saving parent
                     target.cleanRecord(parent);
-                    target.cleanAndSaveInSmartStore(smartStore, parentInfo.soupName, parent, false);
+                    target.cleanAndSaveInSmartStore(smartStore, parentInfo.soupName, parent, parentInfo.idFieldName, false);
 
                     // Put server id of parent in children
                     if (children != null) {
@@ -83,7 +83,7 @@ public class ParentChildrenSyncTargetHelper {
 
                             // Saving child
                             target.cleanRecord(child);
-                            target.cleanAndSaveInSmartStore(smartStore, childrenInfo.soupName, child, false);
+                            target.cleanAndSaveInSmartStore(smartStore, childrenInfo.soupName, child, childrenInfo.idFieldName, false);
                         }
                     }
                 }

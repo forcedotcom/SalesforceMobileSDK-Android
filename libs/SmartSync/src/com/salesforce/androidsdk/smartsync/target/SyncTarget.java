@@ -159,11 +159,11 @@ public abstract class SyncTarget {
      * @param record
      */
     public void cleanAndSaveInLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
-        cleanAndSaveInSmartStore(syncManager.getSmartStore(), soupName, record, true);
+        cleanAndSaveInSmartStore(syncManager.getSmartStore(), soupName, record, getIdFieldName(), true);
         SmartSyncLogger.d(TAG, "cleanAndSaveInLocalStore", record);
     }
 
-    protected void cleanAndSaveInSmartStore(SmartStore smartStore, String soupName, JSONObject record, boolean handleTx) throws JSONException {
+    protected void cleanAndSaveInSmartStore(SmartStore smartStore, String soupName, JSONObject record, String idFieldName, boolean handleTx) throws JSONException {
         cleanRecord(record);
 
         if (record.has(SmartStore.SOUP_ENTRY_ID)) {
@@ -172,7 +172,7 @@ public abstract class SyncTarget {
         }
         else {
             // Record came from server
-            smartStore.upsert(soupName, record, getIdFieldName(), handleTx);
+            smartStore.upsert(soupName, record, idFieldName, handleTx);
         }
     }
 
@@ -198,7 +198,7 @@ public abstract class SyncTarget {
                 smartStore.beginTransaction();
                 for (int i = 0; i < records.length(); i++) {
                     JSONObject record = new JSONObject(records.getJSONObject(i).toString());
-                    cleanAndSaveInSmartStore(syncManager.getSmartStore(), soupName, record, false);
+                    cleanAndSaveInSmartStore(syncManager.getSmartStore(), soupName, record, getIdFieldName(), false);
                 }
                 smartStore.setTransactionSuccessful();
             }
