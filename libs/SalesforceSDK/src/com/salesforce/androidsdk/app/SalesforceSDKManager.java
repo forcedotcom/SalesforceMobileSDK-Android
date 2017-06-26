@@ -135,7 +135,7 @@ public class SalesforceSDKManager {
     private volatile boolean loggedOut = false;
     private SortedSet<String> features;
     private List<String> additionalOauthKeys;
-    private String brandedLoginPath;
+    private String loginBrand;
 
     /**
      * PasscodeManager object lock.
@@ -583,22 +583,22 @@ public class SalesforceSDKManager {
     }
 
     /**
-     * Returns the branded login path.
+     * Returns the login brand parameter.
      *
-     * @return Branded login path, or empty string if not configured.
+     * @return Login brand, if configured.
      */
-    public String getBrandedLoginPath() {
-    	return brandedLoginPath;
+    public String getLoginBrand() {
+    	return loginBrand;
     }
 
     /**
-     * Sets the branded login path. In the following example, "<brand>" should be set here.
+     * Sets the login brand. In the following example, "<brand>" should be set here.
      * https://community.force.com/services/oauth2/authorize/<brand>?response_type=code&...
      *
-     * @return Branded login path.
+     * @param loginBrand Login brand param.
      */
-    public synchronized void setBrandedLoginPath(String loginPath) {
-        brandedLoginPath = loginPath;
+    public synchronized void setLoginBrand(String loginBrand) {
+        this.loginBrand = loginBrand;
     }
 
     /**

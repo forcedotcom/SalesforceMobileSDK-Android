@@ -113,7 +113,7 @@ public class OAuth2Test extends InstrumentationTestCase {
     public void testGetAuthorizationUrlWithBrandedLoginPath() throws URISyntaxException {
         String callbackUrl = "sfdc://callback";
         final String brandedLoginPath = "BRAND";
-        SalesforceSDKManager.getInstance().setBrandedLoginPath(brandedLoginPath);
+        SalesforceSDKManager.getInstance().setLoginBrand(brandedLoginPath);
         URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null);
         URI expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
@@ -136,7 +136,7 @@ public class OAuth2Test extends InstrumentationTestCase {
     public void testGetAuthorizationUrlWithBrandedLoginPathWithLeadingSlash() throws URISyntaxException {
         String callbackUrl = "sfdc://callback";
         final String brandedLoginPath = "BRAND";
-        SalesforceSDKManager.getInstance().setBrandedLoginPath(brandedLoginPath);
+        SalesforceSDKManager.getInstance().setLoginBrand(brandedLoginPath);
         URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null);
         URI expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
@@ -159,7 +159,7 @@ public class OAuth2Test extends InstrumentationTestCase {
     public void testGetAuthorizationUrlWithBrandedLoginPathWithTrailingSlash() throws URISyntaxException {
         String callbackUrl = "sfdc://callback";
         final String brandedLoginPath = "BRAND";
-        SalesforceSDKManager.getInstance().setBrandedLoginPath(brandedLoginPath);
+        SalesforceSDKManager.getInstance().setLoginBrand(brandedLoginPath);
         URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null);
         URI expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +

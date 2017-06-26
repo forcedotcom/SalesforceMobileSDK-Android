@@ -219,7 +219,7 @@ public class OAuth2 {
     }
 
     private static String getBrandedLoginPath() {
-        String brandedLoginPath = SalesforceSDKManager.getInstance().getBrandedLoginPath();
+        String brandedLoginPath = SalesforceSDKManager.getInstance().getLoginBrand();
         if (brandedLoginPath == null || brandedLoginPath.trim().isEmpty()) {
             brandedLoginPath = "";
         } else {
