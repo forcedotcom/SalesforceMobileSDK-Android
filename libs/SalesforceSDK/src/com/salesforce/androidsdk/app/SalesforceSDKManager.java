@@ -199,7 +199,6 @@ public class SalesforceSDKManager {
     	if (loginActivity != null) {
             this.loginActivityClass = loginActivity;
     	}
-        brandedLoginPath = "";
         this.features  = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 
         /*
