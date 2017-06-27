@@ -594,6 +594,7 @@ public class SalesforceSDKManager {
     /**
      * Sets the login brand. In the following example, "<brand>" should be set here.
      * https://community.force.com/services/oauth2/authorize/<brand>?response_type=code&...
+     * Note: This API might change in the future.
      *
      * @param loginBrand Login brand param.
      */
