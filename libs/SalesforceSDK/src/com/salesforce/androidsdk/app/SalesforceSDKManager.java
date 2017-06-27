@@ -135,6 +135,7 @@ public class SalesforceSDKManager {
     private volatile boolean loggedOut = false;
     private SortedSet<String> features;
     private List<String> additionalOauthKeys;
+    private String loginBrand;
 
     /**
      * PasscodeManager object lock.
@@ -582,12 +583,32 @@ public class SalesforceSDKManager {
     }
 
     /**
+     * Returns the login brand parameter.
+     *
+     * @return Login brand, if configured.
+     */
+    public String getLoginBrand() {
+    	return loginBrand;
+    }
+
+    /**
+     * Sets the login brand. In the following example, "<brand>" should be set here.
+     * https://community.force.com/services/oauth2/authorize/<brand>?response_type=code&...
+     * Note: This API might change in the future.
+     *
+     * @param loginBrand Login brand param.
+     */
+    public synchronized void setLoginBrand(String loginBrand) {
+        this.loginBrand = loginBrand;
+    }
+
+    /**
      * Returns the app display name used by the passcode dialog.
      *
      * @return App display string.
      */
     public String getAppDisplayString() {
-    	return DEFAULT_APP_DISPLAY_NAME;
+        return DEFAULT_APP_DISPLAY_NAME;
     }
 
     /**

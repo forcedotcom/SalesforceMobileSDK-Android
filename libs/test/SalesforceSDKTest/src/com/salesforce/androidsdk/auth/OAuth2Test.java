@@ -26,9 +26,13 @@
  */
 package com.salesforce.androidsdk.auth;
 
+import android.app.Application;
+import android.app.Instrumentation;
 import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.TestCredentials;
+import com.salesforce.androidsdk.TestForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse;
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
@@ -46,8 +50,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 /**
- * Tests for OAuth2
- *
+ * Tests for OAuth2.
  */
 public class OAuth2Test extends InstrumentationTestCase {
 
@@ -56,50 +59,126 @@ public class OAuth2Test extends InstrumentationTestCase {
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
+        final Application app = Instrumentation.newApplication(TestForceApp.class,
+                getInstrumentation().getContext());
+        getInstrumentation().callApplicationOnCreate(app);
 		TestCredentials.init(getInstrumentation().getContext());
 		httpAccess = new HttpAccess(null, "dummy-agent");		
 	}
 
 	/**
-	 * Testing getAuthorizationUrl
-	 * @throws URISyntaxException 
-	 * 
+	 * Testing getAuthorizationUrl.
+     *
+	 * @throws URISyntaxException
 	 */
 	public void testGetAuthorizationUrl() throws URISyntaxException {
 		String callbackUrl = "sfdc://callback";
-		URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL), TestCredentials.CLIENT_ID, callbackUrl, null);
-		URI expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL + "/services/oauth2/authorize?display=touch&response_type=token&client_id=" + TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl);
+		URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),
+                TestCredentials.CLIENT_ID, callbackUrl, null);
+		URI expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
+                "/services/oauth2/authorize?display=touch&response_type=token&client_id=" +
+                TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl);
 		assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
-		
-		authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL), TestCredentials.CLIENT_ID, callbackUrl, null, null, "touch");
-		expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL + "/services/oauth2/authorize?display=touch&response_type=token&client_id=" + TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl);
+		authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),
+                TestCredentials.CLIENT_ID, callbackUrl, null, null, "touch");
+		expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
+                "/services/oauth2/authorize?display=touch&response_type=token&client_id=" +
+                TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl);
 		assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
 	}
 
 	/**
-	 * Testing getAuthorizationUrl
+	 * Testing getAuthorizationUrl with params.
+     *
 	 * @throws URISyntaxException
-	 *
 	 */
 	public void testGetAuthorizationUrlWithParams() throws URISyntaxException {
 		String callbackUrl = "sfdc://callback";
 		Map<String,String> params = new HashMap<>();
-		params.put("param1","val1");
-		params.put("param2","val2");
-		params.put("param3",null);
-
-		URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL), TestCredentials.CLIENT_ID, callbackUrl, null,null,null,params);
-		assertTrue("Wrong authorization url", authorizationUrl.getRawQuery().indexOf("&param1=val1")>0);
-		assertTrue("Wrong authorization url", authorizationUrl.getRawQuery().indexOf("&param2=val2")>0);
-		assertTrue("Wrong authorization url", authorizationUrl.getRawQuery().indexOf("&param3=")>0);
-
+		params.put("param1", "val1");
+		params.put("param2", "val2");
+		params.put("param3", null);
+		URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),
+                TestCredentials.CLIENT_ID, callbackUrl, null, null, null, params);
+		assertTrue("Wrong authorization url", authorizationUrl.getRawQuery().indexOf("&param1=val1") > 0);
+		assertTrue("Wrong authorization url", authorizationUrl.getRawQuery().indexOf("&param2=val2") > 0);
+		assertTrue("Wrong authorization url", authorizationUrl.getRawQuery().indexOf("&param3=") > 0);
 	}
+
+    /**
+     * Testing getAuthorizationUrl with branded login path.
+     *
+     * @throws URISyntaxException
+     */
+    public void testGetAuthorizationUrlWithBrandedLoginPath() throws URISyntaxException {
+        String callbackUrl = "sfdc://callback";
+        final String brandedLoginPath = "BRAND";
+        SalesforceSDKManager.getInstance().setLoginBrand(brandedLoginPath);
+        URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),
+                TestCredentials.CLIENT_ID, callbackUrl, null);
+        URI expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
+                "/services/oauth2/authorize/BRAND?display=touch&response_type=token&client_id=" +
+                TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl);
+        assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
+        authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),
+                TestCredentials.CLIENT_ID, callbackUrl, null, null, "touch");
+        expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
+                "/services/oauth2/authorize/BRAND?display=touch&response_type=token&client_id=" +
+                TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl);
+        assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
+    }
+
+    /**
+     * Testing getAuthorizationUrl with branded login path with leading slash.
+     *
+     * @throws URISyntaxException
+     */
+    public void testGetAuthorizationUrlWithBrandedLoginPathWithLeadingSlash() throws URISyntaxException {
+        String callbackUrl = "sfdc://callback";
+        final String brandedLoginPath = "BRAND";
+        SalesforceSDKManager.getInstance().setLoginBrand(brandedLoginPath);
+        URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),
+                TestCredentials.CLIENT_ID, callbackUrl, null);
+        URI expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
+                "/services/oauth2/authorize/BRAND?display=touch&response_type=token&client_id=" +
+                TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl);
+        assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
+        authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),
+                TestCredentials.CLIENT_ID, callbackUrl, null, null, "touch");
+        expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
+                "/services/oauth2/authorize/BRAND?display=touch&response_type=token&client_id=" +
+                TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl);
+        assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
+    }
+
+    /**
+     * Testing getAuthorizationUrl with branded login path with trailing slash.
+     *
+     * @throws URISyntaxException
+     */
+    public void testGetAuthorizationUrlWithBrandedLoginPathWithTrailingSlash() throws URISyntaxException {
+        String callbackUrl = "sfdc://callback";
+        final String brandedLoginPath = "BRAND";
+        SalesforceSDKManager.getInstance().setLoginBrand(brandedLoginPath);
+        URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),
+                TestCredentials.CLIENT_ID, callbackUrl, null);
+        URI expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
+                "/services/oauth2/authorize/BRAND?display=touch&response_type=token&client_id=" +
+                TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl);
+        assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
+        authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),
+                TestCredentials.CLIENT_ID, callbackUrl, null, null, "touch");
+        expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
+                "/services/oauth2/authorize/BRAND?display=touch&response_type=token&client_id=" +
+                TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl);
+        assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
+    }
 
     private void tryScopes(String[] scopes, String expectedScopeParamValue) throws URISyntaxException {
         String callbackUrl = "sfdc://callback";
-        URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),TestCredentials.CLIENT_ID,callbackUrl, scopes);
+        URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),
+                TestCredentials.CLIENT_ID,callbackUrl, scopes);
         HttpUrl url = HttpUrl.get(authorizationUrl);
-
         boolean scopesFound = false;
         for (int i = 0, size = url.querySize(); i < size; i++) {
             if (url.queryParameterName(i).equalsIgnoreCase("scope")) {
@@ -108,21 +187,20 @@ public class OAuth2Test extends InstrumentationTestCase {
                 break;
             }
         }
-
         if (expectedScopeParamValue == null) {
             assertFalse("Scope found on empty scope", scopesFound);
-        }
-        else {
+        } else {
             assertTrue("No scope param found in query", scopesFound);
         }
     }
 
     /**
-	 * Testing getAuthorizationUrl with scopes
-	 * @throws URISyntaxException 
-	 * 
+	 * Testing getAuthorizationUrl with scopes.
+     *
+	 * @throws URISyntaxException
 	 */
 	public void testGetAuthorizationUrlWithScopes() throws URISyntaxException {
+
         //verify basic scopes present
         tryScopes(new String[]{"foo", "bar"}, "bar foo refresh_token");
 
@@ -138,15 +216,16 @@ public class OAuth2Test extends InstrumentationTestCase {
 	
 	
 	/**
-	 * Testing refreshAuthToken
+	 * Testing refreshAuthToken.
 	 * 
-	 * Call refresh token, then try out the auth token by calling /services/data/vXX
+	 * Call refresh token, then try out the auth token by calling /services/data/vXX.
 	 * 
 	 * @throws IOException
 	 * @throws URISyntaxException 
 	 * @throws OAuthFailedException 
 	 */
 	public void testRefreshAuthToken() throws IOException, OAuthFailedException, URISyntaxException {
+
 		// Get an auth token using the refresh token
 		TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
 		assertNotNull("Auth token should not be null", refreshResponse.authToken);
@@ -160,29 +239,30 @@ public class OAuth2Test extends InstrumentationTestCase {
 				.build();
 
 		Response resourcesResponse = httpAccess.getOkHttpClient().newCall(request).execute();
-
 		assertEquals("HTTP response status code should have been 200 (OK)", HttpURLConnection.HTTP_OK, resourcesResponse.code());
 	}
 	
 	/**
-	 * Testing callIdentityService
+	 * Testing callIdentityService.
 	 * 
-	 * Call refresh token then call out to identity service and check that username returned match the one in TestCredentials
+	 * Call refresh token then call out to identity service and check that username returned match the one in TestCredentials.
 	 * 
 	 * @throws IOException
 	 * @throws OAuthFailedException
 	 * @throws URISyntaxException
 	 */
 	public void testCallIdentityService() throws IOException, OAuthFailedException, URISyntaxException {
+
 		// Get an auth token using the refresh token
-		TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
+		TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,
+                new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
 		assertNotNull("Auth token should not be null", refreshResponse.authToken);
 
 		// Now let's call the identity service
-		IdServiceResponse id = OAuth2.callIdentityService(httpAccess, TestCredentials.INSTANCE_URL + "/id/" + TestCredentials.ORG_ID + "/" + TestCredentials.USER_ID, refreshResponse.authToken);
+		IdServiceResponse id = OAuth2.callIdentityService(httpAccess, TestCredentials.INSTANCE_URL +
+                "/id/" + TestCredentials.ORG_ID + "/" + TestCredentials.USER_ID, refreshResponse.authToken);
 		assertEquals("Wrong username returned", TestCredentials.USERNAME, id.username);
 		assertEquals("Wrong pinLength returned", -1, id.pinLength);
 		assertEquals("Wrong screenLockTimeout returned", -1, id.screenLockTimeout);
 	}
-	
 }
