@@ -27,7 +27,7 @@
 package com.salesforce.androidsdk.smartstore.util;
 
 import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
-import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
  * A simple logger util class for the SmartStore library. This class simply acts
@@ -155,6 +155,6 @@ public class SmartStoreLogger {
 
     private static SalesforceLogger getLogger() {
         return SalesforceLogger.getLogger(COMPONENT_NAME,
-                SmartStoreSDKManager.getInstance().getAppContext());
+                SalesforceSDKManager.getInstance().getAppContext());
     }
 }
