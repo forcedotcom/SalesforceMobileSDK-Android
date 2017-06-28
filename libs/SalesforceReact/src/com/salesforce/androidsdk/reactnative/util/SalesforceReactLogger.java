@@ -27,7 +27,7 @@
 package com.salesforce.androidsdk.reactnative.util;
 
 import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
-import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
  * A simple logger util class for the SalesforceReact library. This class simply acts
@@ -155,6 +155,6 @@ public class SalesforceReactLogger {
 
     private static SalesforceLogger getLogger() {
         return SalesforceLogger.getLogger(COMPONENT_NAME,
-                SalesforceReactSDKManager.getInstance().getAppContext());
+                SalesforceSDKManager.getInstance().getAppContext());
     }
 }

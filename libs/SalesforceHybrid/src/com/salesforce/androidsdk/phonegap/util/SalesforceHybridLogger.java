@@ -27,7 +27,7 @@
 package com.salesforce.androidsdk.phonegap.util;
 
 import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
-import com.salesforce.androidsdk.phonegap.app.SalesforceHybridSDKManager;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
  * A simple logger util class for the SalesforceHybrid library. This class simply acts
@@ -155,6 +155,6 @@ public class SalesforceHybridLogger {
 
     private static SalesforceLogger getLogger() {
         return SalesforceLogger.getLogger(COMPONENT_NAME,
-                SalesforceHybridSDKManager.getInstance().getAppContext());
+                SalesforceSDKManager.getInstance().getAppContext());
     }
 }
