@@ -255,7 +255,8 @@ public class SyncManager {
                     updateSync(sync, SyncState.Status.DONE, 100, callback);
                 } catch (RestClient.RefreshTokenRevokedException re) {
                     SmartSyncLogger.e(TAG, "Exception thrown in runSync", re);
-                    // Do not do anything - let the logout go through!
+                    // Failed due to invalid refresh token. Update status to failed.
+                    updateSync(sync, SyncState.Status.FAILED, UNCHANGED, callback);
                 } catch (Exception e) {
                     SmartSyncLogger.e(TAG, "Exception thrown in runSync", e);
                     // Update status to failed
