@@ -113,6 +113,11 @@ public class AILTNPublisher implements AnalyticsPublisher {
                     ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()));
             final RestClient restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient();
 
+            if (restClient.getOkHttpClient() == null) {
+                // Rest client is not ready
+                return false;
+            }
+
             /*
              * There's no easy way to get content length using GZIP interceptors. Some trickery is
              * required to achieve this by adding an additional interceptor to determine content length.
