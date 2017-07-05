@@ -29,30 +29,25 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 5.1
+### What's New in 5.2
 
-**REST API Enhancements**
-- We've added support for batching REST requests together.
-- We've added an API for composite REST requests.
-- We now support:
-	- If-Unmodified-Since conditional requests.
-	- Use of `Id` as the external ID field for upserts, coupled with null for the external ID This pattern is useful if you’re upserting multiple records with different external ID fields.
-	- SObjectTree requests.
+**Login Enhancements**
+- We have added support for branded community login pages by adding methods to configure the brand parameter in your Mobile SDK app.
 
 **SmartSync Enhancements**
-- In Mobile SDK 5.1, we’ve refactored SmartSync classes to decouple the SyncManager class from SyncTarget classes. This new architecture requires API changes that affect all apps that use SmartSync. However, the majority of the changes apply only to SmartSync apps that define custom targets.
+- In Mobile SDK 5.2, we've added new sync targets to allow related records to be synced down or synced up in one call.
+
+**New Logging Framework**
+- We've added a new logging framework in Mobile SDK 5.2 with the following features:
+	- Writes log lines to both console and a rolling log file on the filesystem.
+	- Supports component-specific loggers.
+	- Lets you configure log levels per component.
+	- Lets you configure maximum log file size per component.
 
 **Library Upgrades**
-- We've updated React Native to version 0.43.1.
-- We've updated Cordova to version 6.1.2.
-- We've updated OkHttp to version 3.6.0.
-
-**New Distribution Channel**
-- Mobile SDK is now available on jCenter, in our Maven repo [here](https://bintray.com/forcedotcom/salesforcemobilesdk).
-- See [this](https://rwhitleysfdc.wordpress.com/2017/02/14/consuming-mobile-sdk-for-android-through-gradle) blog post for more information.
+- We've updated Cordova to version 6.2.3.
 
 **Other Technical Improvements**
-- Updated our push notification implementation to conform with the latest GCM standards.
 - Improvements to sample apps.
 - Various bug fixes.
 
