@@ -26,6 +26,12 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
@@ -33,15 +39,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import okhttp3.MediaType;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
-
-import android.util.Log;
 
 /**
  * RestResponse: Class to represent any REST response.
@@ -51,6 +51,7 @@ public class RestResponse {
 
     private static final String CONTENT_TYPE_HEADER_KEY = "Content-Type";
     private static final String CONTENT_TYPE_HEADER_VALUE = "application/json";
+	private static final String TAG = "RestResponse";
 
 	private final Response response;
 
@@ -139,7 +140,7 @@ public class RestResponse {
 		try {
 			consume();
 		} catch (IOException e) {
-			Log.e("RestResponse: consume()", "Content could not be written to byte array", e);
+			SalesforceSDKLogger.e(TAG, "Content could not be written to a byte array", e);
 		}
 	}
 
@@ -256,7 +257,7 @@ public class RestResponse {
 		try {
 			return asString();
 		} catch (Exception e) {
-			Log.e("RestResponse:toString()", "Exception caught while calling asString()", e);
+            SalesforceSDKLogger.e(TAG, "Exception thrown while converting to string", e);
 			return ((response == null) ? "" : response.toString());
 		}
 	}

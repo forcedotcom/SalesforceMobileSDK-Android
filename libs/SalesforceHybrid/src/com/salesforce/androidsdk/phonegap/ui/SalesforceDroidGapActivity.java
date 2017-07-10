@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.phonegap.ui;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.SystemClock;
-import android.util.Log;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.WebView;
@@ -39,6 +38,7 @@ import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess.NoNetworkException;
 import com.salesforce.androidsdk.config.BootConfig;
+import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
@@ -88,7 +88,6 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        Log.i(TAG, "onCreate called");
         super.onCreate(savedInstanceState);
         init();
 
@@ -117,7 +116,6 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 
     @Override
     public void init() {
-        Log.i(TAG, "init called");
         super.init();
         EventsObservable.get().notifyEvent(EventType.GapWebViewCreateComplete, appView);
     }
@@ -156,7 +154,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 
                 // Web app already loaded
                 else {
-                    Log.i(TAG, "onResume - Already logged in / web app already loaded");
+                    SalesforceHybridLogger.i(TAG, "onResume - already logged in/web app already loaded");
                 }
             }
         }
@@ -173,7 +171,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
                     this.recreate();
                 }
             } catch (AccountInfoNotFoundException e) {
-                Log.i(TAG, "restartIfUserSwitched - No user account found");
+                SalesforceHybridLogger.i(TAG, "restartIfUserSwitched - no user account found");
             }
         }
     }
@@ -188,13 +186,13 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 
             // Online
             if (SalesforceSDKManager.getInstance().hasNetwork()) {
-                Log.i(TAG, "onResumeNotLoggedIn - Should authenticate / online - authenticating");
+                SalesforceHybridLogger.i(TAG, "onResumeNotLoggedIn - should authenticate/online - authenticating");
                 authenticate(null);
             }
 
             // Offline
             else {
-                Log.w(TAG, "onResumeNotLoggedIn - Should authenticate / offline - cannot proceed");
+                SalesforceHybridLogger.w(TAG, "onResumeNotLoggedIn - should authenticate/offline - can not proceed");
                 loadErrorPage();
             }
         }
@@ -204,13 +202,13 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 
             // Local
             if (bootconfig.isLocal()) {
-                Log.i(TAG, "onResumeNotLoggedIn - Should not authenticate / local start page - loading web app");
+                SalesforceHybridLogger.i(TAG, "onResumeNotLoggedIn - should not authenticate/local start page - loading web app");
                 loadLocalStartPage();
             }
 
             // Remote
             else {
-                Log.w(TAG, "onResumeNotLoggedIn - Should not authenticate / remote start page - cannot proceed");
+                SalesforceHybridLogger.w(TAG, "onResumeNotLoggedIn - should not authenticate/remote start page - can not proceed");
                 loadErrorPage();
             }
         }
@@ -223,7 +221,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 
         // Local
         if (bootconfig.isLocal()) {
-            Log.i(TAG, "onResumeLoggedInNotLoaded - Local start page - loading web app");
+            SalesforceHybridLogger.i(TAG, "onResumeLoggedInNotLoaded - local start page - loading web app");
             loadLocalStartPage();
         }
 
@@ -232,7 +230,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 
             // Online
             if (SalesforceSDKManager.getInstance().hasNetwork()) {
-                Log.i(TAG, "onResumeLoggedInNotLoaded - Remote start page / online - loading web app");
+                SalesforceHybridLogger.i(TAG, "onResumeLoggedInNotLoaded - remote start page/online - loading web app");
                 loadRemoteStartPage();
             }
 
@@ -240,13 +238,13 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
             else {
                 // Has cached version
                 if (SalesforceWebViewClientHelper.hasCachedAppHome(this)) {
-                    Log.i(TAG, "onResumeLoggedInNotLoaded - Remote start page / offline / cached - loading cached web app");
+                    SalesforceHybridLogger.i(TAG, "onResumeLoggedInNotLoaded - remote start page/offline/cached - loading cached web app");
                     loadCachedStartPage();
                 }
 
                 // No cached version
                 else {
-                    Log.w(TAG, "onResumeLoggedInNotLoaded - Remote start page / offline / not cached - cannot proceed");
+                    SalesforceHybridLogger.i(TAG, "onResumeLoggedInNotLoaded - remote start page/offline/not cached - can not proceed");
                     loadErrorPage();
                 }
             }
@@ -280,7 +278,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     }
 
     public void logout(CallbackContext callbackContext) {
-        Log.i(TAG, "logout called");
+        SalesforceHybridLogger.i(TAG, "logout called");
         SalesforceSDKManager.getInstance().logout(this);
         if (callbackContext != null) {
             callbackContext.success();
@@ -292,16 +290,16 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
      * @param callbackContext when not null credentials/errors are sent through to callbackContext.success()/error()
      */
     public void authenticate(final CallbackContext callbackContext) {
-        Log.i(TAG, "authenticate called");
+        SalesforceHybridLogger.i(TAG, "authenticate called");
         clientManager.getRestClient(this, new RestClientCallback() {
 
             @Override
             public void authenticatedRestClient(RestClient client) {
                 if (client == null) {
-                    Log.i(TAG, "authenticate - authenticatedRestClient called with null client");
+                    SalesforceHybridLogger.i(TAG, "authenticate callback triggered with null client");
                     logout(null);
                 } else {
-                    Log.i(TAG, "authenticate - authenticatedRestClient called with actual client");
+                    SalesforceHybridLogger.i(TAG, "authenticate callback triggered with actual client");
                     SalesforceDroidGapActivity.this.client = client;
 
                     /*
@@ -350,7 +348,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
      * @param callbackContext
      */
     public void getAuthCredentials(CallbackContext callbackContext) {
-        Log.i(TAG, "getAuthCredentials called");
+        SalesforceHybridLogger.i(TAG, "getAuthCredentials called");
         if (client != null) {
             JSONObject credentials = client.getJSONCredentials();
             if (callbackContext != null) {
@@ -369,13 +367,12 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
      * @param url the page to load once the session has been refreshed.
      */
     public void refresh(final String url) {
-        Log.i(TAG, "refresh called");
+        SalesforceHybridLogger.i(TAG, "refresh called");
         client.sendAsync(RestRequest.getRequestForResources(ApiVersionStrings.getVersionNumber(this)), new AsyncRequestCallback() {
 
             @Override
             public void onSuccess(RestRequest request, RestResponse response) {
-                Log.i(TAG, "refresh - Refresh succeeded");
-
+                SalesforceHybridLogger.i(TAG, "refresh callback - refresh succeeded");
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -394,7 +391,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 
             @Override
             public void onError(Exception exception) {
-                Log.w(TAG, "refresh - Refresh failed - " + exception);
+                SalesforceHybridLogger.w(TAG, "refresh callback - refresh failed", exception);
 
                 // Only logout if we are NOT offline
                 if (!(exception instanceof NoNetworkException)) {
@@ -447,7 +444,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     public void loadLocalStartPage() {
         assert bootconfig.isLocal();
         String startPage = bootconfig.getStartPage();
-        Log.i(TAG, "loadLocalStartPage - loading: " + startPage);
+        SalesforceHybridLogger.i(TAG, "loadLocalStartPage called - loading: " + startPage);
         loadUrl("file:///android_asset/www/" + startPage);
         webAppLoaded = true;
     }		
@@ -458,7 +455,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     public void loadRemoteStartPage() {
         assert !bootconfig.isLocal();
         String startPage = bootconfig.getStartPage();
-        Log.i(TAG, "loadRemoteStartPage - loading: " + startPage);
+        SalesforceHybridLogger.i(TAG, "loadRemoteStartPage called - loading: " + startPage);
         String url = getFrontDoorUrl(startPage, false);
         loadUrl(url);
         webAppLoaded = true;
@@ -502,9 +499,8 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
      * Load error page 
      */
     public void loadErrorPage() {
-        Log.i(TAG, "getErrorPageUrl called");
         String errorPage = bootconfig.getErrorPage();
-        Log.i(TAG, "getErrorPageUrl - local error page: " + errorPage);
+        SalesforceHybridLogger.i(TAG, "getErrorPageUrl called - local error page: " + errorPage);
         loadUrl("file:///android_asset/www/" + errorPage);
     }
 
@@ -521,7 +517,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     * Set cookies on cookie manager.
     */
    private void setSidCookies() {
-       Log.i(TAG, "setSidCookies - setting cookies");
+       SalesforceHybridLogger.i(TAG, "setSidCookies called");
        CookieManager cookieMgr = CookieManager.getInstance();
        cookieMgr.setAcceptCookie(true);  // Required to set additional cookies that the auth process will return.
        SalesforceSDKManager.getInstance().removeSessionCookies();

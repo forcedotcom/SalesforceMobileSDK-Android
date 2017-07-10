@@ -26,23 +26,22 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.os.Build;
+
+import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
+
+import net.sqlcipher.database.SQLiteDatabase;
+
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-
-import net.sqlcipher.database.SQLiteDatabase;
-
-import android.annotation.SuppressLint;
-import android.content.Context;
-import android.content.pm.ApplicationInfo;
-import android.os.Build;
-import android.util.Log;
 
 /**
  * When loading sqlite library we see UnsatisfiedLinkError exceptions
@@ -68,10 +67,9 @@ public class SqliteLibraryLoader {
             // We are assuming the library loaded by sql cipher failed
             return extractAndLoadAgain(context, DATABASE_SQLCIPHER, getSupportedAbis());
         } catch (Exception ex) {
-            Log.e(TAG, "Error loading native libraries for Sqlcipher", ex);
+            SmartStoreLogger.e(TAG, "Error occurred while loading native libs for SQLCipher", ex);
             return false;
         }
-
         return true;
     }
 
@@ -87,34 +85,29 @@ public class SqliteLibraryLoader {
      * @return True if the library can be read from new location, false otherwise.
      */
     private static boolean extractAndLoadAgain(Context context, String libraryName, String[] supportedABIs) {
-        final String METHOD_TAG = TAG + ":extractAndLoadAgain";
-
         ApplicationInfo appInfo = context.getApplicationInfo();
         String destPath = context.getFilesDir().toString();
-        Log.i(METHOD_TAG, "Extracting to destination : " + destPath);
+        SmartStoreLogger.i(TAG, "Extracting to destination: " + destPath);
         try {
-
             String soName = destPath + File.separator + libraryName;
             new File(soName).delete();
-
             boolean fileCopied = false;
             for (String abi : supportedABIs) {
-                Log.i(METHOD_TAG, "Using ABI : " + abi);
+                SmartStoreLogger.i(TAG, "Using ABI: " + abi);
                 UnzipUtil.extractFile(appInfo.sourceDir, "lib/" + abi + "/" + libraryName, destPath);
                 if (canReadFile(new File(soName))) {
-                    Log.i(METHOD_TAG, "File exists after extracting to " + abi);
+                    SmartStoreLogger.i(TAG, "File exists after extracting to " + abi);
                     fileCopied = true;
                     break;
                 }
             }
-
             if (fileCopied) {
                 System.load(soName);
                 return true;
             }
         } catch (IOException | UnsatisfiedLinkError e) {
             // extractFile to app files dir did not work. Not enough space? Uninstall/Reinstall dialog should be shown.
-            Log.e(METHOD_TAG, "An error occurred when extracting and loading libs", e);
+            SmartStoreLogger.e(TAG, "Error occurred while extracting and loading libs", e);
         }
         return false;
     }

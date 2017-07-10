@@ -33,7 +33,6 @@ import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.os.Build;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.manager.AnalyticsManager;
@@ -45,6 +44,7 @@ import com.salesforce.androidsdk.analytics.transform.Transform;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.AdminSettingsManager;
 import com.salesforce.androidsdk.config.BootConfig;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -310,7 +310,7 @@ public class SalesforceAnalyticsManager {
             try {
                 transformer = transformClass.newInstance();
             } catch (Exception e) {
-                Log.e(TAG, "Exception thrown while instantiating class", e);
+                SalesforceSDKLogger.e(TAG, "Exception thrown while instantiating class", e);
             }
             if (transformer != null) {
                 final JSONArray eventsJSONArray = new JSONArray();
@@ -325,7 +325,7 @@ public class SalesforceAnalyticsManager {
                 try {
                     networkPublisher = remotes.get(transformClass).newInstance();
                 } catch (Exception e) {
-                    Log.e(TAG, "Exception thrown while instantiating class", e);
+                    SalesforceSDKLogger.e(TAG, "Exception thrown while instantiating class", e);
                 }
                 if (networkPublisher != null) {
                     boolean networkSuccess = networkPublisher.publish(eventsJSONArray);
@@ -376,7 +376,7 @@ public class SalesforceAnalyticsManager {
     public void addRemotePublisher(Class<? extends Transform> transformer,
                                    Class<? extends AnalyticsPublisher> publisher) {
         if (transformer == null || publisher == null) {
-            Log.w(TAG, "Invalid transformer and/or publisher");
+            SalesforceSDKLogger.w(TAG, "Invalid transformer and/or publisher");
             return;
         }
         remotes.put(transformer, publisher);
@@ -409,11 +409,11 @@ public class SalesforceAnalyticsManager {
             appVersion = packageInfo.versionName;
             appName = SalesforceSDKManager.getAiltnAppName();
         } catch (PackageManager.NameNotFoundException e) {
-            Log.w(TAG, e);
+            SalesforceSDKLogger.w(TAG, "Could not read package info", e);
         } catch (Resources.NotFoundException nfe) {
 
             // A test harness such as Gradle does NOT have an application name.
-            Log.w(TAG, nfe);
+            SalesforceSDKLogger.w(TAG, "Could not read package info", nfe);
         }
         final String osVersion = Build.VERSION.RELEASE;
         final String osName = "android";

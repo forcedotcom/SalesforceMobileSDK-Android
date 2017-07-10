@@ -30,7 +30,8 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
-import android.util.Log;
+
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.io.IOException;
 import java.security.KeyManagementException;
@@ -57,6 +58,7 @@ public class HttpAccess {
 
     // User agent header name.
 	private static final String USER_AGENT = "User-Agent";
+    private static final String TAG = "HttpAccess";
 
     private String userAgent;
     private OkHttpClient okHttpClient;
@@ -117,9 +119,9 @@ public class HttpAccess {
             try {
                 builder.sslSocketFactory(SalesforceTLSSocketFactory.getInstance());
             } catch (KeyManagementException e) {
-                Log.e("HttpAccess", "getOkHttpClientBuilder - Exception thrown while setting SSL socket factory", e);
-            } catch (NoSuchAlgorithmException e) {
-                Log.e("HttpAccess", "getOkHttpClientBuilder - Exception thrown while setting SSL socket factory", e);
+                SalesforceSDKLogger.e(TAG, "Exception thrown while setting SSL socket factory", e);
+            } catch (NoSuchAlgorithmException ne) {
+                SalesforceSDKLogger.e(TAG, "Exception thrown while setting SSL socket factory", ne);
             }
         }
 

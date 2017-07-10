@@ -27,11 +27,11 @@
 package com.salesforce.androidsdk.phonegap.plugin;
 
 import android.app.Activity;
-import android.util.Log;
 import android.util.SparseArray;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
@@ -77,6 +77,8 @@ import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.TYPE;
  * PhoneGap plugin for smart store.
  */
 public class SmartStorePlugin extends ForcePlugin {
+
+	private static final String TAG = "SmartStorePlugin";
 
 	// Map of cursor id to StoreCursor, per database.
 	private static Map<SQLiteDatabase, SparseArray<StoreCursor>> STORE_CURSORS = new HashMap<>();
@@ -127,7 +129,7 @@ public class SmartStorePlugin extends ForcePlugin {
     	try {
     		action = Action.valueOf(actionStr);
     	} catch (IllegalArgumentException e) {
-    		Log.e("StorePlugin.execute", "Unknown action " + actionStr);
+            SalesforceHybridLogger.e(TAG, "Unknown action: " + actionStr, e);
             return false;
     	}
 
@@ -166,15 +168,14 @@ public class SmartStorePlugin extends ForcePlugin {
 						  default: throw new SmartStoreException("No handler for action " + action);
 						}
 					} catch (Exception e) {
-						Log.w("StorePlugin.execute", e.getMessage(), e);
+                        SalesforceHybridLogger.w(TAG, "execute call failed", e);
 						callbackContext.error(e.getMessage());
 					}
-					Log.d("STorePlugin.execute", "Total time for " + action + "->" + (System.currentTimeMillis() - start));
+                    SalesforceHybridLogger.d(TAG, "Total time for " + action + " -> " + (System.currentTimeMillis() - start));
 				}
 			}
 		});
-
-    	Log.d("STorePlugin.execute", "Main thread time for " + action + "->" + (System.currentTimeMillis() - start));
+        SalesforceHybridLogger.d(TAG, "Main thread time for " + action + " -> " + (System.currentTimeMillis() - start));
     	return true;
     }
 

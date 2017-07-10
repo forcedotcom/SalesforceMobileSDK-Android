@@ -26,15 +26,15 @@
  */
 package com.salesforce.androidsdk.phonegap.plugin;
 
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 
 import org.apache.cordova.CallbackContext;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.util.Log;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 /**
  * PhoneGap plugin to run javascript tests.
@@ -90,6 +90,7 @@ public class TestRunnerPlugin extends ForcePlugin {
 	 * @throws InterruptedException 
 	 */
 	private void onTestComplete(JSONArray args,  CallbackContext callbackContext) throws JSONException, InterruptedException {
+
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String testName = arg0.getString(TEST_NAME);
@@ -97,13 +98,9 @@ public class TestRunnerPlugin extends ForcePlugin {
 		String message = stripHtml(arg0.getString(MESSAGE));
         int durationMsec =  arg0.getInt(DURATION);
         double duration = durationMsec / 1000.0;
-        
 		TestResult testResult = new TestResult(testName, success, message, duration);
 		testResults.put(testResult);
-
-		Log.w(TAG,testResult.testName + " completed in " + testResult.duration);
-	
-        
+        SalesforceHybridLogger.w(TAG, testResult.testName + " completed in " + testResult.duration);
 		callbackContext.success();
 	}
 
@@ -122,6 +119,7 @@ public class TestRunnerPlugin extends ForcePlugin {
 	}
 	
 	public static class TestResult {
+
 		public final String testName;
 		public final boolean success;
 		public final String message;
@@ -133,6 +131,5 @@ public class TestRunnerPlugin extends ForcePlugin {
 			this.message = message;
 			this.duration = duration;
 		}
-		
 	}
 }

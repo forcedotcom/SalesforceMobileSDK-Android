@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.util;
 
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -138,7 +137,7 @@ public class MapUtil {
                 try {
                     jsonObject.put(key, map.get(key));
                 } catch (JSONException e) {
-                    Log.e(TAG, "Exception thrown while creating JSONObject", e);
+                    SalesforceSDKLogger.e(TAG, "Exception thrown while creating JSON object", e);
                 }
             }
         }

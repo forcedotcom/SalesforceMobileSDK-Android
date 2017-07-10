@@ -38,11 +38,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.util.Log;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.io.IOException;
 import java.net.URI;
@@ -224,7 +224,6 @@ public class AuthenticatorService extends Service {
                 }
             }
             Map<String,String> addlParamsMap = SalesforceSDKManager.getInstance().getLoginOptions().getAdditionalParameters();
-
             final String encCommunityId = mgr.getUserData(account, AuthenticatorService.KEY_COMMUNITY_ID);
             String communityId = null;
             if (encCommunityId != null) {
@@ -291,6 +290,7 @@ public class AuthenticatorService extends Service {
                             if (newValue != null) {
                                 final String encrNewValue = SalesforceSDKManager.encryptWithPasscode(newValue, passcodeHash);
                                 resBundle.putString(key, encrNewValue);
+                                mgr.setUserData(account, key, encrNewValue);
                             }
                         } else if (values != null && values.containsKey(key)) {
                             final String value = values.get(key);
@@ -318,19 +318,19 @@ public class AuthenticatorService extends Service {
                 }
                 resBundle.putString(AuthenticatorService.KEY_COMMUNITY_URL, encrCommunityUrl);
             } catch (IOException e) {
-                Log.w(TAG, "", e);
+                SalesforceSDKLogger.w(TAG, "Exception thrown while getting new auth token", e);
                 throw new NetworkErrorException(e);
-            } catch (URISyntaxException e) {
-                Log.w(TAG, "", e);
-                throw new NetworkErrorException(e);
-            } catch (OAuthFailedException e) {
-                if (e.isRefreshTokenInvalid()) {
-                	Log.i(TAG, "Invalid Refresh Token: (Error: " + e.response.error + ", Status Code: " + e.httpStatusCode + ")");
-                    // the exception explicitly indicates that the refresh token is no longer valid.
+            } catch (URISyntaxException ex) {
+                SalesforceSDKLogger.w(TAG, "Exception thrown while getting new auth token", ex);
+                throw new NetworkErrorException(ex);
+            } catch (OAuthFailedException ofe) {
+                if (ofe.isRefreshTokenInvalid()) {
+                    SalesforceSDKLogger.i(TAG, "Invalid Refresh Token: (Error: " +
+                            ofe.response.error + ", Status Code: " + ofe.httpStatusCode + ")", ofe);
                     return makeAuthIntentBundle(response, options);
                 }
-                resBundle.putString(AccountManager.KEY_ERROR_CODE, e.response.error);
-                resBundle.putString(AccountManager.KEY_ERROR_MESSAGE, e.response.errorDescription);
+                resBundle.putString(AccountManager.KEY_ERROR_CODE, ofe.response.error);
+                resBundle.putString(AccountManager.KEY_ERROR_MESSAGE, ofe.response.errorDescription);
             }
             return resBundle;
         }

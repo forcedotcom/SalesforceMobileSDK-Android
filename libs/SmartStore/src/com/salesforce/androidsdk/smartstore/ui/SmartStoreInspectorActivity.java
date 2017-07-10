@@ -33,7 +33,6 @@ import android.os.Bundle;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
@@ -50,6 +49,7 @@ import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -63,6 +63,7 @@ public class SmartStoreInspectorActivity extends Activity {
 	// Keys for extras bundle
 	private static final String IS_GLOBAL_STORE = "isGlobalStore";
 	private static final String DB_NAME = "dbName";
+    private static final String TAG = "SmartStoreInspectorActivity";
 
 	// Default page size / index
 	private static final int DEFAULT_PAGE_SIZE = 10;
@@ -258,11 +259,6 @@ public class SmartStoreInspectorActivity extends Activity {
 		}
 	}
 
-	/**
-	 * Helper method to show an alert
-	 * 
-	 * @param e
-	 */
 	private void showAlert(String title, String message) {
 		lastAlertTitle = title;
 		lastAlertMessage = message;
@@ -346,7 +342,7 @@ public class SmartStoreInspectorActivity extends Activity {
 						+ "}");
 			}
 		} catch (JSONException e) {
-			Log.e("SmartStoreInspector", "getIndices", e);
+			SmartStoreLogger.e(TAG, "Error occurred while parsing JSON", e);
 		}
 
 		// Adding some SQL keywords

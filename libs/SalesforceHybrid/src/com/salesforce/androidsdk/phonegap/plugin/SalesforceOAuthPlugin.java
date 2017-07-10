@@ -26,10 +26,9 @@
  */
 package com.salesforce.androidsdk.phonegap.plugin;
 
-import android.util.Log;
-
 import com.salesforce.androidsdk.phonegap.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.phonegap.ui.SalesforceWebViewClientHelper;
+import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
@@ -75,7 +74,7 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
                     default: throw new Exception("No handler for action " + action);
                 }
             } catch (Exception e) {
-                Log.w(TAG, "execute:" +  e.getMessage(), e);
+                SalesforceHybridLogger.w(TAG, "execute: " + e.getMessage(), e);
                 callbackContext.error(e.getMessage());
             }
             }
@@ -90,7 +89,7 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
      * @throws JSONException
      */
     protected void authenticate(final CallbackContext callbackContext) throws JSONException {
-        Log.i(TAG, "authenticate called");
+        SalesforceHybridLogger.i(TAG, "authenticate called");
         ((SalesforceDroidGapActivity) cordova.getActivity()).authenticate(callbackContext);
 
         // Done.
@@ -105,7 +104,7 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
      * @throws JSONException
      */
     protected void getAuthCredentials(CallbackContext callbackContext) throws JSONException {
-        Log.i(TAG, "getAuthCredentials called");
+        SalesforceHybridLogger.i(TAG, "getAuthCredentials called");
         ((SalesforceDroidGapActivity) cordova.getActivity()).getAuthCredentials(callbackContext);
     }
 
@@ -114,7 +113,7 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
      * @param callbackContext Used when calling back into Javascript.
      */
     protected void getAppHomeUrl(CallbackContext callbackContext)  {
-        Log.i(TAG, "getAppHomeUrl called");
+        SalesforceHybridLogger.i(TAG, "getAppHomeUrl called");
         callbackContext.success(SalesforceWebViewClientHelper.getAppHomeUrl(cordova.getActivity()));
     }
 
@@ -123,7 +122,7 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
      * @param callbackContext Used when calling back into Javascript.
      */
     protected void logoutCurrentUser(CallbackContext callbackContext) {
-        Log.i(TAG, "logoutCurrentUser called");
+        SalesforceHybridLogger.i(TAG, "logoutCurrentUser called");
         ((SalesforceDroidGapActivity) cordova.getActivity()).logout(callbackContext);
     }
 }

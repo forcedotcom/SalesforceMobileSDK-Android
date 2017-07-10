@@ -26,18 +26,18 @@
  */
 package com.salesforce.androidsdk.phonegap.plugin;
 
-import java.util.List;
+import android.content.Intent;
+
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 
 import org.apache.cordova.CallbackContext;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.content.Intent;
-import android.util.Log;
-
-import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import java.util.List;
 
 /**
  * Cordova plugin that provides methods related to user account management.
@@ -45,6 +45,8 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
  * @author bhariharan
  */
 public class SFAccountManagerPlugin extends ForcePlugin {
+
+    private static final String TAG = "SFAccountManagerPlugin";
 
     /**
      * Supported plugin actions.
@@ -90,7 +92,7 @@ public class SFAccountManagerPlugin extends ForcePlugin {
      * @param callbackContext Used when calling back into Javascript.
      */
     protected void getUsers(CallbackContext callbackContext) {
-        Log.i("SFAccountManagerPlugin.getUsers", "getUsers called");
+        SalesforceHybridLogger.i(TAG, "getUsers called");
         final List<UserAccount> userAccounts = SalesforceSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers();
         final JSONArray accounts = new JSONArray();
         if (userAccounts != null && !userAccounts.isEmpty()) {
@@ -107,7 +109,7 @@ public class SFAccountManagerPlugin extends ForcePlugin {
      * @param callbackContext Used when calling back into Javascript.
      */
     protected void getCurrentUser(CallbackContext callbackContext) {
-        Log.i("SFAccountManagerPlugin.getCurrentUser", "getCurrentUser called");
+        SalesforceHybridLogger.i(TAG, "getCurrentUser called");
         final UserAccount userAccount = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
         JSONObject account = new JSONObject();
         if (userAccount != null) {
@@ -123,7 +125,7 @@ public class SFAccountManagerPlugin extends ForcePlugin {
      * @param callbackContext Used when calling back into Javascript.
      */
     protected void logout(JSONArray args, CallbackContext callbackContext) {
-        Log.i("SFAccountManagerPlugin.logout", "logout called");
+        SalesforceHybridLogger.i(TAG, "logout called");
         UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
         if (args != null && args.length() > 0) {
         	final JSONObject user = args.optJSONObject(0);
@@ -142,7 +144,7 @@ public class SFAccountManagerPlugin extends ForcePlugin {
      * @param callbackContext Used when calling back into Javascript.
      */
     protected void switchToUser(JSONArray args, CallbackContext callbackContext) {
-        Log.i("SFAccountManagerPlugin.switchToUser", "switchToUser called");
+        SalesforceHybridLogger.i(TAG, "switchToUser called");
         UserAccount account = null;
         final List<UserAccount> userAccounts = SalesforceSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers();
 

@@ -14,6 +14,7 @@ apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 
 dependencies {
+    compile 'com.squareup:tape:1.2.3'
 }
 
 android {
@@ -123,9 +124,9 @@ bintray {
         licenses = ['Apache-2.0']
         labels = ['android', 'salesforce', 'mobilesdk']
         version {
-            name = '5.1.0'
+            name = '5.2.0'
             released  = new Date()
-            vcsTag = 'v5.1.0'
+            vcsTag = 'v5.2.0'
         }
     }
 }

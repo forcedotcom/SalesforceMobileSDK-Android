@@ -16,7 +16,7 @@ apply plugin: 'com.jfrog.bintray'
 dependencies {
   compile project(':libs:SalesforceAnalytics')
   compile 'com.squareup.okhttp3:okhttp:3.6.0'
-  compile "com.google.android.gms:play-services-gcm:10.2.0"
+  compile 'com.google.android.gms:play-services-gcm:10.2.0'
 }
 
 android {
@@ -126,9 +126,9 @@ bintray {
         licenses = ['Apache-2.0']
         labels = ['android', 'salesforce', 'mobilesdk']
         version {
-            name = '5.1.0'
+            name = '5.2.0'
             released  = new Date()
-            vcsTag = 'v5.1.0'
+            vcsTag = 'v5.2.0'
         }
     }
 }
