@@ -26,16 +26,13 @@
  */
 package com.salesforce.androidsdk.reactnative.ui;
 
-import android.app.Activity;
-import android.content.Intent;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.util.Log;
 import android.widget.Toast;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
 
 import com.facebook.react.ReactActivity;
 import com.facebook.react.ReactActivityDelegate;
@@ -43,6 +40,7 @@ import com.facebook.react.bridge.Callback;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.reactnative.R;
 import com.salesforce.androidsdk.reactnative.bridge.ReactBridgeHelper;
+import com.salesforce.androidsdk.reactnative.util.SalesforceReactLogger;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
@@ -83,7 +81,7 @@ public abstract class SalesforceReactActivity extends ReactActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.i(TAG, "onCreate called");
+        SalesforceReactLogger.i(TAG, "onCreate called");
         super.onCreate(savedInstanceState);
 
         // Get clientManager
@@ -128,7 +126,7 @@ public abstract class SalesforceReactActivity extends ReactActivity {
             }
             // Logged in
             else {
-                Log.i(TAG, "onResume - Already logged in");
+                SalesforceReactLogger.i(TAG, "onResume - already logged in");
             }
 
         }
@@ -147,20 +145,20 @@ public abstract class SalesforceReactActivity extends ReactActivity {
 
             // Online
             if (SalesforceSDKManager.getInstance().hasNetwork()) {
-                Log.i(TAG, "onResumeNotLoggedIn - Should authenticate / online - authenticating");
+                SalesforceReactLogger.i(TAG, "onResumeNotLoggedIn - should authenticate/online - authenticating");
                 login();
             }
 
             // Offline
             else {
-                Log.w(TAG, "onResumeNotLoggedIn - Should authenticate / offline - cannot proceed");
+                SalesforceReactLogger.w(TAG, "onResumeNotLoggedIn - should authenticate/offline - can not proceed");
                 onErrorAuthenticateOffline();
             }
         }
 
         // Does not need to be authenticated
         else {
-            Log.i(TAG, "onResumeNotLoggedIn - Should not authenticate");
+            SalesforceReactLogger.i(TAG, "onResumeNotLoggedIn - should not authenticate");
         }
     }
 
@@ -177,15 +175,15 @@ public abstract class SalesforceReactActivity extends ReactActivity {
     }
 
     protected void login() {
-        Log.i(TAG, "login called");
+        SalesforceReactLogger.i(TAG, "login called");
         clientManager.getRestClient(this, new RestClientCallback() {
             @Override
             public void authenticatedRestClient(RestClient client) {
                 if (client == null) {
-                    Log.i(TAG, "login - authenticatedRestClient called with null client");
+                    SalesforceReactLogger.i(TAG, "login callback triggered with null client");
                     logout(null);
                 } else {
-                    Log.i(TAG, "login - authenticatedRestClient called with actual client");
+                    SalesforceReactLogger.i(TAG, "login callback triggered with actual client");
                     SalesforceReactActivity.this.restartReactNativeApp();
                 }
             }
@@ -197,7 +195,7 @@ public abstract class SalesforceReactActivity extends ReactActivity {
      * @param successCallback
      */
     public void logout(Callback successCallback) {
-        Log.i(TAG, "logout called");
+        SalesforceReactLogger.i(TAG, "logout called");
         SalesforceSDKManager.getInstance().logout(this);
     }
 
@@ -207,7 +205,7 @@ public abstract class SalesforceReactActivity extends ReactActivity {
      * @param errorCallback
      */
     public void authenticate(final Callback successCallback, final Callback errorCallback) {
-        Log.i(TAG, "authenticate called");
+        SalesforceReactLogger.i(TAG, "authenticate called");
         clientManager.getRestClient(this, new RestClientCallback() {
             @Override
             public void authenticatedRestClient(RestClient client) {
@@ -223,7 +221,7 @@ public abstract class SalesforceReactActivity extends ReactActivity {
      * @param errorCallback
      */
     public void getAuthCredentials(Callback successCallback, Callback errorCallback) {
-        Log.i(TAG, "getAuthCredentials called");
+        SalesforceReactLogger.i(TAG, "getAuthCredentials called");
         if (client != null) {
             if (successCallback != null) {
                 ReactBridgeHelper.invokeSuccess(successCallback, client.getJSONCredentials());
@@ -338,5 +336,4 @@ public abstract class SalesforceReactActivity extends ReactActivity {
             overlayPermissionRequiredDialog.dismiss();
         }
     }
-
 }

@@ -28,10 +28,10 @@ package com.salesforce.androidsdk.auth;
 
 import android.net.Uri;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import org.json.JSONObject;
 
@@ -127,7 +127,8 @@ public class OAuth2 {
     private static final String TAG = "OAuth2";
 
     // Login paths
-    private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize?display=";
+    private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize";
+    private static final String OAUTH_DISPLAY_PARAM = "?display=";
     private static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
     private static final String OAUTH_REVOKE_PATH = "/services/oauth2/revoke?token=";
     public static final String EMPTY_STRING = "";
@@ -200,7 +201,8 @@ public class OAuth2 {
                                           String callbackUrl, String[] scopes, String clientSecret, String displayType,
                                           Map<String,String> addlParams) {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
-        sb.append(OAUTH_AUTH_PATH).append(displayType == null ? TOUCH : displayType);
+        sb.append(OAUTH_AUTH_PATH).append(getBrandedLoginPath());
+        sb.append(OAUTH_DISPLAY_PARAM).append(displayType == null ? TOUCH : displayType);
         sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(clientSecret == null ? TOKEN : ACTIVATED_CLIENT_CODE);
         sb.append(AND).append(CLIENT_ID).append(EQUAL).append(Uri.encode(clientId));
         if (scopes != null && scopes.length > 0)
@@ -214,6 +216,22 @@ public class OAuth2 {
             }
         }
         return URI.create(sb.toString());
+    }
+
+    private static String getBrandedLoginPath() {
+        String brandedLoginPath = SalesforceSDKManager.getInstance().getLoginBrand();
+        if (brandedLoginPath == null || brandedLoginPath.trim().isEmpty()) {
+            brandedLoginPath = "";
+        } else {
+            final String forwardSlash = "/";
+            if (!brandedLoginPath.startsWith(forwardSlash)) {
+                brandedLoginPath = forwardSlash + brandedLoginPath;
+            }
+            if (brandedLoginPath.endsWith(forwardSlash)) {
+                brandedLoginPath = brandedLoginPath.substring(0, brandedLoginPath.length() - 1);
+            }
+        }
+        return brandedLoginPath;
     }
 
     /**
@@ -356,7 +374,7 @@ public class OAuth2 {
         try {
             httpAccessor.getOkHttpClient().newCall(request).execute();
         } catch (IOException e) {
-            Log.w(TAG, e);
+            SalesforceSDKLogger.w(TAG, "Exception thrown while revoking refresh token", e);
         }
     }
 
@@ -579,7 +597,7 @@ public class OAuth2 {
                     screenLockTimeout = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(SCREEN_LOCK);
                 }
             } catch (Exception e) {
-                Log.w(TAG, e);
+                SalesforceSDKLogger.w(TAG, "Could not parse identity response", e);
             }
         }
     }
@@ -599,7 +617,7 @@ public class OAuth2 {
                 errorDescription = parsedResponse
                         .getString(ERROR_DESCRIPTION);
             } catch (Exception e) {
-                Log.w(TAG, e);
+                SalesforceSDKLogger.w(TAG, "Could not parse token error response", e);
             }
         }
 
@@ -653,7 +671,7 @@ public class OAuth2 {
                     }
                 }
             } catch (Exception e) {
-                Log.w(TAG, e);
+                SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);
             }
         }
 
@@ -693,7 +711,7 @@ public class OAuth2 {
                     }
                 }
             } catch (Exception e) {
-                Log.w(TAG, e);
+                SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);
             }
         }
 

@@ -26,10 +26,9 @@
  */
 package com.salesforce.androidsdk.smartsync.target;
 
-import android.util.Log;
-
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
@@ -242,7 +241,7 @@ public abstract class SyncDownTarget extends SyncTarget {
                 long timeStamp = Constants.TIMESTAMP_FORMAT.parse(timeStampStr).getTime();
                 maxTimeStamp = Math.max(timeStamp, maxTimeStamp);
             } catch (Exception e) {
-                Log.w(TAG, "getLatestModificationTimeStamp: Could not parse modification date field " + modifiedDateFieldName, e);
+                SmartSyncLogger.w(TAG, "Could not parse modification date field: " + modifiedDateFieldName, e);
                 maxTimeStamp = -1;
                 break;
             }

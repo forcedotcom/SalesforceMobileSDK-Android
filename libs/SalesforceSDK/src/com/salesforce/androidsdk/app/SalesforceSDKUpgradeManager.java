@@ -32,7 +32,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
@@ -40,6 +39,7 @@ import com.salesforce.androidsdk.config.AdminSettingsManager;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.security.PasscodeManager;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.io.File;
 import java.util.Map;
@@ -51,15 +51,9 @@ import java.util.Map;
  */
 public class SalesforceSDKUpgradeManager {
 
-    /**
-     * Name of the shared preference file that contains version information.
-     */
     private static final String VERSION_SHARED_PREF = "version_info";
-
-    /**
-     * Key in shared preference file for account manager version.
-     */
     private static final String ACC_MGR_KEY = "acc_mgr_version";
+    private static final String TAG = "SalesforceSDKUpgradeManager";
 
     private static SalesforceSDKUpgradeManager instance = null;
 
@@ -115,7 +109,7 @@ public class SalesforceSDKUpgradeManager {
             	upgradeTo2Dot2();
             }
         } catch (NumberFormatException e) {
-        	Log.e("UpgradeManager:upgradeAccMgr", "Failed to parse installed version.");
+            SalesforceSDKLogger.e(TAG, "Failed to parse installed version", e);
         }
     }
 

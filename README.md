@@ -29,30 +29,25 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 5.1
+### What's New in 5.2
 
-**REST API Enhancements**
-- We've added support for batching REST requests together.
-- We've added an API for composite REST requests.
-- We now support:
-	- If-Unmodified-Since conditional requests.
-	- Use of `Id` as the external ID field for upserts, coupled with null for the external ID This pattern is useful if you’re upserting multiple records with different external ID fields.
-	- SObjectTree requests.
+**Login Enhancements**
+- We have added support for branded community login pages by adding methods to configure the brand parameter in your Mobile SDK app.
 
 **SmartSync Enhancements**
-- In Mobile SDK 5.1, we’ve refactored SmartSync classes to decouple the SyncManager class from SyncTarget classes. This new architecture requires API changes that affect all apps that use SmartSync. However, the majority of the changes apply only to SmartSync apps that define custom targets.
+- In Mobile SDK 5.2, we've added new sync targets to allow related records to be synced down or synced up in one call.
+
+**New Logging Framework**
+- We've added a new logging framework in Mobile SDK 5.2 with the following features:
+	- Writes log lines to both console and a rolling log file on the filesystem.
+	- Supports component-specific loggers.
+	- Lets you configure log levels per component.
+	- Lets you configure maximum log file size per component.
 
 **Library Upgrades**
-- We've updated React Native to version 0.43.1.
-- We've updated Cordova to version 6.1.2.
-- We've updated OkHttp to version 3.6.0.
-
-**New Distribution Channel**
-- Mobile SDK is now available on jCenter, in our Maven repo [here](https://bintray.com/forcedotcom/salesforcemobilesdk).
-- See [this](https://rwhitleysfdc.wordpress.com/2017/02/14/consuming-mobile-sdk-for-android-through-gradle) blog post for more information.
+- We've updated Cordova to version 6.2.3.
 
 **Other Technical Improvements**
-- Updated our push notification implementation to conform with the latest GCM standards.
 - Improvements to sample apps.
 - Various bug fixes.
 
@@ -63,9 +58,6 @@ The Salesforce Mobile SDK provides essential libraries for quickly building nati
 
 ### Hybrid Applications
 HTML5 is quickly emerging as dominant technology for developing cross-platform mobile applications. While developers can create sophisticated apps with HTML5 and JavaScript, some limitations remain, specifically: session management, access to the camera and address book, and the inability to distribute apps inside public App Stores. The Salesforce Mobile Container makes possible to combine the ease of web app development with power of the Android platform by wrapping a web app inside a thin native container, producing a hybrid application.
-
-### WARNING: OAuth2 token storage on devices without encryption
-The Salesforce Mobile SDK provides PIN-based OAuth token encryption for Android devices that don't provide full storage encryption functionality.  The SDK implementation is **NOT** designed to provide complete security. It's simply offered as an option for temporarily protecting your app from eavesdroppers. Please use caution in your production deployment with sensitive data. **We strongly recommend deploying production apps on the latest generation of Android devices with build-in device encryption.**
 
 Setting up your Development Environment
 ==

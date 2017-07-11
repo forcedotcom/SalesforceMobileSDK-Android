@@ -40,7 +40,6 @@ import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.text.Html;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -124,7 +123,6 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             setMode(passcodeManager.hasStoredPasscode(this) ? PasscodeMode.Check : PasscodeMode.Create);
             showFingerprintDialog();
         }
-        Log.i("PasscodeActivity:onCreate", "Mode: " + getMode());
         logoutEnabled = true;
         if (savedInstanceState != null) {
             final String inputText = savedInstanceState.getString(EXTRA_KEY);
@@ -206,7 +204,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 
     @Override
     public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-        Log.i("onEditorAction", "view=" + v + " actionId=" + actionId + " event=" + event);
+
         // Processing the editor action only on key up to avoid sending events like pass code manager unlock twice.
         if ( actionId ==  EditorInfo.IME_ACTION_GO ||
                 (event != null && event.getAction() == KeyEvent.ACTION_UP)) {

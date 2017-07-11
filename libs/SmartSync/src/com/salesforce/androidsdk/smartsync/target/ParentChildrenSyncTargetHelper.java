@@ -49,6 +49,7 @@ public class ParentChildrenSyncTargetHelper {
     public static final String PARENT = "parent";
     public static final String CHILDREN = "children";
     public static final String RELATIONSHIP_TYPE = "relationshipType";
+    static final String FEATURE_RELATED_RECORDS = "RR";
 
     /**
      * Enum for relationship types
@@ -63,7 +64,6 @@ public class ParentChildrenSyncTargetHelper {
         synchronized(smartStore.getDatabase()) {
             try {
                 smartStore.beginTransaction();
-
                 for (int i=0; i<recordTrees.length(); i++) {
                     JSONObject record = recordTrees.getJSONObject(i);
                     JSONObject parent = new JSONObject(record.toString());
@@ -73,7 +73,7 @@ public class ParentChildrenSyncTargetHelper {
 
                     // Saving parent
                     target.cleanRecord(parent);
-                    target.cleanAndSaveInSmartStore(smartStore, parentInfo.soupName, parent, false);
+                    target.cleanAndSaveInSmartStore(smartStore, parentInfo.soupName, parent, parentInfo.idFieldName, false);
 
                     // Put server id of parent in children
                     if (children != null) {
@@ -83,15 +83,12 @@ public class ParentChildrenSyncTargetHelper {
 
                             // Saving child
                             target.cleanRecord(child);
-                            target.cleanAndSaveInSmartStore(smartStore, childrenInfo.soupName, child, false);
+                            target.cleanAndSaveInSmartStore(smartStore, childrenInfo.soupName, child, childrenInfo.idFieldName, false);
                         }
                     }
                 }
-
                 smartStore.setTransactionSuccessful();
-
-            }
-            finally {
+            } finally {
                 smartStore.endTransaction();
             }
         }
@@ -140,5 +137,4 @@ public class ParentChildrenSyncTargetHelper {
 
         return QuerySpec.buildSmartQuerySpec(smartSql, Integer.MAX_VALUE);
     }
-
 }

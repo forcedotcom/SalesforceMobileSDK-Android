@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
-import android.util.Log;
-
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -43,7 +41,7 @@ import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.target.AdvancedSyncUpTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
-import com.salesforce.androidsdk.smartsync.util.SyncManagerLogger;
+import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
@@ -85,7 +83,6 @@ public class SyncManager {
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
 	private SmartStore smartStore;
 	private RestClient restClient;
-    private SyncManagerLogger logger;
 
     /**
      * Private constructor
@@ -95,7 +92,6 @@ public class SyncManager {
         apiVersion = ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext());
         this.smartStore = smartStore;
         this.restClient = restClient;
-        this.logger = new SyncManagerLogger(Log.INFO);
         SyncState.setupSyncsSoupIfNeeded(smartStore);
     }
 
@@ -209,7 +205,7 @@ public class SyncManager {
      */
     public SyncState syncDown(SyncDownTarget target, SyncOptions options, String soupName, SyncUpdateCallback callback) throws JSONException {
     	SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName);
-        logger.d(this, "syncDown:", sync);
+        SmartSyncLogger.d(TAG, "syncDown called", sync);
         runSync(sync, callback);
 		return sync;
     }
@@ -232,7 +228,7 @@ public class SyncManager {
             throw new SmartSyncException("Cannot run reSync:" + syncId + ": wrong type:" + sync.getType());
         }
         sync.setTotalSize(-1);
-        logger.d(this, "reSync:", sync);
+        SmartSyncLogger.d(TAG, "reSync called", sync);
         runSync(sync, callback);
         return sync;
     }
@@ -258,11 +254,10 @@ public class SyncManager {
                     }
                     updateSync(sync, SyncState.Status.DONE, 100, callback);
                 } catch (RestClient.RefreshTokenRevokedException re) {
-                    logger.e(this, "runSync", re);
+                    SmartSyncLogger.e(TAG, "Exception thrown in runSync", re);
                     // Do not do anything - let the logout go through!
-
                 } catch (Exception e) {
-                    logger.e(this, "runSync", e);
+                    SmartSyncLogger.e(TAG, "Exception thrown in runSync", e);
                     // Update status to failed
                     updateSync(sync, SyncState.Status.FAILED, UNCHANGED, callback);
                 }
@@ -281,8 +276,8 @@ public class SyncManager {
      */
     public SyncState syncUp(SyncUpTarget target, SyncOptions options, String soupName, SyncUpdateCallback callback) throws JSONException {
     	SyncState sync = SyncState.createSyncUp(smartStore, target, options, soupName);
-        logger.d(this, "syncUp:", sync);
-    	runSync(sync, callback);
+        SmartSyncLogger.d(TAG, "syncUp called", sync);
+        runSync(sync, callback);
     	return sync;
     }
 
@@ -305,9 +300,7 @@ public class SyncManager {
         if (sync.getType() != SyncState.Type.syncDown) {
             throw new SmartSyncException("Cannot run cleanResyncGhosts:" + syncId + ": wrong type:" + sync.getType());
         }
-
-        logger.d(this, "cleanResyncGhosts:", sync);
-
+        SmartSyncLogger.d(TAG, "cleanResyncGhosts called", sync);
         final String soupName = sync.getSoupName();
         final SyncDownTarget target = (SyncDownTarget) sync.getTarget();
 
@@ -324,7 +317,7 @@ public class SyncManager {
                         attributes.put("syncTarget", target.getClass().getName());
                         EventBuilderHelper.createAndStoreEventSync("cleanResyncGhosts", null, TAG, attributes);
                     } catch (JSONException e) {
-                        Log.e(TAG, "Unexpected json error for cleanResyncGhosts sync tag: " + sync.getId(), e);
+                        SmartSyncLogger.e(TAG, "Unexpected JSON error for cleanResyncGhosts sync tag: " + sync.getId(), e);
                     }
                 }
             }
@@ -362,7 +355,7 @@ public class SyncManager {
                         attributes.put("syncId", sync.getId());
                         attributes.put("syncTarget", sync.getTarget().getClass().getName());
                     } catch (JSONException e) {
-                        logger.e(this, "Exception thrown while building attributes", e);
+                        SmartSyncLogger.e(TAG, "Exception thrown while building attributes", e);
                     }
                     EventBuilderHelper.createAndStoreEvent(sync.getType().name(), null, TAG, attributes);
                     runningSyncIds.remove(sync.getId());
@@ -370,11 +363,10 @@ public class SyncManager {
             }
             sync.save(smartStore);
     	} catch (JSONException e) {
-    		logger.e(this, "Unexpected json error for sync: " + sync.getId(), e);
+            SmartSyncLogger.e(TAG, "Unexpected JSON error for sync: " + sync.getId(), e);
     	} catch (SmartStoreException e) {
-            logger.e(this, "Unexpected smart store error for sync: " + sync.getId(), e);
-        }
-        finally {
+            SmartSyncLogger.e(TAG, "Unexpected smart store error for sync: " + sync.getId(), e);
+        } finally {
             callback.onUpdate(sync);
         }
     }
@@ -405,8 +397,7 @@ public class SyncManager {
 
     private void syncUpOneRecord(SyncUpTarget target, String soupName,
                                  JSONObject record, SyncOptions options) throws JSONException, IOException {
-
-        logger.d(this, "syncUpOneRecord", record);
+        SmartSyncLogger.d(TAG, "syncUpOneRecord called", record);
 
         /*
          * Checks if we are attempting to sync up a record that has been updated
@@ -419,7 +410,7 @@ public class SyncManager {
                 !target.isNewerThanServer(this, record)) {
 
             // Nothing to do for this record
-            logger.d(this, "syncUpOneRecord: Record not synced since client does not have the latest from server:", record);
+            SmartSyncLogger.d(TAG, "syncUpOneRecord: Record not synched since client does not have the latest from server", record);
             return;
         }
 
@@ -547,13 +538,12 @@ public class SyncManager {
 	 * @throws IOException
 	 */
 	public RestResponse sendSyncWithSmartSyncUserAgent(RestRequest restRequest) throws IOException {
-        logger.d(this, "sendSyncWithSmartSyncUserAgent:request", restRequest);
+        SmartSyncLogger.d(TAG, "sendSyncWithSmartSyncUserAgent called with request: ", restRequest);
         RestResponse restResponse = restClient.sendSync(restRequest, new HttpAccess.UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(SMART_SYNC)));
         if (restResponse.isSuccess()) {
-            logger.d(this, "sendSyncWithSmartSyncUserAgent:response", restResponse);
-        }
-        else {
-            logger.w(this, "sendSyncWithSmartSyncUserAgent:response", restResponse);
+            SmartSyncLogger.d(TAG, "sendSyncWithSmartSyncUserAgent received response: ", restResponse);
+        } else {
+            SmartSyncLogger.w(TAG, "sendSyncWithSmartSyncUserAgent received response: ", restResponse);
         }
         return restResponse;
     }
@@ -563,13 +553,6 @@ public class SyncManager {
      */
     public SmartStore getSmartStore() {
         return smartStore;
-    }
-
-    /**
-     * return SyncManagerLogger used by this SyncManager
-     */
-    public SyncManagerLogger getLogger() {
-        return logger;
     }
 
     /**

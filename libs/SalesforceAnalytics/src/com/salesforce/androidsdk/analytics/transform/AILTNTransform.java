@@ -27,10 +27,10 @@
 package com.salesforce.androidsdk.analytics.transform;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.salesforce.androidsdk.analytics.model.DeviceAppAttributes;
 import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
+import com.salesforce.androidsdk.analytics.util.SalesforceAnalyticsLogger;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -80,7 +80,7 @@ public class AILTNTransform implements Transform {
             }
         } catch (JSONException e) {
             logLine = null;
-            Log.e(TAG, "Exception thrown while transforming JSON", e);
+            SalesforceAnalyticsLogger.e(null, TAG, "Exception occurred while transforming JSON", e);
         }
         return logLine;
     }
@@ -94,7 +94,7 @@ public class AILTNTransform implements Transform {
             }
             deviceAttributes.put(CONNECTION_TYPE_KEY, event.getConnectionType());
         } catch (JSONException e) {
-            Log.e(TAG, "Exception thrown while transforming JSON", e);
+            SalesforceAnalyticsLogger.e(null, TAG, "Exception occurred while transforming JSON", e);
         }
         return deviceAttributes;
     }
@@ -167,7 +167,7 @@ public class AILTNTransform implements Transform {
             }
         } catch (JSONException e) {
             payload = null;
-            Log.e(TAG, "Exception thrown while transforming JSON", e);
+            SalesforceAnalyticsLogger.e(null, TAG, "Exception occurred while transforming JSON", e);
         }
         return payload;
     }
@@ -188,7 +188,7 @@ public class AILTNTransform implements Transform {
             }
         } catch (JSONException e) {
             locator = null;
-            Log.e(TAG, "Exception thrown while transforming JSON", e);
+            SalesforceAnalyticsLogger.e(null, TAG, "Exception occurred while transforming JSON", e);
         }
         return locator;
     }

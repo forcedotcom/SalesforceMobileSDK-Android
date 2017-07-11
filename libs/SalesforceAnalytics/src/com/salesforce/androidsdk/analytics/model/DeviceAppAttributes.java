@@ -26,7 +26,7 @@
  */
 package com.salesforce.androidsdk.analytics.model;
 
-import android.util.Log;
+import com.salesforce.androidsdk.analytics.util.SalesforceAnalyticsLogger;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -207,7 +207,7 @@ public class DeviceAppAttributes {
             json.put(DEVICE_ID_KEY, deviceId);
             json.put(CLIENT_ID_KEY, clientId);
         } catch (JSONException e) {
-            Log.e(TAG, "Exception thrown while attempting to convert to JSON", e);
+            SalesforceAnalyticsLogger.e(null, TAG, "Exception thrown while attempting to convert to JSON", e);
         }
         return json;
     }

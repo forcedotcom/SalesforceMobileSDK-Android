@@ -26,6 +26,10 @@
  */
 package com.salesforce.androidsdk.util.test;
 
+import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.EventsObservable.Event;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -33,12 +37,6 @@ import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-
-import android.util.Log;
-
-import com.salesforce.androidsdk.util.EventsObservable;
-import com.salesforce.androidsdk.util.EventsObservable.Event;
-import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
  * This tracks activity events using a queue, allowing for tests to wait for certain events to turn up.
@@ -67,7 +65,6 @@ public class EventsListenerQueue implements EventsObserver {
     }
 
 	public void onEvent(Event evt) {
-    	Log.i("EventsListenerQueue", "onEvent:" + evt.getType());		
 		List<BlockForEvent> matchingBlocks = new ArrayList<BlockForEvent>();
 		for (BlockForEvent block : blocks) {
 			if (block.getType() == evt.getType()) {
@@ -110,7 +107,6 @@ public class EventsListenerQueue implements EventsObserver {
 
     /** will wait for expected event in the queue, waiting till the timeout specified */
     public Event waitForEvent(EventType expectedType, int timeout) {
-    	Log.i("EventsListenerQueue", "waitForEvent:" + expectedType);
         long end = System.currentTimeMillis() + timeout;
         long remaining = timeout;
         while (remaining > 0) {

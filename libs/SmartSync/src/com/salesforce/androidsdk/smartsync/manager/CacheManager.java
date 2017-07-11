@@ -26,17 +26,7 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
@@ -50,6 +40,16 @@ import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
 import com.salesforce.androidsdk.smartsync.model.SalesforceObjectType;
 import com.salesforce.androidsdk.smartsync.model.SalesforceObjectTypeLayout;
 import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This class provides APIs to store and retrieve Salesforce object
@@ -314,11 +314,11 @@ public class CacheManager {
                 }
             }
         } catch (IllegalStateException e) {
-            Log.e(TAG, "IllegalStateException occurred while attempting to read last cached time", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while attempting to read last cached time", e);
         } catch (JSONException e) {
-            Log.e(TAG, "JSONException occurred while attempting to read last cached time", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while attempting to read last cached time", e);
         } catch (SmartStoreException e) {
-            Log.e(TAG, "SmartStoreException occurred while attempting to read last cached time", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while attempting to read last cached time", e);
         }
         return 0;
     }
@@ -381,9 +381,9 @@ public class CacheManager {
                 }
             }
         } catch (JSONException e) {
-            Log.e(TAG, "JSONException occurred while attempting to read cached data", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while attempting to read cached data", e);
         } catch (SmartStoreException e) {
-            Log.e(TAG, "SmartStoreException occurred while attempting to read cached data", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while attempting to read cached data", e);
         }
         return null;
     }
@@ -445,9 +445,9 @@ public class CacheManager {
                 }
             }
         } catch (JSONException e) {
-            Log.e(TAG, "JSONException occurred while attempting to read cached data", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while attempting to read cached data", e);
         } catch (SmartStoreException e) {
-            Log.e(TAG, "SmartStoreException occurred while attempting to read cached data", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while attempting to read cached data", e);
         }
         return null;
     }
@@ -514,9 +514,9 @@ public class CacheManager {
                 }
             }
         } catch (JSONException e) {
-            Log.e(TAG, "JSONException occurred while attempting to read cached data", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while attempting to read cached data", e);
         } catch (SmartStoreException e) {
-            Log.e(TAG, "SmartStoreException occurred while attempting to read cached data", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while attempting to read cached data", e);
         }
         return null;
     }
@@ -559,9 +559,9 @@ public class CacheManager {
                 object.put(CACHE_DATA, data);
                 upsertData(cacheType, object, cacheKey);
             } catch (JSONException e) {
-                Log.e(TAG, "JSONException occurred while attempting to cache data", e);
+                SmartSyncLogger.e(TAG, "Exception occurred while attempting to cache data", e);
             } catch (SmartStoreException e) {
-                Log.e(TAG, "SmartStoreException occurred while attempting to cache data", e);
+                SmartSyncLogger.e(TAG, "Exception occurred while attempting to cache data", e);
             }
         }
     }
@@ -600,7 +600,7 @@ public class CacheManager {
                     obj.put("type", object.getObjectType());
                     data.put(obj);
                 } catch (JSONException e) {
-                    Log.e(TAG, "JSONException occurred while attempting to cache data", e);
+                    SmartSyncLogger.e(TAG, "Exception occurred while attempting to cache data", e);
                 }
             }
         }
@@ -611,9 +611,9 @@ public class CacheManager {
                 obj.put(CACHE_DATA, data);
                 upsertData(cacheType, obj, cacheKey);
             } catch (JSONException e) {
-                Log.e(TAG, "JSONException occurred while attempting to cache data", e);
+                SmartSyncLogger.e(TAG, "Exception occurred while attempting to cache data", e);
             } catch (SmartStoreException e) {
-                Log.e(TAG, "SmartStoreException occurred while attempting to cache data", e);
+                SmartSyncLogger.e(TAG, "Exception occurred while attempting to cache data", e);
             }
         }
     }
@@ -656,9 +656,9 @@ public class CacheManager {
                 obj.put(CACHE_DATA, data);
                 upsertData(cacheType, obj, cacheKey);
             } catch (JSONException e) {
-                Log.e(TAG, "JSONException occurred while attempting to cache data", e);
+                SmartSyncLogger.e(TAG, "Exception occurred while attempting to cache data", e);
             } catch (SmartStoreException e) {
-                Log.e(TAG, "SmartStoreException occurred while attempting to cache data", e);
+                SmartSyncLogger.e(TAG, "Exception occurred while attempting to cache data", e);
             }
         }
     }
@@ -716,9 +716,9 @@ public class CacheManager {
             smartStore.upsert(soupName, object, cacheKey);
             addSoupNameToMasterSoup(soupName);
         } catch (JSONException e) {
-            Log.e(TAG, "JSONException occurred while attempting to cache data", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while attempting to cache data", e);
         } catch (SmartStoreException e) {
-            Log.e(TAG, "SmartStoreException occurred while attempting to cache data", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while attempting to cache data", e);
         }
     }
 
@@ -760,9 +760,9 @@ public class CacheManager {
                 querySpec = QuerySpec.buildSmartQuerySpec(smartSql, count);
                 results = smartStore.query(querySpec, 0);
             } catch (JSONException e) {
-                Log.e(TAG, "JSONException occurred while attempting to read cached data", e);
+                SmartSyncLogger.e(TAG, "Exception occurred while attempting to read cached data", e);
             } catch (SmartStoreException e) {
-                Log.e(TAG, "SmartStoreException occurred while attempting to read cached data", e);
+                SmartSyncLogger.e(TAG, "Exception occurred while attempting to read cached data", e);
             }
         }
 
@@ -787,9 +787,9 @@ public class CacheManager {
     		object.put(SOUP_NAMES_KEY, soupName);
         	smartStore.upsert(SOUP_OF_SOUPS, object);
         } catch (JSONException e) {
-            Log.e(TAG, "JSONException occurred while attempting to cache data", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while attempting to cache data", e);
         } catch (SmartStoreException e) {
-            Log.e(TAG, "SmartStoreException occurred while attempting to cache data", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while attempting to cache data", e);
         }
     }
 
@@ -807,7 +807,7 @@ public class CacheManager {
                     soupName, SOUP_NAMES_KEY, QuerySpec.Order.ascending, 1);
             smartStore.deleteByQuery(SOUP_OF_SOUPS, querySpec);
         } catch (SmartStoreException e) {
-            Log.e(TAG, "SmartStoreException occurred while attempting to remove data", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while attempting to remove data", e);
         }
     }
 

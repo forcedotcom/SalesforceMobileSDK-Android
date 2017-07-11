@@ -471,12 +471,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         // Check that db was correctly populated
         checkDb(accountIdToFields, ACCOUNTS_SOUP);
         for (String accountId : accountIdToFields.keySet()) {
-            long accountLocalId = syncManager.getSmartStore().lookupSoupEntryId(ACCOUNTS_SOUP, Constants.ID, accountId);
-            Map<String, Map<String, Object>> contactIdToFields = accountIdContactIdToFields.get(accountId);
-            for (String contactId : contactIdToFields.keySet()) {
-                Map<String, Object> fields = contactIdToFields.get(contactId);
-            }
-            checkDb(contactIdToFields, CONTACTS_SOUP);
+            checkDb(accountIdContactIdToFields.get(accountId), CONTACTS_SOUP);
         }
     }
 
@@ -738,6 +733,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
             fieldsLocallyUpdated.put(ACCOUNT_ID, accountNameToServerId.get(accountName));
             idToFieldsLocallyUpdated.put(contactId, fieldsLocallyUpdated);
             contactIdToAccountName.put(contactId, accountName);
+            i++;
         }
         updateRecordsLocally(idToFieldsLocallyUpdated, CONTACTS_SOUP);
 
@@ -805,7 +801,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
         // Check that db doesn't show contact entries as locally created anymore
         Map<String, Map<String, Object>> contactIdToFieldsCreated = getIdToFieldsByName(CONTACTS_SOUP, new String[]{Constants.LAST_NAME, ACCOUNT_ID}, Constants.LAST_NAME, contactNames);
-        checkDbStateFlags(contactIdToFieldsCreated.keySet(), false, false, false, ACCOUNTS_SOUP);
+        checkDbStateFlags(contactIdToFieldsCreated.keySet(), false, false, false, CONTACTS_SOUP);
 
         // Check contacts on server
         checkServer(contactIdToFieldsCreated, Constants.CONTACT);
@@ -1556,6 +1552,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         for (JSONObject[] contacts : mapAccountToContacts.values()) {
             for (JSONObject contact : contacts) {
                 contactNames[i] = contact.getString(Constants.LAST_NAME);
+                i++;
             }
         }
 

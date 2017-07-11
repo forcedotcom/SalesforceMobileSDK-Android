@@ -26,9 +26,8 @@
  */
 package com.salesforce.androidsdk.phonegap.plugin;
 
-import android.util.Log;
-
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
@@ -41,7 +40,7 @@ import org.json.JSONException;
 public abstract class ForcePlugin extends CordovaPlugin {
 	
 	private static final String VERSION_KEY = "pluginSDKVersion";
-
+	private static final String TAG = "ForcePlugin";
 
 	/**
      * Executes the plugin request and returns PluginResult.
@@ -66,15 +65,12 @@ public abstract class ForcePlugin extends CordovaPlugin {
     	}
 
 		JavaScriptPluginVersion jsVersion = new JavaScriptPluginVersion(jsVersionStr);
-    	Log.i(getClass().getSimpleName() + ".execute", "action: " + action + ", jsVersion: " + jsVersion);
-
+		SalesforceHybridLogger.i(TAG, getClass().getSimpleName() + ".execute, action: " + action + ", jsVersion: " + jsVersion);
     	if (jsVersion.isOlder()) {
-	    	Log.w(getClass().getSimpleName() + ".execute", "is being called by js from older sdk, jsVersion: " + jsVersion + ", nativeVersion: " + SalesforceSDKManager.SDK_VERSION);
+            SalesforceHybridLogger.w(TAG, getClass().getSimpleName() + ".execute is being called by js from older sdk, jsVersion: " + jsVersion + ", nativeVersion: " + SalesforceSDKManager.SDK_VERSION);
+    	} else if (jsVersion.isNewer()) {
+            SalesforceHybridLogger.w(TAG, getClass().getSimpleName() + ".execute is being called by js from newer sdk, jsVersion: " + jsVersion + ", nativeVersion: " + SalesforceSDKManager.SDK_VERSION);
     	}
-    	else if (jsVersion.isNewer()) {
-	    	Log.w(getClass().getSimpleName() + ".execute", "is being called by js from newer sdk, jsVersion: " + jsVersion + ", nativeVersion: " + SalesforceSDKManager.SDK_VERSION);
-    	}
-    	
         return execute(action, jsVersion, args, callbackContext);
     }
 

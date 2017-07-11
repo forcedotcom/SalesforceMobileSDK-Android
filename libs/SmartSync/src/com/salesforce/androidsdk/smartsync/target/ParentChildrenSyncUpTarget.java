@@ -28,12 +28,14 @@ package com.salesforce.androidsdk.smartsync.target;
 
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.target.ParentChildrenSyncTargetHelper.RelationshipType;
 import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.ParentInfo;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
+import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
@@ -57,7 +59,6 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
     // Constants
     public static final String CHILDREN_CREATE_FIELDLIST = "childrenCreateFieldlist";
     public static final String CHILDREN_UPDATE_FIELDLIST = "childrenUpdateFieldlist";
-
     public static final String COMPOSITE_RESPONSE = "compositeResponse";
     public static final String REFERENCE_ID = "referenceId";
     public static final String BODY = "body";
@@ -74,11 +75,9 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                 new ParentInfo(target.getJSONObject(ParentChildrenSyncTargetHelper.PARENT)),
                 JSONObjectHelper.<String>toList(target.optJSONArray(CREATE_FIELDLIST)),
                 JSONObjectHelper.<String>toList(target.optJSONArray(UPDATE_FIELDLIST)),
-
                 new ChildrenInfo(target.getJSONObject(ParentChildrenSyncTargetHelper.CHILDREN)),
                 JSONObjectHelper.<String>toList(target.optJSONArray(CHILDREN_CREATE_FIELDLIST)),
                 JSONObjectHelper.<String>toList(target.optJSONArray(CHILDREN_UPDATE_FIELDLIST)),
-
                 RelationshipType.valueOf(target.getString(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE))
         );
     }
@@ -90,13 +89,13 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                                       List<String> childrenCreateFieldlist,
                                       List<String> childrenUpdateFieldlist,
                                       RelationshipType relationshipType) {
-
         super(parentCreateFieldlist, parentUpdateFieldlist);
         this.parentInfo = parentInfo;
         this.childrenInfo = childrenInfo;
         this.childrenCreateFieldlist = childrenCreateFieldlist;
         this.childrenUpdateFieldlist = childrenUpdateFieldlist;
         this.relationshipType = relationshipType;
+        SmartSyncSDKManager.getInstance().registerUsedAppFeature(ParentChildrenSyncTargetHelper.FEATURE_RELATED_RECORDS);
     }
 
     @Override
@@ -212,7 +211,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
 
         // Re-run if required
         if (needReRun) {
-            syncManager.getLogger().d(this, "syncUpOneRecord", record);
+            SmartSyncLogger.d(TAG, "syncUpOneRecord", record);
             syncUpRecord(syncManager, record, children, fieldlist, mergeMode);
         }
     }
@@ -449,7 +448,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                 isParentDeleted
         );
 
-        idToLocalTimestamps.put(record.getString(childrenInfo.idFieldName), parentModDate);
+        idToLocalTimestamps.put(record.getString(getIdFieldName()), parentModDate);
 
         JSONArray children = ParentChildrenSyncTargetHelper.getChildrenFromLocalStore(
                 syncManager.getSmartStore(),

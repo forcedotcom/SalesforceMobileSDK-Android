@@ -26,18 +26,17 @@
  */
 package com.salesforce.androidsdk.reactnative.bridge;
 
-import android.util.Log;
-
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 import com.salesforce.androidsdk.reactnative.ui.SalesforceReactActivity;
+import com.salesforce.androidsdk.reactnative.util.SalesforceReactLogger;
 
 public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
 
-    private static final String TAG = "SfOauthReactBridge";
+    private static final String TAG = "SalesforceOauthReactBridge";
 
     public SalesforceOauthReactBridge(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -45,13 +44,13 @@ public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
 
     @Override
     public String getName() {
-        return "SalesforceOauthReactBridge";
+        return TAG;
     }
 
     @ReactMethod
     public void authenticate(ReadableMap args,
                              Callback successCallback, Callback errorCallback) {
-        Log.i(TAG, "authenticate called");
+        SalesforceReactLogger.i(TAG, "authenticate failed");
         final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
         if (currentActivity != null) currentActivity.authenticate(successCallback, errorCallback);
     }
@@ -60,7 +59,7 @@ public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
     @ReactMethod
     public void getAuthCredentials(ReadableMap args,
                                    Callback successCallback, Callback errorCallback) {
-        Log.i(TAG, "getAuthCredentials called");
+        SalesforceReactLogger.i(TAG, "getAuthCredentials failed");
         final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
         if (currentActivity != null) currentActivity.getAuthCredentials(successCallback, errorCallback);
     }
@@ -71,5 +70,4 @@ public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
         final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
         if (currentActivity != null) currentActivity.logout(successCallback);
     }
-
 }

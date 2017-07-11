@@ -26,15 +26,14 @@
  */
 package com.salesforce.androidsdk.phonegap.plugin;
 
-import android.util.Log;
-
+import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
+import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
-import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 
 import org.apache.cordova.CallbackContext;
 import org.json.JSONArray;
@@ -81,7 +80,7 @@ public class SmartSyncPlugin extends ForcePlugin {
         try {
             action = Action.valueOf(actionStr);
         } catch (IllegalArgumentException e) {
-            Log.e(TAG, "Unknown action " + actionStr);
+            SalesforceHybridLogger.e(TAG, "Unknown action " + actionStr, e);
             return false;
         }
 
@@ -114,14 +113,14 @@ public class SmartSyncPlugin extends ForcePlugin {
                               throw new RuntimeException("No handler for action " + action);
                         }
                     } catch (Exception e) {
-                        Log.w(TAG, e.getMessage(), e);
+                        SalesforceHybridLogger.e(TAG, "Exception thrown", e);
                         callbackContext.error(e.getMessage());
-                    }                   
-                    Log.d(TAG, "Total time for " + action + "->" + (System.currentTimeMillis() - start));
+                    }
+                    SalesforceHybridLogger.d(TAG, "Total time for " + action + " -> " + (System.currentTimeMillis() - start));
                 }
             }
         });
-        Log.d(TAG, "Main thread time for " + action + "->" + (System.currentTimeMillis() - start));
+        SalesforceHybridLogger.d(TAG, "Main thread time for " + action + " -> " + (System.currentTimeMillis() - start));
         return true;
     }
 
@@ -254,7 +253,7 @@ public class SmartSyncPlugin extends ForcePlugin {
                     String js = "javascript:document.dispatchEvent(new CustomEvent(\"" + SYNC_EVENT_TYPE + "\", { \"" + DETAIL + "\": " + syncAsString + "}))";
                     webView.loadUrl(js);
                 } catch (Exception e) {
-                    Log.e(TAG, "Failed to dispatch event", e);
+                    SalesforceHybridLogger.e(TAG, "Failed to dispatch event", e);
                 }
             }
         });

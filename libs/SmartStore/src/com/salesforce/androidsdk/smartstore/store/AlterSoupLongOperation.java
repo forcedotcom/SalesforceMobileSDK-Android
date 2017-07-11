@@ -29,9 +29,9 @@ package com.salesforce.androidsdk.smartstore.store;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
+import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 
 import net.sqlcipher.database.SQLiteDatabase;
 
@@ -428,7 +428,7 @@ public class AlterSoupLongOperation extends LongOperation {
     	contentValues.put(SmartStore.DETAILS_COL, details.toString());
     	contentValues.put(SmartStore.CREATED_COL, now);
     	contentValues.put(SmartStore.LAST_MODIFIED_COL, now);
-    	Log.i(TAG, soupName + " " + status);
+		SmartStoreLogger.i(TAG, soupName + " " + status);
 		return DBHelper.getInstance(db).insert(db, SmartStore.LONG_OPERATIONS_STATUS_TABLE, contentValues);
 	}
 
@@ -466,7 +466,7 @@ public class AlterSoupLongOperation extends LongOperation {
 	    	contentValues.put(SmartStore.LAST_MODIFIED_COL, now);
 	    	DBHelper.getInstance(db).update(db, SmartStore.LONG_OPERATIONS_STATUS_TABLE, contentValues, SmartStore.ID_PREDICATE, rowId + "");
 		}
-    	Log.i(TAG, soupName + " " + newStatus);
+        SmartStoreLogger.i(TAG, soupName + " " + newStatus);
 	}
 	
 	/**

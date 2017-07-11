@@ -15,7 +15,7 @@ apply plugin: 'com.jfrog.bintray'
 
 dependencies {
   compile project(':libs:SmartSync')
-  compile 'org.apache.cordova:framework:6.1.2:release@aar'
+  compile 'org.apache.cordova:framework:6.2.3:release@aar'
 }
 
 android {
@@ -125,9 +125,9 @@ bintray {
         licenses = ['Apache-2.0']
         labels = ['android', 'salesforce', 'mobilesdk']
         version {
-            name = '5.1.0'
+            name = '5.2.0'
             released  = new Date()
-            vcsTag = 'v5.1.0'
+            vcsTag = 'v5.2.0'
         }
     }
 }

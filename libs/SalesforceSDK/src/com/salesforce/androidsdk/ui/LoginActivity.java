@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import java.util.List;
-
 import android.accounts.AccountAuthenticatorActivity;
 import android.app.ActionBar;
 import android.app.Activity;
@@ -54,6 +52,8 @@ import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+
+import java.util.List;
 
 /**
  * Login Activity: takes care of authenticating the user.
@@ -234,7 +234,9 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	@Override
 	public void loadingLoginPage(String loginUrl) {
 		final ActionBar ab = getActionBar();
-		ab.setTitle(loginUrl);
+		if (ab != null) {
+			ab.setTitle(loginUrl);
+		}
 	}
 
 	@Override
@@ -330,8 +332,8 @@ public class LoginActivity extends AccountAuthenticatorActivity
     private void initAnalyticsManager() {
         final UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
         final SalesforceAnalyticsManager analyticsManager = SalesforceAnalyticsManager.getInstance(account);
-	if (analyticsManager != null) {
+	    if (analyticsManager != null) {
             analyticsManager.updateLoggingPrefs();
-	}
+	    }
     }
 }
