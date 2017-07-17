@@ -55,9 +55,6 @@ public class SyncState {
 	public static final String SYNC_START_TIME = "startTime";
 	public static final String SYNC_END_TIME = "endTime";
 
-	// Number of nanoseconds in a second
-	private static final double BILLION = 1000000000.0;
-
 	private long id;
 	private Type type;
 	private SyncTarget target;
@@ -67,8 +64,10 @@ public class SyncState {
 	private int progress;
 	private int totalSize;
     private long maxTimeStamp;
-	private double startTime;
-	private double endTime;
+
+	// Start and end time in milliseconds since 1970
+	private long startTime;
+	private long endTime;
 	
 	
 	/**
@@ -100,8 +99,8 @@ public class SyncState {
     	sync.put(SYNC_PROGRESS, 0);
     	sync.put(SYNC_TOTAL_SIZE, -1);
         sync.put(SYNC_MAX_TIME_STAMP, -1);
-		sync.put(SYNC_START_TIME, -1);
-		sync.put(SYNC_END_TIME, -1);
+		sync.put(SYNC_START_TIME, 0);
+		sync.put(SYNC_END_TIME, 0);
 
     	sync = store.upsert(SYNCS_SOUP, sync);
     	return SyncState.fromJSON(sync);
@@ -123,8 +122,8 @@ public class SyncState {
     	sync.put(SYNC_PROGRESS, 0);
     	sync.put(SYNC_TOTAL_SIZE, -1);
         sync.put(SYNC_MAX_TIME_STAMP, -1);
-		sync.put(SYNC_START_TIME, -1);
-		sync.put(SYNC_END_TIME, -1);
+		sync.put(SYNC_START_TIME, 0);
+		sync.put(SYNC_END_TIME, 0);
 
     	sync = store.upsert(SYNCS_SOUP, sync);
     	return SyncState.fromJSON(sync);
@@ -148,8 +147,8 @@ public class SyncState {
 		state.progress = sync.getInt(SYNC_PROGRESS);
 		state.totalSize = sync.getInt(SYNC_TOTAL_SIZE);
         state.maxTimeStamp = sync.optLong(SYNC_MAX_TIME_STAMP, -1);
-		state.startTime = sync.optDouble(SYNC_START_TIME, -1);
-		state.endTime = sync.optDouble(SYNC_START_TIME, -1);
+		state.startTime = sync.optLong(SYNC_START_TIME, 0);
+		state.endTime = sync.optLong(SYNC_START_TIME, 0);
 		return state;
 	}
 	
@@ -260,10 +259,10 @@ public class SyncState {
 	
 	public void setStatus(Status status) {
 		if (this.status == Status.NEW && status == Status.RUNNING) {
-			this.startTime = System.nanoTime()/ BILLION;
+			this.startTime = System.currentTimeMillis();
 		}
 		if (this.status == Status.RUNNING && (status == Status.DONE || status == Status.FAILED)) {
-			this.endTime = System.nanoTime()/BILLION;
+			this.endTime = System.currentTimeMillis();
 		}
 
 		this.status = status;
