@@ -52,6 +52,8 @@ public class SyncState {
 	public static final String SYNC_PROGRESS = "progress";
 	public static final String SYNC_TOTAL_SIZE = "totalSize";
     public static final String SYNC_MAX_TIME_STAMP = "maxTimeStamp";
+	public static final String SYNC_START_TIME = "startTime";
+	public static final String SYNC_END_TIME = "endTime";
 
 	private long id;
 	private Type type;
@@ -62,6 +64,10 @@ public class SyncState {
 	private int progress;
 	private int totalSize;
     private long maxTimeStamp;
+
+	// Start and end time in milliseconds since 1970
+	private long startTime;
+	private long endTime;
 	
 	
 	/**
@@ -93,6 +99,8 @@ public class SyncState {
     	sync.put(SYNC_PROGRESS, 0);
     	sync.put(SYNC_TOTAL_SIZE, -1);
         sync.put(SYNC_MAX_TIME_STAMP, -1);
+		sync.put(SYNC_START_TIME, 0);
+		sync.put(SYNC_END_TIME, 0);
 
     	sync = store.upsert(SYNCS_SOUP, sync);
     	return SyncState.fromJSON(sync);
@@ -114,6 +122,8 @@ public class SyncState {
     	sync.put(SYNC_PROGRESS, 0);
     	sync.put(SYNC_TOTAL_SIZE, -1);
         sync.put(SYNC_MAX_TIME_STAMP, -1);
+		sync.put(SYNC_START_TIME, 0);
+		sync.put(SYNC_END_TIME, 0);
 
     	sync = store.upsert(SYNCS_SOUP, sync);
     	return SyncState.fromJSON(sync);
@@ -137,6 +147,8 @@ public class SyncState {
 		state.progress = sync.getInt(SYNC_PROGRESS);
 		state.totalSize = sync.getInt(SYNC_TOTAL_SIZE);
         state.maxTimeStamp = sync.optLong(SYNC_MAX_TIME_STAMP, -1);
+		state.startTime = sync.optLong(SYNC_START_TIME, 0);
+		state.endTime = sync.optLong(SYNC_START_TIME, 0);
 		return state;
 	}
 	
@@ -171,6 +183,8 @@ public class SyncState {
 		sync.put(SYNC_PROGRESS, progress);
 		sync.put(SYNC_TOTAL_SIZE, totalSize);
         sync.put(SYNC_MAX_TIME_STAMP, maxTimeStamp);
+		sync.put(SYNC_START_TIME, startTime);
+		sync.put(SYNC_END_TIME, endTime);
 		return sync;
 	}
 	
@@ -223,7 +237,15 @@ public class SyncState {
         return maxTimeStamp;
     }
 
-    public void setMaxTimeStamp(long maxTimeStamp) {
+	public double getStartTime() {
+		return startTime;
+	}
+
+	public double getEndTime() {
+		return endTime;
+	}
+
+	public void setMaxTimeStamp(long maxTimeStamp) {
         this.maxTimeStamp = maxTimeStamp;
     }
 
@@ -236,6 +258,13 @@ public class SyncState {
 	}
 	
 	public void setStatus(Status status) {
+		if (this.status == Status.NEW && status == Status.RUNNING) {
+			this.startTime = System.currentTimeMillis();
+		}
+		if (this.status == Status.RUNNING && (status == Status.DONE || status == Status.FAILED)) {
+			this.endTime = System.currentTimeMillis();
+		}
+
 		this.status = status;
 	}
 	

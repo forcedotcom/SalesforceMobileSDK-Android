@@ -44,6 +44,10 @@ import java.util.concurrent.Executors;
  */
 public class EventBuilderHelper {
 
+    // Event startTime and endTime can be specified by passing values for attributes START_TIME and END_TIME
+    public static final String START_TIME = "startTime";
+    public static final String END_TIME = "endTime";
+
     private static final String TAG = "EventBuilderHelper";
     private static boolean enabled = true;
 
@@ -122,7 +126,9 @@ public class EventBuilderHelper {
         final InstrumentationEventBuilder builder = InstrumentationEventBuilder.getInstance(manager.getAnalyticsManager(),
                                                                                             SalesforceSDKManager.getInstance().getAppContext());
         builder.name(name);
-        builder.startTime(System.currentTimeMillis());
+        builder.startTime(attributes.optLong(START_TIME));
+        if (attributes.has(END_TIME)) builder.endTime(attributes.optLong(END_TIME));
+
         final JSONObject page = new JSONObject();
         try {
             page.put("context", className);

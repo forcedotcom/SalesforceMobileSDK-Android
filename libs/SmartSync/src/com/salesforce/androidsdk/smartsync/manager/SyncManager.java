@@ -354,6 +354,8 @@ public class SyncManager {
                         }
                         attributes.put("syncId", sync.getId());
                         attributes.put("syncTarget", sync.getTarget().getClass().getName());
+                        attributes.put(EventBuilderHelper.START_TIME, sync.getStartTime());
+                        attributes.put(EventBuilderHelper.END_TIME, sync.getEndTime());
                     } catch (JSONException e) {
                         SmartSyncLogger.e(TAG, "Exception thrown while building attributes", e);
                     }
