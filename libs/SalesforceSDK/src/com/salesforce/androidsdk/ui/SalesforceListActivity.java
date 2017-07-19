@@ -155,6 +155,11 @@ public abstract class SalesforceListActivity extends ListActivity {
      * Performs actions on logout complete.
      */
     protected void logoutCompleteActions() {
+		// NB: without this code a refresh token revoke does not restart app
+		// If this is not the desired behavior in your application, simply override this method
+		if (!isChild()) {
+			recreate();
+		}
     }
 
     /**
