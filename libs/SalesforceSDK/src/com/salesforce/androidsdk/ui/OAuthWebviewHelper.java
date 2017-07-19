@@ -26,14 +26,12 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.net.http.SslError;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.security.KeyChain;
 import android.security.KeyChainAliasCallback;
@@ -408,7 +406,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             handler.cancel();
         }
 
-        @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 		@Override
         public void onReceivedClientCertRequest(WebView view, ClientCertRequest request) {
         	request.proceed(key, certChain);
