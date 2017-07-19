@@ -132,15 +132,6 @@ public class MainActivity extends SalesforceListActivity implements
 	}
 
 	@Override
-	protected void logoutCompleteActions() {
-		super.logoutCompleteActions();
-		// If refresh token is revoked - ClientManager does a logout that doesn't finish top activity activity or show login
-		if (!isChild()) {
-            recreate();
-        }
-	}
-
-	@Override
 	public void onResume(RestClient client) {
 		curAccount = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser();
 		Account account = null;
