@@ -126,8 +126,6 @@ public class EventBuilderHelper {
         final InstrumentationEventBuilder builder = InstrumentationEventBuilder.getInstance(manager.getAnalyticsManager(),
                                                                                             SalesforceSDKManager.getInstance().getAppContext());
         builder.name(name);
-        builder.startTime(attributes.optLong(START_TIME));
-        if (attributes.has(END_TIME)) builder.endTime(attributes.optLong(END_TIME));
 
         final JSONObject page = new JSONObject();
         try {
@@ -137,6 +135,8 @@ public class EventBuilderHelper {
         }
         builder.page(page);
         if (attributes != null) {
+            builder.startTime(attributes.optLong(START_TIME));
+            if (attributes.has(END_TIME)) builder.endTime(attributes.optLong(END_TIME));
             builder.attributes(attributes);
         }
         builder.schemaType(InstrumentationEvent.SchemaType.LightningInteraction);
