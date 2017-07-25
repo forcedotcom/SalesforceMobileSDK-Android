@@ -89,8 +89,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		// Getting login options from intent's extras
 		LoginOptions loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
 
-		requestFeatures();
-
 		// Protect against screenshots
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
 				WindowManager.LayoutParams.FLAG_SECURE);
@@ -122,12 +120,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
             webviewHelper.loadLoginPage();
         }
     }
-
-	protected void requestFeatures() {
-		// We'll show progress in the window title bar
-		getWindow().requestFeature(Window.FEATURE_PROGRESS);
-		getWindow().requestFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
-	}
 
 	/**
      * Returns whether certificate based authentication flow should be used.
