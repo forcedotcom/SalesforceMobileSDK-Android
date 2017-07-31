@@ -26,10 +26,6 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import javax.crypto.Cipher;
-
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-
 import android.Manifest.permission;
 import android.annotation.TargetApi;
 import android.app.Dialog;
@@ -50,6 +46,10 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.TextView;
+
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+
+import javax.crypto.Cipher;
 
 /**
  * A dialog which uses Fingerprint APIs to authenticate the user, and falls back to password
@@ -95,7 +95,9 @@ public class FingerprintAuthDialogFragment extends DialogFragment {
                         mStatusText.setText(salesforceR.idFingerprintSuccessString());
                         mStatusText.setTextColor(Color.GREEN);
                     }
-                    FingerprintAuthDialogFragment.this.dismiss();
+                    if (FingerprintAuthDialogFragment.this.getFragmentManager() != null) {
+                        FingerprintAuthDialogFragment.this.dismiss();
+                    }
                     mContext.unlockViaFingerprintScan();
                 }
 
