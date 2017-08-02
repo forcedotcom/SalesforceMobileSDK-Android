@@ -25,8 +25,22 @@
         </service>
 
         <!-- Login activity -->
+        <!--
+            Launch mode of "singleInstance" ensures that the activity isn't restarted
+            by a callback from Chrome custom tab when auth flow is complete.
+        -->
         <activity android:name="com.salesforce.androidsdk.ui.LoginActivity"
-            android:theme="@style/SalesforceSDK.ActionBarTheme" />
+            android:theme="@style/SalesforceSDK.ActionBarTheme"
+            android:launchMode="singleInstance">
+            <intent-filter>
+                <data android:scheme="testsfdc"
+                    android:host="*"
+                    android:path="/mobilesdk/detect/oauth/done" />
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
 
         <!-- Passcode activity -->
         <activity android:name="com.salesforce.androidsdk.ui.PasscodeActivity"

@@ -27,8 +27,11 @@
 package com.salesforce.androidsdk.ui;
 
 import android.app.Activity;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.net.http.SslError;
 import android.os.AsyncTask;
@@ -36,6 +39,7 @@ import android.os.Bundle;
 import android.security.KeyChain;
 import android.security.KeyChainAliasCallback;
 import android.security.KeyChainException;
+import android.support.customtabs.CustomTabsIntent;
 import android.text.TextUtils;
 import android.webkit.ClientCertRequest;
 import android.webkit.SslErrorHandler;
@@ -103,6 +107,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     public static final String RESPONSE_ERROR_DESCRIPTION_INTENT = "com.salesforce.auth.intent.RESPONSE_ERROR_DESCRIPTION";
     private static final String TAG = "OAuthWebViewHelper";
     private static final String ACCOUNT_OPTIONS = "accountOptions";
+
     // background executor
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
 
@@ -297,10 +302,43 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         try {
             URI uri = getAuthorizationUrl(jwtFlow);
             callback.loadingLoginPage(loginOptions.getLoginUrl());
-            webview.loadUrl(uri.toString());
+            loadLoginPageInChrome(uri);
+            // webview.loadUrl(uri.toString());
         } catch (URISyntaxException ex) {
             showError(ex);
         }
+    }
+
+    private void loadLoginPageInChrome(URI uri) {
+        final Uri url = Uri.parse(uri.toString());
+        final CustomTabsIntent.Builder intentBuilder = new CustomTabsIntent.Builder();
+
+        // Replaces default 'Close Tab' button with a custom back arrow instead of 'x'.
+        final Resources resources = activity.getResources();
+        intentBuilder.setCloseButtonIcon(BitmapFactory.decodeResource(resources,
+                R.drawable.sf__action_back));
+        intentBuilder.setToolbarColor(resources.getColor(R.color.sf__chrome_nav_bar_azure));
+
+        // Adds a menu item to change server.
+        final Intent changeServerIntent = new Intent(activity, ServerPickerActivity.class);
+        final PendingIntent changeServerPendingIntent = PendingIntent.getActivity(activity,
+                LoginActivity.PICK_SERVER_REQUEST_CODE, changeServerIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+        intentBuilder.addMenuItem(activity.getString(R.string.sf__pick_server), changeServerPendingIntent);
+        final CustomTabsIntent customTabsIntent = intentBuilder.build();
+
+        /*
+         * Sets the package explicitly to Google Chrome to avoid other browsers. This
+         * ensures that we don't display a popup allowing the user to select a browser
+         * because some browsers don't support certain authentication schemes.
+         */
+        customTabsIntent.intent.setPackage("com.android.chrome");
+
+        /*
+         * Prevents Chrome custom tab from staying in the activity history stack. This flag
+         * ensures that Chrome custom tab is dismissed once the login process is complete.
+         */
+        customTabsIntent.intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+        customTabsIntent.launchUrl(activity, url);
     }
 
     protected String getOAuthClientId() {
@@ -315,7 +353,10 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     loginOptions.getOauthCallbackUrl(),
                     loginOptions.getOauthScopes(),
                     null,
-                    getAuthorizationDisplayType(), loginOptions.getJwt(), loginOptions.getLoginUrl(),loginOptions.getAdditionalParameters());
+                    getAuthorizationDisplayType(),
+                    loginOptions.getJwt(),
+                    loginOptions.getLoginUrl(),
+                    loginOptions.getAdditionalParameters());
         }
         return OAuth2.getAuthorizationUrl(
                 new URI(loginOptions.getLoginUrl()),
