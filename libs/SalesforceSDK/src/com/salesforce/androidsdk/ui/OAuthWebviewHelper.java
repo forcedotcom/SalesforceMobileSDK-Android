@@ -313,6 +313,15 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         final Uri url = Uri.parse(uri.toString());
         final CustomTabsIntent.Builder intentBuilder = new CustomTabsIntent.Builder();
 
+        /*
+         * Sets custom animation to slide in and out for Chrome custom tab so that
+         * it doesn't look like a swizzle out of the app and back in.
+         */
+        intentBuilder.setStartAnimations(activity, android.R.anim.slide_in_left,
+                android.R.anim.slide_out_right);
+        intentBuilder.setExitAnimations(activity, android.R.anim.slide_in_left,
+                android.R.anim.slide_out_right);
+
         // Replaces default 'Close Tab' button with a custom back arrow instead of 'x'.
         final Resources resources = activity.getResources();
         intentBuilder.setCloseButtonIcon(BitmapFactory.decodeResource(resources,
