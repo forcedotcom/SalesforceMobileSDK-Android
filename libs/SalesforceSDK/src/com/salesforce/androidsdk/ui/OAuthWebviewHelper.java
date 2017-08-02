@@ -302,8 +302,11 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         try {
             URI uri = getAuthorizationUrl(jwtFlow);
             callback.loadingLoginPage(loginOptions.getLoginUrl());
-            loadLoginPageInChrome(uri);
-            // webview.loadUrl(uri.toString());
+            if (SalesforceSDKManager.getInstance().isBrowserLoginEnabled()) {
+                loadLoginPageInChrome(uri);
+            } else {
+                webview.loadUrl(uri.toString());
+            }
         } catch (URISyntaxException ex) {
             showError(ex);
         }
@@ -597,10 +600,11 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                  * account is added at this point.
                  */
                 if (!passcodeManager.hasStoredPasscode(mgr.getAppContext())) {
-                    // This will bring up the create passcode screen - we will create the account in onResume
+
+                    // This will bring up the create passcode screen - we will create the account in onResume.
                     passcodeManager.setEnabled(true);
                     passcodeManager.lockIfNeeded((Activity) getContext(), true);
-                } else if (!changeRequired) { // If a passcode change is required, the lock screen will have already been set in setMinPasscodeLength
+                } else if (!changeRequired) { // If a passcode change is required, the lock screen will have already been set in setMinPasscodeLength.
                     loginOptions.setPasscodeHash(mgr.getPasscodeHash());
                     addAccount();
                     callback.finish();
@@ -766,7 +770,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     }
 
     /**
-     * Class encapsulating the parameters required to create a new account
+     * Class encapsulating the parameters required to create a new account.
      */
     public static class AccountOptions {
 
