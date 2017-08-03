@@ -288,18 +288,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	}
 
 	@Override
-	public void onLoadingProgress(int totalProgress) {
-		onIndeterminateProgress(false);
-		setProgress(totalProgress);
-	}
-
-	@Override
-	public void onIndeterminateProgress(boolean show) {
-		setProgressBarIndeterminateVisibility(show);
-		setProgressBarIndeterminate(show);
-	}
-
-	@Override
 	public void onAccountAuthenticatorResult(Bundle authResult) {
 		setAccountAuthenticatorResult(authResult);
 	}
