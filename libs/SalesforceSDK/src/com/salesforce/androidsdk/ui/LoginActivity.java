@@ -77,7 +77,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
     private SalesforceR salesforceR;
 	private boolean wasBackgrounded;
 	private OAuthWebviewHelper webviewHelper;
-    private ChromeEventReceiver chromeEventReceiver;
+    private ChangeServerReceiver changeServerReceiver;
     private boolean receiverRegistered;
 
     /**************************************************************************************************
@@ -118,9 +118,9 @@ public class LoginActivity extends AccountAuthenticatorActivity
         EventsObservable.get().notifyEvent(EventType.LoginActivityCreateComplete, this);
         certAuthOrLogin();
         if (!receiverRegistered) {
-            chromeEventReceiver = new ChromeEventReceiver();
+			changeServerReceiver = new ChangeServerReceiver();
             final IntentFilter changeServerFilter = new IntentFilter(ServerPickerActivity.CHANGE_SERVER_INTENT);
-            registerReceiver(chromeEventReceiver, changeServerFilter);
+            registerReceiver(changeServerReceiver, changeServerFilter);
             receiverRegistered = true;
         }
 	}
@@ -128,7 +128,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	@Override
 	protected void onDestroy() {
         if (receiverRegistered) {
-            unregisterReceiver(chromeEventReceiver);
+            unregisterReceiver(changeServerReceiver);
             receiverRegistered = false;
         }
         super.onDestroy();
@@ -384,7 +384,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	    }
     }
 
-    public class ChromeEventReceiver extends BroadcastReceiver {
+    public class ChangeServerReceiver extends BroadcastReceiver {
 
         @Override
         public void onReceive(Context context, Intent intent) {
