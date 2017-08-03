@@ -61,7 +61,8 @@
 
         <!-- Passcode activity -->
         <activity android:name="com.salesforce.androidsdk.ui.PasscodeActivity"
-            android:theme="@style/SalesforceSDK.ActionBarTheme" />
+            android:theme="@style/SalesforceSDK.ActionBarTheme"
+            android:exported="false" />
 
         <!-- Manage space activity -->
         <activity android:name="com.salesforce.androidsdk.ui.ManageSpaceActivity"
