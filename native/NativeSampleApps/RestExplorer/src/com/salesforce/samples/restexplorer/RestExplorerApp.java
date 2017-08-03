@@ -39,6 +39,7 @@ public class RestExplorerApp extends Application {
 	public void onCreate() {
 		super.onCreate();
 		SalesforceSDKManager.initNative(getApplicationContext(), new KeyImpl(), ExplorerActivity.class);
+		SalesforceSDKManager.getInstance().setBrowserLoginEnabled(true);
 
 		/*
 		 * Un-comment the line below to enable push notifications in this app.
