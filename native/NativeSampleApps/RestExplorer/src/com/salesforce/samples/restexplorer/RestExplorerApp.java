@@ -39,7 +39,13 @@ public class RestExplorerApp extends Application {
 	public void onCreate() {
 		super.onCreate();
 		SalesforceSDKManager.initNative(getApplicationContext(), new KeyImpl(), ExplorerActivity.class);
-		SalesforceSDKManager.getInstance().setBrowserLoginEnabled(true);
+
+		/*
+         * Uncomment the following line to enable browser based login. This will use a
+         * Chrome custom tab to login instead of the default WebView. You will also need
+         * to uncomment a few lines of code in SalesforceSDK library project's AndroidManifest.xml.
+         */
+		// SalesforceSDKManager.getInstance().setBrowserLoginEnabled(true);
 
 		/*
 		 * Un-comment the line below to enable push notifications in this app.
