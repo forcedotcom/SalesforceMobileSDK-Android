@@ -133,6 +133,7 @@ public class SalesforceSDKManager {
     private SortedSet<String> features;
     private List<String> additionalOauthKeys;
     private String loginBrand;
+    private boolean browserLoginEnabled;
 
     /**
      * PasscodeManager object lock.
@@ -597,6 +598,24 @@ public class SalesforceSDKManager {
      */
     public synchronized void setLoginBrand(String loginBrand) {
         this.loginBrand = loginBrand;
+    }
+
+    /**
+     * Returns whether browser based login should be used instead of WebView.
+     *
+     * @return True - if Chrome should be used for login, False - otherwise.
+     */
+    public boolean isBrowserLoginEnabled() {
+        return browserLoginEnabled;
+    }
+
+    /**
+     * Sets whether browser based login should be used instead of WebView.
+     *
+     * @param browserLoginEnabled True - if Chrome should be used for login, False - otherwise.
+     */
+    public synchronized void setBrowserLoginEnabled(boolean browserLoginEnabled) {
+        this.browserLoginEnabled = browserLoginEnabled;
     }
 
     /**
