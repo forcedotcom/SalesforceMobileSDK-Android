@@ -30,6 +30,8 @@ import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -341,9 +343,12 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         /*
          * Sets the package explicitly to Google Chrome to avoid other browsers. This
          * ensures that we don't display a popup allowing the user to select a browser
-         * because some browsers don't support certain authentication schemes.
+         * because some browsers don't support certain authentication schemes. If Chrome
+         * is not available, we will use the default browser that the device uses.
          */
-        customTabsIntent.intent.setPackage("com.android.chrome");
+        if (doesChromeExist()) {
+            customTabsIntent.intent.setPackage("com.android.chrome");
+        }
 
         /*
          * Prevents Chrome custom tab from staying in the activity history stack. This flag
@@ -351,6 +356,21 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
          */
         customTabsIntent.intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
         customTabsIntent.launchUrl(activity, url);
+    }
+
+    private boolean doesChromeExist() {
+        boolean exists = false;
+        final PackageManager packageManager = activity.getPackageManager();
+        ApplicationInfo applicationInfo = null;
+        try {
+            applicationInfo = packageManager.getApplicationInfo("com.android.chrome", 0);
+        } catch (PackageManager.NameNotFoundException e) {
+            SalesforceSDKLogger.w(TAG, "Chrome does not exist on this device", e);
+        }
+        if (applicationInfo != null) {
+            exists = true;
+        }
+        return exists;
     }
 
     protected String getOAuthClientId() {
