@@ -27,7 +27,7 @@
 package com.salesforce.androidsdk.smartsync;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
-import com.salesforce.androidsdk.analytics.security.Encryptor;
+import com.salesforce.androidsdk.util.SalesforceKeyGenerator;
 
 /**
  * This class provides an implementation of KeyInterface.
@@ -38,6 +38,6 @@ public class KeyImpl implements KeyInterface {
 
 	@Override
 	public String getKey(String name) {
-		return Encryptor.hash(name + "12s9adpahk;n12-97sdainsdfd=012", name + "12kl0dsakj4-cxhsdbfg1jasdol8");
+		return SalesforceKeyGenerator.getEncryptionKey(name);
 	}
 }
