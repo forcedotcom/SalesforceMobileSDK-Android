@@ -28,6 +28,9 @@ package com.salesforce.androidsdk.app;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.text.TextUtils;
+
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 /**
  * This class handles upgrades from one version to another.
@@ -73,6 +76,28 @@ public class SalesforceSDKUpgradeManager {
 
         // Update shared preference file to reflect the latest version.
         writeCurVersion(ACC_MGR_KEY, SalesforceSDKManager.SDK_VERSION);
+
+        /*
+         * We need to update this variable, since the app will not
+         * have this value set for a first time install.
+         */
+        if (TextUtils.isEmpty(installedVersion)) {
+            installedVersion = getInstalledAccMgrVersion();
+        }
+        try {
+            final String majorVersionNum = installedVersion.substring(0, 3);
+            double installedVerDouble = Double.parseDouble(majorVersionNum);
+
+            /*
+             * If the installed version < v6.0.0, we need to perform a migration step
+             * from the old encryption key to the new encryption key for hybrid apps.
+             */
+            if (installedVerDouble < 6.0) {
+                upgradeTo6Dot0();
+            }
+        } catch (NumberFormatException e) {
+            SalesforceSDKLogger.e(TAG, "Failed to parse installed version", e);
+        }
     }
 
     /**
@@ -103,5 +128,12 @@ public class SalesforceSDKUpgradeManager {
     protected String getInstalledVersion(String key) {
         final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(VERSION_SHARED_PREF, Context.MODE_PRIVATE);
         return sp.getString(key, "");
+    }
+
+    /**
+     * Upgrade steps for older versions of the Mobile SDK to Mobile SDK 6.0.
+     */
+    protected void upgradeTo6Dot0() {
+        UUIDManager.upgradeTo6Dot0();
     }
 }

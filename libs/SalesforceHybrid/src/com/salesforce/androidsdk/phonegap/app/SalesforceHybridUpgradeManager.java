@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.phonegap.app;
 
-import com.salesforce.androidsdk.app.UUIDManager;
-import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncUpgradeManager;
 
 /**
@@ -36,8 +34,6 @@ import com.salesforce.androidsdk.smartsync.app.SmartSyncUpgradeManager;
  * @author bhariharan
  */
 public class SalesforceHybridUpgradeManager extends SmartSyncUpgradeManager {
-
-    private static final String TAG = "SalesforceHybridUpgradeManager";
 
     private static SalesforceHybridUpgradeManager INSTANCE = null;
 
@@ -56,32 +52,5 @@ public class SalesforceHybridUpgradeManager extends SmartSyncUpgradeManager {
     @Override
     public void upgrade() {
         super.upgrade();
-    }
-
-    @Override
-    protected synchronized void upgradeAccMgr() {
-        super.upgradeAccMgr();
-        final String installedVersion = getInstalledAccMgrVersion();
-        try {
-            final String majorVersionNum = installedVersion.substring(0, 3);
-            double installedVerDouble = Double.parseDouble(majorVersionNum);
-
-            /*
-             * If the installed version < v6.0.0, we need to perform a migration step
-             * from the old encryption key to the new encryption key for hybrid apps.
-             */
-            if (installedVerDouble < 6.0) {
-                upgradeTo6Dot0();
-            }
-        } catch (NumberFormatException e) {
-            SalesforceHybridLogger.e(TAG, "Failed to parse installed version", e);
-        }
-    }
-
-    /**
-     * Upgrade steps for older versions of the Mobile SDK to Mobile SDK 6.0.
-     */
-    protected void upgradeTo6Dot0() {
-        UUIDManager.upgradeTo6Dot0();
     }
 }
