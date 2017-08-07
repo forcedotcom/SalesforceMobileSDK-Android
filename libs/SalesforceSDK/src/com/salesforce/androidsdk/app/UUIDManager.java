@@ -26,47 +26,51 @@
  */
 package com.salesforce.androidsdk.app;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
-import com.salesforce.androidsdk.analytics.security.Encryptor;
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 
+import com.salesforce.androidsdk.analytics.security.Encryptor;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
 /**
- * Helper class for UUID generation
+ * Helper class for UUID generation.
  */
 public class UUIDManager {
 
 	private static final String UUID_PREF = "uuids2";
 
     /**
-     * Random keys persisted encrypted in a private preference file
+     * Random keys persisted encrypted in a private preference file.
      * This is provided as an example.
      * We recommend you provide you own implementation for creating the HashConfig's.
      */
     private static Map<String, String> uuids = new HashMap<String, String>();
-    
+
     public static synchronized String getUuId(String name) {
-    	String cached = uuids.get(name);
-    	if (cached != null) return cached;
-        SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(UUID_PREF, Context.MODE_PRIVATE);
-        String key = SalesforceSDKManager.getInstance().getKey(name);
+        String cached = uuids.get(name);
+        if (cached != null) {
+            return cached;
+        }
+        final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(UUID_PREF, Context.MODE_PRIVATE);
+        final String key = SalesforceSDKManager.getInstance().getKey(name);
         if (!sp.contains(name)) {
-            String uuid = UUID.randomUUID().toString();
-            Editor e = sp.edit();
+            final String uuid = UUID.randomUUID().toString();
+            final Editor e = sp.edit();
             e.putString(name, Encryptor.encrypt(uuid, key));
             e.commit();
         }
         cached = Encryptor.decrypt(sp.getString(name, null), key);
-        if (cached != null)
-        	uuids.put(name, cached);
+        if (cached != null) {
+            uuids.put(name, cached);
+        }
         return cached;
-    }	
-    
+    }
+
     /**
      * Resets the generated UUIDs and wipes out the shared pref file that houses them.
      */
@@ -76,5 +80,31 @@ public class UUIDManager {
         if (sp != null) {
             sp.edit().clear().commit();
         }
-    }   
+    }
+
+    /**
+     * Migrates existing encryption keys from pre-6.0 to post-6.0 format.
+     */
+    public static synchronized void upgradeTo6Dot0() {
+        final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(UUID_PREF, Context.MODE_PRIVATE);
+        final Editor e = sp.edit();
+        uuids.clear();
+        if (sp != null) {
+            final Map<String, String> storedUuids = (Map<String, String>) sp.getAll();
+            if (storedUuids != null) {
+                final Set<String> keySet = storedUuids.keySet();
+                if (keySet != null) {
+                    for (final String key : keySet) {
+                        final String oldEncryptionKey = Encryptor.hash(key + "12s9adpahk;n12-97sdainkasd=012", key + "12kl0dsakj4-cxh1qewkjasdol8");
+                        final String newEncryptionKey = SalesforceSDKManager.getInstance().getKey(key);
+                        final String oldEncrValue = storedUuids.get(key);
+                        final String decrValue = Encryptor.decrypt(oldEncrValue, oldEncryptionKey);
+                        final String newEncrValue = Encryptor.encrypt(decrValue, newEncryptionKey);
+                        e.putString(key, newEncrValue);
+                        e.commit();
+                    }
+                }
+            }
+        }
+    }
 }
