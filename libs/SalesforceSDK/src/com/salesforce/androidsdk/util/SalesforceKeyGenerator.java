@@ -36,7 +36,9 @@ import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.crypto.KeyGenerator;
@@ -54,7 +56,7 @@ public class SalesforceKeyGenerator {
     private static final String ID_SHARED_PREF_KEY = "id_%s";
     private static final String ADDENDUM = "addendum_%s";
 
-    private static String UNIQUE_ID;
+    private static Map<String, String> UNIQUE_IDS = new HashMap<>();
 
     /**
      * Returns the unique ID being used.
@@ -63,10 +65,10 @@ public class SalesforceKeyGenerator {
      * @return Unique ID.
      */
     public static synchronized String getUniqueId(String name) {
-        if (UNIQUE_ID == null) {
+        if (UNIQUE_IDS.get(name) == null) {
             generateUniqueId(name);
         }
-        return UNIQUE_ID;
+        return UNIQUE_IDS.get(name);
     }
 
     /**
@@ -91,41 +93,35 @@ public class SalesforceKeyGenerator {
     }
 
     private static void generateUniqueId(String name) {
-        if (UNIQUE_ID == null) {
-            final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_FILE, 0);
-            final String id = prefs.getString(getSharedPrefKey(name), null);
+        final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_FILE, 0);
+        final String id = prefs.getString(getSharedPrefKey(name), null);
 
-            // Checks if we have a unique identifier stored.
-            if (id != null) {
-                UNIQUE_ID = id + getAddendum(name);
-                return;
-            } else {
+        // Checks if we have a unique identifier stored.
+        if (id != null) {
+            UNIQUE_IDS.put(name, id + getAddendum(name));
+        } else {
+            String uniqueId;
+            try {
 
-                // If the unique identifier is still null, this generates a random UUID to use.
-                if (UNIQUE_ID == null) {
-                    try {
+                // Uses SecureRandom to generate an AES-256 key.
+                final int outputKeyLength = 256;
+                final SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
 
-                        // Uses SecureRandom to generate an AES-256 key.
-                        final int outputKeyLength = 256;
-                        final SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
+                // SecureRandom does not require seeding. It's automatically seeded from system entropy.
+                final KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+                keyGenerator.init(outputKeyLength, secureRandom);
 
-                        // SecureRandom does not require seeding. It's automatically seeded from system entropy.
-                        final KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
-                        keyGenerator.init(outputKeyLength, secureRandom);
+                // Generates a 256-bit key.
+                uniqueId = Base64.encodeToString(keyGenerator.generateKey().getEncoded(), Base64.NO_WRAP);
+            } catch (NoSuchAlgorithmException e) {
+                SalesforceSDKLogger.e(TAG, "Security exception thrown", e);
 
-                        // Generates a 256-bit key.
-                        UNIQUE_ID = Base64.encodeToString(keyGenerator.generateKey().getEncoded(), Base64.NO_WRAP);
-                    } catch (NoSuchAlgorithmException e) {
-                        SalesforceSDKLogger.e(TAG, "Security exception thrown", e);
-
-                        // Generates a random UUID 128-bit key instead.
-                        UNIQUE_ID = UUID.randomUUID().toString();
-                    }
-                }
+                // Generates a random UUID 128-bit key instead.
+                uniqueId = UUID.randomUUID().toString();
             }
-            prefs.edit().putString(getSharedPrefKey(name), UNIQUE_ID).apply();
+            prefs.edit().putString(getSharedPrefKey(name), uniqueId).commit();
+            UNIQUE_IDS.put(name, uniqueId + getAddendum(name));
         }
-        UNIQUE_ID = UNIQUE_ID + getAddendum(name);
     }
 
     private static String getSharedPrefKey(String name) {
