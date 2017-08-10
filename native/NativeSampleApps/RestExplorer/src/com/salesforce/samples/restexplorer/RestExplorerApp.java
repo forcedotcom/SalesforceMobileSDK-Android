@@ -38,7 +38,7 @@ public class RestExplorerApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SalesforceSDKManager.initNative(getApplicationContext(), new KeyImpl(), ExplorerActivity.class);
+		SalesforceSDKManager.initNative(getApplicationContext(), null, ExplorerActivity.class);
 
 		/*
          * Uncomment the following line to enable browser based login. This will use a

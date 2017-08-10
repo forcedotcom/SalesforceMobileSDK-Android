@@ -28,8 +28,8 @@ package com.salesforce.androidsdk.phonegap.app;
 
 import android.app.Application;
 
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
-import com.salesforce.androidsdk.util.SalesforceKeyGenerator;
 
 /**
  * Application class used by hybrid applications
@@ -54,6 +54,6 @@ class HybridKeyImpl implements KeyInterface {
 
 	@Override
 	public String getKey(String name) {
-        return SalesforceKeyGenerator.getEncryptionKey(name);
+        return Encryptor.hash(name + "12s9adpahk;n12-97sdainkasd=012", name + "12kl0dsakj4-cxh1qewkjasdol8");
 	}
 }
