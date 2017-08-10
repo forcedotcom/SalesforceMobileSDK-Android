@@ -228,10 +228,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 
         case CreateConfirm:
             if (enteredPasscode.equals(firstPasscode)) {
-                final String oldPass = passcodeManager.getPasscodeHash();
                 passcodeManager.store(this, enteredPasscode);
-                SalesforceSDKManager.getInstance().changePasscode(oldPass,
-                		passcodeManager.hashForEncryption(enteredPasscode));
                 passcodeManager.unlock(enteredPasscode);
                 done();
             } else {
@@ -443,7 +440,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     }
 
     private void showFingerprintDialog() {
-        if (passcodeManager != null && passcodeManager.getPasscodeHash() != null && isFingerprintEnabled()) {
+        if (passcodeManager != null && isFingerprintEnabled()) {
             fingerprintAuthDialog = new FingerprintAuthDialogFragment();
             fingerprintAuthDialog.setContext(this);
             fingerprintAuthDialog.show(getFragmentManager(), "fingerprintDialog");

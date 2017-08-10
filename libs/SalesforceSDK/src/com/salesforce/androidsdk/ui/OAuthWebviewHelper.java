@@ -203,7 +203,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     	 * care of in the 'Confirm Passcode' step in PasscodeActivity.
     	 */
         if (accountOptions != null) {
-            loginOptions.setPasscodeHash(SalesforceSDKManager.getInstance().getPasscodeHash());
             addAccount();
             callback.finish();
         }
@@ -606,19 +605,16 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 /*
                  * Checks if a passcode already exists. If a passcode has NOT
                  * been created yet, the user is taken through the passcode
-                 * creation flow, at the end of which account data is encrypted
-                 * with a hash of the passcode. Other existing accounts are
-                 * also re-encrypted behind the scenes at this point. If a
-                 * passcode already exists, the existing hash is used and the
-                 * account is added at this point.
+                 * creation flow, at the end of which account data is encrypted.
                  */
                 if (!passcodeManager.hasStoredPasscode(mgr.getAppContext())) {
 
                     // This will bring up the create passcode screen - we will create the account in onResume.
                     passcodeManager.setEnabled(true);
                     passcodeManager.lockIfNeeded((Activity) getContext(), true);
-                } else if (!changeRequired) { // If a passcode change is required, the lock screen will have already been set in setMinPasscodeLength.
-                    loginOptions.setPasscodeHash(mgr.getPasscodeHash());
+                } else if (!changeRequired) {
+
+                    // If a passcode change is required, the lock screen will have already been set in setMinPasscodeLength.
                     addAccount();
                     callback.finish();
                 }
@@ -628,7 +624,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             else {
                 final PasscodeManager passcodeManager = mgr.getPasscodeManager();
                 passcodeManager.storeMobilePolicyForOrg(account, 0, PasscodeManager.MIN_PASSCODE_LENGTH);
-                loginOptions.setPasscodeHash(mgr.getPasscodeHash());
                 addAccount();
                 callback.finish();
             }
@@ -680,7 +675,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 getOAuthClientId(),
                 accountOptions.orgId,
                 accountOptions.userId,
-                loginOptions.getPasscodeHash(),
                 loginOptions.getClientSecret(),
                 accountOptions.communityId,
                 accountOptions.communityUrl,

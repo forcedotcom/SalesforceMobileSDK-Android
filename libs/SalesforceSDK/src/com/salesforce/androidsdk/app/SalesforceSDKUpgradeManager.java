@@ -134,6 +134,6 @@ public class SalesforceSDKUpgradeManager {
      * Upgrade steps for older versions of the Mobile SDK to Mobile SDK 6.0.
      */
     protected void upgradeTo6Dot0() {
-        UUIDManager.upgradeTo6Dot0();
+
     }
 }

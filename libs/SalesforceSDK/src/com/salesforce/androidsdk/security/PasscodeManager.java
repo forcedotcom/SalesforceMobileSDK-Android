@@ -37,9 +37,9 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.app.UUIDManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.SalesforceKeyGenerator;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -110,10 +110,12 @@ public class PasscodeManager  {
      */
    public PasscodeManager(Context ctx) {
 	   this(ctx,
-		   new HashConfig(UUIDManager.getUuId(VPREFIX),
-				   UUIDManager.getUuId(VSUFFIX), UUIDManager.getUuId(VKEY)),
-		   new HashConfig(UUIDManager.getUuId(EPREFIX),
-				   UUIDManager.getUuId(ESUFFIX), UUIDManager.getUuId(EKEY)));
+		   new HashConfig(SalesforceKeyGenerator.getUniqueId(VPREFIX),
+                   SalesforceKeyGenerator.getUniqueId(VSUFFIX),
+                   SalesforceKeyGenerator.getUniqueId(VKEY)),
+		   new HashConfig(SalesforceKeyGenerator.getUniqueId(EPREFIX),
+                   SalesforceKeyGenerator.getUniqueId(ESUFFIX),
+                   SalesforceKeyGenerator.getUniqueId(EKEY)));
    }
 
    public PasscodeManager(Context ctx, HashConfig verificationHashConfig,
@@ -368,24 +370,6 @@ public class PasscodeManager  {
     }
 
     /**
-     * @return a hash of the passcode that can be used for encrypting oauth tokens
-     */
-    public String getPasscodeHash() {
-        return passcodeHash;
-    }
-
-    /**
-     * Sets the passcode hash, used ONLY in tests.
-     *
-     * @param passcodeHash Passcode hash.
-     */
-    public void setPasscodeHash(String passcodeHash) {
-    	if (SalesforceSDKManager.getInstance().getIsTestRun()) {
-        	this.passcodeHash = passcodeHash;
-    	}
-    }
-
-    /**
      * @return true if locked
      */
     public boolean isLocked() {
@@ -415,15 +399,6 @@ public class PasscodeManager  {
             return false;
         }
     }
-
-    /**
-     * @param a
-     */
-    public void nolongerFrontActivity(Activity a) {
-        if (frontActivity == a)
-            frontActivity = null;
-    }
-
 
     /**
      * To be called by passcode protected activity when being paused
@@ -485,7 +460,6 @@ public class PasscodeManager  {
 
         // Passcode to no passcode.
         timeoutMs = newTimeout;
-        SalesforceSDKManager.getInstance().changePasscode(passcodeHash, null);
         reset(SalesforceSDKManager.getInstance().getAppContext());
     }
 
@@ -534,20 +508,20 @@ public class PasscodeManager  {
     public void showLockActivity(Context ctx, boolean changePasscodeFlow) {
         locked = true;
         if (ctx != null) {
-        final Intent i = new Intent(ctx, SalesforceSDKManager.getInstance().getPasscodeActivity());
-        i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-        i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        if (ctx == SalesforceSDKManager.getInstance().getAppContext()) {
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            final Intent i = new Intent(ctx, SalesforceSDKManager.getInstance().getPasscodeActivity());
+            i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+            i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            if (ctx == SalesforceSDKManager.getInstance().getAppContext()) {
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            }
+            i.putExtra(CHANGE_PASSCODE_KEY, changePasscodeFlow);
+            if (ctx instanceof Activity) {
+                ((Activity) ctx).startActivityForResult(i, PASSCODE_REQUEST_CODE);
+            } else {
+                ctx.startActivity(i);
+            }
         }
-        i.putExtra(CHANGE_PASSCODE_KEY, changePasscodeFlow);
-        if (ctx instanceof Activity) {
-            ((Activity) ctx).startActivityForResult(i, PASSCODE_REQUEST_CODE);
-        } else {
-            ctx.startActivity(i);
-        }
-    }
         EventsObservable.get().notifyEvent(EventType.AppLocked);
     }
 
@@ -610,9 +584,11 @@ public class PasscodeManager  {
      * Key for hashing and salts to be preprended and appended to data to increase entropy.
      */
     public static class HashConfig {
+
         public final String prefix;
         public final String suffix;
         public final String key;
+
         public HashConfig(String prefix, String suffix, String key) {
             this.prefix = prefix;
             this.suffix = suffix;
