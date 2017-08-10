@@ -1018,7 +1018,7 @@ public class SalesforceSDKManager {
      * @return Encrypted data.
      */
     public static String encrypt(String data) {
-        return Encryptor.encrypt(data, SalesforceKeyGenerator.getEncryptionKey(INTERNAL_ENTROPY));
+        return Encryptor.encrypt(data, getEncryptionKey());
     }
 
     /**
@@ -1037,7 +1037,7 @@ public class SalesforceSDKManager {
      * @return Decrypted data.
      */
     public static String decrypt(String data) {
-        return Encryptor.decrypt(data, SalesforceKeyGenerator.getEncryptionKey(INTERNAL_ENTROPY));
+        return Encryptor.decrypt(data, getEncryptionKey());
     }
 
     /**
