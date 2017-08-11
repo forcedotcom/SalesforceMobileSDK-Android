@@ -52,6 +52,7 @@ import android.widget.TextView.OnEditorActionListener;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.app.SalesforceSDKUpgradeManager;
 import com.salesforce.androidsdk.security.PasscodeManager;
 
 import java.util.List;
@@ -93,17 +94,15 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         // Object which allows reference to resources living outside the SDK.
         salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
 
-        // Protect against screenshots
+        // Protect against screenshots.
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
                 WindowManager.LayoutParams.FLAG_SECURE);
-
         setContentView(getLayoutId());
         final TextView forgotPasscodeView = getForgotPasscodeView();
         if (forgotPasscodeView != null) {
             forgotPasscodeView.setText(Html.fromHtml(getForgotPasscodeString()));
         }
         forgotPasscodeView.setOnClickListener(this);
-
         logoutAlertDialog = buildLogoutDialog();
         title = getTitleView();
         error = getErrorView();
@@ -114,8 +113,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         final Intent i = getIntent();
         boolean shouldChangePasscode = false;
         if (i != null) {
-            shouldChangePasscode = i.getBooleanExtra(PasscodeManager.CHANGE_PASSCODE_KEY,
-                                                     false);
+            shouldChangePasscode = i.getBooleanExtra(PasscodeManager.CHANGE_PASSCODE_KEY, false);
         }
         if (shouldChangePasscode) {
             setMode(PasscodeMode.Change);
@@ -195,8 +193,9 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     }
 
     /**
-     * Used from tests to allow/disallow automatic logout when wrong passcode has been entered too many times
-     * @param b
+     * Used from tests to allow/disallow automatic logout when wrong passcode has been entered too many times.
+     *
+     * @param b True - if logout is enabled, False - otherwise.
      */
     public void enableLogout(boolean b) {
         logoutEnabled = b;
@@ -213,7 +212,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
                 error.setText(getMinLengthInstructions(getMinPasscodeLength()));
                 return true; // return true indicating we consumed the action.
             }
-            return pc.length() > 0 ? onSubmit(pc) : false;
+            return (pc.length() > 0 && onSubmit(pc));
         } else {
             return true;
         }
@@ -239,6 +238,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         case Check:
             if (passcodeManager.check(this, enteredPasscode)) {
                 passcodeManager.unlock(enteredPasscode);
+                performUpgradeStep(enteredPasscode);
                 done();
             } else {
                 int attempts = passcodeManager.addFailedPasscodeAttempt();
@@ -263,6 +263,15 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             return true;
         }
         return false;
+    }
+
+    private void performUpgradeStep(String passcode) {
+        final SalesforceSDKUpgradeManager upgradeManager = SalesforceSDKUpgradeManager.getInstance();
+        if (upgradeManager.isPasscodeUpgradeRequired()) {
+            upgradeManager.upgradeTo6Dot0(passcodeManager.getLegacyEncryptionKey(passcode),
+                    SalesforceSDKManager.getEncryptionKey());
+            upgradeManager.wipeUpgradeSharedPref();
+        }
     }
 
     protected void done() {
@@ -451,7 +460,8 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     private boolean isFingerprintEnabled() {
         if (VERSION.SDK_INT >= VERSION_CODES.M) {
             fingerprintManager = (FingerprintManager) this.getSystemService(Context.FINGERPRINT_SERVICE);
-            // Here, thisActivity is the current activity
+
+            // Here, this activity is the current activity.
             if (checkSelfPermission(Manifest.permission.USE_FINGERPRINT) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{ permission.USE_FINGERPRINT}, REQUEST_CODE_ASK_PERMISSIONS);
             } else {

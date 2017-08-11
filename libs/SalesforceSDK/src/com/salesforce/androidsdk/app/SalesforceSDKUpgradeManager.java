@@ -53,6 +53,8 @@ public class SalesforceSDKUpgradeManager {
 
     private static final String VERSION_SHARED_PREF = "version_info";
     private static final String ACC_MGR_KEY = "acc_mgr_version";
+    private static final String SHARED_PREF_6_0 = "upgrade_6_0";
+    private static final String UPGRADE_REQUIRED_KEY = "passcode_upgrade_required";
     private static final String TAG = "SalesforceSDKUpgradeManager";
 
     private static SalesforceSDKUpgradeManager INSTANCE = null;
@@ -138,25 +140,52 @@ public class SalesforceSDKUpgradeManager {
      * @return Currently installed version of the specified key.
      */
     protected String getInstalledVersion(String key) {
-        final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(VERSION_SHARED_PREF, Context.MODE_PRIVATE);
+        final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(VERSION_SHARED_PREF,
+                Context.MODE_PRIVATE);
         return sp.getString(key, "");
     }
 
     /**
-     * Upgrade steps for older versions of the Mobile SDK to Mobile SDK 6.0.
+     * Returns if re-encryption is required in an app with passcode enabled.
+     *
+     * @return True - if re-encryption is required, False - otherwise.
      */
+    public boolean isPasscodeUpgradeRequired() {
+        final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_6_0,
+                Context.MODE_PRIVATE);
+        return sp.getBoolean(UPGRADE_REQUIRED_KEY, false);
+    }
+
+    private void createUpgradeSharedPref() {
+        final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_6_0,
+                Context.MODE_PRIVATE);
+        sp.edit().putBoolean(UPGRADE_REQUIRED_KEY, true).commit();
+    }
+
+    /**
+     * Wipes the shared pref file once passcode upgrade is complete.
+     */
+    public void wipeUpgradeSharedPref() {
+        final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_6_0,
+                Context.MODE_PRIVATE);
+        sp.edit().clear().commit();
+    }
+
     private void upgradeTo6Dot0() {
         final Context context = SalesforceSDKManager.getInstance().getAppContext();
         final PasscodeManager passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
         final String newEncryptionKey = SalesforceSDKManager.getEncryptionKey();
         String oldEncryptionkey = null;
 
-        // Determines which decryption key to use based on if passcode is enabled or not.
-        if (passcodeManager.hasStoredPasscode(context)) {
-
+        /*
+         * Checks if passcode is enabled or not. If passcode is not enabled, the data is
+         * re-encrypted right away. If passcode is enabled, the data is re-encrypted after
+         * the passcode screen is dismissed, since we need the passcode to compute the key.
+         */
+        if (!passcodeManager.hasStoredPasscode(context)) {
+            oldEncryptionkey = passcodeManager.getLegacyEncryptionKey("");
         } else {
-            oldEncryptionkey = Encryptor.hash(UUIDManager.getUuId("eprefix") + ""
-                    + UUIDManager.getUuId("esuffix"), UUIDManager.getUuId("ekey"));
+            createUpgradeSharedPref();
         }
         upgradeTo6Dot0(oldEncryptionkey, newEncryptionKey);
     }
@@ -167,7 +196,7 @@ public class SalesforceSDKUpgradeManager {
      * @param oldKey Old encryption key.
      * @param newKey New encryption key.
      */
-    protected void upgradeTo6Dot0(String oldKey, String newKey) {
+    public void upgradeTo6Dot0(String oldKey, String newKey) {
         reEncryptAccountInfo(oldKey, newKey);
         reEncryptAnalyticsData(oldKey, newKey);
     }

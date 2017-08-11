@@ -37,6 +37,7 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.app.UUIDManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.SalesforceKeyGenerator;
@@ -557,7 +558,20 @@ public class PasscodeManager  {
     public String hashForEncryption(String passcode) {
     	return hash(passcode, encryptionHashConfig);
     }
-    
+
+    /**
+     * Returns the legacy encryption key used before Mobile SDK 6.0.
+     *
+     * @param passcode Passcode.
+     * @return Legacy encryption key.
+     * @deprecated Do not use this starting with Mobile SDK 6.0. This will be removed
+     * in Mobile SDK 7.0. This is used to perform upgrade steps from a pre-6.0 SDK app.
+     */
+    public String getLegacyEncryptionKey(String passcode) {
+        return Encryptor.hash(UUIDManager.getUuId(EPREFIX) + passcode
+                + UUIDManager.getUuId(ESUFFIX), UUIDManager.getUuId(EKEY));
+    }
+
     private String hash(String passcode, HashConfig hashConfig) {
         return Encryptor.hash(hashConfig.prefix + passcode + hashConfig.suffix, hashConfig.key);
     }
