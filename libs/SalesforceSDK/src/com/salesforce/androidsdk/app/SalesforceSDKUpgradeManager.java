@@ -155,7 +155,8 @@ public class SalesforceSDKUpgradeManager {
         if (passcodeManager.hasStoredPasscode(context)) {
 
         } else {
-            oldEncryptionkey = passcodeManager.hashForEncryption("");
+            oldEncryptionkey = Encryptor.hash(UUIDManager.getUuId("eprefix") + ""
+                    + UUIDManager.getUuId("esuffix"), UUIDManager.getUuId("ekey"));
         }
         upgradeTo6Dot0(oldEncryptionkey, newEncryptionKey);
     }
