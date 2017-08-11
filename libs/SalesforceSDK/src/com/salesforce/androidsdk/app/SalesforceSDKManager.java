@@ -363,13 +363,6 @@ public class SalesforceSDKManager {
         return loginOptions;
     }
 
-	/**
-	 * For internal use only. Initializes required components.
-	 * @param context Application context.
-     * @param keyImpl Implementation of KeyInterface.
-     * @param mainActivity Activity to be launched after the login flow.
-     * @param loginActivity Login activity.
-     */
     private static void init(Context context, KeyInterface keyImpl,
                              Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
     	if (INSTANCE == null) {

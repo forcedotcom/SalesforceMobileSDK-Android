@@ -27,6 +27,13 @@
 package com.salesforce.androidsdk.smartstore.app;
 
 import com.salesforce.androidsdk.app.SalesforceSDKUpgradeManager;
+import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
+
+import net.sqlcipher.database.SQLiteDatabase;
+
+import java.util.Collection;
+import java.util.Map;
 
 /**
  * This class handles upgrades from one version to another.
@@ -39,7 +46,6 @@ public class SmartStoreUpgradeManager extends SalesforceSDKUpgradeManager {
      * Key in shared preference file for smart store version.
      */
     private static final String SMART_STORE_KEY = "smart_store_version";
-    private static final String DB_NAME_2DOT3_FORMAT = "smartstore%s.db";
 
     private static SmartStoreUpgradeManager INSTANCE = null;
 
@@ -82,5 +88,20 @@ public class SmartStoreUpgradeManager extends SalesforceSDKUpgradeManager {
      */
     public String getInstalledSmartStoreVersion() {
         return getInstalledVersion(SMART_STORE_KEY);
+    }
+
+    @Override
+    protected void upgradeTo6Dot0(String oldKey, String newKey) {
+        super.upgradeTo6Dot0(oldKey, newKey);
+        final Map<String, DBOpenHelper> dbMap = DBOpenHelper.getOpenHelpers();
+        if (dbMap != null) {
+            final Collection<DBOpenHelper> dbHelpers = dbMap.values();
+            for (final DBOpenHelper dbHelper : dbHelpers) {
+                if (dbHelper != null) {
+                    final SQLiteDatabase db = dbHelper.getWritableDatabase(oldKey);
+                    SmartStore.changeKey(db, oldKey, newKey);
+                }
+            }
+        }
     }
 }
