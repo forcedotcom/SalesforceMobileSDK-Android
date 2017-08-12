@@ -91,7 +91,7 @@ public class SmartStoreUpgradeManager extends SalesforceSDKUpgradeManager {
     }
 
     @Override
-    protected void upgradeTo6Dot0(String oldKey, String newKey) {
+    public void upgradeTo6Dot0(String oldKey, String newKey) {
         super.upgradeTo6Dot0(oldKey, newKey);
         final Map<String, DBOpenHelper> dbMap = DBOpenHelper.getOpenHelpers();
         if (dbMap != null) {
