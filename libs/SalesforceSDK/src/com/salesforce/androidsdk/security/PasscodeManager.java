@@ -37,6 +37,7 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.app.SalesforceSDKUpgradeManager;
 import com.salesforce.androidsdk.app.UUIDManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -307,11 +308,15 @@ public class PasscodeManager  {
      * @return true if passcode matches the one stored (hashed) in private preference
      */
     public boolean check(Context ctx, String passcode) {
-        SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
+        final SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
         String hashedPasscode = sp.getString(KEY_PASSCODE, null);
         hashedPasscode = removeNewLine(hashedPasscode);
         if (hashedPasscode != null) {
-            return hashedPasscode.equals(hashForVerification(passcode));
+            String verificationHash = hashForVerification(passcode);
+            if (SalesforceSDKUpgradeManager.getInstance().isPasscodeUpgradeRequired()) {
+                verificationHash = legacyHashForVerification(passcode);
+            }
+            return hashedPasscode.equals(verificationHash);
         }
 
         /*
@@ -553,6 +558,20 @@ public class PasscodeManager  {
 
     public String hashForVerification(String passcode) {
     	return hash(passcode, verificationHashConfig);
+    }
+
+    /**
+     * Returns the legacy hash for verification before Mobile SDK 6.0.
+     *
+     * @param passcode Passcode.
+     * @return Legacy hash for verification.
+     * @deprecated Do not use this starting with Mobile SDK 6.0. This will be removed
+     * in Mobile SDK 7.0. This is used to perform upgrade steps from a pre-6.0 SDK app.
+     */
+    public String legacyHashForVerification(String passcode) {
+        return hash(passcode, new HashConfig(UUIDManager.getUuId(VPREFIX),
+                UUIDManager.getUuId(VSUFFIX),
+                UUIDManager.getUuId(VKEY)));
     }
     
     public String hashForEncryption(String passcode) {

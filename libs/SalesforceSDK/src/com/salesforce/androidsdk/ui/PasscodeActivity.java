@@ -237,8 +237,8 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 
         case Check:
             if (passcodeManager.check(this, enteredPasscode)) {
-                passcodeManager.unlock(enteredPasscode);
                 performUpgradeStep(enteredPasscode);
+                passcodeManager.unlock(enteredPasscode);
                 done();
             } else {
                 int attempts = passcodeManager.addFailedPasscodeAttempt();
@@ -268,6 +268,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     private void performUpgradeStep(String passcode) {
         final SalesforceSDKUpgradeManager upgradeManager = SalesforceSDKUpgradeManager.getInstance();
         if (upgradeManager.isPasscodeUpgradeRequired()) {
+            passcodeManager.store(this, passcode);
             upgradeManager.upgradeTo6Dot0(passcodeManager.getLegacyEncryptionKey(passcode),
                     SalesforceSDKManager.getEncryptionKey());
             upgradeManager.wipeUpgradeSharedPref();
