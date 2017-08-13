@@ -184,10 +184,10 @@ public class SalesforceSDKUpgradeManager {
          */
         if (!passcodeManager.hasStoredPasscode(context)) {
             oldEncryptionkey = passcodeManager.getLegacyEncryptionKey("");
+            upgradeTo6Dot0(oldEncryptionkey, newEncryptionKey);
         } else {
             createUpgradeSharedPref();
         }
-        upgradeTo6Dot0(oldEncryptionkey, newEncryptionKey);
     }
 
     /**
