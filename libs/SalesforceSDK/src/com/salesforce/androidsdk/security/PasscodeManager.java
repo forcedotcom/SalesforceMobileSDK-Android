@@ -313,6 +313,11 @@ public class PasscodeManager  {
         hashedPasscode = removeNewLine(hashedPasscode);
         if (hashedPasscode != null) {
             String verificationHash = hashForVerification(passcode);
+
+            /*
+             * Performs migration from pre-6.0 to 6.0. This uses the old verification
+             * hash to ensure the right passcode was entered by the user.
+             */
             if (SalesforceSDKUpgradeManager.getInstance().isPasscodeUpgradeRequired()) {
                 verificationHash = legacyHashForVerification(passcode);
             }

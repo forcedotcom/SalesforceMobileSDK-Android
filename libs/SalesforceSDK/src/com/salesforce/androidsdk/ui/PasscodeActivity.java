@@ -268,6 +268,11 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     private void performUpgradeStep(String passcode) {
         final SalesforceSDKUpgradeManager upgradeManager = SalesforceSDKUpgradeManager.getInstance();
         if (upgradeManager.isPasscodeUpgradeRequired()) {
+
+            /*
+             * We need to store the new passcode to ensure the old verification
+             * hash is overwritten with the new verification hash.
+             */
             passcodeManager.store(this, passcode);
             upgradeManager.upgradeTo6Dot0(passcodeManager.getLegacyEncryptionKey(passcode),
                     SalesforceSDKManager.getEncryptionKey());
