@@ -26,49 +26,66 @@
  */
 package com.salesforce.androidsdk.app;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
-import com.salesforce.androidsdk.analytics.security.Encryptor;
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 
+import com.salesforce.androidsdk.analytics.security.Encryptor;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 /**
- * Helper class for UUID generation
+ * Helper class for UUID generation.
+ *
+ * @deprecated Do not use this starting with Mobile SDK 6.0. This will be removed
+ * in Mobile SDK 7.0. Use {@link com.salesforce.androidsdk.util.SalesforceKeyGenerator instead}.
  */
 public class UUIDManager {
 
 	private static final String UUID_PREF = "uuids2";
 
     /**
-     * Random keys persisted encrypted in a private preference file
+     * Random keys persisted encrypted in a private preference file.
      * This is provided as an example.
      * We recommend you provide you own implementation for creating the HashConfig's.
      */
     private static Map<String, String> uuids = new HashMap<String, String>();
-    
+
+    /**
+     * Returns a UUID associated with the name passed in.
+     *
+     * @param name Name.
+     * @return UUID.
+     * @deprecated Do not use this starting with Mobile SDK 6.0. This will be removed
+     * in Mobile SDK 7.0. Use {@link com.salesforce.androidsdk.util.SalesforceKeyGenerator instead}.
+     */
     public static synchronized String getUuId(String name) {
-    	String cached = uuids.get(name);
-    	if (cached != null) return cached;
-        SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(UUID_PREF, Context.MODE_PRIVATE);
-        String key = SalesforceSDKManager.getInstance().getKey(name);
+        String cached = uuids.get(name);
+        if (cached != null) {
+            return cached;
+        }
+        final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(UUID_PREF, Context.MODE_PRIVATE);
+        final String key = SalesforceSDKManager.getInstance().getKey(name);
         if (!sp.contains(name)) {
-            String uuid = UUID.randomUUID().toString();
-            Editor e = sp.edit();
+            final String uuid = UUID.randomUUID().toString();
+            final Editor e = sp.edit();
             e.putString(name, Encryptor.encrypt(uuid, key));
             e.commit();
         }
         cached = Encryptor.decrypt(sp.getString(name, null), key);
-        if (cached != null)
-        	uuids.put(name, cached);
+        if (cached != null) {
+            uuids.put(name, cached);
+        }
         return cached;
-    }	
-    
+    }
+
     /**
      * Resets the generated UUIDs and wipes out the shared pref file that houses them.
+     *
+     * @deprecated Do not use this starting with Mobile SDK 6.0. This will be removed
+     * in Mobile SDK 7.0. Use {@link com.salesforce.androidsdk.util.SalesforceKeyGenerator instead}.
      */
     public static synchronized void resetUuids() {
         uuids.clear();
@@ -76,5 +93,5 @@ public class UUIDManager {
         if (sp != null) {
             sp.edit().clear().commit();
         }
-    }   
+    }
 }

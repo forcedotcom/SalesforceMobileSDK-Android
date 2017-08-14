@@ -39,8 +39,7 @@ public class ConfiguredApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SalesforceSDKManager.initNative(getApplicationContext(), new KeyImpl(),
-                MainActivity.class);
+		SalesforceSDKManager.initNative(getApplicationContext(), null, MainActivity.class);
 
 		/*
          * Uncomment the following line to enable browser based login. This will use a

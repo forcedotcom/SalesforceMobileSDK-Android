@@ -72,10 +72,10 @@ public class SmartSyncSDKManager extends SmartStoreSDKManager {
 		if (INSTANCE == null) {
     		INSTANCE = new SmartSyncSDKManager(context, keyImpl, mainActivity, loginActivity);
     	}
-		initInternal(context);
 
-        // Upgrade to the latest version.
-        SmartSyncUpgradeManager.getInstance().upgrade();
+		// Upgrade to the latest version.
+		SmartSyncUpgradeManager.getInstance().upgrade();
+		initInternal(context);
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
 	}
 

@@ -57,9 +57,6 @@ public class LoginServerManager {
     public static final String PRODUCTION_LOGIN_URL = "https://login.salesforce.com";
     public static final String SANDBOX_LOGIN_URL = "https://test.salesforce.com";
 
-	// Legacy keys for login servers properties stored in preferences.
-	public static final String LEGACY_SERVER_URL_PREFS_SETTINGS = "server_url_prefs";
-
 	// Keys used in shared preferences.
 	private static final String SERVER_URL_FILE = "server_url_file";
 	private static final String RUNTIME_PREFS_FILE = "runtime_prefs_file";
