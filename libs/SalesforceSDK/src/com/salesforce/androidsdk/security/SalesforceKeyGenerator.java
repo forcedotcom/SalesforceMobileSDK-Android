@@ -84,21 +84,21 @@ public class SalesforceKeyGenerator {
      * @return Encryption key.
      */
     public static synchronized String getEncryptionKey(String name) {
-        final String keyString = getUniqueId(name);
-        if (CACHED_ENCRYPTION_KEYS.get(keyString) == null) {
-            generateEncryptionKey(keyString);
+        if (CACHED_ENCRYPTION_KEYS.get(name) == null) {
+            generateEncryptionKey(name);
         }
-        return CACHED_ENCRYPTION_KEYS.get(keyString);
+        return CACHED_ENCRYPTION_KEYS.get(name);
     }
 
-    private static void generateEncryptionKey(String keyString) {
+    private static void generateEncryptionKey(String name) {
         try {
+            final String keyString = getUniqueId(name);
             byte[] secretKey = keyString.getBytes(Charset.forName(UTF8));
             final MessageDigest md = MessageDigest.getInstance(SHA1);
             secretKey = md.digest(secretKey);
             byte[] dest = new byte[16];
             System.arraycopy(secretKey, 0, dest, 0, 16);
-            CACHED_ENCRYPTION_KEYS.put(keyString, Base64.encodeToString(dest, Base64.DEFAULT));
+            CACHED_ENCRYPTION_KEYS.put(name, Base64.encodeToString(dest, Base64.DEFAULT));
         } catch (Exception ex) {
             SalesforceSDKLogger.e(TAG, "Exception thrown while getting encryption key", ex);
         }
