@@ -56,8 +56,13 @@ public class SalesforceKeyGenerator {
     private static final String SHARED_PREF_FILE = "identifier.xml";
     private static final String ID_SHARED_PREF_KEY = "id_%s";
     private static final String ADDENDUM = "addendum_%s";
+    private static final String UTF8 = "UTF-8";
+    private static final String SHA1 = "SHA-1";
+    private static final String SHA1PRNG = "SHA1PRNG";
+    private static final String AES = "AES";
 
     private static Map<String, String> UNIQUE_IDS = new HashMap<>();
+    private static Map<String, String> CACHED_ENCRYPTION_KEYS = new HashMap<>();
 
     /**
      * Returns the unique ID being used.
@@ -79,17 +84,23 @@ public class SalesforceKeyGenerator {
      * @return Encryption key.
      */
     public static synchronized String getEncryptionKey(String name) {
+        if (CACHED_ENCRYPTION_KEYS.get(name) == null) {
+            generateEncryptionKey(name);
+        }
+        return CACHED_ENCRYPTION_KEYS.get(name);
+    }
+
+    private static void generateEncryptionKey(String name) {
         try {
             final String keyString = getUniqueId(name);
-            byte[] secretKey = keyString.getBytes(Charset.forName("UTF-8"));
-            final MessageDigest md = MessageDigest.getInstance("SHA-1");
+            byte[] secretKey = keyString.getBytes(Charset.forName(UTF8));
+            final MessageDigest md = MessageDigest.getInstance(SHA1);
             secretKey = md.digest(secretKey);
             byte[] dest = new byte[16];
             System.arraycopy(secretKey, 0, dest, 0, 16);
-            return Base64.encodeToString(dest, Base64.DEFAULT);
+            CACHED_ENCRYPTION_KEYS.put(name, Base64.encodeToString(dest, Base64.DEFAULT));
         } catch (Exception ex) {
             SalesforceSDKLogger.e(TAG, "Exception thrown while getting encryption key", ex);
-            return null;
         }
     }
 
@@ -106,10 +117,10 @@ public class SalesforceKeyGenerator {
 
                 // Uses SecureRandom to generate an AES-256 key.
                 final int outputKeyLength = 256;
-                final SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
+                final SecureRandom secureRandom = SecureRandom.getInstance(SHA1PRNG);
 
                 // SecureRandom does not require seeding. It's automatically seeded from system entropy.
-                final KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+                final KeyGenerator keyGenerator = KeyGenerator.getInstance(AES);
                 keyGenerator.init(outputKeyLength, secureRandom);
 
                 // Generates a 256-bit key.
