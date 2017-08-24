@@ -369,6 +369,11 @@ public class ClientManager {
         }
         Account acc = new Account(accountName, getAccountType());
         accountManager.addAccountExplicitly(acc, SalesforceSDKManager.encrypt(refreshToken), new Bundle());
+
+        // Caching auth token otherwise the first call to accountManager.getAuthToken will go to the AuthenticatorService which will do a refresh
+        // That is problematic when the refresh token is set to expire immediately
+        accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encrypt(authToken));
+
         // There is a bug in AccountManager::addAccountExplicitly() that sometimes causes user data to not be
         // saved when the user data is passed in through that method. The work-around is to call setUserData()
         // for all the user data manually after passing in empty user data into addAccountExplicitly().
