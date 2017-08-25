@@ -51,14 +51,12 @@ public class SalesforceHybridTestActivity extends SalesforceDroidGapActivity {
 	protected ClientManager buildClientManager() {
 		final ClientManager clientManager = super.buildClientManager();
 		final LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
-
 		clientManager.createNewAccount(accountName,
         		username, refreshToken,
         		authToken, instanceUrl,
         		loginUrl, identityUrl,
         		loginOptions.getOauthClientId(), orgId,
-        		userId, null);
-	
+        		userId, null, null, null, null, null, null, null, null, null, null);
 		return clientManager;
 	}
 }
