@@ -70,12 +70,13 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
         }
         userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
         loginOptions = new LoginOptions(ClientManagerTest.TEST_LOGIN_URL,
-        		ClientManagerTest.TEST_PASSCODE_HASH, ClientManagerTest.TEST_CALLBACK_URL,
-        		ClientManagerTest.TEST_CLIENT_ID, ClientManagerTest.TEST_SCOPES);
+        		ClientManagerTest.TEST_CALLBACK_URL,
+        		ClientManagerTest.TEST_CLIENT_ID,
+				ClientManagerTest.TEST_SCOPES,
+                null);
         clientManager = new ClientManager(targetContext,
         		ClientManagerTest.TEST_ACCOUNT_TYPE, loginOptions, true);
         accMgr = clientManager.getAccountManager();
-        SalesforceSDKManager.getInstance().getPasscodeManager().setPasscodeHash(ClientManagerTest.TEST_PASSCODE_HASH);
     }
 
     @Override
@@ -113,7 +114,6 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
     	List<UserAccount> users = userAccMgr.getAuthenticatedUsers();
     	assertNull("There should be no authenticated users", users);
     	createTestAccount();
-    	SalesforceSDKManager.getInstance().getPasscodeManager().setPasscodeHash(ClientManagerTest.TEST_PASSCODE_HASH);
     	users = userAccMgr.getAuthenticatedUsers();
     	assertEquals("There should be 1 authenticated user", 1, users.size());
     	final UserAccount curUser = userAccMgr.getCurrentUser();
@@ -234,7 +234,7 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
         		ClientManagerTest.TEST_AUTH_TOKEN, ClientManagerTest.TEST_INSTANCE_URL,
         		ClientManagerTest.TEST_LOGIN_URL, ClientManagerTest.TEST_IDENTITY_URL,
         		ClientManagerTest.TEST_CLIENT_ID, ClientManagerTest.TEST_ORG_ID,
-        		ClientManagerTest.TEST_USER_ID, ClientManagerTest.TEST_PASSCODE_HASH);
+        		ClientManagerTest.TEST_USER_ID, null, null, null, null, null, null, null, null, null, null);
     }
 
     /**
@@ -248,6 +248,6 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
         		ClientManagerTest.TEST_AUTH_TOKEN, ClientManagerTest.TEST_INSTANCE_URL,
         		ClientManagerTest.TEST_LOGIN_URL, ClientManagerTest.TEST_IDENTITY_URL,
         		ClientManagerTest.TEST_CLIENT_ID, ClientManagerTest.TEST_ORG_ID_2,
-        		ClientManagerTest.TEST_USER_ID_2, ClientManagerTest.TEST_PASSCODE_HASH);
+        		ClientManagerTest.TEST_USER_ID_2, null, null, null, null, null, null, null, null, null, null);
     }
 }
