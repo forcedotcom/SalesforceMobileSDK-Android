@@ -61,6 +61,7 @@ import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.push.PushNotificationInterface;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -627,6 +628,7 @@ public class SalesforceSDKManager {
     protected void cleanUp(Activity frontActivity, Account account) {
         final UserAccount userAccount = UserAccountManager.getInstance().buildUserAccount(account);
         SalesforceAnalyticsManager.reset(userAccount);
+        RestClient.clearCaches(userAccount.getOrgId(), userAccount.getUserId());
         final List<UserAccount> users = getUserAccountManager().getAuthenticatedUsers();
 
         // Finishes front activity if specified, and if this is the last account.
