@@ -527,7 +527,7 @@ public class OAuth2 {
         final TokenErrorResponse response;
         final int httpStatusCode;
 
-        boolean isRefreshTokenInvalid() {
+        public boolean isRefreshTokenInvalid() {
             return httpStatusCode == HttpURLConnection.HTTP_UNAUTHORIZED
                     || httpStatusCode == HttpURLConnection.HTTP_FORBIDDEN
                     || httpStatusCode == HttpURLConnection.HTTP_BAD_REQUEST;
