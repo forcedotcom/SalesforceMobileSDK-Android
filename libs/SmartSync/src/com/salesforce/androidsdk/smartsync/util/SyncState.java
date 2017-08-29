@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.smartsync.util;
 
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
@@ -103,6 +104,10 @@ public class SyncState {
 		sync.put(SYNC_END_TIME, 0);
 
     	sync = store.upsert(SYNCS_SOUP, sync);
+		if (sync == null) {
+			throw new SyncManager.SmartSyncException("Failed to create sync down");
+		}
+
     	return SyncState.fromJSON(sync);
 	}
 
@@ -126,6 +131,9 @@ public class SyncState {
 		sync.put(SYNC_END_TIME, 0);
 
     	sync = store.upsert(SYNCS_SOUP, sync);
+		if (sync == null) {
+			throw new SyncManager.SmartSyncException("Failed to create sync up");
+		}
     	return SyncState.fromJSON(sync);
 	}
 	
@@ -194,7 +202,10 @@ public class SyncState {
 	 * @throws JSONException
 	 */
 	public void save(SmartStore store) throws JSONException {
-		store.update(SYNCS_SOUP, asJSON(), getId());
+		JSONObject sync = store.update(SYNCS_SOUP, asJSON(), getId());
+		if (sync == null) {
+			throw new SyncManager.SmartSyncException("Failed to save sync state");
+		}
 	}
 	
 	public long getId() {
