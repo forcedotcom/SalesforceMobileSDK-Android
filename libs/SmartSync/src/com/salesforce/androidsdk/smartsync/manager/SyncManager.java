@@ -168,8 +168,31 @@ public class SyncManager {
      * Resets all the sync managers
      */
     public static synchronized void reset() {
+        for (SyncManager syncManager : INSTANCES.values()) {
+            syncManager.threadPool.shutdownNow();
+        }
         INSTANCES.clear();
     }
+
+    /**
+     * Resets the sync managers for this user account
+     *
+     * @param account User account.
+     */
+    public static synchronized void reset(UserAccount account) {
+        Set<String> keysToRemove = new HashSet<>();
+        for (String key : INSTANCES.keySet()) {
+            if (key.startsWith(account.getUserId())) {
+                keysToRemove.add(key);
+                SyncManager syncManager = INSTANCES.get(key);
+                syncManager.threadPool.shutdownNow();
+            }
+        }
+        // NB: keySet returns a Set view of the keys contained in this map.
+        // The set is backed by the map, so changes to the map are reflected in the set, and vice-versa.
+        INSTANCES.keySet().removeAll(keysToRemove);
+    }
+
 
     /**
      * Get details of a sync state
