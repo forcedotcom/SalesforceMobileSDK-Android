@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
@@ -145,9 +146,11 @@ public class RestClient {
 	}
 
 	/**
-	 * Remove cached OkHttpClient.Builder, OkHttpClient and OAuthRefreshInterceptor for the given org id, user id
+	 * Remove cached OkHttpClient.Builder, OkHttpClient and OAuthRefreshInterceptor for the given user
 	 */
-	public synchronized static void clearCaches(String orgId, String userId) {
+	public synchronized static void clearCaches(UserAccount userAccount) {
+		String orgId = userAccount != null ? userAccount.getOrgId() : null;
+		String userId = userAccount != null ? userAccount.getUserId() : null;
 		String cacheKey = computeCacheKey(orgId, userId);
 		OAUTH_REFRESH_INTERCEPTORS.remove(cacheKey);
 		OK_CLIENT_BUILDERS.remove(cacheKey);
