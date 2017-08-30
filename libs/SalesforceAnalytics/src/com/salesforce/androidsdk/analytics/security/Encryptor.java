@@ -288,18 +288,7 @@ public class Encryptor {
         final SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
         final IvParameterSpec ivSpec = new IvParameterSpec(initVector);
         cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec);
-        byte[] padded = cipher.doFinal(meat, 0, meatLen);
-        byte[] result = padded;
-        byte paddingValue = padded[padded.length - 1];
-        if (0 <= paddingValue) {
-            if (paddingValue < (byte) 16) {
-                byte compare = padded[padded.length - paddingValue];
-                if (compare == paddingValue) {
-                    result = new byte[padded.length - paddingValue];
-                    System.arraycopy(padded, 0, result, 0, result.length);
-                }
-            }
-        }
+        byte[] result = cipher.doFinal(meat, 0, meatLen);
         return result;
     }
 }
