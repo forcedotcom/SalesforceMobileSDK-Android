@@ -30,7 +30,7 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
-import android.accounts.AccountsException;
+import android.accounts.NetworkErrorException;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -42,10 +42,10 @@ import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -105,18 +105,15 @@ public class ClientManager {
         // No account found - let's add one - the AuthenticatorService add account method will start the login activity
         if (acc == null) {
             SalesforceSDKLogger.i(TAG, "No account of type " + accountType + " found");
-            accountManager.addAccount(getAccountType(),
-                    AccountManager.KEY_AUTHTOKEN, null /*required features*/, options,
-                    activityContext, new AccMgrCallback(restClientCallback),
-                    null /* handler */);
+            accountManager.addAccount(getAccountType(), AccountManager.KEY_AUTHTOKEN, null, options,
+                    activityContext, new AccMgrCallback(restClientCallback), null);
 
         }
         // Account found
         else {
             SalesforceSDKLogger.i(TAG, "Found account of type " + accountType);
-            accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN,
-                    options, activityContext, new AccMgrCallback(restClientCallback), null /* handler */);
-
+            final RestClient cachedRestClient = peekRestClient();
+            restClientCallback.authenticatedRestClient(cachedRestClient);
         }
     }
 
@@ -148,7 +145,6 @@ public class ClientManager {
      *
      * @return
      */
-
     public RestClient peekRestClient(UserAccount user) {
     	return peekRestClient(getAccountByName(user.getAccountName()));
     }
@@ -164,18 +160,16 @@ public class ClientManager {
             SalesforceSDKLogger.i(TAG, "User is logging out", e);
             throw e;
         }
-        String authToken = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AccountManager.KEY_AUTHTOKEN));
-        String refreshToken = SalesforceSDKManager.decrypt(accountManager.getPassword(acc));
-
-        // We also store the username, instance url, org id, user id and username in the account manager
-        String loginServer = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_LOGIN_URL));
-        String idUrl = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_ID_URL));
-        String instanceServer = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_INSTANCE_URL));
-        String orgId = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_ORG_ID));
-        String userId = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_USER_ID));
-        String username = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_USERNAME));
-        String accountName = accountManager.getUserData(acc, AccountManager.KEY_ACCOUNT_NAME);
-        String clientId = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_CLIENT_ID));
+        final String authToken = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AccountManager.KEY_AUTHTOKEN));
+        final String refreshToken = SalesforceSDKManager.decrypt(accountManager.getPassword(acc));
+        final String loginServer = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_LOGIN_URL));
+        final String idUrl = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_ID_URL));
+        final String instanceServer = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_INSTANCE_URL));
+        final String orgId = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_ORG_ID));
+        final String userId = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_USER_ID));
+        final String username = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_USERNAME));
+        final String accountName = accountManager.getUserData(acc, AccountManager.KEY_ACCOUNT_NAME);
+        final String clientId = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_CLIENT_ID));
         final String lastName = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_LAST_NAME));
         final String email = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_EMAIL));
         final String encFirstName =  accountManager.getUserData(acc, AuthenticatorService.KEY_FIRST_NAME);
@@ -220,18 +214,22 @@ public class ClientManager {
         if (encCommunityUrl != null) {
         	communityUrl = SalesforceSDKManager.decrypt(encCommunityUrl);
         }
-        if (authToken == null)
+        if (authToken == null) {
             throw new AccountInfoNotFoundException(AccountManager.KEY_AUTHTOKEN);
-        if (instanceServer == null)
+        }
+        if (instanceServer == null) {
             throw new AccountInfoNotFoundException(AuthenticatorService.KEY_INSTANCE_URL);
-        if (userId == null)
+        }
+        if (userId == null) {
             throw new AccountInfoNotFoundException(AuthenticatorService.KEY_USER_ID);
-        if (orgId == null)
+        }
+        if (orgId == null) {
             throw new AccountInfoNotFoundException(AuthenticatorService.KEY_ORG_ID);
-
+        }
         try {
-            AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(this, instanceServer, authToken, refreshToken);
-            ClientInfo clientInfo = new ClientInfo(clientId, new URI(instanceServer),
+            final AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(this,
+                    instanceServer, authToken, refreshToken);
+            final ClientInfo clientInfo = new ClientInfo(clientId, new URI(instanceServer),
             		new URI(loginServer), new URI(idUrl), accountName, username,
             		userId, orgId, communityId, communityUrl,
                     firstName, lastName, displayName, email, photoUrl, thumbnailUrl, values);
@@ -263,9 +261,9 @@ public class ClientManager {
      * @return The account with the application account type and the given name.
      */
     public Account getAccountByName(String name) {
-        Account[] accounts = accountManager.getAccountsByType(getAccountType());
+        final Account[] accounts = accountManager.getAccountsByType(getAccountType());
         if (accounts != null) {
-            for (Account account : accounts) {
+            for (final Account account : accounts) {
                 if (account.name.equals(name)) {
                     return account;
                 }
@@ -377,7 +375,7 @@ public class ClientManager {
         // There is a bug in AccountManager::addAccountExplicitly() that sometimes causes user data to not be
         // saved when the user data is passed in through that method. The work-around is to call setUserData()
         // for all the user data manually after passing in empty user data into addAccountExplicitly().
-        for (String key : extras.keySet()) {
+        for (final String key : extras.keySet()) {
             // WARNING! This assumes all user data is a String!
             accountManager.setUserData(acc, key, extras.getString(key));
         }
@@ -438,11 +436,7 @@ public class ClientManager {
             try {
                 f.getResult();
                 client = peekRestClient();
-            } catch (AccountsException e) {
-                SalesforceSDKLogger.w(TAG, "Exception thrown while creating rest client", e);
-            } catch (IOException e) {
-                SalesforceSDKLogger.w(TAG, "Exception thrown while creating rest client", e);
-            } catch (AccountInfoNotFoundException e) {
+            } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Exception thrown while creating rest client", e);
             }
 
@@ -480,7 +474,8 @@ public class ClientManager {
          * @param clientManager
          * @param refreshToken
          */
-        public AccMgrAuthTokenProvider(ClientManager clientManager, String instanceUrl, String authToken, String refreshToken) {
+        public AccMgrAuthTokenProvider(ClientManager clientManager, String instanceUrl,
+                                       String authToken, String refreshToken) {
             this.clientManager = clientManager;
             this.refreshToken = refreshToken;
             lastNewAuthToken = authToken;
@@ -495,9 +490,10 @@ public class ClientManager {
         @Override
         public String getNewAuthToken() {
             SalesforceSDKLogger.i(TAG, "Need new access token");
-            Account acc = clientManager.getAccount();
-            if (acc == null)
+            final Account acc = clientManager.getAccount();
+            if (acc == null) {
                 return null;
+            }
 
             // Wait if another thread is already fetching an access token
             synchronized (lock) {
@@ -513,12 +509,12 @@ public class ClientManager {
             }
 
             // Invalidate current auth token.
-            final String cachedAuthToken = clientManager.accountManager.peekAuthToken(acc, AccountManager.KEY_AUTHTOKEN);
+            final String cachedAuthToken = clientManager.peekRestClient(acc).getAuthToken();
             clientManager.invalidateToken(cachedAuthToken);
             String newAuthToken = null;
             String newInstanceUrl = null;
             try {
-                final Bundle bundle = clientManager.accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN, null, false, null, null).getResult();
+                final Bundle bundle = refreshStaleToken(acc);
                 if (bundle == null) {
                     SalesforceSDKLogger.w(TAG, "Bundle was null while getting auth token");
                 } else {
@@ -582,6 +578,88 @@ public class ClientManager {
 
         @Override
         public String getInstanceUrl() { return lastNewInstanceUrl; }
+
+        private Bundle refreshStaleToken(Account account) throws NetworkErrorException {
+            final Bundle resBundle = new Bundle();
+            final Context context = SalesforceSDKManager.getInstance().getAppContext();
+            final AccountManager mgr = AccountManager.get(context);
+            final String refreshToken = SalesforceSDKManager.decrypt(mgr.getPassword(account));
+            final String loginServer = SalesforceSDKManager.decrypt(mgr.getUserData(account,
+                    AuthenticatorService.KEY_LOGIN_URL));
+            final String clientId = SalesforceSDKManager.decrypt(mgr.getUserData(account,
+                    AuthenticatorService.KEY_CLIENT_ID));
+            final String instServer = SalesforceSDKManager.decrypt(mgr.getUserData(account,
+                    AuthenticatorService.KEY_INSTANCE_URL));
+            final String encClientSecret = mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_SECRET);
+            String clientSecret = null;
+            if (encClientSecret != null) {
+                clientSecret = SalesforceSDKManager.decrypt(encClientSecret);
+            }
+            final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
+            Map<String, String> values = null;
+            if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+                values = new HashMap<>();
+                for (final String key : additionalOauthKeys) {
+                    final String encValue = mgr.getUserData(account, key);
+                    if (encValue != null) {
+                        final String value = SalesforceSDKManager.decrypt(encValue);
+                        values.put(key, value);
+                    }
+                }
+            }
+            final Map<String,String> addlParamsMap = SalesforceSDKManager.getInstance().getLoginOptions().getAdditionalParameters();
+            try {
+                final OAuth2.TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
+                        new URI(loginServer), clientId, refreshToken, clientSecret, addlParamsMap);
+                if (!instServer.equalsIgnoreCase(tr.instanceUrl)) {
+                    mgr.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL,
+                            SalesforceSDKManager.encrypt(tr.instanceUrl));
+                }
+                mgr.setUserData(account, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encrypt(tr.authToken));
+                resBundle.putString(AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encrypt(tr.authToken));
+                resBundle.putString(AuthenticatorService.KEY_INSTANCE_URL, SalesforceSDKManager.encrypt(tr.instanceUrl));
+                if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+                    for (final String key : additionalOauthKeys) {
+                        if (tr.additionalOauthValues != null && tr.additionalOauthValues.containsKey(key)) {
+                            final String newValue = tr.additionalOauthValues.get(key);
+                            if (newValue != null) {
+                                final String encrNewValue = SalesforceSDKManager.encrypt(newValue);
+                                resBundle.putString(key, encrNewValue);
+                                mgr.setUserData(account, key, encrNewValue);
+                            }
+                        } else if (values != null && values.containsKey(key)) {
+                            final String value = values.get(key);
+                            if (value != null) {
+                                final String encrValue = SalesforceSDKManager.encrypt(value);
+                                resBundle.putString(key, encrValue);
+                            }
+                        }
+                    }
+                }
+            } catch (OAuth2.OAuthFailedException ofe) {
+                if (ofe.isRefreshTokenInvalid()) {
+                    SalesforceSDKLogger.i(TAG, "Invalid Refresh Token: (Error: " +
+                            ofe.getTokenErrorResponse().error + ", Status Code: " +
+                            ofe.getHttpStatusCode() + ")", ofe);
+                    return makeAuthIntentBundle(context);
+                }
+                resBundle.putString(AccountManager.KEY_ERROR_CODE, ofe.getTokenErrorResponse().error);
+                resBundle.putString(AccountManager.KEY_ERROR_MESSAGE, ofe.getTokenErrorResponse().errorDescription);
+            } catch (Exception e) {
+                SalesforceSDKLogger.w(TAG, "Exception thrown while getting new auth token", e);
+                throw new NetworkErrorException(e);
+            }
+            return resBundle;
+        }
+
+        private Bundle makeAuthIntentBundle(Context context) {
+            final Bundle reply = new Bundle();
+            final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
+            i.setPackage(context.getPackageName());
+            i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            reply.putParcelable(AccountManager.KEY_INTENT, i);
+            return reply;
+        }
     }
 
     /**
@@ -708,7 +786,7 @@ public class ClientManager {
         public static LoginOptions fromBundle(Bundle options) {
             Map<String,String> additionalParameters = null;
             Serializable serializable =  options.getSerializable(KEY_ADDL_PARAMS);
-            if(serializable != null) {
+            if (serializable != null) {
                 additionalParameters = (HashMap<String,String>) serializable;
             }
             return new LoginOptions(options.getString(LOGIN_URL),
