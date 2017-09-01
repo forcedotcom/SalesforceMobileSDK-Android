@@ -124,6 +124,15 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         /** we're starting to load this login page into the webview */
         void loadingLoginPage(String loginUrl);
 
+        /**
+         * progress update of loading the webview, totalProgress will go from
+         * 0..10000 (you can pass this directly to the activity progressbar)
+         */
+        void onLoadingProgress(int totalProgress);
+
+        /** We're doing something that takes some unknown amount of time */
+        void onIndeterminateProgress(boolean show);
+
         /** We've completed the auth process and here's the resulting Authentication Result bundle to return to the Authenticator */
         void onAccountAuthenticatorResult(Bundle authResult);
 
@@ -216,7 +225,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
     /** Factory method for the WebChromeClient, you can replace this with something else if you need to */
     protected WebChromeClient makeWebChromeClient() {
-        return new WebChromeClient();
+        return new AuthWebChromeClient();
     }
 
     protected Context getContext() {
@@ -623,8 +632,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     callback.finish();
                 }
             }
-
-            // No screen lock required or no mobile policy specified.
+            // No screen lock required or no mobile policy specified
             else {
                 final PasscodeManager passcodeManager = mgr.getPasscodeManager();
                 passcodeManager.storeMobilePolicyForOrg(account, 0, PasscodeManager.MIN_PASSCODE_LENGTH);
@@ -639,6 +647,11 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 SalesforceSDKLogger.w(TAG, "Exception thrown", ex);
             }
             backgroundException = ex;
+        }
+
+        @Override
+        protected void onProgressUpdate(Boolean... values) {
+            callback.onIndeterminateProgress(values[0]);
         }
     }
 
@@ -765,6 +778,17 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     protected String buildAccountName(String username, String instanceServer) {
         return String.format("%s (%s) (%s)", username, instanceServer,
         		SalesforceSDKManager.getInstance().getApplicationName());
+    }
+
+    /**
+     * WebChromeClient used to report back loading progress.
+     */
+    protected class AuthWebChromeClient extends WebChromeClient {
+
+        @Override
+        public void onProgressChanged(WebView view, int newProgress) {
+            callback.onLoadingProgress(newProgress * 100);
+        }
     }
 
     /**
