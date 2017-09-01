@@ -41,6 +41,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKUpgradeManager;
 import com.salesforce.androidsdk.app.UUIDManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.SalesforceKeyGenerator;
 
 import java.io.File;
 import java.io.FilenameFilter;

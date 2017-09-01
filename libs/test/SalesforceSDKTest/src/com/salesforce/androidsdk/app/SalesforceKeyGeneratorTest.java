@@ -31,10 +31,10 @@ import android.app.Instrumentation;
 import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.TestForceApp;
-import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
+import com.salesforce.androidsdk.util.SalesforceKeyGenerator;
 
 /**
- * Tests for {@link SalesforceKeyGenerator}.
+ * Tests for {@link com.salesforce.androidsdk.util.SalesforceKeyGenerator}.
  *
  * @author bhariharan
  */

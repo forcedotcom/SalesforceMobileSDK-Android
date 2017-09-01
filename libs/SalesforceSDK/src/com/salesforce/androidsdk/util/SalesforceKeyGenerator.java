@@ -24,14 +24,13 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.security;
+package com.salesforce.androidsdk.util;
 
 import android.content.SharedPreferences;
 import android.text.TextUtils;
 import android.util.Base64;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
