@@ -109,7 +109,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     public static final String RESPONSE_ERROR_DESCRIPTION_INTENT = "com.salesforce.auth.intent.RESPONSE_ERROR_DESCRIPTION";
     private static final String TAG = "OAuthWebViewHelper";
     private static final String ACCOUNT_OPTIONS = "accountOptions";
-    private static final String FEATURE_BROWSER_LOGIN = "BW";
 
     // background executor
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
@@ -316,7 +315,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     }
 
     private void loadLoginPageInChrome(URI uri) {
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BROWSER_LOGIN);
         final Uri url = Uri.parse(uri.toString());
         final CustomTabsIntent.Builder intentBuilder = new CustomTabsIntent.Builder();
 
