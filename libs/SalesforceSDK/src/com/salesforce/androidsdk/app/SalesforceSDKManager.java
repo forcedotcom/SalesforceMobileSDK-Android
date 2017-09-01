@@ -30,6 +30,7 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -44,6 +45,7 @@ import android.os.SystemClock;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.webkit.CookieManager;
+import android.webkit.CookieSyncManager;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
@@ -85,6 +87,7 @@ import java.util.UUID;
  * use the static getInstance() method to access the
  * singleton SalesforceSDKManager object.
  */
+@SuppressWarnings("deprecation")
 public class SalesforceSDKManager {
 
     /**
@@ -1179,16 +1182,46 @@ public class SalesforceSDKManager {
         return new ClientManager(getAppContext(), getAccountType(), getLoginOptions(jwt, url), true);
     }
 
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 	public void removeAllCookies() {
-		CookieManager.getInstance().removeAllCookies(null);
+
+		/*
+		 * TODO: Remove this conditional once 'minApi >= 21'.
+		 */
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+	        CookieManager.getInstance().removeAllCookies(null);
+		} else {
+	        CookieSyncManager.createInstance(context);
+	        CookieManager.getInstance().removeAllCookie();
+		}
     }
 
+	@TargetApi(Build.VERSION_CODES.LOLLIPOP)
 	public void removeSessionCookies() {
-        CookieManager.getInstance().removeSessionCookies(null);
+
+		/*
+		 * TODO: Remove this conditional once 'minApi >= 21'.
+		 */
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+	        CookieManager.getInstance().removeSessionCookies(null);
+		} else {
+	        CookieSyncManager.createInstance(context);
+	        CookieManager.getInstance().removeSessionCookie();
+		}
     }
 
+	@TargetApi(Build.VERSION_CODES.LOLLIPOP)
 	public void syncCookies() {
-        CookieManager.getInstance().flush();
+
+		/*
+		 * TODO: Remove this conditional once 'minApi >= 21'.
+		 */
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+	        CookieManager.getInstance().flush();
+		} else {
+	        CookieSyncManager.createInstance(context);
+	        CookieSyncManager.getInstance().sync();
+		}
     }
 
     private void sendLogoutCompleteIntent() {
