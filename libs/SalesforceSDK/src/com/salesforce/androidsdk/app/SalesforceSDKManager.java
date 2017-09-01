@@ -63,13 +63,13 @@ import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.security.PasscodeManager;
-import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.net.URI;

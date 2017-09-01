@@ -31,7 +31,6 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 
 import com.salesforce.androidsdk.analytics.security.Encryptor;
-import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -41,7 +40,7 @@ import java.util.UUID;
  * Helper class for UUID generation.
  *
  * @deprecated Do not use this starting with Mobile SDK 6.0. This will be removed
- * in Mobile SDK 7.0. Use {@link SalesforceKeyGenerator instead}.
+ * in Mobile SDK 7.0. Use {@link com.salesforce.androidsdk.util.SalesforceKeyGenerator instead}.
  */
 public class UUIDManager {
 
@@ -60,7 +59,7 @@ public class UUIDManager {
      * @param name Name.
      * @return UUID.
      * @deprecated Do not use this starting with Mobile SDK 6.0. This will be removed
-     * in Mobile SDK 7.0. Use {@link SalesforceKeyGenerator instead}.
+     * in Mobile SDK 7.0. Use {@link com.salesforce.androidsdk.util.SalesforceKeyGenerator instead}.
      */
     public static synchronized String getUuId(String name) {
         String cached = uuids.get(name);
@@ -86,7 +85,7 @@ public class UUIDManager {
      * Resets the generated UUIDs and wipes out the shared pref file that houses them.
      *
      * @deprecated Do not use this starting with Mobile SDK 6.0. This will be removed
-     * in Mobile SDK 7.0. Use {@link SalesforceKeyGenerator instead}.
+     * in Mobile SDK 7.0. Use {@link com.salesforce.androidsdk.util.SalesforceKeyGenerator instead}.
      */
     public static synchronized void resetUuids() {
         uuids.clear();
