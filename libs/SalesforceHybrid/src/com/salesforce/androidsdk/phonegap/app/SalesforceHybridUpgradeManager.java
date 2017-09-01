@@ -54,3 +54,4 @@ public class SalesforceHybridUpgradeManager extends SmartSyncUpgradeManager {
         super.upgrade();
     }
 }
+

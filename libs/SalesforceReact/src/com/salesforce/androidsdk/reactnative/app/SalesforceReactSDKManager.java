@@ -78,10 +78,10 @@ public class SalesforceReactSDKManager extends SmartSyncSDKManager {
 		if (INSTANCE == null) {
     		INSTANCE = new SalesforceReactSDKManager(context, keyImpl, mainActivity, loginActivity);
     	}
-
-		// Upgrade to the latest version.
-		SalesforceReactUpgradeManager.getInstance().upgrade();
 		initInternal(context);
+
+        // Upgrade to the latest version.
+        SalesforceReactUpgradeManager.getInstance().upgrade();
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
 	}
 

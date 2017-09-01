@@ -37,11 +37,9 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.app.SalesforceSDKUpgradeManager;
 import com.salesforce.androidsdk.app.UUIDManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import com.salesforce.androidsdk.util.SalesforceKeyGenerator;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -112,12 +110,10 @@ public class PasscodeManager  {
      */
    public PasscodeManager(Context ctx) {
 	   this(ctx,
-		   new HashConfig(SalesforceKeyGenerator.getUniqueId(VPREFIX),
-                   SalesforceKeyGenerator.getUniqueId(VSUFFIX),
-                   SalesforceKeyGenerator.getUniqueId(VKEY)),
-		   new HashConfig(SalesforceKeyGenerator.getUniqueId(EPREFIX),
-                   SalesforceKeyGenerator.getUniqueId(ESUFFIX),
-                   SalesforceKeyGenerator.getUniqueId(EKEY)));
+		   new HashConfig(UUIDManager.getUuId(VPREFIX),
+				   UUIDManager.getUuId(VSUFFIX), UUIDManager.getUuId(VKEY)),
+		   new HashConfig(UUIDManager.getUuId(EPREFIX),
+				   UUIDManager.getUuId(ESUFFIX), UUIDManager.getUuId(EKEY)));
    }
 
    public PasscodeManager(Context ctx, HashConfig verificationHashConfig,
@@ -308,20 +304,11 @@ public class PasscodeManager  {
      * @return true if passcode matches the one stored (hashed) in private preference
      */
     public boolean check(Context ctx, String passcode) {
-        final SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
+        SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
         String hashedPasscode = sp.getString(KEY_PASSCODE, null);
         hashedPasscode = removeNewLine(hashedPasscode);
         if (hashedPasscode != null) {
-            String verificationHash = hashForVerification(passcode);
-
-            /*
-             * Performs migration from pre-6.0 to 6.0. This uses the old verification
-             * hash to ensure the right passcode was entered by the user.
-             */
-            if (SalesforceSDKUpgradeManager.getInstance().isPasscodeUpgradeRequired()) {
-                verificationHash = legacyHashForVerification(passcode);
-            }
-            return hashedPasscode.equals(verificationHash);
+            return hashedPasscode.equals(hashForVerification(passcode));
         }
 
         /*
@@ -381,6 +368,24 @@ public class PasscodeManager  {
     }
 
     /**
+     * @return a hash of the passcode that can be used for encrypting oauth tokens
+     */
+    public String getPasscodeHash() {
+        return passcodeHash;
+    }
+
+    /**
+     * Sets the passcode hash, used ONLY in tests.
+     *
+     * @param passcodeHash Passcode hash.
+     */
+    public void setPasscodeHash(String passcodeHash) {
+    	if (SalesforceSDKManager.getInstance().getIsTestRun()) {
+        	this.passcodeHash = passcodeHash;
+    	}
+    }
+
+    /**
      * @return true if locked
      */
     public boolean isLocked() {
@@ -410,6 +415,15 @@ public class PasscodeManager  {
             return false;
         }
     }
+
+    /**
+     * @param a
+     */
+    public void nolongerFrontActivity(Activity a) {
+        if (frontActivity == a)
+            frontActivity = null;
+    }
+
 
     /**
      * To be called by passcode protected activity when being paused
@@ -471,6 +485,7 @@ public class PasscodeManager  {
 
         // Passcode to no passcode.
         timeoutMs = newTimeout;
+        SalesforceSDKManager.getInstance().changePasscode(passcodeHash, null);
         reset(SalesforceSDKManager.getInstance().getAppContext());
     }
 
@@ -519,20 +534,20 @@ public class PasscodeManager  {
     public void showLockActivity(Context ctx, boolean changePasscodeFlow) {
         locked = true;
         if (ctx != null) {
-            final Intent i = new Intent(ctx, SalesforceSDKManager.getInstance().getPasscodeActivity());
-            i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-            i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-            if (ctx == SalesforceSDKManager.getInstance().getAppContext()) {
-                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            }
-            i.putExtra(CHANGE_PASSCODE_KEY, changePasscodeFlow);
-            if (ctx instanceof Activity) {
-                ((Activity) ctx).startActivityForResult(i, PASSCODE_REQUEST_CODE);
-            } else {
-                ctx.startActivity(i);
-            }
+        final Intent i = new Intent(ctx, SalesforceSDKManager.getInstance().getPasscodeActivity());
+        i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+        i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        if (ctx == SalesforceSDKManager.getInstance().getAppContext()) {
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         }
+        i.putExtra(CHANGE_PASSCODE_KEY, changePasscodeFlow);
+        if (ctx instanceof Activity) {
+            ((Activity) ctx).startActivityForResult(i, PASSCODE_REQUEST_CODE);
+        } else {
+            ctx.startActivity(i);
+        }
+    }
         EventsObservable.get().notifyEvent(EventType.AppLocked);
     }
 
@@ -564,38 +579,11 @@ public class PasscodeManager  {
     public String hashForVerification(String passcode) {
     	return hash(passcode, verificationHashConfig);
     }
-
-    /**
-     * Returns the legacy hash for verification before Mobile SDK 6.0.
-     *
-     * @param passcode Passcode.
-     * @return Legacy hash for verification.
-     * @deprecated Do not use this starting with Mobile SDK 6.0. This will be removed
-     * in Mobile SDK 7.0. This is used to perform upgrade steps from a pre-6.0 SDK app.
-     */
-    public String legacyHashForVerification(String passcode) {
-        return hash(passcode, new HashConfig(UUIDManager.getUuId(VPREFIX),
-                UUIDManager.getUuId(VSUFFIX),
-                UUIDManager.getUuId(VKEY)));
-    }
     
     public String hashForEncryption(String passcode) {
     	return hash(passcode, encryptionHashConfig);
     }
-
-    /**
-     * Returns the legacy encryption key used before Mobile SDK 6.0.
-     *
-     * @param passcode Passcode.
-     * @return Legacy encryption key.
-     * @deprecated Do not use this starting with Mobile SDK 6.0. This will be removed
-     * in Mobile SDK 7.0. This is used to perform upgrade steps from a pre-6.0 SDK app.
-     */
-    public String getLegacyEncryptionKey(String passcode) {
-        return Encryptor.hash(UUIDManager.getUuId(EPREFIX) + passcode
-                + UUIDManager.getUuId(ESUFFIX), UUIDManager.getUuId(EKEY));
-    }
-
+    
     private String hash(String passcode, HashConfig hashConfig) {
         return Encryptor.hash(hashConfig.prefix + passcode + hashConfig.suffix, hashConfig.key);
     }
@@ -622,11 +610,9 @@ public class PasscodeManager  {
      * Key for hashing and salts to be preprended and appended to data to increase entropy.
      */
     public static class HashConfig {
-
         public final String prefix;
         public final String suffix;
         public final String key;
-
         public HashConfig(String prefix, String suffix, String key) {
             this.prefix = prefix;
             this.suffix = suffix;

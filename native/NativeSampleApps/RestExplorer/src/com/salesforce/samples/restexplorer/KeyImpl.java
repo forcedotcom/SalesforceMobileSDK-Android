@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-present, salesforce.com, inc.
+ * Copyright (c) 2013-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,24 +24,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.smartsync;
+package com.salesforce.samples.restexplorer;
 
-import android.app.Application;
-
-import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 
 /**
- * Test implementation of Application class that uses SmartSyncSDKManager.
+ * This class provides an implementation of KeyInterface.
  *
  * @author bhariharan
  */
-public class TestForceApp extends Application {
+public class KeyImpl implements KeyInterface {
 
-    @Override
-    public void onCreate() {
-    	SmartSyncSDKManager.initNative(getApplicationContext(), new KeyImpl(),
-    			MainActivity.class);
-    	super.onCreate();
-    	SmartSyncSDKManager.getInstance().setIsTestRun(true);
-    }
+	@Override
+	public String getKey(String name) {
+		return Encryptor.hash(name + "12s9adpahk;n12-97sdainkasd=012", name + "12kl0dsakj4-cxh1qewkjasdol8");
+	}
 }
