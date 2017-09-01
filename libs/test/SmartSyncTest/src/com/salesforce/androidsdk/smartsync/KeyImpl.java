@@ -26,22 +26,18 @@
  */
 package com.salesforce.androidsdk.smartsync;
 
-import android.app.Application;
-
-import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 
 /**
- * Test implementation of Application class that uses SmartSyncSDKManager.
+ * This class provides an implementation of KeyInterface.
  *
  * @author bhariharan
  */
-public class TestForceApp extends Application {
+public class KeyImpl implements KeyInterface {
 
-    @Override
-    public void onCreate() {
-    	SmartSyncSDKManager.initNative(getApplicationContext(), new KeyImpl(),
-    			MainActivity.class);
-    	super.onCreate();
-    	SmartSyncSDKManager.getInstance().setIsTestRun(true);
-    }
+	@Override
+	public String getKey(String name) {
+		return Encryptor.hash(name + "12s9adpahk;n12-97sdainsdfd=012", name + "12kl0dsakj4-cxhsdbfg1jasdol8");
+	}
 }

@@ -69,7 +69,6 @@ import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import com.salesforce.androidsdk.util.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.net.URI;
@@ -120,7 +119,6 @@ public class SalesforceSDKManager {
      * Default app name.
      */
     private static final String DEFAULT_APP_DISPLAY_NAME = "Salesforce";
-    private static final String INTERNAL_ENTROPY = "6cgs4f";
     private static final String TAG = "SalesforceSDKManager";
     protected static String AILTN_APP_NAME;
 
@@ -141,6 +139,7 @@ public class SalesforceSDKManager {
     protected Class<? extends Activity> loginActivityClass = LoginActivity.class;
     protected Class<? extends PasscodeActivity> passcodeActivityClass = PasscodeActivity.class;
     protected Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
+    private String encryptionKey;
     private SalesforceR salesforceR = new SalesforceR();
     private PasscodeManager passcodeManager;
     private LoginServerManager loginServerManager;
@@ -272,9 +271,6 @@ public class SalesforceSDKManager {
     	}
     }
 
-    /*
-     * TODO: Mark this deprecated and remove it in Mobile SDK 7.0.
-     */
     public interface KeyInterface {
 
         /**
@@ -320,9 +316,6 @@ public class SalesforceSDKManager {
      *
      * @param name The name associated with the key.
      * @return The key used for encrypting salts and keys.
-     */
-    /*
-     * TODO: Mark this deprecated and remove it in Mobile SDK 7.0.
      */
     public String getKey(String name) {
     	String key = null;
@@ -374,10 +367,10 @@ public class SalesforceSDKManager {
         if (loginOptions == null) {
             final BootConfig config = BootConfig.getBootConfig(context);
             if (TextUtils.isEmpty(jwt)) {
-                loginOptions = new LoginOptions(url, config.getOauthRedirectURI(),
+                loginOptions = new LoginOptions(url, getPasscodeHash(), config.getOauthRedirectURI(),
                         config.getRemoteAccessConsumerKey(), config.getOauthScopes(), null);
             } else {
-                loginOptions = new LoginOptions(url, config.getOauthRedirectURI(),
+                loginOptions = new LoginOptions(url, getPasscodeHash(), config.getOauthRedirectURI(),
                         config.getRemoteAccessConsumerKey(), config.getOauthScopes(), null, jwt);
             }
         } else {
@@ -387,6 +380,13 @@ public class SalesforceSDKManager {
         return loginOptions;
     }
 
+	/**
+	 * For internal use only. Initializes required components.
+	 * @param context Application context.
+     * @param keyImpl Implementation of KeyInterface.
+     * @param mainActivity Activity to be launched after the login flow.
+     * @param loginActivity Login activity.
+     */
     private static void init(Context context, KeyInterface keyImpl,
                              Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
     	if (INSTANCE == null) {
@@ -404,14 +404,14 @@ public class SalesforceSDKManager {
 	 */
     public static void initInternal(Context context) {
 
-        // Upgrades to the latest version.
-        SalesforceSDKUpgradeManager.getInstance().upgrade();
-
         // Initializes the encryption module.
         Encryptor.init(context);
 
         // Initializes the HTTP client.
         HttpAccess.init(context, INSTANCE.getUserAgent());
+
+        // Upgrades to the latest version.
+        SalesforceSDKUpgradeManager.getInstance().upgrade();
     }
 
     /**
@@ -560,6 +560,51 @@ public class SalesforceSDKManager {
     }
 
     /**
+     * Changes the passcode to a new value.
+     *
+     * @param oldPass Old passcode.
+     * @param newPass New passcode.
+     */
+    public synchronized void changePasscode(String oldPass, String newPass) {
+        if (!isNewPasscode(oldPass, newPass)) {
+            return;
+        }
+
+        // Resets the cached encryption key, since the passcode has changed.
+        encryptionKey = null;
+        SalesforceAnalyticsManager.changePasscode(oldPass, newPass);
+        ClientManager.changePasscode(oldPass, newPass);
+    }
+
+    /**
+     * Indicates whether the new passcode is different from the old passcode.
+     *
+     * @param oldPass Old passcode.
+     * @param newPass New passcode.
+     * @return True if the new passcode is different from the old passcode.
+     */
+    protected boolean isNewPasscode(String oldPass, String newPass) {
+        return !((oldPass == null && newPass == null)
+                || (oldPass != null && newPass != null && oldPass.trim().equals(newPass.trim())));
+    }
+
+    /**
+     * Returns the encryption key being used.
+     *
+     * @param actualPass Passcode.
+     * @return Encryption key for passcode.
+     */
+    public synchronized String getEncryptionKeyForPasscode(String actualPass) {
+        if (actualPass != null && !actualPass.trim().equals("")) {
+            return actualPass;
+        }
+        if (encryptionKey == null) {
+            encryptionKey = getPasscodeManager().hashForEncryption("");
+        }
+        return encryptionKey;
+    }
+
+    /**
      * Returns the login brand parameter.
      *
      * @return Login brand, if configured.
@@ -604,6 +649,15 @@ public class SalesforceSDKManager {
      */
     public String getAppDisplayString() {
         return DEFAULT_APP_DISPLAY_NAME;
+    }
+
+    /**
+     * Returns the passcode hash being used.
+     *
+     * @return The hashed passcode, or null if it's not required.
+     */
+    public String getPasscodeHash() {
+        return getPasscodeManager().getPasscodeHash();
     }
 
     /**
@@ -679,6 +733,7 @@ public class SalesforceSDKManager {
             adminPermsManager = null;
             getPasscodeManager().reset(context);
             passcodeManager = null;
+            encryptionKey = null;
             UUIDManager.resetUuids();
         }
     }
@@ -747,13 +802,14 @@ public class SalesforceSDKManager {
      * @param clientMgr ClientManager instance.
      * @param showLoginPage True - if the login page should be shown, False - otherwise.
      * @param refreshToken Refresh token.
+     * @param clientId Client ID.
      * @param loginServer Login server.
      * @param account Account instance.
      * @param frontActivity Front activity.
      */
     private void unregisterPush(final ClientManager clientMgr, final boolean showLoginPage,
-    		final String refreshToken, final String loginServer,
-            final Account account, final Activity frontActivity) {
+    		final String refreshToken, final String clientId,
+    		final String loginServer, final Account account, final Activity frontActivity) {
         final IntentFilter intentFilter = new IntentFilter(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT);
         final BroadcastReceiver pushUnregisterReceiver = new BroadcastReceiver() {
 
@@ -761,7 +817,7 @@ public class SalesforceSDKManager {
             public void onReceive(Context context, Intent intent) {
                 if (intent.getAction().equals(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT)) {
                     postPushUnregister(this, clientMgr, showLoginPage,
-                    		refreshToken, loginServer, account, frontActivity);
+                    		refreshToken, clientId, loginServer, account, frontActivity);
                 }
             }
         };
@@ -784,7 +840,7 @@ public class SalesforceSDKManager {
                     SystemClock.sleep(500);
                 }
                 postPushUnregister(pushUnregisterReceiver, clientMgr, showLoginPage,
-                		refreshToken, loginServer, account, frontActivity);
+                		refreshToken, clientId, loginServer, account, frontActivity);
             };
         }).start();
     }
@@ -799,21 +855,22 @@ public class SalesforceSDKManager {
      * @param clientMgr ClientManager instance.
      * @param showLoginPage True - if the login page should be shown, False - otherwise.
      * @param refreshToken Refresh token.
+     * @param clientId Client ID.
      * @param loginServer Login server.
      * @param account Account instance.
      * @param frontActivity Front activity.
      */
     private synchronized void postPushUnregister(BroadcastReceiver pushReceiver,
     		final ClientManager clientMgr, final boolean showLoginPage,
-    		final String refreshToken, final String loginServer,
-            final Account account, Activity frontActivity) {
+    		final String refreshToken, final String clientId,
+    		final String loginServer, final Account account, Activity frontActivity) {
         if (!loggedOut) {
             try {
                 context.unregisterReceiver(pushReceiver);
             } catch (Exception e) {
                 SalesforceSDKLogger.e(TAG, "Exception occurred while unregistering", e);
             }
-    		removeAccount(clientMgr, showLoginPage, refreshToken, loginServer, account, frontActivity);
+    		removeAccount(clientMgr, showLoginPage, refreshToken, clientId, loginServer, account, frontActivity);
         }
     }
 
@@ -865,11 +922,16 @@ public class SalesforceSDKManager {
         isLoggingOut = true;
 		final AccountManager mgr = AccountManager.get(context);
 		String refreshToken = null;
+		String clientId = null;
 		String loginServer = null;
 		if (account != null) {
-			refreshToken = SalesforceSDKManager.decrypt(mgr.getPassword(account));
-	        loginServer = SalesforceSDKManager.decrypt(mgr.getUserData(account,
-	        		AuthenticatorService.KEY_INSTANCE_URL));
+			String passcodeHash = getPasscodeHash();
+			refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(account),
+	        		passcodeHash);
+	        clientId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account,
+	        		AuthenticatorService.KEY_CLIENT_ID), passcodeHash);
+	        loginServer = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account,
+	        		AuthenticatorService.KEY_INSTANCE_URL), passcodeHash);
 		}
 
 		/*
@@ -879,10 +941,10 @@ public class SalesforceSDKManager {
 		final UserAccount userAcc = getUserAccountManager().buildUserAccount(account);
     	if (PushMessaging.isRegistered(context, userAcc) && refreshToken != null) {
     		loggedOut = false;
-    		unregisterPush(clientMgr, showLoginPage, refreshToken,
+    		unregisterPush(clientMgr, showLoginPage, refreshToken, clientId,
     				loginServer, account, frontActivity);
     	} else {
-    		removeAccount(clientMgr, showLoginPage, refreshToken,
+    		removeAccount(clientMgr, showLoginPage, refreshToken, clientId,
                     loginServer, account, frontActivity);
     	}
     }
@@ -893,12 +955,13 @@ public class SalesforceSDKManager {
      * @param clientMgr ClientManager instance.
      * @param showLoginPage If true, displays the login page after removing the account.
      * @param refreshToken Refresh token.
+     * @param clientId Client ID.
      * @param loginServer Login server.
      * @param account Account instance.
      * @param frontActivity Front activity.
      */
     private void removeAccount(ClientManager clientMgr, final boolean showLoginPage,
-    		String refreshToken, String loginServer,
+    		String refreshToken, String clientId, String loginServer,
     		Account account, Activity frontActivity) {
     	loggedOut = true;
     	cleanUp(frontActivity, account);
@@ -947,7 +1010,7 @@ public class SalesforceSDKManager {
 
     	// Revokes the existing refresh token.
         if (shouldLogoutWhenTokenRevoked() && account != null && refreshToken != null) {
-        	new RevokeTokenTask(refreshToken, loginServer).execute();
+        	new RevokeTokenTask(refreshToken, clientId, loginServer).execute();
         }
     }
 
@@ -1045,32 +1108,25 @@ public class SalesforceSDKManager {
     }
 
     /**
-     * Encrypts the given data.
+     * Encrypts the given data using the given passcode as the encryption key.
      *
      * @param data Data to be encrypted.
+     * @param passcode Encryption key.
      * @return Encrypted data.
      */
-    public static String encrypt(String data) {
-        return Encryptor.encrypt(data, getEncryptionKey());
+    public static String encryptWithPasscode(String data, String passcode) {
+        return Encryptor.encrypt(data, SalesforceSDKManager.INSTANCE.getEncryptionKeyForPasscode(passcode));
     }
 
     /**
-     * Returns the encryption key being used.
-     *
-     * @return Encryption key.
-     */
-    public static String getEncryptionKey() {
-        return SalesforceKeyGenerator.getEncryptionKey(INTERNAL_ENTROPY);
-    }
-
-    /**
-     * Decrypts the given data.
+     * Decrypts the given data using the given passcode as the decryption key.
      *
      * @param data Data to be decrypted.
+     * @param passcode Decryption key.
      * @return Decrypted data.
      */
-    public static String decrypt(String data) {
-        return Encryptor.decrypt(data, getEncryptionKey());
+    public static String decryptWithPasscode(String data, String passcode) {
+        return Encryptor.decrypt(data, SalesforceSDKManager.INSTANCE.getEncryptionKeyForPasscode(passcode));
     }
 
     /**
@@ -1081,10 +1137,12 @@ public class SalesforceSDKManager {
     private class RevokeTokenTask extends AsyncTask<Void, Void, Void> {
 
     	private String refreshToken;
+    	private String clientId;
     	private String loginServer;
 
-    	public RevokeTokenTask(String refreshToken, String loginServer) {
+    	public RevokeTokenTask(String refreshToken, String clientId, String loginServer) {
     		this.refreshToken = refreshToken;
+    		this.clientId = clientId;
     		this.loginServer = loginServer;
     	}
 
