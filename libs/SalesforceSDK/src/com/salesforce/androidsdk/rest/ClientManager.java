@@ -394,7 +394,7 @@ public class ClientManager {
 
         // Caching auth token otherwise the first call to accountManager.getAuthToken will go to the AuthenticatorService which will do a refresh
         // That is problematic when the refresh token is set to expire immediately
-        accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encrypt(authToken));
+        accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(authToken, passcodeHash));
 
         // There is a bug in AccountManager::addAccountExplicitly() that sometimes causes user data to not be
         // saved when the user data is passed in through that method. The work-around is to call setUserData()
@@ -726,20 +726,21 @@ public class ClientManager {
         public String getInstanceUrl() { return lastNewInstanceUrl; }
 
         private Bundle refreshStaleToken(Account account) throws NetworkErrorException {
+            String passcodeHash = SalesforceSDKManager.getInstance().getPasscodeHash();
             final Bundle resBundle = new Bundle();
             final Context context = SalesforceSDKManager.getInstance().getAppContext();
             final AccountManager mgr = AccountManager.get(context);
-            final String refreshToken = SalesforceSDKManager.decrypt(mgr.getPassword(account));
-            final String loginServer = SalesforceSDKManager.decrypt(mgr.getUserData(account,
-                    AuthenticatorService.KEY_LOGIN_URL));
-            final String clientId = SalesforceSDKManager.decrypt(mgr.getUserData(account,
-                    AuthenticatorService.KEY_CLIENT_ID));
-            final String instServer = SalesforceSDKManager.decrypt(mgr.getUserData(account,
-                    AuthenticatorService.KEY_INSTANCE_URL));
+            final String refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(account), passcodeHash);
+            final String loginServer = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account,
+                    AuthenticatorService.KEY_LOGIN_URL), passcodeHash);
+            final String clientId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account,
+                    AuthenticatorService.KEY_CLIENT_ID), passcodeHash);
+            final String instServer = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account,
+                    AuthenticatorService.KEY_INSTANCE_URL), passcodeHash);
             final String encClientSecret = mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_SECRET);
             String clientSecret = null;
             if (encClientSecret != null) {
-                clientSecret = SalesforceSDKManager.decrypt(encClientSecret);
+                clientSecret = SalesforceSDKManager.decryptWithPasscode(encClientSecret, passcodeHash);
             }
             final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
             Map<String, String> values = null;
@@ -748,7 +749,7 @@ public class ClientManager {
                 for (final String key : additionalOauthKeys) {
                     final String encValue = mgr.getUserData(account, key);
                     if (encValue != null) {
-                        final String value = SalesforceSDKManager.decrypt(encValue);
+                        final String value = SalesforceSDKManager.decryptWithPasscode(encValue, passcodeHash);
                         values.put(key, value);
                     }
                 }
@@ -759,24 +760,24 @@ public class ClientManager {
                         new URI(loginServer), clientId, refreshToken, clientSecret, addlParamsMap);
                 if (!instServer.equalsIgnoreCase(tr.instanceUrl)) {
                     mgr.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL,
-                            SalesforceSDKManager.encrypt(tr.instanceUrl));
+                            SalesforceSDKManager.encryptWithPasscode(tr.instanceUrl, passcodeHash));
                 }
-                mgr.setUserData(account, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encrypt(tr.authToken));
-                resBundle.putString(AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encrypt(tr.authToken));
-                resBundle.putString(AuthenticatorService.KEY_INSTANCE_URL, SalesforceSDKManager.encrypt(tr.instanceUrl));
+                mgr.setUserData(account, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(tr.authToken, passcodeHash));
+                resBundle.putString(AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(tr.authToken, passcodeHash));
+                resBundle.putString(AuthenticatorService.KEY_INSTANCE_URL, SalesforceSDKManager.encryptWithPasscode(tr.instanceUrl, passcodeHash));
                 if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
                     for (final String key : additionalOauthKeys) {
                         if (tr.additionalOauthValues != null && tr.additionalOauthValues.containsKey(key)) {
                             final String newValue = tr.additionalOauthValues.get(key);
                             if (newValue != null) {
-                                final String encrNewValue = SalesforceSDKManager.encrypt(newValue);
+                                final String encrNewValue = SalesforceSDKManager.encryptWithPasscode(newValue, passcodeHash);
                                 resBundle.putString(key, encrNewValue);
                                 mgr.setUserData(account, key, encrNewValue);
                             }
                         } else if (values != null && values.containsKey(key)) {
                             final String value = values.get(key);
                             if (value != null) {
-                                final String encrValue = SalesforceSDKManager.encrypt(value);
+                                final String encrValue = SalesforceSDKManager.encryptWithPasscode(value, passcodeHash);
                                 resBundle.putString(key, encrValue);
                             }
                         }
