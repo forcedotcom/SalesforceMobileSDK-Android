@@ -612,33 +612,31 @@ public class RestClientTest extends InstrumentationTestCase {
     }
     
     /**
-     * Testing doing a sync request against a non salesforce public api with a RestClient that uses an UnauthenticatedClientInfo
+     * Testing doing a sync request with a RestClient that uses an UnauthenticatedClientInfo
      * @return
      * @throws Exception
      */
     public void testRestClientUnauthenticatedlientInfo() throws Exception {
         RestClient unauthenticatedRestClient = new RestClient(new RestClient.UnauthenticatedClientInfo(), null, HttpAccess.DEFAULT, null);
-        RestRequest request = new RestRequest(RestMethod.GET, "https://api.spotify.com/v1/search?q=James%20Brown&type=artist");
+        RestRequest request = new RestRequest(RestMethod.GET, "https://na1.salesforce.com/services/data");
         RestResponse response = unauthenticatedRestClient.sendSync(request);
-        checkResponse(response, HttpURLConnection.HTTP_OK, false);
-        JSONObject jsonResponse = response.asJSONObject();
-        checkKeys(jsonResponse, "artists");
-        checkKeys(jsonResponse.getJSONObject("artists"), "href", "items", "limit", "next", "offset", "previous", "total");
+        checkResponse(response, HttpURLConnection.HTTP_OK, true);
+        JSONArray jsonResponse = response.asJSONArray();
+        checkKeys(jsonResponse.getJSONObject(0), "label", "url", "version");
     }
 
     /**
-     * Testing doing an async request against a non salesforce public api with a RestClient that uses an UnauthenticatedClientInfo
+     * Testing doing an async request with a RestClient that uses an UnauthenticatedClientInfo
      * @return
      * @throws Exception
      */
     public void testRestClientUnauthenticatedlientInfoAsync() throws Exception {
         RestClient unauthenticatedRestClient = new RestClient(new RestClient.UnauthenticatedClientInfo(), null, HttpAccess.DEFAULT, null);
-        RestRequest request = new RestRequest(RestMethod.GET, "https://api.spotify.com/v1/search?q=James%20Brown&type=artist");
+        RestRequest request = new RestRequest(RestMethod.GET, "https://na1.salesforce.com/services/data");
         RestResponse response = sendAsync(unauthenticatedRestClient, request);
-        checkResponse(response, HttpURLConnection.HTTP_OK, false);
-        JSONObject jsonResponse = response.asJSONObject();
-        checkKeys(jsonResponse, "artists");
-        checkKeys(jsonResponse.getJSONObject("artists"), "href", "items", "limit", "next", "offset", "previous", "total");
+        checkResponse(response, HttpURLConnection.HTTP_OK, true);
+        JSONArray jsonResponse = response.asJSONArray();
+        checkKeys(jsonResponse.getJSONObject(0), "label", "url", "version");
     }
 
     /**
