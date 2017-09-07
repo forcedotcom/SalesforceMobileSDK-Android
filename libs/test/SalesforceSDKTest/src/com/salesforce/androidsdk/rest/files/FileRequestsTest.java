@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.rest.files;
 
-import android.os.Environment;
-
 import com.salesforce.androidsdk.rest.RestRequest;
 
 import java.io.File;
@@ -185,10 +183,8 @@ public class FileRequestsTest extends ApiRequestsBaseTest {
      * @throws Exception
      */
     public void testFileUpload() throws Exception {
-        final String filename  = "MyFile.txt";
-        final File file = new File(Environment.getExternalStorageDirectory() + File.separator + filename);
+        final File file = File.createTempFile("MyFile", "txt");
         if (!file.exists()) {
-            file.createNewFile();
             final OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(file));
             out.write("This is a test!");
             out.close();
@@ -196,7 +192,7 @@ public class FileRequestsTest extends ApiRequestsBaseTest {
         assertTrue("File should exist", file.exists());
 
 
-        RestRequest request = FileRequests.uploadFile(file, filename, "Test Title", "Test Description", "text/plain");
+        RestRequest request = FileRequests.uploadFile(file, file.getName(), "Test Title", "Test Description", "text/plain");
 
         assertEquals(connectPath + "connect/files/users/me", request.getPath());
         doAdditionalVerifications(RestRequest.RestMethod.POST, request);
