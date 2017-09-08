@@ -54,6 +54,11 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
     private static final String TAG = "SFSDKManagerTest";
     private static final String TEST_APP_NAME = "OverridenAppName";
 
+    @Override
+    public void tearDown() throws Exception {
+        super.tearDown();
+    }
+
     /**
      * Test for setting the analytics app name before 'SalesforceSDKManager.init()'
      * has been called.
@@ -142,6 +147,10 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
      */
     private static class SalesforceSDKTestManager extends SalesforceSDKManager {
 
+        // We don't want to be using INSTANCE defined in SalesforceSDKManager
+        // Otherwise tests in other suites could fail after we call resetInstance(...)
+        private static SalesforceSDKTestManager TEST_INSTANCE = null;
+
         /**
          * Protected constructor.
          *
@@ -164,11 +173,25 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
          */
         public static void init(Context context, KeyInterface keyImpl,
                                  Class<? extends Activity> mainActivity) {
-            if (INSTANCE == null) {
-                INSTANCE = new SalesforceSDKTestManager(context, keyImpl, mainActivity, LoginActivity.class);
+            if (TEST_INSTANCE == null) {
+                TEST_INSTANCE = new SalesforceSDKTestManager(context, keyImpl, mainActivity, LoginActivity.class);
             }
             initInternal(context);
         }
+
+        /**
+         * Returns a singleton instance of this class.
+         *
+         * @return Singleton instance of SalesforceSDKManager.
+         */
+        public static SalesforceSDKManager getInstance() {
+            if (TEST_INSTANCE != null) {
+                return TEST_INSTANCE;
+            } else {
+                throw new RuntimeException("Applications need to call SalesforceSDKManager.init() first.");
+            }
+        }
+
 
         /**
          * Resets the app name to be used by the analytics framework.
@@ -183,7 +206,7 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
          * This is meant to be used ONLY by tests.
          */
         public static void resetInstance() {
-            INSTANCE = null;
+            TEST_INSTANCE = null;
         }
     }
 }
