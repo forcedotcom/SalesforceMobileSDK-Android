@@ -100,7 +100,7 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
         final LoginOptions loginOptions = new LoginOptions(TestCredentials.LOGIN_URL,
-        		TEST_CALLBACK_URL, TestCredentials.CLIENT_ID, TEST_SCOPES, null);
+        		null, TEST_CALLBACK_URL, TestCredentials.CLIENT_ID, TEST_SCOPES);
         final ClientManager clientManager = new ClientManager(targetContext,
         		TestCredentials.ACCOUNT_TYPE, loginOptions, true);
         clientManager.createNewAccount(TestCredentials.ACCOUNT_NAME,
@@ -108,7 +108,7 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
         		TEST_AUTH_TOKEN, TestCredentials.INSTANCE_URL,
         		TestCredentials.LOGIN_URL, TestCredentials.IDENTITY_URL,
         		TestCredentials.CLIENT_ID, TestCredentials.ORG_ID,
-        		TestCredentials.USER_ID, null, null, null, null, null, null, null, null, null, null);
+        		TestCredentials.USER_ID, null);
     	MetadataManager.reset(null);
     	CacheManager.hardReset(null);
     	SyncManager.reset();

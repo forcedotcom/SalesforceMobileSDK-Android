@@ -26,22 +26,18 @@
  */
 package com.salesforce.samples.configuredapp;
 
-import android.app.Application;
-
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.samples.configuredapp.ui.MainActivity;
+import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 
 /**
- * Application class for our application.
+ * This class provides an implementation of KeyInterface.
+ *
+ * @author bhariharan
  */
-public class ConfiguredApp extends Application {
+public class KeyImpl implements KeyInterface {
 
 	@Override
-	public void onCreate() {
-		super.onCreate();
-		SalesforceSDKManager.initNative(getApplicationContext(), new KeyImpl(),
-                MainActivity.class);
+	public String getKey(String name) {
+		return Encryptor.hash(name + "12s9adpahk;n12-97sdainkasd=012", name + "12kl0dsakj4-cxh1qewkjasdol8");
 	}
 }
-
-

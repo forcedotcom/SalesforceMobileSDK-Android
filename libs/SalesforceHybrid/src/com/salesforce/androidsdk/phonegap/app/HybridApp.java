@@ -28,8 +28,8 @@ package com.salesforce.androidsdk.phonegap.app;
 
 import android.app.Application;
 
-import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 
 /**
  * Application class used by hybrid applications
@@ -40,13 +40,6 @@ public class HybridApp extends Application {
 	public void onCreate() {
 		super.onCreate();
 		SalesforceHybridSDKManager.initHybrid(getApplicationContext(), new HybridKeyImpl());
-
-        /*
-         * Uncomment the following line to enable browser based login. This will use a
-         * Chrome custom tab to login instead of the default WebView. You will also need
-         * to uncomment a few lines of code in SalesforceSDK library project's AndroidManifest.xml.
-         */
-		// SalesforceHybridSDKManager.getInstance().setBrowserLoginEnabled(true);
 	}
 }
 
@@ -54,6 +47,6 @@ class HybridKeyImpl implements KeyInterface {
 
 	@Override
 	public String getKey(String name) {
-        return Encryptor.hash(name + "12s9adpahk;n12-97sdainkasd=012", name + "12kl0dsakj4-cxh1qewkjasdol8");
+		return Encryptor.hash(name + "12s9adpahk;n12-97sdainkasd=012", name + "12kl0dsakj4-cxh1qewkjasdol8");
 	}
 }

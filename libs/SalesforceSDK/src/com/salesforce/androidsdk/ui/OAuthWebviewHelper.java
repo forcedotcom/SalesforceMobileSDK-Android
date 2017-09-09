@@ -26,22 +26,18 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
-import android.content.res.Resources;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.net.http.SslError;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.security.KeyChain;
 import android.security.KeyChainAliasCallback;
 import android.security.KeyChainException;
-import android.support.customtabs.CustomTabsIntent;
 import android.text.TextUtils;
 import android.webkit.ClientCertRequest;
 import android.webkit.SslErrorHandler;
@@ -109,8 +105,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     public static final String RESPONSE_ERROR_DESCRIPTION_INTENT = "com.salesforce.auth.intent.RESPONSE_ERROR_DESCRIPTION";
     private static final String TAG = "OAuthWebViewHelper";
     private static final String ACCOUNT_OPTIONS = "accountOptions";
-    private static final String FEATURE_BROWSER_LOGIN = "BW";
-
     // background executor
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
 
@@ -123,6 +117,15 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
         /** we're starting to load this login page into the webview */
         void loadingLoginPage(String loginUrl);
+
+        /**
+         * progress update of loading the webview, totalProgress will go from
+         * 0..10000 (you can pass this directly to the activity progressbar)
+         */
+        void onLoadingProgress(int totalProgress);
+
+        /** We're doing something that takes some unknown amount of time */
+        void onIndeterminateProgress(boolean show);
 
         /** We've completed the auth process and here's the resulting Authentication Result bundle to return to the Authenticator */
         void onAccountAuthenticatorResult(Bundle authResult);
@@ -203,6 +206,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     	 * care of in the 'Confirm Passcode' step in PasscodeActivity.
     	 */
         if (accountOptions != null) {
+            loginOptions.setPasscodeHash(SalesforceSDKManager.getInstance().getPasscodeHash());
             addAccount();
             callback.finish();
         }
@@ -215,7 +219,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
     /** Factory method for the WebChromeClient, you can replace this with something else if you need to */
     protected WebChromeClient makeWebChromeClient() {
-        return new WebChromeClient();
+        return new AuthWebChromeClient();
     }
 
     protected Context getContext() {
@@ -295,74 +299,10 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         try {
             URI uri = getAuthorizationUrl(jwtFlow);
             callback.loadingLoginPage(loginOptions.getLoginUrl());
-            if (SalesforceSDKManager.getInstance().isBrowserLoginEnabled()) {
-                loadLoginPageInChrome(uri);
-            } else {
-                webview.loadUrl(uri.toString());
-            }
+            webview.loadUrl(uri.toString());
         } catch (URISyntaxException ex) {
             showError(ex);
         }
-    }
-
-    private void loadLoginPageInChrome(URI uri) {
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BROWSER_LOGIN);
-        final Uri url = Uri.parse(uri.toString());
-        final CustomTabsIntent.Builder intentBuilder = new CustomTabsIntent.Builder();
-
-        /*
-         * Sets custom animation to slide in and out for Chrome custom tab so that
-         * it doesn't look like a swizzle out of the app and back in.
-         */
-        intentBuilder.setStartAnimations(activity, android.R.anim.slide_in_left,
-                android.R.anim.slide_out_right);
-        intentBuilder.setExitAnimations(activity, android.R.anim.slide_in_left,
-                android.R.anim.slide_out_right);
-
-        // Replaces default 'Close Tab' button with a custom back arrow instead of 'x'.
-        final Resources resources = activity.getResources();
-        intentBuilder.setCloseButtonIcon(BitmapFactory.decodeResource(resources,
-                R.drawable.sf__action_back));
-        intentBuilder.setToolbarColor(resources.getColor(R.color.sf__chrome_nav_bar_azure));
-
-        // Adds a menu item to change server.
-        final Intent changeServerIntent = new Intent(activity, ServerPickerActivity.class);
-        final PendingIntent changeServerPendingIntent = PendingIntent.getActivity(activity,
-                LoginActivity.PICK_SERVER_REQUEST_CODE, changeServerIntent, PendingIntent.FLAG_CANCEL_CURRENT);
-        intentBuilder.addMenuItem(activity.getString(R.string.sf__pick_server), changeServerPendingIntent);
-        final CustomTabsIntent customTabsIntent = intentBuilder.build();
-
-        /*
-         * Sets the package explicitly to Google Chrome to avoid other browsers. This
-         * ensures that we don't display a popup allowing the user to select a browser
-         * because some browsers don't support certain authentication schemes. If Chrome
-         * is not available, we will use the default browser that the device uses.
-         */
-        if (doesChromeExist()) {
-            customTabsIntent.intent.setPackage("com.android.chrome");
-        }
-
-        /*
-         * Prevents Chrome custom tab from staying in the activity history stack. This flag
-         * ensures that Chrome custom tab is dismissed once the login process is complete.
-         */
-        customTabsIntent.intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-        customTabsIntent.launchUrl(activity, url);
-    }
-
-    private boolean doesChromeExist() {
-        boolean exists = false;
-        final PackageManager packageManager = activity.getPackageManager();
-        ApplicationInfo applicationInfo = null;
-        try {
-            applicationInfo = packageManager.getApplicationInfo("com.android.chrome", 0);
-        } catch (PackageManager.NameNotFoundException e) {
-            SalesforceSDKLogger.w(TAG, "Chrome does not exist on this device", e);
-        }
-        if (applicationInfo != null) {
-            exists = true;
-        }
-        return exists;
     }
 
     protected String getOAuthClientId() {
@@ -377,10 +317,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     loginOptions.getOauthCallbackUrl(),
                     loginOptions.getOauthScopes(),
                     null,
-                    getAuthorizationDisplayType(),
-                    loginOptions.getJwt(),
-                    loginOptions.getLoginUrl(),
-                    loginOptions.getAdditionalParameters());
+                    getAuthorizationDisplayType(), loginOptions.getJwt(), loginOptions.getLoginUrl(),loginOptions.getAdditionalParameters());
         }
         return OAuth2.getAuthorizationUrl(
                 new URI(loginOptions.getLoginUrl()),
@@ -471,6 +408,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             handler.cancel();
         }
 
+        @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 		@Override
         public void onReceivedClientCertRequest(WebView view, ClientCertRequest request) {
         	request.proceed(key, certChain);
@@ -605,25 +543,27 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 /*
                  * Checks if a passcode already exists. If a passcode has NOT
                  * been created yet, the user is taken through the passcode
-                 * creation flow, at the end of which account data is encrypted.
+                 * creation flow, at the end of which account data is encrypted
+                 * with a hash of the passcode. Other existing accounts are
+                 * also re-encrypted behind the scenes at this point. If a
+                 * passcode already exists, the existing hash is used and the
+                 * account is added at this point.
                  */
                 if (!passcodeManager.hasStoredPasscode(mgr.getAppContext())) {
-
-                    // This will bring up the create passcode screen - we will create the account in onResume.
+                    // This will bring up the create passcode screen - we will create the account in onResume
                     passcodeManager.setEnabled(true);
                     passcodeManager.lockIfNeeded((Activity) getContext(), true);
-                } else if (!changeRequired) {
-
-                    // If a passcode change is required, the lock screen will have already been set in setMinPasscodeLength.
+                } else if (!changeRequired) { // If a passcode change is required, the lock screen will have already been set in setMinPasscodeLength
+                    loginOptions.setPasscodeHash(mgr.getPasscodeHash());
                     addAccount();
                     callback.finish();
                 }
             }
-
-            // No screen lock required or no mobile policy specified.
+            // No screen lock required or no mobile policy specified
             else {
                 final PasscodeManager passcodeManager = mgr.getPasscodeManager();
                 passcodeManager.storeMobilePolicyForOrg(account, 0, PasscodeManager.MIN_PASSCODE_LENGTH);
+                loginOptions.setPasscodeHash(mgr.getPasscodeHash());
                 addAccount();
                 callback.finish();
             }
@@ -634,6 +574,11 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 SalesforceSDKLogger.w(TAG, "Exception thrown", ex);
             }
             backgroundException = ex;
+        }
+
+        @Override
+        protected void onProgressUpdate(Boolean... values) {
+            callback.onIndeterminateProgress(values[0]);
         }
     }
 
@@ -675,6 +620,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 getOAuthClientId(),
                 accountOptions.orgId,
                 accountOptions.userId,
+                loginOptions.getPasscodeHash(),
                 loginOptions.getClientSecret(),
                 accountOptions.communityId,
                 accountOptions.communityUrl,
@@ -762,7 +708,18 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     }
 
     /**
-     * Class encapsulating the parameters required to create a new account.
+     * WebChromeClient used to report back loading progress.
+     */
+    protected class AuthWebChromeClient extends WebChromeClient {
+
+        @Override
+        public void onProgressChanged(WebView view, int newProgress) {
+            callback.onLoadingProgress(newProgress * 100);
+        }
+    }
+
+    /**
+     * Class encapsulating the parameters required to create a new account
      */
     public static class AccountOptions {
 

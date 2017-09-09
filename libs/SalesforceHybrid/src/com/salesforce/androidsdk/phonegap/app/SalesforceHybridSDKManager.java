@@ -67,10 +67,10 @@ public class SalesforceHybridSDKManager extends SmartSyncSDKManager {
 		if (INSTANCE == null) {
     		INSTANCE = new SalesforceHybridSDKManager(context, keyImpl, mainActivity, loginActivity);
     	}
-
-		// Upgrade to the latest version.
-		SalesforceHybridUpgradeManager.getInstance().upgrade();
 		initInternal(context);
+
+        // Upgrade to the latest version.
+        SalesforceHybridUpgradeManager.getInstance().upgrade();
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
 	}
 

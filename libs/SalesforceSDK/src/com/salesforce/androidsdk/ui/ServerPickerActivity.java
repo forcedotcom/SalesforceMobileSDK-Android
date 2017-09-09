@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.ui;
 
 import android.app.Activity;
 import android.app.FragmentManager;
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -54,7 +53,6 @@ import java.util.List;
 public class ServerPickerActivity extends Activity implements
         android.widget.RadioGroup.OnCheckedChangeListener {
 
-    public static final String CHANGE_SERVER_INTENT = "com.salesforce.SERVER_CHANGED";
     private static final String SERVER_DIALOG_NAME = "custom_server_dialog";
 
     private CustomServerUrlEditor urlEditDialog;
@@ -172,8 +170,6 @@ public class ServerPickerActivity extends Activity implements
      */
     public void setPositiveReturnValue(View v) {
         setResult(Activity.RESULT_OK, null);
-        final Intent changeServerIntent = new Intent(CHANGE_SERVER_INTENT);
-        sendBroadcast(changeServerIntent);
         finish();
     }
 

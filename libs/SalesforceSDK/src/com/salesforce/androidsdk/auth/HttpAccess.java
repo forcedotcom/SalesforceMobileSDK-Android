@@ -29,8 +29,13 @@ package com.salesforce.androidsdk.auth;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Build;
+
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
@@ -100,11 +105,26 @@ public class HttpAccess {
         ConnectionSpec connectionSpec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
                 .tlsVersions(TlsVersion.TLS_1_1, TlsVersion.TLS_1_2)
                 .build();
+
         OkHttpClient.Builder builder = new OkHttpClient.Builder()
                 .connectionSpecs(Collections.singletonList(connectionSpec))
                 .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
                 .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
                 .addNetworkInterceptor(new UserAgentInterceptor(userAgent));
+
+        /*
+         * FIXME: Remove this piece of code once minApi >= Lollipop.
+         */
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            try {
+                builder.sslSocketFactory(SalesforceTLSSocketFactory.getInstance());
+            } catch (KeyManagementException e) {
+                SalesforceSDKLogger.e(TAG, "Exception thrown while setting SSL socket factory", e);
+            } catch (NoSuchAlgorithmException ne) {
+                SalesforceSDKLogger.e(TAG, "Exception thrown while setting SSL socket factory", ne);
+            }
+        }
+
         return builder;
     }
 

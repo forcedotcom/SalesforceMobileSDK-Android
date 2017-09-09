@@ -14,10 +14,9 @@ apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 
 dependencies {
-    compile project(':libs:SalesforceAnalytics')
-    compile 'com.squareup.okhttp3:okhttp:3.6.0'
-    compile 'com.google.android.gms:play-services-gcm:11.0.2'
-    compile 'com.android.support:customtabs:25.2.0'
+  compile project(':libs:SalesforceAnalytics')
+  compile 'com.squareup.okhttp3:okhttp:3.6.0'
+  compile 'com.google.android.gms:play-services-gcm:10.2.0'
 }
 
 android {
@@ -127,9 +126,9 @@ bintray {
         licenses = ['Apache-2.0']
         labels = ['android', 'salesforce', 'mobilesdk']
         version {
-            name = '6.0.0'
+            name = '5.3.0'
             released  = new Date()
-            vcsTag = 'v6.0.0'
+            vcsTag = 'v5.3.0'
         }
     }
 }
