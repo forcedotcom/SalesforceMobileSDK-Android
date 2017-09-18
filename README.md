@@ -30,23 +30,17 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 5.2
+### What's New in 5.3
 
-**Login Enhancements**
-- We have added support for branded community login pages by adding methods to configure the brand parameter in your Mobile SDK app.
-
-**SmartSync Enhancements**
-- In Mobile SDK 5.2, we've added new sync targets to allow related records to be synced down or synced up in one call.
-
-**New Logging Framework**
-- We've added a new logging framework in Mobile SDK 5.2 with the following features:
-	- Writes log lines to both console and a rolling log file on the filesystem.
-	- Supports component-specific loggers.
-	- Lets you configure log levels per component.
-	- Lets you configure maximum log file size per component.
+**OS Version Support**
+- Android Oreo (API 26) is fully supported in Mobile SDK 5.3.
 
 **Library Upgrades**
-- We've updated Cordova to version 6.2.3.
+- We've updated SQLCipher to version 3.5.7.
+
+**Kotlin Support**
+- We now support Kotlin in native Android apps.
+- `forcedroid` adds a new app type: `native_kotlin`.
 
 **Other Technical Improvements**
 - Improvements to sample apps.
