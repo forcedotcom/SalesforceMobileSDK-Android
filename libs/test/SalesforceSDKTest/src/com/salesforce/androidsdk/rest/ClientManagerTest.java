@@ -38,7 +38,6 @@ import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.TestForceApp;
-import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
@@ -61,7 +60,6 @@ import java.util.concurrent.TimeUnit;
 
 public class ClientManagerTest extends InstrumentationTestCase {
 
-    public static final String TEST_PASSCODE_HASH = Encryptor.hash("passcode", "hash-key");
     public static final String TEST_ORG_ID = "test_org_id";
     public static final String TEST_USER_ID = "test_user_id";
     public static final String TEST_ORG_ID_2 = "test_org_id_2";
@@ -103,8 +101,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
         final Application app = Instrumentation.newApplication(TestForceApp.class, targetContext);
         getInstrumentation().callApplicationOnCreate(app);
         TestCredentials.init(getInstrumentation().getContext());
-        loginOptions = new LoginOptions(TEST_LOGIN_URL, TEST_PASSCODE_HASH,
-        		TEST_CALLBACK_URL, TEST_CLIENT_ID, TEST_SCOPES);
+        loginOptions = new LoginOptions(TEST_LOGIN_URL, TEST_CALLBACK_URL,
+                TEST_CLIENT_ID, TEST_SCOPES, null);
         clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE,
         		loginOptions, true);
         accountManager = clientManager.getAccountManager();
@@ -112,7 +110,6 @@ public class ClientManagerTest extends InstrumentationTestCase {
         if (!SalesforceSDKManager.hasInstance()) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
-        SalesforceSDKManager.getInstance().getPasscodeManager().setPasscodeHash(ClientManagerTest.TEST_PASSCODE_HASH);
         testOauthKeys = new ArrayList<>();
         testOauthKeys.add(TEST_CUSTOM_KEY);
         testOauthValues = new HashMap<>();
@@ -131,7 +128,6 @@ public class ClientManagerTest extends InstrumentationTestCase {
         testOauthKeys = null;
         testOauthValues = null;
         SalesforceSDKManager.getInstance().setAdditionalOauthKeys(testOauthKeys);
-        SalesforceSDKManager.getInstance().getPasscodeManager().setPasscodeHash(null);
         super.tearDown();
     }
 
@@ -147,38 +143,29 @@ public class ClientManagerTest extends InstrumentationTestCase {
      * Test setting/get of Login Optionsas a bundle
      */
     public void testLoginOptionsWithAddlParams() {
-
         Map<String,String> additionalParams = new HashMap<String,String>();
         additionalParams.put("p1","v1");
         additionalParams.put("p2","v2");
         additionalParams.put("p3",null);
-
-        LoginOptions loginOptions = new LoginOptions(TEST_LOGIN_URL, TEST_PASSCODE_HASH,
-                TEST_CALLBACK_URL, TEST_CLIENT_ID, TEST_SCOPES,null,null,additionalParams);
-
+        LoginOptions loginOptions = new LoginOptions(TEST_LOGIN_URL,
+                TEST_CALLBACK_URL, TEST_CLIENT_ID, TEST_SCOPES, null, null, additionalParams);
         assertNotNull("LoginOptions must not be null",loginOptions);
         assertNotNull("LoginOptions must not be null",loginOptions.getAdditionalParameters());
         assertEquals("# of LoginOptions must be correct",additionalParams.size(),loginOptions.getAdditionalParameters().size());
         assertEquals("LoginOptions must be correct",additionalParams.get("p1"),loginOptions.getAdditionalParameters().get("p1"));
-
-        additionalParams = new HashMap<String,String>();
+        additionalParams = new HashMap<String, String>();
         additionalParams.put("p4","v1");
         additionalParams.put("p5","v2");
-
         loginOptions.setAdditionalParameters(additionalParams);
         assertEquals("# of LoginOptions must be correct",additionalParams.size(),loginOptions.getAdditionalParameters().size());
-
         Bundle bundle = loginOptions.asBundle();
-
         assertNotNull("LoginOptions Bundle must not be null",bundle);
         assertNotNull("LoginOptions Bundle must have parameter map",bundle.getSerializable("addlParams"));
-
         loginOptions = LoginOptions.fromBundle(bundle);
         assertNotNull("LoginOptions from bundle should not be null",loginOptions);
         assertNotNull("LoginOptions.additionalParameters from bundle should not be null",loginOptions.getAdditionalParameters());
         assertEquals("LoginOptions.additionalParameters from bundle should not be null",additionalParams.size(),loginOptions.getAdditionalParameters().size());
         assertEquals("LoginOptions.additionalParameters must have parameter",additionalParams.get("p4"),loginOptions.getAdditionalParameters().get("p4"));
-
     }
 
     /**
@@ -216,21 +203,21 @@ public class ClientManagerTest extends InstrumentationTestCase {
         assertEquals("Wrong account name", TEST_ACCOUNT_NAME, account.name);
         assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
         String encryptedAuthToken = accountManager.getUserData(account, AccountManager.KEY_AUTHTOKEN);
-        String decryptedAuthToken = SalesforceSDKManager.decryptWithPasscode(encryptedAuthToken, TEST_PASSCODE_HASH);
+        String decryptedAuthToken = SalesforceSDKManager.decrypt(encryptedAuthToken);
         assertEquals("Wrong auth token", TEST_AUTH_TOKEN, decryptedAuthToken);
         String encryptedRefreshToken = accountManager.getPassword(account);
-        String decryptedRefreshToken = SalesforceSDKManager.decryptWithPasscode(encryptedRefreshToken, TEST_PASSCODE_HASH);
+        String decryptedRefreshToken = SalesforceSDKManager.decrypt(encryptedRefreshToken);
         assertEquals("Wrong refresh token", TEST_REFRESH_TOKEN, decryptedRefreshToken);
-        assertEquals("Wrong instance url", TEST_INSTANCE_URL, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), TEST_PASSCODE_HASH));
-        assertEquals("Wrong login url", TEST_LOGIN_URL, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), TEST_PASSCODE_HASH));
-        assertEquals("Wrong client id", TEST_CLIENT_ID, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), TEST_PASSCODE_HASH));
-        assertEquals("Wrong user id", TEST_USER_ID, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_USER_ID), TEST_PASSCODE_HASH));
-        assertEquals("Wrong org id", TEST_ORG_ID, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_ORG_ID), TEST_PASSCODE_HASH));
-        assertEquals("Wrong username", TEST_USERNAME, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_USERNAME), TEST_PASSCODE_HASH));
-        assertEquals("Wrong last name", TEST_LAST_NAME, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_LAST_NAME), TEST_PASSCODE_HASH));
-        assertEquals("Wrong display name", TEST_DISPLAY_NAME, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_DISPLAY_NAME), TEST_PASSCODE_HASH));
-        assertEquals("Wrong email", TEST_EMAIL, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_EMAIL), TEST_PASSCODE_HASH));
-        assertEquals("Wrong additional OAuth value", TEST_CUSTOM_VALUE, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, TEST_CUSTOM_KEY), TEST_PASSCODE_HASH));
+        assertEquals("Wrong instance url", TEST_INSTANCE_URL, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL)));
+        assertEquals("Wrong login url", TEST_LOGIN_URL, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL)));
+        assertEquals("Wrong client id", TEST_CLIENT_ID, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID)));
+        assertEquals("Wrong user id", TEST_USER_ID, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_USER_ID)));
+        assertEquals("Wrong org id", TEST_ORG_ID, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_ORG_ID)));
+        assertEquals("Wrong username", TEST_USERNAME, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_USERNAME)));
+        assertEquals("Wrong last name", TEST_LAST_NAME, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LAST_NAME)));
+        assertEquals("Wrong display name", TEST_DISPLAY_NAME, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_DISPLAY_NAME)));
+        assertEquals("Wrong email", TEST_EMAIL, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_EMAIL)));
+        assertEquals("Wrong additional OAuth value", TEST_CUSTOM_VALUE, SalesforceSDKManager.decrypt(accountManager.getUserData(account, TEST_CUSTOM_KEY)));
     }
 
     /**
@@ -511,7 +498,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
     private Bundle createTestAccount() {
         return clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN,
                 TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_CLIENT_ID,
-                TEST_ORG_ID, TEST_USER_ID, TEST_PASSCODE_HASH, null, null, null, TEST_FIRST_NAME,
+                TEST_ORG_ID, TEST_USER_ID, null, null, null, TEST_FIRST_NAME,
                 TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL, testOauthValues);
     }
 
@@ -522,7 +509,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
     private Bundle createOtherTestAccount() {
         return clientManager.createNewAccount(TEST_OTHER_ACCOUNT_NAME, TEST_OTHER_USERNAME,
                 TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL,
-                TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID_2, TEST_USER_ID_2, TEST_PASSCODE_HASH,
+                TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID_2, TEST_USER_ID_2,
                 null, null, null, TEST_FIRST_NAME, TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL,
                 TEST_THUMBNAIL_URL, testOauthValues);
     }
