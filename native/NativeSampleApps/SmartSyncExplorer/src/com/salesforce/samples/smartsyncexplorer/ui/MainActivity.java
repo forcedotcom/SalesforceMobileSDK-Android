@@ -54,10 +54,8 @@ import android.widget.SearchView.OnQueryTextListener;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
@@ -65,6 +63,7 @@ import com.salesforce.androidsdk.ui.SalesforceListActivity;
 import com.salesforce.samples.smartsyncexplorer.R;
 import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
+import com.salesforce.samples.smartsyncexplorer.sync.ContactSyncAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -109,10 +108,7 @@ public class MainActivity extends SalesforceListActivity implements
 	
     private SearchView searchView;
     private ContactListAdapter listAdapter;
-    private UserAccount curAccount;
 	private NameFieldFilter nameFilter;
-	private List<ContactObject> originalData;
-	private SmartStore smartStore;
     private LogoutDialogFragment logoutConfirmationDialog;
     private ContactListLoader contactLoader;
     private LoadCompleteReceiver loadCompleteReceiver;
@@ -125,7 +121,7 @@ public class MainActivity extends SalesforceListActivity implements
 		getActionBar().setTitle(R.string.main_activity_title);
 		listAdapter = new ContactListAdapter(this, R.layout.list_item);
 		getListView().setAdapter(listAdapter);
-		nameFilter = new NameFieldFilter(listAdapter, originalData);
+		nameFilter = new NameFieldFilter(listAdapter, null);
 		logoutConfirmationDialog = new LogoutDialogFragment();
 		loadCompleteReceiver = new LoadCompleteReceiver();
 		isRegistered = new AtomicBoolean(false);
@@ -142,19 +138,26 @@ public class MainActivity extends SalesforceListActivity implements
 
 	@Override
 	public void onResume(RestClient client) {
-		curAccount = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser();
-		Account account = null;
-		if (curAccount != null) {
-			account = SmartSyncSDKManager.getInstance().getUserAccountManager().buildAccount(curAccount);
-		}
-		smartStore = SmartSyncSDKManager.getInstance().getSmartStore(curAccount);
+		// Loader initialization and receiver registration
 		getLoaderManager().initLoader(CONTACT_LOADER_ID, null, this);
-		if (!smartStore.hasSoup(ContactListLoader.CONTACT_SOUP)) {
-			syncDownContacts();
-		} else {
-            refreshList();
-        }
+		if (!isRegistered.get()) {
+			registerReceiver(loadCompleteReceiver,
+					new IntentFilter(ContactListLoader.LOAD_COMPLETE_INTENT_ACTION));
+		}
+		isRegistered.set(true);
 
+		// Setup periodic sync
+		setupPeriodicSync();
+
+		// Sync now
+		requestSync(true /* sync down only */);
+	}
+
+	/**
+	 * Setup periodic sync
+	 */
+	private void setupPeriodicSync() {
+		Account account = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentAccount();
 		/*
 		 * Enables sync automatically for this provider. To enable almost
 		 * instantaneous sync when records are modified locally, a call needs
@@ -164,15 +167,21 @@ public class MainActivity extends SalesforceListActivity implements
 		 */
 		ContentResolver.setSyncAutomatically(account, SYNC_CONTENT_AUTHORITY, true);
 		ContentResolver.addPeriodicSync(account, SYNC_CONTENT_AUTHORITY,
-					Bundle.EMPTY, SYNC_FREQUENCY_ONE_HOUR);
-		if (!isRegistered.get()) {
-			registerReceiver(loadCompleteReceiver,
-					new IntentFilter(ContactListLoader.LOAD_COMPLETE_INTENT_ACTION));
-		}
-		isRegistered.set(true);
+				Bundle.EMPTY, SYNC_FREQUENCY_ONE_HOUR);
 	}
 
-    @Override
+	/**
+	 * Request a sync
+	 * @param syncDownOnly if true, only a sync down is done, if false a sync up followed by a sync down is done
+	 */
+	private void requestSync(boolean syncDownOnly) {
+		Account account = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentAccount();
+		Bundle extras = new Bundle();
+		extras.putBoolean(ContactSyncAdapter.SYNC_DOWN_ONLY, syncDownOnly);
+		ContentResolver.requestSync(account, SYNC_CONTENT_AUTHORITY, extras);
+	}
+
+	@Override
 	public void onPause() {
     	if (isRegistered.get()) {
         	unregisterReceiver(loadCompleteReceiver);
@@ -206,7 +215,7 @@ public class MainActivity extends SalesforceListActivity implements
 	    switch (item.getItemId()) {
 	        case R.id.action_refresh:
 				Toast.makeText(this, "Synchronizing...", Toast.LENGTH_SHORT).show();
-				syncUpContacts();
+				requestSync(false /* sync up + sync down */);
 	            return true;
 	        case R.id.action_logout:
 	    		logoutConfirmationDialog.show(getFragmentManager(), "LogoutDialog");
@@ -238,39 +247,35 @@ public class MainActivity extends SalesforceListActivity implements
 
 	@Override
 	public Loader<List<ContactObject>> onCreateLoader(int id, Bundle args) {
-		contactLoader = new ContactListLoader(this, curAccount);
+		contactLoader = new ContactListLoader(this, SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser());
 		return contactLoader;
 	}
 
 	@Override
 	public void onLoaderReset(Loader<List<ContactObject>> loader) {
-		originalData = null;
 		refreshList(null);
 	}
 
 	@Override
 	public void onLoadFinished(Loader<List<ContactObject>> loader,
 			List<ContactObject> data) {
-		originalData = data;
-		nameFilter.setOrigData(originalData);
 		refreshList(data);
 	}
 
 	@Override
 	public boolean onClose() {
-		refreshList(originalData);
 		return true;
 	}
 
 	@Override
 	public boolean onQueryTextSubmit(String query) {
-		filterList(query);
+		nameFilter.setFilterTerm(query);
 		return true;
 	}
 
 	@Override
 	public boolean onQueryTextChange(String newText) {
-		filterList(newText);
+		nameFilter.setFilterTerm(newText);
 		return true;
     }
 
@@ -286,7 +291,8 @@ public class MainActivity extends SalesforceListActivity implements
     }
 
 	private void refreshList(List<ContactObject> data) {
-		listAdapter.setData(data);
+		// NB: We feed the data to nameFilter, and in turns it feeds the (filtered) data to listAdapter
+		nameFilter.setData(data);
 	}
 
 	private void launchDetailActivity(String objId, String objName,
@@ -303,17 +309,6 @@ public class MainActivity extends SalesforceListActivity implements
 		nameFilter.filter(filterTerm);
 	}
 
-	private void syncDownContacts() {
-		contactLoader.syncDown();
-		Toast.makeText(MainActivity.this, "Sync down complete!",
-				Toast.LENGTH_LONG).show();
-	}
-
-	private void syncUpContacts() {
-		contactLoader.syncUp();
-		Toast.makeText(this, "Sync up complete!", Toast.LENGTH_LONG).show();
-	}
-
 	/**
 	 * Custom array adapter to supply data to the list view.
 	 *
@@ -323,6 +318,7 @@ public class MainActivity extends SalesforceListActivity implements
 
 		private int listItemLayoutId;
 		private List<ContactObject> sObjects;
+		private String filterTerm;
 
 		/**
 		 * Parameterized constructor.
@@ -411,7 +407,8 @@ public class MainActivity extends SalesforceListActivity implements
 	private static class NameFieldFilter extends Filter {
 
 		private ContactListAdapter adpater;
-		private List<ContactObject> origList;
+		private List<ContactObject> data;
+		private String filterTerm;
 
 		/**
 		 * Parameterized constructor.
@@ -421,37 +418,49 @@ public class MainActivity extends SalesforceListActivity implements
 		 */
 		public NameFieldFilter(ContactListAdapter adapter, List<ContactObject> origList) {
 			this.adpater = adapter;
-			this.origList = origList;
+			this.data = origList;
+			this.filterTerm = null;
 		}
 
 		/**
 		 * Sets the original data set.
 		 *
-		 * @param origData Original data set.
+		 * @param data Original data set.
 		 */
-		public void setOrigData(List<ContactObject> origData) {
-			origList = origData;
+		public void setData(List<ContactObject> data) {
+			this.data = data;
+			filter(filterTerm);
+		}
+
+		/**
+		 * Sets the filter term
+		 * @param filterTerm
+		 * @return
+		 */
+		public void setFilterTerm(String filterTerm) {
+			this.filterTerm = filterTerm;
+			filter(filterTerm);
 		}
 
 		@Override
 		protected FilterResults performFiltering(CharSequence constraint) {
-			if (origList == null) {
+			if (data == null) {
 				return null;
 			}
 			final FilterResults results = new FilterResults();
 			if (TextUtils.isEmpty(constraint)) {
-				results.values = origList;
-				results.count = origList.size();
+				results.values = data;
+				results.count = data.size();
 				return results;
 			}
 			final String filterString = constraint.toString().toLowerCase();
-			int count = origList.size();
+			int count = data.size();
 			String filterableString;
 			final List<ContactObject> resultSet = new ArrayList<ContactObject>();
 			for (int i = 0; i < count; i++) {
-				filterableString = origList.get(i).getName();
+				filterableString = data.get(i).getName();
 				if (filterableString.toLowerCase().contains(filterString)) {
-					resultSet.add(origList.get(i));
+					resultSet.add(data.get(i));
 				}
 			}
 			results.values = resultSet;

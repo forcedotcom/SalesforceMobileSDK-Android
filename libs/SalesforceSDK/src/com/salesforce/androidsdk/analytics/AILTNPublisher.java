@@ -106,12 +106,19 @@ public class AILTNPublisher implements AnalyticsPublisher {
             SalesforceSDKLogger.e(TAG, "Exception thrown while constructing event payload", e);
             return false;
         }
-
         RestResponse restResponse = null;
         try {
             final String apiPath = String.format(API_PATH,
                     ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()));
             final RestClient restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient();
+
+            /*
+             * Since the publisher is invoked from a Service, it could use an instance
+             * of RestClient from memory that has no backing OkHttpClient that's ready.
+             */
+            if (restClient.getOkHttpClient() == null) {
+                return false;
+            }
 
             /*
              * There's no easy way to get content length using GZIP interceptors. Some trickery is

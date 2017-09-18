@@ -126,12 +126,11 @@ public class JavaScriptPluginVersionTest extends InstrumentationTestCase {
 		assertFalse((new JavaScriptPluginVersion(SalesforceSDKManager.SDK_VERSION)).isNewer());
 	}
 
-	
 	/**
 	 * Create JavaScriptPluginVersion for future versions and make sure isCurrent/isOlder/isNewer returns the value expected
 	 */
 	public void testJavaScriptPluginVersionsWithNewVersion() {
-		for (String version : new String[] {"5.3.0", "5.4.0", "5.5.0"}) {
+		for (String version : new String[] {"6.1.0", "6.2.0", "6.3.0"}) {
 			assertFalse((new JavaScriptPluginVersion(version)).isOlder());
 			assertFalse((new JavaScriptPluginVersion(version)).isCurrent());
 			assertTrue((new JavaScriptPluginVersion(version)).isNewer());

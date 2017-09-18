@@ -31,9 +31,7 @@ import android.accounts.Account;
 import android.accounts.AccountAuthenticatorResponse;
 import android.accounts.AccountManager;
 import android.accounts.NetworkErrorException;
-import android.app.ActivityManager;
 import android.app.Service;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -44,9 +42,7 @@ import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,9 +53,9 @@ import java.util.Map;
  */
 public class AuthenticatorService extends Service {
 
-    private static Authenticator authenticator;
+    private static Authenticator AUTHENTICATOR;
 
-    // Keys to extra info in the account
+    // Keys to extra info in the account.
     public static final String KEY_LOGIN_URL = "loginUrl";
     public static final String KEY_INSTANCE_URL = "instanceUrl";
     public static final String KEY_USER_ID = "userId";
@@ -76,25 +72,23 @@ public class AuthenticatorService extends Service {
     public static final String KEY_DISPLAY_NAME = "display_name";
     public static final String KEY_PHOTO_URL = "photoUrl";
     public static final String KEY_THUMBNAIL_URL = "thumbnailUrl";
+    private static final String TAG = "AuthenticatorService";
 
     private Authenticator getAuthenticator() {
-        if (authenticator == null)
-            authenticator = new Authenticator(this);
-        return authenticator;
+        if (AUTHENTICATOR == null) {
+            AUTHENTICATOR = new Authenticator(this);
+        }
+        return AUTHENTICATOR;
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        if (intent.getAction().equals(AccountManager.ACTION_AUTHENTICATOR_INTENT))
+        if (AccountManager.ACTION_AUTHENTICATOR_INTENT.equals(intent.getAction())) {
             return getAuthenticator().getIBinder();
+        }
         return null;
     }
 
-    /**
-     * The Authenticator for salesforce accounts.
-     * - addAccount Start the login flow (by launching the activity filtering the salesforce.intent.action.LOGIN intent).
-     * - getAuthToken Refresh the token by calling {@link OAuth2#refreshAuthToken(HttpAccess, URI, String, String) OAuth2.refreshAuthToken}.
-     */
     private static class Authenticator extends AbstractAccountAuthenticator {
 
     	private static final String SETTINGS_PACKAGE_NAME = "com.android.settings";
@@ -108,8 +102,7 @@ public class AuthenticatorService extends Service {
         }
 
         @Override
-        public Bundle addAccount(
-                        AccountAuthenticatorResponse response,
+        public Bundle addAccount(AccountAuthenticatorResponse response,
                         String accountType,
                         String authTokenType,
                         String[] requiredFeatures,
@@ -122,58 +115,13 @@ public class AuthenticatorService extends Service {
         }
 
         private boolean isAddFromSettings(Bundle options) {
-			// Is there a better way? 
-        	return options.containsKey(ANDROID_PACKAGE_NAME) && options.getString(ANDROID_PACKAGE_NAME).equals(SETTINGS_PACKAGE_NAME);
+			return options.containsKey(ANDROID_PACKAGE_NAME)
+                    && SETTINGS_PACKAGE_NAME.equals(options.getString(ANDROID_PACKAGE_NAME));
 		}
 
-        @SuppressWarnings("deprecation")
-		@Override
-        public Bundle getAccountRemovalAllowed(AccountAuthenticatorResponse response, Account account) {
-            final Bundle result = new Bundle();
-            final ActivityManager manager = (ActivityManager) context.getSystemService(ACTIVITY_SERVICE);
-
-            /*
-             * Allowing account removal from the Settings app is quite messy,
-             * since we don't know which account is being removed. Hence, we
-             * check which package the account removal call is coming from,
-             * and decide whether to allow it or not. Unfortunately, the only
-             * way to do this is the convoluted way used below, which basically
-             * gets a list of running tasks and get the topmost activity on
-             * the task in focus. If the call is coming from the Settings app,
-             * the topmost activity's package will be the Settings app.
-             *
-             * FIXME: The following piece of code does nothing on Lollipop and
-             * above, since Google has revoked the ability to get the list of
-             * running tasks outside of the application stack. We'll need to
-             * figure out a different strategy to handle this. One approach
-             * is to launch a custom logout flow for 'Settings' (if that's possible).
-             */
-            boolean isNotRemoveFromSettings = true;
-            if (manager != null) {
-                final List<ActivityManager.RunningTaskInfo> task = manager.getRunningTasks(1);
-                if (task != null && task.size() > 0) {
-                    final ComponentName componentInfo = task.get(0).topActivity;
-                    if (componentInfo != null) {
-                        if (SETTINGS_PACKAGE_NAME.equals(componentInfo.getPackageName())) {
-                            isNotRemoveFromSettings = false;
-                        }
-                    }
-                }
-            }
-            result.putBoolean(AccountManager.KEY_BOOLEAN_RESULT, isNotRemoveFromSettings);
-            return result;
-        }
-
-		/**
-         * Uses the refresh token to get a new access token.
-         */
         @Override
-        public Bundle getAuthToken(
-                            AccountAuthenticatorResponse response,
-                            Account account,
-                            String authTokenType,
-                            Bundle options) throws NetworkErrorException {
-            final String TAG = "Auth..Ser..:getAuthT..";
+        public Bundle getAuthToken(AccountAuthenticatorResponse response, Account account,
+                            String authTokenType, Bundle options) throws NetworkErrorException {
             final AccountManager mgr = AccountManager.get(context);
             final String passcodeHash = SalesforceSDKManager.getInstance().getPasscodeHash();
             final String refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(account), passcodeHash);
@@ -223,7 +171,7 @@ public class AuthenticatorService extends Service {
                     }
                 }
             }
-            Map<String,String> addlParamsMap = SalesforceSDKManager.getInstance().getLoginOptions().getAdditionalParameters();
+            final Map<String,String> addlParamsMap = SalesforceSDKManager.getInstance().getLoginOptions().getAdditionalParameters();
             final String encCommunityId = mgr.getUserData(account, AuthenticatorService.KEY_COMMUNITY_ID);
             String communityId = null;
             if (encCommunityId != null) {
@@ -238,7 +186,8 @@ public class AuthenticatorService extends Service {
             }
             final Bundle resBundle = new Bundle();
             try {
-                final TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT, new URI(loginServer), clientId, refreshToken, clientSecret, addlParamsMap);
+                final TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
+                        new URI(loginServer), clientId, refreshToken, clientSecret, addlParamsMap);
 
                 // Handle the case where the org has been migrated to a new instance, or has turned on my domains.
                 if (!instServer.equalsIgnoreCase(tr.instanceUrl)) {
@@ -317,12 +266,6 @@ public class AuthenticatorService extends Service {
                 	encrCommunityUrl = SalesforceSDKManager.encryptWithPasscode(communityUrl, passcodeHash);
                 }
                 resBundle.putString(AuthenticatorService.KEY_COMMUNITY_URL, encrCommunityUrl);
-            } catch (IOException e) {
-                SalesforceSDKLogger.w(TAG, "Exception thrown while getting new auth token", e);
-                throw new NetworkErrorException(e);
-            } catch (URISyntaxException ex) {
-                SalesforceSDKLogger.w(TAG, "Exception thrown while getting new auth token", ex);
-                throw new NetworkErrorException(ex);
             } catch (OAuthFailedException ofe) {
                 if (ofe.isRefreshTokenInvalid()) {
                     SalesforceSDKLogger.i(TAG, "Invalid Refresh Token: (Error: " +
@@ -331,36 +274,35 @@ public class AuthenticatorService extends Service {
                 }
                 resBundle.putString(AccountManager.KEY_ERROR_CODE, ofe.response.error);
                 resBundle.putString(AccountManager.KEY_ERROR_MESSAGE, ofe.response.errorDescription);
+            } catch (Exception e) {
+                SalesforceSDKLogger.w(TAG, "Exception thrown while getting new auth token", e);
+                throw new NetworkErrorException(e);
             }
             return resBundle;
         }
 
-        /**
-         * Return bundle with intent to start the login flow.
-         *
-         * @param response
-         * @param options
-         * @return
-         */
         private Bundle makeAuthIntentBundle(AccountAuthenticatorResponse response, Bundle options) {
-            Bundle reply = new Bundle();
-            Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
+            final Bundle reply = new Bundle();
+            final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
             i.setPackage(context.getPackageName());
             i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             i.putExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE, response);
-            if (options != null)
+            if (options != null) {
                 i.putExtras(options);
+            }
             reply.putParcelable(AccountManager.KEY_INTENT, i);
             return reply;
         }
 
         @Override
-        public Bundle updateCredentials(AccountAuthenticatorResponse response, Account account, String authTokenType, Bundle options) throws NetworkErrorException {
+        public Bundle updateCredentials(AccountAuthenticatorResponse response, Account account,
+                                        String authTokenType, Bundle options) throws NetworkErrorException {
             return null;
         }
 
         @Override
-        public Bundle confirmCredentials(AccountAuthenticatorResponse response, Account account, Bundle options) throws NetworkErrorException {
+        public Bundle confirmCredentials(AccountAuthenticatorResponse response, Account account,
+                                         Bundle options) throws NetworkErrorException {
             return null;
         }
 
@@ -375,7 +317,8 @@ public class AuthenticatorService extends Service {
         }
 
         @Override
-        public Bundle hasFeatures(AccountAuthenticatorResponse response, Account account, String[] features) throws NetworkErrorException {
+        public Bundle hasFeatures(AccountAuthenticatorResponse response, Account account,
+                                  String[] features) throws NetworkErrorException {
             return null;
         }
     }

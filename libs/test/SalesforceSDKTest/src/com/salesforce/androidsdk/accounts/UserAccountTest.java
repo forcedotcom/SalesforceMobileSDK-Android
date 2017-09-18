@@ -99,6 +99,7 @@ public class UserAccountTest extends InstrumentationTestCase {
             eq = null;
         }
         SalesforceSDKManager.getInstance().setAdditionalOauthKeys(null);
+        SalesforceSDKManager.getInstance().getPasscodeManager().setPasscodeHash(null);
         super.tearDown();
     }
 

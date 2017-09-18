@@ -19,7 +19,7 @@ dependencies {
 }
 
 android {
-  compileSdkVersion 25
+  compileSdkVersion 26
   buildToolsVersion '25.0.0'
 
   buildTypes {
@@ -125,9 +125,9 @@ bintray {
         licenses = ['Apache-2.0']
         labels = ['android', 'salesforce', 'mobilesdk']
         version {
-            name = '5.2.0'
+            name = '5.3.0'
             released  = new Date()
-            vcsTag = 'v5.2.0'
+            vcsTag = 'v5.3.0'
         }
     }
 }
