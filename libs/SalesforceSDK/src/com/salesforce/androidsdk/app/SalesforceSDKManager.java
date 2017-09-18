@@ -63,6 +63,7 @@ import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.push.PushNotificationInterface;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -76,6 +77,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.UUID;
 
 /**
  * This class serves as an interface to the various
@@ -91,7 +93,25 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "5.2.0";
+    public static final String SDK_VERSION = "5.3.0";
+
+    /**
+     * Intent action meant for instances of SalesforceSDKManager residing in other processes
+     * to order them to clean up in-memory caches
+     */
+    private static final String CLEANUP_INTENT_ACTION = "com.salesforce.CLEANUP";
+
+    // Receiver for CLEANUP_INTENT_ACTION broadcast
+    private CleanupReceiver cleanupReceiver;
+
+    // Key in broadcast for process id
+    private static final String PROCESS_ID_KEY = "processId";
+
+    // Unique per process id added to broadcast to prevent processing broadcast from own process
+    private static final String PROCESS_ID = UUID.randomUUID().toString();
+
+    // Key in broadcast for user account
+    private static final String USER_ACCOUNT = "userAccount";
 
     /**
      * Intent action that specifies that logout was completed.
@@ -218,6 +238,10 @@ public class SalesforceSDKManager {
                 setAiltnAppName(ailtnAppName);
             }
         }
+
+        // If your app runs in multiple processes, all the SalesforceSDKManager need to run cleanup during a logout
+        cleanupReceiver = new CleanupReceiver();
+        context.registerReceiver(cleanupReceiver, new IntentFilter(SalesforceSDKManager.CLEANUP_INTENT_ACTION));
     }
 
     /**
@@ -662,9 +686,15 @@ public class SalesforceSDKManager {
      * @param frontActivity Front activity.
      * @param account Account.
      */
-    protected void cleanUp(Activity frontActivity, Account account) {
+    private void cleanUp(Activity frontActivity, Account account) {
         final UserAccount userAccount = UserAccountManager.getInstance().buildUserAccount(account);
-        SalesforceAnalyticsManager.reset(userAccount);
+
+        // Clean up in this process
+        cleanUp(userAccount);
+
+        // Have SalesforceSDKManager living in separate processes also clean up
+        sendCleanupIntent(userAccount);
+
         final List<UserAccount> users = getUserAccountManager().getAuthenticatedUsers();
 
         // Finishes front activity if specified, and if this is the last account.
@@ -690,6 +720,16 @@ public class SalesforceSDKManager {
             encryptionKey = null;
             UUIDManager.resetUuids();
         }
+    }
+
+    /**
+     * Clean up cached data
+     *
+     * @param userAccount
+     */
+    protected void cleanUp(UserAccount userAccount) {
+        SalesforceAnalyticsManager.reset(userAccount);
+        RestClient.clearCaches(userAccount);
     }
 
     /**
@@ -1189,4 +1229,32 @@ public class SalesforceSDKManager {
         intent.setPackage(context.getPackageName());
         context.sendBroadcast(intent);
     }
+
+    private void sendCleanupIntent(UserAccount userAccount) {
+        final Intent intent = new Intent(CLEANUP_INTENT_ACTION);
+        intent.setPackage(context.getPackageName());
+        intent.putExtra(PROCESS_ID_KEY, PROCESS_ID);
+        if (null != userAccount) {
+            intent.putExtra(USER_ACCOUNT, userAccount.toBundle());
+        }
+        context.sendBroadcast(intent);
+    }
+
+    private class CleanupReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent != null
+                    && intent.getAction().equals(SalesforceSDKManager.CLEANUP_INTENT_ACTION)
+                    && !intent.getStringExtra(PROCESS_ID_KEY).equals(PROCESS_ID)) {
+
+                UserAccount userAccount = null;
+                if (intent.hasExtra(USER_ACCOUNT)) {
+                    userAccount = new UserAccount(intent.getBundleExtra(USER_ACCOUNT));
+                }
+                cleanUp(userAccount);
+            }
+        }
+    }
+
 }

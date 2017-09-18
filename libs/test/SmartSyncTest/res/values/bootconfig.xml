@@ -10,7 +10,7 @@
     <string name="account_name">ut2@cs1.mobilesdk.org (test)</string>
     <string name="account_type">com.salesforce.androidsdk.smartsynctest.login</string>
     <string name="encoding">UTF-8</string>
-    <string name="instance_url">https://cs1.salesforce.com</string>
+    <string name="instance_url">https://mobilesdk.cs1.my.salesforce.com</string>
     <string name="community_url">https://mobilesdk.cs1.my.salesforce.com/androidcomm</string>
     <string name="identity_url">https://test.salesforce.com</string>
     <string name="login_url">https://test.salesforce.com</string>

@@ -45,11 +45,13 @@ public class SFDCGcmListenerService extends GcmListenerService {
      */
     @Override
     public void onMessageReceived(String from, Bundle data) {
-        final PushNotificationInterface pnInterface = SalesforceSDKManager.getInstance().getPushNotificationReceiver();
-        if (pnInterface != null && data != null) {
-            // Add 'from' to the Bundle directly before passing it back
-            data.putString(KEY_FROM, from);
-            pnInterface.onPushMessageReceived(data);
+        if (data != null && SalesforceSDKManager.hasInstance()) {
+            final PushNotificationInterface pnInterface = SalesforceSDKManager.getInstance().getPushNotificationReceiver();
+            if (pnInterface != null) {
+                // Add 'from' to the Bundle directly before passing it back
+                data.putString(KEY_FROM, from);
+                pnInterface.onPushMessageReceived(data);
+            }
         }
     }
 }

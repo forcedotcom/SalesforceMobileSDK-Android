@@ -2,11 +2,11 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.salesforce.androidsdk" 
-	android:versionCode="57"
-	android:versionName="5.2.0">
+	android:versionCode="58"
+	android:versionName="5.3.0">
 
     <uses-sdk android:minSdkVersion="19"
-        android:targetSdkVersion="25" />
+        android:targetSdkVersion="26" />
 
     <application>
 
@@ -30,7 +30,8 @@
 
         <!-- Passcode activity -->
         <activity android:name="com.salesforce.androidsdk.ui.PasscodeActivity"
-            android:theme="@style/SalesforceSDK.ActionBarTheme" />
+            android:theme="@style/SalesforceSDK.ActionBarTheme"
+            android:exported="false" />
 
         <!-- Manage space activity -->
         <activity android:name="com.salesforce.androidsdk.ui.ManageSpaceActivity"
@@ -90,7 +91,6 @@
     <uses-permission android:name="android.permission.MANAGE_ACCOUNTS" />
     <uses-permission android:name="android.permission.USE_CREDENTIALS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.GET_TASKS" />
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
 
     <!--TODO: Remove the -sdk-23 tag when the minsdk version is 23-->

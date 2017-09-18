@@ -98,7 +98,7 @@ public class PasscodeManager  {
     private Activity frontActivity;
     private Handler handler;
     private long lastActivity;
-    private boolean locked;
+    boolean locked;
     private int timeoutMs;
     private int minPasscodeLength;
     private LockChecker lockChecker;

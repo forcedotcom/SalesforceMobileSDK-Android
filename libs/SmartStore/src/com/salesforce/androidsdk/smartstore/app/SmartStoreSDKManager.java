@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.smartstore.app;
 
-import android.accounts.Account;
 import android.app.Activity;
 import android.content.Context;
 import android.text.TextUtils;
@@ -136,26 +135,15 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
     }
 
     @Override
-    protected void cleanUp(Activity frontActivity, Account account) {
-        if (account != null) {
-            final UserAccount userAccount = getUserAccountManager().buildUserAccount(account);
-            if (userAccount != null && hasSmartStore(userAccount)) {
-                DBOpenHelper.deleteDatabase(getAppContext(), userAccount);
-            }
+    protected void cleanUp(UserAccount userAccount) {
+        if (userAccount != null) {
+            // NB if database file was already deleted, we still need to call DBOpenHelper.deleteDatabase to clean up the DBOpenHelper cache
+            DBOpenHelper.deleteDatabase(getAppContext(), userAccount);
         } else {
             DBOpenHelper.deleteAllUserDatabases(getAppContext());
         }
 
-        /*
-         * Checks how many accounts are left that are authenticated. If only one
-         * account is left, this is the account that is being removed. In this
-         * case, we can safely reset all DBs.
-         */
-        final List<UserAccount> users = getUserAccountManager().getAuthenticatedUsers();
-        if (users != null && users.size() == 1) {
-            DBOpenHelper.deleteDatabase(getAppContext(), users.get(0));
-        }
-        super.cleanUp(frontActivity, account);
+        super.cleanUp(userAccount);
     }
 
     @Override

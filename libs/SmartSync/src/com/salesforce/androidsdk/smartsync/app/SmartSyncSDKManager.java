@@ -122,8 +122,7 @@ public class SmartSyncSDKManager extends SmartStoreSDKManager {
     }
 
     @Override
-    protected void cleanUp(Activity frontActivity, Account account) {
-    	final UserAccount userAccount = SmartSyncUserAccountManager.getInstance().buildUserAccount(account);
+    protected void cleanUp(UserAccount userAccount) {
     	MetadataManager.reset(userAccount);
 
     	/*
@@ -131,8 +130,8 @@ public class SmartSyncSDKManager extends SmartStoreSDKManager {
     	 * the underlying database will be wiped in the super class.
     	 */
     	CacheManager.softReset(userAccount);
-    	SyncManager.reset();
-        super.cleanUp(frontActivity, account);
+    	SyncManager.reset(userAccount);
+        super.cleanUp(userAccount);
     }
 
     @Override

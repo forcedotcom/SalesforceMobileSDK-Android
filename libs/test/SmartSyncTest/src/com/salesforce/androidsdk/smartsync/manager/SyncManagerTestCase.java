@@ -262,6 +262,12 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         if (expectedTotalSize != TOTAL_SIZE_UNKNOWN) {
             assertEquals("Wrong total size", expectedTotalSize, sync.getTotalSize());
         }
+        if (sync.getStatus() != SyncState.Status.NEW) {
+            assertTrue("Wrong start time", sync.getStartTime() > 0);
+        }
+        if (sync.getStatus() == SyncState.Status.DONE || sync.getStatus() == SyncState.Status.FAILED) {
+            assertTrue("Wrong end time", sync.getEndTime() > 0);
+        }
     }
 
     private void checkStatus(SyncState sync, SyncState.Type expectedType, long expectedId, SyncTarget expectedTarget, SyncOptions expectedOptions, SyncState.Status expectedStatus, int expectedProgress) throws JSONException {

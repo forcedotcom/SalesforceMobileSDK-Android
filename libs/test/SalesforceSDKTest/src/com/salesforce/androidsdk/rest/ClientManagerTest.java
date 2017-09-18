@@ -131,6 +131,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
         testOauthKeys = null;
         testOauthValues = null;
         SalesforceSDKManager.getInstance().setAdditionalOauthKeys(testOauthKeys);
+        SalesforceSDKManager.getInstance().getPasscodeManager().setPasscodeHash(null);
         super.tearDown();
     }
 
