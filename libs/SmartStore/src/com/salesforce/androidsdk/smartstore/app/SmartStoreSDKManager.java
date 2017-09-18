@@ -39,20 +39,17 @@ import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
-import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteOpenHelper;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 /**
  * SDK Manager for all native applications that use SmartStore
  */
 public class SmartStoreSDKManager extends SalesforceSDKManager {
+
     private static final String FEATURE_SMART_STORE_USER = "US";
     private static final String FEATURE_SMART_STORE_GLOBAL = "GS";
 
@@ -84,10 +81,10 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         if (INSTANCE == null) {
             INSTANCE = new SmartStoreSDKManager(context, keyImpl, mainActivity, loginActivity);
         }
-        initInternal(context);
 
         // Upgrade to the latest version.
         SmartStoreUpgradeManager.getInstance().upgrade();
+        initInternal(context);
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
     }
 
@@ -146,29 +143,6 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         super.cleanUp(userAccount);
     }
 
-    @Override
-    public synchronized void changePasscode(String oldPass, String newPass) {
-        if (isNewPasscode(oldPass, newPass)) {
-            final Map<String, DBOpenHelper> dbMap = DBOpenHelper.getOpenHelpers();
-            if (dbMap != null) {
-                final Collection<DBOpenHelper> dbHelpers = dbMap.values();
-                if (dbHelpers != null) {
-                    for (final DBOpenHelper dbHelper : dbHelpers) {
-                        if (dbHelper != null) {
-
-                            // If the old passcode is null, use the default key.
-                            final SQLiteDatabase db = dbHelper.getWritableDatabase(getEncryptionKeyForPasscode(oldPass));
-
-                            // If the new passcode is null, use the default key.
-                            SmartStore.changeKey(db, getEncryptionKeyForPasscode(oldPass), getEncryptionKeyForPasscode(newPass));
-                        }
-                    }
-                }
-            }
-            super.changePasscode(oldPass, newPass);
-        }
-    }
-
     /**
      * Return default database used by smart store in the global context
      *
@@ -191,12 +165,9 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         if (TextUtils.isEmpty(dbName)) {
             dbName = DBOpenHelper.DEFAULT_DB_NAME;
         }
-        final String passcodeHash = getPasscodeHash();
-        final String passcode = (passcodeHash == null ?
-                getEncryptionKeyForPasscode(null) : passcodeHash);
         final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(context,
                 dbName, null, null);
-        return new SmartStore(dbOpenHelper, passcode);
+        return new SmartStore(dbOpenHelper, getEncryptionKey());
     }
 
     /**
@@ -245,12 +216,11 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
             dbNamePrefix = DBOpenHelper.DEFAULT_DB_NAME;
         }
         SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SMART_STORE_USER);
-        final String passcodeHash = getPasscodeHash();
-        final String passcode = (passcodeHash == null ?
-                getEncryptionKeyForPasscode(null) : passcodeHash);
         final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(context,
                 dbNamePrefix, account, communityId);
-        return new SmartStore(dbOpenHelper, passcode);
+        SmartStore store = new SmartStore(dbOpenHelper, getEncryptionKey());
+
+        return store;
     }
 
     /**
@@ -414,5 +384,4 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
                     UserAccountManager.getInstance().getCurrentUser().getCommunityId());
         }
     }
-
 }

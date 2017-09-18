@@ -29,14 +29,17 @@ package com.salesforce.androidsdk.ui;
 import android.accounts.AccountAuthenticatorActivity;
 import android.app.ActionBar;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.Uri;
 import android.os.Bundle;
 import android.security.KeyChain;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -45,6 +48,7 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
@@ -52,8 +56,10 @@ import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.UriFragmentParser;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Login Activity: takes care of authenticating the user.
@@ -66,12 +72,13 @@ import java.util.List;
 public class LoginActivity extends AccountAuthenticatorActivity
 		implements OAuthWebviewHelperEvents {
 
-	// Request code when calling server picker activity
     public static final int PICK_SERVER_REQUEST_CODE = 10;
 
     private SalesforceR salesforceR;
 	private boolean wasBackgrounded;
 	private OAuthWebviewHelper webviewHelper;
+    private ChangeServerReceiver changeServerReceiver;
+    private boolean receiverRegistered;
 
     /**************************************************************************************************
      *
@@ -83,36 +90,57 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		// Object which allows reference to resources living outside the SDK
-		salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
+        // Object which allows reference to resources living outside the SDK
+        salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
 
-		// Getting login options from intent's extras
-		LoginOptions loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
+        // Getting login options from intent's extras
+        final LoginOptions loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
 
-		requestFeatures();
+        // Protect against screenshots
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
+                WindowManager.LayoutParams.FLAG_SECURE);
 
-		// Protect against screenshots
-		getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
-				WindowManager.LayoutParams.FLAG_SECURE);
+        // Setup content view
+        setContentView(salesforceR.layoutLogin());
 
-		// Setup content view
-		setContentView(salesforceR.layoutLogin());
+        // Setup the WebView.
+        final WebView webView = (WebView) findViewById(salesforceR.idLoginWebView());
+        final WebSettings webSettings = webView.getSettings();
+        webSettings.setJavaScriptEnabled(true);
+        webSettings.setAllowFileAccessFromFileURLs(true);
+        webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
+        webSettings.setDatabaseEnabled(true);
+        webSettings.setDomStorageEnabled(true);
+        EventsObservable.get().notifyEvent(EventType.AuthWebViewCreateComplete, webView);
+        webviewHelper = getOAuthWebviewHelper(this, loginOptions, webView, savedInstanceState);
 
-		// Setup the WebView.
-		final WebView webView = (WebView) findViewById(salesforceR.idLoginWebView());
-		final WebSettings webSettings = webView.getSettings();
-		webSettings.setJavaScriptEnabled(true);
-		webSettings.setAllowFileAccessFromFileURLs(true);
-		webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
-		webSettings.setDatabaseEnabled(true);
-		webSettings.setDomStorageEnabled(true);
-		EventsObservable.get().notifyEvent(EventType.AuthWebViewCreateComplete, webView);
-		webviewHelper = getOAuthWebviewHelper(this, loginOptions, webView, savedInstanceState);
-
-		// Let observers know
-		EventsObservable.get().notifyEvent(EventType.LoginActivityCreateComplete, this);
+        // Let observers know
+        EventsObservable.get().notifyEvent(EventType.LoginActivityCreateComplete, this);
         certAuthOrLogin();
+        if (!receiverRegistered) {
+			changeServerReceiver = new ChangeServerReceiver();
+            final IntentFilter changeServerFilter = new IntentFilter(ServerPickerActivity.CHANGE_SERVER_INTENT);
+            registerReceiver(changeServerReceiver, changeServerFilter);
+            receiverRegistered = true;
+        }
 	}
+
+	@Override
+	protected void onDestroy() {
+        if (receiverRegistered) {
+            unregisterReceiver(changeServerReceiver);
+            receiverRegistered = false;
+        }
+        super.onDestroy();
+    }
+
+	@Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        if (isChromeCallback(intent)) {
+            completeAuthFlow(intent);
+        }
+    }
 
     protected void certAuthOrLogin() {
         if (shouldUseCertBasedAuth()) {
@@ -123,11 +151,29 @@ public class LoginActivity extends AccountAuthenticatorActivity
         }
     }
 
-	protected void requestFeatures() {
-		// We'll show progress in the window title bar
-		getWindow().requestFeature(Window.FEATURE_PROGRESS);
-		getWindow().requestFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
-	}
+    private boolean isChromeCallback(Intent intent) {
+        if (intent == null) {
+            return false;
+        }
+        final Uri uri = intent.getData();
+        if (uri == null) {
+            return false;
+        }
+        return true;
+    }
+
+    private void completeAuthFlow(Intent intent) {
+        final Uri uri = intent.getData();
+        final Map<String, String> params = UriFragmentParser.parse(uri);
+        final String error = params.get("error");
+        if (error != null) {
+            final String errorDesc = params.get("error_description");
+            webviewHelper.onAuthFlowError(error, errorDesc, null);
+        } else {
+            final OAuth2.TokenEndpointResponse tr = new OAuth2.TokenEndpointResponse(params);
+            webviewHelper.onAuthFlowComplete(tr);
+        }
+    }
 
 	/**
      * Returns whether certificate based authentication flow should be used.
@@ -161,6 +207,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
+
 		// This allows sub classes to override the behavior by returning false.
 		if (fixBackButtonBehavior(keyCode)) {
 			return true;
@@ -176,6 +223,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	 */
 	protected boolean fixBackButtonBehavior(int keyCode) {
 		if (keyCode == KeyEvent.KEYCODE_BACK) {
+
 		/*
 		 * If there are no accounts signed in, we need the login screen
 		 * to go away, and go back to the home screen. However, if the
@@ -240,18 +288,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	}
 
 	@Override
-	public void onLoadingProgress(int totalProgress) {
-		onIndeterminateProgress(false);
-		setProgress(totalProgress);
-	}
-
-	@Override
-	public void onIndeterminateProgress(boolean show) {
-		setProgressBarIndeterminateVisibility(show);
-		setProgressBarIndeterminate(show);
-	}
-
-	@Override
 	public void onAccountAuthenticatorResult(Bundle authResult) {
 		setAccountAuthenticatorResult(authResult);
 	}
@@ -297,9 +333,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	 */
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		if (requestCode == PICK_SERVER_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-			webviewHelper.loadLoginPage();
-		} else if (requestCode == PasscodeManager.PASSCODE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+		if (requestCode == PasscodeManager.PASSCODE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
 			webviewHelper.onNewPasscode();
 		} else {
 	        super.onActivityResult(requestCode, resultCode, data);
@@ -312,19 +346,20 @@ public class LoginActivity extends AccountAuthenticatorActivity
         final UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
         final List<UserAccount> authenticatedUsers = userAccountManager.getAuthenticatedUsers();
         final int numAuthenticatedUsers = authenticatedUsers == null ? 0 : authenticatedUsers.size();
-
         final int userSwitchType;
         if (numAuthenticatedUsers == 1) {
-            // We've already authenticated the first user, so there should be one
+
+            // We've already authenticated the first user, so there should be one.
             userSwitchType = UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN;
         } else if (numAuthenticatedUsers > 1) {
-            // Otherwise we're logging in with an additional user
+
+            // Otherwise we're logging in with an additional user.
             userSwitchType = UserAccountManager.USER_SWITCH_TYPE_LOGIN;
         } else {
-            // This should never happen but if it does, pass in the "unknown" value
+
+            // This should never happen but if it does, pass in the "unknown" value.
             userSwitchType = UserAccountManager.USER_SWITCH_TYPE_DEFAULT;
         }
-
         userAccountManager.sendUserSwitchIntent(userSwitchType, null);
         super.finish();
 	}
@@ -335,5 +370,18 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	    if (analyticsManager != null) {
             analyticsManager.updateLoggingPrefs();
 	    }
+    }
+
+    public class ChangeServerReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent != null && intent.getAction() != null) {
+                final String action = intent.getAction();
+                if (ServerPickerActivity.CHANGE_SERVER_INTENT.equals(action)) {
+                    webviewHelper.loadLoginPage();
+                }
+            }
+        }
     }
 }

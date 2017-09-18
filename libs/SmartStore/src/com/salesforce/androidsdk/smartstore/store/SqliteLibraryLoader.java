@@ -214,7 +214,7 @@ public class SqliteLibraryLoader {
      */
     @SuppressLint("NewApi")
     public static String[] getSupportedAbis() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && Build.SUPPORTED_ABIS.length > 0) {
+        if (Build.SUPPORTED_ABIS.length > 0) {
             return Build.SUPPORTED_ABIS;
         } else {
             return new String[] { Build.CPU_ABI, Build.CPU_ABI2 };

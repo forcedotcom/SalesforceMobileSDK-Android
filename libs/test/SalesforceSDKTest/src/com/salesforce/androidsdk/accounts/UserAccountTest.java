@@ -34,7 +34,6 @@ import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.rest.ClientManagerTest;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.MapUtil;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
@@ -88,7 +87,6 @@ public class UserAccountTest extends InstrumentationTestCase {
         if (!SalesforceSDKManager.hasInstance()) {
             eq.waitForEvent(EventsObservable.EventType.AppCreateComplete, 5000);
         }
-        SalesforceSDKManager.getInstance().getPasscodeManager().setPasscodeHash(ClientManagerTest.TEST_PASSCODE_HASH);
         SalesforceSDKManager.getInstance().setAdditionalOauthKeys(createAdditionalOauthKeys());
     }
 
@@ -99,7 +97,6 @@ public class UserAccountTest extends InstrumentationTestCase {
             eq = null;
         }
         SalesforceSDKManager.getInstance().setAdditionalOauthKeys(null);
-        SalesforceSDKManager.getInstance().getPasscodeManager().setPasscodeHash(null);
         super.tearDown();
     }
 

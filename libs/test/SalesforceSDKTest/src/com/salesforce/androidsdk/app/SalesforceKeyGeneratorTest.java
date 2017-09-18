@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-present, salesforce.com, inc.
+ * Copyright (c) 2017-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -31,32 +31,39 @@ import android.app.Instrumentation;
 import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.TestForceApp;
+import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 
 /**
+ * Tests for {@link SalesforceKeyGenerator}.
  *
+ * @author bhariharan
  */
-public class UUIDManagerTest extends InstrumentationTestCase {
+public class SalesforceKeyGeneratorTest extends InstrumentationTestCase {
+
+    private static final String KEY_1 = "key_1";
+    private static final String KEY_2 = "key_2";
 
 	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
-		final Application app = Instrumentation.newApplication(TestForceApp.class, getInstrumentation().getTargetContext());
+		final Application app = Instrumentation.newApplication(TestForceApp.class,
+				getInstrumentation().getTargetContext());
 		getInstrumentation().callApplicationOnCreate(app);
 	}
 
-	public void testGetUUID() {
-		String id1 = UUIDManager.getUuId(getName());
-		String id2 = UUIDManager.getUuId(getName());
-		assertEquals("getUuid with same name should return same value", id1, id2);
-		String id3 = UUIDManager.getUuId(getName() + "1");
-		assertNotSame("differently named uuids should be different", id1, id3);
+	public void testGetUniqueId() {
+		final String id1 = SalesforceKeyGenerator.getUniqueId(KEY_1);
+        final String id1Again = SalesforceKeyGenerator.getUniqueId(KEY_1);
+		final String id2 = SalesforceKeyGenerator.getUniqueId(KEY_2);
+		assertEquals("Unique IDs with the same name should be the same", id1, id1Again);
+		assertNotSame("Unique IDs with different names should be different", id1, id2);
 	}
-	
-	public void testReset() {
-		String id1 = UUIDManager.getUuId(getName());
-		assertNotNull(id1);
-		UUIDManager.resetUuids();
-		String id2 = UUIDManager.getUuId(getName());
-		assertNotSame("id should be different after a reset", id1, id2);
-	}
+
+    public void testGetEncryptionKey() {
+        final String id1 = SalesforceKeyGenerator.getEncryptionKey(KEY_1);
+        final String id1Again = SalesforceKeyGenerator.getEncryptionKey(KEY_1);
+        final String id2 = SalesforceKeyGenerator.getEncryptionKey(KEY_2);
+        assertEquals("Encryption keys with the same name should be the same", id1, id1Again);
+        assertNotSame("Encryption keys with different names should be different", id1, id2);
+    }
 }

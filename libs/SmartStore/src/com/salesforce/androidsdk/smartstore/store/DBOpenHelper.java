@@ -616,12 +616,12 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @param soupTableName Name of the soup that the blob belongs to.
 	 * @param soupEntryId Entry id for the soup blob.
 	 * @param soupElt Blob to store on file storage in JSON format.
-	 * @param passcode Key with which to encrypt the data.
+	 * @param encryptionKey Key with which to encrypt the data.
 	 *
 	 * @return True if operation was successful, false otherwise.
 	 */
-	public boolean saveSoupBlob(String soupTableName, long soupEntryId, JSONObject soupElt, String passcode) {
-		return saveSoupBlobFromString(soupTableName, soupEntryId, soupElt.toString(), passcode);
+	public boolean saveSoupBlob(String soupTableName, long soupEntryId, JSONObject soupElt, String encryptionKey) {
+		return saveSoupBlobFromString(soupTableName, soupEntryId, soupElt.toString(), encryptionKey);
 	}
 
 	/**
@@ -630,14 +630,14 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @param soupTableName Name of the soup that the blob belongs to.
 	 * @param soupEntryId Entry id for the soup blob.
 	 * @param soupEltStr Blob to store on file storage as a String.
-	 * @param passcode Key with which to encrypt the data.
+	 * @param encryptionKey Key with which to encrypt the data.
 	 *
 	 * @return True if operation was successful, false otherwise.
 	 */
-	public boolean saveSoupBlobFromString(String soupTableName, long soupEntryId, String soupEltStr, String passcode) {
+	public boolean saveSoupBlobFromString(String soupTableName, long soupEntryId, String soupEltStr, String encryptionKey) {
 		File file = getSoupBlobFile(soupTableName, soupEntryId);
 		try (FileOutputStream outputStream = new FileOutputStream(file, false)) {
-			byte[] data = Encryptor.encryptBytes(soupEltStr, passcode);
+			byte[] data = Encryptor.encryptBytes(soupEltStr, encryptionKey);
 			if (data != null) {
 				outputStream.write(data);
 				return true;
@@ -653,14 +653,14 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 *
 	 * @param soupTableName Soup name to which the blob belongs.
 	 * @param soupEntryId Entry id for the requested soup blob.
-	 * @param passcode Key with which to decrypt the data.
+	 * @param encryptionKey Key with which to decrypt the data.
 	 *
 	 * @return The blob from file storage represented as JSON. Returns null if there was an error.
 	 */
-	public JSONObject loadSoupBlob(String soupTableName, long soupEntryId, String passcode) {
+	public JSONObject loadSoupBlob(String soupTableName, long soupEntryId, String encryptionKey) {
 		JSONObject result = null;
 		try {
-			final String soupBlobString = loadSoupBlobAsString(soupTableName, soupEntryId, passcode);
+			final String soupBlobString = loadSoupBlobAsString(soupTableName, soupEntryId, encryptionKey);
 			if (soupBlobString != null) {
 				result = new JSONObject(soupBlobString);
 			}
@@ -675,17 +675,17 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 *
 	 * @param soupTableName Soup name to which the blob belongs.
 	 * @param soupEntryId Entry id for the requested soup blob.
-	 * @param passcode Key with which to decrypt the data.
+	 * @param encryptionKey Key with which to decrypt the data.
 	 *
 	 * @return The blob from file storage represented as String. Returns null if there was an error.
 	 */
-	public String loadSoupBlobAsString(String soupTableName, long soupEntryId, String passcode) {
+	public String loadSoupBlobAsString(String soupTableName, long soupEntryId, String encryptionKey) {
 		File file = getSoupBlobFile(soupTableName, soupEntryId);
 		try (FileInputStream f = new FileInputStream(file)) {
 			DataInputStream data = new DataInputStream(f);
 			byte[] bytes = new byte[(int) file.length()];
 			data.readFully(bytes);
-			return Encryptor.decrypt(bytes, passcode);
+			return Encryptor.decrypt(bytes, encryptionKey);
 		} catch (IOException ex) {
             SmartStoreLogger.e(TAG, "Exception occurred while attempting to read external soup blob", ex);
 		}

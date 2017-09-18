@@ -97,7 +97,7 @@ public class SalesforceAnalyticsManager {
     /**
      * Returns the instance of this class associated with this user and community.
      *
-     * @param account User account.
+     * @param account     User account.
      * @param communityId Community ID.
      * @return Instance of this class.
      */
@@ -148,7 +148,7 @@ public class SalesforceAnalyticsManager {
     /**
      * Resets the instance of this class associated with this user and community.
      *
-     * @param account User account.
+     * @param account     User account.
      * @param communityId Community ID.
      */
     public static synchronized void reset(UserAccount account, String communityId) {
@@ -170,31 +170,6 @@ public class SalesforceAnalyticsManager {
                     manager.resetAnalyticsPolicy();
                 }
                 INSTANCES.remove(uniqueId);
-            }
-        }
-    }
-
-    /**
-     * Changes the passcode to a new value and re-encrypts the
-     * stored event data with the new passcode.
-     *
-     * @param oldPass Old passcode.
-     * @param newPass New passcode.
-     */
-    public static synchronized void changePasscode(String oldPass, String newPass) {
-        final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
-        final String oldEncryptionKey = sdkManager.getEncryptionKeyForPasscode(oldPass);
-        final String newEncryptionKey = sdkManager.getEncryptionKeyForPasscode(newPass);
-        if (INSTANCES != null) {
-            final Set<String> keys = INSTANCES.keySet();
-            if (keys != null) {
-                for (final String key : keys) {
-                    final SalesforceAnalyticsManager sfAnalyticsManager = INSTANCES.get(key);
-                    if (sfAnalyticsManager != null) {
-                        sfAnalyticsManager.analyticsManager.changeEncryptionKey(oldEncryptionKey,
-                                newEncryptionKey);
-                    }
-                }
             }
         }
     }
@@ -371,7 +346,7 @@ public class SalesforceAnalyticsManager {
      * Adds a remote publisher to publish events to.
      *
      * @param transformer Transformer class.
-     * @param publisher Publisher class.
+     * @param publisher   Publisher class.
      */
     public void addRemotePublisher(Class<? extends Transform> transformer,
                                    Class<? extends AnalyticsPublisher> publisher) {
@@ -388,7 +363,7 @@ public class SalesforceAnalyticsManager {
         final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
         analyticsManager = new AnalyticsManager(account.getCommunityLevelFilenameSuffix(),
                 sdkManager.getAppContext(),
-                sdkManager.getEncryptionKeyForPasscode(sdkManager.getPasscodeHash()),
+                SalesforceSDKManager.getEncryptionKey(),
                 deviceAppAttributes);
         eventStoreManager = analyticsManager.getEventStoreManager();
         remotes = new HashMap<Class<? extends Transform>, Class<? extends AnalyticsPublisher>>();

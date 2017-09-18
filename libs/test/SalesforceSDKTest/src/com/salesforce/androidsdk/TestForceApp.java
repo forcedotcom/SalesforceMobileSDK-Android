@@ -39,8 +39,7 @@ public class TestForceApp extends Application {
 
     @Override
     public void onCreate() {
-    	SalesforceSDKManager.initNative(getApplicationContext(), new KeyImpl(),
-    			MainActivity.class);
+    	SalesforceSDKManager.initNative(getApplicationContext(), null, MainActivity.class);
     	super.onCreate();
     	SalesforceSDKManager.getInstance().setIsTestRun(true);
     }
