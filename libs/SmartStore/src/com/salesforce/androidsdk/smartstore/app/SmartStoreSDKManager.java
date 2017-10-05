@@ -33,6 +33,8 @@ import android.text.TextUtils;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.smartstore.R;
+import com.salesforce.androidsdk.smartstore.config.StoreConfig;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -383,5 +385,30 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
                     UserAccountManager.getInstance().getCurrentUser(),
                     UserAccountManager.getInstance().getCurrentUser().getCommunityId());
         }
+    }
+
+    /**
+     * Setup global store using config found in res/raw/globalstore.json
+     */
+    public void setupGlobalStoreFromDefaulltConfig() {
+        setupStoreFromConfig(getGlobalSmartStore(), R.raw.globalstore);
+    }
+
+    /**
+     * Setup user store using config found in res/raw/userstore.json
+     */
+    public void setupUserStoreFromDefaultConfig() {
+        setupStoreFromConfig(getSmartStore(), R.raw.userstore);
+    }
+
+    /**
+     * Setup given store using config found in given json resource file
+     *
+     * @param store
+     * @param resourceId
+     */
+    public void setupStoreFromConfig(SmartStore store, int resourceId) {
+        StoreConfig config = new StoreConfig(context, resourceId);
+        config.registerSoups(store);
     }
 }

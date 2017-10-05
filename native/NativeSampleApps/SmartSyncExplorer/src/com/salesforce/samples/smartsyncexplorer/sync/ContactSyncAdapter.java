@@ -36,6 +36,7 @@ import android.os.Bundle;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
 
 /**
@@ -63,12 +64,14 @@ public class ContactSyncAdapter extends AbstractThreadedSyncAdapter {
     public void onPerformSync(Account account, Bundle extras, String authority,
                               ContentProviderClient provider, SyncResult syncResult) {
         final boolean syncDownOnly = extras.getBoolean(SYNC_DOWN_ONLY, false);
-        final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
+        final SmartStoreSDKManager sdkManager = SmartStoreSDKManager.getInstance();
         final UserAccountManager accManager = sdkManager.getUserAccountManager();
         if (sdkManager.isLoggingOut() || accManager.getAuthenticatedUsers() == null) {
             return;
         }
         if (account != null) {
+            // Setup schema if needed
+            sdkManager.setupUserStoreFromDefaultConfig();
             final UserAccount user = sdkManager.getUserAccountManager().buildUserAccount(account);
             final ContactListLoader contactLoader = new ContactListLoader(getContext(), user);
             if (syncDownOnly) {
