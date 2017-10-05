@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.phonegap.plugin;
 
+import com.salesforce.androidsdk.smartstore.config.StoreConfig;
+
 public final class PluginConstants {
 
     static final String TARGET = "target";
@@ -34,17 +36,13 @@ public final class PluginConstants {
 
     static final String SOUP_SPEC = "soupSpec";
 
-    static final String SOUP_SPEC_NAME = "name";
-
-    static final String SOUP_SPEC_FEATURES = "features";
-
     static final String RE_INDEX_DATA = "reIndexData";
 
     static final String CURSOR_ID = "cursorId";
 
     static final String TYPE = "type";
 
-    static final String SOUP_NAME = "soupName";
+    static final String SOUP_NAME = StoreConfig.SOUP_NAME;
 
     static final String PATH = "path";
 
@@ -60,7 +58,7 @@ public final class PluginConstants {
 
     static final String INDEX = "index";
 
-    static final String INDEXES = "indexes";
+    static final String INDEXES = StoreConfig.INDEXES;
 
     static final String IS_GLOBAL_STORE = "isGlobalStore";
 

@@ -88,6 +88,7 @@ public class StoreConfig {
 
     /**
      * Register the soup from the config in the given store
+     * NB: only feedback is through the logs - the config is static so getting it right is something the developer should do while writing the app
      * @param store
      */
     public void registerSoups(SmartStore store) {
@@ -99,6 +100,7 @@ public class StoreConfig {
                 JSONObject soupConfig = soupsConfig.getJSONObject(i);
                 String soupName = soupConfig.getString(SOUP_NAME);
                 IndexSpec[] indexSpecs = IndexSpec.fromJSON(soupConfig.getJSONArray(INDEXES));
+                SmartStoreLogger.d(TAG, "Registering soup:" + soupName);
                 store.registerSoup(soupName, indexSpecs);
             } catch (JSONException e) {
                 SmartStoreLogger.e(TAG, "Unhandled exception parsing json", e);
