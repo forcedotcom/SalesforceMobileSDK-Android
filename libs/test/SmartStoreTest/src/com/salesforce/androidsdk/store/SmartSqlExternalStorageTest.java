@@ -57,7 +57,7 @@ public class SmartSqlExternalStorageTest extends SmartStoreTestCase {
 	private static final String DEPARTMENTS_SOUP = "departments";
 
 	@Override
-	protected String getPasscode() {
+	protected String getEncryptionKey() {
 		return Encryptor.hash("test123", "hashing-key");
 	}
 

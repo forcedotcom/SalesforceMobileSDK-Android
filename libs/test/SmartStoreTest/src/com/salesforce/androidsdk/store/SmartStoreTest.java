@@ -72,7 +72,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	}
 
     @Override
-    protected String getPasscode() {
+    protected String getEncryptionKey() {
         return "test123";
     }
 
@@ -83,7 +83,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		ArrayList<String> compileOptions = new ArrayList<String>();
 		Cursor c = null;
 		try {
-			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 			c = db.rawQuery("PRAGMA compile_options", null);
             while(c.moveToNext()) {
 				compileOptions.add(c.getString(0));
@@ -255,7 +255,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 			String soupTableName = getSoupTableName(TEST_SOUP);
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, null, null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
@@ -294,7 +294,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 			String soupTableName = getSoupTableName(OTHER_TEST_SOUP);
 			assertEquals("Table for other_test_soup was expected to be called TABLE_2", "TABLE_2", soupTableName);
 			assertTrue("Table for other_test_soup should now exist", hasTable("TABLE_2"));
-			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
@@ -353,7 +353,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 			String soupTableName = getSoupTableName(TEST_SOUP);		
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
@@ -406,7 +406,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 			String soupTableName = getSoupTableName(TEST_SOUP);			
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
@@ -459,7 +459,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 			String soupTableName = getSoupTableName(TEST_SOUP);			
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
@@ -573,7 +573,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 			String soupTableName = getSoupTableName(TEST_SOUP);
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
@@ -630,7 +630,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 			String soupTableName = getSoupTableName(TEST_SOUP);
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
@@ -679,7 +679,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 			String soupTableName = getSoupTableName(TEST_SOUP);
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertFalse("Expected no soup element", c.moveToFirst());
@@ -1120,7 +1120,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		
 		Cursor c = null;
 		try {
-			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 			String soupTableName = getSoupTableName(FOURTH_TEST_SOUP);
 			String amountColumnName = store.getSoupIndexSpecs(FOURTH_TEST_SOUP)[0].columnName;
 			c = DBHelper.getInstance(db).query(db, soupTableName, new String[] { amountColumnName }, null, null, "id = " + id);
@@ -1382,7 +1382,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	 */
 	public void testUpdateTableNameAndAddColumns() {
 		// Setup db and test values
-		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 		final String TEST_TABLE = "test_table";
 		final String NEW_TEST_TABLE = "new_test_table";
 		final String NEW_COLUMN = "new_column";

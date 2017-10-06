@@ -62,7 +62,7 @@ public class SmartStoreFullTextSearchSpeedTest extends SmartStoreTestCase {
     public static final String ANIMALS_SOUP = "animals";
     public static final String TEXT_COL = "text";
 
-    protected String getPasscode() {
+    protected String getEncryptionKey() {
         return "";
     }
 

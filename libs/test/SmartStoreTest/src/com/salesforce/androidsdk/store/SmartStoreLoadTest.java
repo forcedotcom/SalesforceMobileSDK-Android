@@ -106,7 +106,7 @@ public class SmartStoreLoadTest extends SmartStoreTestCase {
     //
     // Helper methods
     //
-    protected String getPasscode() {
+    protected String getEncryptionKey() {
         return "";
     }
 

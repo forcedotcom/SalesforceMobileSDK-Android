@@ -33,7 +33,6 @@ import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
-import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 
 import net.sqlcipher.database.SQLiteDatabase;
 
@@ -69,7 +68,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     private long eileenEvaId;
 
     @Override
-    protected String getPasscode() {
+    protected String getEncryptionKey() {
         return "";
     }
 
@@ -152,7 +151,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
             assertEquals("getSoupTableName should have returned TABLE_1", "TABLE_1", soupTableName);
             assertTrue("Table for soup employees does exist", hasTable(soupTableName));
 
-            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 
             // Check soup table
             c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
@@ -235,7 +234,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         Cursor c = null;
         try {
             String soupTableName = getSoupTableName(EMPLOYEES_SOUP);
-            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 
             // Check soup table
             c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
@@ -259,7 +258,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         // Check DB
         try {
             String soupTableName = getSoupTableName(EMPLOYEES_SOUP);
-            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 
             // Check soup table
             c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
@@ -285,7 +284,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         // Check DB
         try {
             String soupTableName = getSoupTableName(EMPLOYEES_SOUP);
-            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 
             // Check soup table
             c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
@@ -327,7 +326,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         Cursor c = null;
         try {
             String soupTableName = getSoupTableName(EMPLOYEES_SOUP);
-            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 
             // Check soup table
             c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
@@ -351,7 +350,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         // Check DB
         try {
             String soupTableName = getSoupTableName(EMPLOYEES_SOUP);
-            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 
             // Check soup table
             c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
@@ -404,7 +403,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
             assertEquals("getSoupTableName should have returned TABLE_1", "TABLE_1", soupTableName);
             assertTrue("Table for soup employees does exist", hasTable(soupTableName));
 
-            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 
             // Check soup table
             c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
