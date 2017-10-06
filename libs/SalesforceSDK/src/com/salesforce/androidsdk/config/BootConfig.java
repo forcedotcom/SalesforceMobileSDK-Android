@@ -125,7 +125,7 @@ public class BootConfig {
 			if (!config.isLocal()) {
 				if (config.shouldAuthenticate()) {
 					if (config.isStartPageAbsoluteUrl()) {
-						return new BootConfigValidationResult(false, "Cannot authenticate using a remote URL for start page.");
+						return new BootConfigValidationResult(false, "Cannot authenticate using an absolute URL for start page.");
 					}
 				}
 				else {
