@@ -98,6 +98,49 @@ public class BootConfig {
 		}
 		return INSTANCE;
 	}
+
+	/**
+	 * Validates a boot config's inputs against basic sanity tests.
+	 * @param config The BootConfig instance to validate.
+	 * @return A BootConfigValidationResult describing the success or failure of validation, with
+	 * an the error message associated with a failed validation.
+	 */
+	public static BootConfigValidationResult validateBootConfig(BootConfig config) {
+		if (config == null) {
+			return new BootConfigValidationResult(false, "No boot config provided.");
+		}
+
+		if (SalesforceSDKManager.getInstance().isHybrid()) {
+			String startPage = config.getStartPage();
+			if (startPage == null) {
+				return new BootConfigValidationResult(false, "No start page configured.");
+			}
+
+			// Sanity check local URLs against absolute URL values.
+			if (config.isLocal() && config.isStartPageAbsoluteUrl()) {
+				return new BootConfigValidationResult(false, "Local start page should not be absolute URL.");
+			}
+
+			// Start page makeup for remote apps beyond this point is subject to conditional configuration.
+			if (!config.isLocal()) {
+				if (config.shouldAuthenticate()) {
+					if (config.isStartPageAbsoluteUrl()) {
+						return new BootConfigValidationResult(false, "Cannot authenticate using a remote URL for start page.");
+					}
+				}
+				else {
+					if (!config.isStartPageAbsoluteUrl()) {
+						return new BootConfigValidationResult(false, "Cannot configure relative URL start page with deferred authentication.");
+					}
+				}
+			}
+
+			return new BootConfigValidationResult(true);
+		}
+		else {
+			return new BootConfigValidationResult(true);
+		}
+	}
 	
     /**
      * Use runtime configurations (from MDM provider) if any
@@ -254,6 +297,14 @@ public class BootConfig {
 	 */
 	public String getStartPage() {
 		return startPage;
+	}
+
+	/**
+	 * Convenience method to determine whether a configured startPage value is an absolute URL.
+	 * @return true if startPage is an absolute URL, false otherwise.
+	 */
+	public boolean isStartPageAbsoluteUrl() {
+		return (startPage != null && (startPage.startsWith("http://") || startPage.startsWith("https://")));
 	}
 
 	/**
