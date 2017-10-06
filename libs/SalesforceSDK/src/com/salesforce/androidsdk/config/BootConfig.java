@@ -122,17 +122,13 @@ public class BootConfig {
 			}
 
 			// Start page makeup for remote apps beyond this point is subject to conditional configuration.
-			if (!config.isLocal()) {
-				if (config.shouldAuthenticate()) {
-					if (config.isStartPageAbsoluteUrl()) {
-						return new BootConfigValidationResult(false, "Cannot authenticate using an absolute URL for start page.");
-					}
-				}
-				else {
-					if (!config.isStartPageAbsoluteUrl()) {
-						return new BootConfigValidationResult(false, "Cannot configure relative URL start page with deferred authentication.");
-					}
-				}
+
+			if (!config.isLocal() && config.shouldAuthenticate() && config.isStartPageAbsoluteUrl()) {
+				return new BootConfigValidationResult(false, "Cannot authenticate using an absolute URL for start page.");
+			}
+
+			if (!config.isLocal() && !config.shouldAuthenticate() && !config.isStartPageAbsoluteUrl()) {
+				return new BootConfigValidationResult(false, "Cannot configure relative URL start page with deferred authentication.");
 			}
 
 			return new BootConfigValidationResult(true);
