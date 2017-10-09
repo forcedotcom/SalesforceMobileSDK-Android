@@ -85,8 +85,11 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	 */
 	public ContactListLoader(Context context, UserAccount account) {
 		super(context);
-		smartStore = SmartSyncSDKManager.getInstance().getSmartStore(account);
+		SmartSyncSDKManager sdkManager = SmartSyncSDKManager.getInstance();
+		smartStore = sdkManager.getSmartStore(account);
 		syncMgr = SyncManager.getInstance(account);
+		// Setup schema if needed
+		sdkManager.setupUserStoreFromDefaultConfig();
 	}
 
 	@Override
