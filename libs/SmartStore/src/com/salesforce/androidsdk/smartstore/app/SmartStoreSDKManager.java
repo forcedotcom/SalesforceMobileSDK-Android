@@ -394,7 +394,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * Setup global store using config found in res/raw/globalstore.json
      */
     public void setupGlobalStoreFromDefaultConfig() {
-        SmartStoreLogger.d(TAG, "Setting up global store using config sound in res/raw/globalstore.json");
+        SmartStoreLogger.d(TAG, "Setting up global store using config found in res/raw/globalstore.json");
         setupStoreFromConfig(getGlobalSmartStore(), R.raw.globalstore);
     }
 
@@ -402,7 +402,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * Setup user store using config found in res/raw/userstore.json
      */
     public void setupUserStoreFromDefaultConfig() {
-        SmartStoreLogger.d(TAG, "Setting up user store using config sound in res/raw/userstore.json");
+        SmartStoreLogger.d(TAG, "Setting up user store using config found in res/raw/userstore.json");
         setupStoreFromConfig(getSmartStore(), R.raw.userstore);
     }
 
