@@ -33,8 +33,11 @@ import android.text.TextUtils;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.smartstore.R;
+import com.salesforce.androidsdk.smartstore.config.StoreConfig;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -49,6 +52,8 @@ import java.util.List;
  * SDK Manager for all native applications that use SmartStore
  */
 public class SmartStoreSDKManager extends SalesforceSDKManager {
+
+    private static final String TAG = "SmartStoreSDKManager";
 
     private static final String FEATURE_SMART_STORE_USER = "US";
     private static final String FEATURE_SMART_STORE_GLOBAL = "GS";
@@ -383,5 +388,32 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
                     UserAccountManager.getInstance().getCurrentUser(),
                     UserAccountManager.getInstance().getCurrentUser().getCommunityId());
         }
+    }
+
+    /**
+     * Setup global store using config found in res/raw/globalstore.json
+     */
+    public void setupGlobalStoreFromDefaultConfig() {
+        SmartStoreLogger.d(TAG, "Setting up global store using config found in res/raw/globalstore.json");
+        setupStoreFromConfig(getGlobalSmartStore(), R.raw.globalstore);
+    }
+
+    /**
+     * Setup user store using config found in res/raw/userstore.json
+     */
+    public void setupUserStoreFromDefaultConfig() {
+        SmartStoreLogger.d(TAG, "Setting up user store using config found in res/raw/userstore.json");
+        setupStoreFromConfig(getSmartStore(), R.raw.userstore);
+    }
+
+    /**
+     * Setup given store using config found in given json resource file
+     *
+     * @param store
+     * @param resourceId
+     */
+    private void setupStoreFromConfig(SmartStore store, int resourceId) {
+        StoreConfig config = new StoreConfig(context, resourceId);
+        config.registerSoups(store);
     }
 }

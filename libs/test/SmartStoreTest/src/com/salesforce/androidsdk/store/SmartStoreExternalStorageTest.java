@@ -55,7 +55,7 @@ import java.util.List;
 public class SmartStoreExternalStorageTest extends SmartStoreTest {
 
 	@Override
-	protected String getPasscode() {
+	protected String getEncryptionKey() {
 		return Encryptor.hash("test123", "hashing-key");
 	}
 
@@ -66,7 +66,7 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
 
 	@Override
 	protected void assertSameSoupAsDB(JSONObject soup, Cursor c, String soupTableName, Long id) throws JSONException {
-		JSONTestHelper.assertSameJSON("Wrong value in external storage", soup, ((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, id, getPasscode()));
+		JSONTestHelper.assertSameJSON("Wrong value in external storage", soup, ((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, id, getEncryptionKey()));
 	}
 
 	/**
@@ -95,8 +95,8 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
 		store.create(TEST_SOUP, soupElt);
 
 		// Act
-		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
-		SmartStore.changeKey(db, getPasscode(), newPasscode);
+		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
+		SmartStore.changeKey(db, getEncryptionKey(), newPasscode);
 		store = new SmartStore(dbOpenHelper, newPasscode);
 
 		// Verify that data is still accessible
@@ -114,7 +114,7 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
 	public void testGetDatabaseSize() throws JSONException {
 		// Get initial values
 		int totalSizeBefore = store.getDatabaseSize();
-		int dBFileSizeBefore = (int) (new File(dbOpenHelper.getWritableDatabase(getPasscode()).getPath()).length());
+		int dBFileSizeBefore = (int) (new File(dbOpenHelper.getWritableDatabase(getEncryptionKey()).getPath()).length());
 		int dbBlobsDirSizeBefore = totalSizeBefore - dBFileSizeBefore;
 
 		// Populate db with several entries
@@ -125,7 +125,7 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
 
 		// Check new values
 		int totalSizeAfter = store.getDatabaseSize();
-		int dbFileSizeAfter = (int) (new File(dbOpenHelper.getWritableDatabase(getPasscode()).getPath()).length());
+		int dbFileSizeAfter = (int) (new File(dbOpenHelper.getWritableDatabase(getEncryptionKey()).getPath()).length());
 		int dbBlobsDirSizeAfter = totalSizeAfter - dbFileSizeAfter;
 
 		assertTrue("Database file should be larger", dbFileSizeAfter > dBFileSizeBefore);

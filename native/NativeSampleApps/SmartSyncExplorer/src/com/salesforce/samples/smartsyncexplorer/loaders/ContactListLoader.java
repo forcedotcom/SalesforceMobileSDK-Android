@@ -72,15 +72,6 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	public static final Integer LIMIT = 10000;
 	public static final String LOAD_COMPLETE_INTENT_ACTION = "com.salesforce.samples.smartsyncexplorer.loaders.LIST_LOAD_COMPLETE";
     private static final String TAG = "ContactListLoader";
-    private static IndexSpec[] CONTACTS_INDEX_SPEC = {
-		new IndexSpec("Id", Type.string),
-		new IndexSpec("FirstName", Type.string),
-		new IndexSpec("LastName", Type.string),
-		new IndexSpec(SyncTarget.LOCALLY_CREATED, Type.string),
-		new IndexSpec(SyncTarget.LOCALLY_UPDATED, Type.string),
-		new IndexSpec(SyncTarget.LOCALLY_DELETED, Type.string),
-		new IndexSpec(SyncTarget.LOCAL, Type.string)
-	};
 
     private SmartStore smartStore;
     private SyncManager syncMgr;
@@ -94,8 +85,11 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	 */
 	public ContactListLoader(Context context, UserAccount account) {
 		super(context);
-		smartStore = SmartSyncSDKManager.getInstance().getSmartStore(account);
+		SmartSyncSDKManager sdkManager = SmartSyncSDKManager.getInstance();
+		smartStore = sdkManager.getSmartStore(account);
 		syncMgr = SyncManager.getInstance(account);
+		// Setup schema if needed
+		sdkManager.setupUserStoreFromDefaultConfig();
 	}
 
 	@Override
@@ -149,7 +143,6 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	 * Pulls the latest records from the server.
 	 */
 	public synchronized void syncDown() {
-		smartStore.registerSoup(ContactListLoader.CONTACT_SOUP, CONTACTS_INDEX_SPEC);
         final SyncUpdateCallback callback = new SyncUpdateCallback() {
 
             @Override
