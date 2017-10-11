@@ -143,7 +143,7 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
         httpAccess = new HttpAccess(null, "dummy-agent");
         final TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,
         		new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID,
-        		TestCredentials.REFRESH_TOKEN);
+        		TestCredentials.REFRESH_TOKEN, null, null);
         final String authToken = refreshResponse.authToken;
         final ClientInfo clientInfo = new ClientInfo(TestCredentials.CLIENT_ID,
         		new URI(TestCredentials.INSTANCE_URL),

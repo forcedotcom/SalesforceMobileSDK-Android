@@ -100,7 +100,7 @@ public class RestClientTest extends InstrumentationTestCase {
         super.setUp();
         TestCredentials.init(getInstrumentation().getContext());
         httpAccess = new HttpAccess(null, "dummy-agent");
-        TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
+        TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN, null, null);
         authToken = refreshResponse.authToken;
         instanceUrl = refreshResponse.instanceUrl;
         testOauthKeys = new ArrayList<>();
