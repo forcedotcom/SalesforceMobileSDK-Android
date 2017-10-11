@@ -107,7 +107,7 @@ public class UserAccountTest extends InstrumentationTestCase {
         final UserAccount account = new UserAccount(TEST_AUTH_TOKEN,
                 TEST_REFRESH_TOKEN, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_INSTANCE_URL,
                 TEST_ORG_ID, TEST_USER_ID, TEST_USERNAME, TEST_ACCOUNT_NAME,
-                TEST_CLIENT_ID, TEST_COMMUNITY_ID, TEST_COMMUNITY_URL, TEST_FIRST_NAME,
+                TEST_COMMUNITY_ID, TEST_COMMUNITY_URL, TEST_FIRST_NAME,
                 TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL,
                 createAdditionalOauthValues());
         final Bundle bundle = account.toBundle();
@@ -129,7 +129,6 @@ public class UserAccountTest extends InstrumentationTestCase {
         assertEquals("Org ID should match", TEST_ORG_ID, account.getOrgId());
         assertEquals("User ID should match", TEST_USER_ID, account.getUserId());
         assertEquals("User name should match", TEST_USERNAME, account.getUsername());
-        assertEquals("Client ID should match", TEST_CLIENT_ID, account.getClientId());
         assertEquals("Account name should match", TEST_ACCOUNT_NAME, account.getAccountName());
         assertEquals("Community ID should match", TEST_COMMUNITY_ID, account.getCommunityId());
         assertEquals("Community URL should match", TEST_COMMUNITY_URL, account.getCommunityUrl());
@@ -156,7 +155,6 @@ public class UserAccountTest extends InstrumentationTestCase {
         assertEquals("Org ID should match", TEST_ORG_ID, account.getOrgId());
         assertEquals("User ID should match", TEST_USER_ID, account.getUserId());
         assertEquals("User name should match", TEST_USERNAME, account.getUsername());
-        assertEquals("Client ID should match", TEST_CLIENT_ID, account.getClientId());
         assertEquals("Community ID should match", TEST_COMMUNITY_ID, account.getCommunityId());
         assertEquals("Community URL should match", TEST_COMMUNITY_URL, account.getCommunityUrl());
         assertEquals("First name should match", TEST_FIRST_NAME, account.getFirstName());
@@ -186,7 +184,6 @@ public class UserAccountTest extends InstrumentationTestCase {
         object.put(UserAccount.ORG_ID, TEST_ORG_ID);
         object.put(UserAccount.USER_ID, TEST_USER_ID);
         object.put(UserAccount.USERNAME, TEST_USERNAME);
-        object.put(UserAccount.CLIENT_ID, TEST_CLIENT_ID);
         object.put(UserAccount.ACCOUNT_NAME, TEST_ACCOUNT_NAME);
         object.put(UserAccount.COMMUNITY_ID, TEST_COMMUNITY_ID);
         object.put(UserAccount.COMMUNITY_URL, TEST_COMMUNITY_URL);
@@ -215,7 +212,6 @@ public class UserAccountTest extends InstrumentationTestCase {
         object.putString(UserAccount.ORG_ID, TEST_ORG_ID);
         object.putString(UserAccount.USER_ID, TEST_USER_ID);
         object.putString(UserAccount.USERNAME, TEST_USERNAME);
-        object.putString(UserAccount.CLIENT_ID, TEST_CLIENT_ID);
         object.putString(UserAccount.ACCOUNT_NAME, TEST_ACCOUNT_NAME);
         object.putString(UserAccount.COMMUNITY_ID, TEST_COMMUNITY_ID);
         object.putString(UserAccount.COMMUNITY_URL, TEST_COMMUNITY_URL);

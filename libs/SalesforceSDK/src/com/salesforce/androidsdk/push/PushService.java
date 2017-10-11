@@ -342,9 +342,9 @@ public class PushService extends IntentService {
     		try {
     	        final AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(cm,
 						account.getInstanceServer(), account.getAuthToken(), account.getRefreshToken());
-    			final ClientInfo clientInfo = new ClientInfo(account.getClientId(),
-    					new URI(account.getInstanceServer()), new URI(account.getLoginServer()),
-    					new URI(account.getIdUrl()), account.getAccountName(), account.getUsername(),
+    			final ClientInfo clientInfo = new ClientInfo(new URI(account.getInstanceServer()),
+						new URI(account.getLoginServer()), new URI(account.getIdUrl()),
+                        account.getAccountName(), account.getUsername(),
     	        		account.getUserId(), account.getOrgId(),
     	        		account.getCommunityId(), account.getCommunityUrl(),
 						account.getFirstName(), account.getLastName(), account.getDisplayName(), account.getEmail(),

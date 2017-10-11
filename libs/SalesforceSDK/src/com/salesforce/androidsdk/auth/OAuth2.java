@@ -81,7 +81,6 @@ public class OAuth2 {
 
     private static final String ACCESS_TOKEN = "access_token";
     private static final String CLIENT_ID = "client_id";
-    private static final String CLIENT_SECRET = "client_secret";
     private static final String ERROR = "error";
     private static final String ERROR_DESCRIPTION = "error_description";
     private static final String FORMAT = "format";
@@ -106,7 +105,6 @@ public class OAuth2 {
     private static final String PICTURE = "picture";
     private static final String THUMBNAIL = "thumbnail";
     private static final String CODE = "code";
-    private static final String ACTIVATED_CLIENT_CODE = "activated_client_code";
     private static final String CUSTOM_ATTRIBUTES = "custom_attributes";
     private static final String CUSTOM_PERMISSIONS = "custom_permissions";
     private static final String SFDC_COMMUNITY_ID = "sfdc_community_id";
@@ -126,6 +124,8 @@ public class OAuth2 {
     private static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
     private static final String OAUTH_REVOKE_PATH = "/services/oauth2/revoke?token=";
     private static final String EMPTY_STRING = "";
+    private static final String FORWARD_SLASH = "/";
+    private static final String SINGLE_SPACE = " ";
     private static final String TAG = "OAuth2";
 
     /**
@@ -137,7 +137,6 @@ public class OAuth2 {
      * @param callbackUrl OAuth callback URL or redirect URL.
      * @param scopes A list of OAuth scopes to request (e.g. {"visualforce", "api"}). If null,
      *               the default OAuth scope is provided.
-     * @param clientSecret OAuth client secret. If null, 'response_type' is set to 'token'.
      * @param displayType OAuth display type. If null, the default of 'touch' is used.
      * @param addlParams Any additional parameters that may be added to the request.
      * @return A URL to start the OAuth flow in a web browser/view.
@@ -145,12 +144,12 @@ public class OAuth2 {
      * @see <a href="https://help.salesforce.com/apex/HTViewHelpDoc?language=en&id=remoteaccess_oauth_scopes.htm">RemoteAccess OAuth Scopes</a>
      */
     public static URI getAuthorizationUrl(URI loginServer, String clientId, String callbackUrl,
-                                          String[] scopes, String clientSecret, String displayType,
+                                          String[] scopes, String displayType,
                                           Map<String,String> addlParams) {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
         sb.append(OAUTH_AUTH_PATH).append(getBrandedLoginPath());
         sb.append(OAUTH_DISPLAY_PARAM).append(displayType == null ? TOUCH : displayType);
-        sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(clientSecret == null ? TOKEN : ACTIVATED_CLIENT_CODE);
+        sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(TOKEN);
         sb.append(AND).append(CLIENT_ID).append(EQUAL).append(Uri.encode(clientId));
         if (scopes != null && scopes.length > 0) {
             sb.append(AND).append(SCOPE).append(EQUAL).append(Uri.encode(computeScopeParameter(scopes)));
@@ -168,13 +167,12 @@ public class OAuth2 {
     private static String getBrandedLoginPath() {
         String brandedLoginPath = SalesforceSDKManager.getInstance().getLoginBrand();
         if (brandedLoginPath == null || brandedLoginPath.trim().isEmpty()) {
-            brandedLoginPath = "";
+            brandedLoginPath = EMPTY_STRING;
         } else {
-            final String forwardSlash = "/";
-            if (!brandedLoginPath.startsWith(forwardSlash)) {
-                brandedLoginPath = forwardSlash + brandedLoginPath;
+            if (!brandedLoginPath.startsWith(FORWARD_SLASH)) {
+                brandedLoginPath = FORWARD_SLASH + brandedLoginPath;
             }
-            if (brandedLoginPath.endsWith(forwardSlash)) {
+            if (brandedLoginPath.endsWith(FORWARD_SLASH)) {
                 brandedLoginPath = brandedLoginPath.substring(0, brandedLoginPath.length() - 1);
             }
         }
@@ -190,7 +188,6 @@ public class OAuth2 {
      * @param callbackUrl OAuth callback URL or redirect URL.
      * @param scopes A list of OAuth scopes to request (e.g. {"visualforce", "api"}). If null,
      *               the default OAuth scope is provided.
-     * @param clientSecret OAuth client secret. If null, 'response_type' is set to 'token'.
      * @param displayType OAuth display type. If null, the default of 'touch' is used.
      * @param accessToken Access token.
      * @param instanceURL Instance URL.
@@ -200,18 +197,17 @@ public class OAuth2 {
      * @see <a href="https://help.salesforce.com/apex/HTViewHelpDoc?language=en&id=remoteaccess_oauth_scopes.htm">RemoteAccess OAuth Scopes</a>
      */
     public static URI getAuthorizationUrl(URI loginServer, String clientId, String callbackUrl,
-                                          String[] scopes, String clientSecret, String displayType,
-                                          String accessToken, String instanceURL,
-                                          Map<String, String> addlParams) {
+                                          String[] scopes, String displayType, String accessToken,
+                                          String instanceURL, Map<String, String> addlParams) {
         if (accessToken == null || instanceURL == null) {
-            return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes, clientSecret,
+            return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes,
                     displayType, addlParams);
         }
         final StringBuilder sb = new StringBuilder(instanceURL);
         sb.append(FRONTDOOR);
         sb.append(SID).append(EQUAL).append(accessToken);
         sb.append(AND).append(RETURL).append(EQUAL).append(Uri.encode(getAuthorizationUrl(loginServer,
-                clientId, callbackUrl, scopes, clientSecret, displayType, null).toString()));
+                clientId, callbackUrl, scopes, displayType, null).toString()));
         if (addlParams != null && addlParams.size() > 0) {
             for (final Map.Entry<String,String> entry : addlParams.entrySet()) {
                 final String value = entry.getValue() == null ? EMPTY_STRING : entry.getValue();
@@ -223,9 +219,9 @@ public class OAuth2 {
 
     private static String computeScopeParameter(String[] scopes) {
         final List<String> scopesList = Arrays.asList(scopes == null ? new String[]{} : scopes);
-        final Set<String> scopesSet = new TreeSet<String>(scopesList); // sorted set to make tests easier
+        final Set<String> scopesSet = new TreeSet<>(scopesList);
         scopesSet.add(REFRESH_TOKEN);
-        return TextUtils.join(" ", scopesSet.toArray(new String[]{}));
+        return TextUtils.join(SINGLE_SPACE, scopesSet.toArray(new String[]{}));
     }
 
     /**
@@ -235,7 +231,6 @@ public class OAuth2 {
      * @param loginServer Login server.
      * @param clientId Client ID.
      * @param refreshToken Refresh token.
-     * @param clientSecret Client secret.
      * @param addlParams Additional parameters.
      * @return Token response.
      *
@@ -244,11 +239,10 @@ public class OAuth2 {
      */
     public static TokenEndpointResponse refreshAuthToken(HttpAccess httpAccessor, URI loginServer,
                                                          String clientId, String refreshToken,
-                                                         String clientSecret,
                                                          Map<String,String> addlParams)
             throws OAuthFailedException, IOException {
         final FormBody.Builder formBodyBuilder = makeTokenEndpointParams(REFRESH_TOKEN,
-                clientId, clientSecret, addlParams);
+                clientId, addlParams);
         formBodyBuilder.add(REFRESH_TOKEN, refreshToken);
         formBodyBuilder.add(FORMAT, JSON);
         return makeTokenEndpointRequest(httpAccessor, loginServer, formBodyBuilder);
@@ -347,12 +341,8 @@ public class OAuth2 {
     }
 
     private static FormBody.Builder makeTokenEndpointParams(String grantType, String clientId,
-                                                            String clientSecret,
                                                             Map<String,String> addlParams) {
         final FormBody.Builder builder = new FormBody.Builder().add(GRANT_TYPE, grantType).add(CLIENT_ID, clientId);
-        if (clientSecret != null) {
-            builder.add(CLIENT_SECRET, clientSecret);
-        }
         if (addlParams != null ) {
             for (final Map.Entry<String,String> entry : addlParams.entrySet()) {
                 builder.add(entry.getKey(),entry.getValue());
@@ -360,7 +350,6 @@ public class OAuth2 {
         }
         return builder;
     }
-
 
     /**
      * Exception thrown when the refresh flow fails.

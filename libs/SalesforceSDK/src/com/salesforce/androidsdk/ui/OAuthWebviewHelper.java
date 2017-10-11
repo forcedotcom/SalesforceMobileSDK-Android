@@ -371,24 +371,21 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
     protected URI getAuthorizationUrl(Boolean jwtFlow) throws URISyntaxException {
         if (jwtFlow) {
-            return OAuth2.getAuthorizationUrl(
-                    new URI(loginOptions.getLoginUrl()),
+            return OAuth2.getAuthorizationUrl(new URI(loginOptions.getLoginUrl()),
                     getOAuthClientId(),
                     loginOptions.getOauthCallbackUrl(),
                     loginOptions.getOauthScopes(),
-                    null,
                     getAuthorizationDisplayType(),
                     loginOptions.getJwt(),
                     loginOptions.getLoginUrl(),
                     loginOptions.getAdditionalParameters());
         }
-        return OAuth2.getAuthorizationUrl(
-                new URI(loginOptions.getLoginUrl()),
+        return OAuth2.getAuthorizationUrl(new URI(loginOptions.getLoginUrl()),
                 getOAuthClientId(),
                 loginOptions.getOauthCallbackUrl(),
                 loginOptions.getOauthScopes(),
-                null,
-                getAuthorizationDisplayType(),loginOptions.getAdditionalParameters());
+                getAuthorizationDisplayType(),
+                loginOptions.getAdditionalParameters());
     }
 
     protected URI getAuthorizationUrl() throws URISyntaxException {
@@ -581,9 +578,9 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     accountOptions.identityUrl, accountOptions.instanceUrl,
                     accountOptions.orgId, accountOptions.userId,
                     accountOptions.username, buildAccountName(accountOptions.username,
-                    accountOptions.instanceUrl), loginOptions.getClientSecret(),
-                    accountOptions.communityId, accountOptions.communityUrl,
-                    accountOptions.firstName, accountOptions.lastName, accountOptions.displayName,
+                    accountOptions.instanceUrl), accountOptions.communityId,
+                    accountOptions.communityUrl, accountOptions.firstName,
+                    accountOptions.lastName, accountOptions.displayName,
                     accountOptions.email, accountOptions.photoUrl,
                     accountOptions.thumbnailUrl, accountOptions.additionalOauthValues);
             if (id.customAttributes != null) {
@@ -675,7 +672,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 getOAuthClientId(),
                 accountOptions.orgId,
                 accountOptions.userId,
-                loginOptions.getClientSecret(),
                 accountOptions.communityId,
                 accountOptions.communityUrl,
                 accountOptions.firstName,
@@ -697,11 +693,11 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 accountOptions.refreshToken, loginOptions.getLoginUrl(),
                 accountOptions.identityUrl, accountOptions.instanceUrl,
                 accountOptions.orgId, accountOptions.userId,
-                accountOptions.username, accountName,
-                loginOptions.getClientSecret(), accountOptions.communityId,
+                accountOptions.username, accountName, accountOptions.communityId,
                 accountOptions.communityUrl, accountOptions.firstName,
                 accountOptions.lastName, accountOptions.displayName, accountOptions.email,
-                accountOptions.photoUrl, accountOptions.thumbnailUrl, accountOptions.additionalOauthValues);
+                accountOptions.photoUrl, accountOptions.thumbnailUrl,
+                accountOptions.additionalOauthValues);
         if (!TextUtils.isEmpty(pushNotificationId)) {
             PushMessaging.register(appContext, account);
         }
