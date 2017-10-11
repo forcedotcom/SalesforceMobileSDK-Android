@@ -722,7 +722,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         // Create sync
         SlowSoqlSyncDownTarget target = new SlowSoqlSyncDownTarget("SELECT Id, Name, LastModifiedDate FROM Account WHERE Id IN " + makeInClause(idToFields.keySet()));
         SyncOptions options = SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED);
-        SyncState sync = SyncState.createSyncDown(smartStore, target, options, ACCOUNTS_SOUP);
+        SyncState sync = SyncState.createSyncDown(smartStore, target, options, ACCOUNTS_SOUP, null);
         long syncId = sync.getId();
         checkStatus(sync, SyncState.Type.syncDown, syncId, target, options, SyncState.Status.NEW, 0, -1);
 

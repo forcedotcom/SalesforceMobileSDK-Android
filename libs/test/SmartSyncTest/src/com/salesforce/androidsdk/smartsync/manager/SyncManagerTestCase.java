@@ -159,7 +159,7 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
      */
     protected long trySyncDown(SyncState.MergeMode mergeMode, SyncDownTarget target, String soupName, int totalSize, int numberFetches) throws JSONException {
         final SyncOptions options = SyncOptions.optionsForSyncDown(mergeMode);
-        final SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName);
+        final SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName, null);
         long syncId = sync.getId();
         checkStatus(sync, SyncState.Type.syncDown, syncId, target, options, SyncState.Status.NEW, 0, -1);
 
@@ -503,7 +503,7 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
      */
     protected void trySyncUp(SyncUpTarget target, int numberChanges, SyncOptions options, boolean expectSyncFailure) throws JSONException {
         // Create sync
-		SyncState sync = SyncState.createSyncUp(smartStore, target, options, ACCOUNTS_SOUP);
+		SyncState sync = SyncState.createSyncUp(smartStore, target, options, ACCOUNTS_SOUP, null);
 		long syncId = sync.getId();
 		checkStatus(sync, SyncState.Type.syncUp, syncId, target, options, SyncState.Status.NEW, 0, -1);
 

@@ -193,7 +193,6 @@ public class SyncManager {
         INSTANCES.keySet().removeAll(keysToRemove);
     }
 
-
     /**
      * Get details of a sync state
      * @param syncId
@@ -227,7 +226,7 @@ public class SyncManager {
      * @throws JSONException
      */
     public SyncState syncDown(SyncDownTarget target, SyncOptions options, String soupName, SyncUpdateCallback callback) throws JSONException {
-    	SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName);
+    	SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName, null);
         SmartSyncLogger.d(TAG, "syncDown called", sync);
         runSync(sync, callback);
 		return sync;
@@ -298,7 +297,7 @@ public class SyncManager {
      * @throws JSONException
      */
     public SyncState syncUp(SyncUpTarget target, SyncOptions options, String soupName, SyncUpdateCallback callback) throws JSONException {
-    	SyncState sync = SyncState.createSyncUp(smartStore, target, options, soupName);
+    	SyncState sync = SyncState.createSyncUp(smartStore, target, options, soupName, null);
         SmartSyncLogger.d(TAG, "syncUp called", sync);
         runSync(sync, callback);
     	return sync;
