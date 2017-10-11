@@ -72,8 +72,7 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
         loginOptions = new LoginOptions(ClientManagerTest.TEST_LOGIN_URL,
         		ClientManagerTest.TEST_CALLBACK_URL,
         		ClientManagerTest.TEST_CLIENT_ID,
-				ClientManagerTest.TEST_SCOPES,
-                null);
+				ClientManagerTest.TEST_SCOPES);
         clientManager = new ClientManager(targetContext,
         		ClientManagerTest.TEST_ACCOUNT_TYPE, loginOptions, true);
         accMgr = clientManager.getAccountManager();
@@ -165,14 +164,14 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
         		ClientManagerTest.TEST_IDENTITY_URL, ClientManagerTest.TEST_INSTANCE_URL,
         		ClientManagerTest.TEST_ORG_ID, ClientManagerTest.TEST_USER_ID,
         		ClientManagerTest.TEST_USERNAME, ClientManagerTest.TEST_ACCOUNT_NAME,
-        		ClientManagerTest.TEST_CLIENT_ID, null, null);
+        		null, null, null, null, null, null, null, null, null);
     	assertTrue("User account should exist", userAccMgr.doesUserAccountExist(userAcc));
     	userAcc = new UserAccount(ClientManagerTest.TEST_AUTH_TOKEN,
         		ClientManagerTest.TEST_REFRESH_TOKEN, ClientManagerTest.TEST_LOGIN_URL,
         		ClientManagerTest.TEST_IDENTITY_URL, ClientManagerTest.TEST_INSTANCE_URL,
         		ClientManagerTest.TEST_ORG_ID_2, ClientManagerTest.TEST_USER_ID_2,
         		ClientManagerTest.TEST_OTHER_USERNAME, ClientManagerTest.TEST_OTHER_ACCOUNT_NAME,
-        		ClientManagerTest.TEST_CLIENT_ID, null, null);
+        		null, null, null, null, null, null, null, null, null);
     	assertFalse("User account should not exist", userAccMgr.doesUserAccountExist(userAcc));
     }
 
@@ -209,8 +208,8 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
         		ClientManagerTest.TEST_IDENTITY_URL, ClientManagerTest.TEST_INSTANCE_URL,
         		ClientManagerTest.TEST_ORG_ID, ClientManagerTest.TEST_USER_ID,
         		ClientManagerTest.TEST_USERNAME, ClientManagerTest.TEST_ACCOUNT_NAME,
-        		ClientManagerTest.TEST_CLIENT_ID, null, null);
-    	userAccMgr.signoutUser(userAcc, null, false);
+				null, null, null, null, null, null, null, null, null);
+		userAccMgr.signoutUser(userAcc, null, false);
     	eq.waitForEvent(EventType.LogoutComplete, 30000);
     	users = userAccMgr.getAuthenticatedUsers();
     	assertEquals("There should be 1 authenticated user", 1, users.size());
@@ -234,7 +233,7 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
         		ClientManagerTest.TEST_AUTH_TOKEN, ClientManagerTest.TEST_INSTANCE_URL,
         		ClientManagerTest.TEST_LOGIN_URL, ClientManagerTest.TEST_IDENTITY_URL,
         		ClientManagerTest.TEST_CLIENT_ID, ClientManagerTest.TEST_ORG_ID,
-        		ClientManagerTest.TEST_USER_ID, null, null, null, null, null, null, null, null, null, null);
+        		ClientManagerTest.TEST_USER_ID, null, null, null, null, null, null, null, null, null);
     }
 
     /**
@@ -248,6 +247,6 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
         		ClientManagerTest.TEST_AUTH_TOKEN, ClientManagerTest.TEST_INSTANCE_URL,
         		ClientManagerTest.TEST_LOGIN_URL, ClientManagerTest.TEST_IDENTITY_URL,
         		ClientManagerTest.TEST_CLIENT_ID, ClientManagerTest.TEST_ORG_ID_2,
-        		ClientManagerTest.TEST_USER_ID_2, null, null, null, null, null, null, null, null, null, null);
+        		ClientManagerTest.TEST_USER_ID_2, null, null, null, null, null, null, null, null, null);
     }
 }

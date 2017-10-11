@@ -63,7 +63,6 @@ public class AuthenticatorService extends Service {
     public static final String KEY_ORG_ID = "orgId";
     public static final String KEY_USERNAME = "username";
     public static final String KEY_ID_URL = "id";
-    public static final String KEY_CLIENT_SECRET = "clientSecret";
     public static final String KEY_COMMUNITY_ID = "communityId";
     public static final String KEY_COMMUNITY_URL = "communityUrl";
     public static final String KEY_EMAIL = "email";
@@ -152,11 +151,6 @@ public class AuthenticatorService extends Service {
             if (encThumbnailUrl != null) {
                 thumbnailUrl = SalesforceSDKManager.decrypt(encThumbnailUrl);
             }
-            final String encClientSecret = mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_SECRET);
-            String clientSecret = null;
-            if (encClientSecret != null) {
-                clientSecret = SalesforceSDKManager.decrypt(encClientSecret);
-            }
             final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
             Map<String, String> values = null;
             if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
@@ -183,7 +177,7 @@ public class AuthenticatorService extends Service {
             final Bundle resBundle = new Bundle();
             try {
                 final TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
-                        new URI(loginServer), clientId, refreshToken, clientSecret, addlParamsMap);
+                        new URI(loginServer), clientId, refreshToken, addlParamsMap);
 
                 // Handle the case where the org has been migrated to a new instance, or has turned on my domains.
                 if (!instServer.equalsIgnoreCase(tr.instanceUrl)) {
@@ -247,11 +241,6 @@ public class AuthenticatorService extends Service {
                     }
                 }
                 resBundle.putString(AuthenticatorService.KEY_THUMBNAIL_URL, encrThumbnailUrl);
-                String encrClientSecret = null;
-                if (clientSecret != null) {
-                    encrClientSecret = SalesforceSDKManager.encrypt(clientSecret);
-                }
-                resBundle.putString(AuthenticatorService.KEY_CLIENT_SECRET, encrClientSecret);
                 String encrCommunityId = null;
                 if (communityId != null) {
                 	encrCommunityId = SalesforceSDKManager.encrypt(communityId);

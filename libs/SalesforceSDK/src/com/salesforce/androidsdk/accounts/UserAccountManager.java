@@ -442,7 +442,7 @@ public class UserAccountManager {
 			return null;
 		}
 		return new UserAccount(authToken, refreshToken, loginServer, idUrl,
-				instanceServer, orgId, userId, username, accountName, clientId,
+				instanceServer, orgId, userId, username, accountName,
 				communityId, communityUrl, firstName, lastName, displayName, email, photoUrl,
 				thumbnailUrl, additionalOauthValues);
 	}

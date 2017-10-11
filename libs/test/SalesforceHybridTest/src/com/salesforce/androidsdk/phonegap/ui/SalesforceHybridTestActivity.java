@@ -56,7 +56,7 @@ public class SalesforceHybridTestActivity extends SalesforceDroidGapActivity {
         		authToken, instanceUrl,
         		loginUrl, identityUrl,
         		loginOptions.getOauthClientId(), orgId,
-        		userId, null, null, null, null, null, null, null, null, null, null);
+        		userId, null, null, null, null, null, null, null, null, null);
 		return clientManager;
 	}
 }

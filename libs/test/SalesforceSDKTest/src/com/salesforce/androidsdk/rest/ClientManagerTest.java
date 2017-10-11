@@ -102,7 +102,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
         getInstrumentation().callApplicationOnCreate(app);
         TestCredentials.init(getInstrumentation().getContext());
         loginOptions = new LoginOptions(TEST_LOGIN_URL, TEST_CALLBACK_URL,
-                TEST_CLIENT_ID, TEST_SCOPES, null);
+                TEST_CLIENT_ID, TEST_SCOPES);
         clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE,
         		loginOptions, true);
         accountManager = clientManager.getAccountManager();
@@ -148,7 +148,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
         additionalParams.put("p2","v2");
         additionalParams.put("p3",null);
         LoginOptions loginOptions = new LoginOptions(TEST_LOGIN_URL,
-                TEST_CALLBACK_URL, TEST_CLIENT_ID, TEST_SCOPES, null, null, additionalParams);
+                TEST_CALLBACK_URL, TEST_CLIENT_ID, TEST_SCOPES, null, additionalParams);
         assertNotNull("LoginOptions must not be null",loginOptions);
         assertNotNull("LoginOptions must not be null",loginOptions.getAdditionalParameters());
         assertEquals("# of LoginOptions must be correct",additionalParams.size(),loginOptions.getAdditionalParameters().size());
@@ -498,8 +498,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
     private Bundle createTestAccount() {
         return clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN,
                 TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_CLIENT_ID,
-                TEST_ORG_ID, TEST_USER_ID, null, null, null, TEST_FIRST_NAME,
-                TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL, testOauthValues);
+                TEST_ORG_ID, TEST_USER_ID, null, null, TEST_FIRST_NAME, TEST_LAST_NAME,
+                TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL, testOauthValues);
     }
 
     /**
@@ -510,7 +510,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
         return clientManager.createNewAccount(TEST_OTHER_ACCOUNT_NAME, TEST_OTHER_USERNAME,
                 TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL,
                 TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID_2, TEST_USER_ID_2,
-                null, null, null, TEST_FIRST_NAME, TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL,
+                null, null, TEST_FIRST_NAME, TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL,
                 TEST_THUMBNAIL_URL, testOauthValues);
     }
 }

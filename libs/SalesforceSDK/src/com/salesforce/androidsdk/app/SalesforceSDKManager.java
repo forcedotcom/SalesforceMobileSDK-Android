@@ -375,10 +375,10 @@ public class SalesforceSDKManager {
             final BootConfig config = BootConfig.getBootConfig(context);
             if (TextUtils.isEmpty(jwt)) {
                 loginOptions = new LoginOptions(url, config.getOauthRedirectURI(),
-                        config.getRemoteAccessConsumerKey(), config.getOauthScopes(), null);
+                        config.getRemoteAccessConsumerKey(), config.getOauthScopes());
             } else {
                 loginOptions = new LoginOptions(url, config.getOauthRedirectURI(),
-                        config.getRemoteAccessConsumerKey(), config.getOauthScopes(), null, jwt);
+                        config.getRemoteAccessConsumerKey(), config.getOauthScopes(), jwt);
             }
         } else {
             loginOptions.setJwt(jwt);

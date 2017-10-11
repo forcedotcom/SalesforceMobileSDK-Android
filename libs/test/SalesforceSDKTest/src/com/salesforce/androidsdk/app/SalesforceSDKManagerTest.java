@@ -110,7 +110,7 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
                 ClientManagerTest.TEST_INSTANCE_URL, ClientManagerTest.TEST_LOGIN_URL,
                 ClientManagerTest.TEST_IDENTITY_URL, ClientManagerTest.TEST_CLIENT_ID,
                 ClientManagerTest.TEST_ORG_ID, ClientManagerTest.TEST_USER_ID,
-                null, null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null);
         final AccountManager accMgr = AccountManager.get(targetContext);
         final UserAccount curUser = userAccMgr.getCurrentUser();
         assertNotNull("Current user should NOT be null", curUser);
