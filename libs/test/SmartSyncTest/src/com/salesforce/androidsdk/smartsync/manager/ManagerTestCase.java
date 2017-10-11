@@ -145,8 +145,7 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
         		new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID,
         		TestCredentials.REFRESH_TOKEN, null);
         final String authToken = refreshResponse.authToken;
-        final ClientInfo clientInfo = new ClientInfo(TestCredentials.CLIENT_ID,
-        		new URI(TestCredentials.INSTANCE_URL),
+        final ClientInfo clientInfo = new ClientInfo(new URI(TestCredentials.INSTANCE_URL),
         		new URI(TestCredentials.LOGIN_URL),
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
