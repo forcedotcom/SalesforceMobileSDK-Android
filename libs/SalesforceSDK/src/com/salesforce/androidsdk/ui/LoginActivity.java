@@ -101,6 +101,8 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		// Setup the WebView.
 		final WebView webView = (WebView) findViewById(salesforceR.idLoginWebView());
 		final WebSettings webSettings = webView.getSettings();
+		webSettings.setUseWideViewPort(true);
+		webSettings.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NORMAL);
 		webSettings.setJavaScriptEnabled(true);
 		webSettings.setAllowFileAccessFromFileURLs(true);
 		webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
