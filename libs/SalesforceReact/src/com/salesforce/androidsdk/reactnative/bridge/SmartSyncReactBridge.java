@@ -48,7 +48,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
     static final String SOUP_NAME = "soupName";
     static final String OPTIONS = "options";
     static final String SYNC_ID = "syncId";
-    static final String NAME = "name";
+    static final String SYNC_NAME = "syncName";
     public static final String TAG = "SmartSyncReactBridge";
 
     public SmartSyncReactBridge(ReactApplicationContext reactContext) {
@@ -73,9 +73,10 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         JSONObject target = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(TARGET)));
         String soupName = args.getString(SOUP_NAME);
         JSONObject options = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(OPTIONS)));
+        String syncName = args.getString(SYNC_NAME);
         try {
             final SyncManager syncManager = getSyncManager(args);
-            syncManager.syncUp(SyncUpTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncManager.SyncUpdateCallback() {
+            syncManager.syncUp(SyncUpTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, syncName, new SyncManager.SyncUpdateCallback() {
                 @Override
                 public void onUpdate(SyncState sync) {
                     handleSyncUpdate(sync, successCallback, errorCallback);
@@ -100,9 +101,10 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         JSONObject target = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(TARGET)));
         String soupName = args.getString(SOUP_NAME);
         JSONObject options = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(OPTIONS)));
+        String syncName = args.getString(SYNC_NAME);
         try {
             final SyncManager syncManager = getSyncManager(args);
-            syncManager.syncDown(SyncDownTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncManager.SyncUpdateCallback() {
+            syncManager.syncDown(SyncDownTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, syncName, new SyncManager.SyncUpdateCallback() {
                 @Override
                 public void onUpdate(SyncState sync) {
                     handleSyncUpdate(sync, successCallback, errorCallback);
@@ -145,10 +147,10 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
     public void getSyncStatusByName(ReadableMap args,
                                     final Callback successCallback, final Callback errorCallback) {
         // Parse args
-        String name = args.getString(NAME);
+        String syncName = args.getString(SYNC_NAME);
         try {
             final SyncManager syncManager = getSyncManager(args);
-            SyncState sync = syncManager.getSyncStatusByName(name);
+            SyncState sync = syncManager.getSyncStatusByName(syncName);
             ReactBridgeHelper.invokeSuccess(successCallback, sync.asJSON());
         } catch (Exception e) {
             SalesforceReactLogger.e(TAG, "getSyncStatusByName call failed", e);
@@ -187,10 +189,10 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
     public void deleteSyncByName(ReadableMap args,
                                  final Callback successCallback, final Callback errorCallback) {
         // Parse args
-        String name = args.getString(NAME);
+        String syncName = args.getString(SYNC_NAME);
         try {
             final SyncManager syncManager = getSyncManager(args);
-            syncManager.deleteSyncByName(name);
+            syncManager.deleteSyncByName(syncName);
             successCallback.invoke();
         } catch (Exception e) {
             SalesforceReactLogger.e(TAG, "deleteSyncByName call failed", e);

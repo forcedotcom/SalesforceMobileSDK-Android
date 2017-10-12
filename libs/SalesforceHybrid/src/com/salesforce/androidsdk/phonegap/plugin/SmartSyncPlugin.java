@@ -53,7 +53,7 @@ public class SmartSyncPlugin extends ForcePlugin {
 
     // Keys in json from/to javascript
     private static final String SYNC_ID = "syncId";
-    private static final String NAME = "name";
+    private static final String SYNC_NAME = "syncName";
     private static final String TAG = "SmartSyncPlugin";
 
     // Event
@@ -151,10 +151,11 @@ public class SmartSyncPlugin extends ForcePlugin {
         JSONObject target = arg0.getJSONObject(TARGET);
         String soupName = arg0.getString(SOUP_NAME);
         JSONObject options = arg0.optJSONObject(OPTIONS);
+        String syncName = arg0.optString(SYNC_NAME);
         final boolean isGlobal = SmartStorePlugin.getIsGlobal(arg0);
         final String storeName = SmartStorePlugin.getStoreName(arg0);
         SyncManager syncManager = getSyncManager(arg0);
-        SyncState sync = syncManager.syncUp(SyncUpTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
+        SyncState sync = syncManager.syncUp(SyncUpTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, syncName, new SyncUpdateCallback() {
 
             @Override
             public void onUpdate(SyncState sync) {
@@ -178,10 +179,11 @@ public class SmartSyncPlugin extends ForcePlugin {
         JSONObject target = arg0.getJSONObject(TARGET);
         String soupName = arg0.getString(SOUP_NAME);
         JSONObject options = arg0.getJSONObject(OPTIONS);
+        String syncName = arg0.optString(SYNC_NAME);
         final boolean isGlobal = SmartStorePlugin.getIsGlobal(arg0);
         final String storeName = SmartStorePlugin.getStoreName(arg0);
         SyncManager syncManager = getSyncManager(arg0);
-        SyncState sync = syncManager.syncDown(SyncDownTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
+        SyncState sync = syncManager.syncDown(SyncDownTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, syncName, new SyncUpdateCallback() {
 
             @Override
             public void onUpdate(SyncState sync) {
@@ -219,9 +221,9 @@ public class SmartSyncPlugin extends ForcePlugin {
 
         // Parse args.
         JSONObject arg0 = args.getJSONObject(0);
-        String name = arg0.getString(NAME);
+        String syncName = arg0.getString(SYNC_NAME);
         SyncManager syncManager = getSyncManager(arg0);
-        SyncState sync = syncManager.getSyncStatusByName(name);
+        SyncState sync = syncManager.getSyncStatusByName(syncName);
         callbackContext.success(sync.asJSON());
     }
 
@@ -253,9 +255,9 @@ public class SmartSyncPlugin extends ForcePlugin {
 
         // Parse args.
         JSONObject arg0 = args.getJSONObject(0);
-        String name = arg0.getString(NAME);
+        String syncName = arg0.getString(SYNC_NAME);
         SyncManager syncManager = getSyncManager(arg0);
-        syncManager.deleteSyncByName(name);
+        syncManager.deleteSyncByName(syncName);
         callbackContext.success();
     }
 
