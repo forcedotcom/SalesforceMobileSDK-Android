@@ -39,8 +39,14 @@ public class ConfiguredApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SalesforceSDKManager.initNative(getApplicationContext(), new KeyImpl(),
-                MainActivity.class);
+		SalesforceSDKManager.initNative(getApplicationContext(), null, MainActivity.class);
+
+		/*
+         * Uncomment the following line to enable browser based login. This will use a
+         * Chrome custom tab to login instead of the default WebView. You will also need
+         * to uncomment a few lines of code in SalesforceSDK library project's AndroidManifest.xml.
+         */
+		// SalesforceSDKManager.getInstance().setBrowserLoginEnabled(true);
 	}
 }
 

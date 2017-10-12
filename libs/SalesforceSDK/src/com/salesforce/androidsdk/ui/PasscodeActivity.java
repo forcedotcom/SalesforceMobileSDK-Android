@@ -52,8 +52,10 @@ import android.widget.TextView.OnEditorActionListener;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.app.SalesforceSDKUpgradeManager;
 import com.salesforce.androidsdk.security.PasscodeManager;
 
+import java.lang.reflect.Method;
 import java.util.List;
 
 /**
@@ -93,17 +95,15 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         // Object which allows reference to resources living outside the SDK.
         salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
 
-        // Protect against screenshots
+        // Protect against screenshots.
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
                 WindowManager.LayoutParams.FLAG_SECURE);
-
         setContentView(getLayoutId());
         final TextView forgotPasscodeView = getForgotPasscodeView();
         if (forgotPasscodeView != null) {
             forgotPasscodeView.setText(Html.fromHtml(getForgotPasscodeString()));
         }
         forgotPasscodeView.setOnClickListener(this);
-
         logoutAlertDialog = buildLogoutDialog();
         title = getTitleView();
         error = getErrorView();
@@ -114,8 +114,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         final Intent i = getIntent();
         boolean shouldChangePasscode = false;
         if (i != null) {
-            shouldChangePasscode = i.getBooleanExtra(PasscodeManager.CHANGE_PASSCODE_KEY,
-                                                     false);
+            shouldChangePasscode = i.getBooleanExtra(PasscodeManager.CHANGE_PASSCODE_KEY, false);
         }
         if (shouldChangePasscode) {
             setMode(PasscodeMode.Change);
@@ -195,8 +194,9 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     }
 
     /**
-     * Used from tests to allow/disallow automatic logout when wrong passcode has been entered too many times
-     * @param b
+     * Used from tests to allow/disallow automatic logout when wrong passcode has been entered too many times.
+     *
+     * @param b True - if logout is enabled, False - otherwise.
      */
     public void enableLogout(boolean b) {
         logoutEnabled = b;
@@ -213,7 +213,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
                 error.setText(getMinLengthInstructions(getMinPasscodeLength()));
                 return true; // return true indicating we consumed the action.
             }
-            return pc.length() > 0 ? onSubmit(pc) : false;
+            return (pc.length() > 0 && onSubmit(pc));
         } else {
             return true;
         }
@@ -228,10 +228,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 
         case CreateConfirm:
             if (enteredPasscode.equals(firstPasscode)) {
-                final String oldPass = passcodeManager.getPasscodeHash();
                 passcodeManager.store(this, enteredPasscode);
-                SalesforceSDKManager.getInstance().changePasscode(oldPass,
-                		passcodeManager.hashForEncryption(enteredPasscode));
                 passcodeManager.unlock(enteredPasscode);
                 done();
             } else {
@@ -241,6 +238,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 
         case Check:
             if (passcodeManager.check(this, enteredPasscode)) {
+                performUpgradeStep(enteredPasscode);
                 passcodeManager.unlock(enteredPasscode);
                 done();
             } else {
@@ -266,6 +264,39 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             return true;
         }
         return false;
+    }
+
+    private void performUpgradeStep(String passcode) {
+        final String oldKey = passcodeManager.getLegacyEncryptionKey(passcode);
+        final String newKey = SalesforceSDKManager.getEncryptionKey();
+        final SalesforceSDKUpgradeManager upgradeManager = SalesforceSDKUpgradeManager.getInstance();
+        if (upgradeManager.isPasscodeUpgradeRequired()) {
+
+            /*
+             * We need to store the new passcode to ensure the old verification
+             * hash is overwritten with the new verification hash.
+             */
+            passcodeManager.store(this, passcode);
+
+            /*
+             * Checks if SmartStoreUpgradeManager is available and if it is, invokes it using
+             * reflection since it is in a different library. This ensures that the database
+             * upgrade happens if required. If it does not exist, falls back on regular upgrade.
+             */
+            try {
+                final String smartStoreUpgradeClassName = "com.salesforce.androidsdk.smartstore.app.SmartStoreUpgradeManager";
+                final String upgradeMethodName = "upgradeTo6Dot0";
+                final Class<?>[] upgradeMethodArguments = { String.class, String.class };
+                final Object[] upgradeArgumentValues = new Object[] { oldKey, newKey };
+                final Class<?> clazz = Class.forName(smartStoreUpgradeClassName);
+                final Method method = clazz.getMethod(upgradeMethodName, upgradeMethodArguments);
+                final Object newInstance = clazz.newInstance();
+                method.invoke(newInstance, upgradeArgumentValues);
+            } catch (Exception e) {
+                upgradeManager.upgradeTo6Dot0(oldKey, newKey);
+            }
+            upgradeManager.wipeUpgradeSharedPref();
+        }
     }
 
     protected void done() {
@@ -443,7 +474,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     }
 
     private void showFingerprintDialog() {
-        if (passcodeManager != null && passcodeManager.getPasscodeHash() != null && isFingerprintEnabled()) {
+        if (passcodeManager != null && isFingerprintEnabled()) {
             fingerprintAuthDialog = new FingerprintAuthDialogFragment();
             fingerprintAuthDialog.setContext(this);
             fingerprintAuthDialog.show(getFragmentManager(), "fingerprintDialog");
@@ -454,7 +485,8 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     private boolean isFingerprintEnabled() {
         if (VERSION.SDK_INT >= VERSION_CODES.M) {
             fingerprintManager = (FingerprintManager) this.getSystemService(Context.FINGERPRINT_SERVICE);
-            // Here, thisActivity is the current activity
+
+            // Here, this activity is the current activity.
             if (checkSelfPermission(Manifest.permission.USE_FINGERPRINT) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{ permission.USE_FINGERPRINT}, REQUEST_CODE_ASK_PERMISSIONS);
             } else {

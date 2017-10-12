@@ -57,7 +57,7 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	private static final String BUILDING = "building";
 
 	@Override
-	protected String getPasscode() {
+	protected String getEncryptionKey() {
 		return "";
 	}
 

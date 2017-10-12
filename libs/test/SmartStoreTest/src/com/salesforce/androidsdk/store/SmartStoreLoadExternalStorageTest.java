@@ -46,7 +46,7 @@ public class SmartStoreLoadExternalStorageTest extends SmartStoreLoadTest {
     static final int LARGE_BYTES = 512 * 1024;
 
     @Override
-    protected String getPasscode() {
+    protected String getEncryptionKey() {
         return Encryptor.hash("test123", "hashing-key");
     }
 
