@@ -113,7 +113,7 @@ public class UserAccount {
 	 * @param thumbnailUrl Thumbnail URL.
 	 * @param additionalOauthValues Additional OAuth values.
 	 */
-	public UserAccount(String authToken, String refreshToken,
+	UserAccount(String authToken, String refreshToken,
 					   String loginServer, String idUrl, String instanceServer,
 					   String orgId, String userId, String username, String accountName,
 					   String communityId, String communityUrl, String firstName, String lastName,

@@ -441,10 +441,12 @@ public class UserAccountManager {
 		if (authToken == null || instanceServer == null || userId == null || orgId == null) {
 			return null;
 		}
-		return new UserAccount(authToken, refreshToken, loginServer, idUrl,
-				instanceServer, orgId, userId, username, accountName,
-				communityId, communityUrl, firstName, lastName, displayName, email, photoUrl,
-				thumbnailUrl, additionalOauthValues);
+		return UserAccountBuilder.getInstance().authToken(authToken).refreshToken(refreshToken).
+                loginServer(loginServer).idUrl(idUrl).instanceServer(instanceServer).orgId(orgId).
+                userId(userId).username(username).accountName(accountName).communityId(communityId).
+                communityUrl(communityUrl).firstName(firstName).lastName(lastName).displayName(displayName).
+                email(email).photoUrl(photoUrl).thumbnailUrl(thumbnailUrl).
+                additionalOauthValues(additionalOauthValues).build();
 	}
 
 	/**
