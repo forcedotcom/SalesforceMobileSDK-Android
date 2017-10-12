@@ -42,6 +42,7 @@ import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.smartsync.util.SyncUpdateCallbackQueue;
+import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -722,7 +723,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         // Create sync
         SlowSoqlSyncDownTarget target = new SlowSoqlSyncDownTarget("SELECT Id, Name, LastModifiedDate FROM Account WHERE Id IN " + makeInClause(idToFields.keySet()));
         SyncOptions options = SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED);
-        SyncState sync = SyncState.createSyncDown(smartStore, target, options, ACCOUNTS_SOUP);
+        SyncState sync = SyncState.createSyncDown(smartStore, target, options, ACCOUNTS_SOUP, null);
         long syncId = sync.getId();
         checkStatus(sync, SyncState.Type.syncDown, syncId, target, options, SyncState.Status.NEW, 0, -1);
 
@@ -1082,6 +1083,111 @@ public class SyncManagerTest extends SyncManagerTestCase {
             idToFieldsExpectedOnServer.put(id, expectedFields);
         }
         checkServer(idToFieldsExpectedOnServer, Constants.ACCOUNT);
+    }
+
+    /**
+     * Create sync down, get it by id, delete it by id, make sure it's gone
+     */
+    public void testCreateGetDeleteSyncDownById() throws JSONException {
+        // Create
+        SyncState sync = SyncState.createSyncDown(smartStore, new SoqlSyncDownTarget("SELECT Id, Name from Account"), SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED), ACCOUNTS_SOUP, null);
+        long syncId = sync.getId();
+        // Get by id
+        SyncState fetchedSync = SyncState.byId(smartStore, syncId);
+        JSONTestHelper.assertSameJSON("Wrong sync state", sync.asJSON(), fetchedSync.asJSON());
+        // Delete by id
+        SyncState.deleteById(smartStore, syncId);
+        assertNull("Sync should be gone", SyncState.byId(smartStore, syncId));
+    }
+
+    /**
+     * Create sync down with a name, get it by name, delete it by name, make sure it's gone
+     */
+    public void testCreateGetDeleteSyncDownWithName() throws JSONException {
+        // Create a named sync down
+        String syncName = "MyNamedSyncDown";
+        SyncState sync = SyncState.createSyncDown(smartStore, new SoqlSyncDownTarget("SELECT Id, Name from Account"), SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED), ACCOUNTS_SOUP, syncName);
+        long syncId = sync.getId();
+        // Get by name
+        SyncState fetchedSync = SyncState.byName(smartStore, syncName);
+        JSONTestHelper.assertSameJSON("Wrong sync state", sync.asJSON(), fetchedSync.asJSON());
+        // Delete by name
+        SyncState.deleteByName(smartStore, syncName);
+        assertNull("Sync should be gone", SyncState.byId(smartStore, syncId));
+        assertNull("Sync should be gone", SyncState.byName(smartStore, syncName));
+    }
+
+    /**
+     * Create sync up, get it by id, delete it by id, make sure it's gone
+     */
+    public void testCreateGetDeleteSyncUpById() throws JSONException {
+        // Create
+        SyncState sync = SyncState.createSyncUp(smartStore, new SyncUpTarget(), SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED), ACCOUNTS_SOUP, null);
+        long syncId = sync.getId();
+        // Get by id
+        SyncState fetchedSync = SyncState.byId(smartStore, syncId);
+        JSONTestHelper.assertSameJSON("Wrong sync state", sync.asJSON(), fetchedSync.asJSON());
+        // Delete by id
+        SyncState.deleteById(smartStore, syncId);
+        assertNull("Sync should be gone", SyncState.byId(smartStore, syncId));
+    }
+
+    /**
+     * Create sync up with a name, get it by name, delete it by name, make sure it's gone
+     */
+    public void testCreateGetDeleteSyncUpWithName() throws JSONException {
+        // Create a named sync up
+        String syncName = "MyNamedSyncUp";
+        SyncState sync = SyncState.createSyncUp(smartStore, new SyncUpTarget(), SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED), ACCOUNTS_SOUP, syncName);
+        long syncId = sync.getId();
+        // Get by name
+        SyncState fetchedSync = SyncState.byName(smartStore, syncName);
+        JSONTestHelper.assertSameJSON("Wrong sync state", sync.asJSON(), fetchedSync.asJSON());
+        // Delete by name
+        SyncState.deleteByName(smartStore, syncName);
+        assertNull("Sync should be gone", SyncState.byId(smartStore, syncId));
+        assertNull("Sync should be gone", SyncState.byName(smartStore, syncName));
+    }
+
+    /**
+     * Create sync with a name, make sure a new sync down with the same name cannot be created
+     */
+    public void testCreateSyncDownWithExistingName() throws JSONException {
+        // Create a named sync
+        String syncName = "MyNamedSync";
+        SyncState.createSyncUp(smartStore, new SyncUpTarget(), SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED), ACCOUNTS_SOUP, syncName);
+        // Try to create a sync down with the same name
+        try {
+            SyncState.createSyncDown(smartStore, new SoqlSyncDownTarget("SELECT Id, Name from Account"), SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED), ACCOUNTS_SOUP, syncName);
+            fail("SmartSyncException should have been thrown");
+        }
+        catch (SyncManager.SmartSyncException e) {
+            assertTrue(e.getMessage().contains("already a sync with name"));
+        }
+        // Delete by name
+        SyncState.deleteByName(smartStore, syncName);
+        assertNull("Sync should be gone", SyncState.byName(smartStore, syncName));
+    }
+
+    /**
+     * Create sync with a name, make sure a new sync up with the same name cannot be created
+     */
+    public void testCreateSyncUpWithExistingName() throws JSONException {
+        // Create a named sync
+        String syncName = "MyNamedSync";
+        SyncState.createSyncDown(smartStore, new SoqlSyncDownTarget("SELECT Id, Name from Account"), SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED), ACCOUNTS_SOUP, syncName);
+        // Try to create a sync down with the same name
+        try {
+            SyncState.createSyncUp(smartStore, new SyncUpTarget(), SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED), ACCOUNTS_SOUP, syncName);
+            fail("SmartSyncException should have been thrown");
+        }
+        catch (SyncManager.SmartSyncException e) {
+            assertTrue(e.getMessage().contains("already a sync with name"));
+        }
+        // Delete by name
+        SyncState.deleteByName(smartStore, syncName);
+        assertNull("Sync should be gone", SyncState.byName(smartStore, syncName));
+
     }
 
     /**
