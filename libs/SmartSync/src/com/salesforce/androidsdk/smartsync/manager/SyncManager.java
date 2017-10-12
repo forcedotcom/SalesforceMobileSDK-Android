@@ -194,13 +194,45 @@ public class SyncManager {
     }
 
     /**
-     * Get details of a sync state
+     * Get details of a sync by id
      * @param syncId
      * @return
      * @throws JSONException
      */
     public SyncState getSyncStatus(long syncId) throws JSONException {
     	return SyncState.byId(smartStore, syncId);
+    }
+
+    /**
+     * Get details of a sync by name
+     * @param name
+     * @return
+     * @throws JSONException
+     */
+    public SyncState getSyncStatusByName(String name) throws JSONException {
+        return SyncState.byName(smartStore, name);
+    }
+
+    /**
+     * Delete sync by id
+     *
+     * @param syncId
+     * @return
+     * @throws JSONException
+     */
+    public void deleteSyncById(long syncId) throws JSONException {
+        SyncState.deleteById(smartStore, syncId);
+    }
+
+    /**
+     * Delete sync by name
+     *
+     * @param name
+     * @return
+     * @throws JSONException
+     */
+    public void deleteSyncByName(String name) throws JSONException {
+        SyncState.deleteByName(smartStore, name);
     }
 
     /**

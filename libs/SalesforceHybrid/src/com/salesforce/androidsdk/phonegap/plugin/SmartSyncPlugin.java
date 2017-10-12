@@ -53,6 +53,7 @@ public class SmartSyncPlugin extends ForcePlugin {
 
     // Keys in json from/to javascript
     private static final String SYNC_ID = "syncId";
+    private static final String NAME = "name";
     private static final String TAG = "SmartSyncPlugin";
 
     // Event
@@ -66,8 +67,11 @@ public class SmartSyncPlugin extends ForcePlugin {
         syncUp,
         syncDown,
         getSyncStatus,
+        getSyncStatusByName,
         reSync,
-        cleanResyncGhosts
+        cleanResyncGhosts,
+        deleteSyncById,
+        deleteSyncByName
     }
     
     @Override
@@ -103,11 +107,20 @@ public class SmartSyncPlugin extends ForcePlugin {
                           case getSyncStatus:
                               getSyncStatus(args, callbackContext);
                               break;
+                          case getSyncStatusByName:
+                              getSyncStatusByName(args, callbackContext);
+                              break;
                           case reSync:
                               reSync(args, callbackContext);
                               break;
                           case cleanResyncGhosts:
                               cleanResyncGhosts(args, callbackContext);
+                              break;
+                          case deleteSyncById:
+                              deleteSyncById(args, callbackContext);
+                              break;
+                          case deleteSyncByName:
+                              deleteSyncByName(args, callbackContext);
                               break;
                           default:
                               throw new RuntimeException("No handler for action " + action);
@@ -193,6 +206,57 @@ public class SmartSyncPlugin extends ForcePlugin {
         SyncManager syncManager = getSyncManager(arg0);
         SyncState sync = syncManager.getSyncStatus(syncId);
         callbackContext.success(sync.asJSON());
+    }
+
+    /**
+     * Native implementation of getSyncStatusByName.
+     *
+     * @param args
+     * @param callbackContext
+     * @throws JSONException
+     */
+    private void getSyncStatusByName(JSONArray args, CallbackContext callbackContext) throws Exception {
+
+        // Parse args.
+        JSONObject arg0 = args.getJSONObject(0);
+        String name = arg0.getString(NAME);
+        SyncManager syncManager = getSyncManager(arg0);
+        SyncState sync = syncManager.getSyncStatusByName(name);
+        callbackContext.success(sync.asJSON());
+    }
+
+    /**
+     * Native implementation of deleteSyncById.
+     *
+     * @param args
+     * @param callbackContext
+     * @throws JSONException
+     */
+    private void deleteSyncById(JSONArray args, CallbackContext callbackContext) throws Exception {
+
+        // Parse args.
+        JSONObject arg0 = args.getJSONObject(0);
+        long syncId = arg0.getLong(SYNC_ID);
+        SyncManager syncManager = getSyncManager(arg0);
+        syncManager.deleteSyncById(syncId);
+        callbackContext.success();
+    }
+
+    /**
+     * Native implementation of deleteSyncByName.
+     *
+     * @param args
+     * @param callbackContext
+     * @throws JSONException
+     */
+    private void deleteSyncByName(JSONArray args, CallbackContext callbackContext) throws Exception {
+
+        // Parse args.
+        JSONObject arg0 = args.getJSONObject(0);
+        String name = arg0.getString(NAME);
+        SyncManager syncManager = getSyncManager(arg0);
+        syncManager.deleteSyncByName(name);
+        callbackContext.success();
     }
 
     /**

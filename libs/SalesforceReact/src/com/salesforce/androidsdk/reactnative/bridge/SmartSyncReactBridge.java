@@ -48,8 +48,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
     static final String SOUP_NAME = "soupName";
     static final String OPTIONS = "options";
     static final String SYNC_ID = "syncId";
-    static final String IS_GLOBAL_STORE = "isGlobalStore";
-    static final String STORE_NAME = "storeName";
+    static final String NAME = "name";
     public static final String TAG = "SmartSyncReactBridge";
 
     public SmartSyncReactBridge(ReactApplicationContext reactContext) {
@@ -132,6 +131,69 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
             ReactBridgeHelper.invokeSuccess(successCallback, sync.asJSON());
         } catch (Exception e) {
             SalesforceReactLogger.e(TAG, "getSyncStatus call failed", e);
+            errorCallback.invoke(e.toString());
+        }
+    }
+
+    /**
+     * Native implementation of getSyncStatusByName
+     * @param args
+     * @param successCallback
+     * @param errorCallback
+     */
+    @ReactMethod
+    public void getSyncStatusByName(ReadableMap args,
+                                    final Callback successCallback, final Callback errorCallback) {
+        // Parse args
+        String name = args.getString(NAME);
+        try {
+            final SyncManager syncManager = getSyncManager(args);
+            SyncState sync = syncManager.getSyncStatusByName(name);
+            ReactBridgeHelper.invokeSuccess(successCallback, sync.asJSON());
+        } catch (Exception e) {
+            SalesforceReactLogger.e(TAG, "getSyncStatusByName call failed", e);
+            errorCallback.invoke(e.toString());
+        }
+    }
+
+    /**
+     * Native implementation of deleteSyncById
+     * @param args
+     * @param successCallback
+     * @param errorCallback
+     */
+    @ReactMethod
+    public void deleteSyncById(ReadableMap args,
+                               final Callback successCallback, final Callback errorCallback) {
+        // Parse args
+        long syncId = args.getInt(SYNC_ID);
+        try {
+            final SyncManager syncManager = getSyncManager(args);
+            syncManager.deleteSyncById(syncId);
+            successCallback.invoke();
+        } catch (Exception e) {
+            SalesforceReactLogger.e(TAG, "deleteSyncById call failed", e);
+            errorCallback.invoke(e.toString());
+        }
+    }
+
+    /**
+     * Native implementation of deleteSyncByName
+     * @param args
+     * @param successCallback
+     * @param errorCallback
+     */
+    @ReactMethod
+    public void deleteSyncByName(ReadableMap args,
+                                 final Callback successCallback, final Callback errorCallback) {
+        // Parse args
+        String name = args.getString(NAME);
+        try {
+            final SyncManager syncManager = getSyncManager(args);
+            syncManager.deleteSyncByName(name);
+            successCallback.invoke();
+        } catch (Exception e) {
+            SalesforceReactLogger.e(TAG, "deleteSyncByName call failed", e);
             errorCallback.invoke(e.toString());
         }
     }
