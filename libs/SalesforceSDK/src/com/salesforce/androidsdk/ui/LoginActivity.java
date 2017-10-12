@@ -42,6 +42,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.WebSettings;
+import android.webkit.WebSettings.LayoutAlgorithm;
 import android.webkit.WebView;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -106,6 +107,8 @@ public class LoginActivity extends AccountAuthenticatorActivity
         // Setup the WebView.
         final WebView webView = (WebView) findViewById(salesforceR.idLoginWebView());
         final WebSettings webSettings = webView.getSettings();
+        webSettings.setUseWideViewPort(true);
+        webSettings.setLayoutAlgorithm(LayoutAlgorithm.NORMAL);
         webSettings.setJavaScriptEnabled(true);
         webSettings.setAllowFileAccessFromFileURLs(true);
         webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
