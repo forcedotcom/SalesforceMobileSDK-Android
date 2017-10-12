@@ -161,8 +161,8 @@ public class RestRequest {
     /**
      * Generic constructor for arbitrary requests without a body.
      *
-     * @param method				the HTTP method for the request (GET/POST/DELETE etc).
-     * @param path					the URI path, this will automatically be resolved against the users current instance host.
+     * @param method				HTTP method used in the request (GET/POST/DELETE etc).
+     * @param path					URI path. This is automatically resolved against the user's current instance host.
      */
     public RestRequest(RestMethod method, String path) {
         this(method, path, (RequestBody) null, null);
@@ -171,9 +171,9 @@ public class RestRequest {
     /**
      * Generic constructor for arbitrary requests without a body.
      *
-     * @param method				the HTTP method for the request (GET/POST/DELETE etc).
-     * @param path					the URI path, this will automatically be resolved against the users current instance host.
-     * @param additionalHttpHeaders additional headers.
+     * @param method				HTTP method used for the request (GET/POST/DELETE etc).
+     * @param path					URI path. This will automatically be resolved against the user's current instance host.
+     * @param additionalHttpHeaders Additional headers.
      *
      */
     public RestRequest(RestMethod method, String path,  Map<String, String> additionalHttpHeaders) {
@@ -183,11 +183,11 @@ public class RestRequest {
 	/**
 	 * Generic constructor for arbitrary requests.
 	 * 
-	 * @param method				the HTTP method for the request (GET/POST/DELETE etc).
-	 * @param path					the URI path, this will automatically be resolved against the users current instance host.
-	 * @param requestBody			the request body if there is one, can be null.
+	 * @param method				HTTP method used for the request (GET/POST/DELETE etc).
+	 * @param path					URI path. This will automatically be resolved against the user's current instance host.
+	 * @param requestBody			Request body, if one exists. Can be null.
      *
-     * Note: do not use this constructor if requestBody is not null and you want to build a batch or composite request.
+     * Note: Do not use this constructor if requestBody is not null and you want to build a batch or composite request.
 	 */
 	public RestRequest(RestMethod method, String path, RequestBody requestBody) {
         this(method, path, requestBody, null);
@@ -196,11 +196,11 @@ public class RestRequest {
     /**
      * Generic constructor for arbitrary requests.
      *
-     * @param method				the HTTP method for the request (GET/POST/DELETE etc).
-     * @param path					the URI path, this will automatically be resolved against the users current instance host.
-     * @param requestBodyAsJson		the request body as JSON if there is one, can be null.
+     * @param method				 HTTP method used for the request (GET/POST/DELETE etc).
+     * @param path					 URI path. This will automatically be resolved against the user's current instance host.
+     * @param requestBodyAsJson		 Request body as JSON, if one exists. Can be null.
      *
-     * Note: use this constructor if requestBody is not null and you want to build a batch or composite request.
+     * Note: Use this constructor if requestBody is not null and you want to build a batch or composite request.
      */
     public RestRequest(RestMethod method, String path, JSONObject requestBodyAsJson) {
         this(method, path, requestBodyAsJson, null);
@@ -210,12 +210,12 @@ public class RestRequest {
     /**
      * Generic constructor for arbitrary requests.
      *
-     * @param method				the HTTP method for the request (GET/POST/DELETE etc).
-     * @param path					the URI path, this will automatically be resolved against the users current instance host.
-     * @param requestBody			the request body if there is one, can be null.
-     * @param additionalHttpHeaders additional headers.
+     * @param method				 HTTP method used for the request (GET/POST/DELETE etc).
+     * @param path					 URI path. This will automatically be resolved against the user's current instance host.
+     * @param requestBody			 Request body, if one exists. Can be null.
+     * @param additionalHttpHeaders  Additional headers.
      *
-     * Note: do not use this constructor if requestBody is not null and you want to build a batch or composite request.
+     * Note: Do not use this constructor if requestBody is not null and you want to build a batch or composite request.
      */
     public RestRequest(RestMethod method, String path, RequestBody requestBody, Map<String, String> additionalHttpHeaders) {
         this.method = method;
@@ -229,12 +229,12 @@ public class RestRequest {
     /**
      * Generic constructor for arbitrary requests.
      *
-     * @param method				the HTTP method for the request (GET/POST/DELETE etc).
-     * @param path					the URI path, this will automatically be resolved against the users current instance host.
-     * @param requestBodyAsJson     the request body as JSON if there is one, can be null.
-     * @param additionalHttpHeaders additional headers.
+     * @param method				HTTP method used for the request (GET/POST/DELETE etc).
+     * @param path				    URI path. This will automatically be resolved against the user's current instance host.
+     * @param requestBodyAsJson     Request body as JSON, if one exists. Can be null.
+     * @param additionalHttpHeaders Additional headers.
      *
-     * Note: use this constructor if requestBody is not null and you want to build a batch or composite request.
+     * Note: Use this constructor if requestBody is not null and you want to build a batch or composite request.
      */
 	public RestRequest(RestMethod method, String path, JSONObject requestBodyAsJson,  Map<String, String> additionalHttpHeaders) {
         this.method = method;
@@ -245,35 +245,35 @@ public class RestRequest {
     }
 
     /**
-	 * @return HTTP method of the request.
+	 * @return  HTTP method of the request.
 	 */
 	public RestMethod getMethod() {
 		return method;
 	}
 
 	/**
-	 * @return Path of the request.
+	 * @return  Path of the request.
 	 */
 	public String getPath() {
 		return path;
 	}
 
 	/**
-	 * @return request RequestBody
+	 * @return  Request body.
 	 */
 	public RequestBody getRequestBody() {
 		return requestBody;
 	}
 
     /**
-     * @return request body as json
+     * @return  Request body as JSON.
      */
     public JSONObject getRequestBodyAsJson() {
         return requestBodyAsJson;
     }
 
     /**
-	 * @return addition http headers
+	 * @return  Additional HTTP headers.
 	 */
 	public Map<String, String> getAdditionalHttpHeaders() {
 		return additionalHttpHeaders;
@@ -281,9 +281,9 @@ public class RestRequest {
 
 	/**
 	 * Request to get summary information about each Salesforce.com version currently available.
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_versions.htm
 	 * 
-	 * @return a JsonNode
+	 * @return  RestRequest object that requests the list of versions.
+     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_versions.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_versions.htm</a>
      */
     public static RestRequest getRequestForVersions() {
         return new RestRequest(RestMethod.GET, RestAction.VERSIONS.getPath());
@@ -291,10 +291,10 @@ public class RestRequest {
 	
 	/**
 	 * Request to list available resources for the specified API version, including resource name and URI.
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_discoveryresource.htm
 	 *
-	 * @param apiVersion
-	 * @return a RestRequest
+	 * @param apiVersion    Salesforce API version.
+     * @return              RestRequest object that requests resources for the given API version.
+     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_discoveryresource.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_discoveryresource.htm</a>
 	 */
 	public static RestRequest getRequestForResources(String apiVersion) {
 		return new RestRequest(RestMethod.GET, RestAction.RESOURCES.getPath(apiVersion));
@@ -302,10 +302,10 @@ public class RestRequest {
 
 	/**
 	 * Request to list the available objects and their metadata for your organization's data.
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_describeGlobal.htm
 	 *
-	 * @param apiVersion
-	 * @return a RestRequest
+     * @param apiVersion    Salesforce API version.
+     * @return              RestRequest object that requests objects and metadata for the given API version.
+     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_describeGlobal.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_describeGlobal.htm</a>
 	 */
 	public static RestRequest getRequestForDescribeGlobal(String apiVersion) {
 		return new RestRequest(RestMethod.GET, RestAction.DESCRIBE_GLOBAL.getPath(apiVersion));
@@ -313,12 +313,12 @@ public class RestRequest {
 
 	/**
 	 * Request to describe the individual metadata for the specified object.
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_basic_info.htm
-	 * 
-	 * @param apiVersion
-	 * @param objectType
-	 * @return a RestRequest
+	 *
+     * @param apiVersion    Salesforce API version.
+     * @param objectType    Type of object for which the caller is requesting object metadata.
+     * @return              RestRequest object that requests an object's metadata for the given API version.
 	 * @throws IOException
+     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_basic_info.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_basic_info.htm</a>
 	 */
 	public static RestRequest getRequestForMetadata(String apiVersion, String objectType) {
         return new RestRequest(RestMethod.GET, RestAction.METADATA.getPath(apiVersion, objectType));
@@ -326,11 +326,11 @@ public class RestRequest {
 
 	/**
 	 * Request to completely describe the individual metadata at all levels for the specified object. 
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_describe.htm
-	 * 
-	 * @param apiVersion
-	 * @param objectType
-	 * @return a RestRequest
+	 *
+     * @param apiVersion Salesforce API version.
+     * @param objectType Type of object for which the caller is requesting the metadata description.
+     * @return RestRequest object that requests an object's metadata description for the given API version.
+     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_describe.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_describe.htm</a>
 	 */
 	public static RestRequest getRequestForDescribe(String apiVersion, String objectType)  {
         return new RestRequest(RestMethod.GET, RestAction.DESCRIBE.getPath(apiVersion, objectType));
@@ -338,29 +338,29 @@ public class RestRequest {
 	
 	/**
 	 * Request to create a record. 
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm
-	 * 
-	 * @param apiVersion
-	 * @param objectType
-	 * @param fields
-	 * @return a RestRequest
-	 * @throws IOException 
+	 *
+     * @param apiVersion    Salesforce API version.
+     * @param objectType    Type of record to be created.
+     * @param fields        Map of the new record's fields and their values. Can be null.
+     * @return              RestRequest object that requests creation of a record.
+	 * @throws IOException
 	 * @throws UnsupportedEncodingException 
+     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm</a>
 	 */
 	public static RestRequest getRequestForCreate(String apiVersion, String objectType, Map<String, Object> fields) throws IOException  {
 		return new RestRequest(RestMethod.POST, RestAction.CREATE.getPath(apiVersion, objectType), fields == null ? null : new JSONObject(fields));
 	}
 
 	/**
-	 * Request to retrieve a record by object id. 
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm
-	 * 
-	 * @param apiVersion
-	 * @param objectType
-	 * @param objectId
-	 * @param fieldList
-	 * @return a RestRequest
-	 * @throws UnsupportedEncodingException 
+	 * Request to retrieve a record by object ID.
+	 *
+     * @param apiVersion    Salesforce API version.
+     * @param objectType    Type of the requested record.
+     * @param objectId      Salesforce ID of the requested record.
+     * @param fields        List of requested field names.
+     * @return              RestRequest object that requests a record.
+	 * @throws UnsupportedEncodingException
+     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm</a>
 	 */
 	public static RestRequest getRequestForRetrieve(String apiVersion, String objectType, String objectId, List<String> fieldList) throws UnsupportedEncodingException  {
 		StringBuilder path = new StringBuilder(RestAction.RETRIEVE.getPath(apiVersion, objectType, objectId));
@@ -385,14 +385,14 @@ public class RestRequest {
 
 	/**
 	 * Request to update a record. 
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm
 	 *
-	 * @param apiVersion 
-	 * @param objectType
-	 * @param objectId
-	 * @param fields
-	 * @return a RestRequest
-	 * @throws IOException 
+     * @param apiVersion    Salesforce API version.
+     * @param objectType    Type of the record.
+     * @param objectId      Salesforce ID of the record.
+     * @param fields        Map of the fields to be updated and their new values.
+     * @return              RestRequest object that requests a record update.
+	 * @throws IOException
+     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm</a>
 	 */
 	public static RestRequest getRequestForUpdate(String apiVersion, String objectType, String objectId, Map<String, Object> fields) throws IOException  {
         return getRequestForUpdate(apiVersion, objectType, objectId, fields, null);
@@ -400,15 +400,15 @@ public class RestRequest {
 
     /**
      * Request to update a record.
-     * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm
      *
-     * @param apiVersion
-     * @param objectType
-     * @param objectId
-     * @param fields
-     * @param ifUnmodifiedSinceDate
-     * @return
+     * @param apiVersion            Salesforce API version.
+     * @param objectType            Type of the record.
+     * @param objectId              Salesforce ID of the record.
+     * @param fields                Map of the fields to be updated and their new values. Can be null.
+     * @param ifUnmodifiedSinceDate Fulfill the request only if the record has not been modified since the given date.
+     * @return                      RestRequest object that requests a record update.
      * @throws IOException
+     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm</a>
      */
     public static RestRequest getRequestForUpdate(String apiVersion, String objectType, String objectId, Map<String, Object> fields, Date ifUnmodifiedSinceDate) throws IOException  {
         Map<String, String> additionalHttpHeaders = prepareConditionalHeader(IF_UNMODIFIED_SINCE, ifUnmodifiedSinceDate);
@@ -417,15 +417,15 @@ public class RestRequest {
 	
 	/**
 	 * Request to upsert (update or insert) a record. 
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_upsert.htm
 	 *
-	 * @param apiVersion
-	 * @param objectType
-	 * @param externalIdField
-	 * @param externalId
-	 * @param fields
-	 * @return a RestRequest
-	 * @throws IOException 
+     * @param apiVersion        Salesforce API version.
+     * @param objectType        Type of the record.
+     * @param externalIdField   Name of ID field in source data.
+     * @param externalId        ID of source data record. Can be an empty string.
+     * @param fields            Map of the fields to be upserted and their new values. Can be null.
+     * @return                  RestRequest object that requests a record upsert.
+	 * @throws IOException
+     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_upsert.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_upsert.htm</a>
 	 */
 	public static RestRequest getRequestForUpsert(String apiVersion, String objectType, String externalIdField, String externalId, Map<String, Object> fields) throws IOException  {
         return new RestRequest(
@@ -440,12 +440,12 @@ public class RestRequest {
 	
 	/**
 	 * Request to delete a record. 
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm
-	 * 
-	 * @param apiVersion
-	 * @param objectType
-	 * @param objectId
-	 * @return a RestRequest
+	 *
+     * @param apiVersion    Salesforce API version.
+     * @param objectType    Type of the record.
+	 * @param objectId      Salesforce ID of the record.
+     * @return              RestRequest object that requests a record deletion.
+     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm</a>
 	 */
 	public static RestRequest getRequestForDelete(String apiVersion, String objectType, String objectId)  {
         return new RestRequest(RestMethod.DELETE, RestAction.DELETE.getPath(apiVersion, objectType, objectId));
@@ -453,12 +453,12 @@ public class RestRequest {
 
     /**
 	 * Request to execute the specified SOSL search. 
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search.htm
-	 * 
-	 * @param apiVersion
-	 * @param q
-	 * @return a RestRequest
-	 * @throws UnsupportedEncodingException 
+	 *
+	 * @param apiVersion    Salesforce API version.
+	 * @param q             SOSL search string.
+     * @return              RestRequest object that requests a SOSL search.
+	 * @throws UnsupportedEncodingException
+     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search.htm</a>
 	 */
 	public static RestRequest getRequestForSearch(String apiVersion, String q) throws UnsupportedEncodingException  {
 		StringBuilder path = new StringBuilder(RestAction.SEARCH.getPath(apiVersion));
@@ -468,13 +468,13 @@ public class RestRequest {
 	}
 
 	/**
-	 * Request to execute the specified SOQL search. 
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_query.htm
-	 * 
-	 * @param apiVersion
-	 * @param q
-	 * @return a RestRequest
-	 * @throws UnsupportedEncodingException 
+	 * Request to execute the specified SOQL query.
+	 *
+     * @param apiVersion    Salesforce API version.
+     * @param q             SOQL query string.
+     * @return              RestRequest object that requests a SOQL query.
+	 * @throws UnsupportedEncodingException
+     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_query.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_query.htm</a>
 	 */
 	public static RestRequest getRequestForQuery(String apiVersion, String q) throws UnsupportedEncodingException  {
 		StringBuilder path = new StringBuilder(RestAction.QUERY.getPath(apiVersion));
@@ -485,11 +485,11 @@ public class RestRequest {
 
 	/**
 	 * Request to get search scope and order.
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_scope_order.htm
-	 * 
-	 * @param apiVersion
-	 * @return a RestRequest
-	 * @throws UnsupportedEncodingException 
+	 *
+	 * @param apiVersion    Salesforce API version.
+     * @return              RestRequest object that requests the search scope and order for the given API version.
+	 * @throws UnsupportedEncodingException
+     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_scope_order.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_scope_order.htm</a>
 	 */
 	public static RestRequest getRequestForSearchScopeAndOrder(String apiVersion) throws UnsupportedEncodingException  {
         return new RestRequest(RestMethod.GET, new StringBuilder(RestAction.SEARCH_SCOPE_AND_ORDER.getPath(apiVersion)).toString());
@@ -497,12 +497,12 @@ public class RestRequest {
 	
 	/**
 	 * Request to get search result layouts
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_layouts.htm
-	 * 
-	 * @param apiVersion
-	 * @param objectList
-	 * @return a RestRequest
-	 * @throws UnsupportedEncodingException 
+	 *
+	 * @param apiVersion    Salesforce API version.
+	 * @param objectList    List of objects whose search result layouts are being requested.
+     * @return              RestRequest object that requests the search result layout for the given list of objects.
+	 * @throws UnsupportedEncodingException
+     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_layouts.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_layouts.htm</a>
 	 */
 	public static RestRequest getRequestForSearchResultLayout(String apiVersion, List<String> objectList) throws UnsupportedEncodingException  {
 		StringBuilder path = new StringBuilder(RestAction.SEARCH_RESULT_LAYOUT.getPath(apiVersion));
@@ -513,12 +513,12 @@ public class RestRequest {
 
     /**
 	 * Composite request
-	 * See https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_composite.htm
 	 *
-     * @param apiVersion
-     * @param allOrNone
-	 * @param refIdToRequests    Linked map of reference id to refIdToRequests (will be played in order requests were added)
-	 * @return
+     * @param apiVersion        Salesforce API version.
+     * @param allOrNone         Indicates whether the request will accept partially complete results.
+	 * @param refIdToRequests   Linked map of reference IDs to RestRequest objects. The requests will be played in order in which they were added.
+     * @return RestRequest object that requests execution of the given composite request.
+     * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_composite.htm">https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_composite.htm</a>
 	 */
 	public static RestRequest getCompositeRequest(String apiVersion, boolean allOrNone, LinkedHashMap<String, RestRequest> refIdToRequests) throws JSONException {
 		JSONArray requestsArrayJson = new JSONArray();
@@ -556,11 +556,11 @@ public class RestRequest {
 
     /**
      * Batch request
-     * See https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_batch.htm
-     * @param apiVersion
-     * @param haltOnError
-     * @param requests
-     * @return
+     * @param apiVersion    Salesforce API version.
+     * @param haltOnError   Indicates whether to stop processing the batch if an error occurs.
+     * @param requests      List of RestRequest objects.
+     * @return              RestRequest object that requests execution of the given batch of requests.
+     * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_batch.htm">https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_batch.htm</a>
      */
     public static RestRequest getBatchRequest(String apiVersion, boolean haltOnError, List<RestRequest> requests) throws JSONException {
         JSONArray requestsArrayJson = new JSONArray();
@@ -583,14 +583,14 @@ public class RestRequest {
     }
 
     /**
-     * Request to create one or more sObject trees with root records of the specified type
-     * See https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_sobject_tree.htm
+     * Request to create one or more sObject trees with root records of the specified type.
      *
-     * @param apiVersion
-     * @param objectType
-     * @param objectTrees
-     * @return
+     * @param apiVersion    Salesforce API version.
+     * @param objectType    Type of object requested.
+     * @param objectTrees   List of {link #SObjectTree} objects.
+     * @return              RestRequest object that requests creation of one or more sObject trees.
      * @throws JSONException
+     * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_sobject_tree.htm">https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_sobject_tree.htm</a>
      */
     public static RestRequest getRequestForSObjectTree(String apiVersion, String objectType, List<SObjectTree> objectTrees) throws JSONException {
         JSONArray jsonTrees = new JSONArray();
@@ -603,11 +603,11 @@ public class RestRequest {
     }
 
     /**
-     * Helper method
+     * Helper method for creating conditional HTTP header.
      *
-     * @param headerName
-     * @param date
-     * @return
+     * @param headerName Name of header.
+     * @param date Date of header. If null, this method returns null.
+     * @return Map of header name and date, or null if no date is provided.
      */
     private static Map<String, String> prepareConditionalHeader(String headerName, Date date) {
         if (date != null) {
@@ -621,7 +621,7 @@ public class RestRequest {
 
 
     /**
-     * Helper class for getRequestForSObjectTree
+     * Helper class for getRequestForSObjectTree.
      */
     public static class SObjectTree {
         final String objectType;
