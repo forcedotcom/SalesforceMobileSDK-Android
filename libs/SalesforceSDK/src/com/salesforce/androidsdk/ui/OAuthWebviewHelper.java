@@ -53,6 +53,7 @@ import android.widget.Toast;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountBuilder;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -573,16 +574,16 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     id.displayName, id.email, id.pictureUrl, id.thumbnailUrl, tr.additionalOauthValues);
 
             // Sets additional admin prefs, if they exist.
-            final UserAccount account = new UserAccount(accountOptions.authToken,
-                    accountOptions.refreshToken, loginOptions.getLoginUrl(),
-                    accountOptions.identityUrl, accountOptions.instanceUrl,
-                    accountOptions.orgId, accountOptions.userId,
-                    accountOptions.username, buildAccountName(accountOptions.username,
-                    accountOptions.instanceUrl), accountOptions.communityId,
-                    accountOptions.communityUrl, accountOptions.firstName,
-                    accountOptions.lastName, accountOptions.displayName,
-                    accountOptions.email, accountOptions.photoUrl,
-                    accountOptions.thumbnailUrl, accountOptions.additionalOauthValues);
+            final UserAccount account = UserAccountBuilder.getInstance().authToken(accountOptions.authToken).
+                    refreshToken(accountOptions.refreshToken).loginServer(loginOptions.getLoginUrl()).
+                    idUrl(accountOptions.identityUrl).instanceServer(accountOptions.instanceUrl).
+                    orgId(accountOptions.orgId).userId(accountOptions.userId).username(accountOptions.username).
+                    accountName(buildAccountName(accountOptions.username, accountOptions.instanceUrl)).
+                    communityId(accountOptions.communityId).communityUrl(accountOptions.communityUrl).
+                    firstName(accountOptions.firstName).lastName(accountOptions.lastName).
+                    displayName(accountOptions.displayName).email(accountOptions.email).
+                    photoUrl(accountOptions.photoUrl).thumbnailUrl(accountOptions.thumbnailUrl).
+                    additionalOauthValues(accountOptions.additionalOauthValues).build();
             if (id.customAttributes != null) {
                 mgr.getAdminSettingsManager().setPrefs(id.customAttributes, account);
             }
@@ -689,15 +690,16 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     	 */
         final Context appContext = SalesforceSDKManager.getInstance().getAppContext();
         final String pushNotificationId = BootConfig.getBootConfig(appContext).getPushNotificationClientId();
-        final UserAccount account = new UserAccount(accountOptions.authToken,
-                accountOptions.refreshToken, loginOptions.getLoginUrl(),
-                accountOptions.identityUrl, accountOptions.instanceUrl,
-                accountOptions.orgId, accountOptions.userId,
-                accountOptions.username, accountName, accountOptions.communityId,
-                accountOptions.communityUrl, accountOptions.firstName,
-                accountOptions.lastName, accountOptions.displayName, accountOptions.email,
-                accountOptions.photoUrl, accountOptions.thumbnailUrl,
-                accountOptions.additionalOauthValues);
+        final UserAccount account = UserAccountBuilder.getInstance().authToken(accountOptions.authToken).
+                refreshToken(accountOptions.refreshToken).loginServer(loginOptions.getLoginUrl()).
+                idUrl(accountOptions.identityUrl).instanceServer(accountOptions.instanceUrl).
+                orgId(accountOptions.orgId).userId(accountOptions.userId).username(accountOptions.username).
+                accountName(accountName).communityId(accountOptions.communityId).
+                communityUrl(accountOptions.communityUrl).firstName(accountOptions.firstName).
+                lastName(accountOptions.lastName).displayName(accountOptions.displayName).
+                email(accountOptions.email).photoUrl(accountOptions.photoUrl).
+                thumbnailUrl(accountOptions.thumbnailUrl).
+                additionalOauthValues(accountOptions.additionalOauthValues).build();
         if (!TextUtils.isEmpty(pushNotificationId)) {
             PushMessaging.register(appContext, account);
         }

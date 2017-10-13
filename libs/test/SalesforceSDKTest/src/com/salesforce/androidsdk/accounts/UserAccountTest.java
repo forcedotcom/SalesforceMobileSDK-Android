@@ -104,12 +104,14 @@ public class UserAccountTest extends InstrumentationTestCase {
      * Tests bundle creation.
      */
     public void testConvertAccountToBundle() {
-        final UserAccount account = new UserAccount(TEST_AUTH_TOKEN,
-                TEST_REFRESH_TOKEN, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_INSTANCE_URL,
-                TEST_ORG_ID, TEST_USER_ID, TEST_USERNAME, TEST_ACCOUNT_NAME,
-                TEST_COMMUNITY_ID, TEST_COMMUNITY_URL, TEST_FIRST_NAME,
-                TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL,
-                createAdditionalOauthValues());
+        final UserAccount account = UserAccountBuilder.getInstance().authToken(TEST_AUTH_TOKEN).
+                refreshToken(TEST_REFRESH_TOKEN).loginServer(TEST_LOGIN_URL).
+                idUrl(TEST_IDENTITY_URL).instanceServer(TEST_INSTANCE_URL).
+                orgId(TEST_ORG_ID).userId(TEST_USER_ID).username(TEST_USERNAME).accountName(TEST_ACCOUNT_NAME).
+                communityId(TEST_COMMUNITY_ID).communityUrl(TEST_COMMUNITY_URL).firstName(TEST_FIRST_NAME).
+                lastName(TEST_LAST_NAME).displayName(TEST_DISPLAY_NAME).email(TEST_EMAIL).
+                photoUrl(TEST_PHOTO_URL).thumbnailUrl(TEST_THUMBNAIL_URL).
+                additionalOauthValues(createAdditionalOauthValues()).build();
         final Bundle bundle = account.toBundle();
         final Bundle expectedBundle = createTestAccountBundle();
         assertTrue(equalBundles(bundle, expectedBundle));
