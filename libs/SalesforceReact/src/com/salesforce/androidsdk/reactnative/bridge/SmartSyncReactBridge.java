@@ -130,7 +130,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         try {
             final SyncManager syncManager = getSyncManager(args);
             SyncState sync = syncManager.getSyncStatus(syncId);
-            ReactBridgeHelper.invokeSuccess(successCallback, sync.asJSON());
+            ReactBridgeHelper.invokeSuccess(successCallback, sync == null ? null : sync.asJSON());
         } catch (Exception e) {
             SalesforceReactLogger.e(TAG, "getSyncStatus call failed", e);
             errorCallback.invoke(e.toString());
@@ -151,7 +151,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         try {
             final SyncManager syncManager = getSyncManager(args);
             SyncState sync = syncManager.getSyncStatusByName(syncName);
-            ReactBridgeHelper.invokeSuccess(successCallback, sync.asJSON());
+            ReactBridgeHelper.invokeSuccess(successCallback, sync == null ? null : sync.asJSON());
         } catch (Exception e) {
             SalesforceReactLogger.e(TAG, "getSyncStatusByName call failed", e);
             errorCallback.invoke(e.toString());
