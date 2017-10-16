@@ -73,7 +73,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         JSONObject target = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(TARGET)));
         String soupName = args.getString(SOUP_NAME);
         JSONObject options = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(OPTIONS)));
-        String syncName = args.getString(SYNC_NAME);
+        String syncName = args.hasKey(SYNC_NAME) ? args.getString(SYNC_NAME) : null;
         try {
             final SyncManager syncManager = getSyncManager(args);
             syncManager.syncUp(SyncUpTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, syncName, new SyncManager.SyncUpdateCallback() {
@@ -101,7 +101,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         JSONObject target = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(TARGET)));
         String soupName = args.getString(SOUP_NAME);
         JSONObject options = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(OPTIONS)));
-        String syncName = args.getString(SYNC_NAME);
+        String syncName = args.hasKey(SYNC_NAME) ? args.getString(SYNC_NAME) : null;
         try {
             final SyncManager syncManager = getSyncManager(args);
             syncManager.syncDown(SyncDownTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, syncName, new SyncManager.SyncUpdateCallback() {
