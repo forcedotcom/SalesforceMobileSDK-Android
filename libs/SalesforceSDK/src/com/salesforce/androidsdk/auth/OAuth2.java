@@ -105,6 +105,7 @@ public class OAuth2 {
     private static final String PICTURE = "picture";
     private static final String THUMBNAIL = "thumbnail";
     private static final String CODE = "code";
+    private static final String CODE_CHALLENGE = "code_challenge";
     private static final String CUSTOM_ATTRIBUTES = "custom_attributes";
     private static final String CUSTOM_PERMISSIONS = "custom_permissions";
     private static final String SFDC_COMMUNITY_ID = "sfdc_community_id";
@@ -215,6 +216,57 @@ public class OAuth2 {
             }
         }
         return URI.create(sb.toString());
+    }
+
+    /**
+     * Returns an IDP 'frontdoor' URL configured with the SP's configuration.
+     *
+     * @param instanceUrl IDP's instance URL.
+     * @param accessToken IDP's access token.
+     * @param loginUrl SP's login URL.
+     * @param displayType IDP's display type.
+     * @param clientId SP's client ID.
+     * @param callbackUrl SP's callback URL.
+     * @param scopes SP's scopes.
+     * @param codeChallenge SP's code challenge.
+     * @return A 'frontdoor' URL that the IDP can load in a WebView.
+     */
+    public static String getIDPFrontdoorUrl(String instanceUrl, String accessToken, String loginUrl,
+                                            String displayType, String clientId, String callbackUrl,
+                                            String[] scopes, String codeChallenge) {
+        final StringBuilder sb = new StringBuilder(instanceUrl);
+        sb.append(FRONTDOOR);
+        sb.append(SID).append(EQUAL).append(accessToken);
+        sb.append(AND).append(RETURL).append(EQUAL).append(Uri.encode(getIDPApprovalUrl(loginUrl,
+                displayType, clientId, callbackUrl, scopes, codeChallenge)));
+        return sb.toString();
+    }
+
+    /**
+     * Returns an approval URL configured with the SP's configuration.
+     *
+     * @param loginUrl SP's login URL.
+     * @param displayType IDP's display type.
+     * @param clientId SP's client ID.
+     * @param callbackUrl SP's callback URL.
+     * @param scopes SP's scopes.
+     * @param codeChallenge SP's code challenge.
+     * @return An approval URL that the IDP can use to construct its 'frontdoor' URL.
+     */
+    public static String getIDPApprovalUrl(String loginUrl, String displayType,
+                                           String clientId, String callbackUrl,
+                                           String[] scopes, String codeChallenge) {
+        final StringBuilder sb = new StringBuilder(loginUrl);
+        sb.append(OAUTH_AUTH_PATH).append(getBrandedLoginPath());
+        sb.append(OAUTH_DISPLAY_PARAM).append(displayType == null ? TOUCH : displayType);
+        sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(CODE);
+        sb.append(AND).append(CLIENT_ID).append(EQUAL).append(Uri.encode(clientId));
+        if (scopes != null && scopes.length > 0) {
+            sb.append(AND).append(SCOPE).append(EQUAL).append(Uri.encode(computeScopeParameter(scopes)));
+        }
+        sb.append(AND).append(REDIRECT_URI).append(EQUAL).append(callbackUrl);
+        sb.append(AND).append(CODE_CHALLENGE).append(EQUAL).append(callbackUrl);
+        return sb.toString();
     }
 
     private static String computeScopeParameter(String[] scopes) {
