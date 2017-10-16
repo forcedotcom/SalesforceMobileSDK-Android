@@ -32,6 +32,7 @@ import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -188,7 +189,7 @@ public class SyncState {
 		SyncState state = new SyncState();
 		state.id = sync.getLong(SmartStore.SOUP_ENTRY_ID);
 		state.type = Type.valueOf(sync.getString(SYNC_TYPE));
-		state.name = sync.optString(SYNC_NAME);
+		state.name = JSONObjectHelper.optString(sync, SYNC_NAME);
         final JSONObject jsonTarget = sync.optJSONObject(SYNC_TARGET);
         state.target = (state.type == Type.syncDown ? SyncDownTarget.fromJSON(jsonTarget) : SyncUpTarget.fromJSON(jsonTarget));
 		state.options = SyncOptions.fromJSON(sync.optJSONObject(SYNC_OPTIONS));

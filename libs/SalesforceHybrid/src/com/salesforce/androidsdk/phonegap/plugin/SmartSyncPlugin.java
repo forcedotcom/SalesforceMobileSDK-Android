@@ -34,6 +34,7 @@ import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.apache.cordova.CallbackContext;
 import org.json.JSONArray;
@@ -151,7 +152,7 @@ public class SmartSyncPlugin extends ForcePlugin {
         JSONObject target = arg0.getJSONObject(TARGET);
         String soupName = arg0.getString(SOUP_NAME);
         JSONObject options = arg0.optJSONObject(OPTIONS);
-        String syncName = arg0.optString(SYNC_NAME);
+        String syncName = JSONObjectHelper.optString(arg0, SYNC_NAME);
         final boolean isGlobal = SmartStorePlugin.getIsGlobal(arg0);
         final String storeName = SmartStorePlugin.getStoreName(arg0);
         SyncManager syncManager = getSyncManager(arg0);
@@ -179,7 +180,7 @@ public class SmartSyncPlugin extends ForcePlugin {
         JSONObject target = arg0.getJSONObject(TARGET);
         String soupName = arg0.getString(SOUP_NAME);
         JSONObject options = arg0.getJSONObject(OPTIONS);
-        String syncName = arg0.optString(SYNC_NAME);
+        String syncName = JSONObjectHelper.optString(arg0, SYNC_NAME);
         final boolean isGlobal = SmartStorePlugin.getIsGlobal(arg0);
         final String storeName = SmartStorePlugin.getStoreName(arg0);
         SyncManager syncManager = getSyncManager(arg0);
@@ -207,7 +208,9 @@ public class SmartSyncPlugin extends ForcePlugin {
         long syncId = arg0.getLong(SYNC_ID);
         SyncManager syncManager = getSyncManager(arg0);
         SyncState sync = syncManager.getSyncStatus(syncId);
-        callbackContext.success(sync.asJSON());
+        // cordova can't return null, so returning {} when sync is not found
+        // cordova.force.js turns it back into a null
+        callbackContext.success(sync == null ? new JSONObject() : sync.asJSON());
     }
 
     /**
@@ -224,7 +227,9 @@ public class SmartSyncPlugin extends ForcePlugin {
         String syncName = arg0.getString(SYNC_NAME);
         SyncManager syncManager = getSyncManager(arg0);
         SyncState sync = syncManager.getSyncStatusByName(syncName);
-        callbackContext.success(sync.asJSON());
+        // cordova can't return null, so returning {} when sync is not found
+        // cordova.force.js turns it back into a null
+        callbackContext.success(sync == null ? new JSONObject() : sync.asJSON());
     }
 
     /**
