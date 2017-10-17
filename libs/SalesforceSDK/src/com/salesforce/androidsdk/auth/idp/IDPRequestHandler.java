@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.auth.idp;
 
 import android.content.Context;
+import android.content.Intent;
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.R;
@@ -76,15 +77,20 @@ public class IDPRequestHandler {
         ensureValidityOfAccessToken();
     }
 
+    /**
+     * Kicks off the 'frontdoor' request for the SP configuration provided.
+     */
     public void makeFrontDoorRequest() {
         final Context context = SalesforceSDKManager.getInstance().getAppContext();
         final String frontdoorUrl = OAuth2.getIDPFrontdoorUrl(userAccount.getInstanceServer(),
                 userAccount.getAuthToken(), loginUrl, context.getString(R.string.oauth_display_type),
                 spConfig.getOauthClientId(), spConfig.getOauthCallbackUrl(),
                 spConfig.getOauthScopes(), spConfig.getCodeChallenge());
-        /*
-         * TODO: Load URL in WebView.
-         */
+        final Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setClassName(IDPWebViewActivity.PACKAGE_NAME, IDPWebViewActivity.CLASS_NAME);
+        intent.putExtra(IDPWebViewActivity.CALLBACK_URL_KEY, spConfig.getOauthCallbackUrl());
+        intent.putExtra(IDPWebViewActivity.FRONTDOOR_URL_KEY, frontdoorUrl);
+        context.startActivity(intent);
     }
 
     private void basicValidation() throws IDPRequestHandlerException {
