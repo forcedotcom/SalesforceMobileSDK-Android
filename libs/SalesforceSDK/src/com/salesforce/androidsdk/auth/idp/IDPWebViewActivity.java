@@ -49,8 +49,6 @@ import java.util.Map;
  */
 public class IDPWebViewActivity extends Activity {
 
-    public static final String PACKAGE_NAME = "com.salesforce.androidsdk.auth.idp";
-    public static final String CLASS_NAME = "IDPWebViewActivity";
     public static final String CALLBACK_URL_KEY = "callbackUrl";
     public static final String FRONTDOOR_URL_KEY = "frontdoorUrl";
     private static final String ERROR_KEY = "error";

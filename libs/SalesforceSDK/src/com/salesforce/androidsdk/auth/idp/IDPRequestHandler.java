@@ -86,8 +86,7 @@ public class IDPRequestHandler {
                 userAccount.getAuthToken(), loginUrl, context.getString(R.string.oauth_display_type),
                 spConfig.getOauthClientId(), spConfig.getOauthCallbackUrl(),
                 spConfig.getOauthScopes(), spConfig.getCodeChallenge());
-        final Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setClassName(IDPWebViewActivity.PACKAGE_NAME, IDPWebViewActivity.CLASS_NAME);
+        final Intent intent = new Intent(context, IDPWebViewActivity.class);
         intent.putExtra(IDPWebViewActivity.CALLBACK_URL_KEY, spConfig.getOauthCallbackUrl());
         intent.putExtra(IDPWebViewActivity.FRONTDOOR_URL_KEY, frontdoorUrl);
         context.startActivity(intent);
