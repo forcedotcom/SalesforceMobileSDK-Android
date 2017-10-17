@@ -79,6 +79,12 @@
             android:excludeFromRecents="true"
             android:theme="@style/SalesforceSDK.ActionBarTheme" />
 
+        <!-- IDP WebView activity -->
+        <activity android:name="com.salesforce.androidsdk.auth.idp.IDPWebViewActivity"
+            android:excludeFromRecents="true"
+            android:theme="@style/SalesforceSDK.ActionBarTheme"
+            android:exported="false" />
+
         <!-- Google Play Services Push Registration -->
         <!--
             Push notification services and receivers. The 'category' attribute
