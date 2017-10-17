@@ -26,12 +26,7 @@
  */
 package com.salesforce.androidsdk.auth.idp;
 
-import android.text.TextUtils;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
+import com.salesforce.androidsdk.auth.OAuth2;
 
 /**
  * This class performs represents an SP app's config.
@@ -39,9 +34,6 @@ import java.util.TreeSet;
  * @author bhariharan
  */
 public class SPConfig {
-
-    private static final String REFRESH_TOKEN_SCOPE = "refresh_token";
-    private static final String SINGLE_SPACE = " ";
 
     private String oauthClientId;
     private String oauthCallbackUrl;
@@ -69,7 +61,7 @@ public class SPConfig {
         this.oauthScopes = oauthScopes;
         this.loginUrl = loginUrl;
         this.userHint = userHint;
-        computeScopeParameter();
+        computedScopeParameter = OAuth2.computeScopeParameter(oauthScopes);
     }
 
     /**
@@ -133,12 +125,5 @@ public class SPConfig {
      */
     public String getComputedScopeParameter() {
         return computedScopeParameter;
-    }
-
-    private void computeScopeParameter() {
-        final List<String> scopesList = Arrays.asList(oauthScopes == null ? new String[]{} : oauthScopes);
-        final Set<String> scopesSet = new TreeSet<>(scopesList);
-        scopesSet.add(REFRESH_TOKEN_SCOPE);
-        computedScopeParameter = TextUtils.join(SINGLE_SPACE, scopesSet.toArray(new String[]{}));
     }
 }

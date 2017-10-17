@@ -269,7 +269,14 @@ public class OAuth2 {
         return sb.toString();
     }
 
-    private static String computeScopeParameter(String[] scopes) {
+    /**
+     * Computes the scope parameter from an array of scopes. Also adds
+     * the 'refresh_token' scope if it hasn't already been added.
+     *
+     * @param scopes Array of scopes.
+     * @return Scope parameter.
+     */
+    public static String computeScopeParameter(String[] scopes) {
         final List<String> scopesList = Arrays.asList(scopes == null ? new String[]{} : scopes);
         final Set<String> scopesSet = new TreeSet<>(scopesList);
         scopesSet.add(REFRESH_TOKEN);
