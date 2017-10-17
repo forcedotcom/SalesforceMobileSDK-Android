@@ -209,14 +209,10 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
     @ReactMethod
     public void reSync(ReadableMap args,
                        final Callback successCallback, final Callback errorCallback) {
-        // Parse args
-        long syncId = args.getInt(SYNC_ID);
         try {
             final SyncManager syncManager = getSyncManager(args);
 
-
-            SyncState sync;
-            if (args.hasKey(SYNC_ID)) {
+            if (args.hasKey(SYNC_ID) && !args.isNull(SYNC_ID)) {
                 syncManager.reSync(args.getInt(SYNC_ID), new SyncManager.SyncUpdateCallback() {
                     @Override
                     public void onUpdate(SyncState sync) {
@@ -224,9 +220,8 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                     }
                 });
             }
-            else if (args.hasKey(SYNC_NAME)) {
-                String syncName = args.getString(SYNC_NAME);
-                syncManager.reSync(syncName, new SyncManager.SyncUpdateCallback() {
+            else if (args.hasKey(SYNC_NAME) && !args.isNull(SYNC_NAME)) {
+                syncManager.reSync(args.getString(SYNC_NAME), new SyncManager.SyncUpdateCallback() {
                     @Override
                     public void onUpdate(SyncState sync) {
                         handleSyncUpdate(sync, successCallback, errorCallback);
