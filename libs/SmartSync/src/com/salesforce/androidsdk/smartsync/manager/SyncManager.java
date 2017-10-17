@@ -302,7 +302,21 @@ public class SyncManager {
         return sync;
     }
 
-	/**
+    /**
+     * Re-run sync but only fetch new/modified records
+     * @param syncName
+     * @param callback
+     * @throws JSONException
+     */
+    public SyncState reSync(String syncName, SyncUpdateCallback callback) throws JSONException {
+        SyncState sync = getSyncStatusByName(syncName);
+        if (sync == null) {
+            throw new SmartSyncException("Cannot run reSync:" + syncName + ": no sync found");
+        }
+        return reSync(sync.getId(), callback);
+    }
+
+    /**
 	 * Run a sync
 	 * @param sync
 	 * @param callback

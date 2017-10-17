@@ -165,6 +165,55 @@ public class SyncManagerTest extends SyncManagerTestCase {
     }
 
     /**
+     * Sync down the test accounts, modify a few on the server, re-sync using sync name, make sure only the updated ones are downloaded
+     */
+    public void testReSyncByName() throws Exception {
+        String syncName = "syncForTestReSyncByName";
+
+        // first sync down
+        long syncId = trySyncDown(MergeMode.OVERWRITE, syncName);
+
+        // Check sync time stamp
+        SyncState sync = syncManager.getSyncStatus(syncId);
+        SyncDownTarget target = (SyncDownTarget) sync.getTarget();
+        SyncOptions options = sync.getOptions();
+        long maxTimeStamp = sync.getMaxTimeStamp();
+        assertTrue("Wrong time stamp", maxTimeStamp > 0);
+
+        // Make some remote change
+        Map<String, Map<String, Object>> idToFieldsUpdated = makeRemoteChanges(idToFields, Constants.ACCOUNT);
+
+        // Call reSync
+        SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+        syncManager.reSync(syncName, queue);
+
+        // Check status updates
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, -1);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, idToFieldsUpdated.size());
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100, idToFieldsUpdated.size());
+
+        // Check db
+        checkDb(idToFieldsUpdated, ACCOUNTS_SOUP);
+
+        // Check sync time stamp
+        assertTrue("Wrong time stamp", syncManager.getSyncStatus(syncId).getMaxTimeStamp() > maxTimeStamp);
+    }
+
+    /**
+     * Call reSync with the name of non-existing sync, expect exception
+     */
+    public void testReSyncByNameWithWrongName() throws Exception {
+        String syncName = "testReSyncByNameWithWrongName";
+        try {
+            syncManager.reSync(syncName, null);
+            fail("Expected exception");
+        } catch (SyncManager.SmartSyncException e) {
+            assertTrue(e.getMessage().contains("no sync found"));
+        }
+    }
+
+
+    /**
 	 * Sync down the test accounts, modify a few, sync up, check smartstore and server afterwards
 	 */
 	public void testSyncUpWithLocallyUpdatedRecords() throws Exception {
@@ -782,7 +831,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Builds SOQL sync down target and performs initial sync.
         final String soql = "SELECT Id, Name FROM Account WHERE Id IN " + makeInClause(accountIds);
-        long syncId = trySyncDown(MergeMode.LEAVE_IF_CHANGED, new SoqlSyncDownTarget(soql), ACCOUNTS_SOUP, accounts.size(), 1);
+        long syncId = trySyncDown(MergeMode.LEAVE_IF_CHANGED, new SoqlSyncDownTarget(soql), ACCOUNTS_SOUP, accounts.size(), 1, null);
         checkDbExist(ACCOUNTS_SOUP, accountIds, Constants.ID);
 
         // Deletes 1 account on the server and verifies the ghost record is cleared from the soup.
@@ -863,7 +912,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         }
         // Running a refresh-sync-down for soup
         final SyncDownTarget target = new RefreshSyncDownTarget(REFRESH_FIELDLIST, Constants.ACCOUNT, ACCOUNTS_SOUP);
-        trySyncDown(MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, idToFields.size(), 1);
+        trySyncDown(MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, idToFields.size(), 1, null);
         // Make sure the soup has the records with id and names
         checkDb(idToFields, ACCOUNTS_SOUP);
     }
@@ -884,7 +933,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         // Running a refresh-sync-down for soup with two ids per soql query (to force multiple round trips)
         final RefreshSyncDownTarget target = new RefreshSyncDownTarget(REFRESH_FIELDLIST, Constants.ACCOUNT, ACCOUNTS_SOUP);
         target.setCountIdsPerSoql(2);
-        trySyncDown(MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, idToFields.size(), idToFields.size() / 2);
+        trySyncDown(MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, idToFields.size(), idToFields.size() / 2, null);
 
         // Make sure the soup has the records with id and names
         checkDb(idToFields, ACCOUNTS_SOUP);
@@ -906,7 +955,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         // Running a refresh-sync-down for soup
         final RefreshSyncDownTarget target = new RefreshSyncDownTarget(REFRESH_FIELDLIST, Constants.ACCOUNT, ACCOUNTS_SOUP);
         target.setCountIdsPerSoql(1); //  to exercise continueFetch
-        long syncId = trySyncDown(MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, idToFields.size(), 10);
+        long syncId = trySyncDown(MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, idToFields.size(), 10, null);
 
         // Check sync time stamp
         SyncState sync = syncManager.getSyncStatus(syncId);
@@ -960,7 +1009,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         }
         // Running a refresh-sync-down for soup
         final RefreshSyncDownTarget target = new RefreshSyncDownTarget(REFRESH_FIELDLIST, Constants.ACCOUNT, ACCOUNTS_SOUP);
-        long syncId = trySyncDown(MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, idToFields.size(), 1);
+        long syncId = trySyncDown(MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, idToFields.size(), 1, null);
 
         // Make sure the soup has the records with id and names
         checkDb(idToFields, ACCOUNTS_SOUP);
@@ -1196,10 +1245,19 @@ public class SyncManagerTest extends SyncManagerTestCase {
      * @param mergeMode
 	 */
 	private long trySyncDown(MergeMode mergeMode) throws JSONException {
-		final SyncDownTarget target = new SoqlSyncDownTarget("SELECT Id, Name, Description, LastModifiedDate FROM Account WHERE Id IN " + makeInClause(idToFields.keySet()));
-        return trySyncDown(mergeMode, target, ACCOUNTS_SOUP, idToFields.size(), 1);
-
+        return trySyncDown(mergeMode, null);
 	}
+
+    /**
+     * Sync down helper
+     * @throws JSONException
+     * @param mergeMode
+     */
+    private long trySyncDown(MergeMode mergeMode, String syncName) throws JSONException {
+        final SyncDownTarget target = new SoqlSyncDownTarget("SELECT Id, Name, Description, LastModifiedDate FROM Account WHERE Id IN " + makeInClause(idToFields.keySet()));
+        return trySyncDown(mergeMode, target, ACCOUNTS_SOUP, idToFields.size(), 1, syncName);
+
+    }
 
     /**
      * Sync up helper
