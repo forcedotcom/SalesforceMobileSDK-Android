@@ -213,12 +213,29 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         long syncId = args.getInt(SYNC_ID);
         try {
             final SyncManager syncManager = getSyncManager(args);
-            syncManager.reSync(syncId, new SyncManager.SyncUpdateCallback() {
-                @Override
-                public void onUpdate(SyncState sync) {
-                    handleSyncUpdate(sync, successCallback, errorCallback);
-                }
-            });
+
+
+            SyncState sync;
+            if (args.hasKey(SYNC_ID)) {
+                syncManager.reSync(args.getInt(SYNC_ID), new SyncManager.SyncUpdateCallback() {
+                    @Override
+                    public void onUpdate(SyncState sync) {
+                        handleSyncUpdate(sync, successCallback, errorCallback);
+                    }
+                });
+            }
+            else if (args.hasKey(SYNC_NAME)) {
+                String syncName = args.getString(SYNC_NAME);
+                syncManager.reSync(syncName, new SyncManager.SyncUpdateCallback() {
+                    @Override
+                    public void onUpdate(SyncState sync) {
+                        handleSyncUpdate(sync, successCallback, errorCallback);
+                    }
+                });
+            }
+            else {
+                throw new SyncManager.SmartSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
+            }
         } catch (Exception e) {
             SalesforceReactLogger.e(TAG, "reSync call failed", e);
             errorCallback.invoke(e.toString());

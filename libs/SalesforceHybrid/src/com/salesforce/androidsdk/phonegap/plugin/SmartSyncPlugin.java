@@ -277,17 +277,34 @@ public class SmartSyncPlugin extends ForcePlugin {
 
         // Parse args.
         JSONObject arg0 = args.getJSONObject(0);
-        long syncId = arg0.getLong(SYNC_ID);
         final boolean isGlobal = SmartStorePlugin.getIsGlobal(arg0);
         final String storeName = SmartStorePlugin.getStoreName(arg0);
         final SyncManager syncManager = getSyncManager(arg0);
-        SyncState sync = syncManager.reSync(syncId, new SyncUpdateCallback() {
 
-            @Override
-            public void onUpdate(SyncState sync) {
-                handleSyncUpdate(sync, isGlobal,storeName);
-            }
-        });
+        SyncState sync;
+        if (arg0.has(SYNC_ID)) {
+            long syncId = arg0.getLong(SYNC_ID);
+            sync = syncManager.reSync(syncId, new SyncUpdateCallback() {
+
+                @Override
+                public void onUpdate(SyncState sync) {
+                    handleSyncUpdate(sync, isGlobal, storeName);
+                }
+            });
+        }
+        else if (arg0.has(SYNC_NAME)) {
+            String syncName = arg0.getString(SYNC_NAME);
+            sync = syncManager.reSync(syncName, new SyncUpdateCallback() {
+
+                @Override
+                public void onUpdate(SyncState sync) {
+                    handleSyncUpdate(sync, isGlobal, storeName);
+                }
+            });
+        }
+        else {
+            throw new SyncManager.SmartSyncException("reSync failed:  either " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
+        }
         callbackContext.success(sync.asJSON());
     }
 
