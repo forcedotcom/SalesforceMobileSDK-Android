@@ -43,6 +43,7 @@ import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.io.IOException;
+import java.net.URI;
 
 /**
  * This class performs requests made by an app acting as the IDP app using the SP app's
@@ -86,11 +87,11 @@ public class IDPRequestHandler {
      */
     public void makeFrontDoorRequest(String accessToken, WebView webView) throws IDPRequestHandlerException {
         final Context context = SalesforceSDKManager.getInstance().getAppContext();
-        final String frontdoorUrl = OAuth2.getIDPFrontdoorUrl(userAccount.getInstanceServer(),
+        final URI frontdoorUrl = OAuth2.getIDPFrontdoorUrl(userAccount.getInstanceServer(),
                 accessToken, loginUrl, context.getString(R.string.oauth_display_type),
                 spConfig.getOauthClientId(), spConfig.getOauthCallbackUrl(),
                 spConfig.getOauthScopes(), spConfig.getCodeChallenge());
-        webView.loadUrl(frontdoorUrl);
+        webView.loadUrl(frontdoorUrl.toString());
     }
 
     /**

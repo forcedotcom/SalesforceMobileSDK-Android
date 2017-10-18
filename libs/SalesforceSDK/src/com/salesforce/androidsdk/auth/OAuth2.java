@@ -206,7 +206,7 @@ public class OAuth2 {
         }
         final StringBuilder sb = new StringBuilder(instanceURL);
         sb.append(FRONTDOOR);
-        sb.append(SID).append(EQUAL).append(Uri.encode(accessToken));
+        sb.append(SID).append(EQUAL).append(accessToken);
         sb.append(AND).append(RETURL).append(EQUAL).append(Uri.encode(getAuthorizationUrl(loginServer,
                 clientId, callbackUrl, scopes, displayType, null).toString()));
         if (addlParams != null && addlParams.size() > 0) {
@@ -231,15 +231,15 @@ public class OAuth2 {
      * @param codeChallenge SP's code challenge.
      * @return A 'frontdoor' URL that the IDP can load in a WebView.
      */
-    public static String getIDPFrontdoorUrl(String instanceUrl, String accessToken, String loginUrl,
+    public static URI getIDPFrontdoorUrl(String instanceUrl, String accessToken, String loginUrl,
                                             String displayType, String clientId, String callbackUrl,
                                             String[] scopes, String codeChallenge) {
         final StringBuilder sb = new StringBuilder(instanceUrl);
         sb.append(FRONTDOOR);
-        sb.append(SID).append(EQUAL).append(Uri.encode(accessToken));
+        sb.append(SID).append(EQUAL).append(accessToken);
         sb.append(AND).append(RETURL).append(EQUAL).append(Uri.encode(getIDPApprovalUrl(loginUrl,
-                displayType, clientId, callbackUrl, scopes, codeChallenge)));
-        return sb.toString();
+                displayType, clientId, callbackUrl, scopes, codeChallenge).toString()));
+        return URI.create(sb.toString());
     }
 
     /**
@@ -253,7 +253,7 @@ public class OAuth2 {
      * @param codeChallenge SP's code challenge.
      * @return An approval URL that the IDP can use to construct its 'frontdoor' URL.
      */
-    public static String getIDPApprovalUrl(String loginUrl, String displayType,
+    public static URI getIDPApprovalUrl(String loginUrl, String displayType,
                                            String clientId, String callbackUrl,
                                            String[] scopes, String codeChallenge) {
         final StringBuilder sb = new StringBuilder(loginUrl);
@@ -266,7 +266,7 @@ public class OAuth2 {
         }
         sb.append(AND).append(REDIRECT_URI).append(EQUAL).append(callbackUrl);
         sb.append(AND).append(CODE_CHALLENGE).append(EQUAL).append(codeChallenge);
-        return sb.toString();
+        return URI.create(sb.toString());
     }
 
     /**

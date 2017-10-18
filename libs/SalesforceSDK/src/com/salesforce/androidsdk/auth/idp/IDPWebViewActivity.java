@@ -81,6 +81,7 @@ public class IDPWebViewActivity extends Activity {
         final WebSettings webSettings = webView.getSettings();
         webSettings.setUseWideViewPort(true);
         webSettings.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NORMAL);
+        webSettings.setJavaScriptEnabled(true);
         webView.setWebViewClient(new IDPWebViewClient());
         try {
             final IDPRequestHandler idpRequestHandler = new IDPRequestHandler(spConfig, userAccount);
