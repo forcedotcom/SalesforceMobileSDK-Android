@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.auth.idp;
 import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.WindowManager;
 import android.webkit.WebSettings;
@@ -36,7 +37,9 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import com.salesforce.androidsdk.R;
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import com.salesforce.androidsdk.util.UriFragmentParser;
 
 import java.util.Locale;
@@ -49,13 +52,14 @@ import java.util.Map;
  */
 public class IDPWebViewActivity extends Activity {
 
-    public static final String CALLBACK_URL_KEY = "callbackUrl";
-    public static final String FRONTDOOR_URL_KEY = "frontdoorUrl";
+    public static final String USER_ACCOUNT_BUNDLE_KEY = "user_account_bundle";
+    public static final String SP_CONFIG_BUNDLE_KEY = "sp_config_bundle";
     private static final String ERROR_KEY = "error";
     private static final String ERROR_DESCRIPTION_KEY = "error_description";
+    private static final String TAG = "IDPWebViewActivity";
 
-    private String callbackUrl;
-    private String frontdoorUrl;
+    private UserAccount userAccount;
+    private SPConfig spConfig;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,8 +69,8 @@ public class IDPWebViewActivity extends Activity {
         final Intent intent = getIntent();
         final Bundle extras = intent.getExtras();
         if (extras != null) {
-            callbackUrl = extras.getString(CALLBACK_URL_KEY);
-            frontdoorUrl = extras.getString(FRONTDOOR_URL_KEY);
+            userAccount = new UserAccount(extras.getBundle(USER_ACCOUNT_BUNDLE_KEY));
+            spConfig = new SPConfig(extras.getBundle(SP_CONFIG_BUNDLE_KEY));
         }
 
         // Protects against screenshots.
@@ -78,7 +82,12 @@ public class IDPWebViewActivity extends Activity {
         webSettings.setUseWideViewPort(true);
         webSettings.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NORMAL);
         webView.setWebViewClient(new IDPWebViewClient());
-        webView.loadUrl(frontdoorUrl);
+        try {
+            final IDPRequestHandler idpRequestHandler = new IDPRequestHandler(spConfig, userAccount);
+            new RefreshAuthTokenTask(idpRequestHandler, webView).execute();
+        } catch (IDPRequestHandler.IDPRequestHandlerException e) {
+            SalesforceSDKLogger.e(TAG, "Building IDP request handler failed", e);
+        }
     }
 
     /**
@@ -89,7 +98,7 @@ public class IDPWebViewActivity extends Activity {
 
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
-            boolean isDone = url.replace("///", "/").toLowerCase(Locale.US).startsWith(callbackUrl.
+            boolean isDone = url.replace("///", "/").toLowerCase(Locale.US).startsWith(spConfig.getOauthCallbackUrl().
                     replace("///", "/").toLowerCase(Locale.US));
             if (isDone) {
                 final Uri callbackUri = Uri.parse(url);
@@ -106,6 +115,39 @@ public class IDPWebViewActivity extends Activity {
                 }
             }
             return isDone;
+        }
+    }
+
+    private class RefreshAuthTokenTask extends AsyncTask<Void, Void, String> {
+
+        private IDPRequestHandler idpRequestHandler;
+        private WebView webView;
+
+        public RefreshAuthTokenTask(IDPRequestHandler idpRequestHandler, WebView webView) {
+            this.idpRequestHandler = idpRequestHandler;
+            this.webView = webView;
+        }
+
+        @Override
+        protected String doInBackground(Void... nothings) {
+            String accessToken = null;
+            try {
+                accessToken = idpRequestHandler.getValidAccessToken();
+            } catch (Exception e) {
+                SalesforceSDKLogger.e(TAG, "Refreshing token failed", e);
+            }
+            return accessToken;
+        }
+
+        @Override
+        protected void onPostExecute(String accessToken) {
+            try {
+                if (accessToken != null) {
+                    idpRequestHandler.makeFrontDoorRequest(accessToken, webView);
+                }
+            } catch (IDPRequestHandler.IDPRequestHandlerException e) {
+                SalesforceSDKLogger.e(TAG, "Making frontdoor request failed", e);
+            }
         }
     }
 }

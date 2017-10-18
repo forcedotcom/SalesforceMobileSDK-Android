@@ -206,7 +206,7 @@ public class OAuth2 {
         }
         final StringBuilder sb = new StringBuilder(instanceURL);
         sb.append(FRONTDOOR);
-        sb.append(SID).append(EQUAL).append(accessToken);
+        sb.append(SID).append(EQUAL).append(Uri.encode(accessToken));
         sb.append(AND).append(RETURL).append(EQUAL).append(Uri.encode(getAuthorizationUrl(loginServer,
                 clientId, callbackUrl, scopes, displayType, null).toString()));
         if (addlParams != null && addlParams.size() > 0) {
@@ -236,7 +236,7 @@ public class OAuth2 {
                                             String[] scopes, String codeChallenge) {
         final StringBuilder sb = new StringBuilder(instanceUrl);
         sb.append(FRONTDOOR);
-        sb.append(SID).append(EQUAL).append(accessToken);
+        sb.append(SID).append(EQUAL).append(Uri.encode(accessToken));
         sb.append(AND).append(RETURL).append(EQUAL).append(Uri.encode(getIDPApprovalUrl(loginUrl,
                 displayType, clientId, callbackUrl, scopes, codeChallenge)));
         return sb.toString();

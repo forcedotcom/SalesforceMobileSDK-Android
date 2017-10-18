@@ -27,8 +27,8 @@
 package com.salesforce.androidsdk.auth.idp;
 
 import android.content.Context;
-import android.content.Intent;
 import android.text.TextUtils;
+import android.webkit.WebView;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -64,6 +64,7 @@ public class IDPRequestHandler {
      *
      * @param spConfig SP app's config.
      * @param userAccount User account.
+     * @throws IDPRequestHandlerException
      */
     public IDPRequestHandler(SPConfig spConfig, UserAccount userAccount) throws IDPRequestHandlerException {
         this.spConfig = spConfig;
@@ -74,22 +75,54 @@ public class IDPRequestHandler {
             loginUrl = userAccount.getLoginServer();
         }
         buildRestClient();
-        ensureValidityOfAccessToken();
     }
 
     /**
-     * Kicks off the 'frontdoor' request for the SP configuration provided.
+     * Kicks off the 'frontdoor' request in the supplied WebView instance.
+     *
+     * @param accessToken Valid access token.
+     * @param webView WebView instance.
+     * @throws IDPRequestHandlerException
      */
-    public void makeFrontDoorRequest() {
+    public void makeFrontDoorRequest(String accessToken, WebView webView) throws IDPRequestHandlerException {
         final Context context = SalesforceSDKManager.getInstance().getAppContext();
         final String frontdoorUrl = OAuth2.getIDPFrontdoorUrl(userAccount.getInstanceServer(),
-                userAccount.getAuthToken(), loginUrl, context.getString(R.string.oauth_display_type),
+                accessToken, loginUrl, context.getString(R.string.oauth_display_type),
                 spConfig.getOauthClientId(), spConfig.getOauthCallbackUrl(),
                 spConfig.getOauthScopes(), spConfig.getCodeChallenge());
-        final Intent intent = new Intent(context, IDPWebViewActivity.class);
-        intent.putExtra(IDPWebViewActivity.CALLBACK_URL_KEY, spConfig.getOauthCallbackUrl());
-        intent.putExtra(IDPWebViewActivity.FRONTDOOR_URL_KEY, frontdoorUrl);
-        context.startActivity(intent);
+        webView.loadUrl(frontdoorUrl);
+    }
+
+    /**
+     * Makes a simple REST call to and returns a valid access token or null if refresh failed.
+     * This method should NOT be called from the main thread since it makes a network request.
+     *
+     * @return Valid access token.
+     * @throws IDPRequestHandlerException
+     */
+    public String getValidAccessToken() throws IDPRequestHandlerException {
+
+        /*
+         * Ensures the access token associated with this user account is valid and refreshes the
+         * token if it's not valid. Any request to 'frontdoor' must be made with a valid token.
+         */
+        final Context context = SalesforceSDKManager.getInstance().getAppContext();
+        RestResponse restResponse = null;
+        Exception exception = null;
+        String accessToken = null;
+        try {
+            restResponse = restClient.sendSync(RestRequest.getRequestForResources(
+                    ApiVersionStrings.getVersionNumber(context)));
+        } catch (IOException e) {
+            exception = e;
+        } finally {
+            if (restResponse == null || !restResponse.isSuccess()) {
+                handleError("Invalid REST client", exception);
+            } else {
+                accessToken = restClient.getAuthToken();
+            }
+        }
+        return accessToken;
     }
 
     private void basicValidation() throws IDPRequestHandlerException {
@@ -118,27 +151,6 @@ public class IDPRequestHandler {
         final ClientManager clientManager = new ClientManager(context, idpAccountType,
                 loginOptions, false);
         restClient = clientManager.peekRestClient(userAccount);
-    }
-
-    private void ensureValidityOfAccessToken() throws IDPRequestHandlerException {
-
-        /*
-         * Ensures the access token associated with this user account is valid and refreshes the
-         * token if it's not valid. Any request to 'frontdoor' must be made with a valid token.
-         */
-        final Context context = SalesforceSDKManager.getInstance().getAppContext();
-        RestResponse restResponse = null;
-        Exception exception = null;
-        try {
-            restResponse = restClient.sendSync(RestRequest.getRequestForResources(
-                    ApiVersionStrings.getVersionNumber(context)));
-        } catch (IOException e) {
-            exception = e;
-        } finally {
-            if (restResponse == null || !restResponse.isSuccess()) {
-                handleError("Invalid REST client", exception);
-            }
-        }
     }
 
     private void handleError(String errorMessage, Throwable e) throws IDPRequestHandlerException {

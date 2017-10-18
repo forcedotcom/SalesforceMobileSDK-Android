@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.auth.idp;
 
+import android.os.Bundle;
+
 import com.salesforce.androidsdk.auth.OAuth2;
 
 /**
@@ -34,6 +36,14 @@ import com.salesforce.androidsdk.auth.OAuth2;
  * @author bhariharan
  */
 public class SPConfig {
+
+    private static final String OAUTH_CLIENT_ID_KEY = "oauth_client_id";
+    private static final String OAUTH_CALLBACK_URL_KEY = "oauth_callback_url";
+    private static final String CODE_CHALLENGE_KEY = "code_challenge";
+    private static final String OAUTH_SCOPES_KEY = "oauth_scopes";
+    private static final String LOGIN_URL_KEY = "login_url";
+    private static final String USER_HINT_KEY = "user_hint";
+    private static final String COMPUTED_SCOPE_PARAMETER_KEY = "computed_scope_parameter";
 
     private String oauthClientId;
     private String oauthCallbackUrl;
@@ -62,6 +72,38 @@ public class SPConfig {
         this.loginUrl = loginUrl;
         this.userHint = userHint;
         computedScopeParameter = OAuth2.computeScopeParameter(oauthScopes);
+    }
+
+    /**
+     * Parameterized constructor for internal use only.
+     *
+     * @param config Bundle containing config.
+     */
+    SPConfig(Bundle config) {
+        oauthClientId = config.getString(OAUTH_CLIENT_ID_KEY);
+        oauthCallbackUrl = config.getString(OAUTH_CALLBACK_URL_KEY);
+        codeChallenge = config.getString(CODE_CHALLENGE_KEY);
+        oauthScopes = config.getStringArray(OAUTH_SCOPES_KEY);
+        loginUrl = config.getString(LOGIN_URL_KEY);
+        userHint = config.getString(USER_HINT_KEY);
+        computedScopeParameter = config.getString(COMPUTED_SCOPE_PARAMETER_KEY);
+    }
+
+    /**
+     * Returns the bundle representation of this class.
+     *
+     * @return Bundle representation.
+     */
+    public Bundle toBundle() {
+        final Bundle bundle = new Bundle();
+        bundle.putString(OAUTH_CLIENT_ID_KEY, oauthClientId);
+        bundle.putString(OAUTH_CALLBACK_URL_KEY, oauthCallbackUrl);
+        bundle.putString(CODE_CHALLENGE_KEY, codeChallenge);
+        bundle.putStringArray(OAUTH_SCOPES_KEY, oauthScopes);
+        bundle.putString(LOGIN_URL_KEY, loginUrl);
+        bundle.putString(USER_HINT_KEY, userHint);
+        bundle.putString(COMPUTED_SCOPE_PARAMETER_KEY, computedScopeParameter);
+        return bundle;
     }
 
     /**
