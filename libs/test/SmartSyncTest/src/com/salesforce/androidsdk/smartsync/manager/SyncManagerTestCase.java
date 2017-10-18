@@ -148,18 +148,35 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
     }
 
     /**
+     /**
+     * Sync down helper.
+     *
+     * @param mergeMode
+     * @param target
+     * @param soupName
+     * @param totalSize
+     * @param numberFetches
+     * @return
+     * @throws JSONException
+     */
+    protected long trySyncDown(SyncState.MergeMode mergeMode, SyncDownTarget target, String soupName, int totalSize, int numberFetches) throws JSONException {
+        return trySyncDown(mergeMode, target, soupName, totalSize, numberFetches, null);
+    }
+
+    /**
      * Sync down helper.
      *
      * @param mergeMode     Merge mode.
      * @param target        Sync down target.
      * @param soupName      Soup name.
-     * @param totalSize     Expected total size
-     * @param numberFetches Expected number of fetches
+     * @param totalSize     Expected total size.
+     * @param numberFetches Expected number of fetches.
+     * @param syncName      Name for sync or null.
      * @return Sync ID.
      */
-    protected long trySyncDown(SyncState.MergeMode mergeMode, SyncDownTarget target, String soupName, int totalSize, int numberFetches) throws JSONException {
+    protected long trySyncDown(SyncState.MergeMode mergeMode, SyncDownTarget target, String soupName, int totalSize, int numberFetches, String syncName) throws JSONException {
         final SyncOptions options = SyncOptions.optionsForSyncDown(mergeMode);
-        final SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName, null);
+        final SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName, syncName);
         long syncId = sync.getId();
         checkStatus(sync, SyncState.Type.syncDown, syncId, target, options, SyncState.Status.NEW, 0, -1);
 

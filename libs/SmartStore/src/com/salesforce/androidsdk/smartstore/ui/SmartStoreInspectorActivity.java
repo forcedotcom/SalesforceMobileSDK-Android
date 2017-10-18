@@ -50,6 +50,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -285,9 +286,10 @@ public class SmartStoreInspectorActivity extends Activity {
 		for (int j = 0; j < result.length(); j++) {
 			JSONArray row = result.getJSONArray(j);
 			for (int i = 0; i < row.length(); i++) {
-				Object val = row.get(i);
-				adapter.add(val instanceof JSONObject ? ((JSONObject) val)
-						.toString(2) : val.toString());
+				Object val = JSONObjectHelper.opt(row, i);
+				adapter.add(val instanceof JSONObject
+						? ((JSONObject) val).toString(2)
+						: (val == null ? "null" : val.toString()));
 			}
 		}
 

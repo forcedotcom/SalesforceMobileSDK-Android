@@ -44,13 +44,13 @@ public class ReactBridgeHelper  {
     public static void invokeSuccess(Callback successCallback, JSONObject json) {
         // XXX it would be better to user a NativeMap
         //     for now we serialize the object and do a JSON.parse(result) on the javascript side
-        successCallback.invoke(json.toString());
+        successCallback.invoke(json == null ? null : json.toString());
     }
 
     public static void invokeSuccess(Callback successCallback, JSONArray json) {
         // XXX it would be better to user a NativeArray
         //     for now we serialize the object and do a JSON.parse(result) on the javascript side
-        successCallback.invoke(json.toString());
+        successCallback.invoke(json == null ? null : json.toString());
     }
 
     public static void invokeSuccess(Callback successCallback, String value) {

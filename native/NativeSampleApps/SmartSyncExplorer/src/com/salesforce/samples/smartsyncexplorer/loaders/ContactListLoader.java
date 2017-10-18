@@ -33,25 +33,22 @@ import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.SmartSyncException;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
-import com.salesforce.androidsdk.smartsync.util.Constants;
-import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 import com.salesforce.androidsdk.smartsync.target.SoqlSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
+import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
+import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.smartsync.util.SyncState.Status;
-import com.salesforce.androidsdk.smartsync.target.SyncTarget;
-import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 
 import org.json.JSONArray;
@@ -71,11 +68,11 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	public static final String CONTACT_SOUP = "contacts";
 	public static final Integer LIMIT = 10000;
 	public static final String LOAD_COMPLETE_INTENT_ACTION = "com.salesforce.samples.smartsyncexplorer.loaders.LIST_LOAD_COMPLETE";
-    private static final String TAG = "ContactListLoader";
+	private static final String TAG = "ContactListLoader";
+	public static final String SYNC_NAME = "smartSyncExplorerSyncDown";
 
-    private SmartStore smartStore;
+	private SmartStore smartStore;
     private SyncManager syncMgr;
-    private long syncId = -1;
 
 	/**
 	 * Parameterized constructor.
@@ -153,16 +150,15 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
             }
         };
         try {
-            if (syncId == -1) {
+            if (syncMgr.getSyncStatus(SYNC_NAME) == null) {
                 final SyncOptions options = SyncOptions.optionsForSyncDown(SyncState.MergeMode.LEAVE_IF_CHANGED);
                 final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS_SYNC_DOWN)
                         .from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
                 final SyncDownTarget target = new SoqlSyncDownTarget(soqlQuery);
                 final SyncState sync = syncMgr.syncDown(target, options,
-                		ContactListLoader.CONTACT_SOUP, callback);
-                syncId = sync.getId();
+                		ContactListLoader.CONTACT_SOUP, SYNC_NAME, callback);
             } else {
-                syncMgr.reSync(syncId, callback);
+                syncMgr.reSync(SYNC_NAME, callback);
             }
         } catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while parsing", e);

@@ -32,6 +32,7 @@ import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -188,7 +189,7 @@ public class SyncState {
 		SyncState state = new SyncState();
 		state.id = sync.getLong(SmartStore.SOUP_ENTRY_ID);
 		state.type = Type.valueOf(sync.getString(SYNC_TYPE));
-		state.name = sync.optString(SYNC_NAME);
+		state.name = JSONObjectHelper.optString(sync, SYNC_NAME);
         final JSONObject jsonTarget = sync.optJSONObject(SYNC_TARGET);
         state.target = (state.type == Type.syncDown ? SyncDownTarget.fromJSON(jsonTarget) : SyncUpTarget.fromJSON(jsonTarget));
 		state.options = SyncOptions.fromJSON(sync.optJSONObject(SYNC_OPTIONS));
@@ -242,21 +243,19 @@ public class SyncState {
 
 	/**
 	 * Delete row for sync given by id
-	 *
-	 * @param store
+	 *  @param store
 	 * @param id
 	 */
-	public static void deleteById(SmartStore store, long id) {
+	public static void deleteSync(SmartStore store, long id) {
 		store.delete(SYNCS_SOUP, id);
 	}
 
 	/**
 	 * Delete row for sync given by name
-	 *
-	 * @param store
+	 *  @param store
 	 * @param name
 	 */
-	public static void deleteByName(SmartStore store, String name) {
+	public static void deleteSync(SmartStore store, String name) {
 		if (name == null) {
 			throw new SyncManager.SmartSyncException("name must not be null");
 		}
@@ -266,7 +265,7 @@ public class SyncState {
 		if (syncId < 0)
 			return;
 
-		deleteById(store, syncId);
+		deleteSync(store, syncId);
 	}
 
 	/**

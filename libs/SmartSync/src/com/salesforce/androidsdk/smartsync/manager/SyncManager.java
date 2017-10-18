@@ -194,13 +194,45 @@ public class SyncManager {
     }
 
     /**
-     * Get details of a sync state
+     * Get details of a sync by id
      * @param syncId
      * @return
      * @throws JSONException
      */
     public SyncState getSyncStatus(long syncId) throws JSONException {
     	return SyncState.byId(smartStore, syncId);
+    }
+
+    /**
+     * Get details of a sync by name
+     * @param name
+     * @return
+     * @throws JSONException
+     */
+    public SyncState getSyncStatus(String name) throws JSONException {
+        return SyncState.byName(smartStore, name);
+    }
+
+    /**
+     * Delete sync by id
+     *
+     * @param syncId
+     * @return
+     * @throws JSONException
+     */
+    public void deleteSync(long syncId) throws JSONException {
+        SyncState.deleteSync(smartStore, syncId);
+    }
+
+    /**
+     * Delete sync by name
+     *
+     * @param name
+     * @return
+     * @throws JSONException
+     */
+    public void deleteSync(String name) throws JSONException {
+        SyncState.deleteSync(smartStore, name);
     }
 
     /**
@@ -217,7 +249,7 @@ public class SyncManager {
     }
 
     /**
-     * Create and run a sync down
+     * Create and run a sync down without a name
      * @param target
      * @param options
       *@param soupName
@@ -226,7 +258,22 @@ public class SyncManager {
      * @throws JSONException
      */
     public SyncState syncDown(SyncDownTarget target, SyncOptions options, String soupName, SyncUpdateCallback callback) throws JSONException {
-    	SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName, null);
+        return syncDown(target, options, soupName, null, callback);
+    }
+
+    /**
+     * Create and run a sync down
+     *
+     * @param target
+     * @param options
+     * @param soupName
+     * @param syncName
+     * @param callback
+     * @return
+     * @throws JSONException
+     */
+    public SyncState syncDown(SyncDownTarget target, SyncOptions options, String soupName, String syncName, SyncUpdateCallback callback) throws JSONException {
+    	SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName, syncName);
         SmartSyncLogger.d(TAG, "syncDown called", sync);
         runSync(sync, callback);
 		return sync;
@@ -255,7 +302,21 @@ public class SyncManager {
         return sync;
     }
 
-	/**
+    /**
+     * Re-run sync but only fetch new/modified records
+     * @param syncName
+     * @param callback
+     * @throws JSONException
+     */
+    public SyncState reSync(String syncName, SyncUpdateCallback callback) throws JSONException {
+        SyncState sync = getSyncStatus(syncName);
+        if (sync == null) {
+            throw new SmartSyncException("Cannot run reSync:" + syncName + ": no sync found");
+        }
+        return reSync(sync.getId(), callback);
+    }
+
+    /**
 	 * Run a sync
 	 * @param sync
 	 * @param callback
@@ -288,7 +349,7 @@ public class SyncManager {
 	}
 
     /**
-     * Create and run a sync up
+     * Create and run a sync up without a name
      * @param target
      * @param options
      * @param soupName
@@ -297,7 +358,20 @@ public class SyncManager {
      * @throws JSONException
      */
     public SyncState syncUp(SyncUpTarget target, SyncOptions options, String soupName, SyncUpdateCallback callback) throws JSONException {
-    	SyncState sync = SyncState.createSyncUp(smartStore, target, options, soupName, null);
+        return syncUp(target, options, soupName, null, callback);
+    }
+
+    /**
+     * Create and run a sync up
+     * @param target
+     * @param options
+     * @param soupName
+     * @param callback
+     * @return
+     * @throws JSONException
+     */
+    public SyncState syncUp(SyncUpTarget target, SyncOptions options, String soupName, String syncName, SyncUpdateCallback callback) throws JSONException {
+    	SyncState sync = SyncState.createSyncUp(smartStore, target, options, soupName, syncName);
         SmartSyncLogger.d(TAG, "syncUp called", sync);
         runSync(sync, callback);
     	return sync;
