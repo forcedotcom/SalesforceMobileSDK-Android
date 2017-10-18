@@ -265,7 +265,7 @@ public class OAuth2 {
             sb.append(AND).append(SCOPE).append(EQUAL).append(Uri.encode(computeScopeParameter(scopes)));
         }
         sb.append(AND).append(REDIRECT_URI).append(EQUAL).append(callbackUrl);
-        sb.append(AND).append(CODE_CHALLENGE).append(EQUAL).append(callbackUrl);
+        sb.append(AND).append(CODE_CHALLENGE).append(EQUAL).append(codeChallenge);
         return sb.toString();
     }
 
