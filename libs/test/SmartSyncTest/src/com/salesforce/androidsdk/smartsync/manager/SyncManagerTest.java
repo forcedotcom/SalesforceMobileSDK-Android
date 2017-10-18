@@ -1145,7 +1145,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         SyncState fetchedSync = SyncState.byId(smartStore, syncId);
         JSONTestHelper.assertSameJSON("Wrong sync state", sync.asJSON(), fetchedSync.asJSON());
         // Delete by id
-        SyncState.deleteById(smartStore, syncId);
+        SyncState.deleteSync(smartStore, syncId);
         assertNull("Sync should be gone", SyncState.byId(smartStore, syncId));
     }
 
@@ -1161,7 +1161,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         SyncState fetchedSync = SyncState.byName(smartStore, syncName);
         JSONTestHelper.assertSameJSON("Wrong sync state", sync.asJSON(), fetchedSync.asJSON());
         // Delete by name
-        SyncState.deleteByName(smartStore, syncName);
+        SyncState.deleteSync(smartStore, syncName);
         assertNull("Sync should be gone", SyncState.byId(smartStore, syncId));
         assertNull("Sync should be gone", SyncState.byName(smartStore, syncName));
     }
@@ -1177,7 +1177,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         SyncState fetchedSync = SyncState.byId(smartStore, syncId);
         JSONTestHelper.assertSameJSON("Wrong sync state", sync.asJSON(), fetchedSync.asJSON());
         // Delete by id
-        SyncState.deleteById(smartStore, syncId);
+        SyncState.deleteSync(smartStore, syncId);
         assertNull("Sync should be gone", SyncState.byId(smartStore, syncId));
     }
 
@@ -1193,7 +1193,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         SyncState fetchedSync = SyncState.byName(smartStore, syncName);
         JSONTestHelper.assertSameJSON("Wrong sync state", sync.asJSON(), fetchedSync.asJSON());
         // Delete by name
-        SyncState.deleteByName(smartStore, syncName);
+        SyncState.deleteSync(smartStore, syncName);
         assertNull("Sync should be gone", SyncState.byId(smartStore, syncId));
         assertNull("Sync should be gone", SyncState.byName(smartStore, syncName));
     }
@@ -1214,7 +1214,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
             assertTrue(e.getMessage().contains("already a sync with name"));
         }
         // Delete by name
-        SyncState.deleteByName(smartStore, syncName);
+        SyncState.deleteSync(smartStore, syncName);
         assertNull("Sync should be gone", SyncState.byName(smartStore, syncName));
     }
 
@@ -1234,7 +1234,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
             assertTrue(e.getMessage().contains("already a sync with name"));
         }
         // Delete by name
-        SyncState.deleteByName(smartStore, syncName);
+        SyncState.deleteSync(smartStore, syncName);
         assertNull("Sync should be gone", SyncState.byName(smartStore, syncName));
 
     }

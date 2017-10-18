@@ -68,11 +68,9 @@ public class SmartSyncPlugin extends ForcePlugin {
         syncUp,
         syncDown,
         getSyncStatus,
-        getSyncStatusByName,
         reSync,
         cleanResyncGhosts,
-        deleteSyncById,
-        deleteSyncByName
+        deleteSync
     }
     
     @Override
@@ -108,20 +106,14 @@ public class SmartSyncPlugin extends ForcePlugin {
                           case getSyncStatus:
                               getSyncStatus(args, callbackContext);
                               break;
-                          case getSyncStatusByName:
-                              getSyncStatusByName(args, callbackContext);
-                              break;
                           case reSync:
                               reSync(args, callbackContext);
                               break;
                           case cleanResyncGhosts:
                               cleanResyncGhosts(args, callbackContext);
                               break;
-                          case deleteSyncById:
-                              deleteSyncById(args, callbackContext);
-                              break;
-                          case deleteSyncByName:
-                              deleteSyncByName(args, callbackContext);
+                          case deleteSync:
+                              deleteSync(args, callbackContext);
                               break;
                           default:
                               throw new RuntimeException("No handler for action " + action);
@@ -205,64 +197,47 @@ public class SmartSyncPlugin extends ForcePlugin {
 
         // Parse args.
         JSONObject arg0 = args.getJSONObject(0);
-        long syncId = arg0.getLong(SYNC_ID);
         SyncManager syncManager = getSyncManager(arg0);
-        SyncState sync = syncManager.getSyncStatus(syncId);
+
+        SyncState sync;
+        if (arg0.has(SYNC_ID) && !arg0.isNull(SYNC_ID)) {
+            sync = syncManager.getSyncStatus(arg0.getLong(SYNC_ID));
+        }
+        else if (arg0.has(SYNC_NAME) && !arg0.isNull(SYNC_NAME)) {
+            sync = syncManager.getSyncStatus(arg0.getString(SYNC_NAME));
+        }
+        else {
+            throw new SyncManager.SmartSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
+        }
+
         // cordova can't return null, so returning {} when sync is not found
         // cordova.force.js turns it back into a null
         callbackContext.success(sync == null ? new JSONObject() : sync.asJSON());
     }
 
     /**
-     * Native implementation of getSyncStatusByName.
+     * Native implementation of deleteSync.
      *
      * @param args
      * @param callbackContext
      * @throws JSONException
      */
-    private void getSyncStatusByName(JSONArray args, CallbackContext callbackContext) throws Exception {
+    private void deleteSync(JSONArray args, CallbackContext callbackContext) throws Exception {
 
         // Parse args.
         JSONObject arg0 = args.getJSONObject(0);
-        String syncName = arg0.getString(SYNC_NAME);
         SyncManager syncManager = getSyncManager(arg0);
-        SyncState sync = syncManager.getSyncStatusByName(syncName);
-        // cordova can't return null, so returning {} when sync is not found
-        // cordova.force.js turns it back into a null
-        callbackContext.success(sync == null ? new JSONObject() : sync.asJSON());
-    }
 
-    /**
-     * Native implementation of deleteSyncById.
-     *
-     * @param args
-     * @param callbackContext
-     * @throws JSONException
-     */
-    private void deleteSyncById(JSONArray args, CallbackContext callbackContext) throws Exception {
+        if (arg0.has(SYNC_ID) && !arg0.isNull(SYNC_ID)) {
+            syncManager.deleteSync(arg0.getLong(SYNC_ID));
+        }
+        else if (arg0.has(SYNC_NAME) && !arg0.isNull(SYNC_NAME)) {
+            syncManager.deleteSync(arg0.getString(SYNC_NAME));
+        }
+        else {
+            throw new SyncManager.SmartSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
+        }
 
-        // Parse args.
-        JSONObject arg0 = args.getJSONObject(0);
-        long syncId = arg0.getLong(SYNC_ID);
-        SyncManager syncManager = getSyncManager(arg0);
-        syncManager.deleteSyncById(syncId);
-        callbackContext.success();
-    }
-
-    /**
-     * Native implementation of deleteSyncByName.
-     *
-     * @param args
-     * @param callbackContext
-     * @throws JSONException
-     */
-    private void deleteSyncByName(JSONArray args, CallbackContext callbackContext) throws Exception {
-
-        // Parse args.
-        JSONObject arg0 = args.getJSONObject(0);
-        String syncName = arg0.getString(SYNC_NAME);
-        SyncManager syncManager = getSyncManager(arg0);
-        syncManager.deleteSyncByName(syncName);
         callbackContext.success();
     }
 
@@ -282,28 +257,21 @@ public class SmartSyncPlugin extends ForcePlugin {
         final SyncManager syncManager = getSyncManager(arg0);
 
         SyncState sync;
-        if (arg0.has(SYNC_ID)) {
-            long syncId = arg0.getLong(SYNC_ID);
-            sync = syncManager.reSync(syncId, new SyncUpdateCallback() {
+        SyncUpdateCallback callback = new SyncUpdateCallback() {
+            @Override
+            public void onUpdate(SyncState sync) {
+                handleSyncUpdate(sync, isGlobal, storeName);
+            }
+        };
 
-                @Override
-                public void onUpdate(SyncState sync) {
-                    handleSyncUpdate(sync, isGlobal, storeName);
-                }
-            });
+        if (arg0.has(SYNC_ID) && !arg0.isNull(SYNC_ID)) {
+            sync = syncManager.reSync(arg0.getLong(SYNC_ID), callback);
         }
-        else if (arg0.has(SYNC_NAME)) {
-            String syncName = arg0.getString(SYNC_NAME);
-            sync = syncManager.reSync(syncName, new SyncUpdateCallback() {
-
-                @Override
-                public void onUpdate(SyncState sync) {
-                    handleSyncUpdate(sync, isGlobal, storeName);
-                }
-            });
+        else if (arg0.has(SYNC_NAME) && !arg0.isNull(SYNC_NAME)) {
+            sync = syncManager.reSync(arg0.getString(SYNC_NAME), callback);
         }
         else {
-            throw new SyncManager.SmartSyncException("reSync failed:  either " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
+            throw new SyncManager.SmartSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
         }
         callbackContext.success(sync.asJSON());
     }

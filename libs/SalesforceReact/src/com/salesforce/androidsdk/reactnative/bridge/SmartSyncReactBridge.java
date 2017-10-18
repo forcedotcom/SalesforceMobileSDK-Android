@@ -125,32 +125,18 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
     @ReactMethod
     public void getSyncStatus(ReadableMap args,
                               final Callback successCallback, final Callback errorCallback) {
-        // Parse args
-        long syncId = args.getInt(SYNC_ID);
         try {
+            SyncState sync;
             final SyncManager syncManager = getSyncManager(args);
-            SyncState sync = syncManager.getSyncStatus(syncId);
-            ReactBridgeHelper.invokeSuccess(successCallback, sync == null ? null : sync.asJSON());
-        } catch (Exception e) {
-            SalesforceReactLogger.e(TAG, "getSyncStatus call failed", e);
-            errorCallback.invoke(e.toString());
-        }
-    }
-
-    /**
-     * Native implementation of getSyncStatusByName
-     * @param args
-     * @param successCallback
-     * @param errorCallback
-     */
-    @ReactMethod
-    public void getSyncStatusByName(ReadableMap args,
-                                    final Callback successCallback, final Callback errorCallback) {
-        // Parse args
-        String syncName = args.getString(SYNC_NAME);
-        try {
-            final SyncManager syncManager = getSyncManager(args);
-            SyncState sync = syncManager.getSyncStatusByName(syncName);
+            if (args.hasKey(SYNC_ID) && !args.isNull(SYNC_ID)) {
+                sync = syncManager.getSyncStatus(args.getInt(SYNC_ID));
+            }
+            else if (args.hasKey(SYNC_NAME) && !args.isNull(SYNC_NAME)) {
+                sync = syncManager.getSyncStatus(args.getString(SYNC_NAME));
+            }
+            else {
+                throw new SyncManager.SmartSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
+            }
             ReactBridgeHelper.invokeSuccess(successCallback, sync == null ? null : sync.asJSON());
         } catch (Exception e) {
             SalesforceReactLogger.e(TAG, "getSyncStatusByName call failed", e);
@@ -159,43 +145,28 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
     }
 
     /**
-     * Native implementation of deleteSyncById
+     * Native implementation of deleteSync
      * @param args
      * @param successCallback
      * @param errorCallback
      */
     @ReactMethod
-    public void deleteSyncById(ReadableMap args,
+    public void deleteSync(ReadableMap args,
                                final Callback successCallback, final Callback errorCallback) {
-        // Parse args
-        long syncId = args.getInt(SYNC_ID);
         try {
             final SyncManager syncManager = getSyncManager(args);
-            syncManager.deleteSyncById(syncId);
+            if (args.hasKey(SYNC_ID) && !args.isNull(SYNC_ID)) {
+                syncManager.deleteSync(args.getInt(SYNC_ID));
+            }
+            else if (args.hasKey(SYNC_NAME) && !args.isNull(SYNC_NAME)) {
+                syncManager.deleteSync(args.getString(SYNC_NAME));
+            }
+            else {
+                throw new SyncManager.SmartSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
+            }
             successCallback.invoke();
         } catch (Exception e) {
             SalesforceReactLogger.e(TAG, "deleteSyncById call failed", e);
-            errorCallback.invoke(e.toString());
-        }
-    }
-
-    /**
-     * Native implementation of deleteSyncByName
-     * @param args
-     * @param successCallback
-     * @param errorCallback
-     */
-    @ReactMethod
-    public void deleteSyncByName(ReadableMap args,
-                                 final Callback successCallback, final Callback errorCallback) {
-        // Parse args
-        String syncName = args.getString(SYNC_NAME);
-        try {
-            final SyncManager syncManager = getSyncManager(args);
-            syncManager.deleteSyncByName(syncName);
-            successCallback.invoke();
-        } catch (Exception e) {
-            SalesforceReactLogger.e(TAG, "deleteSyncByName call failed", e);
             errorCallback.invoke(e.toString());
         }
     }
@@ -211,22 +182,18 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                        final Callback successCallback, final Callback errorCallback) {
         try {
             final SyncManager syncManager = getSyncManager(args);
+            SyncManager.SyncUpdateCallback callback = new SyncManager.SyncUpdateCallback() {
+                @Override
+                public void onUpdate(SyncState sync) {
+                    handleSyncUpdate(sync, successCallback, errorCallback);
+                }
+            };
 
             if (args.hasKey(SYNC_ID) && !args.isNull(SYNC_ID)) {
-                syncManager.reSync(args.getInt(SYNC_ID), new SyncManager.SyncUpdateCallback() {
-                    @Override
-                    public void onUpdate(SyncState sync) {
-                        handleSyncUpdate(sync, successCallback, errorCallback);
-                    }
-                });
+                syncManager.reSync(args.getInt(SYNC_ID), callback);
             }
             else if (args.hasKey(SYNC_NAME) && !args.isNull(SYNC_NAME)) {
-                syncManager.reSync(args.getString(SYNC_NAME), new SyncManager.SyncUpdateCallback() {
-                    @Override
-                    public void onUpdate(SyncState sync) {
-                        handleSyncUpdate(sync, successCallback, errorCallback);
-                    }
-                });
+                syncManager.reSync(args.getString(SYNC_NAME), callback);
             }
             else {
                 throw new SyncManager.SmartSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
@@ -293,3 +260,4 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         return syncManager;
     }
 }
+

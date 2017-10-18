@@ -150,7 +150,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
             }
         };
         try {
-            if (syncMgr.getSyncStatusByName(SYNC_NAME) == null) {
+            if (syncMgr.getSyncStatus(SYNC_NAME) == null) {
                 final SyncOptions options = SyncOptions.optionsForSyncDown(SyncState.MergeMode.LEAVE_IF_CHANGED);
                 final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS_SYNC_DOWN)
                         .from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();

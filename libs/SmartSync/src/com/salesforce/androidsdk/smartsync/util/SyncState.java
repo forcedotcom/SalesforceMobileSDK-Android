@@ -243,21 +243,19 @@ public class SyncState {
 
 	/**
 	 * Delete row for sync given by id
-	 *
-	 * @param store
+	 *  @param store
 	 * @param id
 	 */
-	public static void deleteById(SmartStore store, long id) {
+	public static void deleteSync(SmartStore store, long id) {
 		store.delete(SYNCS_SOUP, id);
 	}
 
 	/**
 	 * Delete row for sync given by name
-	 *
-	 * @param store
+	 *  @param store
 	 * @param name
 	 */
-	public static void deleteByName(SmartStore store, String name) {
+	public static void deleteSync(SmartStore store, String name) {
 		if (name == null) {
 			throw new SyncManager.SmartSyncException("name must not be null");
 		}
@@ -267,7 +265,7 @@ public class SyncState {
 		if (syncId < 0)
 			return;
 
-		deleteById(store, syncId);
+		deleteSync(store, syncId);
 	}
 
 	/**

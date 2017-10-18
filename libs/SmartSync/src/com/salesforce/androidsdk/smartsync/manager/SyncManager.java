@@ -209,7 +209,7 @@ public class SyncManager {
      * @return
      * @throws JSONException
      */
-    public SyncState getSyncStatusByName(String name) throws JSONException {
+    public SyncState getSyncStatus(String name) throws JSONException {
         return SyncState.byName(smartStore, name);
     }
 
@@ -220,8 +220,8 @@ public class SyncManager {
      * @return
      * @throws JSONException
      */
-    public void deleteSyncById(long syncId) throws JSONException {
-        SyncState.deleteById(smartStore, syncId);
+    public void deleteSync(long syncId) throws JSONException {
+        SyncState.deleteSync(smartStore, syncId);
     }
 
     /**
@@ -231,8 +231,8 @@ public class SyncManager {
      * @return
      * @throws JSONException
      */
-    public void deleteSyncByName(String name) throws JSONException {
-        SyncState.deleteByName(smartStore, name);
+    public void deleteSync(String name) throws JSONException {
+        SyncState.deleteSync(smartStore, name);
     }
 
     /**
@@ -309,7 +309,7 @@ public class SyncManager {
      * @throws JSONException
      */
     public SyncState reSync(String syncName, SyncUpdateCallback callback) throws JSONException {
-        SyncState sync = getSyncStatusByName(syncName);
+        SyncState sync = getSyncStatus(syncName);
         if (sync == null) {
             throw new SmartSyncException("Cannot run reSync:" + syncName + ": no sync found");
         }
