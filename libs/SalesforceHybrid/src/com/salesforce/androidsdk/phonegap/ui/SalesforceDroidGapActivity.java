@@ -475,7 +475,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
         if (loadThroughFrontDoor) {
             url = getFrontDoorUrl(url, false);
         }
-        SalesforceHybridLogger.i(TAG, "loadRemoteStartPage called - loading: " + startPage);
+        SalesforceHybridLogger.i(TAG, "loadRemoteStartPage called - loading: " + url);
         loadUrl(url);
         webAppLoaded = true;
     }
