@@ -39,6 +39,7 @@ import com.salesforce.androidsdk.accounts.UserAccountTest;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.auth.idp.IDPRequestHandler;
 import com.salesforce.androidsdk.auth.idp.SPConfig;
+import com.salesforce.androidsdk.rest.ClientManager;
 
 import junit.framework.Assert;
 
@@ -149,16 +150,50 @@ public class IDPRequestHandlerTest extends InstrumentationTestCase {
     }
 
     /**
+     * Test for missing login URL from SPConfig.
+     */
+    public void testMissingLoginUrl() {
+        final SPConfig spConfig = new SPConfig(TEST_CONSUMER_KEY, TEST_CALLBACK_URL,
+                TEST_CODE_CHALLENGE, TEST_SCOPES, null, TEST_USER_HINT);
+        try {
+            new IDPRequestHandler(spConfig, buildTestUserAccount());
+            Assert.fail("Exception should have been thrown for missing user account");
+        } catch (IDPRequestHandler.IDPRequestHandlerException e) {
+            Assert.fail("Exception should not have been thrown");
+        } catch (ClientManager.AccountInfoNotFoundException e) {
+            Log.v(TAG, "Exception thrown as expected");
+        }
+    }
+
+    /**
+     * Test for missing user hint from SPConfig.
+     */
+    public void testMissingUserHint() {
+        final SPConfig spConfig = new SPConfig(TEST_CONSUMER_KEY, TEST_CALLBACK_URL,
+                TEST_CODE_CHALLENGE, TEST_SCOPES, TEST_LOGIN_URL, null);
+        try {
+            new IDPRequestHandler(spConfig, buildTestUserAccount());
+            Assert.fail("Exception should have been thrown for missing user account");
+        } catch (IDPRequestHandler.IDPRequestHandlerException e) {
+            Assert.fail("Exception should not have been thrown");
+        } catch (ClientManager.AccountInfoNotFoundException e) {
+            Log.v(TAG, "Exception thrown as expected");
+        }
+    }
+
+    /**
      * Test for valid SPConfig and valid UserAccount.
      */
     public void testValidParams() {
         final SPConfig spConfig = new SPConfig(TEST_CONSUMER_KEY, TEST_CALLBACK_URL,
                 TEST_CODE_CHALLENGE, TEST_SCOPES, TEST_LOGIN_URL, TEST_USER_HINT);
         try {
-            final IDPRequestHandler idpRequestHandler = new IDPRequestHandler(spConfig, buildTestUserAccount());
-            assertNotNull("IDPRequestHandler should not be null", idpRequestHandler);
+            new IDPRequestHandler(spConfig, buildTestUserAccount());
+            Assert.fail("Exception should have been thrown for missing user account");
         } catch (IDPRequestHandler.IDPRequestHandlerException e) {
             Assert.fail("Exception should not have been thrown");
+        } catch (ClientManager.AccountInfoNotFoundException e) {
+            Log.v(TAG, "Exception thrown as expected");
         }
     }
 

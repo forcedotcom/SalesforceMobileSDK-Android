@@ -131,7 +131,7 @@ public class IDPRequestHandler {
         // Ensures that we have all the values we need in order to perform an IDP request.
         if (spConfig == null || TextUtils.isEmpty(spConfig.getOauthClientId()) ||
                 TextUtils.isEmpty(spConfig.getOauthCallbackUrl()) ||
-                TextUtils.isEmpty(spConfig.getComputedScopeParameter()) ||
+                (spConfig.getOauthScopes() == null) ||
                 TextUtils.isEmpty(spConfig.getCodeChallenge())) {
             handleError("Incomplete SP app configuration - missing fields", null);
         }
