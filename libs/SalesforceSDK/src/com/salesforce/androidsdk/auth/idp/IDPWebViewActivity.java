@@ -31,6 +31,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -38,7 +39,6 @@ import android.webkit.WebViewClient;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import com.salesforce.androidsdk.util.UriFragmentParser;
 
@@ -54,8 +54,8 @@ public class IDPWebViewActivity extends Activity {
 
     public static final String USER_ACCOUNT_BUNDLE_KEY = "user_account_bundle";
     public static final String SP_CONFIG_BUNDLE_KEY = "sp_config_bundle";
-    private static final String ERROR_KEY = "error";
-    private static final String ERROR_DESCRIPTION_KEY = "error_description";
+    public static final String ERROR_KEY = "error";
+    public static final String CODE_KEY = "code";
     private static final String TAG = "IDPWebViewActivity";
 
     private UserAccount userAccount;
@@ -88,6 +88,7 @@ public class IDPWebViewActivity extends Activity {
             new RefreshAuthTokenTask(idpRequestHandler, webView).execute();
         } catch (IDPRequestHandler.IDPRequestHandlerException e) {
             SalesforceSDKLogger.e(TAG, "Building IDP request handler failed", e);
+            handleError("Incomplete SP config or user account data");
         }
     }
 
@@ -106,17 +107,33 @@ public class IDPWebViewActivity extends Activity {
                 final Map<String, String> params = UriFragmentParser.parse(callbackUri);
 
                 // Determines if the authentication flow succeeded or failed.
-                final String error = params.get(ERROR_KEY);
-                if (error != null) {
-                    final String errorDesc = params.get(ERROR_DESCRIPTION_KEY);
-                    // TODO: Propagate error back.
+                if (params != null) {
+                    final String code = params.get(CODE_KEY);
+                    if (TextUtils.isEmpty(code)) {
+                        handleError("Code not returned from server");
+                    } else {
+                        handleSuccess(code);
+                    }
                 } else {
-                    final OAuth2.TokenEndpointResponse tr = new OAuth2.TokenEndpointResponse(params);
-                    // TODO: Propagate response back.
+                    handleError("Code not returned from server");
                 }
             }
             return isDone;
         }
+    }
+
+    private void handleError(String error) {
+        final Intent intent = new Intent();
+        intent.putExtra(ERROR_KEY, error);
+        setResult(RESULT_CANCELED, intent);
+        finish();
+    }
+
+    private void handleSuccess(String code) {
+        final Intent intent = new Intent();
+        intent.putExtra(CODE_KEY, code);
+        setResult(RESULT_OK, intent);
+        finish();
     }
 
     private class RefreshAuthTokenTask extends AsyncTask<Void, Void, String> {
