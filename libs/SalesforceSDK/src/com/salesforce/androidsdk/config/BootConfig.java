@@ -98,6 +98,39 @@ public class BootConfig {
 		}
 		return INSTANCE;
 	}
+
+	/**
+	 * Validates a boot config's inputs against basic sanity tests.
+	 * @param config The BootConfig instance to validate.
+	 * @throws BootConfigException If the boot config is invalid.
+	 */
+	public static void validateBootConfig(BootConfig config) {
+		if (config == null) {
+			throw new BootConfigException("No boot config provided.");
+		}
+
+		if (SalesforceSDKManager.getInstance().isHybrid()) {
+			String startPage = config.getStartPage();
+			if (startPage == null) {
+				throw new BootConfigException("No start page configured.");
+			}
+
+			// Sanity check local URLs against absolute URL values.
+			if (config.isLocal() && config.isStartPageAbsoluteUrl()) {
+				throw new BootConfigException("Local start page should not be absolute URL.");
+			}
+
+			// Start page makeup for remote apps beyond this point is subject to conditional configuration.
+
+			if (!config.isLocal() && config.shouldAuthenticate() && config.isStartPageAbsoluteUrl()) {
+				throw new BootConfigException("Cannot authenticate using an absolute URL for start page.");
+			}
+
+			if (!config.isLocal() && !config.shouldAuthenticate() && !config.isStartPageAbsoluteUrl()) {
+				throw new BootConfigException("Cannot configure relative URL start page with deferred authentication.");
+			}
+		}
+	}
 	
     /**
      * Use runtime configurations (from MDM provider) if any
@@ -257,6 +290,14 @@ public class BootConfig {
 	}
 
 	/**
+	 * Convenience method to determine whether a configured startPage value is an absolute URL.
+	 * @return true if startPage is an absolute URL, false otherwise.
+	 */
+	public boolean isStartPageAbsoluteUrl() {
+		return (startPage != null && (startPage.startsWith("http://") || startPage.startsWith("https://")));
+	}
+
+	/**
 	 * Returns the path to the local error page.
 	 *
 	 * @return Path to local error page.
@@ -298,6 +339,10 @@ public class BootConfig {
 	static public class BootConfigException extends RuntimeException {
 
 		private static final long serialVersionUID = 1L;
+
+		public BootConfigException(String msg) {
+			super(msg);
+		}
 
 		public BootConfigException(String msg, Throwable cause) {
 			super(msg, cause);

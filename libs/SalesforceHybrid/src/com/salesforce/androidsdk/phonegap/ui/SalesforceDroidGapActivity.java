@@ -180,37 +180,45 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
      * Called when resuming activity and user is not authenticated
      */
     private void onResumeNotLoggedIn() {
+        try {
+            BootConfig.validateBootConfig(bootconfig);
 
-        // Need to be authenticated
-        if (bootconfig.shouldAuthenticate()) {
+            // Need to be authenticated
+            if (bootconfig.shouldAuthenticate()) {
 
-            // Online
-            if (SalesforceSDKManager.getInstance().hasNetwork()) {
-                SalesforceHybridLogger.i(TAG, "onResumeNotLoggedIn - should authenticate/online - authenticating");
-                authenticate(null);
+                // Online
+                if (SalesforceSDKManager.getInstance().hasNetwork()) {
+                    SalesforceHybridLogger.i(TAG, "onResumeNotLoggedIn - should authenticate/online - authenticating");
+                    authenticate(null);
+                }
+
+                // Offline
+                else {
+                    SalesforceHybridLogger.w(TAG, "onResumeNotLoggedIn - should authenticate/offline - can not proceed");
+                    loadErrorPage();
+                }
             }
 
-            // Offline
+            // Does not need to be authenticated
             else {
-                SalesforceHybridLogger.w(TAG, "onResumeNotLoggedIn - should authenticate/offline - can not proceed");
-                loadErrorPage();
-            }
-        }
 
-        // Does not need to be authenticated
-        else {
+                // Local
+                if (bootconfig.isLocal()) {
+                    SalesforceHybridLogger.i(TAG, "onResumeNotLoggedIn - should not authenticate/local start page - loading web app");
+                    loadLocalStartPage();
+                }
 
-            // Local
-            if (bootconfig.isLocal()) {
-                SalesforceHybridLogger.i(TAG, "onResumeNotLoggedIn - should not authenticate/local start page - loading web app");
-                loadLocalStartPage();
+                // Remote
+                else {
+                    SalesforceHybridLogger.w(TAG, "onResumeNotLoggedIn - should not authenticate/remote start page - loading web app");
+                    loadRemoteStartPage(!bootconfig.isStartPageAbsoluteUrl());
+                }
             }
-
-            // Remote
-            else {
-                SalesforceHybridLogger.w(TAG, "onResumeNotLoggedIn - should not authenticate/remote start page - can not proceed");
-                loadErrorPage();
-            }
+        } catch (BootConfig.BootConfigException e) {
+            SalesforceHybridLogger.w(TAG, "onResumeNotLoggedIn - Boot config did not pass validation: "
+                    + e.getMessage()
+                    + " - cannot proceed");
+            loadErrorPage();
         }
     }
 
@@ -231,7 +239,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
             // Online
             if (SalesforceSDKManager.getInstance().hasNetwork()) {
                 SalesforceHybridLogger.i(TAG, "onResumeLoggedInNotLoaded - remote start page/online - loading web app");
-                loadRemoteStartPage();
+                loadRemoteStartPage(!bootconfig.isStartPageAbsoluteUrl());
             }
 
             // Offline
@@ -453,10 +461,21 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
      * Load remote start page (front-doored)
      */
     public void loadRemoteStartPage() {
+        loadRemoteStartPage(true);
+    }
+
+    /**
+     * Load the remote start page.
+     * @param loadThroughFrontDoor Whether or not to load through front-door.
+     */
+    private void loadRemoteStartPage(boolean loadThroughFrontDoor) {
         assert !bootconfig.isLocal();
         String startPage = bootconfig.getStartPage();
-        SalesforceHybridLogger.i(TAG, "loadRemoteStartPage called - loading: " + startPage);
-        String url = getFrontDoorUrl(startPage, false);
+        String url = startPage;
+        if (loadThroughFrontDoor) {
+            url = getFrontDoorUrl(url, false);
+        }
+        SalesforceHybridLogger.i(TAG, "loadRemoteStartPage called - loading: " + url);
         loadUrl(url);
         webAppLoaded = true;
     }
