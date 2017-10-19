@@ -38,7 +38,6 @@ import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess.NoNetworkException;
 import com.salesforce.androidsdk.config.BootConfig;
-import com.salesforce.androidsdk.config.BootConfigValidationResult;
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
@@ -181,45 +180,45 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
      * Called when resuming activity and user is not authenticated
      */
     private void onResumeNotLoggedIn() {
+        try {
+            BootConfig.validateBootConfig(bootconfig);
 
-        BootConfigValidationResult validationResult = BootConfig.validateBootConfig(bootconfig);
-        if (!validationResult.getValidationSucceeded()) {
+            // Need to be authenticated
+            if (bootconfig.shouldAuthenticate()) {
+
+                // Online
+                if (SalesforceSDKManager.getInstance().hasNetwork()) {
+                    SalesforceHybridLogger.i(TAG, "onResumeNotLoggedIn - should authenticate/online - authenticating");
+                    authenticate(null);
+                }
+
+                // Offline
+                else {
+                    SalesforceHybridLogger.w(TAG, "onResumeNotLoggedIn - should authenticate/offline - can not proceed");
+                    loadErrorPage();
+                }
+            }
+
+            // Does not need to be authenticated
+            else {
+
+                // Local
+                if (bootconfig.isLocal()) {
+                    SalesforceHybridLogger.i(TAG, "onResumeNotLoggedIn - should not authenticate/local start page - loading web app");
+                    loadLocalStartPage();
+                }
+
+                // Remote
+                else {
+                    SalesforceHybridLogger.w(TAG, "onResumeNotLoggedIn - should not authenticate/remote start page - loading web app");
+                    loadRemoteStartPage(!bootconfig.isStartPageAbsoluteUrl());
+                }
+            }
+        } catch (BootConfig.BootConfigException e) {
             SalesforceHybridLogger.w(TAG, "onResumeNotLoggedIn - Boot config did not pass validation: "
-                    + validationResult.getValidationMessage()
+                    + e.getMessage()
                     + " - cannot proceed");
             loadErrorPage();
-        }
-
-        // Need to be authenticated
-        else if (bootconfig.shouldAuthenticate()) {
-
-            // Online
-            if (SalesforceSDKManager.getInstance().hasNetwork()) {
-                SalesforceHybridLogger.i(TAG, "onResumeNotLoggedIn - should authenticate/online - authenticating");
-                authenticate(null);
-            }
-
-            // Offline
-            else {
-                SalesforceHybridLogger.w(TAG, "onResumeNotLoggedIn - should authenticate/offline - can not proceed");
-                loadErrorPage();
-            }
-        }
-
-        // Does not need to be authenticated
-        else {
-
-            // Local
-            if (bootconfig.isLocal()) {
-                SalesforceHybridLogger.i(TAG, "onResumeNotLoggedIn - should not authenticate/local start page - loading web app");
-                loadLocalStartPage();
-            }
-
-            // Remote
-            else {
-                SalesforceHybridLogger.w(TAG, "onResumeNotLoggedIn - should not authenticate/remote start page - loading web app");
-                loadRemoteStartPage(!bootconfig.isStartPageAbsoluteUrl());
-            }
         }
     }
 

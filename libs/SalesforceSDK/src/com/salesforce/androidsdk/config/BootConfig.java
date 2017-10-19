@@ -102,39 +102,33 @@ public class BootConfig {
 	/**
 	 * Validates a boot config's inputs against basic sanity tests.
 	 * @param config The BootConfig instance to validate.
-	 * @return A BootConfigValidationResult describing the success or failure of validation, with
-	 * an the error message associated with a failed validation.
+	 * @throws BootConfigException If the boot config is invalid.
 	 */
-	public static BootConfigValidationResult validateBootConfig(BootConfig config) {
+	public static void validateBootConfig(BootConfig config) {
 		if (config == null) {
-			return new BootConfigValidationResult(false, "No boot config provided.");
+			throw new BootConfigException("No boot config provided.");
 		}
 
 		if (SalesforceSDKManager.getInstance().isHybrid()) {
 			String startPage = config.getStartPage();
 			if (startPage == null) {
-				return new BootConfigValidationResult(false, "No start page configured.");
+				throw new BootConfigException("No start page configured.");
 			}
 
 			// Sanity check local URLs against absolute URL values.
 			if (config.isLocal() && config.isStartPageAbsoluteUrl()) {
-				return new BootConfigValidationResult(false, "Local start page should not be absolute URL.");
+				throw new BootConfigException("Local start page should not be absolute URL.");
 			}
 
 			// Start page makeup for remote apps beyond this point is subject to conditional configuration.
 
 			if (!config.isLocal() && config.shouldAuthenticate() && config.isStartPageAbsoluteUrl()) {
-				return new BootConfigValidationResult(false, "Cannot authenticate using an absolute URL for start page.");
+				throw new BootConfigException("Cannot authenticate using an absolute URL for start page.");
 			}
 
 			if (!config.isLocal() && !config.shouldAuthenticate() && !config.isStartPageAbsoluteUrl()) {
-				return new BootConfigValidationResult(false, "Cannot configure relative URL start page with deferred authentication.");
+				throw new BootConfigException("Cannot configure relative URL start page with deferred authentication.");
 			}
-
-			return new BootConfigValidationResult(true);
-		}
-		else {
-			return new BootConfigValidationResult(true);
 		}
 	}
 	
@@ -345,6 +339,10 @@ public class BootConfig {
 	static public class BootConfigException extends RuntimeException {
 
 		private static final long serialVersionUID = 1L;
+
+		public BootConfigException(String msg) {
+			super(msg);
+		}
 
 		public BootConfigException(String msg, Throwable cause) {
 			super(msg, cause);
