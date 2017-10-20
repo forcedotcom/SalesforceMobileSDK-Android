@@ -57,10 +57,12 @@ public class IDPCodeGeneratorActivity extends Activity {
     public static final String SP_CONFIG_BUNDLE_KEY = "sp_config_bundle";
     public static final String ERROR_KEY = "error";
     public static final String CODE_KEY = "code";
+    public static final String LOGIN_URL_KEY = "login_url";
     private static final String TAG = "IDPCodeGeneratorActivity";
 
     private UserAccount userAccount;
     private SPConfig spConfig;
+    private String loginUrl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,6 +88,7 @@ public class IDPCodeGeneratorActivity extends Activity {
         webView.setWebViewClient(new IDPWebViewClient());
         try {
             final IDPRequestHandler idpRequestHandler = new IDPRequestHandler(spConfig, userAccount);
+            loginUrl = idpRequestHandler.getLoginUrl();
             new RefreshAuthTokenTask(idpRequestHandler, webView).execute();
         } catch (IDPRequestHandler.IDPRequestHandlerException e) {
             SalesforceSDKLogger.e(TAG, "Building IDP request handler failed", e);
@@ -133,6 +136,7 @@ public class IDPCodeGeneratorActivity extends Activity {
     private void handleSuccess(String code) {
         final Intent intent = new Intent();
         intent.putExtra(CODE_KEY, code);
+        intent.putExtra(LOGIN_URL_KEY, loginUrl);
         setResult(RESULT_OK, intent);
         finish();
     }
