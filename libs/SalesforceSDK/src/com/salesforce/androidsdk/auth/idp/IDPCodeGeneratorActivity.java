@@ -77,7 +77,7 @@ public class IDPCodeGeneratorActivity extends Activity {
         // Protects against screenshots.
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
                 WindowManager.LayoutParams.FLAG_SECURE);
-        setContentView(R.layout.sf__idp_webview);
+        setContentView(R.layout.sf__idp_code_generator);
         final WebView webView = findViewById(R.id.sf__webview);
         final WebSettings webSettings = webView.getSettings();
         webSettings.setUseWideViewPort(true);
