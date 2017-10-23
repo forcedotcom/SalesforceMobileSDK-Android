@@ -8,4 +8,5 @@ function waitForAVD {
     bootanim=$(adb -e shell getprop init.svc.bootanim 2>&1)
     echo "emulator status=$bootanim"
   done
+  echo "Device Booted"
 }

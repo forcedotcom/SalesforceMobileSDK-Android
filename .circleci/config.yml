@@ -15,7 +15,7 @@ jobs:
     steps:
       - run:
           name:  Launch Emulator
-          command: emulator -avd test23 -no-audio -no-window -no-boot-anim -gpu off
+          command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
           background: true
 
       - checkout
@@ -38,8 +38,8 @@ jobs:
       - run:
           name:  Run Tests
           halt_build_on_fail: false
-          command: ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest :libs:SmartStore:connectedAndroidTest :libs:SmartSync:connectedAndroidTest :libs:SalesforceHybrid:connectedAndroidTest :libs:SalesforceReact:assembleDebug -p . --continue --no-daemon --profile --max-workers 2 
-          no_output_timeout: 900
+          command: ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest :libs:SalesforceSDK:connectedAndroidTest :libs:SmartStore:connectedAndroidTest :libs:SmartSync:connectedAndroidTest :libs:SalesforceHybrid:connectedAndroidTest :libs:SalesforceReact:assembleDebug -p . --continue --no-daemon --profile --max-workers 2 
+          no_output_timeout: 1800
 
       - store_artifacts:
           path: ./build/archives
@@ -53,6 +53,10 @@ jobs:
       - store_artifacts:
           path: ./build/outputs/androidTest-results/connected/
 
+      - store_artifacts:
+          path: libs/SalesforceSDK/build/reports/androidTests/connected/index.html
+      - store_test_results:
+          path: libs/SalesforceSDK/build/reports/androidTests/connected/index.html
       - store_artifacts:
           path: libs/SmartSync/build/reports/androidTests/connected/index.html
       - store_test_results:
