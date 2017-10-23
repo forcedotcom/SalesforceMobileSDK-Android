@@ -98,7 +98,7 @@ public class SalesforceKeyGenerator {
             secretKey = md.digest(secretKey);
             byte[] dest = new byte[16];
             System.arraycopy(secretKey, 0, dest, 0, 16);
-            CACHED_ENCRYPTION_KEYS.put(name, Base64.encodeToString(dest, Base64.DEFAULT));
+            CACHED_ENCRYPTION_KEYS.put(name, Base64.encodeToString(dest, Base64.NO_WRAP));
         } catch (Exception ex) {
             SalesforceSDKLogger.e(TAG, "Exception thrown while getting encryption key", ex);
         }
