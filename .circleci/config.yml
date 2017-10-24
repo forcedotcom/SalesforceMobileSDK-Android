@@ -3,6 +3,8 @@ jobs:
   build:
     docker:
       - image: brandonpage/salesforce-mobilesdk-android-docker-primary:0.0.3
+        environment:
+          MAVEN_OPTS: "-Xms256m -Xmx1024m"
 
     working_directory: ~/SalesforceMobileSDK-Android
 
@@ -54,14 +56,22 @@ jobs:
           path: ./build/outputs/androidTest-results/connected/
 
       - store_artifacts:
-          path: libs/SalesforceSDK/build/reports/androidTests/connected/index.html
+          path: libs/SalesforceAnalytics/build/reports/
       - store_test_results:
-          path: libs/SalesforceSDK/build/reports/androidTests/connected/index.html
+          path: libs/SalesforceAnalytics/build/reports/
       - store_artifacts:
-          path: libs/SmartSync/build/reports/androidTests/connected/index.html
+          path: libs/SalesforceSDK/build/reports/
       - store_test_results:
-          path: libs/SmartSync/build/reports/androidTests/connected/index.html
+          path: libs/SalesforceSDK/build/reports/
       - store_artifacts:
-          path: libs/SalesforceHybrid/build/reports/androidTests/connected/index.html
+          path: libs/SmartStore/build/reports/
       - store_test_results:
-          path: libs/SalesforceHybrid/build/reports/androidTests/connected/index.html
+          path: libs/SmartStore/build/reports/
+      - store_artifacts:
+          path: libs/SmartSync/build/reports/
+      - store_test_results:
+          path: libs/SmartSync/build/reports/
+      - store_artifacts:
+          path: libs/SalesforceHybrid/build/reports/
+      - store_test_results:
+          path: libs/SalesforceHybrid/build/reports/
