@@ -1,0 +1,77 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: brandonpage/salesforce-mobilesdk-android-docker-primary:0.0.3
+        environment:
+          MAVEN_OPTS: "-Xms256m -Xmx1024m"
+
+    working_directory: ~/SalesforceMobileSDK-Android
+
+    environment:
+      - TERM: "dumb"
+      - ADB_INSTALL_TIMEOUT: 10
+      - ANDROID_NDK: '/opt/ndk/android-ndk-r10e'
+      - BUILD_THREADS: 2 
+
+    steps:
+      - run:
+          name:  Launch Emulator
+          command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
+          background: true
+
+      - checkout
+
+      - restore_cache:
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
+      - run:
+          name: Download Dependencies
+          command: ./install.sh && ./gradlew androidDependencies && ./gradlew dependencies
+      - save_cache:
+          paths:
+            - ~/.gradle
+            - node_modules
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
+
+      - run:
+          name:  Wait for Emulator to boot
+          command: source .circleci/ci-helper.sh && waitForAVD
+
+      - run:
+          name:  Run Tests
+          halt_build_on_fail: false
+          command: ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest :libs:SalesforceSDK:connectedAndroidTest :libs:SmartStore:connectedAndroidTest :libs:SmartSync:connectedAndroidTest :libs:SalesforceHybrid:connectedAndroidTest :libs:SalesforceReact:assembleDebug -p . --continue --no-daemon --profile --max-workers 2 
+          no_output_timeout: 1800
+
+      - store_artifacts:
+          path: ./build/archives
+          destination: archives
+      - store_artifacts:
+          path: ./build/reports
+          destination: reports
+      - store_artifacts:
+          path: ./build/outputs
+          destination: outputs
+      - store_artifacts:
+          path: ./build/outputs/androidTest-results/connected/
+
+      - store_artifacts:
+          path: libs/SalesforceAnalytics/build/reports/
+      - store_test_results:
+          path: libs/SalesforceAnalytics/build/reports/
+      - store_artifacts:
+          path: libs/SalesforceSDK/build/reports/
+      - store_test_results:
+          path: libs/SalesforceSDK/build/reports/
+      - store_artifacts:
+          path: libs/SmartStore/build/reports/
+      - store_test_results:
+          path: libs/SmartStore/build/reports/
+      - store_artifacts:
+          path: libs/SmartSync/build/reports/
+      - store_test_results:
+          path: libs/SmartSync/build/reports/
+      - store_artifacts:
+          path: libs/SalesforceHybrid/build/reports/
+      - store_test_results:
+          path: libs/SalesforceHybrid/build/reports/
