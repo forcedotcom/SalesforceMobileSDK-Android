@@ -140,7 +140,8 @@ public class SPRequestHandler {
             OAuth2.TokenEndpointResponse tokenResponse = null;
             try {
                 tokenResponse = OAuth2.getSPCredentials(HttpAccess.DEFAULT,
-                        URI.create(loginUrl), spConfig.getOauthClientId(), code, codeVerifier);
+                        URI.create(loginUrl), spConfig.getOauthClientId(), code, codeVerifier,
+                        spConfig.getOauthCallbackUrl());
             } catch (Exception e) {
                 SalesforceSDKLogger.e(TAG, "Exception occurred while making token request", e);
             }

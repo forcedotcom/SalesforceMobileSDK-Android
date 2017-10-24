@@ -294,18 +294,21 @@ public class OAuth2 {
      * @param clientId Client ID.
      * @param code Code returned from the IDP.
      * @param codeVerifier Code verifier used by the SP to generate 'code_challenge'.
+     * @param callbackUrl Callback URL.
      * @return Full set of credentials.
      * @throws OAuthFailedException
      * @throws IOException
      */
     public static TokenEndpointResponse getSPCredentials(HttpAccess httpAccessor, URI loginServer,
-                                                         String clientId, String code, String codeVerifier)
+                                                         String clientId, String code, String codeVerifier,
+                                                         String callbackUrl)
             throws OAuthFailedException, IOException {
         final FormBody.Builder builder = new FormBody.Builder().
                 add(GRANT_TYPE, AUTHORIZATION_CODE).add(CLIENT_ID, clientId);
         builder.add(CODE, code);
         builder.add(CODE_VERIFIER, codeVerifier);
         builder.add(FORMAT, JSON);
+        builder.add(REDIRECT_URI, callbackUrl);
         return makeTokenEndpointRequest(httpAccessor, loginServer, builder);
     }
 
