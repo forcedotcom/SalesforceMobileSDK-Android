@@ -34,6 +34,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -58,6 +59,7 @@ public class SalesforceKeyGenerator {
     private static final String ADDENDUM = "addendum_%s";
     private static final String UTF8 = "UTF-8";
     private static final String SHA1 = "SHA-1";
+    private static final String SHA256 = "SHA-256";
     private static final String SHA1PRNG = "SHA1PRNG";
     private static final String AES = "AES";
 
@@ -88,6 +90,25 @@ public class SalesforceKeyGenerator {
             generateEncryptionKey(name);
         }
         return CACHED_ENCRYPTION_KEYS.get(name);
+    }
+
+    /**
+     * Returns the SHA-256 hashed value of the supplied private key.
+     *
+     * @param privateKey Private key.
+     * @return SHA-256 hash.
+     */
+    public static String getSHA256Hash(String privateKey) {
+        String hashedString = null;
+        byte[] privateKeyBytes = privateKey.getBytes(StandardCharsets.US_ASCII);
+        try {
+            final MessageDigest digest = MessageDigest.getInstance(SHA256);
+            byte[] hash = digest.digest(privateKeyBytes);
+            hashedString = Base64.encodeToString(hash, Base64.URL_SAFE | Base64.NO_WRAP | Base64.NO_PADDING);
+        } catch(Exception e) {
+            SalesforceSDKLogger.e(TAG, "Exception thrown while generating SHA-256 hash", e);
+        }
+        return hashedString;
     }
 
     private static void generateEncryptionKey(String name) {
