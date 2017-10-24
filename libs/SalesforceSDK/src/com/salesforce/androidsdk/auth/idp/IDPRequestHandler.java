@@ -126,6 +126,15 @@ public class IDPRequestHandler {
         return accessToken;
     }
 
+    /**
+     * Returns the login URL being used.
+     *
+     * @return Login URL.
+     */
+    public String getLoginUrl() {
+        return loginUrl;
+    }
+
     private void basicValidation() throws IDPRequestHandlerException {
 
         // Ensures that we have all the values we need in order to perform an IDP request.

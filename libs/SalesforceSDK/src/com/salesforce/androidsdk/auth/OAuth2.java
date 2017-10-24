@@ -104,8 +104,10 @@ public class OAuth2 {
     private static final String PHOTOS = "photos";
     private static final String PICTURE = "picture";
     private static final String THUMBNAIL = "thumbnail";
+    private static final String AUTHORIZATION_CODE = "authorization_code";
     private static final String CODE = "code";
     private static final String CODE_CHALLENGE = "code_challenge";
+    private static final String CODE_VERIFIER = "code_verifier";
     private static final String CUSTOM_ATTRIBUTES = "custom_attributes";
     private static final String CUSTOM_PERMISSIONS = "custom_permissions";
     private static final String SFDC_COMMUNITY_ID = "sfdc_community_id";
@@ -281,6 +283,33 @@ public class OAuth2 {
         final Set<String> scopesSet = new TreeSet<>(scopesList);
         scopesSet.add(REFRESH_TOKEN);
         return TextUtils.join(SINGLE_SPACE, scopesSet.toArray(new String[]{}));
+    }
+
+    /**
+     * Returns a full set of credentials for the SP app based on the code generated
+     * from the IDP app.
+     *
+     * @param httpAccessor HTTPAccess instance.
+     * @param loginServer Login server.
+     * @param clientId Client ID.
+     * @param code Code returned from the IDP.
+     * @param codeVerifier Code verifier used by the SP to generate 'code_challenge'.
+     * @param callbackUrl Callback URL.
+     * @return Full set of credentials.
+     * @throws OAuthFailedException
+     * @throws IOException
+     */
+    public static TokenEndpointResponse getSPCredentials(HttpAccess httpAccessor, URI loginServer,
+                                                         String clientId, String code, String codeVerifier,
+                                                         String callbackUrl)
+            throws OAuthFailedException, IOException {
+        final FormBody.Builder builder = new FormBody.Builder().
+                add(GRANT_TYPE, AUTHORIZATION_CODE).add(CLIENT_ID, clientId);
+        builder.add(CODE, code);
+        builder.add(CODE_VERIFIER, codeVerifier);
+        builder.add(FORMAT, JSON);
+        builder.add(REDIRECT_URI, callbackUrl);
+        return makeTokenEndpointRequest(httpAccessor, loginServer, builder);
     }
 
     /**
