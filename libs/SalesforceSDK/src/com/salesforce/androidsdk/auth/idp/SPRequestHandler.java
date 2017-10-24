@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.auth.idp;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.AsyncTask;
-import android.util.Log;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
@@ -48,7 +47,7 @@ import java.net.URI;
 public class SPRequestHandler {
 
     public static final int IDP_REQUEST_CODE = 375;
-    private static final String CODE_CHALLENGE_KEY = "code_challenge_key";
+    private static final String CODE_VERIFIER = "code_verifier";
     private static final String TAG = "SPRequestHandler";
 
     private String codeVerifier;
@@ -62,8 +61,12 @@ public class SPRequestHandler {
      * @param loginUrl Login URL.
      */
     public SPRequestHandler(String loginUrl) {
-        codeVerifier = SalesforceKeyGenerator.getEncryptionKey(CODE_CHALLENGE_KEY);
-        codeChallenge = SalesforceKeyGenerator.getUniqueId(CODE_CHALLENGE_KEY);
+        codeVerifier = CODE_VERIFIER;
+        /*
+         * TODO: Switch 'codeVerifier' to a randomly generated 128-byte key instead of
+         * a hardcoded string.
+         */
+        codeChallenge = SalesforceKeyGenerator.getSHA256Hash(codeVerifier);
         this.loginUrl = loginUrl;
         spConfig = buildSPConfig();
     }
@@ -116,12 +119,6 @@ public class SPRequestHandler {
     }
 
     private void handleSuccess(String code, String loginUrl) {
-        /*
-         * TODO: Take the code and login URL that's returned and make a token endpoint
-         * request followed by the identity URL request and complete the rest of the
-         * login flow (similar to the completion steps in LoginActivity and OAuthWebViewHelper.
-         */
-
         new TokenEndpointTask(code, loginUrl).execute();
     }
 
@@ -150,7 +147,10 @@ public class SPRequestHandler {
 
         @Override
         protected void onPostExecute(OAuth2.TokenEndpointResponse tokenResponse) {
-            Log.e("*******************", "Response");
+            /*
+             * TODO: Digest the token response and make a request to the identity URL, then run
+             * post login steps from OAuthWebviewHelper.
+             */
         }
     }
 }
