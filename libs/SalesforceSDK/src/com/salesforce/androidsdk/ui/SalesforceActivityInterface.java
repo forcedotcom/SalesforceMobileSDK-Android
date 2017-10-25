@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-present, salesforce.com, inc.
+ * Copyright (c) 2017-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,58 +26,24 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import android.app.Activity;
-import android.os.Bundle;
-import android.view.KeyEvent;
+
+import com.salesforce.androidsdk.rest.RestClient;
 
 /**
- * Abstract base class for all Salesforce activities.
+ * Interface common to all Salesforce*Activity classes
+ * Used by SalesforceActivityDelegate
  */
-public abstract class SalesforceActivity extends Activity implements SalesforceActivityInterface {
 
-	private final SalesforceActivityDelegate delegate;
+public interface SalesforceActivityInterface {
+    /**
+     * Method that is called after the activity resumes once we have a RestClient.
+     *
+     * @param client RestClient instance.
+     */
+    void onResume(RestClient client);
 
-	public SalesforceActivity() {
-		super();
-		this.delegate = new SalesforceActivityDelegate(this);
-	}
-
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		delegate.onCreate();
-	}
-
-	@Override 
-	public void onResume() {
-		super.onResume();
-		delegate.onResume();
-	}
-
-	@Override
-	public void onUserInteraction() {
-		delegate.onUserInteraction();
-	}
-
-    @Override
-    public void onPause() {
-        super.onPause();
-		delegate.onPause();
-    }
-
-    @Override
-    public void onDestroy() {
-		delegate.onDestroy();
-    	super.onDestroy();
-    }
-
-    @Override
-	public boolean onKeyUp(int keyCode, KeyEvent event) {
-		return delegate.onKeyUp(keyCode, event);
-	}
-
-    @Override
-    public void logoutCompleteActions() {
-    }
-
+    /**
+     * Performs actions on logout complete.
+     */
+    void logoutCompleteActions();
 }
