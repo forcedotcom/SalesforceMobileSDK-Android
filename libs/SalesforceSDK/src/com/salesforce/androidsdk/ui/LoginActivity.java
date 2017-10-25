@@ -319,7 +319,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
      */
     public void onIDPLoginClick(View v) {
         final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url.trim();
-        (new SPRequestHandler(loginServer)).launchIDPApp();
+        (new SPRequestHandler(loginServer)).launchIDPApp(this);
     }
 
 	/**

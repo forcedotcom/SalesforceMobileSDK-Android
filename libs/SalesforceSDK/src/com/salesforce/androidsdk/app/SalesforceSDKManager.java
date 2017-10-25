@@ -156,6 +156,7 @@ public class SalesforceSDKManager {
     private String loginBrand;
     private boolean browserLoginEnabled;
     private boolean idpLoginFlowEnabled;
+    private String idpAppURIScheme;
 
     /**
      * PasscodeManager object lock.
@@ -614,6 +615,24 @@ public class SalesforceSDKManager {
      */
     public synchronized void setIDPLoginFlowEnabled(boolean idpLoginFlowEnabled) {
         this.idpLoginFlowEnabled = idpLoginFlowEnabled;
+    }
+
+    /**
+     * Returns the configured IDP app's URI scheme.
+     *
+     * @return IDP app's URI scheme.
+     */
+    public String getIDPAppURIScheme() {
+        return idpAppURIScheme;
+    }
+
+    /**
+     * Sets the IDP app's URI scheme.
+     *
+     * @param idpAppURIScheme IDP app's URI scheme.
+     */
+    public synchronized void setIDPAppURIScheme(String idpAppURIScheme) {
+        this.idpAppURIScheme = idpAppURIScheme;
     }
 
     /**

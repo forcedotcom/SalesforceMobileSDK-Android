@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.auth.idp;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.AsyncTask;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -73,13 +74,15 @@ public class SPRequestHandler {
 
     /**
      * Launches the IDP app.
+     *
+     * @param context Activity context.
      */
-    public void launchIDPApp() {
-        /*
-         * TODO: Launch the subclass of user switcher screen for IDP that selects user.
-         * This user should take the SPConfig extra coming from here and add the selected
-         * UserAccount extra to it and then launch IDCodeGeneratorActivity.
-         */
+    public void launchIDPApp(Activity context) {
+        final Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.addCategory(Intent.CATEGORY_DEFAULT);
+        intent.setData(Uri.parse(SalesforceSDKManager.getInstance().getIDPAppURIScheme()));
+        intent.putExtra(IDPCodeGeneratorActivity.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle());
+        context.startActivityForResult(intent, IDP_REQUEST_CODE);
     }
 
     /**

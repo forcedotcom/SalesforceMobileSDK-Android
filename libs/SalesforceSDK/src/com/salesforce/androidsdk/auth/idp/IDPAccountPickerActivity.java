@@ -47,6 +47,24 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
     private static final int LOGIN_REQUEST_CODE = 999;
     private static final String TAG = "IDPAccountPickerActivity";
 
+    private SPConfig spConfig;
+
+    @Override
+    public void onCreate(Bundle savedInstance) {
+        super.onCreate(savedInstance);
+
+        // Fetches the required extras.
+        final Intent intent = getIntent();
+        final Bundle extras = intent.getExtras();
+        if (extras != null) {
+            spConfig = new SPConfig(extras.getBundle(IDPCodeGeneratorActivity.SP_CONFIG_BUNDLE_KEY));
+        }
+        /*
+         * TODO: Take the SPConfig extra coming from here and add the selected
+         * UserAccount extra to it and then launch IDCodeGeneratorActivity.
+         */
+    }
+
     @Override
     protected void accountSelected(UserAccount account) {
         SalesforceSDKLogger.d(TAG, "Account selected: " + account);
