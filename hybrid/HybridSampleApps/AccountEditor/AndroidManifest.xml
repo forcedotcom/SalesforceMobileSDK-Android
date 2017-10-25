@@ -43,7 +43,7 @@
             The full URI that needs to be set on the SP app would be "accounteditor://authenticator".
         -->
         <!--
-        <activity android:name="com.salesforce.androidsdk.ui.IDPAccountPickerActivity"
+        <activity android:name="com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity"
             android:excludeFromRecents="true"
             android:theme="@style/SalesforceSDK.ActionBarTheme">
 
