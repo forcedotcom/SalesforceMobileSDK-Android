@@ -47,6 +47,7 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.webkit.CookieManager;
 
+import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
@@ -67,6 +68,7 @@ import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
+import com.salesforce.androidsdk.ui.DevInfoActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
@@ -75,6 +77,8 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.SortedSet;
@@ -1193,7 +1197,7 @@ public class SalesforceSDKManager {
                                         devActionsDialog = null;
                                     }
                                 })
-                                .setTitle("Mobile SDK Dev Support")
+                                .setTitle(R.string.sf__dev_support_title)
                                 .create();
                 devActionsDialog.show();
             }
@@ -1207,6 +1211,13 @@ public class SalesforceSDKManager {
      */
     protected LinkedHashMap<String,DevActionHandler> getDevActions(final Activity frontActivity) {
         LinkedHashMap<String, DevActionHandler> devActions = new LinkedHashMap<>();
+        devActions.put(
+                "Show dev info", new DevActionHandler() {
+                    @Override
+                    public void onSelected() {
+                        frontActivity.startActivity(new Intent(frontActivity, DevInfoActivity.class));
+                    }
+                });
         devActions.put(
                 "Logout", new DevActionHandler() {
                     @Override
@@ -1242,6 +1253,30 @@ public class SalesforceSDKManager {
         return isDevSupportEnabled;
     }
 
+    /**
+     * @return Dev info (list of name1, value1, name2, value2 etc) to show in DevInfoActivity
+     */
+    public List<String> getDevSupportInfos() {
+
+        return Arrays.asList(
+                "SDK Version", SDK_VERSION,
+                "App Type", getAppType(),
+                "User Agent", getUserAgent(),
+                "Browser Login Enabled", isBrowserLoginEnabled() + "",
+                "Current User", usersToString(getUserAccountManager().getCurrentUser()),
+                "Authenticated Users", usersToString(getUserAccountManager().getAuthenticatedUsers().toArray(new UserAccount[0]))
+        );
+    }
+
+    private String usersToString(UserAccount... userAccounts) {
+        List<String> accountNames = new ArrayList<>();
+        if (userAccounts != null) {
+            for (UserAccount userAccount : userAccounts) {
+                accountNames.add(userAccount.getAccountName());
+            }
+        }
+        return TextUtils.join(", ", accountNames);
+    }
 
     private void sendLogoutCompleteIntent() {
         final Intent intent = new Intent(LOGOUT_COMPLETE_INTENT_ACTION);

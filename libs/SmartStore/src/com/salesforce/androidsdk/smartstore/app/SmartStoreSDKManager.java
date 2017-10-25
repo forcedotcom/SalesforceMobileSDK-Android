@@ -47,6 +47,8 @@ import net.sqlcipher.database.SQLiteOpenHelper;
 
 import org.json.JSONException;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -424,7 +426,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         LinkedHashMap<String, DevActionHandler> devActions = super.getDevActions(frontActivity);
 
         devActions.put(
-                "Inspect DB", new DevActionHandler() {
+                "Inspect SmartStore", new DevActionHandler() {
                     @Override
                     public void onSelected() {
                         frontActivity.startActivity(SmartStoreInspectorActivity.getIntent(frontActivity, false, DBOpenHelper.DEFAULT_DB_NAME));
@@ -432,5 +434,17 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
                 });
 
         return devActions;
+    }
+
+    @Override
+    public List<String> getDevSupportInfos() {
+        List<String> devSupportInfos = new ArrayList<>(super.getDevSupportInfos());
+        devSupportInfos.addAll(Arrays.asList(
+                "SQLCipher version", getSmartStore().getSQLCipherVersion(),
+                "SQLCipher Compile Options", TextUtils.join(", ", getSmartStore().getCompileOptions()),
+                "Global Stores", TextUtils.join(", ", getGlobalStoresPrefixList()),
+                "User Stores", TextUtils.join(", ", getUserStoresPrefixList())
+        ));
+        return devSupportInfos;
     }
 }
