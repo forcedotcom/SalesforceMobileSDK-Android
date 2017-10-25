@@ -40,6 +40,7 @@ public class SmartSyncExplorerApp extends Application {
 	public void onCreate() {
 		super.onCreate();
 		SmartSyncSDKManager.initNative(getApplicationContext(), null, MainActivity.class);
+		SmartSyncSDKManager.getInstance().setDevSupportEnabled(BuildConfig.DEBUG);
 
         /*
          * Uncomment the following line to enable browser based login. This will use a

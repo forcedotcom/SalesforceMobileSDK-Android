@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.ui;
 import android.app.Activity;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.view.KeyEvent;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -120,6 +121,17 @@ public abstract class SalesforceActivity extends Activity {
         unregisterReceiver(logoutCompleteReceiver);
     	super.onDestroy();
     }
+
+    @Override
+	public boolean onKeyUp(int keyCode, KeyEvent event) {
+		if (SalesforceSDKManager.getInstance().isDevSupportEnabled()) {
+			if (keyCode == KeyEvent.KEYCODE_MENU) {
+				SalesforceSDKManager.getInstance().showDevSupportDialog(this);
+				return true;
+			}
+		}
+		return false;
+	}
 
     /**
      * Refreshes the client if the user has been switched.
