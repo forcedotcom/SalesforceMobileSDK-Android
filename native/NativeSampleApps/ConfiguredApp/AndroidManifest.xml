@@ -19,10 +19,37 @@
 		<activity android:name="com.salesforce.samples.configuredapp.ui.MainActivity"
 		    android:label="@string/app_name"
 			android:theme="@style/SalesforceSDK.ActionBarTheme">
+
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />
 				<category android:name="android.intent.category.LAUNCHER" />
 			</intent-filter>
 		</activity>
+
+		<!-- IDP account picker activity -->
+		<!--
+            To enable this app as an IDP app that's capable of handling authentication
+            requests originating from other SP apps, uncomment the lines below and replace
+            'scheme' and 'host' with the values you wish to use to define your IDP app.
+            The URI constructed from this must be unique and will be set in the SP app
+            as well. This will be used to launch the IDP app from the SP app.
+
+            In the example given below, 'scheme' is "configuredapp" and 'host' is "authenticator".
+            The full URI that needs to be set on the SP app would be "configuredapp://authenticator".
+        -->
+		<!--
+        <activity android:name="com.salesforce.androidsdk.ui.IDPAccountPickerActivity"
+            android:excludeFromRecents="true"
+            android:theme="@style/SalesforceSDK.ActionBarTheme">
+
+            <intent-filter>
+                <data android:scheme="configuredapp"
+                    android:host="authenticator" />
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        -->
     </application>
 </manifest>
