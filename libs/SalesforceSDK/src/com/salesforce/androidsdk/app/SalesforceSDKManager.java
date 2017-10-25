@@ -155,6 +155,7 @@ public class SalesforceSDKManager {
     private List<String> additionalOauthKeys;
     private String loginBrand;
     private boolean browserLoginEnabled;
+    private boolean idpLoginFlowEnabled;
 
     /**
      * PasscodeManager object lock.
@@ -595,6 +596,24 @@ public class SalesforceSDKManager {
      */
     public synchronized void setBrowserLoginEnabled(boolean browserLoginEnabled) {
         this.browserLoginEnabled = browserLoginEnabled;
+    }
+
+    /**
+     * Returns whether the IDP login flow is enabled.
+     *
+     * @return True - if IDP login flow is enabled, False - otherwise.
+     */
+    public boolean isIDPLoginFlowEnabled() {
+        return idpLoginFlowEnabled;
+    }
+
+    /**
+     * Sets whether IDP login flow is enabled.
+     *
+     * @param idpLoginFlowEnabled True - if IDP login flow is enabled, False - otherwise.
+     */
+    public synchronized void setIDPLoginFlowEnabled(boolean idpLoginFlowEnabled) {
+        this.idpLoginFlowEnabled = idpLoginFlowEnabled;
     }
 
     /**

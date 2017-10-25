@@ -44,12 +44,15 @@ import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebSettings.LayoutAlgorithm;
 import android.webkit.WebView;
+import android.widget.Button;
 
+import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.auth.idp.SPRequestHandler;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
@@ -81,12 +84,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
     private ChangeServerReceiver changeServerReceiver;
     private boolean receiverRegistered;
 
-    /**************************************************************************************************
-     *
-     * Activity lifecycle
-     *
-     **************************************************************************************************/
-
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -103,9 +100,13 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
         // Setup content view
         setContentView(salesforceR.layoutLogin());
+		if (SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled()) {
+            final Button button = findViewById(R.id.sf__idp_login_button);
+            button.setVisibility(View.VISIBLE);
+        }
 
         // Setup the WebView.
-        final WebView webView = (WebView) findViewById(salesforceR.idLoginWebView());
+        final WebView webView = findViewById(salesforceR.idLoginWebView());
         final WebSettings webSettings = webView.getSettings();
         webSettings.setUseWideViewPort(true);
         webSettings.setLayoutAlgorithm(LayoutAlgorithm.NORMAL);
@@ -310,6 +311,16 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		webviewHelper.clearCookies();
 		webviewHelper.loadLoginPage();
 	}
+
+    /**
+     * Called when the IDP login button is clicked.
+     *
+     * @param v IDP login button.
+     */
+    public void onIDPLoginClick(View v) {
+        final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url.trim();
+        (new SPRequestHandler(loginServer)).launchIDPApp();
+    }
 
 	/**
 	 * Called when "Reload" button is clicked.
