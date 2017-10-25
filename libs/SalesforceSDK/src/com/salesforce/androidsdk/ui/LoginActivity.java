@@ -341,15 +341,14 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	    startActivityForResult(i, PICK_SERVER_REQUEST_CODE);
 	}
 
-	/**
-	 * Called when ServerPickerActivity completes.
-	 * Reload login page.
-	 */
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (requestCode == PasscodeManager.PASSCODE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
 			webviewHelper.onNewPasscode();
-		} else {
+		} else if (requestCode == SPRequestHandler.IDP_REQUEST_CODE) {
+            final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url.trim();
+            (new SPRequestHandler(loginServer)).handleIDPResponse(resultCode, data);
+        } else {
 	        super.onActivityResult(requestCode, resultCode, data);
 	    }
 	}
