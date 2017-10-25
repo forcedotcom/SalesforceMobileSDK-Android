@@ -203,7 +203,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
                 // Remote
                 else {
                     SalesforceHybridLogger.w(TAG, "onResumeNotLoggedIn - should not authenticate/remote start page - loading web app");
-                    loadRemoteStartPage(!bootconfig.isStartPageAbsoluteUrl());
+                    loadRemoteStartPage(bootconfig.getUnauthenticatedStartPage(), false);
                 }
             }
         } catch (BootConfig.BootConfigException e) {
@@ -231,7 +231,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
             // Online
             if (SalesforceSDKManager.getInstance().hasNetwork()) {
                 SalesforceHybridLogger.i(TAG, "onResumeLoggedInNotLoaded - remote start page/online - loading web app");
-                loadRemoteStartPage(!bootconfig.isStartPageAbsoluteUrl());
+                loadRemoteStartPage(bootconfig.getStartPage(), true);
             }
 
             // Offline
@@ -460,20 +460,19 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
      * Load remote start page (front-doored)
      */
     public void loadRemoteStartPage() {
-        loadRemoteStartPage(true);
+        loadRemoteStartPage(bootconfig.getStartPage(), true);
     }
 
     /**
      * Load the remote start page.
-     *
+     * @param startPageUrl The start page to load.
      * @param loadThroughFrontDoor Whether or not to load through front-door.
      */
-    private void loadRemoteStartPage(boolean loadThroughFrontDoor) {
+    private void loadRemoteStartPage(String startPageUrl, boolean loadThroughFrontDoor) {
         assert !bootconfig.isLocal();
-        String startPage = bootconfig.getStartPage();
-        String url = startPage;
+        String url = startPageUrl;
         if (loadThroughFrontDoor) {
-            url = getFrontDoorUrl(url, false);
+            url = getFrontDoorUrl(url, BootConfig.isAbsoluteUrl(url));
         }
         SalesforceHybridLogger.i(TAG, "loadRemoteStartPage called - loading: " + url);
         loadUrl(url);
