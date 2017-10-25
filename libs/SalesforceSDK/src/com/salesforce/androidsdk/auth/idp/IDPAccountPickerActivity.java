@@ -29,11 +29,15 @@ package com.salesforce.androidsdk.auth.idp;
 import android.accounts.AccountManager;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This class provides UI to select an existing signed in user account, or add a new account.
@@ -63,6 +67,30 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
          * TODO: Take the SPConfig extra coming from here and add the selected
          * UserAccount extra to it and then launch IDCodeGeneratorActivity.
          */
+    }
+
+    @Override
+    protected List<UserAccount> getAccounts() {
+        final List<UserAccount> accounts = userAccMgr.getAuthenticatedUsers();
+
+        // If no login server is passed in, return all user accounts.
+        if (TextUtils.isEmpty(spConfig.getLoginUrl())) {
+            return accounts;
+        }
+        final List<UserAccount> filteredAccounts = new ArrayList<>();
+        if (accounts != null) {
+            for (final UserAccount account : accounts) {
+
+                // If user account has the same login server, add it to the list.
+                if (spConfig.getLoginUrl().equals(account.getLoginServer())) {
+                    filteredAccounts.add(account);
+                }
+            }
+        }
+        if (filteredAccounts.size() == 0) {
+            return null;
+        }
+        return filteredAccounts;
     }
 
     @Override

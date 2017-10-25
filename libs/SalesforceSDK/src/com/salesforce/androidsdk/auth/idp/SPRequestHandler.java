@@ -53,7 +53,6 @@ public class SPRequestHandler {
 
     private String codeVerifier;
     private String codeChallenge;
-    private String loginUrl;
     private SPConfig spConfig;
 
     /**
@@ -68,8 +67,7 @@ public class SPRequestHandler {
          * a hardcoded string.
          */
         codeChallenge = SalesforceKeyGenerator.getSHA256Hash(codeVerifier);
-        this.loginUrl = loginUrl;
-        spConfig = buildSPConfig();
+        spConfig = buildSPConfig(loginUrl);
     }
 
     /**
@@ -111,7 +109,7 @@ public class SPRequestHandler {
         return spConfig;
     }
 
-    private SPConfig buildSPConfig() {
+    private SPConfig buildSPConfig(String loginUrl) {
         final BootConfig bootConfig = BootConfig.getBootConfig(SalesforceSDKManager.getInstance().getAppContext());
         return new SPConfig(bootConfig.getRemoteAccessConsumerKey(), bootConfig.getOauthRedirectURI(),
                 codeChallenge, bootConfig.getOauthScopes(), loginUrl, null);

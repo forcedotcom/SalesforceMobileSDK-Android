@@ -112,14 +112,20 @@ public class AccountSwitcherActivity extends Activity {
 		}
 	}
 
-	/**
-	 * Builds the list of current accounts and adds them to the RadioGroup.
-	 */
+    /**
+     * Returns the list of user accounts to display.
+     *
+     * @return List of user accounts to display.
+     */
+	protected List<UserAccount> getAccounts() {
+        return userAccMgr.getAuthenticatedUsers();
+    }
+
 	private void buildAccountList() {
         final RadioGroup radioGroup = findViewById(salesforceR.idAccountListGroup());
         radioGroup.removeAllViews();
         UserAccount curAccount = userAccMgr.getCurrentUser();
-		final List<UserAccount> accounts = userAccMgr.getAuthenticatedUsers();
+        final List<UserAccount> accounts = getAccounts();
 		if (accounts == null || accounts.size() == 0) {
 			return;
 		}
