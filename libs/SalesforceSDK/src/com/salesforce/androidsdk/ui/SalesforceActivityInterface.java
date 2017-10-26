@@ -45,5 +45,11 @@ public interface SalesforceActivityInterface {
     /**
      * Performs actions on logout complete.
      */
-    void logoutCompleteActions();
+    void onLogoutComplete();
+
+    /**
+     * Performs actions on user switched.
+     */
+    void onUserSwitched();
+
 }

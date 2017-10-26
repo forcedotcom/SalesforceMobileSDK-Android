@@ -27,21 +27,8 @@
 package com.salesforce.androidsdk.ui;
 
 import android.app.ListActivity;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.view.KeyEvent;
-
-import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.rest.ClientManager;
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
-import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
-import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.security.PasscodeManager;
-import com.salesforce.androidsdk.util.EventsObservable;
-import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import com.salesforce.androidsdk.util.LogoutCompleteReceiver;
-import com.salesforce.androidsdk.util.UserSwitchReceiver;
 
 /**
  * Abstract base class for all Salesforce list activities.
@@ -66,7 +53,7 @@ public abstract class SalesforceListActivity extends ListActivity implements Sal
 	@Override
 	public void onResume() {
 		super.onResume();
-		delegate.onResume();
+		delegate.onResume(true);
 	}
 
 	@Override
@@ -88,10 +75,15 @@ public abstract class SalesforceListActivity extends ListActivity implements Sal
 
 	@Override
 	public boolean onKeyUp(int keyCode, KeyEvent event) {
-		return delegate.onKeyUp(keyCode, event);
+		return delegate.onKeyUp(keyCode, event) || super.onKeyUp(keyCode, event);
 	}
 
 	@Override
-	public void logoutCompleteActions() {
+	public void onLogoutComplete() {
+	}
+
+	@Override
+	public void onUserSwitched() {
+		delegate.onResume(true);
 	}
 }

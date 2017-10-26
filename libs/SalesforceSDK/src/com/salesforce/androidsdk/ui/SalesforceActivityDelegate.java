@@ -67,31 +67,41 @@ public class SalesforceActivityDelegate {
         EventsObservable.get().notifyEvent(EventsObservable.EventType.MainActivityCreateComplete, this);
     }
 
-    public void onResume() {
-
+    /**
+     * Brings up passcode screen if needed
+     * Build RestClient if requested and then calls activity.onResume(restClient)
+     * Otherwise calls activity.onResume(null)
+     *
+     * @param buildRestClient
+     */
+    public void onResume(boolean buildRestClient) {
         // Brings up the passcode screen if needed.
         if (passcodeManager.onResume(activity)) {
+            if (buildRestClient) {
+                // Gets login options.
+                final String accountType = SalesforceSDKManager.getInstance().getAccountType();
+                final ClientManager.LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
 
-            // Gets login options.
-            final String accountType = SalesforceSDKManager.getInstance().getAccountType();
-            final ClientManager.LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
+                // Gets a rest client.
+                new ClientManager(activity, accountType, loginOptions,
+                        SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(activity, new ClientManager.RestClientCallback() {
 
-            // Gets a rest client.
-            new ClientManager(activity, accountType, loginOptions,
-                    SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(activity, new ClientManager.RestClientCallback() {
+                    @Override
+                    public void authenticatedRestClient(RestClient client) {
+                        if (client == null) {
+                            SalesforceSDKManager.getInstance().logout(activity);
+                            return;
+                        }
+                        ((SalesforceActivityInterface) activity).onResume(client);
 
-                @Override
-                public void authenticatedRestClient(RestClient client) {
-                    if (client == null) {
-                        SalesforceSDKManager.getInstance().logout(activity);
-                        return;
+                        // Lets observers know that rendition is complete.
+                        EventsObservable.get().notifyEvent(EventsObservable.EventType.RenditionComplete);
                     }
-                    ((SalesforceActivityInterface) activity).onResume(client);
-
-                    // Lets observers know that rendition is complete.
-                    EventsObservable.get().notifyEvent(EventsObservable.EventType.RenditionComplete);
-                }
-            });
+                });
+            }
+            else {
+                ((SalesforceActivityInterface) activity).onResume(null);
+            }
         }
     }
 
@@ -118,10 +128,6 @@ public class SalesforceActivityDelegate {
         return false;
     }
 
-    protected void refreshIfUserSwitched() {
-        onResume();
-    }
-
 
     /**
      * Acts on the user switch event.
@@ -130,7 +136,7 @@ public class SalesforceActivityDelegate {
 
         @Override
         protected void onUserSwitch() {
-            refreshIfUserSwitched();
+            ((SalesforceActivityInterface) activity).onUserSwitched();
         }
     }
 
@@ -141,7 +147,7 @@ public class SalesforceActivityDelegate {
 
         @Override
         protected void onLogoutComplete() {
-            ((SalesforceActivityInterface) activity).logoutCompleteActions();
+            ((SalesforceActivityInterface) activity).onLogoutComplete();
         }
     }
 }

@@ -51,7 +51,7 @@ public abstract class SalesforceActivity extends Activity implements SalesforceA
 	@Override 
 	public void onResume() {
 		super.onResume();
-		delegate.onResume();
+		delegate.onResume(true);
 	}
 
 	@Override
@@ -73,11 +73,15 @@ public abstract class SalesforceActivity extends Activity implements SalesforceA
 
     @Override
 	public boolean onKeyUp(int keyCode, KeyEvent event) {
-		return delegate.onKeyUp(keyCode, event);
+		return delegate.onKeyUp(keyCode, event) || super.onKeyUp(keyCode, event);
 	}
 
     @Override
-    public void logoutCompleteActions() {
+    public void onLogoutComplete() {
     }
 
+	@Override
+	public void onUserSwitched() {
+		delegate.onResume(true);
+	}
 }
