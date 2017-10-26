@@ -103,11 +103,12 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
         super.onResume();
         delegate.onResume(false);
         // will call this.onResume(RestClient client) with a null client
+        loadReactAppOnceIfReady();
     }
 
     @Override
-    public void onResume(RestClient client) {
-        // Called from delegate / client should be null
+    public void onResume(RestClient _) {
+        // Called from delegate with null
 
         // Get client (if already logged in)
         try {
@@ -124,8 +125,6 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
         else {
             SalesforceReactLogger.i(TAG, "onResume - already logged in");
         }
-
-        loadReactAppOnceIfReady();
     }
 
     /**
