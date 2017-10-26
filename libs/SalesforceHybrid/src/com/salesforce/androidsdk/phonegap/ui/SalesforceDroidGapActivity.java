@@ -138,7 +138,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
     }
 
     @Override
-    public void onResume(RestClient _) {
+    public void onResume(RestClient c) {
         // Called from delegate with null
 
         // Get client (if already logged in)
