@@ -76,6 +76,7 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -171,8 +172,8 @@ public class SalesforceSDKManager {
     /**
      * Dev support
      */
-    private boolean isDevSupportEnabled;
     private AlertDialog devActionsDialog;
+    private Boolean isDevSupportEnabled; // NB: if null, it defaults to BuildConfig.DEBUG
 
     /**
      * Returns a singleton instance of this class.
@@ -1239,18 +1240,19 @@ public class SalesforceSDKManager {
     }
 
     /**
-     * Enable dev support
+     * If the application did not call setDevSupportEnabled(..) then it defaults to BuildConfig.DEBUG
+     * @return true if dev support is enabled
+     */
+    public boolean isDevSupportEnabled() {
+        return isDevSupportEnabled == null ? isDebugBuild() : isDevSupportEnabled.booleanValue();
+    }
+
+    /**
+     * Set isDevSupportEnabled
      * @param isDevSupportEnabled
      */
     public void setDevSupportEnabled(boolean isDevSupportEnabled) {
         this.isDevSupportEnabled = isDevSupportEnabled;
-    }
-
-    /**
-     * @return true if dev support is enabled
-     */
-    public boolean isDevSupportEnabled() {
-        return isDevSupportEnabled;
     }
 
     /**
@@ -1319,5 +1321,34 @@ public class SalesforceSDKManager {
          * Triggered in case when user select the action
          */
         void onSelected();
+    }
+
+    /**
+     * Get BuildConfig.DEBUG by reflection (since it's only available in the app project)
+     * @return true if app's BuildConfig.DEBUG is true
+     */
+    private boolean isDebugBuild() {
+        return ((Boolean) getBuildConfigValue(getAppContext(), "DEBUG")).booleanValue();
+    }
+
+    /**
+     * Gets a field from the project's BuildConfig.
+     * @param context       Used to find the correct file
+     * @param fieldName     The name of the field-to-access
+     * @return              The value of the field, or {@code null} if the field is not found.
+     */
+    private Object getBuildConfigValue(Context context, String fieldName) {
+        try {
+            Class<?> clazz = Class.forName(context.getPackageName() + ".BuildConfig");
+            Field field = clazz.getField(fieldName);
+            return field.get(null);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }
