@@ -28,10 +28,10 @@ package com.salesforce.androidsdk.reactnative.ui;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.view.KeyEvent;
 import android.widget.Toast;
 
 import com.facebook.react.ReactActivity;
@@ -44,24 +44,31 @@ import com.salesforce.androidsdk.reactnative.util.SalesforceReactLogger;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.security.PasscodeManager;
-import com.salesforce.androidsdk.util.EventsObservable;
-import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import com.salesforce.androidsdk.util.LogoutCompleteReceiver;
+import com.salesforce.androidsdk.ui.SalesforceActivityDelegate;
+import com.salesforce.androidsdk.ui.SalesforceActivityInterface;
 
 /**
  * Super class for all Salesforce activities.
  */
-public abstract class SalesforceReactActivity extends ReactActivity {
+public abstract class SalesforceReactActivity extends ReactActivity implements SalesforceActivityInterface {
 
     private static final String TAG = "SfReactActivity";
 
+    // Delegate
+    private final SalesforceActivityDelegate delegate;
+
+    // Rest client
     private RestClient client;
     private ClientManager clientManager;
-    private PasscodeManager passcodeManager;
-    private LogoutCompleteReceiver logoutCompleteReceiver;
+
+    // React delegate
     private SalesforceReactActivityDelegate reactActivityDelegate;
     AlertDialog overlayPermissionRequiredDialog;
+
+    protected SalesforceReactActivity() {
+        super();
+        delegate = new SalesforceActivityDelegate(this);
+    }
 
     /**
      * @return true if you want login to happen as soon as activity is loaded
@@ -87,52 +94,38 @@ public abstract class SalesforceReactActivity extends ReactActivity {
         // Get clientManager
         clientManager = buildClientManager();
 
-        // Gets an instance of the passcode manager.
-        passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
-
-        // TODO
-        // Have a user switcher once we have an account manager bridge for react native
-        logoutCompleteReceiver = new ReactActivityLogoutCompleteReceiver();
-        registerReceiver(logoutCompleteReceiver, new IntentFilter(SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION));
-
-        // Let observers know
-        EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);
-
-    }
-
-    @Override
-    public void onDestroy() {
-        unregisterReceiver(logoutCompleteReceiver);
-        super.onDestroy();
+        // Delegate create
+        delegate.onCreate();
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        delegate.onResume(false);
+        // will call this.onResume(RestClient client) with a null client
+    }
 
-        // Brings up the passcode screen if needed.
-        if (passcodeManager.onResume(this)) {
+    @Override
+    public void onResume(RestClient client) {
+        // Called from delegate / client should be null
 
-            // Get client (if already logged in)
-            try {
-                setRestClient(clientManager.peekRestClient());
-            } catch (ClientManager.AccountInfoNotFoundException e) {
-                setRestClient(client);
-            }
+        // Get client (if already logged in)
+        try {
+            setRestClient(clientManager.peekRestClient());
+        } catch (ClientManager.AccountInfoNotFoundException e) {
+            setRestClient(client);
+        }
 
-            // Not logged in
-            if (client == null) {
-                onResumeNotLoggedIn();
-            }
-            // Logged in
-            else {
-                SalesforceReactLogger.i(TAG, "onResume - already logged in");
-            }
-
+        // Not logged in
+        if (client == null) {
+            onResumeNotLoggedIn();
+        }
+        // Logged in
+        else {
+            SalesforceReactLogger.i(TAG, "onResume - already logged in");
         }
 
         loadReactAppOnceIfReady();
-
     }
 
     /**
@@ -164,14 +157,29 @@ public abstract class SalesforceReactActivity extends ReactActivity {
 
 
     @Override
-    public void onUserInteraction() {
-        passcodeManager.recordUserInteraction();
+    public void onPause() {
+        super.onPause();
+        delegate.onPause();
     }
 
     @Override
-    public void onPause() {
-        super.onPause();
-        passcodeManager.onPause(this);
+    public void onDestroy() {
+        delegate.onDestroy();
+        super.onDestroy();
+    }
+
+    @Override
+    public void onUserInteraction() {
+        delegate.onUserInteraction();
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        return delegate.onKeyUp(keyCode, event) || super.onKeyUp(keyCode, event);
+    }
+
+    public void showReactDevOptionsDialog() {
+        getReactNativeHost().getReactInstanceManager().showDevOptionsDialog();
     }
 
     protected void login() {
@@ -250,23 +258,12 @@ public abstract class SalesforceReactActivity extends ReactActivity {
                 SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
     }
 
-    /**
-     * Performs actions on logout complete.
-     */
-    protected void logoutCompleteActions() {
+    @Override
+    public void onLogoutComplete() {
     }
 
-    /**
-     * Acts on the logout complete event.
-     *
-     * @author bhariharan
-     */
-    private class ReactActivityLogoutCompleteReceiver extends LogoutCompleteReceiver {
-
-        @Override
-        protected void onLogoutComplete() {
-            logoutCompleteActions();
-        }
+    @Override
+    public void onUserSwitched() {
     }
 
     @Override
