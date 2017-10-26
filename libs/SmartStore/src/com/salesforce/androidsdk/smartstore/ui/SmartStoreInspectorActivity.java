@@ -174,10 +174,12 @@ public class SmartStoreInspectorActivity extends Activity implements AdapterView
 	private void setupStore(boolean isGlobal, String dbName) {
 		SmartStoreSDKManager mgr = SmartStoreSDKManager.getInstance();
 		UserAccount currentUser = mgr.getUserAccountManager().getCurrentUser();
-		this.isGlobal = isGlobal;
-		this.dbName = dbName;
-		smartStore = isGlobal ? mgr.getGlobalSmartStore(dbName) : mgr.getSmartStore(dbName, currentUser, null);
-		setupAutocomplete(queryText);
+		if (this.isGlobal != isGlobal || !this.dbName.equals(dbName) || smartStore == null) {
+			this.isGlobal = isGlobal;
+			this.dbName = dbName;
+			smartStore = isGlobal ? mgr.getGlobalSmartStore(dbName) : mgr.getSmartStore(dbName, currentUser, null);
+			setupAutocomplete(queryText);
+		}
 	}
 
 	/**
