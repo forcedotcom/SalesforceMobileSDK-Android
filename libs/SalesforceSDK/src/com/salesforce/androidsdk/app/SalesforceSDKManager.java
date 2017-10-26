@@ -1343,11 +1343,11 @@ public class SalesforceSDKManager {
             Field field = clazz.getField(fieldName);
             return field.get(null);
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            SalesforceSDKLogger.e(TAG, "getBuildConfigValue failed", e);
         } catch (NoSuchFieldException e) {
-            e.printStackTrace();
+            SalesforceSDKLogger.e(TAG, "getBuildConfigValue failed", e);
         } catch (IllegalAccessException e) {
-            e.printStackTrace();
+            SalesforceSDKLogger.e(TAG, "getBuildConfigValue failed", e);
         }
         return null;
     }
