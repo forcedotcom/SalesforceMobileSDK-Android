@@ -3,35 +3,23 @@ junit.show_skipped_tests = true
 junit.report
 
 android_lint.report_file = "libs/SalesforceAnalytics/build/reports/lint-results.xml"
-android_lint.severity = "Error"
 android_lint.filtering = true
 android_lint.lint(inline_mode: true)
-android_lint.lint
 android_lint.report_file = "libs/SalesforceSDK/build/reports/lint-results.xml"
-android_lint.severity = "Error"
 android_lint.filtering = true
 android_lint.lint(inline_mode: true)
-android_lint.lint
 android_lint.report_file = "libs/SalesforceHybrid/build/reports/lint-results.xml"
-android_lint.severity = "Error"
 android_lint.filtering = true
 android_lint.lint(inline_mode: true)
-android_lint.lint
 android_lint.report_file = "libs/SmartSync/build/reports/lint-results.xml"
-android_lint.severity = "Error"
 android_lint.filtering = true
 android_lint.lint(inline_mode: true)
-android_lint.lint
 android_lint.report_file = "libs/SmartStore/build/reports/lint-results.xml"
-android_lint.severity = "Error"
 android_lint.filtering = true
 android_lint.lint(inline_mode: true)
-android_lint.lint
 android_lint.report_file = "libs/SalesforceReact/build/reports/lint-results.xml"
-android_lint.severity = "Error"
 android_lint.filtering = true
 android_lint.lint(inline_mode: true)
-android_lint.lint
 
 # Warn when there is a big PR
 warn("Big PR, try to keep changes smaller if you can") if git.lines_of_code > 500
