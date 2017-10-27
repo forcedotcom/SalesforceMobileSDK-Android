@@ -77,4 +77,8 @@
 	<string name="sf__fingerprint_cancel">Use Passcode</string>
 	<string name="sf__fingerprint_success">Success</string>
 	<string name="sf__fingerprint_failed">Fingerprint Authentication Failed</string>
+
+	<!-- Dev support -->
+	<string name="sf__dev_support_title">Mobile SDK Dev Support</string>
+
 </resources>

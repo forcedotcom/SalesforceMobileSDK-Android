@@ -11,6 +11,8 @@
 	<application>
 
         <!--  SmartStore Inspector screen -->
-        <activity android:name="com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity" />
+        <activity android:name="com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity"
+			android:theme="@style/SalesforceSDK.ActionBarTheme"
+			android:exported="false"/>
 	</application>
 </manifest>

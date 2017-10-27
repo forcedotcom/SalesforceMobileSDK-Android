@@ -57,6 +57,7 @@ android {
   }
 
   lintOptions {
+    xmlReport true 
     abortOnError false
   }
 }

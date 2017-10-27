@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: brandonpage/salesforce-mobilesdk-android-docker-primary:0.0.3
+      - image: brandonpage/salesforce-mobilesdk-android-docker-primary:0.0.4
         environment:
           MAVEN_OPTS: "-Xms256m -Xmx1024m"
 
@@ -10,7 +10,7 @@ jobs:
 
     environment:
       - TERM: "dumb"
-      - ADB_INSTALL_TIMEOUT: 10
+      - ADB_INSTALL_TIMEOUT: 15
       - ANDROID_NDK: '/opt/ndk/android-ndk-r10e'
       - BUILD_THREADS: 2 
 
@@ -38,40 +38,73 @@ jobs:
           command: source .circleci/ci-helper.sh && waitForAVD
 
       - run:
-          name:  Run Tests
+          name: Run SalesforceAnalytics Tests
           halt_build_on_fail: false
-          command: ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest :libs:SalesforceSDK:connectedAndroidTest :libs:SmartStore:connectedAndroidTest :libs:SmartSync:connectedAndroidTest :libs:SalesforceHybrid:connectedAndroidTest :libs:SalesforceReact:assembleDebug -p . --continue --no-daemon --profile --max-workers 2 
-          no_output_timeout: 1800
+          command: ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+          no_output_timeout: 900
+          when: always
+      - run:
+          name: Run SalesforceSDK Tests
+          halt_build_on_fail: false
+          command: ./gradlew :libs:SalesforceSDK:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+          no_output_timeout: 900
+          when: always
+      - run:
+          name: Run SmartStore Tests
+          halt_build_on_fail: false
+          command: ./gradlew :libs:SmartStore:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+          no_output_timeout: 900
+          when: always
+      - run:
+          name: Run SmartSync Tests
+          halt_build_on_fail: false
+          command: ./gradlew :libs:SmartSync:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+          no_output_timeout: 900
+          when: always
+      - run:
+          name: Run SalesforceHybrid Tests
+          halt_build_on_fail: false
+          command: ./gradlew :libs:SalesforceHybrid:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+          no_output_timeout: 900
+          when: always
+      - run:
+          name: Build SalesforceReact
+          halt_build_on_fail: false
+          command: ./gradlew :libs:SalesforceReact:assembleDebug -p . --continue --no-daemon --profile --max-workers 2
+          no_output_timeout: 900
+          when: always
 
-      - store_artifacts:
-          path: ./build/archives
-          destination: archives
-      - store_artifacts:
-          path: ./build/reports
-          destination: reports
-      - store_artifacts:
-          path: ./build/outputs
-          destination: outputs
-      - store_artifacts:
-          path: ./build/outputs/androidTest-results/connected/
-
+      - run:
+          name: Combine lib Test Restuls
+          command: junit-merge libs/**/build/outputs/androidTest-results/connected/*.xml
+          when: always
+      - run:
+          name:  Run Danger
+          command: danger
+          when: always
+    
       - store_artifacts:
           path: libs/SalesforceAnalytics/build/reports/
+          destination: SalesforceAnalytics
       - store_test_results:
-          path: libs/SalesforceAnalytics/build/reports/
+          path: libs/SalesforceAnalytics/build/outputs/androidTest-results/
       - store_artifacts:
           path: libs/SalesforceSDK/build/reports/
+          destination: SalesforceSDK
       - store_test_results:
-          path: libs/SalesforceSDK/build/reports/
+          path: libs/SalesforceSDK/build/outputs/androidTest-results/
       - store_artifacts:
           path: libs/SmartStore/build/reports/
+          destination: SmartStore
       - store_test_results:
-          path: libs/SmartStore/build/reports/
+          path: libs/SmartStore/build/outputs/androidTest-results/
       - store_artifacts:
           path: libs/SmartSync/build/reports/
+          destination: SmartSync
       - store_test_results:
-          path: libs/SmartSync/build/reports/
+          path: libs/SmartSync/build/outputs/androidTest-results/
       - store_artifacts:
           path: libs/SalesforceHybrid/build/reports/
+          destination: SalesforceHybrid
       - store_test_results:
-          path: libs/SalesforceHybrid/build/reports/
+          path: libs/SalesforceHybrid/build/outputs/androidTest-results/

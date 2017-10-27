@@ -85,6 +85,11 @@
             android:theme="@style/SalesforceSDK.ActionBarTheme"
             android:exported="false" />
 
+        <!--  Dev info activity -->
+        <activity android:name="com.salesforce.androidsdk.ui.DevInfoActivity"
+            android:theme="@style/SalesforceSDK.ActionBarTheme"
+            android:exported="false" />
+
         <!-- Google Play Services Push Registration -->
         <!--
             Push notification services and receivers. The 'category' attribute

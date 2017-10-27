@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-present, salesforce.com, inc.
+ * Copyright (c) 2017-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,64 +26,50 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import android.app.ListActivity;
+import android.app.Activity;
 import android.os.Bundle;
-import android.view.KeyEvent;
+import android.widget.ListView;
+import android.widget.SimpleAdapter;
+
+import com.salesforce.androidsdk.R;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
- * Abstract base class for all Salesforce list activities.
- *
- * @author bhariharan
+ * Dev support activity showing a lot of useful information
  */
-public abstract class SalesforceListActivity extends ListActivity implements SalesforceActivityInterface {
+public class DevInfoActivity extends Activity {
 
-	private final SalesforceActivityDelegate delegate;
+    public static final String NAME = "name";
+    public static final String VALUE = "value";
 
-	public SalesforceListActivity() {
-		super();
-		delegate = new SalesforceActivityDelegate(this);
-	}
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		delegate.onCreate();
-	}
+        // Title / layout
+        getActionBar().setTitle(R.string.sf__dev_support_title);
+        setContentView(R.layout.sf__dev_info);
 
-	@Override
-	public void onResume() {
-		super.onResume();
-		delegate.onResume(true);
-	}
+        // Setup list
+        List<Map<String, String>> listData = prepareListData(SalesforceSDKManager.getInstance().getDevSupportInfos());
+        String[] from = new String[] {NAME, VALUE};
+        int[] to = new int[] { android.R.id.text1, android.R.id.text2};
+        ((ListView) findViewById(R.id.list)).setAdapter(new SimpleAdapter(this, listData, android.R.layout.simple_list_item_2, from, to));
+    }
 
-	@Override
-	public void onUserInteraction() {
-		delegate.onUserInteraction();
-	}
-
-	@Override
-	public void onPause() {
-		super.onPause();
-		delegate.onPause();
-	}
-
-	@Override
-	public void onDestroy() {
-		delegate.onDestroy();
-		super.onDestroy();
-	}
-
-	@Override
-	public boolean onKeyUp(int keyCode, KeyEvent event) {
-		return delegate.onKeyUp(keyCode, event) || super.onKeyUp(keyCode, event);
-	}
-
-	@Override
-	public void onLogoutComplete() {
-	}
-
-	@Override
-	public void onUserSwitched() {
-		delegate.onResume(true);
-	}
+    private List<Map<String, String>> prepareListData(List<String> rawData) {
+        List<Map<String, String>> listData = new ArrayList<>();
+        for (int i=0; i<rawData.size(); i+=2) {
+            Map<String, String> entry = new HashMap<>();
+            entry.put(NAME, rawData.get(i));
+            entry.put(VALUE, rawData.get(i+1));
+            listData.add(entry);
+        }
+        return listData;
+    }
 }

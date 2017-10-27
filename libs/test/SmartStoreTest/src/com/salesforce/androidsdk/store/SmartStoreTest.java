@@ -30,6 +30,7 @@ import android.database.Cursor;
 import android.os.SystemClock;
 
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
+import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.Order;
@@ -44,7 +45,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -80,18 +80,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	 * Checking compile options
 	 */
 	public void testCompileOptions() {
-		ArrayList<String> compileOptions = new ArrayList<String>();
-		Cursor c = null;
-		try {
-			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
-			c = db.rawQuery("PRAGMA compile_options", null);
-            while(c.moveToNext()) {
-				compileOptions.add(c.getString(0));
-			}
-		}
-		finally {
-			safeClose(c);
-		}
+		List<String> compileOptions = store.getCompileOptions();
 
 		assertTrue("ENABLE_FTS4 flag not found in compile options", compileOptions.contains("ENABLE_FTS4"));
 		assertTrue("ENABLE_FTS3_PARENTHESIS flag not found in compile options", compileOptions.contains("ENABLE_FTS3_PARENTHESIS"));

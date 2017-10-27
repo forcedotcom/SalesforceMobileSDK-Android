@@ -4,6 +4,26 @@
     android:layout_height="match_parent"
     android:orientation="vertical" >
 
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal" >
+
+        <Button
+            style="@style/SmartStore.Inspector.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="@string/sf__inspector_store" />
+
+        <Spinner
+            android:id="@+id/sf__inspector_stores_spinner"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </LinearLayout>
+
     <MultiAutoCompleteTextView
         android:id="@+id/sf__inspector_query_text"
         style="@style/SmartStore.Inspector.EditText.Query"
