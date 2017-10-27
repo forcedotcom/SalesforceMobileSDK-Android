@@ -82,25 +82,29 @@ jobs:
           name:  Run Danger
           command: danger
           when: always
-
+    
       - store_artifacts:
           path: libs/SalesforceAnalytics/build/reports/
+          destination: SalesforceAnalytics
       - store_test_results:
-          path: libs/SalesforceAnalytics/build/reports/
+          path: libs/SalesforceAnalytics/build/outputs/androidTest-results/
       - store_artifacts:
           path: libs/SalesforceSDK/build/reports/
+          destination: SalesforceSDK
       - store_test_results:
-          path: libs/SalesforceSDK/build/reports/
+          path: libs/SalesforceSDK/build/outputs/androidTest-results/
       - store_artifacts:
           path: libs/SmartStore/build/reports/
+          destination: SmartStore
       - store_test_results:
-          path: libs/SmartStore/build/reports/
+          path: libs/SmartStore/build/outputs/androidTest-results/
       - store_artifacts:
           path: libs/SmartSync/build/reports/
+          destination: SmartSync
       - store_test_results:
-          path: libs/SmartSync/build/reports/
+          path: libs/SmartSync/build/outputs/androidTest-results/
       - store_artifacts:
           path: libs/SalesforceHybrid/build/reports/
+          destination: SalesforceHybrid
       - store_test_results:
-          path: libs/SalesforceHybrid/build/reports/
-      
+          path: libs/SalesforceHybrid/build/outputs/androidTest-results/
