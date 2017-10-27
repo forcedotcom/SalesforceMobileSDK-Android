@@ -26,4 +26,9 @@ android {
     exclude 'META-INF/DEPENDENCIES'
     exclude 'META-INF/NOTICE'
   }
+
+  lintOptions {
+    xmlReport true
+    abortOnError false
+  }
 }
