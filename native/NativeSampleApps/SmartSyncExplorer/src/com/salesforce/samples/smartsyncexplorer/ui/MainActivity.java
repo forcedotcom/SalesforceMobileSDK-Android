@@ -128,8 +128,8 @@ public class MainActivity extends SalesforceListActivity implements
 	}
 
 	@Override
-	protected void logoutCompleteActions() {
-		super.logoutCompleteActions();
+	public void onLogoutComplete() {
+		super.onLogoutComplete();
 		// If refresh token is revoked - ClientManager does a logout that doesn't finish top activity activity or show login
 		if (!isChild()) {
             recreate();

@@ -31,8 +31,10 @@ import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
@@ -45,6 +47,7 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.webkit.CookieManager;
 
+import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
@@ -65,6 +68,7 @@ import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
+import com.salesforce.androidsdk.ui.DevInfoActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
@@ -72,7 +76,11 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
+import java.lang.reflect.Field;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -160,6 +168,12 @@ public class SalesforceSDKManager {
      * PasscodeManager object lock.
      */
     private Object passcodeManagerLock = new Object();
+
+    /**
+     * Dev support
+     */
+    private AlertDialog devActionsDialog;
+    private Boolean isDevSupportEnabled; // NB: if null, it defaults to BuildConfig.DEBUG
 
     /**
      * Returns a singleton instance of this class.
@@ -1152,6 +1166,120 @@ public class SalesforceSDKManager {
         CookieManager.getInstance().flush();
     }
 
+
+    /**
+     * Show dev support dialog
+     */
+    public void showDevSupportDialog(final Activity frontActivity) {
+        if (!isDevSupportEnabled()) {
+            return;
+        }
+
+        frontActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                final LinkedHashMap<String, DevActionHandler> devActions = getDevActions(frontActivity);
+                final DevActionHandler[] devActionHandlers = devActions.values().toArray(new DevActionHandler[0]);
+
+                devActionsDialog =
+                        new AlertDialog.Builder(frontActivity)
+                                .setItems(
+                                        devActions.keySet().toArray(new String[0]),
+                                        new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                devActionHandlers[which].onSelected();
+                                                devActionsDialog = null;
+                                            }
+                                        })
+                                .setOnCancelListener(new DialogInterface.OnCancelListener() {
+                                    @Override
+                                    public void onCancel(DialogInterface dialog) {
+                                        devActionsDialog = null;
+                                    }
+                                })
+                                .setTitle(R.string.sf__dev_support_title)
+                                .create();
+                devActionsDialog.show();
+            }
+        });
+    }
+
+    /**
+     * Build dev actions to display in dev support dialog
+     * @param frontActivity
+     * @return map of title to dev actions handlers to display
+     */
+    protected LinkedHashMap<String,DevActionHandler> getDevActions(final Activity frontActivity) {
+        LinkedHashMap<String, DevActionHandler> devActions = new LinkedHashMap<>();
+        devActions.put(
+                "Show dev info", new DevActionHandler() {
+                    @Override
+                    public void onSelected() {
+                        frontActivity.startActivity(new Intent(frontActivity, DevInfoActivity.class));
+                    }
+                });
+        devActions.put(
+                "Logout", new DevActionHandler() {
+                    @Override
+                    public void onSelected() {
+                        SalesforceSDKManager.getInstance().logout(frontActivity);
+                    }
+                });
+        devActions.put(
+                "Switch user", new DevActionHandler() {
+                    @Override
+                    public void onSelected() {
+                        final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+                                SalesforceSDKManager.getInstance().getAccountSwitcherActivityClass());
+                        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        SalesforceSDKManager.getInstance().getAppContext().startActivity(i);
+                    }
+                });
+        return devActions;
+    }
+
+    /**
+     * If the application did not call setDevSupportEnabled(..) then it defaults to BuildConfig.DEBUG
+     * @return true if dev support is enabled
+     */
+    public boolean isDevSupportEnabled() {
+        return isDevSupportEnabled == null ? isDebugBuild() : isDevSupportEnabled.booleanValue();
+    }
+
+    /**
+     * Set isDevSupportEnabled
+     * @param isDevSupportEnabled
+     */
+    public void setDevSupportEnabled(boolean isDevSupportEnabled) {
+        this.isDevSupportEnabled = isDevSupportEnabled;
+    }
+
+    /**
+     * @return Dev info (list of name1, value1, name2, value2 etc) to show in DevInfoActivity
+     */
+    public List<String> getDevSupportInfos() {
+
+        return Arrays.asList(
+                "SDK Version", SDK_VERSION,
+                "App Type", getAppType(),
+                "User Agent", getUserAgent(),
+                "Browser Login Enabled", isBrowserLoginEnabled() + "",
+                "Current User", usersToString(getUserAccountManager().getCurrentUser()),
+                "Authenticated Users", usersToString(getUserAccountManager().getAuthenticatedUsers().toArray(new UserAccount[0]))
+        );
+    }
+
+    private String usersToString(UserAccount... userAccounts) {
+        List<String> accountNames = new ArrayList<>();
+        if (userAccounts != null) {
+            for (UserAccount userAccount : userAccounts) {
+                accountNames.add(userAccount.getAccountName());
+            }
+        }
+        return TextUtils.join(", ", accountNames);
+    }
+
     private void sendLogoutCompleteIntent() {
         final Intent intent = new Intent(LOGOUT_COMPLETE_INTENT_ACTION);
         intent.setPackage(context.getPackageName());
@@ -1185,4 +1313,42 @@ public class SalesforceSDKManager {
         }
     }
 
+    /**
+     * Action handler in dev support dialog
+     */
+    public interface DevActionHandler {
+        /**
+         * Triggered in case when user select the action
+         */
+        void onSelected();
+    }
+
+    /**
+     * Get BuildConfig.DEBUG by reflection (since it's only available in the app project)
+     * @return true if app's BuildConfig.DEBUG is true
+     */
+    private boolean isDebugBuild() {
+        return ((Boolean) getBuildConfigValue(getAppContext(), "DEBUG")).booleanValue();
+    }
+
+    /**
+     * Gets a field from the project's BuildConfig.
+     * @param context       Used to find the correct file
+     * @param fieldName     The name of the field-to-access
+     * @return              The value of the field, or {@code null} if the field is not found.
+     */
+    private Object getBuildConfigValue(Context context, String fieldName) {
+        try {
+            Class<?> clazz = Class.forName(context.getPackageName() + ".BuildConfig");
+            Field field = clazz.getField(fieldName);
+            return field.get(null);
+        } catch (ClassNotFoundException e) {
+            SalesforceSDKLogger.e(TAG, "getBuildConfigValue failed", e);
+        } catch (NoSuchFieldException e) {
+            SalesforceSDKLogger.e(TAG, "getBuildConfigValue failed", e);
+        } catch (IllegalAccessException e) {
+            SalesforceSDKLogger.e(TAG, "getBuildConfigValue failed", e);
+        }
+        return null;
+    }
 }

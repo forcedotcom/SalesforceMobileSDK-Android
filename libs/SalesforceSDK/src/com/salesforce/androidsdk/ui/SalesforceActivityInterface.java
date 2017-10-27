@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-present, salesforce.com, inc.
+ * Copyright (c) 2017-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,64 +26,30 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import android.app.ListActivity;
-import android.os.Bundle;
-import android.view.KeyEvent;
+
+import com.salesforce.androidsdk.rest.RestClient;
 
 /**
- * Abstract base class for all Salesforce list activities.
- *
- * @author bhariharan
+ * Interface common to all Salesforce*Activity classes
+ * Used by SalesforceActivityDelegate
  */
-public abstract class SalesforceListActivity extends ListActivity implements SalesforceActivityInterface {
 
-	private final SalesforceActivityDelegate delegate;
+public interface SalesforceActivityInterface {
+    /**
+     * Method that is called after the activity resumes once we have a RestClient.
+     *
+     * @param client RestClient instance.
+     */
+    void onResume(RestClient client);
 
-	public SalesforceListActivity() {
-		super();
-		delegate = new SalesforceActivityDelegate(this);
-	}
+    /**
+     * Performs actions on logout complete.
+     */
+    void onLogoutComplete();
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		delegate.onCreate();
-	}
+    /**
+     * Performs actions on user switched.
+     */
+    void onUserSwitched();
 
-	@Override
-	public void onResume() {
-		super.onResume();
-		delegate.onResume(true);
-	}
-
-	@Override
-	public void onUserInteraction() {
-		delegate.onUserInteraction();
-	}
-
-	@Override
-	public void onPause() {
-		super.onPause();
-		delegate.onPause();
-	}
-
-	@Override
-	public void onDestroy() {
-		delegate.onDestroy();
-		super.onDestroy();
-	}
-
-	@Override
-	public boolean onKeyUp(int keyCode, KeyEvent event) {
-		return delegate.onKeyUp(keyCode, event) || super.onKeyUp(keyCode, event);
-	}
-
-	@Override
-	public void onLogoutComplete() {
-	}
-
-	@Override
-	public void onUserSwitched() {
-		delegate.onResume(true);
-	}
 }

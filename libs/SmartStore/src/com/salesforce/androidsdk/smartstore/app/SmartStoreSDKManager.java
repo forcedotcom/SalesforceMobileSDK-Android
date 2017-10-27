@@ -37,6 +37,7 @@ import com.salesforce.androidsdk.smartstore.R;
 import com.salesforce.androidsdk.smartstore.config.StoreConfig;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
@@ -46,6 +47,9 @@ import net.sqlcipher.database.SQLiteOpenHelper;
 
 import org.json.JSONException;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 /**
@@ -415,5 +419,32 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
     private void setupStoreFromConfig(SmartStore store, int resourceId) {
         StoreConfig config = new StoreConfig(context, resourceId);
         config.registerSoups(store);
+    }
+
+    @Override
+    protected LinkedHashMap<String, DevActionHandler> getDevActions(final Activity frontActivity) {
+        LinkedHashMap<String, DevActionHandler> devActions = super.getDevActions(frontActivity);
+
+        devActions.put(
+                "Inspect SmartStore", new DevActionHandler() {
+                    @Override
+                    public void onSelected() {
+                        frontActivity.startActivity(SmartStoreInspectorActivity.getIntent(frontActivity, false, DBOpenHelper.DEFAULT_DB_NAME));
+                    }
+                });
+
+        return devActions;
+    }
+
+    @Override
+    public List<String> getDevSupportInfos() {
+        List<String> devSupportInfos = new ArrayList<>(super.getDevSupportInfos());
+        devSupportInfos.addAll(Arrays.asList(
+                "SQLCipher version", getSmartStore().getSQLCipherVersion(),
+                "SQLCipher Compile Options", TextUtils.join(", ", getSmartStore().getCompileOptions()),
+                "User Stores", TextUtils.join(", ", getUserStoresPrefixList()),
+                "Global Stores", TextUtils.join(", ", getGlobalStoresPrefixList())
+        ));
+        return devSupportInfos;
     }
 }
