@@ -90,7 +90,9 @@ public class SPRequestHandler {
      * @param data Data returned from the IDP app.
      */
     public void handleIDPResponse(int resultCode, Intent data) {
-        if (resultCode == Activity.RESULT_CANCELED) {
+        if (data == null) {
+            handleError("No result received from IDP app");
+        } else if (resultCode == Activity.RESULT_CANCELED) {
             final String error = data.getStringExtra(IDPCodeGeneratorActivity.ERROR_KEY);
             handleError(error);
         } else if (resultCode == Activity.RESULT_OK) {

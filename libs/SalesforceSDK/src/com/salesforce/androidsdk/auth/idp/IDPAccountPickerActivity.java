@@ -71,6 +71,16 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+
+        // If there are no users in the list, launch new user login flow directly.
+        if (getAccounts() == null) {
+            accountSelected(null);
+        }
+    }
+
+    @Override
     protected List<UserAccount> getAccounts() {
         final List<UserAccount> accounts = userAccMgr.getAuthenticatedUsers();
 
