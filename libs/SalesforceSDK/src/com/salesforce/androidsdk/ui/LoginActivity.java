@@ -228,12 +228,12 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	protected boolean fixBackButtonBehavior(int keyCode) {
 		if (keyCode == KeyEvent.KEYCODE_BACK) {
 
-		/*
-		 * If there are no accounts signed in, we need the login screen
-		 * to go away, and go back to the home screen. However, if the
-		 * login screen has been brought up from the switcher screen,
-		 * the back button should take the user back to the previous screen.
-		 */
+            /*
+		     * If there are no accounts signed in, we need the login screen
+		     * to go away, and go back to the home screen. However, if the
+		     * login screen has been brought up from the switcher screen,
+		     * the back button should take the user back to the previous screen.
+		     */
 			final UserAccountManager accMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
 			if (accMgr.getAuthenticatedUsers() == null) {
 				wasBackgrounded = true;
