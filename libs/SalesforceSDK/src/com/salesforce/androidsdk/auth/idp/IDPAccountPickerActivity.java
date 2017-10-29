@@ -36,6 +36,7 @@ import android.widget.Button;
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
@@ -152,12 +153,46 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
     private void kickOffNewUserFlow() {
         SalesforceSDKLogger.d(TAG, "Kicking off new user flow within IDP");
         final Bundle reply = new Bundle();
+        final String loginUrl = spConfig.getLoginUrl();
+
+        /*
+         * If a login URL is passed in from the SP app, sets that server as the selected
+         * server before launching LoginActivity. If the server passed in is not available
+         * on the IDP, returns an error back to the SP app. If no login URL is passed in,
+         * launches LoginActivity on the IDP with the current selection.
+         */
+        if (!TextUtils.isEmpty(loginUrl)) {
+            final LoginServerManager.LoginServer loginServer = getLoginServer(loginUrl);
+            if (loginServer == null) {
+                final Intent intent = new Intent();
+                intent.putExtra(IDPCodeGeneratorActivity.ERROR_KEY,
+                        "Specified login server does not exist on IDP app");
+                setResult(RESULT_CANCELED, intent);
+                finish();
+            } else {
+                SalesforceSDKManager.getInstance().getLoginServerManager().setSelectedLoginServer(loginServer);
+            }
+        }
         final Bundle options = SalesforceSDKManager.getInstance().getLoginOptions().asBundle();
         final Intent i = new Intent(this, SalesforceSDKManager.getInstance().getLoginActivityClass());
         i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         i.putExtras(options);
         reply.putParcelable(AccountManager.KEY_INTENT, i);
         startActivityForResult(i, IDP_LOGIN_REQUEST_CODE);
+    }
+
+    private LoginServerManager.LoginServer getLoginServer(String loginUrl) {
+        final LoginServerManager loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
+        final List<LoginServerManager.LoginServer> loginServers = loginServerManager.getLoginServers();
+        if (loginServers == null || loginServers.size() == 0) {
+            return null;
+        }
+        for (final LoginServerManager.LoginServer server : loginServers) {
+            if (server.url.equals(loginUrl)) {
+                return server;
+            }
+        }
+        return null;
     }
 
     private void proceedWithIDPAuthFlow(UserAccount account) {
