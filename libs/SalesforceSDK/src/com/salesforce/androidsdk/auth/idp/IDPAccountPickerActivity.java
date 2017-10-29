@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.auth.idp;
 
 import android.accounts.AccountManager;
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -48,7 +49,7 @@ import java.util.List;
  */
 public class IDPAccountPickerActivity extends AccountSwitcherActivity {
 
-    private static final int LOGIN_REQUEST_CODE = 999;
+    private static final int IDP_LOGIN_REQUEST_CODE = 999;
     private static final String TAG = "IDPAccountPickerActivity";
 
     private SPConfig spConfig;
@@ -63,10 +64,6 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
         if (extras != null) {
             spConfig = new SPConfig(extras.getBundle(IDPCodeGeneratorActivity.SP_CONFIG_BUNDLE_KEY));
         }
-        /*
-         * TODO: Take the SPConfig extra coming from here and add the selected
-         * UserAccount extra to it and then launch IDCodeGeneratorActivity.
-         */
     }
 
     @Override
@@ -112,36 +109,49 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
 
     @Override
     protected void finishActivity() {
-        SalesforceSDKLogger.d(TAG, "Inside finish activity!");
 
         // Do nothing in here, since we don't want to finish this activity until the IDP flow is complete.
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        SalesforceSDKLogger.d(TAG, "New user flow complete!");
+        if (requestCode == IDP_LOGIN_REQUEST_CODE) {
+            SalesforceSDKLogger.d(TAG, "Activity result obtained - IDP login complete");
 
-        // Kicks off the SP app's authentication call, since the IDP app is now authenticated.
-        final UserAccount account = userAccMgr.getCurrentUser();
-        if (account != null) {
-            proceedWithIDPAuthFlow(account);
+            // Kicks off the SP app's authentication call, since the IDP app is now authenticated.
+            // TODO: Replace the following line with account returned from LoginActivity instead.
+            final UserAccount account = userAccMgr.getCurrentUser();
+            if (account != null) {
+                proceedWithIDPAuthFlow(account);
+            }
+        } else  if (requestCode == SPRequestHandler.IDP_REQUEST_CODE) {
+            SalesforceSDKLogger.d(TAG, "Activity result obtained - IDP code exchange complete");
+            if (resultCode == Activity.RESULT_OK) {
+                setResult(RESULT_OK, data);
+            } else {
+                setResult(RESULT_CANCELED, data);
+            }
+            finish();
         }
     }
 
     private void kickOffNewUserFlow() {
-        SalesforceSDKLogger.d(TAG, "Kicking off new user flow!");
+        SalesforceSDKLogger.d(TAG, "Kicking off new user flow within IDP");
         final Bundle reply = new Bundle();
         final Bundle options = SalesforceSDKManager.getInstance().getLoginOptions().asBundle();
         final Intent i = new Intent(this, SalesforceSDKManager.getInstance().getLoginActivityClass());
         i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         i.putExtras(options);
         reply.putParcelable(AccountManager.KEY_INTENT, i);
-        startActivityForResult(i, LOGIN_REQUEST_CODE);
+        startActivityForResult(i, IDP_LOGIN_REQUEST_CODE);
     }
 
     private void proceedWithIDPAuthFlow(UserAccount account) {
-        SalesforceSDKLogger.d(TAG, "Proceeding with IDP auth flow, account: " + account.toString());
-        finish();
-        // TODO:
+        SalesforceSDKLogger.d(TAG, "Kicking off code exchange flow within IDP for account: " + account);
+        final Intent intent = new Intent(this, IDPCodeGeneratorActivity.class);
+        intent.addCategory(Intent.CATEGORY_DEFAULT);
+        intent.putExtra(IDPCodeGeneratorActivity.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle());
+        intent.putExtra(IDPCodeGeneratorActivity.USER_ACCOUNT_BUNDLE_KEY, account.toBundle());
+        startActivityForResult(intent, SPRequestHandler.IDP_REQUEST_CODE);
     }
 }
