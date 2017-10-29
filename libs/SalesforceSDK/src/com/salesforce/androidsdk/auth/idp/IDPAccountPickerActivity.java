@@ -31,7 +31,9 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.widget.Button;
 
+import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
@@ -57,6 +59,8 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
     @Override
     public void onCreate(Bundle savedInstance) {
         super.onCreate(savedInstance);
+        final Button button = findViewById(R.id.sf__switcher_apply_button);
+        button.setText(R.string.sf__idp_account_selector);
 
         // Fetches the required extras.
         final Intent intent = getIntent();
