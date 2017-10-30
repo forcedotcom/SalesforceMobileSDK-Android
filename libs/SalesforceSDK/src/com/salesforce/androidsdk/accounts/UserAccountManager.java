@@ -314,11 +314,11 @@ public class UserAccountManager {
 	 * @param url Instance/My domain URL.
 	 */
 	public void switchToNewUser(String jwt, String url) {
-        Bundle options = SalesforceSDKManager.getInstance().getLoginOptions(jwt, url).asBundle();
+        final Bundle options = SalesforceSDKManager.getInstance().getLoginOptions(jwt, url).asBundle();
         switchToNewUserWithOptions(options);
 	}
 
-	private void switchToNewUserWithOptions (Bundle options) {
+	private void switchToNewUserWithOptions(Bundle options) {
 		final Bundle reply = new Bundle();
 		final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
 		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

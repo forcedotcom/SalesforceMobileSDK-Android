@@ -41,6 +41,14 @@ public class SmartSyncExplorerApp extends Application {
 		super.onCreate();
 		SmartSyncSDKManager.initNative(getApplicationContext(), null, MainActivity.class);
 
+		/*
+         * Uncomment the following lines to enable IDP login flow. This will allow the user to
+         * either authenticate using the current app or use a designated IDP app for login.
+         * Replace 'idpAppURIScheme' with the URI scheme of the IDP app meant to be used.
+         */
+		// SalesforceSDKManager.getInstance().setIDPLoginFlowEnabled(true);
+        // SalesforceSDKManager.getInstance().setIDPAppURIScheme(idpAppURIScheme);
+
         /*
          * Uncomment the following line to enable browser based login. This will use a
          * Chrome custom tab to login instead of the default WebView. You will also need

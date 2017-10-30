@@ -35,7 +35,7 @@
             android:launchMode="singleInstance">
 
             <!--
-                To enable browser bath authentication, uncomment the lines below and replace
+                To enable browser based authentication, uncomment the lines below and replace
                 'scheme', 'host' and 'path' with their corresponding values from your connected app.
 
                 For example, if the callback URL of your connected app is

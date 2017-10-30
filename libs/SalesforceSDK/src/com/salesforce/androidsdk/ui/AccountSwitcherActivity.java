@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import java.util.List;
-
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
@@ -36,6 +34,8 @@ import android.widget.RadioGroup;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+
+import java.util.List;
 
 /**
  * This class provides UI to switch between existing signed in user accounts,
@@ -46,8 +46,8 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
  */
 public class AccountSwitcherActivity extends Activity {
 
-    private SalesforceR salesforceR;
-	private UserAccountManager userAccMgr;
+	protected SalesforceR salesforceR;
+	protected UserAccountManager userAccMgr;
 
 	@Override
 	public void onCreate(Bundle savedInstance) {
@@ -71,14 +71,14 @@ public class AccountSwitcherActivity extends Activity {
 	 * @param v View that was clicked.
 	 */
 	public void switchToExistingAccount(View v) {
-        final RadioGroup radioGroup = (RadioGroup) findViewById(salesforceR.idAccountListGroup());
+        final RadioGroup radioGroup = findViewById(salesforceR.idAccountListGroup());
         int checkedId = radioGroup.getCheckedRadioButtonId();
-		final SalesforceAccountRadioButton rb = (SalesforceAccountRadioButton) radioGroup.findViewById(checkedId);
+		final SalesforceAccountRadioButton rb = radioGroup.findViewById(checkedId);
 		if (rb != null) {
 			final UserAccount account = rb.getAccount();
-			userAccMgr.switchToUser(account, UserAccountManager.USER_SWITCH_TYPE_DEFAULT, null);
+			accountSelected(account);
 		}
-		finish();
+		finishActivity();
 	}
 
 	/**
@@ -88,18 +88,44 @@ public class AccountSwitcherActivity extends Activity {
 	 * @param v View that was clicked.
 	 */
 	public void switchToNewAccount(View v) {
-		userAccMgr.switchToNewUser();
+		accountSelected(null);
+		finishActivity();
+	}
+
+	/**
+	 * Finishes this activity.
+	 */
+	protected void finishActivity() {
 		finish();
 	}
 
 	/**
-	 * Builds the list of current accounts and adds them to the RadioGroup.
+	 * Performs the account switch operation. Pass in 'null' to kick off a new user login flow.
+	 *
+	 * @param account Account to switch to. Pass in 'null' to kick off a new user login flow.
 	 */
+	protected void accountSelected(UserAccount account) {
+		if (account == null) {
+			userAccMgr.switchToNewUser();
+		} else {
+			userAccMgr.switchToUser(account, UserAccountManager.USER_SWITCH_TYPE_DEFAULT, null);
+		}
+	}
+
+    /**
+     * Returns the list of user accounts to display.
+     *
+     * @return List of user accounts to display.
+     */
+	protected List<UserAccount> getAccounts() {
+        return userAccMgr.getAuthenticatedUsers();
+    }
+
 	private void buildAccountList() {
-        final RadioGroup radioGroup = (RadioGroup) findViewById(salesforceR.idAccountListGroup());
+        final RadioGroup radioGroup = findViewById(salesforceR.idAccountListGroup());
         radioGroup.removeAllViews();
         UserAccount curAccount = userAccMgr.getCurrentUser();
-		final List<UserAccount> accounts = userAccMgr.getAuthenticatedUsers();
+        final List<UserAccount> accounts = getAccounts();
 		if (accounts == null || accounts.size() == 0) {
 			return;
 		}

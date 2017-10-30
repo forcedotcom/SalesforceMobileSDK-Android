@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.auth.idp;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.AsyncTask;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -52,7 +53,6 @@ public class SPRequestHandler {
 
     private String codeVerifier;
     private String codeChallenge;
-    private String loginUrl;
     private SPConfig spConfig;
 
     /**
@@ -67,19 +67,20 @@ public class SPRequestHandler {
          * a hardcoded string.
          */
         codeChallenge = SalesforceKeyGenerator.getSHA256Hash(codeVerifier);
-        this.loginUrl = loginUrl;
-        spConfig = buildSPConfig();
+        spConfig = buildSPConfig(loginUrl);
     }
 
     /**
      * Launches the IDP app.
+     *
+     * @param context Activity context.
      */
-    public void launchIDPApp() {
-        /*
-         * TODO: Launch the subclass of user switcher screen for IDP that selects user.
-         * This user should take the SPConfig extra coming from here and add the selected
-         * UserAccount extra to it and then launch IDCodeGeneratorActivity.
-         */
+    public void launchIDPApp(Activity context) {
+        final Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.addCategory(Intent.CATEGORY_DEFAULT);
+        intent.setData(Uri.parse(SalesforceSDKManager.getInstance().getIDPAppURIScheme()));
+        intent.putExtra(IDPCodeGeneratorActivity.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle());
+        context.startActivityForResult(intent, IDP_REQUEST_CODE);
     }
 
     /**
@@ -89,7 +90,9 @@ public class SPRequestHandler {
      * @param data Data returned from the IDP app.
      */
     public void handleIDPResponse(int resultCode, Intent data) {
-        if (resultCode == Activity.RESULT_CANCELED) {
+        if (data == null) {
+            handleError("No result received from IDP app");
+        } else if (resultCode == Activity.RESULT_CANCELED) {
             final String error = data.getStringExtra(IDPCodeGeneratorActivity.ERROR_KEY);
             handleError(error);
         } else if (resultCode == Activity.RESULT_OK) {
@@ -108,7 +111,7 @@ public class SPRequestHandler {
         return spConfig;
     }
 
-    private SPConfig buildSPConfig() {
+    private SPConfig buildSPConfig(String loginUrl) {
         final BootConfig bootConfig = BootConfig.getBootConfig(SalesforceSDKManager.getInstance().getAppContext());
         return new SPConfig(bootConfig.getRemoteAccessConsumerKey(), bootConfig.getOauthRedirectURI(),
                 codeChallenge, bootConfig.getOauthScopes(), loginUrl, null);
