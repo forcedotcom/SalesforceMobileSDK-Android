@@ -80,7 +80,7 @@ jobs:
           when: always
       - run:
           name:  Run Danger
-          command: danger
+          command: danger --dangerfile=.circleci/Dangerfile --danger_id=ci/circleci
           when: always
     
       - store_artifacts:
