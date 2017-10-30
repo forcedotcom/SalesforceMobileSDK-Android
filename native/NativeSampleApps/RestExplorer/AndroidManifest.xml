@@ -30,8 +30,9 @@
             The URI constructed from this must be unique and will be set in the SP app
             as well. This will be used to launch the IDP app from the SP app.
 
-            In the example given below, 'scheme' is "restexplorer" and 'host' is "authenticator".
-            The full URI that needs to be set on the SP app would be "restexplorer://authenticator".
+            In the example given below, 'scheme' is "com.salesforce.samples.restexplorer" and
+            'host' is "authenticator". The full URI that needs to be set on the SP app would be
+            "com.salesforce.samples.restexplorer://authenticator".
         -->
         <!--
         <activity android:name="com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity"
@@ -39,7 +40,7 @@
             android:theme="@style/SalesforceSDK.ActionBarTheme">
 
             <intent-filter>
-                <data android:scheme="restexplorer"
+                <data android:scheme="com.salesforce.samples.restexplorer"
                     android:host="authenticator" />
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.BROWSABLE" />
