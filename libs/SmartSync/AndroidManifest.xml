@@ -6,7 +6,7 @@
     android:versionName="6.0.0.dev">
 
     <uses-sdk android:minSdkVersion="21"
-        android:targetSdkVersion="26" />
+        android:targetSdkVersion="27" />
 
     <application />
 </manifest>
