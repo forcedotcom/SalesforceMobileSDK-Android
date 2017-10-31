@@ -20,7 +20,7 @@ dependencies {
 
 android {
   compileSdkVersion 26
-  buildToolsVersion '25.0.0'
+  buildToolsVersion '26.0.2'
 
   buildTypes {
     debug {
