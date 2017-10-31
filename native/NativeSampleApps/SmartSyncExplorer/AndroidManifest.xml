@@ -78,7 +78,7 @@
     </application>
 
     <uses-sdk android:minSdkVersion="21"
-        android:targetSdkVersion="26" />
+        android:targetSdkVersion="27" />
 
     <!--
         GCM permission to ensure that only this application can
