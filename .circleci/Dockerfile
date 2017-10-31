@@ -47,5 +47,5 @@ RUN echo "no" | avdmanager create avd -n test22 -k "system-images;android-22;def
 #RUN echo "y" | sdkmanager "system-images;android-25;google_apis;arm64-v8a"
 #RUN echo "no" | avdmanager create avd -n test25 -k "system-images;android-25;google_apis;arm64-v8a"
 
-RUN sdkmanager "build-tools;26.0.1"
+RUN sdkmanager "build-tools;26.0.2"
 RUN sdkmanager "extras;android;m2repository"
