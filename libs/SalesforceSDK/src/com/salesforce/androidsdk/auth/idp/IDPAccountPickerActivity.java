@@ -53,6 +53,7 @@ import java.util.List;
 public class IDPAccountPickerActivity extends AccountSwitcherActivity {
 
     private static final int IDP_LOGIN_REQUEST_CODE = 999;
+    private static final String FEATURE_APP_IS_IDP = "IP";
     private static final String TAG = "IDPAccountPickerActivity";
 
     private SPConfig spConfig;
@@ -60,6 +61,7 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
     @Override
     public void onCreate(Bundle savedInstance) {
         super.onCreate(savedInstance);
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_APP_IS_IDP);
         final Button button = findViewById(R.id.sf__switcher_apply_button);
         button.setText(R.string.sf__idp_account_selector);
 

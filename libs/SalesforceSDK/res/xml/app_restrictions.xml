@@ -37,4 +37,9 @@
         android:restrictionType="bool"
         android:defaultValue="false"
         android:description="@string/sf__only_show_authorized_hosts_description" />
+
+    <restriction android:key="IDPAppURLScheme"
+        android:title="IDPAppURLScheme"
+        android:restrictionType="string"
+        android:description="@string/sf__idp_app_url_scheme_description" />
 </restrictions>

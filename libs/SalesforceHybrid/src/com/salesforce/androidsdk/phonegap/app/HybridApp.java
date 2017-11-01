@@ -46,8 +46,8 @@ public class HybridApp extends Application {
          * either authenticate using the current app or use a designated IDP app for login.
          * Replace 'idpAppURIScheme' with the URI scheme of the IDP app meant to be used.
          */
-		// SalesforceSDKManager.getInstance().setIDPLoginFlowEnabled(true);
-        // SalesforceSDKManager.getInstance().setIDPAppURIScheme(idpAppURIScheme);
+		// SalesforceHybridSDKManager.getInstance().setIDPLoginFlowEnabled(true);
+        // SalesforceHybridSDKManager.getInstance().setIDPAppURIScheme(idpAppURIScheme);
 
         /*
          * Uncomment the following line to enable browser based login. This will use a

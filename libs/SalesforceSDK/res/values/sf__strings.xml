@@ -71,6 +71,7 @@
     <string name="sf__require_cert_auth_description">Used to specify if certificate based authentication is required for the application.</string>
     <string name="sf__managed_app_cert_alias_description">Used to specify the certificate alias required for the application.</string>
 	<string name="sf__only_show_authorized_hosts_description">Used to specify that only authorized hosts can be shown.</string>
+    <string name="sf__idp_app_url_scheme_description">Used to specify IDP app\'s URL scheme to be used.</string>
 
 	<!-- Fingerprint Auth Resources-->
 	<string name="sf__fingerprint_description">Confirm fingerprint to continue</string>
