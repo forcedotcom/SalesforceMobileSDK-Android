@@ -44,6 +44,11 @@
         android:layout_height="wrap_content"
         android:text="@string/only_allowed_servers" />
 
+    <EditText
+        android:id="@+id/idp_app_url_scheme"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
     <Button
         android:id="@+id/save"
         android:layout_width="wrap_content"

@@ -65,7 +65,8 @@ public class RuntimeConfig {
 		ManagedAppCallbackURL,
 		RequireCertAuth,
 		ManagedAppCertAlias,
-		OnlyShowAuthorizedHosts
+		OnlyShowAuthorizedHosts,
+		IDPAppURLScheme
 	}
 
     private boolean isManaged = false;
