@@ -45,6 +45,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebSettings.LayoutAlgorithm;
 import android.webkit.WebView;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -84,6 +85,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
     private ChangeServerReceiver changeServerReceiver;
     private boolean receiverRegistered;
     private SPRequestHandler spRequestHandler;
+    private SPAuthCallback authCallback;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -128,6 +130,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
             registerReceiver(changeServerReceiver, changeServerFilter);
             receiverRegistered = true;
         }
+        authCallback = new SPAuthCallback();
 	}
 
 	@Override
@@ -320,7 +323,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
      */
     public void onIDPLoginClick(View v) {
         final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url.trim();
-        spRequestHandler = new SPRequestHandler(loginServer);
+        spRequestHandler = new SPRequestHandler(loginServer, authCallback);
         spRequestHandler.launchIDPApp(this);
     }
 
@@ -339,7 +342,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	 * @param v
 	 */
 	public void onPickServerClick(View v) {
-		Intent i = new Intent(this, ServerPickerActivity.class);
+		final Intent i = new Intent(this, ServerPickerActivity.class);
 	    startActivityForResult(i, PICK_SERVER_REQUEST_CODE);
 	}
 
@@ -396,6 +399,32 @@ public class LoginActivity extends AccountAuthenticatorActivity
                     webviewHelper.loadLoginPage();
                 }
             }
+        }
+    }
+
+    /**
+     * Callbacks for SP authentication flow.
+     *
+     * @author bhariharan
+     */
+    public class SPAuthCallback {
+
+        /**
+         * Called when the flow was successful and token response is received.
+         *
+         * @param tokenResponse Token response.
+         */
+        public void receivedTokenResponse(OAuth2.TokenEndpointResponse tokenResponse) {
+            webviewHelper.onAuthFlowComplete(tokenResponse);
+        }
+
+        /**
+         * Called when the flow was not successful.
+         *
+         * @param errorMessage Error message.
+         */
+        public void receivedErrorResponse(String errorMessage) {
+            Toast.makeText(LoginActivity.this, errorMessage, Toast.LENGTH_LONG).show();
         }
     }
 }
