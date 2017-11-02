@@ -53,6 +53,7 @@ import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity;
 import com.salesforce.androidsdk.auth.idp.SPRequestHandler;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
@@ -358,31 +359,49 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	}
 
 	@Override
-	public void finish() {
-        initAnalyticsManager();
-        final UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
-        final List<UserAccount> authenticatedUsers = userAccountManager.getAuthenticatedUsers();
-        final int numAuthenticatedUsers = authenticatedUsers == null ? 0 : authenticatedUsers.size();
-        final int userSwitchType;
-        if (numAuthenticatedUsers == 1) {
+	public void finish(UserAccount userAccount) {
+        initAnalyticsManager(userAccount);
 
-            // We've already authenticated the first user, so there should be one.
-            userSwitchType = UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN;
-        } else if (numAuthenticatedUsers > 1) {
+        /*
+         * Sends user switch intents only if this login flow is not a login triggered due
+         * to an incoming authentication request from an SP app. If it is an incoming SP request,
+         * we should add the user account but NOT switch to the user or send user switch intents.
+         */
+        if (!SalesforceSDKManager.getInstance().isIDPAppLoginFlowActive()) {
+            final UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
+            final List<UserAccount> authenticatedUsers = userAccountManager.getAuthenticatedUsers();
+            final int numAuthenticatedUsers = authenticatedUsers == null ? 0 : authenticatedUsers.size();
+            final int userSwitchType;
+            if (numAuthenticatedUsers == 1) {
 
-            // Otherwise we're logging in with an additional user.
-            userSwitchType = UserAccountManager.USER_SWITCH_TYPE_LOGIN;
-        } else {
+                // We've already authenticated the first user, so there should be one.
+                userSwitchType = UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN;
+            } else if (numAuthenticatedUsers > 1) {
 
-            // This should never happen but if it does, pass in the "unknown" value.
-            userSwitchType = UserAccountManager.USER_SWITCH_TYPE_DEFAULT;
+                // Otherwise we're logging in with an additional user.
+                userSwitchType = UserAccountManager.USER_SWITCH_TYPE_LOGIN;
+            } else {
+
+                // This should never happen but if it does, pass in the "unknown" value.
+                userSwitchType = UserAccountManager.USER_SWITCH_TYPE_DEFAULT;
+            }
+            userAccountManager.sendUserSwitchIntent(userSwitchType, null);
         }
-        userAccountManager.sendUserSwitchIntent(userSwitchType, null);
-        super.finish();
+
+        /*
+         * Passes back the added user account object if this is a login flow in the IDP app
+         * initiated by an incoming request for authentication from an SP app.
+         */
+        if (userAccount != null && SalesforceSDKManager.getInstance().isIDPAppLoginFlowActive()) {
+            final Intent intent = new Intent();
+            intent.putExtra(IDPAccountPickerActivity.USER_ACCOUNT_KEY, userAccount.toBundle());
+            setResult(RESULT_OK, intent);
+        }
+        SalesforceSDKManager.getInstance().setIDPAppLoginFlowActive(false);
+        finish();
 	}
 
-    private void initAnalyticsManager() {
-        final UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+    private void initAnalyticsManager(UserAccount account) {
         final SalesforceAnalyticsManager analyticsManager = SalesforceAnalyticsManager.getInstance(account);
 	    if (analyticsManager != null) {
             analyticsManager.updateLoggingPrefs();

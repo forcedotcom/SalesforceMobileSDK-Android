@@ -52,6 +52,7 @@ import java.util.List;
  */
 public class IDPAccountPickerActivity extends AccountSwitcherActivity {
 
+    public static final String USER_ACCOUNT_KEY = "user_account";
     private static final int IDP_LOGIN_REQUEST_CODE = 999;
     private static final String FEATURE_APP_IS_IDP = "IP";
     private static final String TAG = "IDPAccountPickerActivity";
@@ -134,12 +135,18 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == IDP_LOGIN_REQUEST_CODE) {
             SalesforceSDKLogger.d(TAG, "Activity result obtained - IDP login complete");
-
-            // Kicks off the SP app's authentication call, since the IDP app is now authenticated.
-            // TODO: Replace the following line with account returned from LoginActivity instead.
-            final UserAccount account = userAccMgr.getCurrentUser();
-            if (account != null) {
-                proceedWithIDPAuthFlow(account);
+            if (data != null) {
+                final Bundle userAccountBundle = data.getBundleExtra(USER_ACCOUNT_KEY);
+                if (userAccountBundle != null) {
+                    final UserAccount account = new UserAccount(userAccountBundle);
+                    proceedWithIDPAuthFlow(account);
+                } else {
+                    setResult(RESULT_CANCELED, getIDPLoginFailureIntent());
+                    finish();
+                }
+            } else {
+                setResult(RESULT_CANCELED, getIDPLoginFailureIntent());
+                finish();
             }
         } else  if (requestCode == SPRequestHandler.IDP_REQUEST_CODE) {
             SalesforceSDKLogger.d(TAG, "Activity result obtained - IDP code exchange complete");
@@ -150,6 +157,12 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
             }
             finish();
         }
+    }
+
+    private Intent getIDPLoginFailureIntent() {
+        final Intent intent = new Intent();
+        intent.putExtra(IDPCodeGeneratorActivity.ERROR_KEY, "Failed to log in to IDP app");
+        return intent;
     }
 
     private void kickOffNewUserFlow() {
@@ -180,6 +193,7 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
         i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         i.putExtras(options);
         reply.putParcelable(AccountManager.KEY_INTENT, i);
+        SalesforceSDKManager.getInstance().setIDPAppLoginFlowActive(true);
         startActivityForResult(i, IDP_LOGIN_REQUEST_CODE);
     }
 
