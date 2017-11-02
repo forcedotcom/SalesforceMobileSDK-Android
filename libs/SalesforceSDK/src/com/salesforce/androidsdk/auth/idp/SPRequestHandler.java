@@ -36,6 +36,7 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
+import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.net.URI;
@@ -53,16 +54,19 @@ public class SPRequestHandler {
     private String codeVerifier;
     private String codeChallenge;
     private SPConfig spConfig;
+    private LoginActivity.SPAuthCallback authCallback;
 
     /**
      * Parameterized constructor.
      *
      * @param loginUrl Login URL.
+     * @param authCallback Auth callback.
      */
-    public SPRequestHandler(String loginUrl) {
+    public SPRequestHandler(String loginUrl, LoginActivity.SPAuthCallback authCallback) {
         codeVerifier = SalesforceKeyGenerator.getRandom128ByteKey();
         codeChallenge = SalesforceKeyGenerator.getSHA256Hash(codeVerifier);
         spConfig = buildSPConfig(loginUrl);
+        this.authCallback = authCallback;
     }
 
     /**
@@ -139,16 +143,16 @@ public class SPRequestHandler {
                         spConfig.getOauthCallbackUrl());
             } catch (Exception e) {
                 SalesforceSDKLogger.e(TAG, "Exception occurred while making token request", e);
+                handleError(e.toString());
             }
             return tokenResponse;
         }
 
         @Override
         protected void onPostExecute(OAuth2.TokenEndpointResponse tokenResponse) {
-            /*
-             * TODO: Digest the token response and make a request to the identity URL, then run
-             * post login steps from OAuthWebviewHelper.
-             */
+            if (authCallback != null && tokenResponse != null) {
+                authCallback.receivedTokenResponse(tokenResponse);
+            }
         }
     }
 }
