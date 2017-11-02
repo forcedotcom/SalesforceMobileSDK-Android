@@ -45,6 +45,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebSettings.LayoutAlgorithm;
 import android.webkit.WebView;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -423,10 +424,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
          * @param errorMessage Error message.
          */
         public void receivedErrorResponse(String errorMessage) {
-            /*
-             * TODO: Display a Toast with the error and allow apps to override with their
-             * own error handling behavior.
-             */
+            Toast.makeText(LoginActivity.this, errorMessage, Toast.LENGTH_LONG).show();
         }
     }
 }
