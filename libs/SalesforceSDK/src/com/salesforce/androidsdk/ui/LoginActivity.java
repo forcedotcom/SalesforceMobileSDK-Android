@@ -83,6 +83,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	private OAuthWebviewHelper webviewHelper;
     private ChangeServerReceiver changeServerReceiver;
     private boolean receiverRegistered;
+    private SPRequestHandler spRequestHandler;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -319,7 +320,8 @@ public class LoginActivity extends AccountAuthenticatorActivity
      */
     public void onIDPLoginClick(View v) {
         final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url.trim();
-        (new SPRequestHandler(loginServer)).launchIDPApp(this);
+        spRequestHandler = new SPRequestHandler(loginServer);
+        spRequestHandler.launchIDPApp(this);
     }
 
 	/**
@@ -346,8 +348,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		if (requestCode == PasscodeManager.PASSCODE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
 			webviewHelper.onNewPasscode();
 		} else if (requestCode == SPRequestHandler.IDP_REQUEST_CODE) {
-            final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url.trim();
-            (new SPRequestHandler(loginServer)).handleIDPResponse(resultCode, data);
+            spRequestHandler.handleIDPResponse(resultCode, data);
         } else {
 	        super.onActivityResult(requestCode, resultCode, data);
 	    }

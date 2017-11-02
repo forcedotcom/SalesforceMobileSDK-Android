@@ -48,7 +48,6 @@ import java.net.URI;
 public class SPRequestHandler {
 
     public static final int IDP_REQUEST_CODE = 375;
-    private static final String CODE_VERIFIER = "code_verifier";
     private static final String TAG = "SPRequestHandler";
 
     private String codeVerifier;
@@ -61,11 +60,7 @@ public class SPRequestHandler {
      * @param loginUrl Login URL.
      */
     public SPRequestHandler(String loginUrl) {
-        codeVerifier = CODE_VERIFIER;
-        /*
-         * TODO: Switch 'codeVerifier' to a randomly generated 128-byte key instead of
-         * a hardcoded string.
-         */
+        codeVerifier = SalesforceKeyGenerator.getRandom128ByteKey();
         codeChallenge = SalesforceKeyGenerator.getSHA256Hash(codeVerifier);
         spConfig = buildSPConfig(loginUrl);
     }

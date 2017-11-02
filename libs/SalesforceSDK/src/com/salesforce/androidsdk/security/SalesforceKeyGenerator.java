@@ -93,6 +93,18 @@ public class SalesforceKeyGenerator {
     }
 
     /**
+     * Returns a randomly generated 128-byte key that's URL safe.
+     *
+     * @return Random 128-byte key.
+     */
+    public static String getRandom128ByteKey() {
+        final SecureRandom secureRandom = new SecureRandom();
+        byte[] random = new byte[128];
+        secureRandom.nextBytes(random);
+        return Base64.encodeToString(random,Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
+    }
+
+    /**
      * Returns the SHA-256 hashed value of the supplied private key.
      *
      * @param privateKey Private key.
