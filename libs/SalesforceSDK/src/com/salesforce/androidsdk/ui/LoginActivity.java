@@ -361,16 +361,19 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	@Override
 	public void finish(UserAccount userAccount) {
         initAnalyticsManager(userAccount);
+        final UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
+        final List<UserAccount> authenticatedUsers = userAccountManager.getAuthenticatedUsers();
+        final int numAuthenticatedUsers = authenticatedUsers == null ? 0 : authenticatedUsers.size();
 
         /*
          * Sends user switch intents only if this login flow is not a login triggered due
-         * to an incoming authentication request from an SP app. If it is an incoming SP request,
-         * we should add the user account but NOT switch to the user or send user switch intents.
+         * to an incoming authentication request from an SP app or first user to login on IDP.
+         * If it is an incoming SP request, we should add the user account but NOT switch to
+         * the user or send user switch intents unless it's the first user being logged in.
          */
-        if (!SalesforceSDKManager.getInstance().isIDPAppLoginFlowActive()) {
-            final UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
-            final List<UserAccount> authenticatedUsers = userAccountManager.getAuthenticatedUsers();
-            final int numAuthenticatedUsers = authenticatedUsers == null ? 0 : authenticatedUsers.size();
+        boolean isFirstUserOrNotIDPFlow = !SalesforceSDKManager.getInstance().isIDPAppLoginFlowActive()
+                || (numAuthenticatedUsers == 0);
+        if (isFirstUserOrNotIDPFlow) {
             final int userSwitchType;
             if (numAuthenticatedUsers == 1) {
 

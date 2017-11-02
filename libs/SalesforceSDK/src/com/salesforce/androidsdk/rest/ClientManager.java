@@ -362,10 +362,20 @@ public class ClientManager {
         }
         Account acc = new Account(accountName, getAccountType());
         accountManager.addAccountExplicitly(acc, SalesforceSDKManager.encrypt(refreshToken), new Bundle());
+        final Account[] accounts = getAccounts();
+        int numAuthenticatedUsers = accounts == null ? 0 : accounts.length;
+        boolean isFirstUserOrNotIDPFlow = !SalesforceSDKManager.getInstance().isIDPAppLoginFlowActive()
+                || (numAuthenticatedUsers <= 1);
 
-        // Caching auth token otherwise the first call to accountManager.getAuthToken will go to the AuthenticatorService which will do a refresh
-        // That is problematic when the refresh token is set to expire immediately
-        accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encrypt(authToken));
+        /*
+         * Sets auth token only if this user is the first user being logged in or NOT an IDP login.
+         * Caching auth token otherwise the first call to 'accountManager.getAuthToken()' will go
+         * to the AuthenticatorService which will do a refresh. That is problematic when the
+         * refresh token is set to expire immediately.
+         */
+        if (isFirstUserOrNotIDPFlow) {
+            accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encrypt(authToken));
+        }
 
         // There is a bug in AccountManager::addAccountExplicitly() that sometimes causes user data to not be
         // saved when the user data is passed in through that method. The work-around is to call setUserData()
@@ -374,7 +384,14 @@ public class ClientManager {
             // WARNING! This assumes all user data is a String!
             accountManager.setUserData(acc, key, extras.getString(key));
         }
-        SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUserInfo(userId, orgId);
+
+        /*
+         * Sets this user as the current user only if this is the first user being logged in
+         * or NOT an IDP login initiated by an SP app.
+         */
+        if (isFirstUserOrNotIDPFlow) {
+            SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUserInfo(userId, orgId);
+        }
         return extras;
     }
 
