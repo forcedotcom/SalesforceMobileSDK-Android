@@ -147,14 +147,12 @@ public class BootConfig {
 			}
 
 			// Lack of unauthenticatedStartPage with remote deferred authentication is an error.
-			if (!config.isLocal() && !config.shouldAuthenticate()
-					&& (config.getUnauthenticatedStartPage() == null || config.getUnauthenticatedStartPage().length() == 0)) {
+			if (!config.isLocal() && !config.shouldAuthenticate() && TextUtils.isEmpty(config.getUnauthenticatedStartPage())) {
 				throw new BootConfigException(UNAUTHENTICATED_START_PAGE + " required for remote app with deferred authentication.");
 			}
 
 			// unauthenticatedStartPage, if present, must be an absolute URL.
-			if (config.getUnauthenticatedStartPage() != null
-					&& config.getUnauthenticatedStartPage().length() > 0
+			if (!TextUtils.isEmpty(config.getUnauthenticatedStartPage())
 					&& !BootConfig.isAbsoluteUrl(config.getUnauthenticatedStartPage())) {
 				throw new BootConfigException(UNAUTHENTICATED_START_PAGE + " should be absolute URL.");
 			}

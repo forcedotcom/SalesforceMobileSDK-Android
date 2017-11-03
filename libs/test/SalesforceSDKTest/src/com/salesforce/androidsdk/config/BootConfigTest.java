@@ -42,12 +42,14 @@ public class BootConfigTest extends InstrumentationTestCase {
 
     @Override
     public void setUp() throws Exception {
+        super.setUp();
         testContext = getInstrumentation().getContext();
     }
 
     @Override
     public void tearDown() throws Exception {
         testContext = null;
+        super.tearDown();
     }
 
     public void testNoBootConfig() {
