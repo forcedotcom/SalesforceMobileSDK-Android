@@ -87,20 +87,6 @@ public class BootConfig {
 
 	private static BootConfig INSTANCE = null;
 
-	BootConfig(JSONObject config, boolean isHybrid) {
-		this(isHybrid);
-		parseBootConfig(config);
-	}
-
-	BootConfig(Context ctx, boolean isHybrid) {
-		this(isHybrid);
-		readFromXML(ctx);
-	}
-
-	private BootConfig(boolean isHybrid) {
-		configIsHybrid = isHybrid;
-	}
-
 	/**
      * Method to (build and) get the singleton instance.
      *
@@ -109,16 +95,29 @@ public class BootConfig {
 	 */
 	public static BootConfig getBootConfig(Context ctx) {
 		if (INSTANCE == null) {
-			boolean isHybrid = SalesforceSDKManager.getInstance().isHybrid();
-			if (isHybrid) {
-				JSONObject bootConfigObj = readFromJSON(ctx);
-				INSTANCE = new BootConfig(bootConfigObj, isHybrid);
+			if (SalesforceSDKManager.getInstance().isHybrid()) {
+				INSTANCE = getHybridBootConfig(ctx, HYBRID_BOOTCONFIG_PATH);
 			} else {
-				INSTANCE = new BootConfig(ctx, isHybrid);
+				INSTANCE = new BootConfig();
+				INSTANCE.readFromXML(ctx);
 			}
 			INSTANCE.readFromRuntimeConfig(ctx);
 		}
 		return INSTANCE;
+	}
+
+	/**
+	 * Gets a hybrid boot config instance from its JSON configuration file.
+	 * @param ctx The context used to stage the JSON configuration file.
+	 * @param assetFilePath The relative path to the file, from the assets/ folder of the context.
+	 * @return A BootConfig representing the hybrid boot config object.
+	 */
+	static BootConfig getHybridBootConfig(Context ctx, String assetFilePath) {
+		BootConfig hybridBootConfg = new BootConfig();
+		hybridBootConfg.configIsHybrid = true;
+		JSONObject bootConfigJsonObj = readFromJSON(ctx, assetFilePath);
+		hybridBootConfg.parseBootConfig(bootConfigJsonObj);
+		return hybridBootConfg;
 	}
 
 	/**
@@ -131,7 +130,7 @@ public class BootConfig {
 			throw new BootConfigException("No boot config provided.");
 		}
 
-		if (config.configIsHybrid()) {
+		if (config.configIsHybrid) {
 			// startPage must be a relative URL.
 			if (BootConfig.isAbsoluteUrl(config.getStartPage())) {
 				throw new BootConfigException("Start page should not be absolute URL.");
@@ -202,17 +201,20 @@ public class BootConfig {
 	}
 
 	/**
-	 * Initializes this BootConfig object by reading the content of bootconfig.json.
+	 * Initializes this BootConfig object by reading the content of the JSON configuration file
+	 * at the specified path.
 	 *
-	 * @param ctx Context.
+	 * @param ctx            Context.
+	 * @param assetsFilePath The relative file path to the assets/ folder of the context.
+	 * @return A BootConfig representing the hybrid boot config object.
 	 */
-	private static JSONObject readFromJSON(Context ctx) {
-		final String jsonStr = readBootConfigFile(ctx);
+	private static JSONObject readFromJSON(Context ctx, String assetsFilePath) {
+		String jsonStr = readBootConfigFile(ctx, assetsFilePath);
 		try {
-			final JSONObject jsonObj = new JSONObject(jsonStr);
+			JSONObject jsonObj = new JSONObject(jsonStr);
 			return jsonObj;
 		} catch (JSONException e) {
-			throw new BootConfigException("Failed to parse " + HYBRID_BOOTCONFIG_PATH, e);
+			throw new BootConfigException("Failed to parse " + assetsFilePath, e);
 		}
 	}
 
@@ -230,20 +232,21 @@ public class BootConfig {
 	}
 
 	/**
-	 * Reads the contents of the boot config file.
+	 * Reads the contents of the boot config file from the specified path.
 	 *
-	 * @param ctx Context.
-	 * @return String content of bootconfig.json.
+	 * @param ctx            Context.
+	 * @param assetsFilePath The path to the file, relative to the assets/ folder of the context.
+	 * @return String content of the bootconfig JSON file.
 	 */
-	private static String readBootConfigFile(Context ctx) {
+	private static String readBootConfigFile(Context ctx, String assetsFilePath) {
 		Scanner scanner = null;
 		try {
-			scanner = new Scanner(ctx.getAssets().open(HYBRID_BOOTCONFIG_PATH));
+			scanner = new Scanner(ctx.getAssets().open(assetsFilePath));
 
 			// Good trick to get a string from a stream (http://weblogs.java.net/blog/pat/archive/2004/10/stupid_scanner_1.html).
 			return scanner.useDelimiter("\\A").next();
 		} catch (IOException e) {
-			throw new BootConfigException("Failed to open " + HYBRID_BOOTCONFIG_PATH, e);
+			throw new BootConfigException("Failed to open " + assetsFilePath, e);
 		} finally {
 			if (scanner != null) {
 				scanner.close();
@@ -279,12 +282,6 @@ public class BootConfig {
 			throw new BootConfigException("Failed to parse " + HYBRID_BOOTCONFIG_PATH, e);
 		}
 	}
-
-	/**
-	 * Whether the boot config is for a hybrid or non-hybrid app.
-	 * @return true if the config is for a hybrid app, false otherwise.
-	 */
-	public boolean configIsHybrid() { return configIsHybrid; }
 
 	/**
 	 * Returns the consumer key value specified for your remote access object or connected app.
