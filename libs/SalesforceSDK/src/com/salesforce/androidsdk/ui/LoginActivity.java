@@ -396,9 +396,9 @@ public class LoginActivity extends AccountAuthenticatorActivity
          * initiated by an incoming request for authentication from an SP app.
          */
         if (userAccount != null && SalesforceSDKManager.getInstance().isIDPAppLoginFlowActive()) {
-            final Intent intent = new Intent();
+            final Intent intent = new Intent(IDPAccountPickerActivity.IDP_LOGIN_COMPLETE_ACTION);
             intent.putExtra(IDPAccountPickerActivity.USER_ACCOUNT_KEY, userAccount.toBundle());
-            setResult(RESULT_OK, intent);
+            sendBroadcast(intent);
         }
         SalesforceSDKManager.getInstance().setIDPAppLoginFlowActive(false);
         finish();

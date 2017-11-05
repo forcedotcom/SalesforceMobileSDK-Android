@@ -28,7 +28,10 @@ package com.salesforce.androidsdk.auth.idp;
 
 import android.accounts.AccountManager;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.widget.Button;
@@ -53,11 +56,12 @@ import java.util.List;
 public class IDPAccountPickerActivity extends AccountSwitcherActivity {
 
     public static final String USER_ACCOUNT_KEY = "user_account";
-    private static final int IDP_LOGIN_REQUEST_CODE = 999;
+    public static final String IDP_LOGIN_COMPLETE_ACTION = "com.salesforce.androidsdk.auth.idp.IDP_LOGIN_COMPLETE";
     private static final String FEATURE_APP_IS_IDP = "IP";
     private static final String TAG = "IDPAccountPickerActivity";
 
     private SPConfig spConfig;
+    private IDPLoginCompleteReceiver idpLoginCompleteReceiver;
 
     @Override
     public void onCreate(Bundle savedInstance) {
@@ -72,6 +76,14 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
         if (extras != null) {
             spConfig = new SPConfig(extras.getBundle(IDPCodeGeneratorActivity.SP_CONFIG_BUNDLE_KEY));
         }
+        idpLoginCompleteReceiver = new IDPLoginCompleteReceiver();
+        registerReceiver(idpLoginCompleteReceiver, new IntentFilter(IDP_LOGIN_COMPLETE_ACTION));
+    }
+
+    @Override
+    public void onDestroy() {
+        unregisterReceiver(idpLoginCompleteReceiver);
+        super.onDestroy();
     }
 
     @Override
@@ -133,22 +145,7 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == IDP_LOGIN_REQUEST_CODE) {
-            SalesforceSDKLogger.d(TAG, "Activity result obtained - IDP login complete");
-            if (data != null) {
-                final Bundle userAccountBundle = data.getBundleExtra(USER_ACCOUNT_KEY);
-                if (userAccountBundle != null) {
-                    final UserAccount account = new UserAccount(userAccountBundle);
-                    proceedWithIDPAuthFlow(account);
-                } else {
-                    setResult(RESULT_CANCELED, getIDPLoginFailureIntent());
-                    finish();
-                }
-            } else {
-                setResult(RESULT_CANCELED, getIDPLoginFailureIntent());
-                finish();
-            }
-        } else  if (requestCode == SPRequestHandler.IDP_REQUEST_CODE) {
+        if (requestCode == SPRequestHandler.IDP_REQUEST_CODE) {
             SalesforceSDKLogger.d(TAG, "Activity result obtained - IDP code exchange complete");
             if (resultCode == Activity.RESULT_OK) {
                 setResult(RESULT_OK, data);
@@ -194,7 +191,7 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
         i.putExtras(options);
         reply.putParcelable(AccountManager.KEY_INTENT, i);
         SalesforceSDKManager.getInstance().setIDPAppLoginFlowActive(true);
-        startActivityForResult(i, IDP_LOGIN_REQUEST_CODE);
+        startActivity(i);
     }
 
     private LoginServerManager.LoginServer getLoginServer(String loginUrl) {
@@ -218,5 +215,33 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
         intent.putExtra(IDPCodeGeneratorActivity.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle());
         intent.putExtra(IDPCodeGeneratorActivity.USER_ACCOUNT_BUNDLE_KEY, account.toBundle());
         startActivityForResult(intent, SPRequestHandler.IDP_REQUEST_CODE);
+    }
+
+    /**
+     * A simple receiver that listens for IDP login completion. It fetches the user account
+     * that's passed back and kicks off the IDP code exchange flow. We use a receiver here
+     * since we can't use the standard 'onActivityResult()' flow with LoginActivity, since
+     * LoginActivity uses the 'singleInstance' flag. We need this flag for other actions
+     * to work properly, such as log in using Chrome and other login flows.
+     */
+    private class IDPLoginCompleteReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent != null && IDP_LOGIN_COMPLETE_ACTION.equals(intent.getAction())) {
+                SalesforceSDKLogger.d(TAG, "Activity result obtained - IDP login complete");
+                final Bundle userAccountBundle = intent.getBundleExtra(USER_ACCOUNT_KEY);
+                if (userAccountBundle != null) {
+                    final UserAccount account = new UserAccount(userAccountBundle);
+                    proceedWithIDPAuthFlow(account);
+                } else {
+                    IDPAccountPickerActivity.this.setResult(RESULT_CANCELED, getIDPLoginFailureIntent());
+                    IDPAccountPickerActivity.this.finish();
+                }
+            } else {
+                IDPAccountPickerActivity.this.setResult(RESULT_CANCELED, getIDPLoginFailureIntent());
+                IDPAccountPickerActivity.this.finish();
+            }
+        }
     }
 }
