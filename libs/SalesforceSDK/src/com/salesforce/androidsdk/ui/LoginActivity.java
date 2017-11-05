@@ -372,7 +372,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
          * the user or send user switch intents unless it's the first user being logged in.
          */
         boolean isFirstUserOrNotIDPFlow = !SalesforceSDKManager.getInstance().isIDPAppLoginFlowActive()
-                || (numAuthenticatedUsers == 0);
+                || (numAuthenticatedUsers <= 1);
         if (isFirstUserOrNotIDPFlow) {
             final int userSwitchType;
             if (numAuthenticatedUsers == 1) {
