@@ -101,19 +101,22 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
         final List<UserAccount> accounts = getAccounts();
         if (accounts == null) {
             usersExist = false;
-            final String userHint = spConfig.getUserHint();
-            if (!TextUtils.isEmpty(userHint)) {
-                final String[] userParts = userHint.split(COLON);
+        }
+        final String userHint = spConfig.getUserHint();
+        if (!TextUtils.isEmpty(userHint)) {
+            final String[] userParts = userHint.split(COLON);
 
-                // The value for 'user_hint' should be of the format 'orgId:userId'.
-                if (userParts.length == 2) {
-                    final String orgId = userParts[0];
-                    final String userId = userParts[1];
-                    selectedAccount = SalesforceSDKManager.getInstance().
-                            getUserAccountManager().getUserFromOrgAndUserId(orgId, userId);
-                    if (selectedAccount != null) {
-                        usersExist = true;
-                    }
+            /*
+             * The value for 'user_hint' should be of the format 'orgId:userId' and should
+             * use the 18-character versions of 'orgId' and 'userId'.
+             */
+            if (userParts.length == 2) {
+                final String orgId = userParts[0];
+                final String userId = userParts[1];
+                selectedAccount = SalesforceSDKManager.getInstance().
+                        getUserAccountManager().getUserFromOrgAndUserId(orgId, userId);
+                if (selectedAccount != null) {
+                    usersExist = true;
                 }
             }
         }
