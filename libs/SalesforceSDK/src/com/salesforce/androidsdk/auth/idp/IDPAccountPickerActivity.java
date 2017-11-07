@@ -90,18 +90,7 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
     @Override
     public void onResume() {
         super.onResume();
-
-        /*
-         * If there are no users in the list, checks if a 'user_hint' was passed in. If
-         * 'user_hint' was passed in, gets the account associated with it and selects that
-         * user account. If not, launches the new user login flow directly.
-         */
-        boolean usersExist = true;
         UserAccount selectedAccount = null;
-        final List<UserAccount> accounts = getAccounts();
-        if (accounts == null) {
-            usersExist = false;
-        }
         final String userHint = spConfig.getUserHint();
         if (!TextUtils.isEmpty(userHint)) {
             final String[] userParts = userHint.split(COLON);
@@ -115,22 +104,16 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
                 final String userId = userParts[1];
                 selectedAccount = SalesforceSDKManager.getInstance().
                         getUserAccountManager().getUserFromOrgAndUserId(orgId, userId);
-                if (selectedAccount != null) {
-                    usersExist = true;
-                }
             }
         }
 
         /*
-         * If no users exist, launches the new user login flow directly. If we could build a user
-         * account from the 'user_hint' value passed in, launches SP login flow for that account.
+         * If we could build a user account from the 'user_hint' value passed in,
+         * launches SP login flow for that account. Otherwise, we launch the new user
+         * login flow directly (because selectedAccount will be null).
          */
-        if (!usersExist) {
-            accountSelected(null);
-        } else {
-            if (selectedAccount != null) {
-                accountSelected(selectedAccount);
-            }
+        if (selectedAccount != null || getAccounts() == null) {
+            accountSelected(selectedAccount);
         }
     }
 
