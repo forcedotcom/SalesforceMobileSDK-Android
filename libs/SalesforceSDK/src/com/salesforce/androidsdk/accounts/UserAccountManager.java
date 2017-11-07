@@ -509,4 +509,27 @@ public class UserAccountManager {
         }
 		SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
 	}
+
+    /**
+     * Retrieves a stored user account from org ID and user ID.
+     *
+     * @param orgId Org ID.
+     * @param userId User ID.
+     * @return User account.
+     */
+	public UserAccount getUserFromOrgAndUserId(String orgId, String userId) {
+        if (TextUtils.isEmpty(orgId) || TextUtils.isEmpty(userId)) {
+            return null;
+        }
+        final List<UserAccount> userAccounts = getAuthenticatedUsers();
+        if (userAccounts == null || userAccounts.size() == 0) {
+            return null;
+        }
+        for (final UserAccount userAccount : userAccounts) {
+            if (orgId.equals(userAccount.getOrgId()) && userId.equals(userAccount.getUserId())) {
+                return userAccount;
+            }
+        }
+        return null;
+    }
 }

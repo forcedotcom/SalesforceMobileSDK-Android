@@ -58,6 +58,7 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
     public static final String USER_ACCOUNT_KEY = "user_account";
     public static final String IDP_LOGIN_COMPLETE_ACTION = "com.salesforce.androidsdk.auth.idp.IDP_LOGIN_COMPLETE";
     private static final String FEATURE_APP_IS_IDP = "IP";
+    private static final String COLON = ":";
     private static final String TAG = "IDPAccountPickerActivity";
 
     private SPConfig spConfig;
@@ -90,9 +91,43 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
     public void onResume() {
         super.onResume();
 
-        // If there are no users in the list, launch new user login flow directly.
-        if (getAccounts() == null) {
+        /*
+         * If there are no users in the list, checks if a 'user_hint' was passed in. If
+         * 'user_hint' was passed in, gets the account associated with it and selects that
+         * user account. If not, launches the new user login flow directly.
+         */
+        boolean usersExist = true;
+        UserAccount selectedAccount = null;
+        final List<UserAccount> accounts = getAccounts();
+        if (accounts == null) {
+            usersExist = false;
+            final String userHint = spConfig.getUserHint();
+            if (!TextUtils.isEmpty(userHint)) {
+                final String[] userParts = userHint.split(COLON);
+
+                // The value for 'user_hint' should be of the format 'orgId:userId'.
+                if (userParts.length == 2) {
+                    final String orgId = userParts[0];
+                    final String userId = userParts[1];
+                    selectedAccount = SalesforceSDKManager.getInstance().
+                            getUserAccountManager().getUserFromOrgAndUserId(orgId, userId);
+                    if (selectedAccount != null) {
+                        usersExist = true;
+                    }
+                }
+            }
+        }
+
+        /*
+         * If no users exist, launches the new user login flow directly. If we could build a user
+         * account from the 'user_hint' value passed in, launches SP login flow for that account.
+         */
+        if (!usersExist) {
             accountSelected(null);
+        } else {
+            if (selectedAccount != null) {
+                accountSelected(selectedAccount);
+            }
         }
     }
 
