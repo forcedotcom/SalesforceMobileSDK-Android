@@ -164,6 +164,7 @@ public class SalesforceSDKManager {
     private boolean browserLoginEnabled;
     private boolean idpLoginFlowEnabled;
     private String idpAppURIScheme;
+    private boolean idpAppLoginFlowActive;
 
     /**
      * PasscodeManager object lock.
@@ -646,6 +647,24 @@ public class SalesforceSDKManager {
         } else {
             SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_APP_IS_SP);
         }
+    }
+
+    /**
+     * Returns whether the IDP app is currently going through a login flow.
+     *
+     * @return True - if the IDP app is currently going through a login flow, False - otherwise.
+     */
+    public boolean isIDPAppLoginFlowActive() {
+        return idpAppLoginFlowActive;
+    }
+
+    /**
+     * Sets whether the IDP app is currently going through a login flow.
+     *
+     * @param idpAppLoginFlowActive True - if the IDP app is kicking off login, False - otherwise.
+     */
+    public synchronized void setIDPAppLoginFlowActive(boolean idpAppLoginFlowActive) {
+        this.idpAppLoginFlowActive = idpAppLoginFlowActive;
     }
 
     /**

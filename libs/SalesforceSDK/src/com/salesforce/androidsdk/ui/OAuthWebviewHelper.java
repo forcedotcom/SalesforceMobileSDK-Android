@@ -128,7 +128,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         void onAccountAuthenticatorResult(Bundle authResult);
 
         /** we're in some end state and requesting that the host activity be finished/closed. */
-        void finish();
+        void finish(UserAccount userAccount);
     }
 
     /**
@@ -203,8 +203,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     	 * care of in the 'Confirm Passcode' step in PasscodeActivity.
     	 */
         if (accountOptions != null) {
-            addAccount();
-            callback.finish();
+            final UserAccount addedAccount = addAccount();
+            callback.finish(addedAccount);
         }
     }
 
@@ -248,9 +248,10 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             Toast t = Toast.makeText(webview.getContext(), error + " : " + errorDesc,
                     Toast.LENGTH_LONG);
             webview.postDelayed(new Runnable() {
+
                 @Override
                 public void run() {
-                    callback.finish();
+                    callback.finish(null);
                 }
             }, t.getDuration());
             t.show();
@@ -552,7 +553,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 SalesforceSDKLogger.w(TAG, "Exception thrown while retrieving token response", backgroundException);
                 onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
                         getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorBody()), backgroundException);
-                callback.finish();
+                callback.finish(null);
                 return;
             }
             if (id.customPermissions != null) {
@@ -560,7 +561,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 if (mustBeManagedApp && !RuntimeConfig.getRuntimeConfig(getContext()).isManagedApp()) {
                     onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
                             getContext().getString(mgr.getSalesforceR().stringManagedAppError()), backgroundException);
-                    callback.finish();
+                    callback.finish(null);
                     return;
                 }
             }
@@ -611,8 +612,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 } else if (!changeRequired) {
 
                     // If a passcode change is required, the lock screen will have already been set in setMinPasscodeLength.
-                    addAccount();
-                    callback.finish();
+                    final UserAccount addedAccount = addAccount();
+                    callback.finish(addedAccount);
                 }
             }
 
@@ -620,8 +621,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             else {
                 final PasscodeManager passcodeManager = mgr.getPasscodeManager();
                 passcodeManager.storeMobilePolicyForOrg(account, 0, PasscodeManager.MIN_PASSCODE_LENGTH);
-                addAccount();
-                callback.finish();
+                final UserAccount addedAccount = addAccount();
+                callback.finish(addedAccount);
             }
         }
 
@@ -651,7 +652,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         }
     }
 
-    protected void addAccount() {
+    protected UserAccount addAccount() {
         ClientManager clientManager = new ClientManager(getContext(),
                 SalesforceSDKManager.getInstance().getAccountType(),
                 loginOptions, SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
@@ -710,9 +711,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         } catch (JSONException e) {
             SalesforceSDKLogger.e(TAG, "Exception thrown while creating JSON", e);
         }
-
         callback.onAccountAuthenticatorResult(extras);
-
         if (SalesforceSDKManager.getInstance().getIsTestRun()) {
             logAddAccount(account);
         } else {
@@ -723,6 +722,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 }
             });
         }
+        return account;
     }
 
     /**
