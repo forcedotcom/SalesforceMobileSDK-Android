@@ -58,6 +58,7 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
     public static final String USER_ACCOUNT_KEY = "user_account";
     public static final String IDP_LOGIN_COMPLETE_ACTION = "com.salesforce.androidsdk.auth.idp.IDP_LOGIN_COMPLETE";
     private static final String FEATURE_APP_IS_IDP = "IP";
+    private static final String COLON = ":";
     private static final String TAG = "IDPAccountPickerActivity";
 
     private SPConfig spConfig;
@@ -89,10 +90,30 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
     @Override
     public void onResume() {
         super.onResume();
+        UserAccount selectedAccount = null;
+        final String userHint = spConfig.getUserHint();
+        if (!TextUtils.isEmpty(userHint)) {
+            final String[] userParts = userHint.split(COLON);
 
-        // If there are no users in the list, launch new user login flow directly.
-        if (getAccounts() == null) {
-            accountSelected(null);
+            /*
+             * The value for 'user_hint' should be of the format 'orgId:userId' and should
+             * use the 18-character versions of 'orgId' and 'userId'.
+             */
+            if (userParts.length == 2) {
+                final String orgId = userParts[0];
+                final String userId = userParts[1];
+                selectedAccount = SalesforceSDKManager.getInstance().
+                        getUserAccountManager().getUserFromOrgAndUserId(orgId, userId);
+            }
+        }
+
+        /*
+         * If we could build a user account from the 'user_hint' value passed in,
+         * launches SP login flow for that account. Otherwise, we launch the new user
+         * login flow directly (because selectedAccount will be null).
+         */
+        if (selectedAccount != null || getAccounts() == null) {
+            accountSelected(selectedAccount);
         }
     }
 
