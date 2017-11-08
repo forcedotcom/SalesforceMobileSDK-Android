@@ -146,6 +146,9 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	@Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+
+        // Reloads login page for every new intent to ensure the correct login server is selected.
+        webviewHelper.loadLoginPage();
         if (isChromeCallback(intent)) {
             completeAuthFlow(intent);
         }
