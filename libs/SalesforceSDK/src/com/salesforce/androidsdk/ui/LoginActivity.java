@@ -403,7 +403,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
             intent.putExtra(IDPAccountPickerActivity.USER_ACCOUNT_KEY, userAccount.toBundle());
             sendBroadcast(intent);
         }
-        SalesforceSDKManager.getInstance().setIDPAppLoginFlowActive(false);
         finish();
 	}
 
