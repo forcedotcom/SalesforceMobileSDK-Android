@@ -106,6 +106,14 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         smartStore.clearSoup(SyncState.SYNCS_SOUP);
     }
 
+
+    /**
+     * Delete all syncs in syncs_soup
+     */
+    protected void deleteGlobalSyncs() {
+        globalSmartStore.clearSoup(SyncState.SYNCS_SOUP);
+    }
+
     /**
      * @return local id of the form local_number where number is different every time and increasing
      */
@@ -287,7 +295,7 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         }
     }
 
-    private void checkStatus(SyncState sync, SyncState.Type expectedType, long expectedId, SyncTarget expectedTarget, SyncOptions expectedOptions, SyncState.Status expectedStatus, int expectedProgress) throws JSONException {
+    protected void checkStatus(SyncState sync, SyncState.Type expectedType, long expectedId, SyncTarget expectedTarget, SyncOptions expectedOptions, SyncState.Status expectedStatus, int expectedProgress) throws JSONException {
         checkStatus(sync, expectedType, expectedId, expectedTarget, expectedOptions, expectedStatus, expectedProgress, TOTAL_SIZE_UNKNOWN);
     }
 
