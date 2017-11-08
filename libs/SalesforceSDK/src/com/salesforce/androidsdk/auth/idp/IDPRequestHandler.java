@@ -71,9 +71,9 @@ public class IDPRequestHandler {
         this.spConfig = spConfig;
         this.userAccount = userAccount;
         basicValidation();
-        loginUrl = spConfig.getLoginUrl();
+        loginUrl = userAccount.getLoginServer();
         if (TextUtils.isEmpty(loginUrl)) {
-            loginUrl = userAccount.getLoginServer();
+            loginUrl = spConfig.getLoginUrl();
         }
         buildRestClient();
     }
@@ -156,7 +156,7 @@ public class IDPRequestHandler {
         final String idpClientId = bootConfig.getRemoteAccessConsumerKey();
         final String[] idpScopes = bootConfig.getOauthScopes();
         final ClientManager.LoginOptions loginOptions = new ClientManager.LoginOptions(
-                spConfig.getLoginUrl(), idpCallbackUrl, idpClientId, idpScopes);
+                loginUrl, idpCallbackUrl, idpClientId, idpScopes);
         final String idpAccountType = SalesforceSDKManager.getInstance().getAccountType();
         final ClientManager clientManager = new ClientManager(context, idpAccountType,
                 loginOptions, false);
