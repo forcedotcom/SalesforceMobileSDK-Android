@@ -26,17 +26,19 @@
  */
 package com.salesforce.androidsdk.smartsync.app;
 
-import android.accounts.Account;
 import android.app.Activity;
 import android.content.Context;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.accounts.SmartSyncUserAccountManager;
+import com.salesforce.androidsdk.smartsync.config.SyncsConfig;
 import com.salesforce.androidsdk.smartsync.manager.CacheManager;
 import com.salesforce.androidsdk.smartsync.manager.MetadataManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -46,7 +48,9 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
  */
 public class SmartSyncSDKManager extends SmartStoreSDKManager {
 
-    /**
+	private static final String TAG = "SmartSyncSDKManager";
+
+	/**
      * Protected constructor.
      * @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
@@ -138,4 +142,32 @@ public class SmartSyncSDKManager extends SmartStoreSDKManager {
     public UserAccountManager getUserAccountManager() {
     	return SmartSyncUserAccountManager.getInstance();
     }
+
+	/**
+	 * Setup global syncs using config found in res/raw/globalsyncs.json
+	 */
+	public void setupGlobalSyncsFromDefaultConfig() {
+		SmartSyncLogger.d(TAG, "Setting up global syncs using config found in res/raw/globalsyncs.json");
+		setupSyncsFromConfig(getGlobalSmartStore(), com.salesforce.androidsdk.smartsync.R.raw.globalsyncs);
+	}
+
+	/**
+	 * Setup user syncs using config found in res/raw/usersyncs.json
+	 */
+	public void setupUserSyncsFromDefaultConfig() {
+		SmartSyncLogger.d(TAG, "Setting up user syncs using config found in res/raw/usersyncs.json");
+		setupSyncsFromConfig(getSmartStore(), com.salesforce.androidsdk.smartsync.R.raw.usersyncs);
+	}
+
+	/**
+	 * Setup syncs in given store using config found in given json resource file
+	 *
+	 * @param store
+	 * @param resourceId
+	 */
+	private void setupSyncsFromConfig(SmartStore store, int resourceId) {
+		SyncsConfig config = new SyncsConfig(context, resourceId);
+		config.createSyncs(store);
+	}
+
 }

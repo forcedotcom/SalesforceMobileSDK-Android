@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-present, salesforce.com, inc.
+ * Copyright (c) 2017-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,46 +24,48 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.phonegap.plugin;
+package com.salesforce.androidsdk.config;
 
-import com.salesforce.androidsdk.smartstore.config.StoreConfig;
-import com.salesforce.androidsdk.smartsync.config.SyncsConfig;
+import android.content.Context;
 
-public final class PluginConstants {
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
-    static final String TARGET = SyncsConfig.TARGET;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.StringWriter;
+import java.io.Writer;
 
-    static final String OPTIONS = SyncsConfig.OPTIONS;
+/**
+ * Helper class for reading config files
+ *
+ */
 
-    static final String SOUP_SPEC = "soupSpec";
+public class ConfigHelper {
 
-    static final String RE_INDEX_DATA = "reIndexData";
+    private static final String TAG = "ConfigHelper";
 
-    static final String CURSOR_ID = "cursorId";
+    public static String getRawResourceAsString(Context ctx, int resourceId) {
+        InputStream resourceReader = ctx.getResources().openRawResource(resourceId);
+        Writer writer = new StringWriter();
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(resourceReader, "UTF-8"));
+            String line = reader.readLine();
+            while (line != null) {
+                writer.write(line);
+                line = reader.readLine();
+            }
+        } catch (Exception e) {
+            SalesforceSDKLogger.e(TAG, "Unhandled exception reading resource", e);
+        } finally {
+            try {
+                resourceReader.close();
+            } catch (Exception e) {
+                SalesforceSDKLogger.e(TAG, "Unhandled exception closing reader", e);
+            }
+        }
 
-    static final String TYPE = "type";
+        return writer.toString();
+    }
 
-    static final String SOUP_NAME = StoreConfig.SOUP_NAME;
-
-    static final String PATH = "path";
-
-    static final String PATHS = "paths";
-
-    static final String QUERY_SPEC = "querySpec";
-
-    static final String EXTERNAL_ID_PATH = "externalIdPath";
-
-    static final String ENTRIES = "entries";
-
-    static final String ENTRY_IDS = "entryIds";
-
-    static final String INDEX = "index";
-
-    static final String INDEXES = StoreConfig.INDEXES;
-
-    static final String IS_GLOBAL_STORE = "isGlobalStore";
-
-    static final String STORE_NAME = "storeName";
-
-    static final String SYNC_NAME = SyncsConfig.SYNC_NAME;
 }

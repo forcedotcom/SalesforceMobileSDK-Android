@@ -45,6 +45,7 @@ import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.IS_GLOBA
 import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.OPTIONS;
 import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.SOUP_NAME;
 import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.STORE_NAME;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.SYNC_NAME;
 import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.TARGET;
 
 /**
@@ -54,7 +55,6 @@ public class SmartSyncPlugin extends ForcePlugin {
 
     // Keys in json from/to javascript
     private static final String SYNC_ID = "syncId";
-    private static final String SYNC_NAME = "syncName";
     private static final String TAG = "SmartSyncPlugin";
 
     // Event

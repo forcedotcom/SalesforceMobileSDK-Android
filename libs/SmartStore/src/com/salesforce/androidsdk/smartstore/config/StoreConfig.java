@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.smartstore.config;
 
 import android.content.Context;
 
+import com.salesforce.androidsdk.config.ConfigHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
@@ -35,12 +36,6 @@ import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
-import java.io.Writer;
 
 /**
  * Class encapsulating a SmartStore schema (soups).
@@ -78,7 +73,7 @@ public class StoreConfig {
      */
     public StoreConfig(Context ctx, int resourceId) {
         try {
-            String str = getRawResourceAsString(ctx, resourceId);
+            String str = ConfigHelper.getRawResourceAsString(ctx, resourceId);
             JSONObject config = new JSONObject(str);
             soupsConfig = config.getJSONArray(SOUPS);
         } catch (JSONException e) {
@@ -99,6 +94,13 @@ public class StoreConfig {
             try {
                 JSONObject soupConfig = soupsConfig.getJSONObject(i);
                 String soupName = soupConfig.getString(SOUP_NAME);
+
+                // Leaving soup alone if it already exists
+                if (store.hasSoup(soupName)) {
+                    SmartStoreLogger.d(TAG, "Soup already exists:" + soupName + " - skipping");
+                    continue;
+                }
+
                 IndexSpec[] indexSpecs = IndexSpec.fromJSON(soupConfig.getJSONArray(INDEXES));
                 SmartStoreLogger.d(TAG, "Registering soup:" + soupName);
                 store.registerSoup(soupName, indexSpecs);
@@ -106,29 +108,6 @@ public class StoreConfig {
                 SmartStoreLogger.e(TAG, "Unhandled exception parsing json", e);
             }
         }
-    }
-
-    private String getRawResourceAsString(Context ctx, int resourceId) {
-        InputStream resourceReader = ctx.getResources().openRawResource(resourceId);
-        Writer writer = new StringWriter();
-        try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(resourceReader, "UTF-8"));
-            String line = reader.readLine();
-            while (line != null) {
-                writer.write(line);
-                line = reader.readLine();
-            }
-        } catch (Exception e) {
-            SmartStoreLogger.e(TAG, "Unhandled exception reading resource", e);
-        } finally {
-            try {
-                resourceReader.close();
-            } catch (Exception e) {
-                SmartStoreLogger.e(TAG, "Unhandled exception closing reader", e);
-            }
-        }
-
-        return writer.toString();
     }
 
 }
