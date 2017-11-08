@@ -58,6 +58,8 @@ public class IDPCodeGeneratorActivity extends Activity {
     public static final String ERROR_KEY = "error";
     public static final String CODE_KEY = "code";
     public static final String LOGIN_URL_KEY = "login_url";
+    private static final String EC_301 = "?ec=301";
+    private static final String EC_302 = "?ec=302";
     private static final String TAG = "IDPCodeGeneratorActivity";
 
     private UserAccount userAccount;
@@ -121,6 +123,14 @@ public class IDPCodeGeneratorActivity extends Activity {
                 } else {
                     handleError("Code not returned from server");
                 }
+            } else if (url.contains(EC_301) || url.contains(EC_302)) {
+
+                /*
+                 * Currently there's no good way to recover from an invalid access token
+                 * loading a page through frontdoor. Until the server API returns an
+                 * error response, we look for 'ec=301' or 'ec=302' to handle this error case.
+                 */
+                handleError("Server returned unauthorized token error - ec=301 or ec=302");
             }
             return isDone;
         }

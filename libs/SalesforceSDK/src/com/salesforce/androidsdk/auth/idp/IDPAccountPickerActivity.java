@@ -153,7 +153,7 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
          */
         if (account != null) {
             proceedWithIDPAuthFlow(account);
-        } else {
+        } else if (!SalesforceSDKManager.getInstance().isIDPAppLoginFlowActive()) {
             kickOffNewUserFlow();
         }
     }
@@ -168,6 +168,7 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == SPRequestHandler.IDP_REQUEST_CODE) {
             SalesforceSDKLogger.d(TAG, "Activity result obtained - IDP code exchange complete");
+            SalesforceSDKManager.getInstance().setIDPAppLoginFlowActive(false);
             if (resultCode == Activity.RESULT_OK) {
                 setResult(RESULT_OK, data);
             } else {
