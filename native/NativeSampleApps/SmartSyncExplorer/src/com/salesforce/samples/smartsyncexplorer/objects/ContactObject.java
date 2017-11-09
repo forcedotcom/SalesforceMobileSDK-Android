@@ -26,13 +26,13 @@
  */
 package com.salesforce.samples.smartsyncexplorer.objects;
 
-import org.json.JSONObject;
-
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
-import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.target.SyncTarget;
+import com.salesforce.androidsdk.smartsync.util.Constants;
+
+import org.json.JSONObject;
 
 /**
  * A simple representation of a Contact object.
@@ -48,27 +48,12 @@ public class ContactObject extends SalesforceObject {
 	public static final String EMAIL = "Email";
 	public static final String DEPARTMENT = "Department";
 	public static final String HOME_PHONE = "HomePhone";
-	public static final String[] CONTACT_FIELDS_SYNC_DOWN = {
-		FIRST_NAME,
-		LAST_NAME,
-		TITLE,
-		PHONE,
-		EMAIL,
-		DEPARTMENT,
-		HOME_PHONE
-	};
-	public static final String[] CONTACT_FIELDS_SYNC_UP = {
-		Constants.ID,
-		FIRST_NAME,
-		LAST_NAME,
-		TITLE,
-		PHONE,
-		EMAIL,
-		DEPARTMENT,
-		HOME_PHONE
-	};
 
-	private boolean isLocallyModified;
+	private final boolean isLocallyCreated;
+	private final boolean isLocallyUpdated;
+	private final boolean isLocallyDeleted;
+
+	private final boolean isLocallyModified;
 
 	/**
 	 * Parameterized constructor.
@@ -80,9 +65,10 @@ public class ContactObject extends SalesforceObject {
 		objectType = Constants.CONTACT;
 		objectId = data.optString(Constants.ID);
 		name = data.optString(FIRST_NAME) + " " + data.optString(LAST_NAME);
-		isLocallyModified = data.optBoolean(SyncTarget.LOCALLY_UPDATED) ||
-				data.optBoolean(SyncTarget.LOCALLY_CREATED) ||
-				data.optBoolean(SyncTarget.LOCALLY_DELETED);
+		isLocallyCreated = data.optBoolean(SyncTarget.LOCALLY_CREATED);
+		isLocallyDeleted = data.optBoolean(SyncTarget.LOCALLY_DELETED);
+		isLocallyUpdated = data.optBoolean(SyncTarget.LOCALLY_UPDATED);
+		isLocallyModified = isLocallyCreated || isLocallyUpdated || isLocallyDeleted;
 	}
 
 	/**
@@ -156,6 +142,25 @@ public class ContactObject extends SalesforceObject {
 	public boolean isLocallyModified() {
 		return isLocallyModified;
 	}
+
+	/**
+	 * Returns whether the contact has been locally deleted or not.
+	 *
+	 * @return True - if the contact has been locally deleted, False - otherwise.
+	 */
+	public boolean isLocallyDeleted() {
+		return isLocallyDeleted;
+	}
+
+	/**
+	 * Returns whether the contact has been locally created or not.
+	 *
+	 * @return True - if the contact has been locally created, False - otherwise.
+	 */
+	public boolean isLocallyCreated() {
+		return isLocallyCreated;
+	}
+
 
 	private String sanitizeText(String text) {
 		if (TextUtils.isEmpty(text) || text.equals(Constants.NULL_STRING)) {

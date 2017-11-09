@@ -147,7 +147,8 @@
             android:inputType="textNoSuggestions|phone" />
     </LinearLayout>
 
-    <TextView android:layout_width="match_parent"
+    <TextView android:id="@+id/delete_button"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@android:color/holo_red_light"
         android:textStyle="bold"

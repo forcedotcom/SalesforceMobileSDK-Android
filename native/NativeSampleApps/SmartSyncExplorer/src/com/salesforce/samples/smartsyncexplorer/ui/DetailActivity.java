@@ -40,6 +40,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -153,28 +154,46 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 	 * @param v View that was clicked.
 	 */
 	public void onDeleteClicked(View v) {
-		deleteConfirmationDialog.show(getFragmentManager(), "DeleteDialog");
+		if (sObject.isLocallyDeleted()) {
+			// it's an un-delete
+			deleteOrUndelete();
+		}
+		else {
+			// it's a delete
+			deleteConfirmationDialog.show(getFragmentManager(), "DeleteDialog");
+		}
 	}
 
 	/**
-	 * Performs the underlying deletion of a record.
+	 * Performs the underlying delete or undelete of a record.
 	 */
-	public void reallyDelete() {
+	public void deleteOrUndelete() {
 		final SmartStore smartStore = SmartSyncSDKManager.getInstance().getSmartStore(curAccount);
 		JSONObject contact;
 		try {
 			contact = smartStore.retrieve(ContactListLoader.CONTACT_SOUP,
 					smartStore.lookupSoupEntryId(ContactListLoader.CONTACT_SOUP,
-					Constants.ID, objectId)).getJSONObject(0);
-			contact.put(SyncTarget.LOCAL, true);
-			contact.put(SyncTarget.LOCALLY_DELETED, true);
-			smartStore.upsert(ContactListLoader.CONTACT_SOUP, contact);
-			Toast.makeText(this, "Delete successful!", Toast.LENGTH_LONG).show();
+							Constants.ID, objectId)).getJSONObject(0);
+			boolean isDelete = !contact.getBoolean(SyncTarget.LOCALLY_DELETED);
+
+			// Deleting a locally created contact
+			if (isDelete && contact.getBoolean(SyncTarget.LOCALLY_CREATED)) {
+				smartStore.delete(ContactListLoader.CONTACT_SOUP, contact.getLong(SmartStore.SOUP_ENTRY_ID));
+			}
+			// Other cases
+			else {
+				contact.put(SyncTarget.LOCALLY_DELETED, isDelete);
+				contact.put(SyncTarget.LOCAL, contact.getBoolean(SyncTarget.LOCALLY_UPDATED) || contact.getBoolean(SyncTarget.LOCALLY_CREATED) || contact.getBoolean(SyncTarget.LOCALLY_DELETED));
+				smartStore.upsert(ContactListLoader.CONTACT_SOUP, contact);
+				Toast.makeText(this, (isDelete ? "Delete" : "Undelete") + " successful!", Toast.LENGTH_LONG).show();
+			}
+
 			finish();
 		} catch (JSONException e) {
-            Log.e(TAG, "JSONException occurred while parsing", e);
+			Log.e(TAG, "JSONException occurred while parsing", e);
 		}
 	}
+
 
 	private void refreshScreen() {
 		if (sObject != null) {
@@ -192,7 +211,15 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 					sObject.getDepartment());
 			setText((EditText) findViewById(R.id.home_phone_field),
 					sObject.getHomePhone());
+			// Already deleted -> show undelete
+			if (sObject.isLocallyDeleted()) {
+				((TextView) findViewById(R.id.delete_button)).setText(R.string.undelete);
+			}
 		}
+		else {
+            // Creation -> don't show delete / undelete
+            findViewById(R.id.delete_button).setVisibility(View.INVISIBLE);
+        }
 	}
 
 	private void setText(EditText textField, String text) {

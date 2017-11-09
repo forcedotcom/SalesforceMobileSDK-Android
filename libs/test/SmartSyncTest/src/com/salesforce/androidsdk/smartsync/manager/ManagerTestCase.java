@@ -78,12 +78,15 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
 
     protected Context targetContext;
     protected EventsListenerQueue eq;
+    protected SmartSyncSDKManager sdkManager;
     protected MetadataManager metadataManager;
     protected CacheManager cacheManager;
     protected SyncManager syncManager;
+    protected SyncManager globalSyncManager;
     protected RestClient restClient;
     protected HttpAccess httpAccess;
     protected SmartStore smartStore;
+    protected SmartStore globalSmartStore;
     protected String apiVersion;
 
     @Override
@@ -112,13 +115,16 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
     	MetadataManager.reset(null);
     	CacheManager.hardReset(null);
     	SyncManager.reset();
+    	sdkManager = SmartSyncSDKManager.getInstance();
         metadataManager = MetadataManager.getInstance(null);
         cacheManager = CacheManager.getInstance(null);
+        smartStore = sdkManager.getSmartStore();
+        globalSmartStore = sdkManager.getGlobalSmartStore();
         syncManager = SyncManager.getInstance();
+        globalSyncManager = SyncManager.getInstance(null, null, globalSmartStore);
         restClient = initRestClient();
         metadataManager.setRestClient(restClient);
         syncManager.setRestClient(restClient);
-        smartStore = cacheManager.getSmartStore();
         // Debug logs during tests
         SmartSyncLogger.setLogLevel(SalesforceLogger.Level.DEBUG);
     }

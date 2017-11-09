@@ -27,12 +27,13 @@
 package com.salesforce.androidsdk.phonegap.plugin;
 
 import com.salesforce.androidsdk.smartstore.config.StoreConfig;
+import com.salesforce.androidsdk.smartsync.config.SyncsConfig;
 
 public final class PluginConstants {
 
-    static final String TARGET = "target";
+    static final String TARGET = SyncsConfig.TARGET;
 
-    static final String OPTIONS = "options";
+    static final String OPTIONS = SyncsConfig.OPTIONS;
 
     static final String SOUP_SPEC = "soupSpec";
 
@@ -64,4 +65,5 @@ public final class PluginConstants {
 
     static final String STORE_NAME = "storeName";
 
+    static final String SYNC_NAME = SyncsConfig.SYNC_NAME;
 }
