@@ -54,6 +54,7 @@ import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity;
+import com.salesforce.androidsdk.auth.idp.IDPInititatedLoginReceiver;
 import com.salesforce.androidsdk.auth.idp.SPRequestHandler;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
@@ -89,6 +90,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
     private boolean receiverRegistered;
     private SPRequestHandler spRequestHandler;
     private SPAuthCallback authCallback;
+    private String userHint;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -151,6 +153,18 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
         // Reloads login page for every new intent to ensure the correct login server is selected.
         webviewHelper.loadLoginPage();
+
+        // Launches IDP login flow directly for IDP initiated login flow.
+        if (intent != null) {
+            final Bundle extras = intent.getExtras();
+            if (extras != null) {
+                userHint = extras.getString(IDPInititatedLoginReceiver.USER_HINT_KEY);
+                boolean isIdpInitFlow = extras.getBoolean(IDPInititatedLoginReceiver.IDP_INIT_LOGIN_KEY);
+                if (isIdpInitFlow) {
+                    onIDPLoginClick(null);
+                }
+            }
+        }
         if (isChromeCallback(intent)) {
             completeAuthFlow(intent);
         }
@@ -332,7 +346,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
     public void onIDPLoginClick(View v) {
         final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url.trim();
         SalesforceSDKLogger.d(TAG, "Launching IDP app for authentication with login host: " + loginServer);
-        spRequestHandler = new SPRequestHandler(loginServer, authCallback);
+        spRequestHandler = new SPRequestHandler(loginServer, userHint, authCallback);
         spRequestHandler.launchIDPApp(this);
     }
 
