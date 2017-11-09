@@ -11,7 +11,7 @@
       "syncName": "syncUpContacts",
       "syncType": "syncUp",
       "soupName": "contacts",
-      "target": {"createFieldlist":["Name"]},
+      "target": {"createFieldlist":["FirstName", "LastName", "Title", "MobilePhone", "Email", "Department", "HomePhone"]},
       "options": {"fieldlist":["Id", "FirstName", "LastName", "Title", "MobilePhone", "Email", "Department", "HomePhone"], "mergeMode":"LEAVE_IF_CHANGED"}
     }
   ]
