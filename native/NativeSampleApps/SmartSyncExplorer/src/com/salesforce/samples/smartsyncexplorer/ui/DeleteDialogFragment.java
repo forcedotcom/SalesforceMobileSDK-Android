@@ -57,8 +57,8 @@ public class DeleteDialogFragment extends DialogFragment {
 					@Override
 					public void onClick(DialogInterface dialog,
 							int which) {
-						((DetailActivity) getActivity()).reallyDelete();
-					}
+                        ((DetailActivity) getActivity()).deleteOrUndelete();
+                    }
 				})
 				.setNegativeButton(R.string.cancel, null)
 				.create();
