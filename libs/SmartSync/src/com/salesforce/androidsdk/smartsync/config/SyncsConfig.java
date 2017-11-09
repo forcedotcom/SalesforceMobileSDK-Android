@@ -28,7 +28,7 @@ package com.salesforce.androidsdk.smartsync.config;
 
 import android.content.Context;
 
-import com.salesforce.androidsdk.config.ConfigHelper;
+import com.salesforce.androidsdk.util.ResourceReaderHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
@@ -78,7 +78,7 @@ public class SyncsConfig {
      */
     public SyncsConfig(Context ctx, int resourceId) {
         try {
-            String str = ConfigHelper.getRawResourceAsString(ctx, resourceId);
+            String str = ResourceReaderHelper.readResourceFile(ctx, resourceId);
             JSONObject config = new JSONObject(str);
             syncsConfig = config.getJSONArray(SYNCS);
         } catch (JSONException e) {

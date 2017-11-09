@@ -24,28 +24,38 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.config;
+package com.salesforce.androidsdk.util;
 
 import android.content.Context;
 
+import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.util.Scanner;
 
 /**
- * Helper class for reading config files
+ * Helper class for reading resource files
  *
  */
 
-public class ConfigHelper {
+public class ResourceReaderHelper {
 
-    private static final String TAG = "ConfigHelper";
+    private static final String TAG = "ResourceReaderHelper";
 
-    public static String getRawResourceAsString(Context ctx, int resourceId) {
+    /**
+     * Reads the content of a resource file
+     *
+     * @param ctx        Context.
+     * @param resourceId The id of the resource to read.
+     * @return
+     */
+    public static String readResourceFile(Context ctx, int resourceId) {
         InputStream resourceReader = ctx.getResources().openRawResource(resourceId);
         Writer writer = new StringWriter();
         try {
@@ -68,4 +78,27 @@ public class ConfigHelper {
         return writer.toString();
     }
 
+    /**
+     * Reads the contents of an asset file at the specified path.
+     *
+     * @param ctx            Context.
+     * @param assetsFilePath The path to the file, relative to the assets/ folder of the context.
+     * @return String content of the file.
+     */
+    public static String readAssetFile(Context ctx, String assetsFilePath) {
+        Scanner scanner = null;
+        try {
+            scanner = new Scanner(ctx.getAssets().open(assetsFilePath));
+
+            // Good trick to get a string from a stream (http://weblogs.java.net/blog/pat/archive/2004/10/stupid_scanner_1.html).
+            return scanner.useDelimiter("\\A").next();
+        } catch (IOException e) {
+            SalesforceSDKLogger.e(TAG, "Unhandled exception reading resource", e);
+            return null;
+        } finally {
+            if (scanner != null) {
+                scanner.close();
+            }
+        }
+    }
 }

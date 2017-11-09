@@ -26,14 +26,6 @@
  */
 package com.salesforce.androidsdk.config;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Scanner;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.content.Context;
 import android.content.res.Resources;
 import android.text.TextUtils;
@@ -41,7 +33,14 @@ import android.text.TextUtils;
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
+import com.salesforce.androidsdk.util.ResourceReaderHelper;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.Arrays;
 
 /**
  * Class encapsulating the application configuration (consumer key, oauth scopes, refresh behavior).
@@ -207,7 +206,10 @@ public class BootConfig {
 	 * @return A BootConfig representing the hybrid boot config object.
 	 */
 	private static JSONObject readFromJSON(Context ctx, String assetsFilePath) {
-		String jsonStr = readBootConfigFile(ctx, assetsFilePath);
+		String jsonStr = ResourceReaderHelper.readAssetFile(ctx, assetsFilePath);
+		if (jsonStr == null) {
+			throw new BootConfigException("Failed to open " + assetsFilePath);
+		}
 		try {
 			JSONObject jsonObj = new JSONObject(jsonStr);
 			return jsonObj;
@@ -227,29 +229,6 @@ public class BootConfig {
 		oauthRedirectURI = res.getString(R.string.oauthRedirectURI);
 		oauthScopes = res.getStringArray(R.array.oauthScopes);
 		pushNotificationClientId = res.getString(R.string.androidPushNotificationClientId);
-	}
-
-	/**
-	 * Reads the contents of the boot config file from the specified path.
-	 *
-	 * @param ctx            Context.
-	 * @param assetsFilePath The path to the file, relative to the assets/ folder of the context.
-	 * @return String content of the bootconfig JSON file.
-	 */
-	private static String readBootConfigFile(Context ctx, String assetsFilePath) {
-		Scanner scanner = null;
-		try {
-			scanner = new Scanner(ctx.getAssets().open(assetsFilePath));
-
-			// Good trick to get a string from a stream (http://weblogs.java.net/blog/pat/archive/2004/10/stupid_scanner_1.html).
-			return scanner.useDelimiter("\\A").next();
-		} catch (IOException e) {
-			throw new BootConfigException("Failed to open " + assetsFilePath, e);
-		} finally {
-			if (scanner != null) {
-				scanner.close();
-			}
-		}
 	}
 
 	/**

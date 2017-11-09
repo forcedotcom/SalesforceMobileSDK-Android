@@ -28,7 +28,7 @@ package com.salesforce.androidsdk.smartstore.config;
 
 import android.content.Context;
 
-import com.salesforce.androidsdk.config.ConfigHelper;
+import com.salesforce.androidsdk.util.ResourceReaderHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
@@ -73,7 +73,7 @@ public class StoreConfig {
      */
     public StoreConfig(Context ctx, int resourceId) {
         try {
-            String str = ConfigHelper.getRawResourceAsString(ctx, resourceId);
+            String str = ResourceReaderHelper.readResourceFile(ctx, resourceId);
             JSONObject config = new JSONObject(str);
             soupsConfig = config.getJSONArray(SOUPS);
         } catch (JSONException e) {
