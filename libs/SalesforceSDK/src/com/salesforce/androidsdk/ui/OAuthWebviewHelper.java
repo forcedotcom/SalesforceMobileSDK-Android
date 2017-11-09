@@ -454,14 +454,15 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             SalesforceR r = SalesforceSDKManager.getInstance().getSalesforceR();
             int primErrorStringId = r.stringSSLUnknownError();
             switch (primError) {
-            case SslError.SSL_EXPIRED:      primErrorStringId = r.stringSSLExpired(); break;
-            case SslError.SSL_IDMISMATCH:   primErrorStringId = r.stringSSLIdMismatch(); break;
-            case SslError.SSL_NOTYETVALID:  primErrorStringId = r.stringSSLNotYetValid(); break;
-            case SslError.SSL_UNTRUSTED:    primErrorStringId = r.stringSSLUntrusted(); break;
+                case SslError.SSL_EXPIRED:      primErrorStringId = r.stringSSLExpired(); break;
+                case SslError.SSL_IDMISMATCH:   primErrorStringId = r.stringSSLIdMismatch(); break;
+                case SslError.SSL_NOTYETVALID:  primErrorStringId = r.stringSSLNotYetValid(); break;
+                case SslError.SSL_UNTRUSTED:    primErrorStringId = r.stringSSLUntrusted(); break;
             }
 
             // Building text message to show
             String text = getContext().getString(r.stringSSLError(), getContext().getString(primErrorStringId));
+            SalesforceSDKLogger.e(TAG, "Received SSL error for server: " + text);
 
             // Bringing up toast
             Toast.makeText(getContext(), text, Toast.LENGTH_LONG).show();
@@ -470,6 +471,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
 		@Override
         public void onReceivedClientCertRequest(WebView view, ClientCertRequest request) {
+            SalesforceSDKLogger.d(TAG, "Received client certificate request from server");
         	request.proceed(key, certChain);
         }
     }
@@ -875,6 +877,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 	@Override
 	public void alias(String alias) {
 		try {
+            SalesforceSDKLogger.d(TAG, "Keychain alias callback received");
 			certChain = KeyChain.getCertificateChain(activity, alias);
 			key = KeyChain.getPrivateKey(activity, alias);
 			activity.runOnUiThread(new Runnable() {
