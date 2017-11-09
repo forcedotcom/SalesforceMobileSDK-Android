@@ -26,13 +26,13 @@
  */
 package com.salesforce.samples.smartsyncexplorer.objects;
 
-import org.json.JSONObject;
-
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
-import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.target.SyncTarget;
+import com.salesforce.androidsdk.smartsync.util.Constants;
+
+import org.json.JSONObject;
 
 /**
  * A simple representation of a Contact object.
@@ -48,25 +48,6 @@ public class ContactObject extends SalesforceObject {
 	public static final String EMAIL = "Email";
 	public static final String DEPARTMENT = "Department";
 	public static final String HOME_PHONE = "HomePhone";
-	public static final String[] CONTACT_FIELDS_SYNC_DOWN = {
-		FIRST_NAME,
-		LAST_NAME,
-		TITLE,
-		PHONE,
-		EMAIL,
-		DEPARTMENT,
-		HOME_PHONE
-	};
-	public static final String[] CONTACT_FIELDS_SYNC_UP = {
-		Constants.ID,
-		FIRST_NAME,
-		LAST_NAME,
-		TITLE,
-		PHONE,
-		EMAIL,
-		DEPARTMENT,
-		HOME_PHONE
-	};
 
 	private boolean isLocallyModified;
 

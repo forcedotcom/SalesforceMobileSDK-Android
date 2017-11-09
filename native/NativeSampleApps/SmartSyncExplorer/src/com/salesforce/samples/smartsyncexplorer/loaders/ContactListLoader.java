@@ -40,14 +40,7 @@ import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.SmartSyncException;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
-import com.salesforce.androidsdk.smartsync.target.SoqlSyncDownTarget;
-import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
-import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
-import com.salesforce.androidsdk.smartsync.util.Constants;
-import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
-import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
-import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.smartsync.util.SyncState.Status;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 
@@ -55,7 +48,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -69,7 +61,8 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	public static final Integer LIMIT = 10000;
 	public static final String LOAD_COMPLETE_INTENT_ACTION = "com.salesforce.samples.smartsyncexplorer.loaders.LIST_LOAD_COMPLETE";
 	private static final String TAG = "ContactListLoader";
-	public static final String SYNC_NAME = "smartSyncExplorerSyncDown";
+	public static final String SYNC_DOWN_NAME = "syncDownContacts";
+	public static final String SYNC_UP_NAME = "syncUpContacts";
 
 	private SmartStore smartStore;
     private SyncManager syncMgr;
@@ -87,6 +80,8 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 		syncMgr = SyncManager.getInstance(account);
 		// Setup schema if needed
 		sdkManager.setupUserStoreFromDefaultConfig();
+		// Setup syncs if needed
+		sdkManager.setupUserSyncsFromDefaultConfig();
 	}
 
 	@Override
@@ -115,12 +110,8 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	 * Pushes local changes up to the server.
 	 */
 	public synchronized void syncUp() {
-        final SyncUpTarget target = new SyncUpTarget();
-        final SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(ContactObject.CONTACT_FIELDS_SYNC_UP),
-                MergeMode.LEAVE_IF_CHANGED);
-
 		try {
-			syncMgr.syncUp(target, options, ContactListLoader.CONTACT_SOUP, new SyncUpdateCallback() {
+			syncMgr.runSync(syncMgr.getSyncStatus(SYNC_UP_NAME), new SyncUpdateCallback() {
 
 				@Override
 				public void onUpdate(SyncState sync) {
@@ -140,26 +131,16 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	 * Pulls the latest records from the server.
 	 */
 	public synchronized void syncDown() {
-        final SyncUpdateCallback callback = new SyncUpdateCallback() {
+		try {
+			syncMgr.reSync(SYNC_DOWN_NAME, new SyncUpdateCallback() {
 
-            @Override
-            public void onUpdate(SyncState sync) {
-		        if (Status.DONE.equals(sync.getStatus())) {
-		        	fireLoadCompleteIntent();
-		        }
-            }
-        };
-        try {
-            if (syncMgr.getSyncStatus(SYNC_NAME) == null) {
-                final SyncOptions options = SyncOptions.optionsForSyncDown(SyncState.MergeMode.LEAVE_IF_CHANGED);
-                final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS_SYNC_DOWN)
-                        .from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
-                final SyncDownTarget target = new SoqlSyncDownTarget(soqlQuery);
-                final SyncState sync = syncMgr.syncDown(target, options,
-                		ContactListLoader.CONTACT_SOUP, SYNC_NAME, callback);
-            } else {
-                syncMgr.reSync(SYNC_NAME, callback);
-            }
+                @Override
+                public void onUpdate(SyncState sync) {
+                    if (Status.DONE.equals(sync.getStatus())) {
+                        fireLoadCompleteIntent();
+                    }
+                }
+            });
         } catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while parsing", e);
         } catch (SmartSyncException e) {
