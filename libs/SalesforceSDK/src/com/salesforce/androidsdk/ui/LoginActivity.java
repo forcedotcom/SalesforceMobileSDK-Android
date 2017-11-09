@@ -62,6 +62,7 @@ import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import com.salesforce.androidsdk.util.UriFragmentParser;
 
 import java.util.List;
@@ -79,6 +80,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		implements OAuthWebviewHelperEvents {
 
     public static final int PICK_SERVER_REQUEST_CODE = 10;
+    private static final String TAG = "LoginActivity";
 
     private SalesforceR salesforceR;
 	private boolean wasBackgrounded;
@@ -157,8 +159,10 @@ public class LoginActivity extends AccountAuthenticatorActivity
     protected void certAuthOrLogin() {
         if (shouldUseCertBasedAuth()) {
             final String alias = RuntimeConfig.getRuntimeConfig(this).getString(ConfigKey.ManagedAppCertAlias);
+            SalesforceSDKLogger.d(TAG, "Cert based login flow being triggered with alias: " + alias);
             KeyChain.choosePrivateKeyAlias(this, webviewHelper, null, null, null, 0, alias);
         } else {
+            SalesforceSDKLogger.d(TAG, "User agent login flow being triggered");
             webviewHelper.loadLoginPage();
         }
     }
@@ -327,6 +331,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
      */
     public void onIDPLoginClick(View v) {
         final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url.trim();
+        SalesforceSDKLogger.d(TAG, "Launching IDP app for authentication with login host: " + loginServer);
         spRequestHandler = new SPRequestHandler(loginServer, authCallback);
         spRequestHandler.launchIDPApp(this);
     }
