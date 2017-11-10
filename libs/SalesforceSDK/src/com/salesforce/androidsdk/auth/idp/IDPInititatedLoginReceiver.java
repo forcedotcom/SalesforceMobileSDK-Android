@@ -30,7 +30,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
@@ -44,6 +46,7 @@ public class IDPInititatedLoginReceiver extends BroadcastReceiver {
     public static final String IDP_LOGIN_REQUEST_ACTION = "com.salesforce.IDP_LOGIN_REQUEST";
     public static final String USER_HINT_KEY = "user_hint";
     public static final String IDP_INIT_LOGIN_KEY = "idp_init_login";
+    private static final String COLON = ":";
 
     private String userHint;
 
@@ -55,9 +58,35 @@ public class IDPInititatedLoginReceiver extends BroadcastReceiver {
                 if (extras != null) {
                     userHint = extras.getString(USER_HINT_KEY);
                 }
-                launchLoginActivity();
+
+                // Launches login flow if the user doesn't already exist on the SP app.
+                if (!doesUserExist()) {
+                    launchLoginActivity();
+                }
             }
         }
+    }
+
+    private boolean doesUserExist() {
+        boolean accountExists = false;
+        if (!TextUtils.isEmpty(userHint)) {
+            final String[] userParts = userHint.split(COLON);
+
+            /*
+             * The value for 'user_hint' should be of the format 'orgId:userId' and should
+             * use the 18-character versions of 'orgId' and 'userId'.
+             */
+            if (userParts.length == 2) {
+                final String orgId = userParts[0];
+                final String userId = userParts[1];
+                final UserAccount account = SalesforceSDKManager.getInstance().
+                        getUserAccountManager().getUserFromOrgAndUserId(orgId, userId);
+                if (account != null) {
+                    accountExists = true;
+                }
+            }
+        }
+        return accountExists;
     }
 
     private void launchLoginActivity() {
