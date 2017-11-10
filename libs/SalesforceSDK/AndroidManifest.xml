@@ -90,6 +90,15 @@
             android:theme="@style/SalesforceSDK.ActionBarTheme"
             android:exported="false" />
 
+        <!-- Receiver for IDP initiated login flow -->
+        <receiver android:name="com.salesforce.androidsdk.auth.idp.IDPInititatedLoginReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.salesforce.IDP_LOGIN_REQUEST" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </receiver>
+
         <!-- Google Play Services Push Registration -->
         <!--
             Push notification services and receivers. The 'category' attribute
@@ -110,12 +119,14 @@
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
             </intent-filter>
         </service>
+
         <service android:name="com.salesforce.androidsdk.push.SFDCInstanceIDListenerService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.android.gms.iid.InstanceID" />
             </intent-filter>
         </service>
+
         <service android:name="com.salesforce.androidsdk.push.SFDCRegistrationIntentService"
             android:exported="false">
         </service>
