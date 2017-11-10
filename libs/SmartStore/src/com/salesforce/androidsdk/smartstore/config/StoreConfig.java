@@ -40,7 +40,7 @@ import org.json.JSONObject;
 /**
  * Class encapsulating a SmartStore schema (soups).
  *
- * Config expected JSON in a resource file in JSON with the following:
+ * Config expected in a resource or assets file in JSON with the following:
  * {
  *     soups: [
  *          {
@@ -67,15 +67,31 @@ public class StoreConfig {
     private JSONArray soupsConfig;
 
     /**
-     * Constructor
-     * @param ctx
-     * @param resourceId
+     * Constructor for config stored in resource file
+     * @param ctx Context.
+     * @param resourceId Id of resource file.
      */
     public StoreConfig(Context ctx, int resourceId) {
+        this(ResourceReaderHelper.readResourceFile(ctx, resourceId));
+    }
+
+    /**
+     * Constructor for config stored in asset file
+     * @param ctx Context.
+     * @param assetPath Path of assets file.
+     */
+    public StoreConfig(Context ctx, String assetPath) {
+        this(ResourceReaderHelper.readAssetFile(ctx, assetPath));
+    }
+
+    private StoreConfig(String str) {
         try {
-            String str = ResourceReaderHelper.readResourceFile(ctx, resourceId);
-            JSONObject config = new JSONObject(str);
-            soupsConfig = config.getJSONArray(SOUPS);
+            if (str == null) {
+                soupsConfig = null;
+            } else {
+                JSONObject config = new JSONObject(str);
+                soupsConfig = config.getJSONArray(SOUPS);
+            }
         } catch (JSONException e) {
             SmartStoreLogger.e(TAG, "Unhandled exception parsing json", e);
         }
@@ -87,8 +103,10 @@ public class StoreConfig {
      * @param store
      */
     public void registerSoups(SmartStore store) {
-        if (soupsConfig == null)
+        if (soupsConfig == null) {
+            SmartStoreLogger.d(TAG, "No store config available");
             return;
+        }
 
         for (int i=0; i<soupsConfig.length(); i++) {
             try {

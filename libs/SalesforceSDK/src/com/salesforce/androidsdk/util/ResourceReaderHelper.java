@@ -27,11 +27,13 @@
 package com.salesforce.androidsdk.util;
 
 import android.content.Context;
+import android.content.res.Resources;
 
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -56,49 +58,61 @@ public class ResourceReaderHelper {
      * @return
      */
     public static String readResourceFile(Context ctx, int resourceId) {
-        InputStream resourceReader = ctx.getResources().openRawResource(resourceId);
-        Writer writer = new StringWriter();
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(resourceReader, "UTF-8"));
-            String line = reader.readLine();
-            while (line != null) {
-                writer.write(line);
-                line = reader.readLine();
-            }
-        } catch (Exception e) {
-            SalesforceSDKLogger.e(TAG, "Unhandled exception reading resource", e);
-        } finally {
-            try {
-                resourceReader.close();
-            } catch (Exception e) {
-                SalesforceSDKLogger.e(TAG, "Unhandled exception closing reader", e);
-            }
+            return readStream(ctx.getResources().openRawResource(resourceId));
         }
-
-        return writer.toString();
+        catch (Resources.NotFoundException e) {
+            SalesforceSDKLogger.d(TAG, "Resource not found: " + resourceId);
+            return null;
+        }
+        catch (IOException e) {
+            SalesforceSDKLogger.e(TAG, "Unhandled exception reading resource " + resourceId, e);
+            return null;
+        }
     }
 
     /**
      * Reads the contents of an asset file at the specified path.
      *
      * @param ctx            Context.
-     * @param assetsFilePath The path to the file, relative to the assets/ folder of the context.
+     * @param assetFilePath The path to the file, relative to the assets/ folder of the context.
      * @return String content of the file.
      */
-    public static String readAssetFile(Context ctx, String assetsFilePath) {
-        Scanner scanner = null;
+    public static String readAssetFile(Context ctx, String assetFilePath) {
         try {
-            scanner = new Scanner(ctx.getAssets().open(assetsFilePath));
-
-            // Good trick to get a string from a stream (http://weblogs.java.net/blog/pat/archive/2004/10/stupid_scanner_1.html).
-            return scanner.useDelimiter("\\A").next();
-        } catch (IOException e) {
-            SalesforceSDKLogger.e(TAG, "Unhandled exception reading resource", e);
+            return readStream(ctx.getAssets().open(assetFilePath));
+        }
+        catch (FileNotFoundException e) {
+            SalesforceSDKLogger.d(TAG, "Asset not found: " + assetFilePath);
             return null;
-        } finally {
-            if (scanner != null) {
-                scanner.close();
-            }
+        }
+        catch (IOException e) {
+            SalesforceSDKLogger.e(TAG, "Unhandled exception reading asset " + assetFilePath, e);
+            return null;
         }
     }
+
+    protected static String readStream(InputStream inputStream) throws IOException {
+        Writer writer = new StringWriter();
+
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+            String line = reader.readLine();
+            while (line != null) {
+                writer.write(line);
+                line = reader.readLine();
+            }
+        }
+        finally {
+            try {
+                inputStream.close();
+            } catch (Exception e) {
+                SalesforceSDKLogger.e(TAG, "Unhandled exception closing stream", e);
+            }
+        }
+
+        return writer.toString();
+    }
+
+
 }

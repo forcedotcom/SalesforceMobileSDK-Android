@@ -28,13 +28,14 @@ package com.salesforce.androidsdk.smartsync.config;
 
 import android.content.Context;
 
-import com.salesforce.androidsdk.util.ResourceReaderHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
+import com.salesforce.androidsdk.util.ResourceReaderHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -45,7 +46,7 @@ import static com.salesforce.androidsdk.smartstore.config.StoreConfig.SOUP_NAME;
 /**
  * Class encapsulating syncs definition.
  *
- * Config expected JSON in a resource file in JSON with the following:
+ * Config expected in a resource or assets file in JSON with the following:
  * {
  *     syncs: [
  *          {
@@ -72,15 +73,31 @@ public class SyncsConfig {
     private JSONArray syncsConfig;
 
     /**
-     * Constructor
-     * @param ctx
-     * @param resourceId
+     * Constructor for config stored in resource file
+     * @param ctx Context.
+     * @param resourceId Id of resource file.
      */
     public SyncsConfig(Context ctx, int resourceId) {
+        this(ResourceReaderHelper.readResourceFile(ctx, resourceId));
+    }
+
+    /**
+     * Constructor for config stored in asset file
+     * @param ctx Context.
+     * @param assetPath Path of assets file.
+     */
+    public SyncsConfig(Context ctx, String assetPath) {
+        this(ResourceReaderHelper.readAssetFile(ctx, assetPath));
+    }
+
+    private SyncsConfig(String str) {
         try {
-            String str = ResourceReaderHelper.readResourceFile(ctx, resourceId);
-            JSONObject config = new JSONObject(str);
-            syncsConfig = config.getJSONArray(SYNCS);
+            if (str == null) {
+                syncsConfig = null;
+            } else {
+                JSONObject config = new JSONObject(str);
+                syncsConfig = config.getJSONArray(SYNCS);
+            }
         } catch (JSONException e) {
             SmartSyncLogger.e(TAG, "Unhandled exception parsing json", e);
         }
@@ -93,8 +110,10 @@ public class SyncsConfig {
      * @param store
      */
     public void createSyncs(SmartStore store) {
-        if (syncsConfig == null)
+        if (syncsConfig == null) {
+            SmartSyncLogger.d(TAG, "No syncs config available");
             return;
+        }
 
         for (int i=0; i<syncsConfig.length(); i++) {
             try {
