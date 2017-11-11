@@ -33,7 +33,9 @@ import android.os.Bundle;
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 /**
  * This class receives a request to login from an IDP app and triggers the
@@ -45,10 +47,15 @@ public class IDPInititatedLoginReceiver extends BroadcastReceiver {
 
     public static final String IDP_LOGIN_REQUEST_ACTION = "com.salesforce.IDP_LOGIN_REQUEST";
     public static final String USER_HINT_KEY = "user_hint";
+    public static final String SP_ACTVITY_NAME_KEY = "activity_name";
+    public static final String SP_ACTVITY_EXTRAS_KEY = "activity_extras";
     public static final String IDP_INIT_LOGIN_KEY = "idp_init_login";
     private static final String COLON = ":";
+    private static final String TAG = "IDPInitiatedLoginReceiver";
 
     private String userHint;
+    private String spActivityName;
+    private Bundle spActivityExtras;
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -57,18 +64,43 @@ public class IDPInititatedLoginReceiver extends BroadcastReceiver {
                 final Bundle extras = intent.getExtras();
                 if (extras != null) {
                     userHint = extras.getString(USER_HINT_KEY);
+                    spActivityName = extras.getString(SP_ACTVITY_NAME_KEY);
+                    spActivityExtras = extras.getBundle(SP_ACTVITY_EXTRAS_KEY);
                 }
 
                 // Launches login flow if the user doesn't already exist on the SP app.
                 if (!doesUserExist()) {
                     launchLoginActivity();
+                } else {
+
+                    // If user hint was passed in, switches to the specified user.
+                    UserAccountManager.getInstance().switchToUser(getUserForHint());
+
+                    /*
+                     * If the IDP app specified a component to launch after login, launches that
+                     * component. The activity that is passed in must contain its full package name.
+                     */
+                    if (!TextUtils.isEmpty(spActivityName)) {
+                        try {
+                            final Intent launchIntent = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+                                    Class.forName(spActivityName));
+                            launchIntent.addCategory(Intent.CATEGORY_DEFAULT);
+                            intent.putExtra(SP_ACTVITY_EXTRAS_KEY, spActivityExtras);
+                            SalesforceSDKManager.getInstance().getAppContext().startActivity(launchIntent);
+                        } catch (Exception e) {
+                            SalesforceSDKLogger.e(TAG, "Could not start activity", e);
+                        }
+                    }
                 }
             }
         }
     }
 
     private boolean doesUserExist() {
-        boolean accountExists = false;
+        return (getUserForHint() != null);
+    }
+
+    private UserAccount getUserForHint() {
         if (!TextUtils.isEmpty(userHint)) {
             final String[] userParts = userHint.split(COLON);
 
@@ -82,11 +114,11 @@ public class IDPInititatedLoginReceiver extends BroadcastReceiver {
                 final UserAccount account = SalesforceSDKManager.getInstance().
                         getUserAccountManager().getUserFromOrgAndUserId(orgId, userId);
                 if (account != null) {
-                    accountExists = true;
+                    return account;
                 }
             }
         }
-        return accountExists;
+        return null;
     }
 
     private void launchLoginActivity() {
@@ -96,6 +128,8 @@ public class IDPInititatedLoginReceiver extends BroadcastReceiver {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtras(options);
         intent.putExtra(USER_HINT_KEY, userHint);
+        intent.putExtra(SP_ACTVITY_NAME_KEY, spActivityName);
+        intent.putExtra(SP_ACTVITY_EXTRAS_KEY, spActivityExtras);
         intent.putExtra(IDP_INIT_LOGIN_KEY, true);
         SalesforceSDKManager.getInstance().getAppContext().startActivity(intent);
     }

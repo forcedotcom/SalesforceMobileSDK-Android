@@ -36,6 +36,7 @@ import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
 import android.security.KeyChain;
+import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -91,6 +92,8 @@ public class LoginActivity extends AccountAuthenticatorActivity
     private SPRequestHandler spRequestHandler;
     private SPAuthCallback authCallback;
     private String userHint;
+    private String spActivityName;
+    private Bundle spActivityExtras;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -159,6 +162,8 @@ public class LoginActivity extends AccountAuthenticatorActivity
             final Bundle extras = intent.getExtras();
             if (extras != null) {
                 userHint = extras.getString(IDPInititatedLoginReceiver.USER_HINT_KEY);
+                spActivityName = extras.getString(IDPInititatedLoginReceiver.SP_ACTVITY_NAME_KEY);
+                spActivityExtras = extras.getBundle(IDPInititatedLoginReceiver.SP_ACTVITY_EXTRAS_KEY);
                 boolean isIdpInitFlow = extras.getBoolean(IDPInititatedLoginReceiver.IDP_INIT_LOGIN_KEY);
                 if (isIdpInitFlow) {
                     onIDPLoginClick(null);
@@ -422,6 +427,23 @@ public class LoginActivity extends AccountAuthenticatorActivity
             intent.putExtra(IDPAccountPickerActivity.USER_ACCOUNT_KEY, userAccount.toBundle());
             sendBroadcast(intent);
         }
+
+        // If the IDP app specified a component to launch after login, launches that component.
+        if (!TextUtils.isEmpty(spActivityName)) {
+            try {
+                final Intent intent = new Intent(this, Class.forName(spActivityName));
+                intent.addCategory(Intent.CATEGORY_DEFAULT);
+                intent.putExtra(IDPInititatedLoginReceiver.SP_ACTVITY_EXTRAS_KEY, spActivityExtras);
+                startActivity(intent);
+            } catch (Exception e) {
+                SalesforceSDKLogger.e(TAG, "Could not start activity", e);
+            }
+        }
+
+        // Cleans up some state before dismissing activity.
+        userHint = null;
+        spActivityName = null;
+        spActivityExtras = null;
         finish();
 	}
 
