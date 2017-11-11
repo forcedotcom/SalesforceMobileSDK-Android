@@ -29,7 +29,7 @@ package com.salesforce.androidsdk.smartsync.config;
 import android.content.Context;
 
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
@@ -115,6 +115,8 @@ public class SyncsConfig {
             return;
         }
 
+        SyncManager syncManager = SyncManager.getInstance(null, null, store);
+
         for (int i=0; i<syncsConfig.length(); i++) {
             try {
                 JSONObject syncConfig = syncsConfig.getJSONObject(i);
@@ -122,7 +124,7 @@ public class SyncsConfig {
                 String syncName = syncConfig.getString(SYNC_NAME);
 
                 // Leaving sync alone if it already exists
-                if (SyncState.hasSyncWithName(store, syncName)) {
+                if (syncManager.hasSyncWithName(syncName)) {
                     SmartSyncLogger.d(TAG, "Sync already exists:" + syncName + " - skipping");
                     continue;
                 }
@@ -136,10 +138,10 @@ public class SyncsConfig {
                 switch (syncType) {
 
                     case syncDown:
-                        SyncState.createSyncDown(store, SyncDownTarget.fromJSON(syncConfig.getJSONObject(TARGET)), options, soupName, syncName);
+                        syncManager.createSyncDown(SyncDownTarget.fromJSON(syncConfig.getJSONObject(TARGET)), options, soupName, syncName);
                         break;
                     case syncUp:
-                        SyncState.createSyncUp(store, SyncUpTarget.fromJSON(syncConfig.getJSONObject(TARGET)), options, soupName, syncName);
+                        syncManager.createSyncUp(SyncUpTarget.fromJSON(syncConfig.getJSONObject(TARGET)), options, soupName, syncName);
                         break;
                 }
 
