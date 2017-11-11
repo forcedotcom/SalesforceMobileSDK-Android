@@ -119,8 +119,11 @@ jobs:
 
       - run:
           name: Combine lib Test Restuls
-          command: junit-merge libs/**/build/outputs/androidTest-results/connected/*.xml
           when: always
+          command: |
+            if [ ! -z ${LIBS_TO_TEST} ]; then
+              junit-merge libs/**/build/outputs/androidTest-results/connected/*.xml
+            fi
       - run:
           name:  Run Danger
           when: always
