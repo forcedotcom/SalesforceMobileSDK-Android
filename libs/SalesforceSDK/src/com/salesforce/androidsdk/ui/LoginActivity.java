@@ -93,6 +93,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
     private SPAuthCallback authCallback;
     private String userHint;
     private String spActivityName;
+    private Bundle spActivityExtras;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -162,6 +163,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
             if (extras != null) {
                 userHint = extras.getString(IDPInititatedLoginReceiver.USER_HINT_KEY);
                 spActivityName = extras.getString(IDPInititatedLoginReceiver.SP_ACTVITY_NAME_KEY);
+                spActivityExtras = extras.getBundle(IDPInititatedLoginReceiver.SP_ACTVITY_EXTRAS_KEY);
                 boolean isIdpInitFlow = extras.getBoolean(IDPInititatedLoginReceiver.IDP_INIT_LOGIN_KEY);
                 if (isIdpInitFlow) {
                     onIDPLoginClick(null);
@@ -431,6 +433,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
             try {
                 final Intent intent = new Intent(this, Class.forName(spActivityName));
                 intent.addCategory(Intent.CATEGORY_DEFAULT);
+                intent.putExtra(IDPInititatedLoginReceiver.SP_ACTVITY_EXTRAS_KEY, spActivityExtras);
                 startActivity(intent);
             } catch (Exception e) {
                 SalesforceSDKLogger.e(TAG, "Could not start activity", e);
@@ -440,6 +443,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
         // Cleans up some state before dismissing activity.
         userHint = null;
         spActivityName = null;
+        spActivityExtras = null;
         finish();
 	}
 
