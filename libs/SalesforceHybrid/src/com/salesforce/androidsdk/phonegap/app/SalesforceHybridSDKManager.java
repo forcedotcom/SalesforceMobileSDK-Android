@@ -53,10 +53,10 @@ public class SalesforceHybridSDKManager extends SmartSyncSDKManager {
      */
     private enum ConfigAssetPath {
 
-        globalStore("globalStore.json"),
-        userStore("userStore.json"),
-        globalSyncs("globalSyncs.json"),
-        userSyncs("userSyncs.json");
+        globalStore("globalstore.json"),
+        userStore("userstore.json"),
+        globalSyncs("globalsyncs.json"),
+        userSyncs("usersyncs.json");
 
 
         String path;
