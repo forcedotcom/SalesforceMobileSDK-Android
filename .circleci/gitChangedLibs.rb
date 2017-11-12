@@ -21,8 +21,15 @@ end
 libs_ar = libs.to_a()
 if !libs_ar.empty?() && libs_ar.include?("SalesforceSDK")
   libs_ar = $libs.to_a()
-elsif libs_ar.include?("SmartStore") && !libs_ar.include?("SmartSync")
-  libs_ar.push("SmartSync")
+
+elsif libs_ar.include?("SmartStore")
+      libs_ar.push("SmartSync")
+      libs_ar.push("SalesforceHybridSDK")
+      libs_ar.push("SalesforceReact")
+
+elsif libs_ar.include?("SmartSync")
+      libs_ar.push("SalesforceHybridSDK")
+      libs_ar.push("SalesforceReact")
 end
 
-print libs_ar.join(", ")
+print libs_ar.uniq.join(", ")
