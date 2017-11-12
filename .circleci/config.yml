@@ -28,7 +28,11 @@ jobs:
           command:  |
             LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
             echo "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
-            echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST}"
+            if [ ! -z ${LIBS_TO_TEST} ]; then
+              echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST}"
+            else
+              echo -e "\n\nNo libraries to run"
+            fi
 
       - restore_cache:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
