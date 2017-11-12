@@ -29,9 +29,9 @@ jobs:
             LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
             echo "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
             if [ ! -z ${LIBS_TO_TEST} ]; then
-              echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST}"
+              echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST}."
             else
-              echo -e "\n\nNo libraries to run"
+              echo -e "\n\nNothing to Test."
             fi
 
       - restore_cache:
