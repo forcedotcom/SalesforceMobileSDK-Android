@@ -111,7 +111,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	 */
 	public synchronized void syncUp() {
 		try {
-			syncMgr.runSync(syncMgr.getSyncStatus(SYNC_UP_NAME), new SyncUpdateCallback() {
+			syncMgr.reSync(SYNC_UP_NAME /* see usersyncs.json */, new SyncUpdateCallback() {
 
 				@Override
 				public void onUpdate(SyncState sync) {
@@ -132,7 +132,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	 */
 	public synchronized void syncDown() {
 		try {
-			syncMgr.reSync(SYNC_DOWN_NAME, new SyncUpdateCallback() {
+			syncMgr.reSync(SYNC_DOWN_NAME /* see usersyncs.json */, new SyncUpdateCallback() {
 
                 @Override
                 public void onUpdate(SyncState sync) {

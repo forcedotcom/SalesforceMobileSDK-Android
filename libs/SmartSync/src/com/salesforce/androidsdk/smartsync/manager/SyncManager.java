@@ -214,6 +214,16 @@ public class SyncManager {
     }
 
     /**
+     * Return true if there is a sync with the given name
+     *
+     * @param name
+     * @return
+     */
+    public boolean hasSyncWithName(String name) {
+        return SyncState.hasSyncWithName(smartStore, name);
+    }
+
+    /**
      * Delete sync by id
      *
      * @param syncId
@@ -273,10 +283,23 @@ public class SyncManager {
      * @throws JSONException
      */
     public SyncState syncDown(SyncDownTarget target, SyncOptions options, String soupName, String syncName, SyncUpdateCallback callback) throws JSONException {
-    	SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName, syncName);
+    	SyncState sync = createSyncDown(target, options, soupName, syncName);
         SmartSyncLogger.d(TAG, "syncDown called", sync);
         runSync(sync, callback);
 		return sync;
+    }
+
+    /**
+     * Create a sync down
+     * @param target
+     * @param options
+     * @param soupName
+     * @param syncName
+     * @return
+     * @throws JSONException
+     */
+    public SyncState createSyncDown(SyncDownTarget target, SyncOptions options, String soupName, String syncName) throws JSONException {
+        return SyncState.createSyncDown(smartStore, target, options, soupName, syncName);
     }
 
     /**
@@ -292,9 +315,6 @@ public class SyncManager {
         SyncState sync = SyncState.byId(smartStore, syncId);
         if (sync == null) {
             throw new SmartSyncException("Cannot run reSync:" + syncId + ": no sync found");
-        }
-        if (sync.getType() != SyncState.Type.syncDown) {
-            throw new SmartSyncException("Cannot run reSync:" + syncId + ": wrong type:" + sync.getType());
         }
         sync.setTotalSize(-1);
         SmartSyncLogger.d(TAG, "reSync called", sync);
@@ -371,10 +391,23 @@ public class SyncManager {
      * @throws JSONException
      */
     public SyncState syncUp(SyncUpTarget target, SyncOptions options, String soupName, String syncName, SyncUpdateCallback callback) throws JSONException {
-    	SyncState sync = SyncState.createSyncUp(smartStore, target, options, soupName, syncName);
+    	SyncState sync = createSyncUp(target, options, soupName, syncName);
         SmartSyncLogger.d(TAG, "syncUp called", sync);
         runSync(sync, callback);
     	return sync;
+    }
+
+    /**
+     * Create a sync up
+     * @param target
+     * @param options
+     * @param soupName
+     * @param syncName
+     * @return
+     * @throws JSONException
+     */
+    public SyncState createSyncUp(SyncUpTarget target, SyncOptions options, String soupName, String syncName) throws JSONException {
+        return SyncState.createSyncUp(smartStore, target, options, soupName, syncName);
     }
 
     /**

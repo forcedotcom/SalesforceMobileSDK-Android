@@ -243,7 +243,7 @@ public class SyncState {
 
 	/**
 	 * Delete row for sync given by id
-	 *  @param store
+	 * @param store
 	 * @param id
 	 */
 	public static void deleteSync(SmartStore store, long id) {
@@ -270,7 +270,6 @@ public class SyncState {
 
 	/**
 	 * Return true if there is a sync with the given name
-	 * NB: Throws exception if more than one sync is found with given name
 	 *
 	 * @param store
 	 * @param name
