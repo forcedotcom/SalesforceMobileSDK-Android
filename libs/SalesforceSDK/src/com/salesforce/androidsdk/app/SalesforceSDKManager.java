@@ -162,7 +162,6 @@ public class SalesforceSDKManager {
     private List<String> additionalOauthKeys;
     private String loginBrand;
     private boolean browserLoginEnabled;
-    private boolean idpLoginFlowEnabled;
     private String idpAppURIScheme;
     private boolean idpAppLoginFlowActive;
 
@@ -262,7 +261,6 @@ public class SalesforceSDKManager {
         final RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(context);
         final String idpAppUrlScheme = runtimeConfig.getString(RuntimeConfig.ConfigKey.IDPAppURLScheme);
         if (!TextUtils.isEmpty(idpAppUrlScheme)) {
-            setIDPLoginFlowEnabled(true);
             this.idpAppURIScheme = idpAppUrlScheme;
         }
     }
@@ -632,21 +630,7 @@ public class SalesforceSDKManager {
      * @return True - if IDP login flow is enabled, False - otherwise.
      */
     public boolean isIDPLoginFlowEnabled() {
-        return idpLoginFlowEnabled;
-    }
-
-    /**
-     * Sets whether IDP login flow is enabled.
-     *
-     * @param idpLoginFlowEnabled True - if IDP login flow is enabled, False - otherwise.
-     */
-    public synchronized void setIDPLoginFlowEnabled(boolean idpLoginFlowEnabled) {
-        this.idpLoginFlowEnabled = idpLoginFlowEnabled;
-        if (idpLoginFlowEnabled) {
-            SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_APP_IS_SP);
-        } else {
-            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_APP_IS_SP);
-        }
+        return !TextUtils.isEmpty(idpAppURIScheme);
     }
 
     /**
