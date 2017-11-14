@@ -154,6 +154,12 @@ public class LoginActivity extends AccountAuthenticatorActivity
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
 
+        // If this is a callback from Chrome, processes it and does nothing else.
+        if (isChromeCallback(intent)) {
+            completeAuthFlow(intent);
+            return;
+        }
+
         // Reloads login page for every new intent to ensure the correct login server is selected.
         webviewHelper.loadLoginPage();
 
@@ -169,9 +175,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
                     onIDPLoginClick(null);
                 }
             }
-        }
-        if (isChromeCallback(intent)) {
-            completeAuthFlow(intent);
         }
     }
 
