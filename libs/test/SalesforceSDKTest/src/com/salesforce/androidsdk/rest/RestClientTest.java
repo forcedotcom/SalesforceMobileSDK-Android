@@ -591,7 +591,7 @@ public class RestClientTest extends InstrumentationTestCase {
 
     /**
      * Testing a search call to the server.
-     * Create new account then look for it using sosl.
+     * Create new account then ensure the results of SOSL don't have an error.
      * @throws Exception
      */
     public void testSearch() throws Exception {
