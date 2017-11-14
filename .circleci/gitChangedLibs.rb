@@ -2,34 +2,29 @@ require 'json'
 require 'set'
 
 $GITPRAPI = "https://api.github.com/repos/%s/SalesforceMobileSDK-android/pulls/%s/files"
-$libs = ["SalesforceAnalytics", "SalesforceHybridSDK", "SalesforceReact", "SalesforceSDK", "SmartStore", "SmartSync"]
+libsTopoSorted = ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "SmartSync", "SalesforceHybrid", "SalesforceReact"]
 
 prFilesAPI = $GITPRAPI % [ENV["CIRCLE_PROJECT_USERNAME"], ENV["CIRCLE_PR_NUMBER"]]
 pullfiles = `#{"curl %s" % [prFilesAPI]}`
 prfiles = JSON.parse(pullfiles)
 
-libs = Set.new
+libsModified = Set.new
 for prfile in prfiles
   path = prfile["filename"]
-  for lib in $libs
+  for lib in libsTopoSorted
     if path.include? lib
-      libs = libs.add(lib)
+      libsModified = libsModified.add(lib)
     end
   end
 end
 
-libs_ar = libs.to_a()
-if !libs_ar.empty?() && libs_ar.include?("SalesforceSDK")
-  libs_ar = $libs.to_a()
+# Each Lib in libsTopoSorted depends on the lib that preceeds it.  Find the lowest dependency and take everything after it.
+libsToTest = libsTopoSorted.slice!(libsModified.to_a().map{|l| libsTopoSorted.find_index(l)}.min() .. (libsTopoSorted.length - 1))
 
-elsif libs_ar.include?("SmartStore")
-      libs_ar.push("SmartSync")
-      libs_ar.push("SalesforceHybridSDK")
-      libs_ar.push("SalesforceReact")
-
-elsif libs_ar.include?("SmartSync")
-      libs_ar.push("SalesforceHybridSDK")
-      libs_ar.push("SalesforceReact")
+# SaleforceReact doesn't depend on SalesforceHybridSDK
+if !libsModified.include?("SalesforceReact") && libsToTest.first.eql?("SalesforceHybrid")
+  libsToTest.pop()
 end
 
-print libs_ar.uniq.join(", ")
+# Print so the bash in the CircleCI yml can get the Libs to run
+print libsToTest.join(",")
