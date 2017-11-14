@@ -32,32 +32,7 @@
         -->
         <activity android:name="com.salesforce.androidsdk.ui.LoginActivity"
             android:theme="@style/SalesforceSDK.ActionBarTheme"
-            android:launchMode="singleInstance">
-
-            <!--
-                To enable browser based authentication, uncomment the lines below and replace
-                'scheme', 'host' and 'path' with their corresponding values from your connected app.
-
-                For example, if the callback URL of your connected app is
-                "testsfdc:///mobilesdk/detect/oauth/done",
-                'scheme' would be "testsfdc", 'host' would be "*" since it doesn't exist, and
-                'path' would be "/mobilesdk/detect/oauth/done".
-
-                If the callback URL is "sfdc://login.salesforce.com/oauth/done",
-                'scheme' would be "sfdc", 'host' would be "login.salesforce.com",
-                and 'path' would be "/oauth/done".
-            -->
-            <!--
-            <intent-filter>
-                <data android:scheme="testsfdc"
-                    android:host="*"
-                    android:path="/mobilesdk/detect/oauth/done" />
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            -->
-        </activity>
+            android:launchMode="singleInstance" />
 
         <!-- Passcode activity -->
         <activity android:name="com.salesforce.androidsdk.ui.PasscodeActivity"
