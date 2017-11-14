@@ -36,7 +36,6 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.RestClient.AuthTokenProvider;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
-import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -55,7 +54,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -573,24 +571,6 @@ public class RestClientTest extends InstrumentationTestCase {
         checkKeys(jsonResponse, "done", "totalSize", "records");
         assertEquals("Expected one row", 1, jsonResponse.getInt("totalSize"));
         assertEquals("Wrong row returned", newAccountIdName.name, jsonResponse.getJSONArray("records").getJSONObject(0).get(NAME));
-    }
-
-    /**
-     * Testing a search call to the server.
-     * Create new account then look for it using sosl.
-     * @throws Exception
-     */
-    public void testSearch() throws Exception {
-        IdName idNameFirstAccount = createAccount();
-        IdName idNameSecondAccount = createAccount();
-        RestResponse response = restClient.sendSync(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + ENTITY_NAME_PREFIX + "}"));
-
-        JSONArray jsonResults = response.asJSONObject().getJSONArray("searchRecords");
-        assertEquals("Two results expected", 2, jsonResults.length());
-        HashSet<Object> idsFromSearch = new HashSet<>(JSONObjectHelper.pluck(jsonResults, "Id"));
-        assertEquals("wrong number of results for search request", 2, idsFromSearch.size());
-        assertTrue("Account id not returned by search", idsFromSearch.contains(idNameFirstAccount.id));
-        assertTrue("Contact id not returned by search", idsFromSearch.contains(idNameSecondAccount.id));
     }
 
     /**
