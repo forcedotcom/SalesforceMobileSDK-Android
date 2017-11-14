@@ -588,7 +588,20 @@ public class RestClientTest extends InstrumentationTestCase {
         	fail("Calling consume should not have thrown an exception");
         }
     }
-    
+
+    /**
+     * Testing a search call to the server.
+     * Create new account then look for it using sosl.
+     * @throws Exception
+     */
+    public void testSearch() throws Exception {
+        createAccount();
+        createAccount();
+        RestResponse response = restClient.sendSync(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + ENTITY_NAME_PREFIX + "}"));
+        JSONArray jsonResults = response.asJSONObject().getJSONArray("searchRecords");
+        assertNotNull("Results expected", jsonResults);
+    }
+
     /**
      * Testing doing a sync request with a RestClient that uses an UnauthenticatedClientInfo
      * @return
