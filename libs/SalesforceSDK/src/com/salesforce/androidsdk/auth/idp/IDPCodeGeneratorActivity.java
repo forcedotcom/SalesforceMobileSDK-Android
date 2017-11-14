@@ -58,8 +58,8 @@ public class IDPCodeGeneratorActivity extends Activity {
     public static final String ERROR_KEY = "error";
     public static final String CODE_KEY = "code";
     public static final String LOGIN_URL_KEY = "login_url";
-    private static final String EC_301 = "?ec=301";
-    private static final String EC_302 = "?ec=302";
+    private static final String EC_301 = "ec=301";
+    private static final String EC_302 = "ec=302";
     private static final String TAG = "IDPCodeGeneratorActivity";
 
     private UserAccount userAccount;
