@@ -42,7 +42,7 @@
 								"libs"
 				],
 				"dependencies": {
-								"react": "^16.0.0-alpha.6",
-								"react-native": "^0.43.1"
+								"react": "^16.0.0",
+								"react-native": "^0.50.3"
 				}
 }
