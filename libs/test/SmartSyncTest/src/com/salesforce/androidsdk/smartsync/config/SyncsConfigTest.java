@@ -41,11 +41,6 @@ import java.util.Arrays;
 public class SyncsConfigTest extends SyncManagerTestCase {
 
     @Override
-    public void setUp() throws Exception {
-        super.setUp();
-    }
-
-    @Override
     public void tearDown() throws Exception {
         deleteSyncs();
         deleteGlobalSyncs();
@@ -53,7 +48,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
     }
 
 
-    public void testSetupGlobalSyncsFromDefaulltConfig() throws JSONException {
+    public void testSetupGlobalSyncsFromDefaultConfig() throws JSONException {
         assertFalse(SyncState.hasSyncWithName(globalSmartStore, "globalSync1"));
         assertFalse(SyncState.hasSyncWithName(globalSmartStore, "globalSync2"));
 
@@ -78,7 +73,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
                 SyncState.Status.NEW, 0);
     }
 
-    public void testSetupUserSyncsFromDefaulltConfig() throws JSONException {
+    public void testSetupUserSyncsFromDefaultConfig() throws JSONException {
         assertFalse(SyncState.hasSyncWithName(smartStore, "userSync1"));
         assertFalse(SyncState.hasSyncWithName(smartStore, "userSync2"));
 

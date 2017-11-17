@@ -64,7 +64,7 @@ public class StoreConfig {
     public static final String SOUP_NAME = "soupName";
     public static final String INDEXES = "indexes";
 
-    private JSONArray soupsConfig;
+    private JSONArray soupConfigs;
 
     /**
      * Constructor for config stored in resource file
@@ -87,10 +87,10 @@ public class StoreConfig {
     private StoreConfig(String str) {
         try {
             if (str == null) {
-                soupsConfig = null;
+                soupConfigs = null;
             } else {
                 JSONObject config = new JSONObject(str);
-                soupsConfig = config.getJSONArray(SOUPS);
+                soupConfigs = config.getJSONArray(SOUPS);
             }
         } catch (JSONException e) {
             SmartStoreLogger.e(TAG, "Unhandled exception parsing json", e);
@@ -103,14 +103,14 @@ public class StoreConfig {
      * @param store
      */
     public void registerSoups(SmartStore store) {
-        if (soupsConfig == null) {
+        if (soupConfigs == null) {
             SmartStoreLogger.d(TAG, "No store config available");
             return;
         }
 
-        for (int i=0; i<soupsConfig.length(); i++) {
+        for (int i = 0; i< soupConfigs.length(); i++) {
             try {
-                JSONObject soupConfig = soupsConfig.getJSONObject(i);
+                JSONObject soupConfig = soupConfigs.getJSONObject(i);
                 String soupName = soupConfig.getString(SOUP_NAME);
 
                 // Leaving soup alone if it already exists

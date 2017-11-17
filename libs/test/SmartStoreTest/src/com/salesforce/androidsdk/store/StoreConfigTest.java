@@ -67,7 +67,7 @@ public class StoreConfigTest extends SmartStoreTestCase {
     }
 
 
-    public void testSetupGlobalStoreFromDefaulltConfig() throws JSONException {
+    public void testSetupGlobalStoreFromDefaultConfig() throws JSONException {
         assertFalse(globalStore.hasSoup("globalSoup1"));
         assertFalse(globalStore.hasSoup("globalSoup2"));
 
@@ -102,7 +102,7 @@ public class StoreConfigTest extends SmartStoreTestCase {
         });
     }
 
-    public void testSetupUserStoreFromDefaulltConfig() throws JSONException {
+    public void testSetupUserStoreFromDefaultConfig() throws JSONException {
         assertFalse(userStore.hasSoup("userSoup1"));
         assertFalse(userStore.hasSoup("userSoup2"));
 
