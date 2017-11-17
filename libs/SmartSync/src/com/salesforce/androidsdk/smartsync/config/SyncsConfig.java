@@ -70,7 +70,7 @@ public class SyncsConfig {
     public static final String SYNC_NAME = "syncName";
     public static final String SYNC_TYPE = "syncType";
 
-    private JSONArray syncsConfig;
+    private JSONArray syncConfigs;
 
     /**
      * Constructor for config stored in resource file
@@ -93,10 +93,10 @@ public class SyncsConfig {
     private SyncsConfig(String str) {
         try {
             if (str == null) {
-                syncsConfig = null;
+                syncConfigs = null;
             } else {
                 JSONObject config = new JSONObject(str);
-                syncsConfig = config.getJSONArray(SYNCS);
+                syncConfigs = config.getJSONArray(SYNCS);
             }
         } catch (JSONException e) {
             SmartSyncLogger.e(TAG, "Unhandled exception parsing json", e);
@@ -110,16 +110,16 @@ public class SyncsConfig {
      * @param store
      */
     public void createSyncs(SmartStore store) {
-        if (syncsConfig == null) {
+        if (syncConfigs == null) {
             SmartSyncLogger.d(TAG, "No syncs config available");
             return;
         }
 
         SyncManager syncManager = SyncManager.getInstance(null, null, store);
 
-        for (int i=0; i<syncsConfig.length(); i++) {
+        for (int i = 0; i< syncConfigs.length(); i++) {
             try {
-                JSONObject syncConfig = syncsConfig.getJSONObject(i);
+                JSONObject syncConfig = syncConfigs.getJSONObject(i);
 
                 String syncName = syncConfig.getString(SYNC_NAME);
 
