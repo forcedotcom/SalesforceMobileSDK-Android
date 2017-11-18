@@ -82,7 +82,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
     public void tearDown() throws Exception {
         deleteRecordsOnServer(idToFields.keySet(), Constants.ACCOUNT);
     	dropAccountsSoup();
-    	deleteSyncs();
     	super.tearDown();
     }
 	

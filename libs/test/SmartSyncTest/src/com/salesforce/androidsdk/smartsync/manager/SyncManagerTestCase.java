@@ -71,6 +71,13 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
     protected static final String REMOTELY_UPDATED = "_r_upd";
     protected static final String LOCALLY_UPDATED = "_l_upd";
 
+    @Override
+    public void tearDown() throws Exception {
+        deleteSyncs();
+        deleteGlobalSyncs();
+        super.tearDown();
+    }
+
     /**
      * Create soup for accounts
      */
