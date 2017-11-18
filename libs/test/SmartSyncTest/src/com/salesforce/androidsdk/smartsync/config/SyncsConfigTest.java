@@ -40,32 +40,24 @@ import java.util.Arrays;
 
 public class SyncsConfigTest extends SyncManagerTestCase {
 
-    @Override
-    public void tearDown() throws Exception {
-        deleteSyncs();
-        deleteGlobalSyncs();
-        super.tearDown();
-    }
-
-
     public void testSetupGlobalSyncsFromDefaultConfig() throws JSONException {
-        assertFalse(SyncState.hasSyncWithName(globalSmartStore, "globalSync1"));
-        assertFalse(SyncState.hasSyncWithName(globalSmartStore, "globalSync2"));
+        assertFalse(globalSyncManager.hasSyncWithName("globalSync1"));
+        assertFalse(globalSyncManager.hasSyncWithName("globalSync2"));
 
-        // Setting up soup
+        // Setting up syncs
         SmartSyncSDKManager.getInstance().setupGlobalSyncsFromDefaultConfig();
 
         // Checking smartstore
-        assertTrue(SyncState.hasSyncWithName(globalSmartStore, "globalSync1"));
-        assertTrue(SyncState.hasSyncWithName(globalSmartStore, "globalSync2"));
+        assertTrue(globalSyncManager.hasSyncWithName("globalSync1"));
+        assertTrue(globalSyncManager.hasSyncWithName("globalSync2"));
 
         // Checking first sync in details
-        SyncState actualSync1 = SyncState.byName(globalSmartStore, "globalSync1");
+        SyncState actualSync1 = globalSyncManager.getSyncStatus("globalSync1");
         assertEquals("Wrong soup name", ACCOUNTS_SOUP, actualSync1.getSoupName());
         checkStatus(actualSync1, SyncState.Type.syncDown, actualSync1.getId(), new SoqlSyncDownTarget("SELECT Id, Name, LastModifiedDate FROM Account"), SyncOptions.optionsForSyncDown(SyncState.MergeMode.OVERWRITE), SyncState.Status.NEW, 0);
 
         // Checking second sync in details
-        SyncState actualSync2 = SyncState.byName(globalSmartStore, "globalSync2");
+        SyncState actualSync2 = globalSyncManager.getSyncStatus("globalSync2");
         assertEquals("Wrong soup name", ACCOUNTS_SOUP, actualSync2.getSoupName());
         checkStatus(actualSync2, SyncState.Type.syncUp, actualSync2.getId(),
                 new SyncUpTarget(Arrays.asList(new String[]{"Name"}), null),
@@ -74,23 +66,23 @@ public class SyncsConfigTest extends SyncManagerTestCase {
     }
 
     public void testSetupUserSyncsFromDefaultConfig() throws JSONException {
-        assertFalse(SyncState.hasSyncWithName(smartStore, "userSync1"));
-        assertFalse(SyncState.hasSyncWithName(smartStore, "userSync2"));
+        assertFalse(syncManager.hasSyncWithName("userSync1"));
+        assertFalse(syncManager.hasSyncWithName("userSync2"));
 
-        // Setting up soup
+        // Setting up syncs
         SmartSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         // Checking smartstore
-        assertTrue(SyncState.hasSyncWithName(smartStore, "userSync1"));
-        assertTrue(SyncState.hasSyncWithName(smartStore, "userSync2"));
+        assertTrue(syncManager.hasSyncWithName("userSync1"));
+        assertTrue(syncManager.hasSyncWithName("userSync2"));
 
         // Checking first sync in details
-        SyncState actualSync1 = SyncState.byName(smartStore, "userSync1");
+        SyncState actualSync1 = syncManager.getSyncStatus("userSync1");
         assertEquals("Wrong soup name", ACCOUNTS_SOUP, actualSync1.getSoupName());
         checkStatus(actualSync1, SyncState.Type.syncDown, actualSync1.getId(), new SoqlSyncDownTarget("SELECT Id, Name, LastModifiedDate FROM Account"), SyncOptions.optionsForSyncDown(SyncState.MergeMode.OVERWRITE), SyncState.Status.NEW, 0);
 
         // Checking second sync in details
-        SyncState actualSync2 = SyncState.byName(smartStore, "userSync2");
+        SyncState actualSync2 = syncManager.getSyncStatus("userSync2");
         assertEquals("Wrong soup name", ACCOUNTS_SOUP, actualSync2.getSoupName());
         checkStatus(actualSync2, SyncState.Type.syncUp, actualSync2.getId(),
                 new SyncUpTarget(Arrays.asList(new String[]{"Name"}), null),
