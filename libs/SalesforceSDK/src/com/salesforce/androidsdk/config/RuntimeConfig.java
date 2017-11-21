@@ -34,6 +34,7 @@ import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -157,7 +158,36 @@ public class RuntimeConfig {
 		return (configurations == null ? false : configurations.getBoolean(configKey.name()));
 	}
 
-	private Bundle getRestrictions(Context ctx) {
+	private JSONArray getJSONArray(ConfigKey configKey) throws JSONException {
+		String[] array = getStringArray(configKey);
+		return array == null ? null : new JSONArray(array);
+	}
+
+
+	/**
+	 * Get run time config as a JSONObject
+	 * @return JSONObject for run time config.
+	 */
+	public JSONObject asJSON() {
+		try {
+			JSONObject jsonObject = new JSONObject();
+			jsonObject.put(ConfigKey.AppServiceHosts.name(), getJSONArray(ConfigKey.AppServiceHosts));
+			jsonObject.put(ConfigKey.AppServiceHostLabels.name(), getJSONArray(ConfigKey.AppServiceHostLabels));
+			jsonObject.put(ConfigKey.ManagedAppOAuthID.name(), getString(ConfigKey.ManagedAppOAuthID));
+			jsonObject.put(ConfigKey.ManagedAppCallbackURL.name(), getJSONArray(ConfigKey.ManagedAppCallbackURL));
+			jsonObject.put(ConfigKey.RequireCertAuth.name(), getBoolean(ConfigKey.RequireCertAuth));
+			jsonObject.put(ConfigKey.ManagedAppCertAlias.name(), getString(ConfigKey.ManagedAppCertAlias));
+			jsonObject.put(ConfigKey.OnlyShowAuthorizedHosts.name(), getJSONArray(ConfigKey.OnlyShowAuthorizedHosts));
+			jsonObject.put(ConfigKey.IDPAppURLScheme.name(), getString(ConfigKey.IDPAppURLScheme));
+
+			return jsonObject;
+		}
+		catch (JSONException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	Bundle getRestrictions(Context ctx) {
 		RestrictionsManager restrictionsManager = (RestrictionsManager) ctx.getSystemService(Context.RESTRICTIONS_SERVICE);
 		return restrictionsManager.getApplicationRestrictions();
 	}

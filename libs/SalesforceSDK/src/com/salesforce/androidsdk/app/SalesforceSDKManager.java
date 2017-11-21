@@ -77,10 +77,13 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
+import org.json.JSONObject;
+
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.SortedSet;
@@ -1318,14 +1321,36 @@ public class SalesforceSDKManager {
      */
     public List<String> getDevSupportInfos() {
 
-        return Arrays.asList(
+        List<String> devInfos =  new ArrayList<>(Arrays.asList(
                 "SDK Version", SDK_VERSION,
                 "App Type", getAppType(),
                 "User Agent", getUserAgent(),
                 "Browser Login Enabled", isBrowserLoginEnabled() + "",
                 "Current User", usersToString(getUserAccountManager().getCurrentUser()),
                 "Authenticated Users", usersToString(getUserAccountManager().getAuthenticatedUsers().toArray(new UserAccount[0]))
-        );
+        ));
+
+        devInfos.addAll(getDevInfosFor(BootConfig.getBootConfig(context).asJSON(), "BootConfig"));
+        RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(context);
+        devInfos.addAll(Arrays.asList("Managed?", runtimeConfig.isManagedApp() + ""));
+        if (runtimeConfig.isManagedApp()) {
+            devInfos.addAll(getDevInfosFor(runtimeConfig.asJSON(), "Managed Pref"));
+        }
+
+        return devInfos;
+    }
+
+    private List<String> getDevInfosFor(JSONObject jsonObject, String keyPrefix) {
+        List<String> devInfos = new ArrayList<>();
+        if (jsonObject != null) {
+            Iterator<String> keys = jsonObject.keys();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                devInfos.add(keyPrefix + " - " + key);
+                devInfos.add(jsonObject.opt(key) + "");
+            }
+        }
+        return devInfos;
     }
 
     private String usersToString(UserAccount... userAccounts) {
