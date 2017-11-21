@@ -177,24 +177,28 @@ public class BootConfig {
 
 	/**
 	 * @return boot config as JSONObject
-	 * @throws JSONException
 	 */
-	public JSONObject asJSON() throws JSONException {
-		JSONObject config = new JSONObject();
-		config.put(REMOTE_ACCESS_CONSUMER_KEY, remoteAccessConsumerKey);
-		config.put(OAUTH_REDIRECT_URI, oauthRedirectURI);
-		config.put(OAUTH_SCOPES, new JSONArray(Arrays.asList(oauthScopes)));
-		config.put(IS_LOCAL, isLocal);
-		config.put(START_PAGE, startPage);
-		config.put(ERROR_PAGE, errorPage);
-		if (!TextUtils.isEmpty(pushNotificationClientId)) {
-			config.put(PUSH_NOTIFICATION_CLIENT_ID, pushNotificationClientId);
-		}
-		config.put(SHOULD_AUTHENTICATE, shouldAuthenticate);
-		config.put(ATTEMPT_OFFLINE_LOAD, attemptOfflineLoad);
-		config.put(UNAUTHENTICATED_START_PAGE, unauthenticatedStartPage);
+	public JSONObject asJSON() {
+		try {
+			JSONObject config = new JSONObject();
+			config.put(REMOTE_ACCESS_CONSUMER_KEY, remoteAccessConsumerKey);
+			config.put(OAUTH_REDIRECT_URI, oauthRedirectURI);
+			config.put(OAUTH_SCOPES, new JSONArray(Arrays.asList(oauthScopes)));
+			config.put(IS_LOCAL, isLocal);
+			config.put(START_PAGE, startPage);
+			config.put(ERROR_PAGE, errorPage);
+			if (!TextUtils.isEmpty(pushNotificationClientId)) {
+				config.put(PUSH_NOTIFICATION_CLIENT_ID, pushNotificationClientId);
+			}
+			config.put(SHOULD_AUTHENTICATE, shouldAuthenticate);
+			config.put(ATTEMPT_OFFLINE_LOAD, attemptOfflineLoad);
+			config.put(UNAUTHENTICATED_START_PAGE, unauthenticatedStartPage);
 
-		return config;
+			return config;
+		}
+		catch (JSONException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	/**
