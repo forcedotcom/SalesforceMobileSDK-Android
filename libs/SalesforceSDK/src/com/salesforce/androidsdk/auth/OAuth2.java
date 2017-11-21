@@ -94,6 +94,7 @@ public class OAuth2 {
     private static final String RESPONSE_TYPE = "response_type";
     private static final String SCOPE = "scope";
     private static final String REDIRECT_URI = "redirect_uri";
+    private static final String DEVICE_ID = "device_id";
     private static final String SCREEN_LOCK = "screen_lock";
     private static final String TOKEN = "token";
     private static final String USERNAME = "username";
@@ -114,6 +115,7 @@ public class OAuth2 {
     private static final String SFDC_COMMUNITY_URL = "sfdc_community_url";
     private static final String AND = "&";
     private static final String EQUAL = "=";
+    private static final String QUESTION = "?";
     private static final String TOUCH = "touch";
     private static final String FRONTDOOR = "/secur/frontdoor.jsp?";
     private static final String SID = "sid";
@@ -158,6 +160,7 @@ public class OAuth2 {
             sb.append(AND).append(SCOPE).append(EQUAL).append(Uri.encode(computeScopeParameter(scopes)));
         }
         sb.append(AND).append(REDIRECT_URI).append(EQUAL).append(callbackUrl);
+        sb.append(AND).append(DEVICE_ID).append(EQUAL).append(SalesforceSDKManager.getInstance().getDeviceId());
         if (addlParams != null && addlParams.size() > 0) {
             for (final Map.Entry<String,String> entry : addlParams.entrySet()) {
                 final String value = entry.getValue() == null ? EMPTY_STRING : entry.getValue();
@@ -267,6 +270,7 @@ public class OAuth2 {
             sb.append(AND).append(SCOPE).append(EQUAL).append(Uri.encode(computeScopeParameter(scopes)));
         }
         sb.append(AND).append(REDIRECT_URI).append(EQUAL).append(callbackUrl);
+        sb.append(AND).append(DEVICE_ID).append(EQUAL).append(SalesforceSDKManager.getInstance().getDeviceId());
         sb.append(AND).append(CODE_CHALLENGE).append(EQUAL).append(Uri.encode(codeChallenge));
         return URI.create(sb.toString());
     }
@@ -417,7 +421,10 @@ public class OAuth2 {
                                                                   URI loginServer,
                                                                   FormBody.Builder formBodyBuilder)
             throws OAuthFailedException, IOException {
-        final String refreshPath = loginServer.toString() + OAUTH_TOKEN_PATH;
+        final StringBuilder sb = new StringBuilder(loginServer.toString());
+        sb.append(OAUTH_TOKEN_PATH);
+        sb.append(QUESTION).append(DEVICE_ID).append(EQUAL).append(SalesforceSDKManager.getInstance().getDeviceId());
+        final String refreshPath = sb.toString();
         final RequestBody body = formBodyBuilder.build();
         final Request request = new Request.Builder().url(refreshPath).post(body).build();
         final Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
