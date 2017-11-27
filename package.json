@@ -19,7 +19,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/forcedotcom/SalesforceMobileSDK-Android.git"
+    "url": "https://github.com/brandonpage/SalesforceMobileSDK-Android.git#upgrade"
   },
   "engines": {
     "node": ">=4"
@@ -43,6 +43,6 @@
   ],
   "dependencies": {
     "react": "^16.0.0",
-    "react-native": "^0.50.3"
+    "react-native": "^0.50.4"
   }
 }
