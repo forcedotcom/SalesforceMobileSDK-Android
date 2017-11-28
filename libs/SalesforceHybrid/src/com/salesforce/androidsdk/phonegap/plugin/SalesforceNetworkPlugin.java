@@ -40,6 +40,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -118,20 +119,25 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                 public void onSuccess(RestRequest request, RestResponse response) {
                     try {
 
-                        /*
-                         * Response body could be either JSONObject or JSONArray, and there's no
-                         * good way to determine this from the response headers. Hence, we try both.
-                         */
                         if (response.hasResponseBody()) {
-                            try {
-                                final JSONObject responseAsJSONObject = response.asJSONObject();
+                            // Is it a JSONObject?
+                            final JSONObject responseAsJSONObject = parseResponseAsJSONObject(response);
+                            if (responseAsJSONObject != null) {
                                 callbackContext.success(responseAsJSONObject);
-                            } catch (Exception ex) {
-                                SalesforceHybridLogger.e(TAG, "Error while parsing response", ex);
-                                final JSONArray responseAsJSONArray = response.asJSONArray();
-                                callbackContext.success(responseAsJSONArray);
+                                return;
                             }
-                        } else {
+
+                            // Is it a JSONArray?
+                            final JSONArray responseAsJSONArray = parseResponseAsJSONArray(response);
+                            if (responseAsJSONArray != null) {
+                                callbackContext.success(responseAsJSONArray);
+                                return;
+                            }
+
+                            // Otherwise return as string
+                            callbackContext.success(response.asString());
+                        }
+                        else {
                             callbackContext.success();
                         }
                     } catch (Exception e) {
@@ -151,6 +157,26 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
             });
         } catch (Exception exception) {
             callbackContext.error(exception.getMessage());
+        }
+    }
+
+    private JSONObject parseResponseAsJSONObject(RestResponse response) throws IOException {
+        try {
+            return response.asJSONObject();
+        }
+        catch (JSONException e) {
+            // Not a JSON object
+            return null;
+        }
+    }
+
+    private JSONArray parseResponseAsJSONArray(RestResponse response) throws IOException {
+        try {
+            return response.asJSONArray();
+        }
+        catch (JSONException e) {
+            // Not a JSON array
+            return null;
         }
     }
 
