@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 dependencies {
-  compile project(':libs:SmartSync')
+  implementation project(':libs:SmartSync')
 }
 
 android {
