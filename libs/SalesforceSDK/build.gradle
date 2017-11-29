@@ -14,7 +14,7 @@ apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 
 dependencies {
-    implementation project(':libs:SalesforceAnalytics')
+    api project(':libs:SalesforceAnalytics')
     api 'com.squareup.okhttp3:okhttp:3.9.0'
     api 'com.google.android.gms:play-services-gcm:11.0.2'
     api 'com.android.support:customtabs:25.2.0'
