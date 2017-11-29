@@ -14,8 +14,8 @@ apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 
 dependencies {
-  compile project(':libs:SmartSync')
-  compile 'com.facebook.react:react-native:0.50.4'
+  api project(':libs:SmartSync')
+  api 'com.facebook.react:react-native:0.50.4'
 }
 
 android {

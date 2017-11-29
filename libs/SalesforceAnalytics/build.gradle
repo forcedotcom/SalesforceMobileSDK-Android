@@ -14,7 +14,7 @@ apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 
 dependencies {
-    compile 'com.squareup:tape:1.2.3'
+    api 'com.squareup:tape:1.2.3'
 }
 
 android {

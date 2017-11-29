@@ -14,8 +14,8 @@ apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 
 dependencies {
-  compile project(':libs:SmartSync')
-  compile 'org.apache.cordova:framework:6.4.0:release@aar'
+  api project(':libs:SmartSync')
+  api 'org.apache.cordova:framework:6.4.0:release@aar'
 }
 
 android {
