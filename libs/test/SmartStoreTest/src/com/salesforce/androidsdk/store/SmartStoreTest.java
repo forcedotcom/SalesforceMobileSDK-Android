@@ -906,6 +906,33 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	}
 
 	/**
+	 * Test smart sql returning entire soup elements (i.e. select {soup:_soup} from {soup})
+	 * @throws JSONException
+	 */
+	public void testSelectUnderscoreSoup() throws JSONException {
+		// Create soup elements
+		JSONObject soupElt1 = new JSONObject("{'key':'ka1', 'value':'va1'}");
+		JSONObject soupElt2 = new JSONObject("{'key':'ka2', 'value':'va2'}");
+		JSONObject soupElt3 = new JSONObject("{'key':'ka3', 'value':'va3'}");
+		JSONObject soupElt4 = new JSONObject("{'key':'ka4', 'value':'va4'}");
+
+		JSONObject soupElt1Created = store.create(TEST_SOUP, soupElt1);
+		JSONObject soupElt2Created = store.create(TEST_SOUP, soupElt2);
+		JSONObject soupElt3Created = store.create(TEST_SOUP, soupElt3);
+		JSONObject soupElt4Created = store.create(TEST_SOUP, soupElt4);
+
+		final String smartSql = "SELECT {" + TEST_SOUP + ":_soup} FROM {" + TEST_SOUP + "} ORDER BY {" + TEST_SOUP + ":key}";
+		final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 25);
+		final JSONArray result = store.query(querySpec, 0);
+		assertNotNull("Result should not be null", result);
+		assertEquals("Three results expected", 4, result.length());
+		JSONTestHelper.assertSameJSON("Wrong result for query - row 0", new JSONArray(new JSONObject[] { soupElt1Created}), result.get(0));
+        JSONTestHelper.assertSameJSON("Wrong result for query - row 1", new JSONArray(new JSONObject[] { soupElt2Created}), result.get(1));
+        JSONTestHelper.assertSameJSON("Wrong result for query - row 2", new JSONArray(new JSONObject[] { soupElt3Created}), result.get(2));
+        JSONTestHelper.assertSameJSON("Wrong result for query - row 3", new JSONArray(new JSONObject[] { soupElt4Created}), result.get(3));
+	}
+
+	/**
 	 *  Test smart sql select with null value in string indexed field
 	 *  @throws JSONException
 	 */
@@ -1234,7 +1261,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
     }
 
 	/**
-     * Testing Delete: create multiple soup elements and alert the soup, after that delete a entry, then check them all
+     * Testing Delete: create multiple soup elements and alter the soup, after that delete a entry, then check them all
      * @throws JSONException
      */
     public void testDeleteAgainstChangedSoup() throws JSONException {
@@ -1280,7 +1307,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
     }
 
     /**
-     * Testing Upsert: create multiple soup elements and alert the soup, after that upsert a entry, then check them all
+     * Testing Upsert: create multiple soup elements and alter the soup, after that upsert a entry, then check them all
      * @throws JSONException
      */
     public void testUpsertAgainstChangedSoup() throws JSONException {
@@ -1326,7 +1353,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
     }
 
     /**
-     * Testing Delete: create multiple soup elements and alert the soup, after that delete a entry, then check them all
+     * Testing Delete: create multiple soup elements and alter the soup, after that delete a entry, then check them all
      * @throws JSONException
      */
     public void testExactQueryAgainstChangedSoup() throws JSONException {
