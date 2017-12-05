@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.phonegap.plugin;
 
 import android.text.TextUtils;
+import android.util.Base64;
 
 import com.salesforce.androidsdk.phonegap.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
@@ -61,6 +62,7 @@ import okhttp3.RequestBody;
 public class SalesforceNetworkPlugin extends ForcePlugin {
 
     private static final String TAG = "SalesforceNetworkPlugin";
+    private static final String CONTENT_TYPE_JSON = "application/json";
     private static final String METHOD_KEY = "method";
     private static final String END_POINT_KEY = "endPoint";
     private static final String PATH_KEY = "path";
@@ -70,6 +72,8 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
     private static final String FILE_MIME_TYPE_KEY = "fileMimeType";
     private static final String FILE_URL_KEY = "fileUrl";
     private static final String FILE_NAME_KEY = "fileName";
+    public static final String ENCODED_BODY = "encodedBody";
+    public static final String CONTENT_TYPE = "contentType";
 
     private RestClient restClient;
 
@@ -77,7 +81,8 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
      * Supported plugin actions that the client can take.
      */
     enum Action {
-        pgSendRequest
+        pgSendRequest,
+        pgRequestBinary
     }
 
     @Override
@@ -89,6 +94,9 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
             switch(action) {
                 case pgSendRequest:
                     sendRequest(args, callbackContext);
+                    return true;
+                case pgRequestBinary:
+                    requestBinary(args, callbackContext);
                     return true;
                 default:
                     return false;
@@ -118,8 +126,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                 @Override
                 public void onSuccess(RestRequest request, RestResponse response) {
                     try {
-
-                        if (response.hasResponseBody()) {
+                        if (response.getContentType().contains(CONTENT_TYPE_JSON)) {
                             // Is it a JSONObject?
                             final JSONObject responseAsJSONObject = parseResponseAsJSONObject(response);
                             if (responseAsJSONObject != null) {
@@ -142,11 +149,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                         }
                     } catch (Exception e) {
                         SalesforceHybridLogger.e(TAG, "Error while parsing response", e);
-                        if (response.isSuccess()) {
-                            callbackContext.success();
-                        } else {
-                            onError(e);
-                        }
+                        onError(e);
                     }
                 }
 
@@ -159,6 +162,48 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
             callbackContext.error(exception.getMessage());
         }
     }
+
+    /**
+     * Native implementation for "requestBinary" action.
+     *
+     * @param callbackContext Used when calling back into Javascript.
+     * @throws JSONException
+     */
+    protected void requestBinary(JSONArray args, final CallbackContext callbackContext) {
+        try {
+            final RestRequest request = prepareRestRequest(args);
+
+            // Sends the request.
+            final RestClient restClient = getRestClient();
+            if (restClient == null) {
+                return;
+            }
+            restClient.sendAsync(request, new RestClient.AsyncRequestCallback() {
+
+                @Override
+                public void onSuccess(RestRequest request, RestResponse response) {
+                    try {
+                        JSONObject result = new JSONObject();
+                        result.put(CONTENT_TYPE, response.getContentType());
+                        result.put(ENCODED_BODY, Base64.encodeToString(response.asBytes(), Base64.DEFAULT));
+                        callbackContext.success(result);
+
+                    } catch(Exception e) {
+                        SalesforceHybridLogger.e(TAG, "Error while parsing response", e);
+                        onError(e);
+                    }
+                }
+
+                @Override
+                public void onError(Exception exception) {
+                    callbackContext.error(exception.getMessage());
+                }
+            });
+        } catch (Exception exception) {
+            callbackContext.error(exception.getMessage());
+        }
+    }
+
 
     private JSONObject parseResponseAsJSONObject(RestResponse response) throws IOException {
         try {
