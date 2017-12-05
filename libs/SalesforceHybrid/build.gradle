@@ -15,7 +15,7 @@ apply plugin: 'com.jfrog.bintray'
 
 dependencies {
   api project(':libs:SmartSync')
-  api 'org.apache.cordova:framework:6.4.0:release@aar'
+  api 'org.apache.cordova:framework:7.0.0'
 }
 
 android {
