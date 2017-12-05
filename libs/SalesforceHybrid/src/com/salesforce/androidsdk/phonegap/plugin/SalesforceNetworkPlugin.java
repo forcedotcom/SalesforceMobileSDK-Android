@@ -62,7 +62,6 @@ import okhttp3.RequestBody;
 public class SalesforceNetworkPlugin extends ForcePlugin {
 
     private static final String TAG = "SalesforceNetworkPlugin";
-    private static final String CONTENT_TYPE_JSON = "application/json";
     private static final String METHOD_KEY = "method";
     private static final String END_POINT_KEY = "endPoint";
     private static final String PATH_KEY = "path";
@@ -72,31 +71,27 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
     private static final String FILE_MIME_TYPE_KEY = "fileMimeType";
     private static final String FILE_URL_KEY = "fileUrl";
     private static final String FILE_NAME_KEY = "fileName";
-    public static final String ENCODED_BODY = "encodedBody";
-    public static final String CONTENT_TYPE = "contentType";
-
-    private RestClient restClient;
+    private static final String RETURN_RESPONSE_AS_BLOB = "returnResponseAsBlob";
+    private static final String CONTENT_TYPE_JSON = "application/json";
+    private static final String ENCODED_BODY = "encodedBody";
+    private static final String CONTENT_TYPE = "contentType";
 
     /**
      * Supported plugin actions that the client can take.
      */
     enum Action {
-        pgSendRequest,
-        pgRequestBinary
+        pgSendRequest
     }
 
     @Override
     public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args,
                            CallbackContext callbackContext) throws JSONException {
-        Action action = null;
+        Action action;
         try {
             action = Action.valueOf(actionStr);
             switch(action) {
                 case pgSendRequest:
                     sendRequest(args, callbackContext);
-                    return true;
-                case pgRequestBinary:
-                    requestBinary(args, callbackContext);
                     return true;
                 default:
                     return false;
@@ -110,11 +105,11 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
      * Native implementation for "sendRequest" action.
      *
      * @param callbackContext Used when calling back into Javascript.
-     * @throws JSONException
      */
     protected void sendRequest(JSONArray args, final CallbackContext callbackContext) {
         try {
             final RestRequest request = prepareRestRequest(args);
+            final boolean returnResponseAsBlob = ((JSONObject) args.get(0)).optBoolean(RETURN_RESPONSE_AS_BLOB, false);
 
             // Sends the request.
             final RestClient restClient = getRestClient();
@@ -126,7 +121,16 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                 @Override
                 public void onSuccess(RestRequest request, RestResponse response) {
                     try {
-                        if (response.getContentType().contains(CONTENT_TYPE_JSON)) {
+                        // Binary response
+                        if (returnResponseAsBlob) {
+                            JSONObject result = new JSONObject();
+                            result.put(CONTENT_TYPE, response.getContentType());
+                            result.put(ENCODED_BODY, Base64.encodeToString(response.asBytes(), Base64.DEFAULT));
+                            callbackContext.success(result);
+                        }
+                        // JSON response
+                        else if (response.getContentType().contains(CONTENT_TYPE_JSON)) {
+
                             // Is it a JSONObject?
                             final JSONObject responseAsJSONObject = parseResponseAsJSONObject(response);
                             if (responseAsJSONObject != null) {
@@ -144,6 +148,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                             // Otherwise return as string
                             callbackContext.success(response.asString());
                         }
+                        // No response
                         else {
                             callbackContext.success();
                         }
@@ -162,48 +167,6 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
             callbackContext.error(exception.getMessage());
         }
     }
-
-    /**
-     * Native implementation for "requestBinary" action.
-     *
-     * @param callbackContext Used when calling back into Javascript.
-     * @throws JSONException
-     */
-    protected void requestBinary(JSONArray args, final CallbackContext callbackContext) {
-        try {
-            final RestRequest request = prepareRestRequest(args);
-
-            // Sends the request.
-            final RestClient restClient = getRestClient();
-            if (restClient == null) {
-                return;
-            }
-            restClient.sendAsync(request, new RestClient.AsyncRequestCallback() {
-
-                @Override
-                public void onSuccess(RestRequest request, RestResponse response) {
-                    try {
-                        JSONObject result = new JSONObject();
-                        result.put(CONTENT_TYPE, response.getContentType());
-                        result.put(ENCODED_BODY, Base64.encodeToString(response.asBytes(), Base64.DEFAULT));
-                        callbackContext.success(result);
-
-                    } catch(Exception e) {
-                        SalesforceHybridLogger.e(TAG, "Error while parsing response", e);
-                        onError(e);
-                    }
-                }
-
-                @Override
-                public void onError(Exception exception) {
-                    callbackContext.error(exception.getMessage());
-                }
-            });
-        } catch (Exception exception) {
-            callbackContext.error(exception.getMessage());
-        }
-    }
-
 
     private JSONObject parseResponseAsJSONObject(RestResponse response) throws IOException {
         try {
@@ -239,7 +202,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
             }
             final JSONObject headerParams = arg0.optJSONObject(HEADER_PARAMS_KEY);
             final Iterator<String> headerKeys = headerParams.keys();
-            final Map<String, String> additionalHeaders = new HashMap<String, String>();
+            final Map<String, String> additionalHeaders = new HashMap<>();
             if (headerKeys != null) {
                 while (headerKeys.hasNext()) {
                     final String headerKeyStr = headerKeys.next();
