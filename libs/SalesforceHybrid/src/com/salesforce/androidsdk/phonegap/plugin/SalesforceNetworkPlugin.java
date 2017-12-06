@@ -128,9 +128,8 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                             result.put(ENCODED_BODY, Base64.encodeToString(response.asBytes(), Base64.DEFAULT));
                             callbackContext.success(result);
                         }
-                        // JSON response
-                        else if (response.getContentType().contains(CONTENT_TYPE_JSON)) {
-
+                        // Some response
+                        else if (response.asBytes().length > 0) {
                             // Is it a JSONObject?
                             final JSONObject responseAsJSONObject = parseResponseAsJSONObject(response);
                             if (responseAsJSONObject != null) {
