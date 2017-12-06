@@ -72,7 +72,6 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
     private static final String FILE_URL_KEY = "fileUrl";
     private static final String FILE_NAME_KEY = "fileName";
     private static final String RETURN_RESPONSE_AS_BLOB = "returnResponseAsBlob";
-    private static final String CONTENT_TYPE_JSON = "application/json";
     private static final String ENCODED_BODY = "encodedBody";
     private static final String CONTENT_TYPE = "contentType";
 
