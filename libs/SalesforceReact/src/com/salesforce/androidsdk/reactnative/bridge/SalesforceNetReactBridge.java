@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.reactnative.bridge;
 
 import android.support.annotation.NonNull;
+import android.util.Base64;
 
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -42,7 +43,6 @@ import com.salesforce.androidsdk.rest.RestResponse;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -55,15 +55,18 @@ import okhttp3.RequestBody;
 
 public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
-    public static final String METHOD_KEY = "method";
-    public static final String END_POINT_KEY = "endPoint";
-    public static final String PATH_KEY = "path";
-    public static final String QUERY_PARAMS_KEY = "queryParams";
-    public static final String HEADER_PARAMS_KEY = "headerParams";
-    public static final String FILE_PARAMS_KEY = "fileParams";
-    public static final String FILE_MIME_TYPE_KEY = "fileMimeType";
-    public static final String FILE_URL_KEY = "fileUrl";
-    public static final String FILE_NAME_KEY = "fileName";
+    private static final String METHOD_KEY = "method";
+    private static final String END_POINT_KEY = "endPoint";
+    private static final String PATH_KEY = "path";
+    private static final String QUERY_PARAMS_KEY = "queryParams";
+    private static final String HEADER_PARAMS_KEY = "headerParams";
+    private static final String FILE_PARAMS_KEY = "fileParams";
+    private static final String FILE_MIME_TYPE_KEY = "fileMimeType";
+    private static final String FILE_URL_KEY = "fileUrl";
+    private static final String FILE_NAME_KEY = "fileName";
+    private static final String RETURN_RESPONSE_AS_BLOB = "returnResponseAsBlob";
+    private static final String ENCODED_BODY = "encodedBody";
+    private static final String CONTENT_TYPE = "contentType";
     private static final String TAG = "SalesforceNetReactBridge";
 
     private RestClient restClient;
@@ -84,6 +87,7 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
         try {
             // Prepare request
             RestRequest request = prepareRestRequest(args);
+            final boolean returnResponseAsBlob = args.hasKey(RETURN_RESPONSE_AS_BLOB) && args.getBoolean(RETURN_RESPONSE_AS_BLOB);
 
             // Sending request
             RestClient restClient = getRestClient();
@@ -95,15 +99,25 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
                 @Override
                 public void onSuccess(RestRequest request, RestResponse response) {
                     try {
-                        String responseAsString = response.asString();
-                        // XXX Sending the string over and letting javascript do a JSON.parse(result)
-                        //     It would be better to using NativeMap/NativeArray
-                        //     Although the absence of a common super class would force us to
-                        //     introduce two sendRequest methods:
-                        //     - one that expects map back from the server
-                        //     - one that expects array back from the server
-                        successCallback.invoke(responseAsString);
-                    } catch (IOException e) {
+                        // Sending a string over and letting javascript do a JSON.parse(result)
+                        // It would be better to use NativeMap/NativeArray
+                        // Although the absence of a common super class would force us to
+                        // introduce two sendRequest methods:
+                        // - one that expects map back from the server
+                        // - one that expects array back from the server
+
+                        // Binary response
+                        if (returnResponseAsBlob) {
+                            JSONObject result = new JSONObject();
+                            result.put(CONTENT_TYPE, response.getContentType());
+                            result.put(ENCODED_BODY, Base64.encodeToString(response.asBytes(), Base64.DEFAULT));
+                            successCallback.invoke(result.toString());
+                        }
+                        // Other cases
+                        else {
+                            successCallback.invoke(response.asString());
+                        }
+                    } catch (Exception e) {
                         SalesforceReactLogger.e(TAG, "sendRequest failed", e);
                         onError(e);
                     }
