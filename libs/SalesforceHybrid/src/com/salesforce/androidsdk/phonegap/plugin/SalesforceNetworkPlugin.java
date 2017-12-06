@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.phonegap.plugin;
 
 import android.text.TextUtils;
+import android.util.Base64;
 
 import com.salesforce.androidsdk.phonegap.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
@@ -70,8 +71,9 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
     private static final String FILE_MIME_TYPE_KEY = "fileMimeType";
     private static final String FILE_URL_KEY = "fileUrl";
     private static final String FILE_NAME_KEY = "fileName";
-
-    private RestClient restClient;
+    private static final String RETURN_BINARY = "returnBinary";
+    private static final String ENCODED_BODY = "encodedBody";
+    private static final String CONTENT_TYPE = "contentType";
 
     /**
      * Supported plugin actions that the client can take.
@@ -83,7 +85,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
     @Override
     public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args,
                            CallbackContext callbackContext) throws JSONException {
-        Action action = null;
+        Action action;
         try {
             action = Action.valueOf(actionStr);
             switch(action) {
@@ -102,11 +104,11 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
      * Native implementation for "sendRequest" action.
      *
      * @param callbackContext Used when calling back into Javascript.
-     * @throws JSONException
      */
     protected void sendRequest(JSONArray args, final CallbackContext callbackContext) {
         try {
             final RestRequest request = prepareRestRequest(args);
+            final boolean returnBinary = ((JSONObject) args.get(0)).optBoolean(RETURN_BINARY, false);
 
             // Sends the request.
             final RestClient restClient = getRestClient();
@@ -118,8 +120,15 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                 @Override
                 public void onSuccess(RestRequest request, RestResponse response) {
                     try {
-
-                        if (response.hasResponseBody()) {
+                        // Binary response
+                        if (returnBinary) {
+                            JSONObject result = new JSONObject();
+                            result.put(CONTENT_TYPE, response.getContentType());
+                            result.put(ENCODED_BODY, Base64.encodeToString(response.asBytes(), Base64.DEFAULT));
+                            callbackContext.success(result);
+                        }
+                        // Some response
+                        else if (response.asBytes().length > 0) {
                             // Is it a JSONObject?
                             final JSONObject responseAsJSONObject = parseResponseAsJSONObject(response);
                             if (responseAsJSONObject != null) {
@@ -137,16 +146,13 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                             // Otherwise return as string
                             callbackContext.success(response.asString());
                         }
+                        // No response
                         else {
                             callbackContext.success();
                         }
                     } catch (Exception e) {
                         SalesforceHybridLogger.e(TAG, "Error while parsing response", e);
-                        if (response.isSuccess()) {
-                            callbackContext.success();
-                        } else {
-                            onError(e);
-                        }
+                        onError(e);
                     }
                 }
 
@@ -194,7 +200,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
             }
             final JSONObject headerParams = arg0.optJSONObject(HEADER_PARAMS_KEY);
             final Iterator<String> headerKeys = headerParams.keys();
-            final Map<String, String> additionalHeaders = new HashMap<String, String>();
+            final Map<String, String> additionalHeaders = new HashMap<>();
             if (headerKeys != null) {
                 while (headerKeys.hasNext()) {
                     final String headerKeyStr = headerKeys.next();

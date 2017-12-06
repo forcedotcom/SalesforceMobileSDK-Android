@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 dependencies {
-  compile project(':libs:SalesforceHybrid')
+  api project(':libs:SalesforceHybrid')
 }
 
 android {
