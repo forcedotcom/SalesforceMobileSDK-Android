@@ -64,7 +64,7 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
     private static final String FILE_MIME_TYPE_KEY = "fileMimeType";
     private static final String FILE_URL_KEY = "fileUrl";
     private static final String FILE_NAME_KEY = "fileName";
-    private static final String RETURN_RESPONSE_AS_BLOB = "returnResponseAsBlob";
+    private static final String RETURN_BINARY = "returnBinary";
     private static final String ENCODED_BODY = "encodedBody";
     private static final String CONTENT_TYPE = "contentType";
     private static final String TAG = "SalesforceNetReactBridge";
@@ -87,7 +87,7 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
         try {
             // Prepare request
             RestRequest request = prepareRestRequest(args);
-            final boolean returnResponseAsBlob = args.hasKey(RETURN_RESPONSE_AS_BLOB) && args.getBoolean(RETURN_RESPONSE_AS_BLOB);
+            final boolean returnBinary = args.hasKey(RETURN_BINARY) && args.getBoolean(RETURN_BINARY);
 
             // Sending request
             RestClient restClient = getRestClient();
@@ -107,7 +107,7 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
                         // - one that expects array back from the server
 
                         // Binary response
-                        if (returnResponseAsBlob) {
+                        if (returnBinary) {
                             JSONObject result = new JSONObject();
                             result.put(CONTENT_TYPE, response.getContentType());
                             result.put(ENCODED_BODY, Base64.encodeToString(response.asBytes(), Base64.DEFAULT));
