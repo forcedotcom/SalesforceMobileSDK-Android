@@ -14,8 +14,8 @@ apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 
 dependencies {
-  compile project(':libs:SalesforceSDK')
-  compile 'net.zetetic:android-database-sqlcipher:3.5.7'
+    api project(':libs:SalesforceSDK')
+    api 'net.zetetic:android-database-sqlcipher:3.5.7'
 }
 
 android {

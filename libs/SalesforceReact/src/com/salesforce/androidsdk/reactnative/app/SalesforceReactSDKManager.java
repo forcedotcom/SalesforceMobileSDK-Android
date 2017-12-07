@@ -154,7 +154,6 @@ public class SalesforceReactSDKManager extends SmartSyncSDKManager {
 				return modules;
 			}
 
-			@Override
 			public List<Class<? extends JavaScriptModule>> createJSModules() {
 				return Collections.emptyList();
 			}

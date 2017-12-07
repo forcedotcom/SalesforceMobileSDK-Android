@@ -71,7 +71,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
     private static final String FILE_MIME_TYPE_KEY = "fileMimeType";
     private static final String FILE_URL_KEY = "fileUrl";
     private static final String FILE_NAME_KEY = "fileName";
-    private static final String RETURN_RESPONSE_AS_BLOB = "returnResponseAsBlob";
+    private static final String RETURN_BINARY = "returnBinary";
     private static final String ENCODED_BODY = "encodedBody";
     private static final String CONTENT_TYPE = "contentType";
 
@@ -108,7 +108,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
     protected void sendRequest(JSONArray args, final CallbackContext callbackContext) {
         try {
             final RestRequest request = prepareRestRequest(args);
-            final boolean returnResponseAsBlob = ((JSONObject) args.get(0)).optBoolean(RETURN_RESPONSE_AS_BLOB, false);
+            final boolean returnBinary = ((JSONObject) args.get(0)).optBoolean(RETURN_BINARY, false);
 
             // Sends the request.
             final RestClient restClient = getRestClient();
@@ -121,7 +121,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                 public void onSuccess(RestRequest request, RestResponse response) {
                     try {
                         // Binary response
-                        if (returnResponseAsBlob) {
+                        if (returnBinary) {
                             JSONObject result = new JSONObject();
                             result.put(CONTENT_TYPE, response.getContentType());
                             result.put(ENCODED_BODY, Base64.encodeToString(response.asBytes(), Base64.DEFAULT));

@@ -14,7 +14,7 @@ apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 
 dependencies {
-  compile project(':libs:SmartStore')
+    api project(':libs:SmartStore')
 }
 
 android {
