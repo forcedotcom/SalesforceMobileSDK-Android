@@ -463,7 +463,11 @@ public class PasscodeManager  {
          * no passcode to passcode, which will trigger the passcode creation flow.
          */
         if (timeoutMs == 0 || (timeoutMs > 0 && newTimeout > 0)) {
-            timeoutMs = newTimeout;
+
+            // Updates timeout only if the new timeout is smaller than the old one.
+            if (timeoutMs == 0 || timeoutMs > newTimeout) {
+                timeoutMs = newTimeout;
+            }
             storeMobilePolicy(SalesforceSDKManager.getInstance().getAppContext());
             return;
         }
