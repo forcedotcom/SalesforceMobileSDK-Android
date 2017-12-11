@@ -465,7 +465,7 @@ public class PasscodeManager  {
         if (timeoutMs == 0 || (timeoutMs > 0 && newTimeout > 0)) {
 
             // Updates timeout only if the new timeout is smaller than the old one.
-            if (timeoutMs > newTimeout) {
+            if (timeoutMs == 0 || timeoutMs > newTimeout) {
                 timeoutMs = newTimeout;
             }
             storeMobilePolicy(SalesforceSDKManager.getInstance().getAppContext());
