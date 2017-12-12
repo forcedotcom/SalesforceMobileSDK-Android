@@ -166,7 +166,12 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
         return new RestRequest(method, endPoint + path + separator + urlParams, requestBody, additionalHeaders);
     }
 
-    private RestClient getRestClient() {
+    /**
+     * Returns the RestClient instance being used by this bridge.
+     *
+     * @return RestClient instance.
+     */
+    protected RestClient getRestClient() {
         final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
         return currentActivity != null ? currentActivity.getRestClient() : null;
     }

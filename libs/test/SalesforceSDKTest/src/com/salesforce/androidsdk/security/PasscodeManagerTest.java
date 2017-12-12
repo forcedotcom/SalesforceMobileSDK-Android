@@ -43,7 +43,6 @@ public class PasscodeManagerTest extends InstrumentationTestCase {
     private static final HashConfig TEST_HASH_CONFIG = new HashConfig("", "", "dummy-key");
     private static final int TEST_TIMEOUT_MS = 1000;
 
-
     @Override
     public void setUp() throws Exception {
         super.setUp();
@@ -117,10 +116,10 @@ public class PasscodeManagerTest extends InstrumentationTestCase {
      */
     public void testTimeoutChange() {
         assertFalse(pm.isLocked());
-        pm.setTimeoutMs(2000);
-        now += 1700;
+        pm.setTimeoutMs(800);
+        now += 700;
         assertFalse(pm.shouldLock());
-        now += 301;
+        now += 101;
         assertTrue(pm.shouldLock());
     }
 
