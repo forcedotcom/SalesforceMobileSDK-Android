@@ -640,11 +640,10 @@ public class SalesforceSDKManager {
     }
 
     /**
-     * Returns whether this application is configured as a Identity Provider
-     * @return True - if
+     * Checks for IDPAccountPickerActivity in manifest
+     * @return True - if this application is configured as a Identity Provider
      */
-
-    public boolean isIdentityProvider() {
+    private boolean isIdentityProvider() {
         try {
             PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), PackageManager.GET_ACTIVITIES);
             for (ActivityInfo activityInfo : packageInfo.activities) {
