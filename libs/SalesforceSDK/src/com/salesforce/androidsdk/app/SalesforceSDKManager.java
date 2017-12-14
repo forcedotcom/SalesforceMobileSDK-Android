@@ -37,7 +37,9 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.os.AsyncTask;
@@ -56,6 +58,7 @@ import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity;
 import com.salesforce.androidsdk.config.AdminPermsManager;
 import com.salesforce.androidsdk.config.AdminSettingsManager;
 import com.salesforce.androidsdk.config.BootConfig;
@@ -634,6 +637,27 @@ public class SalesforceSDKManager {
      */
     public boolean isIDPLoginFlowEnabled() {
         return !TextUtils.isEmpty(idpAppURIScheme);
+    }
+
+    /**
+     * Checks for IDPAccountPickerActivity in manifest
+     * @return True - if this application is configured as a Identity Provider
+     */
+    private boolean isIdentityProvider() {
+        try {
+            PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), PackageManager.GET_ACTIVITIES);
+            for (ActivityInfo activityInfo : packageInfo.activities) {
+                if (activityInfo.name.equals(IDPAccountPickerActivity.class.getName())) {
+                    return true;
+                }
+            }
+
+
+        } catch (NameNotFoundException e) {
+            SalesforceSDKLogger.e(TAG, "Exception occurred while examining application info", e);
+        }
+
+        return false;
     }
 
     /**
@@ -1326,6 +1350,8 @@ public class SalesforceSDKManager {
                 "App Type", getAppType(),
                 "User Agent", getUserAgent(),
                 "Browser Login Enabled", isBrowserLoginEnabled() + "",
+                "IDP Enabled", isIDPLoginFlowEnabled() + "",
+                "Identity Provider", isIdentityProvider() + "",
                 "Current User", usersToString(getUserAccountManager().getCurrentUser()),
                 "Authenticated Users", usersToString(getUserAccountManager().getAuthenticatedUsers().toArray(new UserAccount[0]))
         ));
