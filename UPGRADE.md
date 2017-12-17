@@ -1,4 +1,4 @@
-## Upgrade steps from v. 5.2.x to v. 5.3 for native/hybrid/react native apps
+## Upgrade steps from v. 5.3.x to v. 6.0 for native/hybrid/react native apps
 
 To upgrade native, hybrid and react native apps, we strongly recommend creating a new app from the app templates in [the forcedroid npm package](https://npmjs.org/package/forcedroid), then migrating the artifacts specific to your app into the new template.
 
