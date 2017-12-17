@@ -23,17 +23,41 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 5.3
+### What's New in 6.0
 
 **OS Version Support**
-- Android Oreo (API 26) is fully supported in Mobile SDK 5.3.
+- Android Oreo (API 27) is fully supported in Mobile SDK 6.0.
+- The minimum Android OS version we support has been bumped up from KitKat (API 19) to Lollipop (API 21).
+
+**IDE Support**
+- Android Studio 3.0 and Gradle 4.1 are fully supported in Mobile SDK 6.0.
 
 **Library Upgrades**
-- We've updated SQLCipher to version 3.5.7.
+- We've updated React Native to version 0.50.4.
+- We've updated Cordova to version 7.0.0.
 
-**Kotlin Support**
-- We now support Kotlin in native Android apps.
-- `forcedroid` adds a new app type: `native_kotlin`.
+**Login Enhancements**
+- In version 6.0, Mobile SDK enhances its authentication handling by adding identity provider services.
+- Identity providers help known users avoid reentering their Salesforce credentials every time they log in to a Mobile SDK app.
+- A Mobile SDK app can be used to provide authentication services to other Mobile SDK apps.
+- We have created a template that can be used with `forcedroid` that demonstrates this functionality. This template can be found [here](https://github.com/forcedotcom/SalesforceMobileSDK-AuthTemplates).
+- Mobile SDK 6.0 allows developers to use Chrome custom tabs for authentication instead of the system WebView.
+
+**SmartStore Enhancements**
+- Mobile SDK 6.0 introduces the ability to define your SmartStore schemas through configuration files rather than code.
+- To define soups for the default global store, provide a file named `globalstore.json`.
+- To define soups for the default user store, provide a file named `userstore.json`.
+
+**SmartSync Enhancements**
+- Beginning in Mobile SDK 6.0, you can define sync configuration files and assign names to sync configurations.
+- You can use sync names to run, edit, or delete a saved sync operation.
+- You can define “sync down” and “sync up” operations through configuration files rather than code.
+- To define sync operations for the default global store, provide a file named `globalsyncs.json`.
+- To define sync operations for the default user store, provide a file named `usersyncs.json`.
+
+**Other Enhancements**
+- Mobile SDK 6.0 adds support for a developer settings screen in DEBUG builds.
+- This screen displays configuration information that is useful during the development cycle.
 
 **Other Technical Improvements**
 - Improvements to sample apps.
