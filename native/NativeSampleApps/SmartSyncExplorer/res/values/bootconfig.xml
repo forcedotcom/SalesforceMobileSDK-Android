@@ -5,6 +5,7 @@
     <string name="oauthRedirectURI">testsfdc:///mobilesdk/detect/oauth/done</string>
     <string-array name="oauthScopes">
         <item>api</item>
+        <item>web</item>
     </string-array>
     <string name="androidPushNotificationClientId"></string>
 </resources>

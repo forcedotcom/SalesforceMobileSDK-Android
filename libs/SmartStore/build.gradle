@@ -14,13 +14,13 @@ apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 
 dependencies {
-  compile project(':libs:SalesforceSDK')
-  compile 'net.zetetic:android-database-sqlcipher:3.5.7'
+    api project(':libs:SalesforceSDK')
+    api 'net.zetetic:android-database-sqlcipher:3.5.7'
 }
 
 android {
-  compileSdkVersion 26
-  buildToolsVersion '25.0.0'
+  compileSdkVersion 27
+  buildToolsVersion '26.0.2'
   
   buildTypes {
       debug {
@@ -58,6 +58,7 @@ android {
   }
 
   lintOptions {
+    xmlReport true
     abortOnError false
   }
 }
@@ -126,9 +127,9 @@ bintray {
         licenses = ['Apache-2.0']
         labels = ['android', 'salesforce', 'mobilesdk']
         version {
-            name = '5.3.0'
+            name = '6.0.0'
             released  = new Date()
-            vcsTag = 'v5.3.0'
+            vcsTag = 'v6.0.0'
         }
     }
 }

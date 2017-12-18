@@ -34,6 +34,7 @@ import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.apache.cordova.CallbackContext;
 import org.json.JSONArray;
@@ -44,6 +45,7 @@ import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.IS_GLOBA
 import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.OPTIONS;
 import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.SOUP_NAME;
 import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.STORE_NAME;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.SYNC_NAME;
 import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.TARGET;
 
 /**
@@ -67,7 +69,8 @@ public class SmartSyncPlugin extends ForcePlugin {
         syncDown,
         getSyncStatus,
         reSync,
-        cleanResyncGhosts
+        cleanResyncGhosts,
+        deleteSync
     }
     
     @Override
@@ -109,6 +112,9 @@ public class SmartSyncPlugin extends ForcePlugin {
                           case cleanResyncGhosts:
                               cleanResyncGhosts(args, callbackContext);
                               break;
+                          case deleteSync:
+                              deleteSync(args, callbackContext);
+                              break;
                           default:
                               throw new RuntimeException("No handler for action " + action);
                         }
@@ -138,10 +144,11 @@ public class SmartSyncPlugin extends ForcePlugin {
         JSONObject target = arg0.getJSONObject(TARGET);
         String soupName = arg0.getString(SOUP_NAME);
         JSONObject options = arg0.optJSONObject(OPTIONS);
+        String syncName = JSONObjectHelper.optString(arg0, SYNC_NAME);
         final boolean isGlobal = SmartStorePlugin.getIsGlobal(arg0);
         final String storeName = SmartStorePlugin.getStoreName(arg0);
         SyncManager syncManager = getSyncManager(arg0);
-        SyncState sync = syncManager.syncUp(SyncUpTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
+        SyncState sync = syncManager.syncUp(SyncUpTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, syncName, new SyncUpdateCallback() {
 
             @Override
             public void onUpdate(SyncState sync) {
@@ -165,10 +172,11 @@ public class SmartSyncPlugin extends ForcePlugin {
         JSONObject target = arg0.getJSONObject(TARGET);
         String soupName = arg0.getString(SOUP_NAME);
         JSONObject options = arg0.getJSONObject(OPTIONS);
+        String syncName = JSONObjectHelper.optString(arg0, SYNC_NAME);
         final boolean isGlobal = SmartStorePlugin.getIsGlobal(arg0);
         final String storeName = SmartStorePlugin.getStoreName(arg0);
         SyncManager syncManager = getSyncManager(arg0);
-        SyncState sync = syncManager.syncDown(SyncDownTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
+        SyncState sync = syncManager.syncDown(SyncDownTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, syncName, new SyncUpdateCallback() {
 
             @Override
             public void onUpdate(SyncState sync) {
@@ -189,10 +197,48 @@ public class SmartSyncPlugin extends ForcePlugin {
 
         // Parse args.
         JSONObject arg0 = args.getJSONObject(0);
-        long syncId = arg0.getLong(SYNC_ID);
         SyncManager syncManager = getSyncManager(arg0);
-        SyncState sync = syncManager.getSyncStatus(syncId);
-        callbackContext.success(sync.asJSON());
+
+        SyncState sync;
+        if (arg0.has(SYNC_ID) && !arg0.isNull(SYNC_ID)) {
+            sync = syncManager.getSyncStatus(arg0.getLong(SYNC_ID));
+        }
+        else if (arg0.has(SYNC_NAME) && !arg0.isNull(SYNC_NAME)) {
+            sync = syncManager.getSyncStatus(arg0.getString(SYNC_NAME));
+        }
+        else {
+            throw new SyncManager.SmartSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
+        }
+
+        // cordova can't return null, so returning {} when sync is not found
+        // cordova.force.js turns it back into a null
+        callbackContext.success(sync == null ? new JSONObject() : sync.asJSON());
+    }
+
+    /**
+     * Native implementation of deleteSync.
+     *
+     * @param args
+     * @param callbackContext
+     * @throws JSONException
+     */
+    private void deleteSync(JSONArray args, CallbackContext callbackContext) throws Exception {
+
+        // Parse args.
+        JSONObject arg0 = args.getJSONObject(0);
+        SyncManager syncManager = getSyncManager(arg0);
+
+        if (arg0.has(SYNC_ID) && !arg0.isNull(SYNC_ID)) {
+            syncManager.deleteSync(arg0.getLong(SYNC_ID));
+        }
+        else if (arg0.has(SYNC_NAME) && !arg0.isNull(SYNC_NAME)) {
+            syncManager.deleteSync(arg0.getString(SYNC_NAME));
+        }
+        else {
+            throw new SyncManager.SmartSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
+        }
+
+        callbackContext.success();
     }
 
     /**
@@ -206,17 +252,27 @@ public class SmartSyncPlugin extends ForcePlugin {
 
         // Parse args.
         JSONObject arg0 = args.getJSONObject(0);
-        long syncId = arg0.getLong(SYNC_ID);
         final boolean isGlobal = SmartStorePlugin.getIsGlobal(arg0);
         final String storeName = SmartStorePlugin.getStoreName(arg0);
         final SyncManager syncManager = getSyncManager(arg0);
-        SyncState sync = syncManager.reSync(syncId, new SyncUpdateCallback() {
 
+        SyncState sync;
+        SyncUpdateCallback callback = new SyncUpdateCallback() {
             @Override
             public void onUpdate(SyncState sync) {
-                handleSyncUpdate(sync, isGlobal,storeName);
+                handleSyncUpdate(sync, isGlobal, storeName);
             }
-        });
+        };
+
+        if (arg0.has(SYNC_ID) && !arg0.isNull(SYNC_ID)) {
+            sync = syncManager.reSync(arg0.getLong(SYNC_ID), callback);
+        }
+        else if (arg0.has(SYNC_NAME) && !arg0.isNull(SYNC_NAME)) {
+            sync = syncManager.reSync(arg0.getString(SYNC_NAME), callback);
+        }
+        else {
+            throw new SyncManager.SmartSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
+        }
         callbackContext.success(sync.asJSON());
     }
 

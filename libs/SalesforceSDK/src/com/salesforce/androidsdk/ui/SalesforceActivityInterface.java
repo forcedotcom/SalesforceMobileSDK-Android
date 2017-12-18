@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-present, salesforce.com, inc.
+ * Copyright (c) 2017-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,20 +24,32 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.restexplorer;
+package com.salesforce.androidsdk.ui;
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
-import com.salesforce.androidsdk.analytics.security.Encryptor;
+
+import com.salesforce.androidsdk.rest.RestClient;
 
 /**
- * This class provides an implementation of KeyInterface.
- *
- * @author bhariharan
+ * Interface common to all Salesforce*Activity classes
+ * Used by SalesforceActivityDelegate
  */
-public class KeyImpl implements KeyInterface {
 
-	@Override
-	public String getKey(String name) {
-		return Encryptor.hash(name + "12s9adpahk;n12-97sdainkasd=012", name + "12kl0dsakj4-cxh1qewkjasdol8");
-	}
+public interface SalesforceActivityInterface {
+    /**
+     * Method that is called after the activity resumes once we have a RestClient.
+     *
+     * @param client RestClient instance.
+     */
+    void onResume(RestClient client);
+
+    /**
+     * Performs actions on logout complete.
+     */
+    void onLogoutComplete();
+
+    /**
+     * Performs actions on user switched.
+     */
+    void onUserSwitched();
+
 }

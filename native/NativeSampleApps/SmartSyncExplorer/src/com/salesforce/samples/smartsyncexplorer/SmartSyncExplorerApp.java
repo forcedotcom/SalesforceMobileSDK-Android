@@ -39,8 +39,21 @@ public class SmartSyncExplorerApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SmartSyncSDKManager.initNative(getApplicationContext(), new KeyImpl(),
-				MainActivity.class);
+		SmartSyncSDKManager.initNative(getApplicationContext(), null, MainActivity.class);
+
+		/*
+         * Uncomment the following line to enable IDP login flow. This will allow the user to
+         * either authenticate using the current app or use a designated IDP app for login.
+         * Replace 'idpAppURIScheme' with the URI scheme of the IDP app meant to be used.
+         */
+        // SmartSyncSDKManager.getInstance().setIDPAppURIScheme(idpAppURIScheme);
+
+        /*
+         * Uncomment the following line to enable browser based login. This will use a
+         * Chrome custom tab to login instead of the default WebView. You will also need
+         * to uncomment a few lines of code in SalesforceSDK library project's AndroidManifest.xml.
+         */
+        // SmartSyncSDKManager.getInstance().setBrowserLoginEnabled(true);
 
 		/*
 		 * Un-comment the line below to enable push notifications in this app.

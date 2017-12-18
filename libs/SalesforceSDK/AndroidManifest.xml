@@ -2,11 +2,11 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.salesforce.androidsdk" 
-	android:versionCode="58"
-	android:versionName="5.3.0">
+	android:versionCode="59"
+	android:versionName="6.0.0">
 
-    <uses-sdk android:minSdkVersion="19"
-        android:targetSdkVersion="26" />
+    <uses-sdk android:minSdkVersion="21"
+        android:targetSdkVersion="27" />
 
     <application>
 
@@ -25,8 +25,14 @@
         </service>
 
         <!-- Login activity -->
+        <!--
+            Launch mode of "singleInstance" ensures that the activity isn't restarted
+            by a callback from Chrome custom tab when auth flow is complete. This is
+            required for the Chrome custom tab auth flow to work correctly.
+        -->
         <activity android:name="com.salesforce.androidsdk.ui.LoginActivity"
-            android:theme="@style/SalesforceSDK.ActionBarTheme" />
+            android:theme="@style/SalesforceSDK.ActionBarTheme"
+            android:launchMode="singleInstance" />
 
         <!-- Passcode activity -->
         <activity android:name="com.salesforce.androidsdk.ui.PasscodeActivity"
@@ -48,6 +54,26 @@
             android:excludeFromRecents="true"
             android:theme="@style/SalesforceSDK.ActionBarTheme" />
 
+        <!-- IDP webview activity -->
+        <activity android:name="com.salesforce.androidsdk.auth.idp.IDPCodeGeneratorActivity"
+            android:excludeFromRecents="true"
+            android:theme="@style/SalesforceSDK.ActionBarTheme"
+            android:exported="false" />
+
+        <!--  Dev info activity -->
+        <activity android:name="com.salesforce.androidsdk.ui.DevInfoActivity"
+            android:theme="@style/SalesforceSDK.ActionBarTheme"
+            android:exported="false" />
+
+        <!-- Receiver for IDP initiated login flow -->
+        <receiver android:name="com.salesforce.androidsdk.auth.idp.IDPInititatedLoginReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.salesforce.IDP_LOGIN_REQUEST" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </receiver>
+
         <!-- Google Play Services Push Registration -->
         <!--
             Push notification services and receivers. The 'category' attribute
@@ -68,12 +94,14 @@
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
             </intent-filter>
         </service>
+
         <service android:name="com.salesforce.androidsdk.push.SFDCInstanceIDListenerService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.android.gms.iid.InstanceID" />
             </intent-filter>
         </service>
+
         <service android:name="com.salesforce.androidsdk.push.SFDCRegistrationIntentService"
             android:exported="false">
         </service>

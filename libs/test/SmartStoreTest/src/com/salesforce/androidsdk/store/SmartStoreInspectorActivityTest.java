@@ -26,14 +26,6 @@
  */
 package com.salesforce.androidsdk.store;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import net.sqlcipher.database.SQLiteOpenHelper;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.content.Context;
 import android.test.ActivityInstrumentationTestCase2;
 import android.view.View;
@@ -42,6 +34,7 @@ import android.widget.ListAdapter;
 import android.widget.MultiAutoCompleteTextView;
 import android.widget.TextView;
 
+import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.smartstore.R;
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
@@ -49,6 +42,14 @@ import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
+
+import net.sqlcipher.database.SQLiteOpenHelper;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Tests for ServerPickerActivity
@@ -71,6 +72,7 @@ public class SmartStoreInspectorActivityTest extends
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
+		EventBuilderHelper.enableDisable(false);
 		setActivityInitialTouchMode(false);
 		targetContext = getInstrumentation().getTargetContext();
 		createStore();

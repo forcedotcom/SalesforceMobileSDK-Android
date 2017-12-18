@@ -71,6 +71,13 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
     protected static final String REMOTELY_UPDATED = "_r_upd";
     protected static final String LOCALLY_UPDATED = "_l_upd";
 
+    @Override
+    public void tearDown() throws Exception {
+        deleteSyncs();
+        deleteGlobalSyncs();
+        super.tearDown();
+    }
+
     /**
      * Create soup for accounts
      */
@@ -104,6 +111,14 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
      */
     protected void deleteSyncs() {
         smartStore.clearSoup(SyncState.SYNCS_SOUP);
+    }
+
+
+    /**
+     * Delete all syncs in syncs_soup
+     */
+    protected void deleteGlobalSyncs() {
+        globalSmartStore.clearSoup(SyncState.SYNCS_SOUP);
     }
 
     /**
@@ -148,18 +163,35 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
     }
 
     /**
+     /**
+     * Sync down helper.
+     *
+     * @param mergeMode
+     * @param target
+     * @param soupName
+     * @param totalSize
+     * @param numberFetches
+     * @return
+     * @throws JSONException
+     */
+    protected long trySyncDown(SyncState.MergeMode mergeMode, SyncDownTarget target, String soupName, int totalSize, int numberFetches) throws JSONException {
+        return trySyncDown(mergeMode, target, soupName, totalSize, numberFetches, null);
+    }
+
+    /**
      * Sync down helper.
      *
      * @param mergeMode     Merge mode.
      * @param target        Sync down target.
      * @param soupName      Soup name.
-     * @param totalSize     Expected total size
-     * @param numberFetches Expected number of fetches
+     * @param totalSize     Expected total size.
+     * @param numberFetches Expected number of fetches.
+     * @param syncName      Name for sync or null.
      * @return Sync ID.
      */
-    protected long trySyncDown(SyncState.MergeMode mergeMode, SyncDownTarget target, String soupName, int totalSize, int numberFetches) throws JSONException {
+    protected long trySyncDown(SyncState.MergeMode mergeMode, SyncDownTarget target, String soupName, int totalSize, int numberFetches, String syncName) throws JSONException {
         final SyncOptions options = SyncOptions.optionsForSyncDown(mergeMode);
-        final SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName);
+        final SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName, syncName);
         long syncId = sync.getId();
         checkStatus(sync, SyncState.Type.syncDown, syncId, target, options, SyncState.Status.NEW, 0, -1);
 
@@ -270,7 +302,7 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         }
     }
 
-    private void checkStatus(SyncState sync, SyncState.Type expectedType, long expectedId, SyncTarget expectedTarget, SyncOptions expectedOptions, SyncState.Status expectedStatus, int expectedProgress) throws JSONException {
+    protected void checkStatus(SyncState sync, SyncState.Type expectedType, long expectedId, SyncTarget expectedTarget, SyncOptions expectedOptions, SyncState.Status expectedStatus, int expectedProgress) throws JSONException {
         checkStatus(sync, expectedType, expectedId, expectedTarget, expectedOptions, expectedStatus, expectedProgress, TOTAL_SIZE_UNKNOWN);
     }
 
@@ -503,7 +535,7 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
      */
     protected void trySyncUp(SyncUpTarget target, int numberChanges, SyncOptions options, boolean expectSyncFailure) throws JSONException {
         // Create sync
-		SyncState sync = SyncState.createSyncUp(smartStore, target, options, ACCOUNTS_SOUP);
+		SyncState sync = SyncState.createSyncUp(smartStore, target, options, ACCOUNTS_SOUP, null);
 		long syncId = sync.getId();
 		checkStatus(sync, SyncState.Type.syncUp, syncId, target, options, SyncState.Status.NEW, 0, -1);
 

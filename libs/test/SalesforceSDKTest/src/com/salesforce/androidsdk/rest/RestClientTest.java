@@ -36,7 +36,6 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.RestClient.AuthTokenProvider;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
-import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -55,7 +54,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -100,7 +98,9 @@ public class RestClientTest extends InstrumentationTestCase {
         super.setUp();
         TestCredentials.init(getInstrumentation().getContext());
         httpAccess = new HttpAccess(null, "dummy-agent");
-        TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
+        TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,
+                new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID,
+                TestCredentials.REFRESH_TOKEN, null);
         authToken = refreshResponse.authToken;
         instanceUrl = refreshResponse.instanceUrl;
         testOauthKeys = new ArrayList<>();
@@ -108,8 +108,7 @@ public class RestClientTest extends InstrumentationTestCase {
         testOauthValues = new HashMap<>();
         testOauthValues.put(TEST_CUSTOM_KEY, TEST_CUSTOM_VALUE);
         SalesforceSDKManager.getInstance().setAdditionalOauthKeys(testOauthKeys);
-        clientInfo = new ClientInfo(TestCredentials.CLIENT_ID,
-        		new URI(TestCredentials.INSTANCE_URL),
+        clientInfo = new ClientInfo(new URI(TestCredentials.INSTANCE_URL),
         		new URI(TestCredentials.LOGIN_URL),
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
@@ -132,7 +131,6 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws URISyntaxException
      */
     public void testGetClientInfo() throws URISyntaxException {
-        assertEquals("Wrong client id", TestCredentials.CLIENT_ID, restClient.getClientInfo().clientId);
         assertEquals("Wrong instance url", new URI(TestCredentials.INSTANCE_URL), restClient.getClientInfo().instanceUrl);
         assertEquals("Wrong login url", new URI(TestCredentials.LOGIN_URL), restClient.getClientInfo().loginUrl);
         assertEquals("Wrong account name", TestCredentials.ACCOUNT_NAME, restClient.getClientInfo().accountName);
@@ -161,8 +159,7 @@ public class RestClientTest extends InstrumentationTestCase {
     }
 
     public void testClientInfoResolveUrlForCommunityUrl() throws Exception {
-        final ClientInfo info = new ClientInfo(TestCredentials.CLIENT_ID,
-        		new URI(TestCredentials.INSTANCE_URL),
+        final ClientInfo info = new ClientInfo(new URI(TestCredentials.INSTANCE_URL),
         		new URI(TestCredentials.LOGIN_URL),
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
@@ -173,8 +170,7 @@ public class RestClientTest extends InstrumentationTestCase {
     }
 
     public void testGetInstanceUrlForCommunity() throws Exception {
-        final ClientInfo info = new ClientInfo(TestCredentials.CLIENT_ID,
-        		new URI(TestCredentials.INSTANCE_URL),
+        final ClientInfo info = new ClientInfo(new URI(TestCredentials.INSTANCE_URL),
         		new URI(TestCredentials.LOGIN_URL),
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
@@ -578,24 +574,6 @@ public class RestClientTest extends InstrumentationTestCase {
     }
 
     /**
-     * Testing a search call to the server.
-     * Create new account then look for it using sosl.
-     * @throws Exception
-     */
-    public void testSearch() throws Exception {
-        IdName idNameFirstAccount = createAccount();
-        IdName idNameSecondAccount = createAccount();
-        RestResponse response = restClient.sendSync(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + ENTITY_NAME_PREFIX + "}"));
-
-        JSONArray jsonResults = response.asJSONObject().getJSONArray("searchRecords");
-        assertEquals("Two results expected", 2, jsonResults.length());
-        HashSet<Object> idsFromSearch = new HashSet<>(JSONObjectHelper.pluck(jsonResults, "Id"));
-        assertEquals("wrong number of results for search request", 2, idsFromSearch.size());
-        assertTrue("Account id not returned by search", idsFromSearch.contains(idNameFirstAccount.id));
-        assertTrue("Contact id not returned by search", idsFromSearch.contains(idNameSecondAccount.id));
-    }
-
-    /**
      * Testing that calling resume more than once on a RestResponse doesn't throw an exception
      * @throws Exception 
      */
@@ -610,7 +588,20 @@ public class RestClientTest extends InstrumentationTestCase {
         	fail("Calling consume should not have thrown an exception");
         }
     }
-    
+
+    /**
+     * Testing a search call to the server.
+     * Create new account then ensure the results of SOSL don't have an error.
+     * @throws Exception
+     */
+    public void testSearch() throws Exception {
+        createAccount();
+        createAccount();
+        RestResponse response = restClient.sendSync(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + ENTITY_NAME_PREFIX + "}"));
+        JSONArray jsonResults = response.asJSONObject().getJSONArray("searchRecords");
+        assertNotNull("Results expected", jsonResults);
+    }
+
     /**
      * Testing doing a sync request with a RestClient that uses an UnauthenticatedClientInfo
      * @return

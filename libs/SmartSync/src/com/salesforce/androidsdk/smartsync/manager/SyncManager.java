@@ -180,28 +180,71 @@ public class SyncManager {
      * @param account User account.
      */
     public static synchronized void reset(UserAccount account) {
-        Set<String> keysToRemove = new HashSet<>();
-        for (String key : INSTANCES.keySet()) {
-            if (key.startsWith(account.getUserId())) {
-                keysToRemove.add(key);
-                SyncManager syncManager = INSTANCES.get(key);
-                syncManager.threadPool.shutdownNow();
-            }
-        }
-        // NB: keySet returns a Set view of the keys contained in this map.
-        // The set is backed by the map, so changes to the map are reflected in the set, and vice-versa.
-        INSTANCES.keySet().removeAll(keysToRemove);
+	    if (account != null) {
+	        Set<String> keysToRemove = new HashSet<>();
+                for (String key : INSTANCES.keySet()) {
+                    if (key.startsWith(account.getUserId())) {
+                        keysToRemove.add(key);
+                        SyncManager syncManager = INSTANCES.get(key);
+                        syncManager.threadPool.shutdownNow();
+                    }
+                }
+                // NB: keySet returns a Set view of the keys contained in this map.
+                // The set is backed by the map, so changes to the map are reflected in the set, and vice-versa.
+                INSTANCES.keySet().removeAll(keysToRemove);	
+	    }
     }
 
-
     /**
-     * Get details of a sync state
+     * Get details of a sync by id
      * @param syncId
      * @return
      * @throws JSONException
      */
     public SyncState getSyncStatus(long syncId) throws JSONException {
     	return SyncState.byId(smartStore, syncId);
+    }
+
+    /**
+     * Get details of a sync by name
+     * @param name
+     * @return
+     * @throws JSONException
+     */
+    public SyncState getSyncStatus(String name) throws JSONException {
+        return SyncState.byName(smartStore, name);
+    }
+
+    /**
+     * Return true if there is a sync with the given name
+     *
+     * @param name
+     * @return
+     */
+    public boolean hasSyncWithName(String name) {
+        return SyncState.hasSyncWithName(smartStore, name);
+    }
+
+    /**
+     * Delete sync by id
+     *
+     * @param syncId
+     * @return
+     * @throws JSONException
+     */
+    public void deleteSync(long syncId) throws JSONException {
+        SyncState.deleteSync(smartStore, syncId);
+    }
+
+    /**
+     * Delete sync by name
+     *
+     * @param name
+     * @return
+     * @throws JSONException
+     */
+    public void deleteSync(String name) throws JSONException {
+        SyncState.deleteSync(smartStore, name);
     }
 
     /**
@@ -218,7 +261,7 @@ public class SyncManager {
     }
 
     /**
-     * Create and run a sync down
+     * Create and run a sync down without a name
      * @param target
      * @param options
       *@param soupName
@@ -227,10 +270,38 @@ public class SyncManager {
      * @throws JSONException
      */
     public SyncState syncDown(SyncDownTarget target, SyncOptions options, String soupName, SyncUpdateCallback callback) throws JSONException {
-    	SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName);
+        return syncDown(target, options, soupName, null, callback);
+    }
+
+    /**
+     * Create and run a sync down
+     *
+     * @param target
+     * @param options
+     * @param soupName
+     * @param syncName
+     * @param callback
+     * @return
+     * @throws JSONException
+     */
+    public SyncState syncDown(SyncDownTarget target, SyncOptions options, String soupName, String syncName, SyncUpdateCallback callback) throws JSONException {
+    	SyncState sync = createSyncDown(target, options, soupName, syncName);
         SmartSyncLogger.d(TAG, "syncDown called", sync);
         runSync(sync, callback);
 		return sync;
+    }
+
+    /**
+     * Create a sync down
+     * @param target
+     * @param options
+     * @param soupName
+     * @param syncName
+     * @return
+     * @throws JSONException
+     */
+    public SyncState createSyncDown(SyncDownTarget target, SyncOptions options, String soupName, String syncName) throws JSONException {
+        return SyncState.createSyncDown(smartStore, target, options, soupName, syncName);
     }
 
     /**
@@ -247,16 +318,27 @@ public class SyncManager {
         if (sync == null) {
             throw new SmartSyncException("Cannot run reSync:" + syncId + ": no sync found");
         }
-        if (sync.getType() != SyncState.Type.syncDown) {
-            throw new SmartSyncException("Cannot run reSync:" + syncId + ": wrong type:" + sync.getType());
-        }
         sync.setTotalSize(-1);
         SmartSyncLogger.d(TAG, "reSync called", sync);
         runSync(sync, callback);
         return sync;
     }
 
-	/**
+    /**
+     * Re-run sync but only fetch new/modified records
+     * @param syncName
+     * @param callback
+     * @throws JSONException
+     */
+    public SyncState reSync(String syncName, SyncUpdateCallback callback) throws JSONException {
+        SyncState sync = getSyncStatus(syncName);
+        if (sync == null) {
+            throw new SmartSyncException("Cannot run reSync:" + syncName + ": no sync found");
+        }
+        return reSync(sync.getId(), callback);
+    }
+
+    /**
 	 * Run a sync
 	 * @param sync
 	 * @param callback
@@ -289,7 +371,7 @@ public class SyncManager {
 	}
 
     /**
-     * Create and run a sync up
+     * Create and run a sync up without a name
      * @param target
      * @param options
      * @param soupName
@@ -298,10 +380,36 @@ public class SyncManager {
      * @throws JSONException
      */
     public SyncState syncUp(SyncUpTarget target, SyncOptions options, String soupName, SyncUpdateCallback callback) throws JSONException {
-    	SyncState sync = SyncState.createSyncUp(smartStore, target, options, soupName);
+        return syncUp(target, options, soupName, null, callback);
+    }
+
+    /**
+     * Create and run a sync up
+     * @param target
+     * @param options
+     * @param soupName
+     * @param callback
+     * @return
+     * @throws JSONException
+     */
+    public SyncState syncUp(SyncUpTarget target, SyncOptions options, String soupName, String syncName, SyncUpdateCallback callback) throws JSONException {
+    	SyncState sync = createSyncUp(target, options, soupName, syncName);
         SmartSyncLogger.d(TAG, "syncUp called", sync);
         runSync(sync, callback);
     	return sync;
+    }
+
+    /**
+     * Create a sync up
+     * @param target
+     * @param options
+     * @param soupName
+     * @param syncName
+     * @return
+     * @throws JSONException
+     */
+    public SyncState createSyncUp(SyncUpTarget target, SyncOptions options, String soupName, String syncName) throws JSONException {
+        return SyncState.createSyncUp(smartStore, target, options, soupName, syncName);
     }
 
     /**

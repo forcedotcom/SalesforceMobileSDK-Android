@@ -127,7 +127,8 @@ public class ExplorerActivityTest extends
         targetContext = getInstrumentation().getTargetContext();
         clientManager = new ClientManager(targetContext, targetContext.getString(R.string.account_type), null, SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
         clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN,
-                TEST_ACCESS_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID, null);
+                TEST_ACCESS_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_CLIENT_ID,
+                TEST_ORG_ID, TEST_USER_ID, null, null, null, null, null, null, null, null, null);
         SalesforceSDKManager.getInstance().getPasscodeManager().setTimeoutMs(0);
         final AccountManager accountManager = AccountManager.get(targetContext);
 

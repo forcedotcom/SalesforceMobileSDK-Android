@@ -569,7 +569,7 @@ public class AlterSoupLongOperation extends LongOperation {
 					} while (c.moveToNext());
 
 					for (long id : ids) {
-                        String entry = ((DBOpenHelper) store.dbOpenHelper).loadSoupBlobAsString(soupTableName, id, store.passcode);
+                        String entry = ((DBOpenHelper) store.dbOpenHelper).loadSoupBlobAsString(soupTableName, id, store.encryptionKey);
                         ContentValues contentValues = new ContentValues();
                         contentValues.put(SmartStore.SOUP_COL, entry);
                         DBHelper.getInstance(db).update(db, soupTableName, contentValues, SmartStore.ID_PREDICATE, id + "");
@@ -590,7 +590,7 @@ public class AlterSoupLongOperation extends LongOperation {
 					do {
 						long id = c.getLong(0);
 						String entry = c.getString(1);
-						((DBOpenHelper) store.dbOpenHelper).saveSoupBlobFromString(soupTableName, id, entry, store.passcode);
+						((DBOpenHelper) store.dbOpenHelper).saveSoupBlobFromString(soupTableName, id, entry, store.encryptionKey);
 					} while (c.moveToNext());
 				}
 			} finally {

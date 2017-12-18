@@ -78,12 +78,15 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
 
     protected Context targetContext;
     protected EventsListenerQueue eq;
+    protected SmartSyncSDKManager sdkManager;
     protected MetadataManager metadataManager;
     protected CacheManager cacheManager;
     protected SyncManager syncManager;
+    protected SyncManager globalSyncManager;
     protected RestClient restClient;
     protected HttpAccess httpAccess;
     protected SmartStore smartStore;
+    protected SmartStore globalSmartStore;
     protected String apiVersion;
 
     @Override
@@ -100,7 +103,7 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
         final LoginOptions loginOptions = new LoginOptions(TestCredentials.LOGIN_URL,
-        		null, TEST_CALLBACK_URL, TestCredentials.CLIENT_ID, TEST_SCOPES);
+        		TEST_CALLBACK_URL, TestCredentials.CLIENT_ID, TEST_SCOPES);
         final ClientManager clientManager = new ClientManager(targetContext,
         		TestCredentials.ACCOUNT_TYPE, loginOptions, true);
         clientManager.createNewAccount(TestCredentials.ACCOUNT_NAME,
@@ -108,17 +111,20 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
         		TEST_AUTH_TOKEN, TestCredentials.INSTANCE_URL,
         		TestCredentials.LOGIN_URL, TestCredentials.IDENTITY_URL,
         		TestCredentials.CLIENT_ID, TestCredentials.ORG_ID,
-        		TestCredentials.USER_ID, null);
+        		TestCredentials.USER_ID, null, null, null, null, null, null, null, null, null);
     	MetadataManager.reset(null);
     	CacheManager.hardReset(null);
     	SyncManager.reset();
+    	sdkManager = SmartSyncSDKManager.getInstance();
         metadataManager = MetadataManager.getInstance(null);
         cacheManager = CacheManager.getInstance(null);
+        smartStore = sdkManager.getSmartStore();
+        globalSmartStore = sdkManager.getGlobalSmartStore();
         syncManager = SyncManager.getInstance();
+        globalSyncManager = SyncManager.getInstance(null, null, globalSmartStore);
         restClient = initRestClient();
         metadataManager.setRestClient(restClient);
         syncManager.setRestClient(restClient);
-        smartStore = cacheManager.getSmartStore();
         // Debug logs during tests
         SmartSyncLogger.setLogLevel(SalesforceLogger.Level.DEBUG);
     }
@@ -143,10 +149,9 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
         httpAccess = new HttpAccess(null, "dummy-agent");
         final TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,
         		new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID,
-        		TestCredentials.REFRESH_TOKEN);
+        		TestCredentials.REFRESH_TOKEN, null);
         final String authToken = refreshResponse.authToken;
-        final ClientInfo clientInfo = new ClientInfo(TestCredentials.CLIENT_ID,
-        		new URI(TestCredentials.INSTANCE_URL),
+        final ClientInfo clientInfo = new ClientInfo(new URI(TestCredentials.INSTANCE_URL),
         		new URI(TestCredentials.LOGIN_URL),
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,

@@ -31,7 +31,12 @@ import android.content.Context;
 
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.phonegap.ui.SalesforceDroidGapActivity;
+import com.salesforce.androidsdk.smartstore.config.StoreConfig;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.smartsync.config.SyncsConfig;
+import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -40,6 +45,27 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
  * SDK Manager for all hybrid applications
  */
 public class SalesforceHybridSDKManager extends SmartSyncSDKManager {
+
+    private static final String TAG = "SalesforceHybridSDKManager";
+
+    /**
+     Paths to the assets files containing configs for SmartStore / SmartSync in hybrid apps
+     */
+    private enum ConfigAssetPath {
+
+        globalStore("globalstore.json"),
+        userStore("userstore.json"),
+        globalSyncs("globalsyncs.json"),
+        userSyncs("usersyncs.json");
+
+
+        String path;
+
+        ConfigAssetPath(String fileName) {
+            path = "www" + System.getProperty("file.separator") + fileName;
+        }
+    }
+
 
     /**
      * Protected constructor.
@@ -67,10 +93,10 @@ public class SalesforceHybridSDKManager extends SmartSyncSDKManager {
 		if (INSTANCE == null) {
     		INSTANCE = new SalesforceHybridSDKManager(context, keyImpl, mainActivity, loginActivity);
     	}
-		initInternal(context);
 
-        // Upgrade to the latest version.
-        SalesforceHybridUpgradeManager.getInstance().upgrade();
+		// Upgrade to the latest version.
+		SalesforceHybridUpgradeManager.getInstance().upgrade();
+		initInternal(context);
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
 	}
 
@@ -153,4 +179,58 @@ public class SalesforceHybridSDKManager extends SmartSyncSDKManager {
 	public boolean isHybrid() {
 		return true;
 	}
+
+	/**
+	 * Setup global store using config found in assets/www/globalstore.json
+	 */
+	public void setupGlobalStoreFromDefaultConfig() {
+		SmartStoreLogger.d(TAG, "Setting up global store using config found in " + ConfigAssetPath.globalStore.path);
+		setupStoreFromConfig(getGlobalSmartStore(), ConfigAssetPath.globalStore.path);
+	}
+
+	/**
+	 * Setup user store using config found in assets/www/userstore.json
+	 */
+	public void setupUserStoreFromDefaultConfig() {
+		SmartStoreLogger.d(TAG, "Setting up user store using config found in " + ConfigAssetPath.userStore.path);
+		setupStoreFromConfig(getSmartStore(), ConfigAssetPath.userStore.path);
+	}
+
+    /**
+	 * Setup given store using config found in given json assets file
+	 *
+	 * @param store
+	 * @param assetPath
+	 */
+	private void setupStoreFromConfig(SmartStore store, String assetPath) {
+		StoreConfig config = new StoreConfig(context, assetPath);
+		config.registerSoups(store);
+	}
+
+    /**
+     * Setup global syncs using config found in assets/www/globalsyncs.json
+     */
+    public void setupGlobalSyncsFromDefaultConfig() {
+        SmartSyncLogger.d(TAG, "Setting up global syncs using config found in " + ConfigAssetPath.globalSyncs.path);
+        setupSyncsFromConfig(getGlobalSmartStore(), ConfigAssetPath.globalSyncs.path);
+    }
+
+    /**
+     * Setup user syncs using config found in assets/www/usersyncs.json
+     */
+    public void setupUserSyncsFromDefaultConfig() {
+        SmartSyncLogger.d(TAG, "Setting up user syncs using config found in " + ConfigAssetPath.userSyncs.path);
+        setupSyncsFromConfig(getSmartStore(), ConfigAssetPath.userSyncs.path);
+    }
+
+    /**
+     * Setup syncs in given store using config found in given json assets file
+     *
+     * @param store
+     * @param assetPath
+     */
+    private void setupSyncsFromConfig(SmartStore store, String assetPath) {
+        SyncsConfig config = new SyncsConfig(context, assetPath);
+        config.createSyncs(store);
+    }
 }

@@ -54,11 +54,11 @@ import okhttp3.Response;
 /**
  * Helper methods for common OAuth2 requests.
  *
- * The typical OAuth2 flow is;
+ * The typical OAuth2 flow is:
  *
  * <ol>
  * <li> The authorization flow is started by presenting the web-based
- * authorization screen to the user.  This will prompt him/her to login and to
+ * authorization screen to the user. This will prompt him/her to login and to
  * authorize our application. The result will be a callback with an
  * authorization code, or an error.</li>
  *
@@ -76,14 +76,11 @@ import okhttp3.Response;
  *
  * <li> If the refresh token becomes invalid, go back to the beginning.</li>
  * </ol>
- *
  */
 public class OAuth2 {
 
-    // Misc constants: strings appearing in requests or responses
     private static final String ACCESS_TOKEN = "access_token";
     private static final String CLIENT_ID = "client_id";
-    private static final String CLIENT_SECRET = "client_secret";
     private static final String ERROR = "error";
     private static final String ERROR_DESCRIPTION = "error_description";
     private static final String FORMAT = "format";
@@ -97,6 +94,7 @@ public class OAuth2 {
     private static final String RESPONSE_TYPE = "response_type";
     private static final String SCOPE = "scope";
     private static final String REDIRECT_URI = "redirect_uri";
+    private static final String DEVICE_ID = "device_id";
     private static final String SCREEN_LOCK = "screen_lock";
     private static final String TOKEN = "token";
     private static final String USERNAME = "username";
@@ -107,111 +105,65 @@ public class OAuth2 {
     private static final String PHOTOS = "photos";
     private static final String PICTURE = "picture";
     private static final String THUMBNAIL = "thumbnail";
+    private static final String AUTHORIZATION_CODE = "authorization_code";
     private static final String CODE = "code";
-    private static final String ACTIVATED_CLIENT_CODE = "activated_client_code";
+    private static final String CODE_CHALLENGE = "code_challenge";
+    private static final String CODE_VERIFIER = "code_verifier";
     private static final String CUSTOM_ATTRIBUTES = "custom_attributes";
     private static final String CUSTOM_PERMISSIONS = "custom_permissions";
     private static final String SFDC_COMMUNITY_ID = "sfdc_community_id";
     private static final String SFDC_COMMUNITY_URL = "sfdc_community_url";
     private static final String AND = "&";
     private static final String EQUAL = "=";
+    private static final String QUESTION = "?";
     private static final String TOUCH = "touch";
     private static final String FRONTDOOR = "/secur/frontdoor.jsp?";
     private static final String SID = "sid";
     private static final String RETURL = "retURL";
-    private static final String AUTHORIZATION_CODE = "authorization_code";
     private static final String AUTHORIZATION = "Authorization";
     private static final String BEARER = "Bearer ";
     private static final String ASSERTION = "assertion";
     private static final String JWT_BEARER = "urn:ietf:params:oauth:grant-type:jwt-bearer";
-    private static final String TAG = "OAuth2";
-
-    // Login paths
     private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize";
     private static final String OAUTH_DISPLAY_PARAM = "?display=";
     private static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
     private static final String OAUTH_REVOKE_PATH = "/services/oauth2/revoke?token=";
-    public static final String EMPTY_STRING = "";
+    private static final String EMPTY_STRING = "";
+    private static final String FORWARD_SLASH = "/";
+    private static final String SINGLE_SPACE = " ";
+    private static final String TAG = "OAuth2";
 
     /**
-     * Build the URL to the authorization web page for this login server.
-     * You need not provide refresh_token, as it is provided automatically.
+     * Builds the URL to the authorization web page for this login server.
+     * You need not provide the 'refresh_token' scope, as it is provided automatically.
      *
-     * @param loginServer
-     *            the base protocol and server to use (e.g.
-     *            https://login.salesforce.com)
-     * @param clientId
-     *            OAuth client ID
-     * @param callbackUrl
-     *            OAuth callback url
-     * @param scopes A list of OAuth scopes to request (eg {"visualforce","api"}). If null, the default OAuth scope is provided.
+     * @param loginServer Base protocol and server to use (e.g. https://login.salesforce.com).
+     * @param clientId OAuth client ID.
+     * @param callbackUrl OAuth callback URL or redirect URL.
+     * @param scopes A list of OAuth scopes to request (e.g. {"visualforce", "api"}). If null,
+     *               the default OAuth scope is provided.
+     * @param displayType OAuth display type. If null, the default of 'touch' is used.
+     * @param addlParams Any additional parameters that may be added to the request.
      * @return A URL to start the OAuth flow in a web browser/view.
      *
      * @see <a href="https://help.salesforce.com/apex/HTViewHelpDoc?language=en&id=remoteaccess_oauth_scopes.htm">RemoteAccess OAuth Scopes</a>
-     *
      */
-    public static URI getAuthorizationUrl(URI loginServer, String clientId,
-                                          String callbackUrl, String[] scopes) {
-        return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes, null, null);
-    }
-
-    /**
-     * Build the URL to the authorization web page for this login server.
-     * @param loginServer
-     * @param clientId
-     * @param callbackUrl
-     * @param scopes
-     * @param clientSecret
-     * @return
-     */
-    public static URI getAuthorizationUrl(URI loginServer, String clientId,
-                                          String callbackUrl, String[] scopes, String clientSecret) {
-        return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes, clientSecret, null);
-    }
-
-    /**
-     * Build the URL to the authorization web page for this login server.
-     * @param loginServer
-     * @param clientId
-     * @param callbackUrl
-     * @param scopes
-     * @param clientSecret
-     * @param displayType
-     * @return
-     */
-
-    public static URI getAuthorizationUrl(URI loginServer, String clientId,
-                                          String callbackUrl, String[] scopes, String clientSecret, String displayType) {
-        return getAuthorizationUrl(loginServer, clientId,
-                callbackUrl, scopes, clientSecret, displayType,null);
-    }
-
-    /**
-     * Build the URL to the authorization web page for this login server.
-     * @param loginServer
-     * @param clientId
-     * @param callbackUrl
-     * @param scopes
-     * @param clientSecret
-     * @param displayType
-     * @param addlParams
-     * @return
-     */
-    public static URI getAuthorizationUrl(URI loginServer, String clientId,
-                                          String callbackUrl, String[] scopes, String clientSecret, String displayType,
+    public static URI getAuthorizationUrl(URI loginServer, String clientId, String callbackUrl,
+                                          String[] scopes, String displayType,
                                           Map<String,String> addlParams) {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
         sb.append(OAUTH_AUTH_PATH).append(getBrandedLoginPath());
         sb.append(OAUTH_DISPLAY_PARAM).append(displayType == null ? TOUCH : displayType);
-        sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(clientSecret == null ? TOKEN : ACTIVATED_CLIENT_CODE);
+        sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(TOKEN);
         sb.append(AND).append(CLIENT_ID).append(EQUAL).append(Uri.encode(clientId));
-        if (scopes != null && scopes.length > 0)
+        if (scopes != null && scopes.length > 0) {
             sb.append(AND).append(SCOPE).append(EQUAL).append(Uri.encode(computeScopeParameter(scopes)));
+        }
         sb.append(AND).append(REDIRECT_URI).append(EQUAL).append(callbackUrl);
-
-        if(addlParams !=null && addlParams.size() > 0) {
-            for(Map.Entry<String,String> entry : addlParams.entrySet()) {
-                String value = entry.getValue()==null?EMPTY_STRING :entry.getValue();
+        sb.append(AND).append(DEVICE_ID).append(EQUAL).append(SalesforceSDKManager.getInstance().getDeviceId());
+        if (addlParams != null && addlParams.size() > 0) {
+            for (final Map.Entry<String,String> entry : addlParams.entrySet()) {
+                final String value = entry.getValue() == null ? EMPTY_STRING : entry.getValue();
                 sb.append(AND).append(entry.getKey()).append(EQUAL).append(Uri.encode(value));
             }
         }
@@ -221,13 +173,12 @@ public class OAuth2 {
     private static String getBrandedLoginPath() {
         String brandedLoginPath = SalesforceSDKManager.getInstance().getLoginBrand();
         if (brandedLoginPath == null || brandedLoginPath.trim().isEmpty()) {
-            brandedLoginPath = "";
+            brandedLoginPath = EMPTY_STRING;
         } else {
-            final String forwardSlash = "/";
-            if (!brandedLoginPath.startsWith(forwardSlash)) {
-                brandedLoginPath = forwardSlash + brandedLoginPath;
+            if (!brandedLoginPath.startsWith(FORWARD_SLASH)) {
+                brandedLoginPath = FORWARD_SLASH + brandedLoginPath;
             }
-            if (brandedLoginPath.endsWith(forwardSlash)) {
+            if (brandedLoginPath.endsWith(FORWARD_SLASH)) {
                 brandedLoginPath = brandedLoginPath.substring(0, brandedLoginPath.length() - 1);
             }
         }
@@ -235,131 +186,167 @@ public class OAuth2 {
     }
 
     /**
-     * Build the URL to the authorization web page for this login server.
-     * @param loginServer
-     * @param clientId
-     * @param callbackUrl
-     * @param scopes
-     * @param clientSecret
-     * @param displayType
-     * @param accessToken
-     * @param instanceURL
-     * @return
+     * Builds the URL to the authorization web page for this login server.
+     * You need not provide the 'refresh_token' scope, as it is provided automatically.
+     *
+     * @param loginServer Base protocol and server to use (e.g. https://login.salesforce.com).
+     * @param clientId OAuth client ID.
+     * @param callbackUrl OAuth callback URL or redirect URL.
+     * @param scopes A list of OAuth scopes to request (e.g. {"visualforce", "api"}). If null,
+     *               the default OAuth scope is provided.
+     * @param displayType OAuth display type. If null, the default of 'touch' is used.
+     * @param accessToken Access token.
+     * @param instanceURL Instance URL.
+     * @param addlParams Any additional parameters that may be added to the request.
+     * @return A URL to start the OAuth flow in a web browser/view.
+     *
+     * @see <a href="https://help.salesforce.com/apex/HTViewHelpDoc?language=en&id=remoteaccess_oauth_scopes.htm">RemoteAccess OAuth Scopes</a>
      */
-    public static URI getAuthorizationUrl(URI loginServer, String clientId,
-                                          String callbackUrl, String[] scopes, String clientSecret,
-                                          String displayType, String accessToken, String instanceURL) {
-        return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes, clientSecret,
-                displayType, accessToken, instanceURL,null);
-    }
-
-    /**
-     * Build the URL to the authorization web page for this login server.
-     * @param loginServer
-     * @param clientId
-     * @param callbackUrl
-     * @param scopes
-     * @param clientSecret
-     * @param displayType
-     * @param accessToken
-     * @param instanceURL
-     * @param addlParams
-     * @return
-     */
-    public static URI getAuthorizationUrl(URI loginServer, String clientId,
-                                          String callbackUrl, String[] scopes, String clientSecret,
-                                          String displayType, String accessToken, String instanceURL,
-                                          Map<String,String> addlParams) {
-        if(accessToken == null || instanceURL == null) {
-            return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes, clientSecret, displayType, addlParams);
+    public static URI getAuthorizationUrl(URI loginServer, String clientId, String callbackUrl,
+                                          String[] scopes, String displayType, String accessToken,
+                                          String instanceURL, Map<String, String> addlParams) {
+        if (accessToken == null || instanceURL == null) {
+            return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes,
+                    displayType, addlParams);
         }
         final StringBuilder sb = new StringBuilder(instanceURL);
         sb.append(FRONTDOOR);
         sb.append(SID).append(EQUAL).append(accessToken);
-        sb.append(AND).append(RETURL).append(EQUAL).append(Uri.encode(getAuthorizationUrl(loginServer,clientId,callbackUrl,
-                scopes, clientSecret, displayType).toString()));
-
-        if(addlParams != null && addlParams.size() > 0) {
-            for(Map.Entry<String,String> entry : addlParams.entrySet()) {
-                String value = entry.getValue()==null? EMPTY_STRING :entry.getValue();
+        sb.append(AND).append(RETURL).append(EQUAL).append(Uri.encode(getAuthorizationUrl(loginServer,
+                clientId, callbackUrl, scopes, displayType, null).toString()));
+        if (addlParams != null && addlParams.size() > 0) {
+            for (final Map.Entry<String,String> entry : addlParams.entrySet()) {
+                final String value = entry.getValue() == null ? EMPTY_STRING : entry.getValue();
                 sb.append(AND).append(entry.getKey()).append(EQUAL).append(Uri.encode(value));
             }
         }
         return URI.create(sb.toString());
     }
 
-    private static String computeScopeParameter(String[] scopes) {
+    /**
+     * Returns an IDP 'frontdoor' URL configured with the SP's configuration.
+     *
+     * @param instanceUrl IDP's instance URL.
+     * @param accessToken IDP's access token.
+     * @param loginUrl SP's login URL.
+     * @param displayType IDP's display type.
+     * @param clientId SP's client ID.
+     * @param callbackUrl SP's callback URL.
+     * @param scopes SP's scopes.
+     * @param codeChallenge SP's code challenge.
+     * @return A 'frontdoor' URL that the IDP can load in a WebView.
+     */
+    public static URI getIDPFrontdoorUrl(String instanceUrl, String accessToken, String loginUrl,
+                                            String displayType, String clientId, String callbackUrl,
+                                            String[] scopes, String codeChallenge) {
+        final StringBuilder sb = new StringBuilder(instanceUrl);
+        sb.append(FRONTDOOR);
+        sb.append(SID).append(EQUAL).append(accessToken);
+        sb.append(AND).append(RETURL).append(EQUAL).append(Uri.encode(getIDPApprovalUrl(loginUrl,
+                displayType, clientId, callbackUrl, scopes, codeChallenge).toString()));
+        return URI.create(sb.toString());
+    }
+
+    /**
+     * Returns an approval URL configured with the SP's configuration.
+     *
+     * @param loginUrl SP's login URL.
+     * @param displayType IDP's display type.
+     * @param clientId SP's client ID.
+     * @param callbackUrl SP's callback URL.
+     * @param scopes SP's scopes.
+     * @param codeChallenge SP's code challenge.
+     * @return An approval URL that the IDP can use to construct its 'frontdoor' URL.
+     */
+    public static URI getIDPApprovalUrl(String loginUrl, String displayType,
+                                           String clientId, String callbackUrl,
+                                           String[] scopes, String codeChallenge) {
+        final StringBuilder sb = new StringBuilder(loginUrl);
+        sb.append(OAUTH_AUTH_PATH).append(getBrandedLoginPath());
+        sb.append(OAUTH_DISPLAY_PARAM).append(displayType == null ? TOUCH : displayType);
+        sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(CODE);
+        sb.append(AND).append(CLIENT_ID).append(EQUAL).append(Uri.encode(clientId));
+        if (scopes != null && scopes.length > 0) {
+            sb.append(AND).append(SCOPE).append(EQUAL).append(Uri.encode(computeScopeParameter(scopes)));
+        }
+        sb.append(AND).append(REDIRECT_URI).append(EQUAL).append(callbackUrl);
+        sb.append(AND).append(DEVICE_ID).append(EQUAL).append(SalesforceSDKManager.getInstance().getDeviceId());
+        sb.append(AND).append(CODE_CHALLENGE).append(EQUAL).append(Uri.encode(codeChallenge));
+        return URI.create(sb.toString());
+    }
+
+    /**
+     * Computes the scope parameter from an array of scopes. Also adds
+     * the 'refresh_token' scope if it hasn't already been added.
+     *
+     * @param scopes Array of scopes.
+     * @return Scope parameter.
+     */
+    public static String computeScopeParameter(String[] scopes) {
         final List<String> scopesList = Arrays.asList(scopes == null ? new String[]{} : scopes);
-        Set<String> scopesSet = new TreeSet<String>(scopesList); // sorted set to make tests easier
+        final Set<String> scopesSet = new TreeSet<>(scopesList);
         scopesSet.add(REFRESH_TOKEN);
-        return TextUtils.join(" ", scopesSet.toArray(new String[]{}));
+        return TextUtils.join(SINGLE_SPACE, scopesSet.toArray(new String[]{}));
     }
 
     /**
-     * Get a new auth token using the refresh token.
+     * Returns a full set of credentials for the SP app based on the code generated
+     * from the IDP app.
      *
-     * @param httpAccessor
-     * @param loginServer
-     * @param clientId
-     * @param refreshToken
-     * @return
+     * @param httpAccessor HTTPAccess instance.
+     * @param loginServer Login server.
+     * @param clientId Client ID.
+     * @param code Code returned from the IDP.
+     * @param codeVerifier Code verifier used by the SP to generate 'code_challenge'.
+     * @param callbackUrl Callback URL.
+     * @return Full set of credentials.
      * @throws OAuthFailedException
      * @throws IOException
      */
-    public static TokenEndpointResponse refreshAuthToken(
-            HttpAccess httpAccessor, URI loginServer, String clientId,
-            String refreshToken) throws OAuthFailedException, IOException {
-        return refreshAuthToken(httpAccessor, loginServer, clientId, refreshToken, null);
+    public static TokenEndpointResponse getSPCredentials(HttpAccess httpAccessor, URI loginServer,
+                                                         String clientId, String code, String codeVerifier,
+                                                         String callbackUrl)
+            throws OAuthFailedException, IOException {
+        final FormBody.Builder builder = new FormBody.Builder().
+                add(GRANT_TYPE, AUTHORIZATION_CODE).add(CLIENT_ID, clientId);
+        builder.add(CODE, code);
+        builder.add(CODE_VERIFIER, codeVerifier);
+        builder.add(FORMAT, JSON);
+        builder.add(REDIRECT_URI, callbackUrl);
+        return makeTokenEndpointRequest(httpAccessor, loginServer, builder);
     }
 
     /**
-     * Get a new auth token using the refresh token.
+     * Gets a new auth token using the refresh token.
      *
-     * @param httpAccessor
-     * @param loginServer
-     * @param clientId
-     * @param refreshToken
-     * @param clientSecret
-     * @return
+     * @param httpAccessor HttpAccess instance.
+     * @param loginServer Login server.
+     * @param clientId Client ID.
+     * @param refreshToken Refresh token.
+     * @param addlParams Additional parameters.
+     * @return Token response.
+     *
      * @throws OAuthFailedException
      * @throws IOException
      */
-    public static TokenEndpointResponse refreshAuthToken(
-            HttpAccess httpAccessor, URI loginServer, String clientId,
-            String refreshToken, String clientSecret) throws OAuthFailedException, IOException {
-        return  refreshAuthToken(httpAccessor, loginServer, clientId, refreshToken, clientSecret,null);
-    }
-
-    /**
-     * Get a new auth token using the refresh token.
-     *
-     * @param httpAccessor
-     * @param loginServer
-     * @param clientId
-     * @param refreshToken
-     * @param clientSecret
-     * @param addlParams
-     * @return
-     * @throws OAuthFailedException
-     * @throws IOException
-     */
-    public static TokenEndpointResponse refreshAuthToken(
-            HttpAccess httpAccessor, URI loginServer, String clientId,
-            String refreshToken, String clientSecret,Map<String,String> addlParams) throws OAuthFailedException, IOException {
-        FormBody.Builder formBodyBuilder = makeTokenEndpointParams(REFRESH_TOKEN,
-                clientId, clientSecret, addlParams);
+    public static TokenEndpointResponse refreshAuthToken(HttpAccess httpAccessor, URI loginServer,
+                                                         String clientId, String refreshToken,
+                                                         Map<String,String> addlParams)
+            throws OAuthFailedException, IOException {
+        final FormBody.Builder formBodyBuilder = makeTokenEndpointParams(REFRESH_TOKEN,
+                clientId, addlParams);
         formBodyBuilder.add(REFRESH_TOKEN, refreshToken);
         formBodyBuilder.add(FORMAT, JSON);
-        TokenEndpointResponse tr = makeTokenEndpointRequest(httpAccessor, loginServer, formBodyBuilder);
-        return tr;
+        return makeTokenEndpointRequest(httpAccessor, loginServer, formBodyBuilder);
     }
 
     /**
      * Revokes the existing refresh token.
      *
-     * @param httpAccessor
-     * @param loginServer
-     * @param refreshToken
+     * @param httpAccessor HttpAccess instance.
+     * @param loginServer Login server.
+     * @param refreshToken Refresh token.
+     *
      * @throws OAuthFailedException
      * @throws IOException
      */
@@ -367,10 +354,7 @@ public class OAuth2 {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
         sb.append(OAUTH_REVOKE_PATH);
         sb.append(Uri.encode(refreshToken));
-        Request request = new Request.Builder()
-                .url(sb.toString())
-                .get()
-                .build();
+        final Request request = new Request.Builder().url(sb.toString()).get().build();
         try {
             httpAccessor.getOkHttpClient().newCall(request).execute();
         } catch (IOException e) {
@@ -378,99 +362,72 @@ public class OAuth2 {
         }
     }
 
-     /** @returns a TokenEndointResponse from the give authorization code, this is typically the first step after
-     * receiving an authorization code from the oAuth authorization UI flow.
-     * In addition, this will also call the Identity service to fetch & populate the username field.
+    /**
+     * Swaps a JWT for regular OAuth tokens. This is typically the first step after
+     * receiving a JWT from a link. In addition, this will also call the identity
+     * service to populate the username field.
      *
-     * @param loginServerUrl  the protocol & host (e.g. https://login.salesforce.com) that the authCode was generated from
-     * @param clientSecret the client secret if there is one (e.g. for IP/IC bypass)
-     * @param authCode     the authorization code issued by the oauth authorization flow.
-     *
-     * @throws IOException
-     * @throws URISyntaxException
-     * @throws OAuthFailedException
-     *
-     */
-    public static TokenEndpointResponse swapAuthCodeForTokens(HttpAccess httpAccessor, URI loginServerUrl, String clientSecret,
-            String authCode, String clientId, String callbackUrl) throws IOException, URISyntaxException, OAuthFailedException {
-        // call the token endpoint, and swap our authorization code for a refresh & access tokens.
-        FormBody.Builder formBodyBuilder = makeTokenEndpointParams(AUTHORIZATION_CODE, clientId, clientSecret);
-        formBodyBuilder.add(REDIRECT_URI, callbackUrl);
-        TokenEndpointResponse tr = makeTokenEndpointRequest(httpAccessor, loginServerUrl, formBodyBuilder);
-        return tr;
-    }
-
-    /** @returns a TokenEndointResponse from the give JWT, this is typically the first step after
-     * receiving a JWT from email link.
-     * In addition, this will also call the Identity service to fetch & populate the username field.
-     *
-     * @param loginServerUrl  the protocol & host (e.g. https://login.salesforce.com) that the authCode was generated from
-     * @param jwt     the jwt issued by the oauth authorization flow.
+     * @param httpAccessor HttpAccess instance.
+     * @param loginServerUrl The server (e.g. https://login.salesforce.com) that
+     *                       the auth code was generated from.
+     * @param jwt JWT issued by the OAuth authorization flow.
      *
      * @throws IOException
      * @throws URISyntaxException
      * @throws OAuthFailedException
-     *
      */
     public static TokenEndpointResponse swapJWTForTokens(HttpAccess httpAccessor, URI loginServerUrl,
-                                                              String jwt) throws IOException, URISyntaxException, OAuthFailedException {
-        // call the token endpoint, and swap jwt for an access tokens.
-        FormBody.Builder formBodyBuilder = new FormBody.Builder()
-                .add(GRANT_TYPE, JWT_BEARER)
+                                                              String jwt) throws IOException,
+            URISyntaxException, OAuthFailedException {
+        final FormBody.Builder formBodyBuilder = new FormBody.Builder().add(GRANT_TYPE, JWT_BEARER)
                 .add(ASSERTION, jwt);
         return makeTokenEndpointRequest(httpAccessor, loginServerUrl, formBodyBuilder);
     }
 
     /**
-     * Call the identity service to determine the username of the user and the mobile policy, given
+     * Calls the identity service to determine the username of the user and the mobile policy, given
      * their identity service ID and an access token.
      *
-     * @param httpAccessor
-     * @param identityServiceIdUrl
-     * @param authToken
-     * @return
+     * @param httpAccessor HttpAccessor instance.
+     * @param identityServiceIdUrl Identity service URL.
+     * @param authToken Access token.
+     * @return IdServiceResponse instance.
+     *
      * @throws IOException
      * @throws URISyntaxException
      */
-    public static final IdServiceResponse callIdentityService(
-            HttpAccess httpAccessor, String identityServiceIdUrl,
-            String authToken) throws IOException, URISyntaxException {
-        Request.Builder builder = new Request.Builder()
-                .url(identityServiceIdUrl)
-                .get();
+    public static final IdServiceResponse callIdentityService(HttpAccess httpAccessor,
+                                                              String identityServiceIdUrl,
+                                                              String authToken)
+            throws IOException, URISyntaxException {
+        final Request.Builder builder = new Request.Builder().url(identityServiceIdUrl).get();
         addAuthorizationHeader(builder, authToken);
-        Request request = builder.build();
-        Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
+        final Request request = builder.build();
+        final Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
         return new IdServiceResponse(response);
     }
 
     /**
-     * Add authorization header to request builder
-     * @param builder
-     * @param authToken
+     * Adds the authorization header to request builder.
+     *
+     * @param builder Builder instance.
+     * @param authToken Access token.
      */
     public static final Request.Builder addAuthorizationHeader(Request.Builder builder, String authToken) {
         return builder.header(AUTHORIZATION, BEARER + authToken);
     }
 
-    /**
-     * @param httpAccessor
-     * @param loginServer
-     * @param formBodyBuilder
-     * @return
-     * @throws OAuthFailedException
-     * @throws IOException
-     */
-    private static TokenEndpointResponse makeTokenEndpointRequest(
-            HttpAccess httpAccessor, URI loginServer, FormBody.Builder formBodyBuilder)
+    private static TokenEndpointResponse makeTokenEndpointRequest(HttpAccess httpAccessor,
+                                                                  URI loginServer,
+                                                                  FormBody.Builder formBodyBuilder)
             throws OAuthFailedException, IOException {
-        final String refreshPath = loginServer.toString() + OAUTH_TOKEN_PATH;
+        final StringBuilder sb = new StringBuilder(loginServer.toString());
+        sb.append(OAUTH_TOKEN_PATH);
+        sb.append(QUESTION).append(DEVICE_ID).append(EQUAL).append(SalesforceSDKManager.getInstance().getDeviceId());
+        final String refreshPath = sb.toString();
         final RequestBody body = formBodyBuilder.build();
-        Request request = new Request.Builder()
-                .url(refreshPath)
-                .post(body)
-                .build();
-        Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
+        final Request request = new Request.Builder().url(refreshPath).post(body).build();
+        final Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
         if (response.isSuccessful()) {
             return new TokenEndpointResponse(response);
         } else {
@@ -478,43 +435,19 @@ public class OAuth2 {
         }
     }
 
-    /**
-     * @param grantType
-     * @param clientId
-     * @return
-     */
-    private static FormBody.Builder makeTokenEndpointParams(
-            String grantType, String clientId, String clientSecret) {
-        return makeTokenEndpointParams(grantType, clientId, clientSecret, null);
-    }
-
-    /**
-     *
-     * @param grantType
-     * @param clientId
-     * @param clientSecret
-     * @param addlParams
-     * @return
-     */
-    private static FormBody.Builder makeTokenEndpointParams(
-            String grantType, String clientId, String clientSecret, Map<String,String> addlParams) {
-        FormBody.Builder builder = new FormBody.Builder()
-                .add(GRANT_TYPE, grantType)
-                .add(CLIENT_ID, clientId);
-        if (clientSecret != null) {
-            builder.add(CLIENT_SECRET, clientSecret);
-        }
-        if(addlParams != null ) {
-            for(Map.Entry<String,String> entry : addlParams.entrySet()) {
+    private static FormBody.Builder makeTokenEndpointParams(String grantType, String clientId,
+                                                            Map<String,String> addlParams) {
+        final FormBody.Builder builder = new FormBody.Builder().add(GRANT_TYPE, grantType).add(CLIENT_ID, clientId);
+        if (addlParams != null ) {
+            for (final Map.Entry<String,String> entry : addlParams.entrySet()) {
                 builder.add(entry.getKey(),entry.getValue());
             }
         }
         return builder;
     }
 
-
     /**
-     * Exception thrown when refresh fails.
+     * Exception thrown when the refresh flow fails.
      */
     public static class OAuthFailedException extends Exception {
 
@@ -527,6 +460,11 @@ public class OAuth2 {
         final TokenErrorResponse response;
         final int httpStatusCode;
 
+        /**
+         * Returns if the refresh token is valid.
+         *
+         * @return True - if refresh token is valid, False - otherwise.
+         */
         public boolean isRefreshTokenInvalid() {
             return httpStatusCode == HttpURLConnection.HTTP_UNAUTHORIZED
                     || httpStatusCode == HttpURLConnection.HTTP_FORBIDDEN
@@ -554,12 +492,6 @@ public class OAuth2 {
         private static final long serialVersionUID = 1L;
     }
 
-    /**************************************************************************************************
-     *
-     * Helper classes to parse responses
-     *
-     **************************************************************************************************/
-
     /**
      * Helper class to parse an identity service response.
      */
@@ -577,6 +509,11 @@ public class OAuth2 {
         public JSONObject customAttributes;
         public JSONObject customPermissions;
 
+        /**
+         * Parameterized constructor built from identity service response.
+         *
+         * @param response Identity service response.
+         */
         public IdServiceResponse(Response response) {
             try {
                 final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
@@ -610,12 +547,16 @@ public class OAuth2 {
         public String error;
         public String errorDescription;
 
+        /**
+         * Parameterized constructor built from an error response.
+         *
+         * @param response Error response.
+         */
         public TokenErrorResponse(Response response) {
             try {
                 final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
                 error = parsedResponse.getString(ERROR);
-                errorDescription = parsedResponse
-                        .getString(ERROR_DESCRIPTION);
+                errorDescription = parsedResponse.getString(ERROR_DESCRIPTION);
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token error response", e);
             }
@@ -645,8 +586,9 @@ public class OAuth2 {
         public Map<String, String> additionalOauthValues;
 
         /**
-         * Constructor used during login flow
-         * @param callbackUrlParams
+         * Parameterized constructor built during login flow.
+         *
+         * @param callbackUrlParams Callback URL parameters.
          */
         public TokenEndpointResponse(Map<String, String> callbackUrlParams) {
             try {
@@ -676,8 +618,9 @@ public class OAuth2 {
         }
 
         /**
-         * Constructor used during refresh flow
-         * @param response
+         * Parameterized constructor built from refresh flow response.
+         *
+         * @param response Token endpoint response.
          */
         public TokenEndpointResponse(Response response) {
             try {
@@ -717,7 +660,7 @@ public class OAuth2 {
 
         private void computeOtherFields() throws URISyntaxException {
             idUrlWithInstance = idUrl.replace(new URI(idUrl).getHost(), new URI(instanceUrl).getHost());
-            String[] idUrlFragments = idUrl.split("/");
+            final String[] idUrlFragments = idUrl.split("/");
             userId = idUrlFragments[idUrlFragments.length - 1];
             orgId = idUrlFragments[idUrlFragments.length - 2];
         }

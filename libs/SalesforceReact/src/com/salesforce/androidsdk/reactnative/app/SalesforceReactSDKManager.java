@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.reactnative.app;
 import android.app.Activity;
 import android.content.Context;
 
+import com.facebook.react.ReactActivity;
 import com.facebook.react.ReactPackage;
 import com.facebook.react.bridge.JavaScriptModule;
 import com.facebook.react.bridge.NativeModule;
@@ -38,6 +39,7 @@ import com.salesforce.androidsdk.reactnative.bridge.SalesforceNetReactBridge;
 import com.salesforce.androidsdk.reactnative.bridge.SalesforceOauthReactBridge;
 import com.salesforce.androidsdk.reactnative.bridge.SmartStoreReactBridge;
 import com.salesforce.androidsdk.reactnative.bridge.SmartSyncReactBridge;
+import com.salesforce.androidsdk.reactnative.ui.SalesforceReactActivity;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
@@ -45,6 +47,7 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 /**
@@ -78,10 +81,10 @@ public class SalesforceReactSDKManager extends SmartSyncSDKManager {
 		if (INSTANCE == null) {
     		INSTANCE = new SalesforceReactSDKManager(context, keyImpl, mainActivity, loginActivity);
     	}
-		initInternal(context);
 
-        // Upgrade to the latest version.
-        SalesforceReactUpgradeManager.getInstance().upgrade();
+		// Upgrade to the latest version.
+		SalesforceReactUpgradeManager.getInstance().upgrade();
+		initInternal(context);
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
 	}
 
@@ -151,7 +154,6 @@ public class SalesforceReactSDKManager extends SmartSyncSDKManager {
 				return modules;
 			}
 
-			@Override
 			public List<Class<? extends JavaScriptModule>> createJSModules() {
 				return Collections.emptyList();
 			}
@@ -162,4 +164,20 @@ public class SalesforceReactSDKManager extends SmartSyncSDKManager {
 			}
 		};
 	}
+
+	@Override
+	protected LinkedHashMap<String, DevActionHandler> getDevActions(final Activity frontActivity) {
+		LinkedHashMap<String, DevActionHandler> devActions = super.getDevActions(frontActivity);
+
+		devActions.put(
+				"React Native Dev Support", new DevActionHandler() {
+					@Override
+					public void onSelected() {
+						((SalesforceReactActivity) frontActivity).showReactDevOptionsDialog();
+					}
+				});
+
+		return devActions;
+	}
+
 }

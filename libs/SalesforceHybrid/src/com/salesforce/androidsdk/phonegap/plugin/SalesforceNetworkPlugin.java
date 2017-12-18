@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.phonegap.plugin;
 
 import android.text.TextUtils;
+import android.util.Base64;
 
 import com.salesforce.androidsdk.phonegap.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
@@ -40,6 +41,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -69,8 +71,9 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
     private static final String FILE_MIME_TYPE_KEY = "fileMimeType";
     private static final String FILE_URL_KEY = "fileUrl";
     private static final String FILE_NAME_KEY = "fileName";
-
-    private RestClient restClient;
+    private static final String RETURN_BINARY = "returnBinary";
+    private static final String ENCODED_BODY = "encodedBody";
+    private static final String CONTENT_TYPE = "contentType";
 
     /**
      * Supported plugin actions that the client can take.
@@ -82,7 +85,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
     @Override
     public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args,
                            CallbackContext callbackContext) throws JSONException {
-        Action action = null;
+        Action action;
         try {
             action = Action.valueOf(actionStr);
             switch(action) {
@@ -101,11 +104,11 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
      * Native implementation for "sendRequest" action.
      *
      * @param callbackContext Used when calling back into Javascript.
-     * @throws JSONException
      */
     protected void sendRequest(JSONArray args, final CallbackContext callbackContext) {
         try {
             final RestRequest request = prepareRestRequest(args);
+            final boolean returnBinary = ((JSONObject) args.get(0)).optBoolean(RETURN_BINARY, false);
 
             // Sends the request.
             final RestClient restClient = getRestClient();
@@ -117,30 +120,39 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                 @Override
                 public void onSuccess(RestRequest request, RestResponse response) {
                     try {
-
-                        /*
-                         * Response body could be either JSONObject or JSONArray, and there's no
-                         * good way to determine this from the response headers. Hence, we try both.
-                         */
-                        if (response.hasResponseBody()) {
-                            try {
-                                final JSONObject responseAsJSONObject = response.asJSONObject();
+                        // Binary response
+                        if (returnBinary) {
+                            JSONObject result = new JSONObject();
+                            result.put(CONTENT_TYPE, response.getContentType());
+                            result.put(ENCODED_BODY, Base64.encodeToString(response.asBytes(), Base64.DEFAULT));
+                            callbackContext.success(result);
+                        }
+                        // Some response
+                        else if (response.asBytes().length > 0) {
+                            // Is it a JSONObject?
+                            final JSONObject responseAsJSONObject = parseResponseAsJSONObject(response);
+                            if (responseAsJSONObject != null) {
                                 callbackContext.success(responseAsJSONObject);
-                            } catch (Exception ex) {
-                                SalesforceHybridLogger.e(TAG, "Error while parsing response", ex);
-                                final JSONArray responseAsJSONArray = response.asJSONArray();
-                                callbackContext.success(responseAsJSONArray);
+                                return;
                             }
-                        } else {
+
+                            // Is it a JSONArray?
+                            final JSONArray responseAsJSONArray = parseResponseAsJSONArray(response);
+                            if (responseAsJSONArray != null) {
+                                callbackContext.success(responseAsJSONArray);
+                                return;
+                            }
+
+                            // Otherwise return as string
+                            callbackContext.success(response.asString());
+                        }
+                        // No response
+                        else {
                             callbackContext.success();
                         }
                     } catch (Exception e) {
                         SalesforceHybridLogger.e(TAG, "Error while parsing response", e);
-                        if (response.isSuccess()) {
-                            callbackContext.success();
-                        } else {
-                            onError(e);
-                        }
+                        onError(e);
                     }
                 }
 
@@ -151,6 +163,26 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
             });
         } catch (Exception exception) {
             callbackContext.error(exception.getMessage());
+        }
+    }
+
+    private JSONObject parseResponseAsJSONObject(RestResponse response) throws IOException {
+        try {
+            return response.asJSONObject();
+        }
+        catch (JSONException e) {
+            // Not a JSON object
+            return null;
+        }
+    }
+
+    private JSONArray parseResponseAsJSONArray(RestResponse response) throws IOException {
+        try {
+            return response.asJSONArray();
+        }
+        catch (JSONException e) {
+            // Not a JSON array
+            return null;
         }
     }
 
@@ -168,7 +200,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
             }
             final JSONObject headerParams = arg0.optJSONObject(HEADER_PARAMS_KEY);
             final Iterator<String> headerKeys = headerParams.keys();
-            final Map<String, String> additionalHeaders = new HashMap<String, String>();
+            final Map<String, String> additionalHeaders = new HashMap<>();
             if (headerKeys != null) {
                 while (headerKeys.hasNext()) {
                     final String headerKeyStr = headerKeys.next();

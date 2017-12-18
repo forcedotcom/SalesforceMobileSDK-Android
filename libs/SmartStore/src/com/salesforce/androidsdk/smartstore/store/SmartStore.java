@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.smartstore.store;
 
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
@@ -117,7 +118,7 @@ public class SmartStore  {
 	// Backing database
 	protected SQLiteDatabase dbLocal;
 	protected SQLiteOpenHelper dbOpenHelper;
-	protected String passcode;
+	protected String encryptionKey;
 
 	// FTS extension to use
 	protected FtsExtension ftsExtension = FtsExtension.fts5;
@@ -215,11 +216,11 @@ public class SmartStore  {
      * Relies on SQLiteOpenHelper for database handling.
      *
      * @param dbOpenHelper DB open helper.
-     * @param passcode Passcode.
+     * @param encryptionKey Encryption key.
      */
-    public SmartStore(SQLiteOpenHelper dbOpenHelper, String passcode) {
+    public SmartStore(SQLiteOpenHelper dbOpenHelper, String encryptionKey) {
     	this.dbOpenHelper = dbOpenHelper;
-        this.passcode = passcode;
+        this.encryptionKey = encryptionKey;
     }
 
     /**
@@ -229,7 +230,7 @@ public class SmartStore  {
     	if (dbLocal != null) {
             return dbLocal;
         } else {
-            return this.dbOpenHelper.getWritableDatabase(passcode);
+            return this.dbOpenHelper.getWritableDatabase(encryptionKey);
         }
     }
 
@@ -619,7 +620,7 @@ public class SmartStore  {
 			        	try {
 			                JSONObject soupElt;
 			                if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
-			                	soupElt = ((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, Long.parseLong(soupEntryId), passcode);
+			                	soupElt = ((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, Long.parseLong(soupEntryId), encryptionKey);
 			                } else {
 			                	String soupRaw = cursor.getString(1);
 			                	soupElt = new JSONObject(soupRaw);
@@ -821,7 +822,7 @@ public class SmartStore  {
 								// Presence of external storage column implies we must fetch from storage. Soup name and entry id values can be extracted
 								String soupTableName = cursor.getString(cursor.getColumnIndex(SoupSpec.FEATURE_EXTERNAL_STORAGE));
 								Long soupEntryId = cursor.getLong(cursor.getColumnIndex(SmartStore.SOUP_ENTRY_ID));
-								results.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, soupEntryId, passcode));
+								results.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, soupEntryId, encryptionKey));
 	                		} else {
 								results.put(new JSONObject(cursor.getString(0)));
 	                		}
@@ -856,7 +857,7 @@ public class SmartStore  {
                     // Presence of external storage column implies we must fetch from storage. Soup name and entry id values can be extracted
                     String soupTableName = cursor.getString(i);
                     Long soupEntryId = cursor.getLong(i + 1);
-                    row.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, soupEntryId, passcode));
+                    row.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, soupEntryId, encryptionKey));
                     i++; // skip next column (_soupEntryId)
                 } else if (cursor.getColumnName(i).endsWith(SOUP_COL)) {
                     row.put(new JSONObject(raw));
@@ -964,7 +965,7 @@ public class SmartStore  {
 
 	            // Add to external storage if applicable
 	            if (success && usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
-					success = ((DBOpenHelper) dbOpenHelper).saveSoupBlob(soupTableName, soupEntryId, soupElt, passcode);
+					success = ((DBOpenHelper) dbOpenHelper).saveSoupBlob(soupTableName, soupEntryId, soupElt, encryptionKey);
 	            }
 
 	            // Commit if successful
@@ -1062,7 +1063,7 @@ public class SmartStore  {
 	        JSONArray result = new JSONArray();
 	        if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
 		        for (long soupEntryId : soupEntryIds) {
-			        JSONObject raw = ((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, soupEntryId, passcode);
+			        JSONObject raw = ((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, soupEntryId, encryptionKey);
 			        if (raw != null) {
 				        result.put(raw);
 			        }
@@ -1154,7 +1155,7 @@ public class SmartStore  {
 
 				// Add to external storage if applicable
 				if (success && usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
-					success = ((DBOpenHelper) dbOpenHelper).saveSoupBlob(soupTableName, soupEntryId, soupElt, passcode);
+					success = ((DBOpenHelper) dbOpenHelper).saveSoupBlob(soupTableName, soupEntryId, soupElt, encryptionKey);
 				}
 
 				if (success) {
@@ -1608,4 +1609,39 @@ public class SmartStore  {
 			return DBHelper.getInstance(db).getFeatures(db, soupName).contains(SoupSpec.FEATURE_EXTERNAL_STORAGE);
 		}
 	}
+
+	/**
+	 * Get compile options
+	 *
+	 * @return list of compile options
+	 */
+	public List<String> getCompileOptions() {
+		return queryPragma("compile_options");
+	}
+
+	/**
+	 * Get sqlcipher version
+	 *
+	 * @return sqlcipher version
+	 */
+	public String getSQLCipherVersion() {
+		return TextUtils.join(" ", queryPragma("cipher_version"));
+	}
+
+	@NonNull
+	private List<String> queryPragma(String pragma) {
+		final SQLiteDatabase db = getDatabase();
+		ArrayList<String> results = new ArrayList<>();
+		Cursor c = null;
+		try {
+			c = db.rawQuery("PRAGMA " + pragma, null);
+			while (c.moveToNext()) {
+				results.add(c.getString(0));
+			}
+		} finally {
+			safeClose(c);
+		}
+		return results;
+	}
+
 }

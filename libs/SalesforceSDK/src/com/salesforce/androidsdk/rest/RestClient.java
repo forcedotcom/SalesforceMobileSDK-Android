@@ -59,7 +59,6 @@ public class RestClient {
 	private static final String INSTANCE_URL = "instanceUrl";
 	private static final String LOGIN_URL = "loginUrl";
 	private static final String IDENTITY_URL = "identityUrl";
-	private static final String CLIENT_ID = "clientId";
 	private static final String ORG_ID = "orgId";
 	private static final String USER_ID = "userId";
 	private static final String REFRESH_TOKEN = "refreshToken";
@@ -248,7 +247,6 @@ public class RestClient {
 		data.put(REFRESH_TOKEN, getRefreshToken());
 		data.put(USER_ID, clientInfo.userId);
 		data.put(ORG_ID, clientInfo.orgId);
-		data.put(CLIENT_ID, clientInfo.clientId);
 		data.put(LOGIN_URL, clientInfo.loginUrl.toString());
 		data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
 		data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
@@ -397,7 +395,6 @@ public class RestClient {
 	 */
 	public static class ClientInfo {
 
-		public final String clientId;
 		public final URI instanceUrl;
 		public final URI loginUrl;
 		public final URI identityUrl;
@@ -418,7 +415,6 @@ public class RestClient {
 		/**
 		 * Parameterized constructor.
 		 *
-		 * @param clientId Client ID.
 		 * @param instanceUrl Instance URL.
 		 * @param loginUrl Login URL.
 		 * @param identityUrl Identity URL.
@@ -436,12 +432,11 @@ public class RestClient {
          * @param thumbnailUrl Thumbnail URL.
          * @param additionalOauthValues Additional OAuth values.
 		 */
-		public ClientInfo(String clientId, URI instanceUrl, URI loginUrl,
+		public ClientInfo(URI instanceUrl, URI loginUrl,
 				URI identityUrl, String accountName, String username,
 				String userId, String orgId, String communityId, String communityUrl,
 				String firstName, String lastName, String displayName, String email,
 				String photoUrl, String thumbnailUrl, Map<String, String> additionalOauthValues) {
-			this.clientId = clientId;
 			this.instanceUrl = instanceUrl;
 			this.loginUrl = loginUrl;
 			this.identityUrl = identityUrl;
@@ -572,7 +567,7 @@ public class RestClient {
         public static final String NOUSER = "nouser";
 
         public UnauthenticatedClientInfo() {
-            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override
@@ -751,7 +746,7 @@ public class RestClient {
                 if (!clientInfo.instanceUrl.toString().equalsIgnoreCase(instanceUrl)) {
                     try {
                         // Create a new ClientInfo
-                        clientInfo = new ClientInfo(clientInfo.clientId, new URI(instanceUrl),
+                        clientInfo = new ClientInfo(new URI(instanceUrl),
                                 clientInfo.loginUrl, clientInfo.identityUrl,
                                 clientInfo.accountName, clientInfo.username,
                                 clientInfo.userId, clientInfo.orgId, clientInfo.communityId,
@@ -785,5 +780,4 @@ public class RestClient {
 			super(msg, cause);
 		}
 	}
-
 }

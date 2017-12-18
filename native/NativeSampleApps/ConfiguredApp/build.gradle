@@ -1,12 +1,12 @@
-apply plugin: 'android'
+apply plugin: 'com.android.application'
 
 dependencies {
-    compile project(':libs:SalesforceSDK')
+    api project(':libs:SalesforceSDK')
 }
 
 android {
-    compileSdkVersion 26
-    buildToolsVersion '25.0.0'
+    compileSdkVersion 27
+    buildToolsVersion '26.0.2'
 
     sourceSets {
 
@@ -27,4 +27,9 @@ android {
         exclude 'META-INF/DEPENDENCIES'
         exclude 'META-INF/NOTICE'
     }
+
+  lintOptions {
+    xmlReport true
+    abortOnError false
+  }
 }

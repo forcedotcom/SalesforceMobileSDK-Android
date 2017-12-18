@@ -65,7 +65,9 @@ public class HttpAccessTest extends InstrumentationTestCase {
 		httpAccess = new HttpAccess(null, "dummy-agent");
 		okHttpClient = httpAccess.getOkHttpClient();
 		resourcesUrl = HttpUrl.parse(TestCredentials.INSTANCE_URL + "/services/data/" + TestCredentials.API_VERSION + "/");
-		TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
+		TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,
+				new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID,
+                TestCredentials.REFRESH_TOKEN, null);
 		headers = new Headers.Builder()
 				.add("Content-Type", "application/json")
 				.add("Authorization", "OAuth " + refreshResponse.authToken)

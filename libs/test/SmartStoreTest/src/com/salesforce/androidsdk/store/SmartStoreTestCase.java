@@ -57,6 +57,7 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 	protected Context targetContext;
 	protected SQLiteOpenHelper dbOpenHelper;
 	protected SmartStore store;
+	protected DBHelper dbHelper;
 
 	@Override
 	public void setUp() throws Exception {
@@ -64,17 +65,17 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 		EventBuilderHelper.enableDisable(false);
 		targetContext = getInstrumentation().getTargetContext();
 		dbOpenHelper = DBOpenHelper.getOpenHelper(targetContext, null);
-		DBHelper.getInstance(dbOpenHelper.getWritableDatabase(getPasscode())).reset(targetContext, null);
-		store = new SmartStore(dbOpenHelper, getPasscode());
-		store.dropAllSoups();
+		dbHelper = DBHelper.getInstance(dbOpenHelper.getWritableDatabase(getEncryptionKey()));
+		store = new SmartStore(dbOpenHelper, getEncryptionKey());
 	}
 
-	protected abstract String getPasscode();
+	protected abstract String getEncryptionKey();
 
 	@Override
 	protected void tearDown() throws Exception {
-		dbOpenHelper.close();
 		store.dropAllSoups();
+		dbOpenHelper.close();
+		dbHelper.clearMemoryCache();
 		DBOpenHelper.deleteDatabase(targetContext, null);
 		super.tearDown();
 	}
@@ -86,7 +87,7 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 	 */
 	protected boolean hasTable(String tableName) {
 		Cursor c = null;
-		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 		try {
 			c = DBHelper.getInstance(db).query(db, "sqlite_master", null, null, null, "type = ? and name = ?", "table", tableName);
 			return c.getCount() == 1;
@@ -103,7 +104,7 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
      */
 	protected void checkColumns(String tableName, List<String> expectedColumnNames) {
 		Cursor c = null;
-		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 		try {
 			List<String> actualColumnNames = new ArrayList<>();
 			c = db.rawQuery(String.format("PRAGMA table_info(%s)", tableName), null);
@@ -135,7 +136,7 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 	 */
 	protected void checkCreateTableStatement(String tableName, String subStringExpected) {
 		Cursor c = null;
-		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 		try {
 			List<String> actualSqlStatements = new ArrayList<>();
 			c = db.rawQuery(String.format("SELECT sql FROM sqlite_master WHERE type='table' AND tbl_name='%s' ORDER BY name", tableName), null);
@@ -159,7 +160,7 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
      */
     protected void checkDatabaseIndexes(String tableName, List<String> expectedSqlStatements) {
         Cursor c = null;
-        final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+        final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
         try {
             List<String> actualSqlStatements = new ArrayList<>();
             c = db.rawQuery(String.format("SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name='%s' ORDER BY name", tableName), null);
@@ -221,7 +222,7 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 	 * @return table name for soup
 	 */
 	protected String getSoupTableName(String soupName) {
-		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 		return DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	}
 

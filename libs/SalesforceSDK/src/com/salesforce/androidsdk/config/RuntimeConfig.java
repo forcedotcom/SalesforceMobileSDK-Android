@@ -26,16 +26,15 @@
  */
 package com.salesforce.androidsdk.config;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.RestrictionsManager;
-import android.os.Build;
 import android.os.Bundle;
 
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -67,7 +66,8 @@ public class RuntimeConfig {
 		ManagedAppCallbackURL,
 		RequireCertAuth,
 		ManagedAppCertAlias,
-		OnlyShowAuthorizedHosts
+		OnlyShowAuthorizedHosts,
+		IDPAppURLScheme
 	}
 
     private boolean isManaged = false;
@@ -76,41 +76,38 @@ public class RuntimeConfig {
 	private static RuntimeConfig INSTANCE = null;
 
 	private RuntimeConfig(Context ctx) {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-			configurations = getRestrictions(ctx);
-            isManaged = hasRestrictionsProvider(ctx);
+		configurations = getRestrictions(ctx);
+		isManaged = hasRestrictionsProvider(ctx);
 
-			// Register MDM App Feature for User-Agent reporting
-			if(isManaged && configurations!=null && !configurations.isEmpty()){
-				SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_MDM);
-				if(getBoolean(RuntimeConfig.ConfigKey.RequireCertAuth)){
-					SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_CERT_AUTH);
-				}
+		// Register MDM App Feature for User-Agent reporting
+		if (isManaged && configurations != null && !configurations.isEmpty()) {
+			SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_MDM);
+			if (getBoolean(RuntimeConfig.ConfigKey.RequireCertAuth)) {
+				SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_CERT_AUTH);
 			}
+		}
 
-            // Logs analytics event for MDM.
-			threadPool.execute(new Runnable() {
-				@Override
-				public void run() {
-					final JSONObject attributes = new JSONObject();
-					try {
-						attributes.put("mdmIsActive", isManaged);
-						if (configurations != null) {
-							final JSONObject mdmValues = new JSONObject();
-							final Set<String> keys = configurations.keySet();
-							for (final String key : keys) {
-								mdmValues.put(key, JSONObject.wrap(configurations.get(key)));
-							}
-							attributes.put("mdmConfigs", mdmValues);
+		// Logs analytics event for MDM.
+		threadPool.execute(new Runnable() {
+			@Override
+			public void run() {
+				final JSONObject attributes = new JSONObject();
+				try {
+					attributes.put("mdmIsActive", isManaged);
+					if (configurations != null) {
+						final JSONObject mdmValues = new JSONObject();
+						final Set<String> keys = configurations.keySet();
+						for (final String key : keys) {
+							mdmValues.put(key, JSONObject.wrap(configurations.get(key)));
 						}
-					} catch (JSONException e) {
-						SalesforceSDKLogger.e(TAG, "Exception thrown while creating JSON", e);
+						attributes.put("mdmConfigs", mdmValues);
 					}
-					EventBuilderHelper.createAndStoreEventSync("mdmConfiguration", null, TAG, attributes);
+				} catch (JSONException e) {
+					SalesforceSDKLogger.e(TAG, "Exception thrown while creating JSON", e);
 				}
-			});
-
-        }
+				EventBuilderHelper.createAndStoreEventSync("mdmConfiguration", null, TAG, attributes);
+			}
+		});
 	}
 
 	/**
@@ -161,13 +158,40 @@ public class RuntimeConfig {
 		return (configurations == null ? false : configurations.getBoolean(configKey.name()));
 	}
 
-	@TargetApi(Build.VERSION_CODES.LOLLIPOP)
-	private Bundle getRestrictions(Context ctx) {
+	private JSONArray getJSONArray(ConfigKey configKey) throws JSONException {
+		String[] array = getStringArray(configKey);
+		return array == null ? null : new JSONArray(array);
+	}
+
+
+	/**
+	 * Get run time config as a JSONObject
+	 * @return JSONObject for run time config.
+	 */
+	public JSONObject asJSON() {
+		try {
+			JSONObject jsonObject = new JSONObject();
+			jsonObject.put(ConfigKey.AppServiceHosts.name(), getJSONArray(ConfigKey.AppServiceHosts));
+			jsonObject.put(ConfigKey.AppServiceHostLabels.name(), getJSONArray(ConfigKey.AppServiceHostLabels));
+			jsonObject.put(ConfigKey.ManagedAppOAuthID.name(), getString(ConfigKey.ManagedAppOAuthID));
+			jsonObject.put(ConfigKey.ManagedAppCallbackURL.name(), getJSONArray(ConfigKey.ManagedAppCallbackURL));
+			jsonObject.put(ConfigKey.RequireCertAuth.name(), getBoolean(ConfigKey.RequireCertAuth));
+			jsonObject.put(ConfigKey.ManagedAppCertAlias.name(), getString(ConfigKey.ManagedAppCertAlias));
+			jsonObject.put(ConfigKey.OnlyShowAuthorizedHosts.name(), getJSONArray(ConfigKey.OnlyShowAuthorizedHosts));
+			jsonObject.put(ConfigKey.IDPAppURLScheme.name(), getString(ConfigKey.IDPAppURLScheme));
+
+			return jsonObject;
+		}
+		catch (JSONException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	Bundle getRestrictions(Context ctx) {
 		RestrictionsManager restrictionsManager = (RestrictionsManager) ctx.getSystemService(Context.RESTRICTIONS_SERVICE);
 		return restrictionsManager.getApplicationRestrictions();
 	}
 
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private boolean hasRestrictionsProvider(Context ctx) {
         RestrictionsManager restrictionsManager = (RestrictionsManager) ctx.getSystemService(Context.RESTRICTIONS_SERVICE);
         return restrictionsManager.hasRestrictionsProvider();

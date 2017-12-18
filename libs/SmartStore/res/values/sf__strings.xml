@@ -2,6 +2,8 @@
 <resources>
 
     <!--       SmartStore Inspector      -->
+    <string name="sf__inspector_title">Inspect SmartStore</string>
+    <string name="sf__inspector_store">Store</string>
     <string name="sf__inspector_select_button">SELECT</string>
     <string name="sf__inspector_from_button">FROM</string>
     <string name="sf__inspector_where_button">WHERE</string>
@@ -17,7 +19,8 @@
     <string name="sf__inspector_pageindex_hint">Page index (default: 0)</string>    
     <string name="sf__inspector_no_query_specified">No query specified</string>
     <string name="sf__inspector_no_rows_returned">No rows returned</string>
-    
+    <string name="sf__inspector_no_soups_found">No soups found</string>
+
     <string name="sf__inspector_soups_query">select soupName from soup_names</string>
     <string name="sf__inspector_indices_query">select soupName, path, columnType from soup_index_map</string>
 

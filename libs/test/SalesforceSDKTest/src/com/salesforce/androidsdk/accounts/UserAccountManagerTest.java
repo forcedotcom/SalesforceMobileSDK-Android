@@ -70,12 +70,12 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
         }
         userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
         loginOptions = new LoginOptions(ClientManagerTest.TEST_LOGIN_URL,
-        		ClientManagerTest.TEST_PASSCODE_HASH, ClientManagerTest.TEST_CALLBACK_URL,
-        		ClientManagerTest.TEST_CLIENT_ID, ClientManagerTest.TEST_SCOPES);
+        		ClientManagerTest.TEST_CALLBACK_URL,
+        		ClientManagerTest.TEST_CLIENT_ID,
+				ClientManagerTest.TEST_SCOPES);
         clientManager = new ClientManager(targetContext,
         		ClientManagerTest.TEST_ACCOUNT_TYPE, loginOptions, true);
         accMgr = clientManager.getAccountManager();
-        SalesforceSDKManager.getInstance().getPasscodeManager().setPasscodeHash(ClientManagerTest.TEST_PASSCODE_HASH);
     }
 
     @Override
@@ -89,7 +89,6 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
         loginOptions = null;
         clientManager = null;
         accMgr = null;
-		SalesforceSDKManager.getInstance().getPasscodeManager().setPasscodeHash(null);
         super.tearDown();
     }
 
@@ -160,19 +159,21 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
     	createTestAccount();
     	users = userAccMgr.getAuthenticatedUsers();
     	assertEquals("There should be 1 authenticated user", 1, users.size());
-    	UserAccount userAcc = new UserAccount(ClientManagerTest.TEST_AUTH_TOKEN,
-        		ClientManagerTest.TEST_REFRESH_TOKEN, ClientManagerTest.TEST_LOGIN_URL,
-        		ClientManagerTest.TEST_IDENTITY_URL, ClientManagerTest.TEST_INSTANCE_URL,
-        		ClientManagerTest.TEST_ORG_ID, ClientManagerTest.TEST_USER_ID,
-        		ClientManagerTest.TEST_USERNAME, ClientManagerTest.TEST_ACCOUNT_NAME,
-        		ClientManagerTest.TEST_CLIENT_ID, null, null);
+		UserAccount userAcc = UserAccountBuilder.getInstance().authToken(ClientManagerTest.TEST_AUTH_TOKEN).
+                refreshToken(ClientManagerTest.TEST_REFRESH_TOKEN).loginServer(ClientManagerTest.TEST_LOGIN_URL).
+                idUrl(ClientManagerTest.TEST_IDENTITY_URL).instanceServer(ClientManagerTest.TEST_INSTANCE_URL).
+                orgId(ClientManagerTest.TEST_ORG_ID).userId(ClientManagerTest.TEST_USER_ID).
+                username(ClientManagerTest.TEST_USERNAME).accountName(ClientManagerTest.TEST_ACCOUNT_NAME).
+                communityId(null).communityUrl(null).firstName(null).lastName(null).displayName(null).
+				email(null).photoUrl(null).thumbnailUrl(null).additionalOauthValues(null).build();
     	assertTrue("User account should exist", userAccMgr.doesUserAccountExist(userAcc));
-    	userAcc = new UserAccount(ClientManagerTest.TEST_AUTH_TOKEN,
-        		ClientManagerTest.TEST_REFRESH_TOKEN, ClientManagerTest.TEST_LOGIN_URL,
-        		ClientManagerTest.TEST_IDENTITY_URL, ClientManagerTest.TEST_INSTANCE_URL,
-        		ClientManagerTest.TEST_ORG_ID_2, ClientManagerTest.TEST_USER_ID_2,
-        		ClientManagerTest.TEST_OTHER_USERNAME, ClientManagerTest.TEST_OTHER_ACCOUNT_NAME,
-        		ClientManagerTest.TEST_CLIENT_ID, null, null);
+    	userAcc = UserAccountBuilder.getInstance().authToken(ClientManagerTest.TEST_AUTH_TOKEN).
+                refreshToken(ClientManagerTest.TEST_REFRESH_TOKEN).loginServer(ClientManagerTest.TEST_LOGIN_URL).
+                idUrl(ClientManagerTest.TEST_IDENTITY_URL).instanceServer(ClientManagerTest.TEST_INSTANCE_URL).
+                orgId(ClientManagerTest.TEST_ORG_ID_2).userId(ClientManagerTest.TEST_USER_ID_2).
+                username(ClientManagerTest.TEST_OTHER_USERNAME).accountName(ClientManagerTest.TEST_OTHER_ACCOUNT_NAME).
+                communityId(null).communityUrl(null).firstName(null).lastName(null).displayName(null).
+                email(null).photoUrl(null).thumbnailUrl(null).additionalOauthValues(null).build();
     	assertFalse("User account should not exist", userAccMgr.doesUserAccountExist(userAcc));
     }
 
@@ -204,13 +205,14 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
     	createOtherTestAccount();
     	users = userAccMgr.getAuthenticatedUsers();
     	assertEquals("There should be 2 authenticated users", 2, users.size());
-    	final UserAccount userAcc = new UserAccount(ClientManagerTest.TEST_AUTH_TOKEN,
-        		ClientManagerTest.TEST_REFRESH_TOKEN, ClientManagerTest.TEST_LOGIN_URL,
-        		ClientManagerTest.TEST_IDENTITY_URL, ClientManagerTest.TEST_INSTANCE_URL,
-        		ClientManagerTest.TEST_ORG_ID, ClientManagerTest.TEST_USER_ID,
-        		ClientManagerTest.TEST_USERNAME, ClientManagerTest.TEST_ACCOUNT_NAME,
-        		ClientManagerTest.TEST_CLIENT_ID, null, null);
-    	userAccMgr.signoutUser(userAcc, null, false);
+        final UserAccount userAcc = UserAccountBuilder.getInstance().authToken(ClientManagerTest.TEST_AUTH_TOKEN).
+                refreshToken(ClientManagerTest.TEST_REFRESH_TOKEN).loginServer(ClientManagerTest.TEST_LOGIN_URL).
+                idUrl(ClientManagerTest.TEST_IDENTITY_URL).instanceServer(ClientManagerTest.TEST_INSTANCE_URL).
+                orgId(ClientManagerTest.TEST_ORG_ID).userId(ClientManagerTest.TEST_USER_ID).
+                username(ClientManagerTest.TEST_USERNAME).accountName(ClientManagerTest.TEST_ACCOUNT_NAME).
+                communityId(null).communityUrl(null).firstName(null).lastName(null).displayName(null).
+                email(null).photoUrl(null).thumbnailUrl(null).additionalOauthValues(null).build();
+		userAccMgr.signoutUser(userAcc, null, false);
     	eq.waitForEvent(EventType.LogoutComplete, 30000);
     	users = userAccMgr.getAuthenticatedUsers();
     	assertEquals("There should be 1 authenticated user", 1, users.size());
@@ -234,7 +236,7 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
         		ClientManagerTest.TEST_AUTH_TOKEN, ClientManagerTest.TEST_INSTANCE_URL,
         		ClientManagerTest.TEST_LOGIN_URL, ClientManagerTest.TEST_IDENTITY_URL,
         		ClientManagerTest.TEST_CLIENT_ID, ClientManagerTest.TEST_ORG_ID,
-        		ClientManagerTest.TEST_USER_ID, ClientManagerTest.TEST_PASSCODE_HASH);
+        		ClientManagerTest.TEST_USER_ID, null, null, null, null, null, null, null, null, null);
     }
 
     /**
@@ -248,6 +250,6 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
         		ClientManagerTest.TEST_AUTH_TOKEN, ClientManagerTest.TEST_INSTANCE_URL,
         		ClientManagerTest.TEST_LOGIN_URL, ClientManagerTest.TEST_IDENTITY_URL,
         		ClientManagerTest.TEST_CLIENT_ID, ClientManagerTest.TEST_ORG_ID_2,
-        		ClientManagerTest.TEST_USER_ID_2, ClientManagerTest.TEST_PASSCODE_HASH);
+        		ClientManagerTest.TEST_USER_ID_2, null, null, null, null, null, null, null, null, null);
     }
 }

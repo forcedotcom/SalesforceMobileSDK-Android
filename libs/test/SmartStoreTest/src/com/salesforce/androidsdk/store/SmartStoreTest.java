@@ -30,6 +30,7 @@ import android.database.Cursor;
 import android.os.SystemClock;
 
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
+import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.Order;
@@ -44,7 +45,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -72,7 +72,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	}
 
     @Override
-    protected String getPasscode() {
+    protected String getEncryptionKey() {
         return "test123";
     }
 
@@ -80,18 +80,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	 * Checking compile options
 	 */
 	public void testCompileOptions() {
-		ArrayList<String> compileOptions = new ArrayList<String>();
-		Cursor c = null;
-		try {
-			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
-			c = db.rawQuery("PRAGMA compile_options", null);
-            while(c.moveToNext()) {
-				compileOptions.add(c.getString(0));
-			}
-		}
-		finally {
-			safeClose(c);
-		}
+		List<String> compileOptions = store.getCompileOptions();
 
 		assertTrue("ENABLE_FTS4 flag not found in compile options", compileOptions.contains("ENABLE_FTS4"));
 		assertTrue("ENABLE_FTS3_PARENTHESIS flag not found in compile options", compileOptions.contains("ENABLE_FTS3_PARENTHESIS"));
@@ -255,7 +244,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 			String soupTableName = getSoupTableName(TEST_SOUP);
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, null, null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
@@ -294,7 +283,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 			String soupTableName = getSoupTableName(OTHER_TEST_SOUP);
 			assertEquals("Table for other_test_soup was expected to be called TABLE_2", "TABLE_2", soupTableName);
 			assertTrue("Table for other_test_soup should now exist", hasTable("TABLE_2"));
-			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
@@ -353,7 +342,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 			String soupTableName = getSoupTableName(TEST_SOUP);		
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
@@ -406,7 +395,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 			String soupTableName = getSoupTableName(TEST_SOUP);			
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
@@ -459,7 +448,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 			String soupTableName = getSoupTableName(TEST_SOUP);			
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
@@ -573,7 +562,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 			String soupTableName = getSoupTableName(TEST_SOUP);
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
@@ -630,7 +619,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 			String soupTableName = getSoupTableName(TEST_SOUP);
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
@@ -679,7 +668,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 			String soupTableName = getSoupTableName(TEST_SOUP);
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertFalse("Expected no soup element", c.moveToFirst());
@@ -917,6 +906,33 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	}
 
 	/**
+	 * Test smart sql returning entire soup elements (i.e. select {soup:_soup} from {soup})
+	 * @throws JSONException
+	 */
+	public void testSelectUnderscoreSoup() throws JSONException {
+		// Create soup elements
+		JSONObject soupElt1 = new JSONObject("{'key':'ka1', 'value':'va1'}");
+		JSONObject soupElt2 = new JSONObject("{'key':'ka2', 'value':'va2'}");
+		JSONObject soupElt3 = new JSONObject("{'key':'ka3', 'value':'va3'}");
+		JSONObject soupElt4 = new JSONObject("{'key':'ka4', 'value':'va4'}");
+
+		JSONObject soupElt1Created = store.create(TEST_SOUP, soupElt1);
+		JSONObject soupElt2Created = store.create(TEST_SOUP, soupElt2);
+		JSONObject soupElt3Created = store.create(TEST_SOUP, soupElt3);
+		JSONObject soupElt4Created = store.create(TEST_SOUP, soupElt4);
+
+		final String smartSql = "SELECT {" + TEST_SOUP + ":_soup} FROM {" + TEST_SOUP + "} ORDER BY {" + TEST_SOUP + ":key}";
+		final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 25);
+		final JSONArray result = store.query(querySpec, 0);
+		assertNotNull("Result should not be null", result);
+		assertEquals("Three results expected", 4, result.length());
+		JSONTestHelper.assertSameJSON("Wrong result for query - row 0", new JSONArray(new JSONObject[] { soupElt1Created}), result.get(0));
+        JSONTestHelper.assertSameJSON("Wrong result for query - row 1", new JSONArray(new JSONObject[] { soupElt2Created}), result.get(1));
+        JSONTestHelper.assertSameJSON("Wrong result for query - row 2", new JSONArray(new JSONObject[] { soupElt3Created}), result.get(2));
+        JSONTestHelper.assertSameJSON("Wrong result for query - row 3", new JSONArray(new JSONObject[] { soupElt4Created}), result.get(3));
+	}
+
+	/**
 	 *  Test smart sql select with null value in string indexed field
 	 *  @throws JSONException
 	 */
@@ -1120,7 +1136,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		
 		Cursor c = null;
 		try {
-			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 			String soupTableName = getSoupTableName(FOURTH_TEST_SOUP);
 			String amountColumnName = store.getSoupIndexSpecs(FOURTH_TEST_SOUP)[0].columnName;
 			c = DBHelper.getInstance(db).query(db, soupTableName, new String[] { amountColumnName }, null, null, "id = " + id);
@@ -1245,7 +1261,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
     }
 
 	/**
-     * Testing Delete: create multiple soup elements and alert the soup, after that delete a entry, then check them all
+     * Testing Delete: create multiple soup elements and alter the soup, after that delete a entry, then check them all
      * @throws JSONException
      */
     public void testDeleteAgainstChangedSoup() throws JSONException {
@@ -1291,7 +1307,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
     }
 
     /**
-     * Testing Upsert: create multiple soup elements and alert the soup, after that upsert a entry, then check them all
+     * Testing Upsert: create multiple soup elements and alter the soup, after that upsert a entry, then check them all
      * @throws JSONException
      */
     public void testUpsertAgainstChangedSoup() throws JSONException {
@@ -1337,7 +1353,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
     }
 
     /**
-     * Testing Delete: create multiple soup elements and alert the soup, after that delete a entry, then check them all
+     * Testing Delete: create multiple soup elements and alter the soup, after that delete a entry, then check them all
      * @throws JSONException
      */
     public void testExactQueryAgainstChangedSoup() throws JSONException {
@@ -1382,7 +1398,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	 */
 	public void testUpdateTableNameAndAddColumns() {
 		// Setup db and test values
-		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 		final String TEST_TABLE = "test_table";
 		final String NEW_TEST_TABLE = "new_test_table";
 		final String NEW_COLUMN = "new_column";

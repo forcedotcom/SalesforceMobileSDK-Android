@@ -38,7 +38,21 @@ public class RestExplorerApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SalesforceSDKManager.initNative(getApplicationContext(), new KeyImpl(), ExplorerActivity.class);
+		SalesforceSDKManager.initNative(getApplicationContext(), null, ExplorerActivity.class);
+
+		/*
+         * Uncomment the following line to enable IDP login flow. This will allow the user to
+         * either authenticate using the current app or use a designated IDP app for login.
+         * Replace 'idpAppURIScheme' with the URI scheme of the IDP app meant to be used.
+         */
+        // SalesforceSDKManager.getInstance().setIDPAppURIScheme(idpAppURIScheme);
+
+		/*
+         * Uncomment the following line to enable browser based login. This will use a
+         * Chrome custom tab to login instead of the default WebView. You will also need
+         * to uncomment a few lines of code in SalesforceSDK library project's AndroidManifest.xml.
+         */
+		// SalesforceSDKManager.getInstance().setBrowserLoginEnabled(true);
 
 		/*
 		 * Un-comment the line below to enable push notifications in this app.

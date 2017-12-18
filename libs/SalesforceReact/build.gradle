@@ -14,13 +14,13 @@ apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 
 dependencies {
-  compile project(':libs:SmartSync')
-  compile 'com.facebook.react:react-native:0.43.1'
+  api project(':libs:SmartSync')
+  api 'com.facebook.react:react-native:0.50.4'
 }
 
 android {
-  compileSdkVersion 26
-  buildToolsVersion '25.0.0'
+  compileSdkVersion 27
+  buildToolsVersion '26.0.2'
 
   sourceSets {
     main {
@@ -41,6 +41,7 @@ android {
   }
   
   lintOptions {
+    xmlReport true
     abortOnError false
   }
 }
@@ -109,9 +110,9 @@ bintray {
         licenses = ['Apache-2.0']
         labels = ['android', 'salesforce', 'mobilesdk']
         version {
-            name = '5.3.0'
+            name = '6.0.0'
             released  = new Date()
-            vcsTag = 'v5.3.0'
+            vcsTag = 'v6.0.0'
         }
     }
 }

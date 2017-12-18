@@ -26,14 +26,6 @@
  */
 package com.salesforce.androidsdk.config;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Scanner;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.content.Context;
 import android.content.res.Resources;
 import android.text.TextUtils;
@@ -41,6 +33,14 @@ import android.text.TextUtils;
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
+import com.salesforce.androidsdk.util.ResourceReaderHelper;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.Arrays;
 
 /**
  * Class encapsulating the application configuration (consumer key, oauth scopes, refresh behavior).
@@ -48,6 +48,8 @@ import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
  * @author wmathurin
  */
 public class BootConfig {
+
+	private static final String TAG = "BootConfig";
 
 	// We expect a assets/www/bootconfig.json file to be provided by hybrid apps.
 	private static final String HYBRID_BOOTCONFIG_PATH = "www" +
@@ -63,10 +65,13 @@ public class BootConfig {
 	private static final String SHOULD_AUTHENTICATE = "shouldAuthenticate";
 	private static final String ATTEMPT_OFFLINE_LOAD = "attemptOfflineLoad";
 	private static final String PUSH_NOTIFICATION_CLIENT_ID = "androidPushNotificationClientId";
+	private static final String UNAUTHENTICATED_START_PAGE = "unauthenticatedStartPage";
 
 	// Default for optional configs.
 	private static final boolean DEFAULT_SHOULD_AUTHENTICATE = true;
 	private static final boolean DEFAULT_ATTEMPT_OFFLINE_LOAD = true;
+
+	private boolean configIsHybrid;
 
 	private String remoteAccessConsumerKey;
 	private String oauthRedirectURI;
@@ -77,6 +82,7 @@ public class BootConfig {
 	private boolean shouldAuthenticate;
 	private boolean attemptOfflineLoad;
 	private String pushNotificationClientId;
+	private String unauthenticatedStartPage;
 
 	private static BootConfig INSTANCE = null;
 
@@ -88,62 +94,132 @@ public class BootConfig {
 	 */
 	public static BootConfig getBootConfig(Context ctx) {
 		if (INSTANCE == null) {
-			INSTANCE = new BootConfig();
 			if (SalesforceSDKManager.getInstance().isHybrid()) {
-				INSTANCE.readFromJSON(ctx);
+				INSTANCE = getHybridBootConfig(ctx, HYBRID_BOOTCONFIG_PATH);
 			} else {
+				INSTANCE = new BootConfig();
 				INSTANCE.readFromXML(ctx);
 			}
 			INSTANCE.readFromRuntimeConfig(ctx);
 		}
 		return INSTANCE;
 	}
-	
-    /**
-     * Use runtime configurations (from MDM provider) if any
-     * @param ctx
-     */
-    private void readFromRuntimeConfig(Context ctx) {
-    	RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(ctx);
-    	String mdmRemoteAccessConsumeKey = runtimeConfig.getString(ConfigKey.ManagedAppOAuthID);
-    	String mdmOauthRedirectURI = runtimeConfig.getString(ConfigKey.ManagedAppCallbackURL);
-    	if (!TextUtils.isEmpty(mdmRemoteAccessConsumeKey)) {
-            remoteAccessConsumerKey = mdmRemoteAccessConsumeKey;
-        }
-    	if (!TextUtils.isEmpty(mdmOauthRedirectURI)) {
-            oauthRedirectURI = mdmOauthRedirectURI;
-        }
-	}
 
 	/**
-     * @return boot config as JSONObject
-	 * @throws JSONException
+	 * Gets a hybrid boot config instance from its JSON configuration file.
+	 * @param ctx The context used to stage the JSON configuration file.
+	 * @param assetFilePath The relative path to the file, from the assets/ folder of the context.
+	 * @return A BootConfig representing the hybrid boot config object.
 	 */
-	public JSONObject asJSON() throws JSONException {
-		JSONObject config = new JSONObject();
-		config.put(REMOTE_ACCESS_CONSUMER_KEY, remoteAccessConsumerKey);
-		config.put(OAUTH_REDIRECT_URI, oauthRedirectURI);
-		config.put(OAUTH_SCOPES, new JSONArray(Arrays.asList(oauthScopes)));
-        config.put(IS_LOCAL, isLocal);
-        config.put(START_PAGE, startPage);
-        config.put(ERROR_PAGE, errorPage);
-        if (!TextUtils.isEmpty(pushNotificationClientId)) {
-            config.put(PUSH_NOTIFICATION_CLIENT_ID, pushNotificationClientId);
-        }
-        config.put(SHOULD_AUTHENTICATE, shouldAuthenticate);
-        config.put(ATTEMPT_OFFLINE_LOAD, attemptOfflineLoad);
-
-        return config;
+	static BootConfig getHybridBootConfig(Context ctx, String assetFilePath) {
+		BootConfig hybridBootConfg = new BootConfig();
+		hybridBootConfg.configIsHybrid = true;
+		JSONObject bootConfigJsonObj = readFromJSON(ctx, assetFilePath);
+		hybridBootConfg.parseBootConfig(bootConfigJsonObj);
+		return hybridBootConfg;
 	}
 
 	/**
-	 * Initializes this BootConfig object by reading the content of bootconfig.json.
+	 * Validates a boot config's inputs against basic sanity tests.
+	 * @param config The BootConfig instance to validate.
+	 * @throws BootConfigException If the boot config is invalid.
+	 */
+	public static void validateBootConfig(BootConfig config) {
+		if (config == null) {
+			throw new BootConfigException("No boot config provided.");
+		}
+
+		if (config.configIsHybrid) {
+			// startPage must be a relative URL.
+			if (BootConfig.isAbsoluteUrl(config.getStartPage())) {
+				throw new BootConfigException("Start page should not be absolute URL.");
+			}
+
+			// unauthenticatedStartPage doesn't make sense in a local setup.  Warn accordingly.
+			if (config.isLocal() && config.getUnauthenticatedStartPage() != null) {
+				SalesforceSDKLogger.w(TAG, UNAUTHENTICATED_START_PAGE + " set for local app, but it will never be used.");
+			}
+
+			// unauthenticatedStartPage doesn't make sense in a remote setup with authentication.  Warn accordingly.
+			if (!config.isLocal() && config.shouldAuthenticate() && config.getUnauthenticatedStartPage() != null) {
+				SalesforceSDKLogger.w(TAG, UNAUTHENTICATED_START_PAGE + " set for remote app with authentication, but it will never be used.");
+			}
+
+			// Lack of unauthenticatedStartPage with remote deferred authentication is an error.
+			if (!config.isLocal() && !config.shouldAuthenticate() && TextUtils.isEmpty(config.getUnauthenticatedStartPage())) {
+				throw new BootConfigException(UNAUTHENTICATED_START_PAGE + " required for remote app with deferred authentication.");
+			}
+
+			// unauthenticatedStartPage, if present, must be an absolute URL.
+			if (!TextUtils.isEmpty(config.getUnauthenticatedStartPage())
+					&& !BootConfig.isAbsoluteUrl(config.getUnauthenticatedStartPage())) {
+				throw new BootConfigException(UNAUTHENTICATED_START_PAGE + " should be absolute URL.");
+			}
+		}
+	}
+
+	/**
+	 * Use runtime configurations (from MDM provider) if any
 	 *
-	 * @param ctx Context.
+	 * @param ctx
 	 */
-	private void readFromJSON(Context ctx) {
-		final String jsonStr = readBootConfigFile(ctx);
-		parseBootConfigStr(jsonStr);
+	private void readFromRuntimeConfig(Context ctx) {
+		RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(ctx);
+		String mdmRemoteAccessConsumeKey = runtimeConfig.getString(ConfigKey.ManagedAppOAuthID);
+		String mdmOauthRedirectURI = runtimeConfig.getString(ConfigKey.ManagedAppCallbackURL);
+		if (!TextUtils.isEmpty(mdmRemoteAccessConsumeKey)) {
+			remoteAccessConsumerKey = mdmRemoteAccessConsumeKey;
+		}
+		if (!TextUtils.isEmpty(mdmOauthRedirectURI)) {
+			oauthRedirectURI = mdmOauthRedirectURI;
+		}
+	}
+
+	/**
+	 * @return boot config as JSONObject
+	 */
+	public JSONObject asJSON() {
+		try {
+			JSONObject config = new JSONObject();
+			config.put(REMOTE_ACCESS_CONSUMER_KEY, remoteAccessConsumerKey);
+			config.put(OAUTH_REDIRECT_URI, oauthRedirectURI);
+			config.put(OAUTH_SCOPES, new JSONArray(Arrays.asList(oauthScopes)));
+			config.put(IS_LOCAL, isLocal);
+			config.put(START_PAGE, startPage);
+			config.put(ERROR_PAGE, errorPage);
+			if (!TextUtils.isEmpty(pushNotificationClientId)) {
+				config.put(PUSH_NOTIFICATION_CLIENT_ID, pushNotificationClientId);
+			}
+			config.put(SHOULD_AUTHENTICATE, shouldAuthenticate);
+			config.put(ATTEMPT_OFFLINE_LOAD, attemptOfflineLoad);
+			config.put(UNAUTHENTICATED_START_PAGE, unauthenticatedStartPage);
+
+			return config;
+		}
+		catch (JSONException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	/**
+	 * Initializes this BootConfig object by reading the content of the JSON configuration file
+	 * at the specified path.
+	 *
+	 * @param ctx            Context.
+	 * @param assetsFilePath The relative file path to the assets/ folder of the context.
+	 * @return A BootConfig representing the hybrid boot config object.
+	 */
+	private static JSONObject readFromJSON(Context ctx, String assetsFilePath) {
+		String jsonStr = ResourceReaderHelper.readAssetFile(ctx, assetsFilePath);
+		if (jsonStr == null) {
+			throw new BootConfigException("Failed to open " + assetsFilePath);
+		}
+		try {
+			JSONObject jsonObj = new JSONObject(jsonStr);
+			return jsonObj;
+		} catch (JSONException e) {
+			throw new BootConfigException("Failed to parse " + assetsFilePath, e);
+		}
 	}
 
 	/**
@@ -160,36 +236,12 @@ public class BootConfig {
 	}
 
 	/**
-	 * Reads the contents of the boot config file.
+	 * Initializes this BootConfig object by parsing a JSON object.
 	 *
-	 * @param ctx Context.
-	 * @return String content of bootconfig.json.
+	 * @param config JSON object representing boot config.
 	 */
-	private String readBootConfigFile(Context ctx) {
-		Scanner scanner = null;
+	private void parseBootConfig(JSONObject config) {
 		try {
-			scanner = new Scanner(ctx.getAssets().open(HYBRID_BOOTCONFIG_PATH));
-
-			// Good trick to get a string from a stream (http://weblogs.java.net/blog/pat/archive/2004/10/stupid_scanner_1.html).
-			return scanner.useDelimiter("\\A").next();
-		} catch (IOException e) {
-			throw new BootConfigException("Failed to open " + HYBRID_BOOTCONFIG_PATH, e);
-		} finally {
-			if (scanner != null) {
-				scanner.close();
-			}
-		}
-	}
-
-	/**
-	 * Initializes this BootConfig object by parsing a JSON string.
-	 *
-	 * @param jsonStr JSON string.
-	 */
-	private void parseBootConfigStr(String jsonStr) {
-		try {
-			final JSONObject config = new JSONObject(jsonStr);
-
 			// Required fields.
 			remoteAccessConsumerKey = config.getString(REMOTE_ACCESS_CONSUMER_KEY);
 			oauthRedirectURI = config.getString(OAUTH_REDIRECT_URI);
@@ -206,6 +258,7 @@ public class BootConfig {
 			pushNotificationClientId = config.optString(PUSH_NOTIFICATION_CLIENT_ID);
 			shouldAuthenticate = config.optBoolean(SHOULD_AUTHENTICATE, DEFAULT_SHOULD_AUTHENTICATE);
 			attemptOfflineLoad = config.optBoolean(ATTEMPT_OFFLINE_LOAD, DEFAULT_ATTEMPT_OFFLINE_LOAD);
+			unauthenticatedStartPage = config.optString(UNAUTHENTICATED_START_PAGE);
 		} catch (JSONException e) {
 			throw new BootConfigException("Failed to parse " + HYBRID_BOOTCONFIG_PATH, e);
 		}
@@ -257,6 +310,21 @@ public class BootConfig {
 	}
 
 	/**
+	 * Returns the path to the optional unauthenticated start page (for remote deferred
+	 * authentication).
+	 * @return URL of the unauthenticated start page.
+	 */
+	public String getUnauthenticatedStartPage() { return unauthenticatedStartPage; }
+
+	/**
+	 * Convenience method to determine whether a configured startPage value is an absolute URL.
+	 * @return true if startPage is an absolute URL, false otherwise.
+	 */
+	public static boolean isAbsoluteUrl(String urlString) {
+		return (urlString != null && (urlString.startsWith("http://") || urlString.startsWith("https://")));
+	}
+
+	/**
 	 * Returns the path to the local error page.
 	 *
 	 * @return Path to local error page.
@@ -298,6 +366,10 @@ public class BootConfig {
 	static public class BootConfigException extends RuntimeException {
 
 		private static final long serialVersionUID = 1L;
+
+		public BootConfigException(String msg) {
+			super(msg);
+		}
 
 		public BootConfigException(String msg, Throwable cause) {
 			super(msg, cause);

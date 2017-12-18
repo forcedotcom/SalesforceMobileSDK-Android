@@ -50,7 +50,6 @@ import okhttp3.ResponseBody;
 public class RestResponse {
 
     private static final String CONTENT_TYPE_HEADER_KEY = "Content-Type";
-    private static final String CONTENT_TYPE_HEADER_VALUE = "application/json";
 	private static final String TAG = "RestResponse";
 
 	private final Response response;
@@ -155,32 +154,12 @@ public class RestResponse {
 		return responseAsBytes;
 	}
 
-    /**
-     * Checks if the response has a body.
-     *
-     * @return True - if response body is present, False - otherwise.
-     */
-	public boolean hasResponseBody() {
-
-        /*
-         * Parses the response headers to determine how to treat the response body,
-         * if it exists. Typically, there's no response body for a POST.
-         */
-        boolean hasResponseBody = false;
-        final Map<String, List<String>> responseHeaders = getAllHeaders();
-        if (responseHeaders != null) {
-            if (responseHeaders.containsKey(CONTENT_TYPE_HEADER_KEY)) {
-                final List<String> contentTypes = responseHeaders.get(CONTENT_TYPE_HEADER_KEY);
-                if (contentTypes != null) {
-                    for (final String contentType : contentTypes) {
-                        if (contentType != null && contentType.contains(CONTENT_TYPE_HEADER_VALUE)) {
-                            hasResponseBody = true;
-                        }
-                    }
-                }
-            }
-        }
-        return hasResponseBody;
+	/**
+	 * Return content type
+	 * @return value of content-type header or null if header not found
+	 */
+	public String getContentType() {
+		return response.header(CONTENT_TYPE_HEADER_KEY);
 	}
 
 	/**
