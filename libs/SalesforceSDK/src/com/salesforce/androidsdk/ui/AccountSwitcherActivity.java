@@ -31,6 +31,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.RadioGroup;
 
+import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -46,15 +47,13 @@ import java.util.List;
  */
 public class AccountSwitcherActivity extends Activity {
 
-	protected SalesforceR salesforceR;
 	protected UserAccountManager userAccMgr;
 
 	@Override
 	public void onCreate(Bundle savedInstance) {
 		super.onCreate(savedInstance);
-        salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
 		userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
-		setContentView(salesforceR.layoutAccountSwitcher());
+		setContentView(R.layout.sf__account_switcher);
 	}
 
 	@Override
@@ -71,7 +70,7 @@ public class AccountSwitcherActivity extends Activity {
 	 * @param v View that was clicked.
 	 */
 	public void switchToExistingAccount(View v) {
-        final RadioGroup radioGroup = findViewById(salesforceR.idAccountListGroup());
+        final RadioGroup radioGroup = findViewById(R.id.sf__accounts_group);
         int checkedId = radioGroup.getCheckedRadioButtonId();
 		final SalesforceAccountRadioButton rb = radioGroup.findViewById(checkedId);
 		if (rb != null) {
@@ -122,7 +121,7 @@ public class AccountSwitcherActivity extends Activity {
     }
 
 	private void buildAccountList() {
-        final RadioGroup radioGroup = findViewById(salesforceR.idAccountListGroup());
+        final RadioGroup radioGroup = findViewById(R.id.sf__accounts_group);
         radioGroup.removeAllViews();
         UserAccount curAccount = userAccMgr.getCurrentUser();
         final List<UserAccount> accounts = getAccounts();

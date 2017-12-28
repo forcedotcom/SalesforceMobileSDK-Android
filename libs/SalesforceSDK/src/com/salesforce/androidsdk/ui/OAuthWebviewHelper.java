@@ -274,7 +274,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
     protected void showError(Exception exception) {
         Toast.makeText(getContext(),
-                getContext().getString(SalesforceSDKManager.getInstance().getSalesforceR().stringGenericError(), exception.toString()),
+                getContext().getString(R.string.sf__generic_error, exception.toString()),
                 Toast.LENGTH_LONG).show();
     }
 
@@ -449,19 +449,16 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         @Override
         public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
             int primError = error.getPrimaryError();
-
-            // Figuring out string resource id
-            SalesforceR r = SalesforceSDKManager.getInstance().getSalesforceR();
-            int primErrorStringId = r.stringSSLUnknownError();
+            int primErrorStringId = R.string.sf__ssl_unknown_error;
             switch (primError) {
-                case SslError.SSL_EXPIRED:      primErrorStringId = r.stringSSLExpired(); break;
-                case SslError.SSL_IDMISMATCH:   primErrorStringId = r.stringSSLIdMismatch(); break;
-                case SslError.SSL_NOTYETVALID:  primErrorStringId = r.stringSSLNotYetValid(); break;
-                case SslError.SSL_UNTRUSTED:    primErrorStringId = r.stringSSLUntrusted(); break;
+                case SslError.SSL_EXPIRED:      primErrorStringId = R.string.sf__ssl_expired; break;
+                case SslError.SSL_IDMISMATCH:   primErrorStringId = R.string.sf__ssl_id_mismatch; break;
+                case SslError.SSL_NOTYETVALID:  primErrorStringId = R.string.sf__ssl_not_yet_valid; break;
+                case SslError.SSL_UNTRUSTED:    primErrorStringId = R.string.sf__ssl_untrusted; break;
             }
 
             // Building text message to show
-            String text = getContext().getString(r.stringSSLError(), getContext().getString(primErrorStringId));
+            String text = getContext().getString(R.string.sf__ssl_error, getContext().getString(primErrorStringId));
             SalesforceSDKLogger.e(TAG, "Received SSL error for server: " + text);
 
             // Bringing up toast
@@ -516,8 +513,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
         private void handleJWTError() {
             final SalesforceSDKManager mgr = SalesforceSDKManager.getInstance();
-            onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
-                    getContext().getString(mgr.getSalesforceR().stringJWTAuthenticationErrorBody()), backgroundException);
+            onAuthFlowError(getContext().getString(R.string.sf__generic_authentication_error_title),
+                    getContext().getString(R.string.sf__jwt_authentication_error), backgroundException);
         }
     }
 
@@ -553,16 +550,16 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             // Failure cases.
             if (backgroundException != null) {
                 SalesforceSDKLogger.w(TAG, "Exception thrown while retrieving token response", backgroundException);
-                onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
-                        getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorBody()), backgroundException);
+                onAuthFlowError(getContext().getString(R.string.sf__generic_authentication_error_title),
+                        getContext().getString(R.string.sf__generic_authentication_error), backgroundException);
                 callback.finish(null);
                 return;
             }
             if (id.customPermissions != null) {
                 final boolean mustBeManagedApp = id.customPermissions.optBoolean(MUST_BE_MANAGED_APP_PERM);
                 if (mustBeManagedApp && !RuntimeConfig.getRuntimeConfig(getContext()).isManagedApp()) {
-                    onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
-                            getContext().getString(mgr.getSalesforceR().stringManagedAppError()), backgroundException);
+                    onAuthFlowError(getContext().getString(R.string.sf__generic_authentication_error_title),
+                            getContext().getString(R.string.sf__managed_app_error), backgroundException);
                     callback.finish(null);
                     return;
                 }

@@ -389,7 +389,9 @@ public class SalesforceSDKManager {
      *
      * Since 1.3, SalesforceSDK is packaged as a library project, so the SalesforceR subclass is no longer needed.
      * @return SalesforceR object which allows reference to resources living outside the SDK.
+     * @deprecated Will be removed in Mobile SDK 7.0. Resources can be referenced directly in a library project.
      */
+    @Deprecated
     public SalesforceR getSalesforceR() {
         return salesforceR;
     }
@@ -1178,7 +1180,7 @@ public class SalesforceSDKManager {
      * @return Account type string.
      */
     public String getAccountType() {
-        return context.getString(getSalesforceR().stringAccountType());
+        return context.getString(R.string.account_type);
     }
 
     @Override
