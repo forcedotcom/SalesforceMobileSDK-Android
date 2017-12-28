@@ -636,7 +636,13 @@ public class SalesforceSDKManager {
      * @return True - if IDP login flow is enabled, False - otherwise.
      */
     public boolean isIDPLoginFlowEnabled() {
-        return !TextUtils.isEmpty(idpAppURIScheme);
+        boolean isIDPFlowEnabled = !TextUtils.isEmpty(idpAppURIScheme);
+        if (isIDPFlowEnabled) {
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_APP_IS_SP);
+        } else {
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_APP_IS_SP);
+        }
+        return isIDPFlowEnabled;
     }
 
     /**
@@ -645,18 +651,16 @@ public class SalesforceSDKManager {
      */
     private boolean isIdentityProvider() {
         try {
-            PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), PackageManager.GET_ACTIVITIES);
+            PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(),
+                    PackageManager.GET_ACTIVITIES);
             for (ActivityInfo activityInfo : packageInfo.activities) {
                 if (activityInfo.name.equals(IDPAccountPickerActivity.class.getName())) {
                     return true;
                 }
             }
-
-
         } catch (NameNotFoundException e) {
             SalesforceSDKLogger.e(TAG, "Exception occurred while examining application info", e);
         }
-
         return false;
     }
 
