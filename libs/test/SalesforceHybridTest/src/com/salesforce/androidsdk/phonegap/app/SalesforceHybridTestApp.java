@@ -39,6 +39,7 @@ public class SalesforceHybridTestApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SalesforceHybridSDKManager.initHybrid(getApplicationContext(), null, SalesforceHybridTestActivity.class, LoginActivity.class);
+		SalesforceHybridSDKManager.initHybrid(getApplicationContext(),
+				SalesforceHybridTestActivity.class, LoginActivity.class);
 	}
 }
