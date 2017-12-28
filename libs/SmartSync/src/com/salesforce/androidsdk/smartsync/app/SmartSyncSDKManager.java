@@ -59,7 +59,7 @@ public class SmartSyncSDKManager extends SmartStoreSDKManager {
 	 */
 	protected SmartSyncSDKManager(Context context, Class<? extends Activity> mainActivity,
                                   Class<? extends Activity> loginActivity) {
-		this(context, null, mainActivity, loginActivity);
+		super(context, mainActivity, loginActivity);
 	}
 
 	/**

@@ -74,7 +74,7 @@ public class SalesforceHybridSDKManager extends SmartSyncSDKManager {
      */
     protected SalesforceHybridSDKManager(Context context, Class<? extends Activity> mainActivity,
                                          Class<? extends Activity> loginActivity) {
-        this(context, null, mainActivity, loginActivity);
+        super(context, mainActivity, loginActivity);
     }
 
     /**
@@ -211,7 +211,7 @@ public class SalesforceHybridSDKManager extends SmartSyncSDKManager {
     	if (INSTANCE != null) {
     		return (SmartSyncSDKManager) INSTANCE;
     	} else {
-            throw new RuntimeException("Applications need to call SmartSyncSDKManager.init() first.");
+            throw new RuntimeException("Applications need to call SalesforceHybridSDKManager.init() first.");
     	}
     }
 

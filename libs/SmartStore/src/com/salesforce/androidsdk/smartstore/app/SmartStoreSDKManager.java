@@ -71,7 +71,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      */
     protected SmartStoreSDKManager(Context context, Class<? extends Activity> mainActivity,
                                    Class<? extends Activity> loginActivity) {
-        this(context, null, mainActivity, loginActivity);
+        super(context, mainActivity, loginActivity);
     }
 
     /**
