@@ -41,6 +41,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.LoginServerManager;
 
@@ -50,7 +51,6 @@ import com.salesforce.androidsdk.config.LoginServerManager;
 public class CustomServerUrlEditor extends DialogFragment {
 
 	boolean isDefault;
-	private SalesforceR salesforceR;
 	private LoginServerManager loginServerManager;
 	private Context context;
 	private View rootView;
@@ -61,9 +61,6 @@ public class CustomServerUrlEditor extends DialogFragment {
 	public CustomServerUrlEditor() {
 		context = SalesforceSDKManager.getInstance().getAppContext();
 
-		// Object which allows reference to resources living outside the SDK.
-		salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
-
 		// Login server manager.
 		loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
 	}
@@ -71,31 +68,31 @@ public class CustomServerUrlEditor extends DialogFragment {
 	@Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
-        rootView = inflater.inflate(salesforceR.layoutCustomServerUrl(), container);
-        final String label = getEditDefaultValue((salesforceR.idPickerCustomLabel()));
-		final String urlValue = getEditDefaultValue((salesforceR.idPickerCustomUrl()));
-		isDefault = urlValue.equals(getString(salesforceR.stringServerUrlDefaultCustomUrl()));
+        rootView = inflater.inflate(R.layout.sf__custom_server_url, container);
+        final String label = getEditDefaultValue(R.id.sf__picker_custom_label);
+		final String urlValue = getEditDefaultValue(R.id.sf__picker_custom_url);
+		isDefault = urlValue.equals(getString(R.string.sf__server_url_default_custom_url));
 		if (isDefault) {
-			getDialog().setTitle(salesforceR.stringServerUrlAddTitle());
+			getDialog().setTitle(R.string.sf__server_url_add_title);
 		} else {
-			getDialog().setTitle(salesforceR.stringServerUrlEditTitle());
+			getDialog().setTitle(R.string.sf__server_url_edit_title);
 		}
-		setEditText(salesforceR.idPickerCustomLabel(), label);
-		setEditText(salesforceR.idPickerCustomUrl(), urlValue);
+		setEditText(R.id.sf__picker_custom_label, label);
+		setEditText(R.id.sf__picker_custom_url, urlValue);
 
 		/*
 		 * Sets handlers in the code for the dialog. 
 		 */
-		final Button applyBtn = (Button) rootView.findViewById(salesforceR.idApplyButton());
+		final Button applyBtn = rootView.findViewById(R.id.sf__apply_button);
 		applyBtn.setOnClickListener(new View.OnClickListener() {
 
 			@Override
 			public void onClick(View v) {
-				final String lbl = validateInput(salesforceR.idPickerCustomLabel());
+				final String lbl = validateInput(R.id.sf__picker_custom_label);
 				if (lbl == null) {
 					return;
 				}
-				final String val = validateInput(salesforceR.idPickerCustomUrl());
+				final String val = validateInput(R.id.sf__picker_custom_url);
 				if (val == null) {
 					return;
 				}
@@ -105,7 +102,7 @@ public class CustomServerUrlEditor extends DialogFragment {
 				dismiss();
 			}
 		});
-		final Button cancelBtn = (Button) rootView.findViewById(salesforceR.idCancelButton());
+		final Button cancelBtn = rootView.findViewById(R.id.sf__cancel_button);
 		cancelBtn.setOnClickListener(new View.OnClickListener() {
 
 			@Override
@@ -137,7 +134,7 @@ public class CustomServerUrlEditor extends DialogFragment {
 		if (value == null) {
 			throw new RuntimeException("Value cannot be null");
 		}
-		final EditText et = (EditText) rootView.findViewById(editId);
+		final EditText et = rootView.findViewById(editId);
 		final SpannableString labelSpan = new SpannableString(value);
 		if (et != null) {
 			et.setText(labelSpan);
@@ -152,10 +149,10 @@ public class CustomServerUrlEditor extends DialogFragment {
 						if (hasFocus && isDefaultValue) {
 							et.getText().clear();
 						} else if (!hasFocus && et.getText().toString().equals("")) {
-							if (et.getId() == salesforceR.idPickerCustomLabel()) {
-								setEditText(salesforceR.idPickerCustomLabel(), getEditDefaultValue(et.getId()));
+							if (et.getId() == R.id.sf__picker_custom_label) {
+								setEditText(R.id.sf__picker_custom_label, getEditDefaultValue(et.getId()));
 							} else {
-								setEditText(salesforceR.idPickerCustomUrl(), getEditDefaultValue(et.getId()));
+								setEditText(R.id.sf__picker_custom_url, getEditDefaultValue(et.getId()));
 							}
 						}
 					}
@@ -165,7 +162,7 @@ public class CustomServerUrlEditor extends DialogFragment {
 	}
 
 	private String validateInput(int editId) {
-		final EditText et = (EditText) rootView.findViewById(editId);
+		final EditText et = rootView.findViewById(editId);
 		final Editable etVal = et.getText();
 		boolean isInvalidValue = etVal.toString().equals(getEditDefaultValue(editId))
 				|| etVal.toString().equals("");
@@ -173,10 +170,10 @@ public class CustomServerUrlEditor extends DialogFragment {
 		/*
 		 * Ensures that the URL is a 'https://' URL, since OAuth requires 'https://'.
 		 */
-		if (editId == salesforceR.idPickerCustomUrl()) {
+		if (editId == R.id.sf__picker_custom_url) {
 			isInvalidValue = !URLUtil.isHttpsUrl(etVal.toString());
 			if (isInvalidValue) {
-				Toast.makeText(context, getString(salesforceR.stringInvalidServerUrl()),
+				Toast.makeText(context, getString(R.string.sf__invalid_server_url),
 						Toast.LENGTH_SHORT).show();
 			}
 		}
@@ -189,10 +186,10 @@ public class CustomServerUrlEditor extends DialogFragment {
 	}
 
 	private String getEditDefaultValue(int editId) {
-		if (editId == salesforceR.idPickerCustomLabel()) {
-			return getString(salesforceR.stringServerUrlDefaultCustomLabel());
+		if (editId == R.id.sf__picker_custom_label) {
+			return getString(R.string.sf__server_url_default_custom_label);
 		} else { 
-			return getString(salesforceR.stringServerUrlDefaultCustomUrl());
+			return getString(R.string.sf__server_url_default_custom_url);
 		}
 	}
 }
