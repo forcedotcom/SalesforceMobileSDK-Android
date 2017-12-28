@@ -225,11 +225,26 @@ public class SalesforceSDKManager {
 
     /**
      * Protected constructor.
+     *
+     * @param context Application context.
+     * @param mainActivity Activity that should be launched after the login flow.
+     * @param loginActivity Login activity.
+     */
+    protected SalesforceSDKManager(Context context, Class<? extends Activity> mainActivity,
+                                   Class<? extends Activity> loginActivity) {
+        this(context, null, mainActivity, loginActivity);
+    }
+
+    /**
+     * Protected constructor.
+     *
      * @param context Application context.
      * @param keyImpl Implementation for KeyInterface.
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
+     * @deprecated Will be removed in Mobile SDK 7.0. Use {@link #SalesforceSDKManager(Context, Class, Class)} instead.
      */
+    @Deprecated
     protected SalesforceSDKManager(Context context, KeyInterface keyImpl,
                                    Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
         this.uid = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
@@ -300,9 +315,12 @@ public class SalesforceSDKManager {
     	}
     }
 
-    /*
-     * TODO: Mark this deprecated and remove it in Mobile SDK 7.0.
+    /**
+     * @deprecated This interface has been deprecated in Mobile SDK 6.1 and will be removed
+     * in Mobile SDK 7.0. This is required to upgrade an app built on an older version of
+     * Mobile SDK to Mobile SDK 6.x.
      */
+    @Deprecated
     public interface KeyInterface {
 
         /**
@@ -326,7 +344,11 @@ public class SalesforceSDKManager {
          *
          * @param name The name associated with the key.
          * @return The key used for encrypting salts and keys.
+         * @deprecated This interface has been deprecated in Mobile SDK 6.1 and will be removed
+         * in Mobile SDK 7.0. This is required to upgrade an app built on an older version of
+         * Mobile SDK to Mobile SDK 6.x.
          */
+        @Deprecated
         public String getKey(String name);
     }
 
@@ -348,10 +370,11 @@ public class SalesforceSDKManager {
      *
      * @param name The name associated with the key.
      * @return The key used for encrypting salts and keys.
+     * @deprecated This interface has been deprecated in Mobile SDK 6.1 and will be removed
+     * in Mobile SDK 7.0. This is required to upgrade an app built on an older version of
+     * Mobile SDK to Mobile SDK 6.x.
      */
-    /*
-     * TODO: Mark this deprecated and remove it in Mobile SDK 7.0.
-     */
+    @Deprecated
     public String getKey(String name) {
     	String key = null;
     	if (keyImpl != null) {
@@ -447,11 +470,37 @@ public class SalesforceSDKManager {
      * this method before using the Salesforce Mobile SDK.
      *
      * @param context Application context.
-     * @param keyImpl Implementation of KeyInterface.
      * @param mainActivity Activity that should be launched after the login flow.
      */
+    public static void initNative(Context context, Class<? extends Activity> mainActivity) {
+        SalesforceSDKManager.init(context, null, mainActivity, LoginActivity.class);
+    }
+
+    /**
+     * Initializes required components. Native apps must call one overload of
+     * this method before using the Salesforce Mobile SDK.
+     *
+     * @param context Application context.
+     * @param keyImpl Implementation of KeyInterface.
+     * @param mainActivity Activity that should be launched after the login flow.
+     * @deprecated Will be removed in Mobile SDK 7.0. Use {@link #initNative(Context, Class)} instead.
+     */
+    @Deprecated
     public static void initNative(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity) {
         SalesforceSDKManager.init(context, keyImpl, mainActivity, LoginActivity.class);
+    }
+
+    /**
+     * Initializes required components. Native apps must call one overload of
+     * this method before using the Salesforce Mobile SDK.
+     *
+     * @param context Application context.
+     * @param mainActivity Activity that should be launched after the login flow.
+     * @param loginActivity Login activity.
+     */
+    public static void initNative(Context context, Class<? extends Activity> mainActivity,
+                                  Class<? extends Activity> loginActivity) {
+        SalesforceSDKManager.init(context, null, mainActivity, loginActivity);
     }
 
     /**
@@ -462,7 +511,9 @@ public class SalesforceSDKManager {
      * @param keyImpl Implementation of KeyInterface.
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
+     * @deprecated Will be removed in Mobile SDK 7.0. Use {@link #initNative(Context, Class, Class)} instead.
      */
+    @Deprecated
     public static void initNative(Context context, KeyInterface keyImpl,
                                   Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
         SalesforceSDKManager.init(context, keyImpl, mainActivity, loginActivity);
