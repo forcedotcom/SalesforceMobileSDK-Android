@@ -3,7 +3,7 @@ require 'set'
 
 libsTopoSorted = ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "SmartSync", "SalesforceHybrid", "SalesforceReact"]
 
-if ENV["CIRCLE_PULL_REQUEST"].eql?("true") {
+unless ENV["CIRCLE_PULL_REQUEST"].nil? {
   $GITPRAPI = "https://api.github.com/repos/%s/SalesforceMobileSDK-android/pulls/%s/files"
 
   prFilesAPI = $GITPRAPI % [ENV["CIRCLE_PROJECT_USERNAME"], ENV["CIRCLE_PR_NUMBER"]]

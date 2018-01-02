@@ -2,11 +2,11 @@ defaults: &defaults
   working_directory: ~/SalesforceMobileSDK-Android
   docker:
     - image: brandonpage/salesforce-mobilesdk-android-docker-primary:0.0.4
-      environment:
-      MAVEN_OPTS: "-Xms512m -Xmx2048m"
   environment:
     - TERM: "dumb"
     - ADB_INSTALL_TIMEOUT: 15
+    - _JAVA_OPTIONS: "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"
+    - GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs="-XX:+HeapDumpOnOutOfMemoryError"'
     - ANDROID_NDK: '/opt/ndk/android-ndk-r10e'
     - BUILD_THREADS: 2
 

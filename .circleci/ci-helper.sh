@@ -49,7 +49,7 @@ function runTests {
 
 function runDangerPR {
     if [[ -n "$CIRCLE_PULL_REQUEST" ]]; then
-        DANGER_GITHUB_API_TOKEN="c21349d8a97e1bf9cdd9""301fd949a83db862216b" danger --dangerfile=.circleci/Dangerfile_PR --danger_id=ci/circleci-setup
+        DANGER_GITHUB_API_TOKEN="c21349d8a97e1bf9cdd9""301fd949a83db862216b" danger --dangerfile=.circleci/Dangerfile_PR
     else
         echo "Not a PR, no need to run Danger."
     fi
@@ -58,7 +58,7 @@ function runDangerPR {
 function runDangerLib {
     if [[ -n "$CIRCLE_PULL_REQUEST" ]]; then
         mv libs/"${CURRENT_LIB}"/build/outputs/androidTest-results/connected/*.xml libs/"${CURRENT_LIB}"/build/outputs/androidTest-results/connected/test-results.xml
-        DANGER_GITHUB_API_TOKEN="c21349d8a97e1bf9cdd9""301fd949a83db862216b" danger --dangerfile=.circleci/Dangerfile_Lib --danger_id=ci/circleci-${CURRENT_LIB}
+        DANGER_GITHUB_API_TOKEN="c21349d8a97e1bf9cdd9""301fd949a83db862216b" danger --dangerfile=.circleci/Dangerfile_Lib
     else
         echo "Not a PR, no need to run Danger."
     fi
