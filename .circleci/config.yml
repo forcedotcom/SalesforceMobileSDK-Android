@@ -287,5 +287,5 @@ workflows:
              branches:
                only:
                  - nightly_test
-      jobs:
+     jobs:
         - package
