@@ -3,7 +3,7 @@ defaults: &defaults
   docker:
     - image: brandonpage/salesforce-mobilesdk-android-docker-primary:0.0.4
       environment:
-      MAVEN_OPTS: "-Xms256m -Xmx1024m"
+      MAVEN_OPTS: "-Xms512m -Xmx2048m"
   environment:
     - TERM: "dumb"
     - ADB_INSTALL_TIMEOUT: 15
@@ -85,7 +85,6 @@ jobs:
       - CURRENT_LIB: "SalesforceSDK"
     steps:
       - *attach_workspace
-      - run: sleep 30
       - run:
           name:  Launch Emulator
           command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
@@ -104,9 +103,9 @@ jobs:
       - store_test_results:
           path: libs/SalesforceSDK/build/outputs/androidTest-results/
       - run:
-        name:  Run Danger
-        when: always
-        command: source .circleci/ci-helper.sh && runDangerLib
+          name:  Run Danger
+          when: always
+          command: source .circleci/ci-helper.sh && runDangerLib
 
   test-SmartStore:
     <<: *defaults
@@ -114,7 +113,6 @@ jobs:
       - CURRENT_LIB: "SmartStore"
     steps:
       - *attach_workspace
-      - run: sleep 30
       - run:
           name:  Launch Emulator
           command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
@@ -143,7 +141,6 @@ jobs:
       - CURRENT_LIB: "SmartSync"
     steps:
       - *attach_workspace
-      - run: sleep 30
       - run:
           name:  Launch Emulator
           command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
@@ -172,7 +169,6 @@ jobs:
       - CURRENT_LIB: "SalesforceHybrid"
     steps:
       - *attach_workspace
-      - run: sleep 30
       - run:
           name:  Launch Emulator
           command: emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
@@ -257,7 +253,7 @@ workflows:
   nightly:
     triggers:
       - schedule:
-          cron: "20 11 * * *"
+          cron: "15,30,45,00 * * * *"
           filters:
             branches:
               only:
@@ -286,7 +282,7 @@ workflows:
   weekly:
     triggers:
       - schedule:
-          cron: "45 11 * * *"
+          cron: "15,30,45,00 * * * *"
           filters:
             branches:
               only:
