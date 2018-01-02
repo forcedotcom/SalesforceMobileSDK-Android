@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby
+
+if File.file?("test-results.xml")
+  junit.parse "test-results.xml"
+  junit.show_skipped_tests = true
+  junit.report
+end
+
+if File.file?("libs/#{ENV['CURRENT_LIB']}/build/reports/lint-results.xml")
+  android_lint.report_file = "libs/#{ENV['CURRENT_LIB']}/build/reports/lint-results.xml"
+  android_lint.filtering = true
+  android_lint.lint(inline_mode: true)
+end
