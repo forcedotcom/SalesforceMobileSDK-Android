@@ -16,13 +16,13 @@ apply plugin: 'com.jfrog.bintray'
 dependencies {
     api project(':libs:SalesforceAnalytics')
     api 'com.squareup.okhttp3:okhttp:3.9.0'
-    api 'com.google.android.gms:play-services-gcm:11.0.2'
+    api 'com.google.android.gms:play-services-gcm:11.8.0'
     api 'com.android.support:customtabs:25.2.0'
 }
 
 android {
   compileSdkVersion 27
-  buildToolsVersion '26.0.2'
+  buildToolsVersion '27.0.3'
 
   buildTypes {
       debug {
