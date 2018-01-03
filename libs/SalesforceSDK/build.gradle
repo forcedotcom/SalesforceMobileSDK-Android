@@ -17,7 +17,7 @@ dependencies {
     api project(':libs:SalesforceAnalytics')
     api 'com.squareup.okhttp3:okhttp:3.9.0'
     api 'com.google.android.gms:play-services-gcm:11.8.0'
-    api 'com.android.support:customtabs:27.0.2'
+    api 'com.android.support:customtabs:25.2.0'
 }
 
 android {
