@@ -15,6 +15,7 @@ function printTestsToRun {
         echo "Not a PR.  Run everything"
     else
         LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
+        echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
         echo "Bash LIBS_TO_TEST: ${LIBS_TO_TEST}"
         if [[ ! -z ${LIBS_TO_TEST} ]]; then
             echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
@@ -26,16 +27,8 @@ function printTestsToRun {
 
 # Read from ENV var to determine what AVD to start when we update to use multiple
 function startAVD {
-    echo "CIRCLE_PULL_REQUEST: $CIRCLE_PULL_REQUEST"
-    echo "CIRCLE_PULL_REQUEST with brances: ${CIRCLE_PULL_REQUEST}"
-    echo "CIRCLE_PR_USERNAME: ${CIRCLE_PR_USERNAME}"
-    echo "CIRCLE_PROJECT_USERNAME: ${CIRCLE_PROJECT_USERNAME}"
-    echo "CIRCLE_PR_NUMBER: ${CIRCLE_PR_NUMBER}"
-    echo "CIRCLE_PULL_REQUEST: ${CIRCLE_PULL_REQUEST}"
-    echo "CIRCLE_PULL_REQUESTS: ${CIRCLE_PULL_REQUESTS}"
-    echo "LIBS_TO_TEST: $(ruby .circleci/gitChangedLibs.rb)"
-
-    if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ $(ruby .circleci/gitChangedLibs.rb) == *"${CURRENT_LIB}"* ]]; then
+    printTestsToRun
+    if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
         emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
     else
         echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."
@@ -43,7 +36,7 @@ function startAVD {
 }
 
 function waitForAVD {
-    if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ $(ruby .circleci/gitChangedLibs.rb) == *"${CURRENT_LIB}"* ]]; then
+    if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
         local bootanim=""
         export PATH=$(dirname $(dirname $(which android)))/platform-tools:$PATH
         until [[ "$bootanim" =~ "stopped" ]]; do
@@ -59,7 +52,7 @@ function waitForAVD {
 }
 
 function runTests {
-    if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ $(ruby .circleci/gitChangedLibs.rb) == *"${CURRENT_LIB}"* ]]; then
+    if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
         ./gradlew :libs:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
     else
         echo "No need to run ${CURRENT_LIB} tests for this PR."
