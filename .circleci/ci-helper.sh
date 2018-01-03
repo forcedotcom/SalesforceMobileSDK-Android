@@ -2,9 +2,11 @@
 # inspired by https://github.com/Originate/guide/blob/master/android/guide/Continuous%20Integration.md
 
 function printTestsToRun {
-    echo "Bash CIRCLE_PR_USERNAME: ${CIRCLE_PR_USERNAME}"
-    echo "Bash CIRCLE_PROJECT_USERNAME: ${CIRCLE_PROJECT_USERNAME}"
-    echo "Bash CIRCLE_PR_NUMBER: ${CIRCLE_PR_NUMBER}"
+    echo "CIRCLE_PULL_REQUEST: $CIRCLE_PULL_REQUEST"
+    echo "CIRCLE_PULL_REQUEST with brances: ${CIRCLE_PULL_REQUEST}"
+    echo "CIRCLE_PR_USERNAME: ${CIRCLE_PR_USERNAME}"
+    echo "CIRCLE_PROJECT_USERNAME: ${CIRCLE_PROJECT_USERNAME}"
+    echo "CIRCLE_PR_NUMBER: ${CIRCLE_PR_NUMBER}"
     echo "CIRCLE_PULL_REQUEST: ${CIRCLE_PULL_REQUEST}"
     echo "CIRCLE_PULL_REQUESTS: ${CIRCLE_PULL_REQUESTS}"
 
