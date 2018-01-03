@@ -9,6 +9,7 @@ function printTestsToRun {
     echo "CIRCLE_PR_NUMBER: ${CIRCLE_PR_NUMBER}"
     echo "CIRCLE_PULL_REQUEST: ${CIRCLE_PULL_REQUEST}"
     echo "CIRCLE_PULL_REQUESTS: ${CIRCLE_PULL_REQUESTS}"
+    echo "LIBS_TO_TEST: $(ruby .circleci/gitChangedLibs.rb)"
 
     if [ -z "$CIRCLE_PULL_REQUEST" ]; then
         echo "Not a PR.  Run everything"
@@ -25,6 +26,15 @@ function printTestsToRun {
 
 # Read from ENV var to determine what AVD to start when we update to use multiple
 function startAVD {
+    echo "CIRCLE_PULL_REQUEST: $CIRCLE_PULL_REQUEST"
+    echo "CIRCLE_PULL_REQUEST with brances: ${CIRCLE_PULL_REQUEST}"
+    echo "CIRCLE_PR_USERNAME: ${CIRCLE_PR_USERNAME}"
+    echo "CIRCLE_PROJECT_USERNAME: ${CIRCLE_PROJECT_USERNAME}"
+    echo "CIRCLE_PR_NUMBER: ${CIRCLE_PR_NUMBER}"
+    echo "CIRCLE_PULL_REQUEST: ${CIRCLE_PULL_REQUEST}"
+    echo "CIRCLE_PULL_REQUESTS: ${CIRCLE_PULL_REQUESTS}"
+    echo "LIBS_TO_TEST: $(ruby .circleci/gitChangedLibs.rb)"
+
     if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ $(ruby .circleci/gitChangedLibs.rb) == *"${CURRENT_LIB}"* ]]; then
         emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
     else
