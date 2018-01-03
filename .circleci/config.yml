@@ -213,16 +213,17 @@ jobs:
             git clone git@github.com:forcedotcom/SalesforceMobileSDK-Package.git
             cd SalesforceMobileSDK-Package
             git checkout dev
+            node ./install.js
 
       - run:
-        name: Test forcedroid
-        when: always
-        command: ./test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native --test-production
+          name: Test forcedroid
+          when: always
+          command: ./test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native
 
       - run:
-        name: Test sfdx
-        when: always
-        command: ./test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native --use-sfdx --test-production
+          name: Test sfdx
+          when: always
+          command: ./test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native --use-sfdx
 
 
 workflows:
@@ -253,7 +254,7 @@ workflows:
   nightly:
      triggers:
        - schedule:
-           cron: "45 17-23 * * *"
+           cron: "45 8-16 * * *"
            filters:
              branches:
                only:
@@ -282,7 +283,7 @@ workflows:
   weekly:
      triggers:
        - schedule:
-           cron: "15 17-23 * * *"
+           cron: "15 8-16 * * *"
            filters:
              branches:
                only:
