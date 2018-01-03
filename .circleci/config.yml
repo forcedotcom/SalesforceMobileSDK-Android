@@ -208,11 +208,11 @@ jobs:
     <<: *defaults
     steps:
       - run:
-        name: Checkout SalesforceMobileSDK-Package
-        command: |
-          git clone git@github.com:forcedotcom/SalesforceMobileSDK-Package.git
-          cd SalesforceMobileSDK-Package
-          git checkout dev
+          name: Checkout SalesforceMobileSDK-Package
+          command: |
+            git clone git@github.com:forcedotcom/SalesforceMobileSDK-Package.git
+            cd SalesforceMobileSDK-Package
+            git checkout dev
 
       - run:
         name: Test forcedroid
@@ -253,7 +253,7 @@ workflows:
   nightly:
      triggers:
        - schedule:
-           cron: "15,45 * * * *"
+           cron: "45 17-23 * * *"
            filters:
              branches:
                only:
@@ -282,7 +282,7 @@ workflows:
   weekly:
      triggers:
        - schedule:
-           cron: "00,30 * * * *"
+           cron: "15 17-23 * * *"
            filters:
              branches:
                only:
