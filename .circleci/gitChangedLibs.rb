@@ -7,7 +7,6 @@ if not ENV["CIRCLE_PULL_REQUEST"].nil? {
   $GITPRAPI = "https://api.github.com/repos/%s/SalesforceMobileSDK-android/pulls/%s/files"
 
   prFilesAPI = $GITPRAPI % [ENV["CIRCLE_PROJECT_USERNAME"], ENV["CIRCLE_PR_NUMBER"]]
-  print prFilesAPI
   pullfiles = `#{"curl %s" % [prFilesAPI]}`
   prfiles = JSON.parse(pullfiles)
 

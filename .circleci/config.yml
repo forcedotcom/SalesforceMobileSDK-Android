@@ -28,7 +28,14 @@ jobs:
       - run:
           name: Determine Tests to Run
           shell: /bin/bash
-          command: source .circleci/ci-helper.sh && printTestsToRun
+          command:  |
+            LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
+            echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
+            if [[ ! -z ${LIBS_TO_TEST} ]]; then
+              echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
+            else
+              echo -e "\n\nNothing to Test."
+            fi
       - run:
           name:  Run Danger
           when: always
@@ -58,6 +65,17 @@ jobs:
     steps:
       - *attach_workspace
       - run:
+          name: Determine Tests to Run
+          shell: /bin/bash
+          command:  |
+            LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
+            echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
+            if [[ ! -z ${LIBS_TO_TEST} ]]; then
+              echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
+            else
+              echo -e "\n\nNothing to Test."
+            fi
+      - run:
           name:  Launch Emulator
           command: source .circleci/ci-helper.sh && startAVD
           background: true
@@ -85,6 +103,17 @@ jobs:
       - CURRENT_LIB: "SalesforceSDK"
     steps:
       - *attach_workspace
+      - run:
+          name: Determine Tests to Run
+          shell: /bin/bash
+          command:  |
+            LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
+            echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
+            if [[ ! -z ${LIBS_TO_TEST} ]]; then
+              echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
+            else
+              echo -e "\n\nNothing to Test."
+            fi
       - run:
           name:  Launch Emulator
           command: source .circleci/ci-helper.sh && startAVD
@@ -114,6 +143,17 @@ jobs:
     steps:
       - *attach_workspace
       - run:
+          name: Determine Tests to Run
+          shell: /bin/bash
+          command:  |
+            LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
+            echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
+            if [[ ! -z ${LIBS_TO_TEST} ]]; then
+              echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
+            else
+              echo -e "\n\nNothing to Test."
+            fi
+      - run:
           name:  Launch Emulator
           command: source .circleci/ci-helper.sh && startAVD
           background: true
@@ -142,6 +182,17 @@ jobs:
     steps:
       - *attach_workspace
       - run:
+          name: Determine Tests to Run
+          shell: /bin/bash
+          command:  |
+            LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
+            echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
+            if [[ ! -z ${LIBS_TO_TEST} ]]; then
+              echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
+            else
+              echo -e "\n\nNothing to Test."
+            fi
+      - run:
           name:  Launch Emulator
           command: source .circleci/ci-helper.sh && startAVD
           background: true
@@ -169,6 +220,17 @@ jobs:
       - CURRENT_LIB: "SalesforceHybrid"
     steps:
       - *attach_workspace
+      - run:
+          name: Determine Tests to Run
+          shell: /bin/bash
+          command:  |
+            LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
+            echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
+            if [[ ! -z ${LIBS_TO_TEST} ]]; then
+              echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
+            else
+              echo -e "\n\nNothing to Test."
+            fi
       - run:
           name:  Launch Emulator
           command: source .circleci/ci-helper.sh && startAVD

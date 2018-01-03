@@ -27,7 +27,6 @@ function printTestsToRun {
 
 # Read from ENV var to determine what AVD to start when we update to use multiple
 function startAVD {
-    printTestsToRun
     if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
         emulator64-arm -avd test22 -no-audio -no-window -no-boot-anim -gpu off
     else
