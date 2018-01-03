@@ -2,10 +2,16 @@
 # inspired by https://github.com/Originate/guide/blob/master/android/guide/Continuous%20Integration.md
 
 function printTestsToRun {
+    echo "Bash CIRCLE_PR_USERNAME: ${CIRCLE_PR_USERNAME}"
+    echo "Bash CIRCLE_PR_NUMBER: ${CIRCLE_PR_NUMBER}"
+    echo "CIRCLE_PULL_REQUEST: ${CIRCLE_PULL_REQUEST}"
+    echo "CIRCLE_PULL_REQUESTS: ${CIRCLE_PULL_REQUESTS}"
+
     if [ -z "$CIRCLE_PULL_REQUEST" ]; then
         echo "Not a PR.  Run everything"
     else
         LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
+        echo "Bash LIBS_TO_TEST: ${LIBS_TO_TEST}"
         if [[ ! -z ${LIBS_TO_TEST} ]]; then
             echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
         else
