@@ -58,6 +58,10 @@ jobs:
     steps:
       - *attach_workspace
       - run:
+          name: Determine Tests to Run
+          shell: /bin/bash
+          command: source .circleci/ci-helper.sh && printTestsToRun
+      - run:
           name:  Launch Emulator
           command: source .circleci/ci-helper.sh && startAVD
           background: true
@@ -85,6 +89,10 @@ jobs:
       - CURRENT_LIB: "SalesforceSDK"
     steps:
       - *attach_workspace
+      - run:
+          name: Determine Tests to Run
+          shell: /bin/bash
+          command: source .circleci/ci-helper.sh && printTestsToRun
       - run:
           name:  Launch Emulator
           command: source .circleci/ci-helper.sh && startAVD
