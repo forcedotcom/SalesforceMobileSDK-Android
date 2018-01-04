@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+message("Tests results for #{ENV['CURRENT_LIB']}")
+
 if File.file?("test-results.xml")
   junit.parse "test-results.xml"
   junit.show_skipped_tests = true
