@@ -54,16 +54,16 @@ function runTests {
 
 # Use the "-p" flag to run the style Dangerfile for the PR (not the individual library unit test/lint Dangerfile)
 function runDanger {
-    if [[ -n "$CIRCLE_PULL_REQUEST" ]]; then
+    if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
         if [ "$1" == "-p" ]; then
             DANGER_GITHUB_API_TOKEN="c21349d8a97e1bf9cdd9""301fd949a83db862216b" danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
         else
             if ls libs/"${CURRENT_LIB}"/build/outputs/androidTest-results/connected/*.xml 1> /dev/null 2>&1; then
                 mv libs/"${CURRENT_LIB}"/build/outputs/androidTest-results/connected/*.xml libs/"${CURRENT_LIB}"/build/outputs/androidTest-results/connected/test-results.xml
             fi
-            DANGER_GITHUB_API_TOKEN="c21349d8a97e1bf9cdd9""301fd949a83db862216b" danger --dangerfile=.circleci/Dangerfile_Lib.rb --verbose
+            DANGER_GITHUB_API_TOKEN="c21349d8a97e1bf9cdd9""301fd949a83db862216b" danger --dangerfile=.circleci/Dangerfile_Lib.rb --danger_id="${CURRENT_LIB}" --verbose
         fi
     else
-        echo "Not a PR, no need to run Danger."
+        echo "No need to run Danger."
     fi
 }
