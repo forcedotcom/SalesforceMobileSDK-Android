@@ -33,7 +33,7 @@ function waitForAVD {
         local bootanim=""
         export PATH=$(dirname $(dirname $(which android)))/platform-tools:$PATH
         until [[ "$bootanim" =~ "stopped" ]]; do
-            sleep 5
+            sleep 10
             bootanim=$(adb -e shell getprop init.svc.bootanim 2>&1)
             echo "emulator status=$bootanim"
         done
@@ -46,7 +46,7 @@ function waitForAVD {
 
 function runTests {
     if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
-        ./gradlew :libs:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+        ./gradlew :libs:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --profile --max-workers 2 --stacktrace
     else
         echo "No need to run ${CURRENT_LIB} tests for this PR."
     fi
