@@ -28,18 +28,11 @@ jobs:
       - run:
           name: Determine Tests to Run
           shell: /bin/bash
-          command:  |
-            LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
-            echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
-            if [[ ! -z ${LIBS_TO_TEST} ]]; then
-              echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
-            else
-              echo -e "\n\nNothing to Test."
-            fi
+          command: source .circleci/ci-helper.sh && printTestsToRun
       - run:
           name:  Run Danger
           when: always
-          command: source .circleci/ci-helper.sh && runDangerPR
+          command:  source .circleci/ci-helper.sh && runDanger -p
           background: true
       - restore_cache:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
@@ -65,17 +58,6 @@ jobs:
     steps:
       - *attach_workspace
       - run:
-          name: Determine Tests to Run
-          shell: /bin/bash
-          command:  |
-            LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
-            echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
-            if [[ ! -z ${LIBS_TO_TEST} ]]; then
-              echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
-            else
-              echo -e "\n\nNothing to Test."
-            fi
-      - run:
           name:  Launch Emulator
           command: source .circleci/ci-helper.sh && startAVD
           background: true
@@ -95,7 +77,7 @@ jobs:
       - run:
           name:  Run Danger
           when: always
-          command: source .circleci/ci-helper.sh && runDangerLib
+          command: source .circleci/ci-helper.sh && runDanger
 
   test-SalesforceSDK:
     <<: *defaults
@@ -103,17 +85,6 @@ jobs:
       - CURRENT_LIB: "SalesforceSDK"
     steps:
       - *attach_workspace
-      - run:
-          name: Determine Tests to Run
-          shell: /bin/bash
-          command:  |
-            LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
-            echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
-            if [[ ! -z ${LIBS_TO_TEST} ]]; then
-              echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
-            else
-              echo -e "\n\nNothing to Test."
-            fi
       - run:
           name:  Launch Emulator
           command: source .circleci/ci-helper.sh && startAVD
@@ -134,7 +105,7 @@ jobs:
       - run:
           name:  Run Danger
           when: always
-          command: source .circleci/ci-helper.sh && runDangerLib
+          command: source .circleci/ci-helper.sh && runDanger
 
   test-SmartStore:
     <<: *defaults
@@ -142,17 +113,6 @@ jobs:
       - CURRENT_LIB: "SmartStore"
     steps:
       - *attach_workspace
-      - run:
-          name: Determine Tests to Run
-          shell: /bin/bash
-          command:  |
-            LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
-            echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
-            if [[ ! -z ${LIBS_TO_TEST} ]]; then
-              echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
-            else
-              echo -e "\n\nNothing to Test."
-            fi
       - run:
           name:  Launch Emulator
           command: source .circleci/ci-helper.sh && startAVD
@@ -173,7 +133,7 @@ jobs:
       - run:
           name:  Run Danger
           when: always
-          command: source .circleci/ci-helper.sh && runDangerLib
+          command: source .circleci/ci-helper.sh && runDanger
 
   test-SmartSync:
     <<: *defaults
@@ -181,17 +141,6 @@ jobs:
       - CURRENT_LIB: "SmartSync"
     steps:
       - *attach_workspace
-      - run:
-          name: Determine Tests to Run
-          shell: /bin/bash
-          command:  |
-            LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
-            echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
-            if [[ ! -z ${LIBS_TO_TEST} ]]; then
-              echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
-            else
-              echo -e "\n\nNothing to Test."
-            fi
       - run:
           name:  Launch Emulator
           command: source .circleci/ci-helper.sh && startAVD
@@ -212,7 +161,7 @@ jobs:
       - run:
            name:  Run Danger
            when: always
-           command: source .circleci/ci-helper.sh && runDangerLib
+           command: source .circleci/ci-helper.sh && runDanger
 
   test-SalesforceHybrid:
     <<: *defaults
@@ -220,17 +169,6 @@ jobs:
       - CURRENT_LIB: "SalesforceHybrid"
     steps:
       - *attach_workspace
-      - run:
-          name: Determine Tests to Run
-          shell: /bin/bash
-          command:  |
-            LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
-            echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
-            if [[ ! -z ${LIBS_TO_TEST} ]]; then
-              echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
-            else
-              echo -e "\n\nNothing to Test."
-            fi
       - run:
           name:  Launch Emulator
           command: source .circleci/ci-helper.sh && startAVD
@@ -251,7 +189,7 @@ jobs:
       - run:
            name:  Run Danger
            when: always
-           command: source .circleci/ci-helper.sh && runDangerLib
+           command: source .circleci/ci-helper.sh && runDanger
 
   test-SalesforceReact:
     <<: *defaults
@@ -262,16 +200,21 @@ jobs:
       - run:
           name:  Build SalesforceReact
           halt_build_on_fail: false
-          command: |
-            ./gradlew :libs:SalesforceReact:assembleDebug -p . --continue --no-daemon --profile --max-workers 2
-            ./gradlew :libs:SalesforceReact:assembleRelease -p . --continue --no-daemon --profile --max-workers 2
+          command:  |
+            source .circleci/ci-helper.sh && getAndSetLibsToTest
+            if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
+              ./gradlew :libs:SalesforceReact:assembleDebug -p . --continue --no-daemon --profile --max-workers 2
+              ./gradlew :libs:SalesforceReact:assembleRelease -p . --continue --no-daemon --profile --max-workers 2
+            else
+              echo "No need to run ${CURRENT_LIB} tests for this PR."
+            fi
 
   package:
     <<: *defaults
     steps:
       - run:
           name: Checkout SalesforceMobileSDK-Package
-          command: |
+          command:  |
             git clone git@github.com:forcedotcom/SalesforceMobileSDK-Package.git
             cd SalesforceMobileSDK-Package
             git checkout dev
@@ -286,7 +229,6 @@ jobs:
           name: Test sfdx
           when: always
           command: ./test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native --use-sfdx
-
 
 workflows:
   version: 2
@@ -313,7 +255,7 @@ workflows:
           requires:
             - setup
 
-  nightly:
+  nightly-build:
      triggers:
        - schedule:
            cron: "45 8-16 * * *"
@@ -342,7 +284,7 @@ workflows:
             requires:
               - setup
 
-  weekly:
+  package:
      triggers:
        - schedule:
            cron: "15 8-16 * * *"

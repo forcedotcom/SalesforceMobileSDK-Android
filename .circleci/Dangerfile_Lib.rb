@@ -8,6 +8,7 @@ end
 
 if File.file?("libs/#{ENV['CURRENT_LIB']}/build/reports/lint-results.xml")
   android_lint.report_file = "libs/#{ENV['CURRENT_LIB']}/build/reports/lint-results.xml"
-  android_lint.filtering = true
+  # UNCOMMENT THIS - only commented for testing
+  #android_lint.filtering = true
   android_lint.lint(inline_mode: true)
 end
