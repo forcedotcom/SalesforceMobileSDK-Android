@@ -1,9 +1,10 @@
 #!/usr/bin/env ruby
 
-message("Tests results for #{ENV['CURRENT_LIB']}")
+markdown ["# Tests results for #{ENV['CURRENT_LIB']}", "----------------------------------------"]
+test_results = "libs/#{ENV['CURRENT_LIB']}/build/outputs/androidTest-results/connected/test-results.xml"
 
-if File.file?("test-results.xml")
-  junit.parse "test-results.xml"
+if File.file?(test_results)
+  junit.parse test_results
   junit.show_skipped_tests = true
   junit.report
 else
