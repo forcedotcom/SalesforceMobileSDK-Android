@@ -236,6 +236,8 @@ jobs:
 
   nightly-test-API23:
     <<: *defaults
+    docker:
+      - image: brandonpage/salesforce-mobilesdk-android-docker-nightly:test
     environment:
       - AVD: "test23"
     steps:
@@ -278,6 +280,8 @@ jobs:
 
   nightly-test-API24:
     <<: *defaults
+    docker:
+      - image: brandonpage/salesforce-mobilesdk-android-docker-nightly:test
     environment:
       - AVD: "test24"
     steps:
@@ -320,6 +324,8 @@ jobs:
 
   nightly-test-API25:
     <<: *defaults
+    docker:
+      - image: brandonpage/salesforce-mobilesdk-android-docker-nightly:test
     environment:
       - AVD: "test25"
     steps:
