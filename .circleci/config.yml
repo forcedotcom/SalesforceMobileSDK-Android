@@ -241,7 +241,7 @@ jobs:
     steps:
       - *attach_workspace
       - checkout
-      - run: git checkout dev
+      - run: git checkout nightly_test
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-SalesforceAnalytics
@@ -283,7 +283,7 @@ jobs:
     steps:
       - *attach_workspace
       - checkout
-      - run: git checkout dev
+      - run: git checkout nightly_test
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-SalesforceAnalytics
@@ -325,7 +325,7 @@ jobs:
     steps:
       - *attach_workspace
       - checkout
-      - run: git checkout dev
+      - run: git checkout nightly_test
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-SalesforceAnalytics
@@ -390,12 +390,12 @@ jobs:
       - run:
           name: Test forcedroid
           when: always
-          command: ./test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native
+          command: ./SalesforceMobileSDK-Package/test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native
 
       - run:
           name: Test sfdx
           when: always
-          command: ./test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native --use-sfdx
+          command: ./SalesforceMobileSDK-Package/test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native --use-sfdx
 
 
 #####################
