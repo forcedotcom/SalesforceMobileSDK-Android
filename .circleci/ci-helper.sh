@@ -33,7 +33,7 @@ function startAVD {
 }
 
 function waitForAVD {
-    set -e
+    set +e
 
     if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
         local bootanim=""

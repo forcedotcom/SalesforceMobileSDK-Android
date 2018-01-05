@@ -432,7 +432,7 @@ workflows:
   nightly-build:
      triggers:
        - schedule:
-           cron: "45 15-19 * * *"
+           cron: "15,45 * * * *"
            filters:
              branches:
                only:
@@ -445,7 +445,7 @@ workflows:
   package:
      triggers:
        - schedule:
-           cron: "15 15-19 * * *"
+           cron: "00,30 * * * *"
            filters:
              branches:
                only:
