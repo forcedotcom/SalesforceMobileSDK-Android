@@ -41,7 +41,10 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * A TestRunner that limits the lifetime of the test run.
+ *
+ * @deprecated Will be removed in Mobile SDK 7.0. Use the standard Android test runner instead.
  */
+@Deprecated
 public class TimeLimitedTestRunner extends AndroidTestRunner {
 
     private static final String TAG = "TimeLimitedTestRunner";

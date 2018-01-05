@@ -27,7 +27,16 @@
 package com.salesforce.androidsdk.analytics.logger;
 
 import android.content.Context;
-import android.test.InstrumentationTestCase;
+import android.support.test.InstrumentationRegistry;
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
+
+import junit.framework.Assert;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.Set;
 
@@ -36,28 +45,28 @@ import java.util.Set;
  *
  * @author bhariharan
  */
-public class SalesforceLoggerTest extends InstrumentationTestCase {
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class SalesforceLoggerTest {
 
     private static final String TEST_COMPONENT_1 = "TestComponent1";
     private static final String TEST_COMPONENT_2 = "TestComponent2";
 
     private Context targetContext;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
-        targetContext = getInstrumentation().getTargetContext();
+        targetContext = InstrumentationRegistry.getTargetContext();
         SalesforceLogger.flushComponents();
         SalesforceLogger.resetLoggerPrefs(targetContext);
         final Set<String> components = SalesforceLogger.getComponents();
-        assertNull("No components should be returned", components);
+        Assert.assertNull("No components should be returned", components);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
         SalesforceLogger.flushComponents();
         SalesforceLogger.resetLoggerPrefs(targetContext);
-        super.tearDown();
     }
 
     /**
@@ -65,11 +74,12 @@ public class SalesforceLoggerTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testAddSingleComponent() throws Exception {
         final SalesforceLogger logger = SalesforceLogger.getLogger(TEST_COMPONENT_1, targetContext);
-        assertNotNull("SalesforceLogger instance should not be null", logger);
+        Assert.assertNotNull("SalesforceLogger instance should not be null", logger);
         final Set<String> components = SalesforceLogger.getComponents();
-        assertEquals("Number of components should be 1", 1, components.size());
+        Assert.assertEquals("Number of components should be 1", 1, components.size());
     }
 
     /**
@@ -77,15 +87,16 @@ public class SalesforceLoggerTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testAddMultipleComponents() throws Exception {
         SalesforceLogger logger = SalesforceLogger.getLogger(TEST_COMPONENT_1, targetContext);
-        assertNotNull("SalesforceLogger instance should not be null", logger);
+        Assert.assertNotNull("SalesforceLogger instance should not be null", logger);
         logger = SalesforceLogger.getLogger(TEST_COMPONENT_2, targetContext);
-        assertNotNull("SalesforceLogger instance should not be null", logger);
+        Assert.assertNotNull("SalesforceLogger instance should not be null", logger);
         final Set<String> components = SalesforceLogger.getComponents();
-        assertEquals("Number of components should be 2", 2, components.size());
-        assertTrue("Component should be present in results", components.contains(TEST_COMPONENT_1));
-        assertTrue("Component should be present in results", components.contains(TEST_COMPONENT_2));
+        Assert.assertEquals("Number of components should be 2", 2, components.size());
+        Assert.assertTrue("Component should be present in results", components.contains(TEST_COMPONENT_1));
+        Assert.assertTrue("Component should be present in results", components.contains(TEST_COMPONENT_2));
     }
 
     /**
@@ -93,13 +104,14 @@ public class SalesforceLoggerTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSetLogLevel() throws Exception {
         final SalesforceLogger logger = SalesforceLogger.getLogger(TEST_COMPONENT_1, targetContext);
-        assertNotNull("SalesforceLogger instance should not be null", logger);
+        Assert.assertNotNull("SalesforceLogger instance should not be null", logger);
         SalesforceLogger.Level logLevel = logger.getLogLevel();
-        assertNotSame("Log levels should not be same", SalesforceLogger.Level.VERBOSE, logLevel);
+        Assert.assertNotSame("Log levels should not be same", SalesforceLogger.Level.VERBOSE, logLevel);
         logger.setLogLevel(SalesforceLogger.Level.VERBOSE);
         logLevel = logger.getLogLevel();
-        assertEquals("Log levels should be the same", SalesforceLogger.Level.VERBOSE, logLevel);
+        Assert.assertEquals("Log levels should be the same", SalesforceLogger.Level.VERBOSE, logLevel);
     }
 }
