@@ -8,7 +8,6 @@ aliases:
     name:  Run Danger
     when: always
     command:  source .circleci/ci-helper.sh && runDanger
-    background: true
 
   - &Launch-Emulator
     name:  Launch Emulator
