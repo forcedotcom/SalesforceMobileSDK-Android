@@ -3,6 +3,8 @@ FROM circleci/android:api-27-node8-alpha
 MAINTAINER Brandon Page <bpage@salesforce.com>
 
 # Tools
+RUN sudo apt-get update -y
+RUN sudo apt-get install libqt5widgets5
 RUN sudo npm install -g shelljs@0.7.0
 RUN sudo npm install -g junit-merge
 RUN sudo npm install -g cordova

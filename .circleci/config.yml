@@ -22,7 +22,6 @@ aliases:
   - &Lib-Run-Base
     halt_build_on_fail: false
     no_output_timeout: 900
-    when: always
 
   - &Run-Unit-Tests-PR
     <<: *Lib-Run-Base
@@ -32,26 +31,31 @@ aliases:
     <<: *Lib-Run-Base
     name: Run SalesforceAnalytics
     command: ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+    when: always
 
   - &Run-SalesforceSDK
     <<: *Lib-Run-Base
     name: Run SalesforceSDK
     command: ./gradlew :libs:SalesforceSDK:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+    when: always
 
   - &Run-SmartStore
     <<: *Lib-Run-Base
     name: Run SmartStore
     command: ./gradlew :libs:SmartStore:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+    when: always
 
   - &Run-SmartSync
     <<: *Lib-Run-Base
     name: Run SmartSync
     command: ./gradlew :libs:SmartSync:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+    when: always
 
   - &Run-SalesforceHybrid
     <<: *Lib-Run-Base
     name: Run SalesforceHybird
     command: ./gradlew :libs:SalesforceHybrid:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
+    when: always
 
   - &Build-SalesforceReact
     <<: *Lib-Run-Base
@@ -59,6 +63,7 @@ aliases:
     command: |
       ./gradlew :libs:SalesforceReact:assembleDebug -p . --continue --no-daemon --profile --max-workers 2
       ./gradlew :libs:SalesforceReact:assembleRelease -p . --continue --no-daemon --profile --max-workers 2
+    when: always
 
 
 defaults: &defaults
