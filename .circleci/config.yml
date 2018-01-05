@@ -396,7 +396,11 @@ jobs:
       - run:
           name: Test forcedroid
           when: always
-          command: ./SalesforceMobileSDK-Package/test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native
+          command:  |
+            git --version
+            sudo apt-get install git-all
+            git --version
+            ./SalesforceMobileSDK-Package/test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native
 
       - run:
           name: Test sfdx
