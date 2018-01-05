@@ -27,7 +27,16 @@
 package com.salesforce.androidsdk.analytics.logger;
 
 import android.content.Context;
-import android.test.InstrumentationTestCase;
+import android.support.test.InstrumentationRegistry;
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
+
+import junit.framework.Assert;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +46,9 @@ import java.util.List;
  *
  * @author bhariharan
  */
-public class FileLoggerTest extends InstrumentationTestCase {
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class FileLoggerTest {
 
     private static final String COMPONENT_NAME = "FileLoggerTest";
     private static final String TEST_LOG_LINE_1 = "This is test log line 1!";
@@ -49,22 +60,20 @@ public class FileLoggerTest extends InstrumentationTestCase {
     private Context targetContext;
     private FileLogger fileLogger;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
-        targetContext = getInstrumentation().getTargetContext();
+        targetContext = InstrumentationRegistry.getTargetContext();
         FileLogger.resetFileLoggerPrefs(targetContext);
         fileLogger = new FileLogger(targetContext, COMPONENT_NAME);
         fileLogger.flushLog();
         int size = fileLogger.getSize();
-        assertEquals("Log file should be empty", 0, size);
+        Assert.assertEquals("Log file should be empty", 0, size);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
         FileLogger.resetFileLoggerPrefs(targetContext);
         fileLogger.flushLog();
-        super.tearDown();
     }
 
     /**
@@ -74,11 +83,11 @@ public class FileLoggerTest extends InstrumentationTestCase {
      */
     public void testSetMaxSize() throws Exception {
         int maxSize = fileLogger.getMaxSize();
-        assertEquals("Max size didn't match expected max size", DEFAULT_MAX_SIZE, maxSize);
+        Assert.assertEquals("Max size didn't match expected max size", DEFAULT_MAX_SIZE, maxSize);
         int newMaxSize = 2000;
         fileLogger.setMaxSize(newMaxSize);
         maxSize = fileLogger.getMaxSize();
-        assertEquals("Max size didn't match expected max size", newMaxSize, maxSize);
+        Assert.assertEquals("Max size didn't match expected max size", newMaxSize, maxSize);
     }
 
     /**
@@ -86,13 +95,14 @@ public class FileLoggerTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testFlushLogFile() throws Exception {
         fileLogger.addLogLine(TEST_LOG_LINE_1);
         int size = fileLogger.getSize();
-        assertEquals("Log file should have 1 entry", 1, size);
+        Assert.assertEquals("Log file should have 1 entry", 1, size);
         fileLogger.flushLog();
         size = fileLogger.getSize();
-        assertEquals("Log file should be empty", 0, size);
+        Assert.assertEquals("Log file should be empty", 0, size);
     }
 
     /**
@@ -100,10 +110,11 @@ public class FileLoggerTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testAddLogLine() throws Exception {
         fileLogger.addLogLine(TEST_LOG_LINE_1);
         int size = fileLogger.getSize();
-        assertEquals("Log file should have 1 entry", 1, size);
+        Assert.assertEquals("Log file should have 1 entry", 1, size);
     }
 
     /**
@@ -111,6 +122,7 @@ public class FileLoggerTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testAddListOfLogLines() throws Exception {
         final List<String> logLines = new ArrayList<>();
         logLines.add(TEST_LOG_LINE_1);
@@ -118,7 +130,7 @@ public class FileLoggerTest extends InstrumentationTestCase {
         logLines.add(TEST_LOG_LINE_3);
         fileLogger.addLogLines(logLines);
         int size = fileLogger.getSize();
-        assertEquals("Log file should have 3 entries", 3, size);
+        Assert.assertEquals("Log file should have 3 entries", 3, size);
     }
 
     /**
@@ -126,11 +138,12 @@ public class FileLoggerTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testAddArrayOfLogLines() throws Exception {
         final String[] logLines = new String[] {TEST_LOG_LINE_1, TEST_LOG_LINE_2, TEST_LOG_LINE_3};
         fileLogger.addLogLines(logLines);
         int size = fileLogger.getSize();
-        assertEquals("Log file should have 3 entries", 3, size);
+        Assert.assertEquals("Log file should have 3 entries", 3, size);
     }
 
     /**
@@ -138,13 +151,14 @@ public class FileLoggerTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testRemoveLogLine() throws Exception {
         fileLogger.addLogLine(TEST_LOG_LINE_1);
         int size = fileLogger.getSize();
-        assertEquals("Log file should have 1 entry", 1, size);
+        Assert.assertEquals("Log file should have 1 entry", 1, size);
         fileLogger.removeLogLine();
         size = fileLogger.getSize();
-        assertEquals("Log file should be empty", 0, size);
+        Assert.assertEquals("Log file should be empty", 0, size);
     }
 
     /**
@@ -152,14 +166,15 @@ public class FileLoggerTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testRemoveNumLogLines() throws Exception {
         final String[] logLines = new String[] {TEST_LOG_LINE_1, TEST_LOG_LINE_2, TEST_LOG_LINE_3};
         fileLogger.addLogLines(logLines);
         int size = fileLogger.getSize();
-        assertEquals("Log file should have 3 entries", 3, size);
+        Assert.assertEquals("Log file should have 3 entries", 3, size);
         fileLogger.removeLogLines(2);
         size = fileLogger.getSize();
-        assertEquals("Log file should have 1 entry", 1, size);
+        Assert.assertEquals("Log file should have 1 entry", 1, size);
     }
 
     /**
@@ -167,16 +182,17 @@ public class FileLoggerTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testOrderOfRemoval() throws Exception {
         final String[] logLines = new String[] {TEST_LOG_LINE_1, TEST_LOG_LINE_2, TEST_LOG_LINE_3};
         fileLogger.addLogLines(logLines);
         int size = fileLogger.getSize();
-        assertEquals("Log file should have 3 entries", 3, size);
+        Assert.assertEquals("Log file should have 3 entries", 3, size);
         fileLogger.removeLogLines(2);
         size = fileLogger.getSize();
-        assertEquals("Log file should have 1 entry", 1, size);
+        Assert.assertEquals("Log file should have 1 entry", 1, size);
         final String logLineRead = fileLogger.readLogLine();
-        assertEquals("Incorrect log lines were removed", TEST_LOG_LINE_3, logLineRead);
+        Assert.assertEquals("Incorrect log lines were removed", TEST_LOG_LINE_3, logLineRead);
     }
 
     /**
@@ -184,12 +200,13 @@ public class FileLoggerTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testReadLogLine() throws Exception {
         fileLogger.addLogLine(TEST_LOG_LINE_1);
         int size = fileLogger.getSize();
-        assertEquals("Log file should have 1 entry", 1, size);
+        Assert.assertEquals("Log file should have 1 entry", 1, size);
         final String logLineRead = fileLogger.readLogLine();
-        assertEquals("Incorrect log line read", TEST_LOG_LINE_1, logLineRead);
+        Assert.assertEquals("Incorrect log line read", TEST_LOG_LINE_1, logLineRead);
     }
 
     /**
@@ -197,6 +214,7 @@ public class FileLoggerTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testReadAndRemoveLogLinesAsList() throws Exception {
         final List<String> logLines = new ArrayList<>();
         logLines.add(TEST_LOG_LINE_1);
@@ -204,10 +222,10 @@ public class FileLoggerTest extends InstrumentationTestCase {
         logLines.add(TEST_LOG_LINE_3);
         fileLogger.addLogLines(logLines);
         int size = fileLogger.getSize();
-        assertEquals("Log file should have 3 entries", 3, size);
+        Assert.assertEquals("Log file should have 3 entries", 3, size);
         final List<String> logLinesRead = fileLogger.readAndRemoveLogLinesAsList(3);
-        assertEquals("Number of log lines read should be 3", 3, logLinesRead.size());
-        assertEquals("Log lines read are different from expected log lines", logLines, logLinesRead);
+        Assert.assertEquals("Number of log lines read should be 3", 3, logLinesRead.size());
+        Assert.assertEquals("Log lines read are different from expected log lines", logLines, logLinesRead);
     }
 
     /**
@@ -215,16 +233,17 @@ public class FileLoggerTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testReadAndRemoveLogLinesAsArray() throws Exception {
         final String[] logLines = new String[] {TEST_LOG_LINE_1, TEST_LOG_LINE_2, TEST_LOG_LINE_3};
         fileLogger.addLogLines(logLines);
         int size = fileLogger.getSize();
-        assertEquals("Log file should have 3 entries", 3, size);
+        Assert.assertEquals("Log file should have 3 entries", 3, size);
         final String[] logLinesRead = fileLogger.readAndRemoveLogLinesAsArray(3);
-        assertEquals("Number of log lines read should be 3", 3, logLinesRead.length);
-        assertEquals("Log line read is different from expected log line", TEST_LOG_LINE_1, logLinesRead[0]);
-        assertEquals("Log line read is different from expected log line", TEST_LOG_LINE_2, logLinesRead[1]);
-        assertEquals("Log line read is different from expected log line", TEST_LOG_LINE_3, logLinesRead[2]);
+        Assert.assertEquals("Number of log lines read should be 3", 3, logLinesRead.length);
+        Assert.assertEquals("Log line read is different from expected log line", TEST_LOG_LINE_1, logLinesRead[0]);
+        Assert.assertEquals("Log line read is different from expected log line", TEST_LOG_LINE_2, logLinesRead[1]);
+        Assert.assertEquals("Log line read is different from expected log line", TEST_LOG_LINE_3, logLinesRead[2]);
     }
 
     /**
@@ -232,6 +251,7 @@ public class FileLoggerTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testReadAndRemoveFileAsList() throws Exception {
         final List<String> logLines = new ArrayList<>();
         logLines.add(TEST_LOG_LINE_1);
@@ -239,12 +259,12 @@ public class FileLoggerTest extends InstrumentationTestCase {
         logLines.add(TEST_LOG_LINE_3);
         fileLogger.addLogLines(logLines);
         int size = fileLogger.getSize();
-        assertEquals("Log file should have 3 entries", 3, size);
+        Assert.assertEquals("Log file should have 3 entries", 3, size);
         final List<String> logLinesRead = fileLogger.readAndRemoveFileAsList();
-        assertEquals("Number of log lines read should be 3", 3, logLinesRead.size());
-        assertEquals("Log lines read are different from expected log lines", logLines, logLinesRead);
+        Assert.assertEquals("Number of log lines read should be 3", 3, logLinesRead.size());
+        Assert.assertEquals("Log lines read are different from expected log lines", logLines, logLinesRead);
         size = fileLogger.getSize();
-        assertEquals("Log file should have no entries", 0, size);
+        Assert.assertEquals("Log file should have no entries", 0, size);
     }
 
     /**
@@ -252,18 +272,19 @@ public class FileLoggerTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testReadAndRemoveFileAsArray() throws Exception {
         final String[] logLines = new String[] {TEST_LOG_LINE_1, TEST_LOG_LINE_2, TEST_LOG_LINE_3};
         fileLogger.addLogLines(logLines);
         int size = fileLogger.getSize();
-        assertEquals("Log file should have 3 entries", 3, size);
+        Assert.assertEquals("Log file should have 3 entries", 3, size);
         final String[] logLinesRead = fileLogger.readAndRemoveFileAsArray();
-        assertEquals("Number of log lines read should be 3", 3, logLinesRead.length);
-        assertEquals("Log line read is different from expected log line", TEST_LOG_LINE_1, logLinesRead[0]);
-        assertEquals("Log line read is different from expected log line", TEST_LOG_LINE_2, logLinesRead[1]);
-        assertEquals("Log line read is different from expected log line", TEST_LOG_LINE_3, logLinesRead[2]);
+        Assert.assertEquals("Number of log lines read should be 3", 3, logLinesRead.length);
+        Assert.assertEquals("Log line read is different from expected log line", TEST_LOG_LINE_1, logLinesRead[0]);
+        Assert.assertEquals("Log line read is different from expected log line", TEST_LOG_LINE_2, logLinesRead[1]);
+        Assert.assertEquals("Log line read is different from expected log line", TEST_LOG_LINE_3, logLinesRead[2]);
         size = fileLogger.getSize();
-        assertEquals("Log file should have no entries", 0, size);
+        Assert.assertEquals("Log file should have no entries", 0, size);
     }
 
     /**
@@ -271,13 +292,14 @@ public class FileLoggerTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testOrderOfReading() throws Exception {
         final String[] logLines = new String[] {TEST_LOG_LINE_1, TEST_LOG_LINE_2, TEST_LOG_LINE_3};
         fileLogger.addLogLines(logLines);
         int size = fileLogger.getSize();
-        assertEquals("Log file should have 3 entries", 3, size);
+        Assert.assertEquals("Log file should have 3 entries", 3, size);
         final String logLineRead = fileLogger.readLogLine();
-        assertEquals("Incorrect log line was read", TEST_LOG_LINE_1, logLineRead);
+        Assert.assertEquals("Incorrect log line was read", TEST_LOG_LINE_1, logLineRead);
     }
 
     /**
@@ -285,19 +307,20 @@ public class FileLoggerTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testWriteAfterMaxSizeReached() throws Exception {
         final String[] logLines = new String[] {TEST_LOG_LINE_1, TEST_LOG_LINE_2, TEST_LOG_LINE_3};
         fileLogger.addLogLines(logLines);
         int size = fileLogger.getSize();
-        assertEquals("Log file should have 3 entries", 3, size);
+        Assert.assertEquals("Log file should have 3 entries", 3, size);
         fileLogger.setMaxSize(1);
         int maxSize = fileLogger.getMaxSize();
-        assertEquals("Max size should be 1", 1, maxSize);
+        Assert.assertEquals("Max size should be 1", 1, maxSize);
         fileLogger.addLogLine(TEST_LOG_LINE_4);
         size = fileLogger.getSize();
-        assertEquals("Log file should have 1 entry", 1, size);
+        Assert.assertEquals("Log file should have 1 entry", 1, size);
         final String logLineRead = fileLogger.readLogLine();
-        assertEquals("Incorrect log line read", TEST_LOG_LINE_4, logLineRead);
+        Assert.assertEquals("Incorrect log line read", TEST_LOG_LINE_4, logLineRead);
     }
 
     /**
@@ -305,16 +328,17 @@ public class FileLoggerTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testWriteForMaxSizeZero() throws Exception {
         final String[] logLines = new String[] {TEST_LOG_LINE_1, TEST_LOG_LINE_2, TEST_LOG_LINE_3};
         fileLogger.addLogLines(logLines);
         int size = fileLogger.getSize();
-        assertEquals("Log file should have 3 entries", 3, size);
+        Assert.assertEquals("Log file should have 3 entries", 3, size);
         fileLogger.setMaxSize(0);
         int maxSize = fileLogger.getMaxSize();
-        assertEquals("Max size should be 0", 0, maxSize);
+        Assert.assertEquals("Max size should be 0", 0, maxSize);
         fileLogger.addLogLine(TEST_LOG_LINE_4);
         size = fileLogger.getSize();
-        assertEquals("Log file should have no entries", 0, size);
+        Assert.assertEquals("Log file should have no entries", 0, size);
     }
 }

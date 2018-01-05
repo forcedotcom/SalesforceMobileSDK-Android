@@ -9,9 +9,6 @@
 		<uses-library android:name="android.test.runner" />
 	</application>
 
-	<instrumentation android:targetPackage="com.salesforce.androidsdk.analytics.tests"
-		android:name="com.salesforce.androidsdk.analytics.util.test.JUnitReportTestRunner" />
-
     <uses-sdk android:minSdkVersion="21"
         android:targetSdkVersion="27" />
 </manifest>
