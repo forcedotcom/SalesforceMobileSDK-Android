@@ -1,13 +1,9 @@
-FROM circleci/android:api-26-alpha
+FROM circleci/android:api-27-node8-alpha
 
 MAINTAINER Brandon Page <bpage@salesforce.com>
 
 # Tools
-RUN sudo apt-get update -y
-RUN sudo apt-get install libqt5widgets5
-RUN curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
-RUN sudo apt-get install -y nodejs
-RUN sudo npm install -g shelljs
+RUN sudo npm install -g shelljs@0.7.0
 RUN sudo npm install -g junit-merge
 RUN sudo npm install -g cordova
 RUN cordova telemetry off
@@ -36,16 +32,16 @@ RUN echo "y" | sdkmanager "system-images;android-22;default;armeabi-v7a"
 RUN echo "no" | avdmanager create avd -n test22 -k "system-images;android-22;default;armeabi-v7a"
 
 # Android API 23
-#RUN echo "y" | sdkmanager "system-images;android-23;google_apis;armeabi-v7a"
-#RUN echo "no" | avdmanager create avd -n test23 -k "system-images;android-23;google_apis;armeabi-v7a"
+RUN echo "y" | sdkmanager "system-images;android-23;google_apis;armeabi-v7a"
+RUN echo "no" | avdmanager create avd -n test23 -k "system-images;android-23;google_apis;armeabi-v7a"
 
 # Android API 24
-#RUN echo "y" | sdkmanager "system-images;android-24;default;arm64-v8a"
-#RUN echo "no" | avdmanager create avd -n test24 -k "system-images;android-24;default;arm64-v8a"
+RUN echo "y" | sdkmanager "system-images;android-24;default;arm64-v8a"
+RUN echo "no" | avdmanager create avd -n test24 -k "system-images;android-24;default;arm64-v8a"
 
 # Android API 25
-#RUN echo "y" | sdkmanager "system-images;android-25;google_apis;arm64-v8a"
-#RUN echo "no" | avdmanager create avd -n test25 -k "system-images;android-25;google_apis;arm64-v8a"
+RUN echo "y" | sdkmanager "system-images;android-25;google_apis;arm64-v8a"
+RUN echo "no" | avdmanager create avd -n test25 -k "system-images;android-25;google_apis;arm64-v8a"
 
-RUN sdkmanager "build-tools;26.0.2"
+RUN sdkmanager "build-tools;27.0.3"
 RUN sdkmanager "extras;android;m2repository"
