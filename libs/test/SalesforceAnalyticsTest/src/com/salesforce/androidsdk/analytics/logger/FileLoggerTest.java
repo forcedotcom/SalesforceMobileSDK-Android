@@ -81,6 +81,7 @@ public class FileLoggerTest {
      *
      * @throws Exception
      */
+    @Test
     public void testSetMaxSize() throws Exception {
         int maxSize = fileLogger.getMaxSize();
         Assert.assertEquals("Max size didn't match expected max size", DEFAULT_MAX_SIZE, maxSize);
