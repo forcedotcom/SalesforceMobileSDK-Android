@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 
-markdown "# Tests results for #{ENV['CURRENT_LIB']}"
 test_results = "libs/#{ENV['CURRENT_LIB']}/build/outputs/androidTest-results/connected/test-results.xml"
 
 if File.file?(test_results)
@@ -18,3 +17,6 @@ if File.file?("libs/#{ENV['CURRENT_LIB']}/build/reports/lint-results.xml")
 else
   warn("No Lint Results.")
 end
+
+# State what Library the test failures are for (or don't post at all).
+markdown "# Tests results for #{ENV['CURRENT_LIB']}" unless status_report[:error].to_s.empty? && status_report[:warning].to_s.empty?

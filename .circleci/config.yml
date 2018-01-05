@@ -397,7 +397,8 @@ jobs:
           when: always
           command:  |
             git --version
-            sudo apt-get install git=2.13
+            sudo apt-get update
+            sudo apt-get install git
             git --version
             ./SalesforceMobileSDK-Package/test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native
 
