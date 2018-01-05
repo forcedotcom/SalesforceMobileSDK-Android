@@ -70,7 +70,7 @@ public class SalesforceSDKManagerTest {
     @Test
     public void testOverrideAiltnAppNameBeforeSDKManagerInit() {
         SalesforceSDKTestManager.setAiltnAppName(TEST_APP_NAME);
-        SalesforceSDKTestManager.init(InstrumentationRegistry.getTargetContext(), null, MainActivity.class);
+        SalesforceSDKTestManager.init(InstrumentationRegistry.getTargetContext(), MainActivity.class);
         SalesforceSDKTestManager.getInstance().setIsTestRun(true);
         compareAiltnAppNames(TEST_APP_NAME);
     }
@@ -81,7 +81,7 @@ public class SalesforceSDKManagerTest {
      */
     @Test
     public void testOverrideAiltnAppNameAfterSDKManagerInit() {
-        SalesforceSDKTestManager.init(InstrumentationRegistry.getTargetContext(), null, MainActivity.class);
+        SalesforceSDKTestManager.init(InstrumentationRegistry.getTargetContext(), MainActivity.class);
         SalesforceSDKTestManager.setAiltnAppName(TEST_APP_NAME);
         SalesforceSDKTestManager.getInstance().setIsTestRun(true);
         compareAiltnAppNames(TEST_APP_NAME);
@@ -92,7 +92,7 @@ public class SalesforceSDKManagerTest {
      */
     @Test
     public void testDefaultAiltnAppName() {
-        SalesforceSDKTestManager.init(InstrumentationRegistry.getTargetContext(), null, MainActivity.class);
+        SalesforceSDKTestManager.init(InstrumentationRegistry.getTargetContext(), MainActivity.class);
         SalesforceSDKTestManager.getInstance().setIsTestRun(true);
         compareAiltnAppNames(getDefaultAppName());
     }
@@ -102,7 +102,7 @@ public class SalesforceSDKManagerTest {
      */
     @Test
     public void testOverrideInvalidAiltnAppName() {
-        SalesforceSDKTestManager.init(InstrumentationRegistry.getTargetContext(), null, MainActivity.class);
+        SalesforceSDKTestManager.init(InstrumentationRegistry.getTargetContext(), MainActivity.class);
         SalesforceSDKTestManager.setAiltnAppName(null);
         SalesforceSDKTestManager.getInstance().setIsTestRun(true);
         compareAiltnAppNames(getDefaultAppName());
@@ -175,13 +175,11 @@ public class SalesforceSDKManagerTest {
          * Initializes this component.
          *
          * @param context Application context.
-         * @param keyImpl Implementation of KeyInterface.
          * @param mainActivity Activity to be launched after the login flow.
          */
-        public static void init(Context context, KeyInterface keyImpl,
-                                 Class<? extends Activity> mainActivity) {
+        public static void init(Context context, Class<? extends Activity> mainActivity) {
             if (TEST_INSTANCE == null) {
-                TEST_INSTANCE = new SalesforceSDKTestManager(context, keyImpl, mainActivity, LoginActivity.class);
+                TEST_INSTANCE = new SalesforceSDKTestManager(context, mainActivity, LoginActivity.class);
             }
             initInternal(context);
         }
