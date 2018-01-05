@@ -34,7 +34,10 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * This extends the report runner that generates a standard junit report file, with the timerun cap.
+ *
+ * @deprecated Will be removed in Mobile SDK 7.0. Use the standard Android test runner instead.
  */
+@Deprecated
 public class JUnitReportTestRunner extends InstrumentationTestRunner {
 
     @Override
