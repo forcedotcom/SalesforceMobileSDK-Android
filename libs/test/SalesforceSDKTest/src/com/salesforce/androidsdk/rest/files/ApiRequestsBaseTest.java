@@ -26,20 +26,27 @@
  */
 package com.salesforce.androidsdk.rest.files;
 
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
+
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 
-import junit.framework.TestCase;
+import junit.framework.Assert;
 
-public class ApiRequestsBaseTest extends TestCase {
+import org.junit.Before;
+import org.junit.runner.RunWith;
+
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class ApiRequestsBaseTest {
 
     protected String connectPath;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
         connectPath = "/services/data/" + ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()) + "/chatter/";
     }
 
@@ -48,7 +55,7 @@ public class ApiRequestsBaseTest extends TestCase {
     }
 
     protected void doAdditionalVerifications(RestMethod method, RestRequest req) {
-        assertEquals(method, req.getMethod());
-        assertEquals("false", req.getAdditionalHttpHeaders().get("X-Chatter-Entity-Encoding"));
+        Assert.assertEquals(method, req.getMethod());
+        Assert.assertEquals("false", req.getAdditionalHttpHeaders().get("X-Chatter-Entity-Encoding"));
     }
 }
