@@ -26,7 +26,7 @@
  */
 package com.salesforce.androidsdk.store;
 
-import android.support.test.filters.SmallTest;
+import android.support.test.filters.MediumTest;
 import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
 
@@ -41,6 +41,8 @@ import junit.framework.Assert;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -48,10 +50,20 @@ import org.junit.runner.RunWith;
  * Set of tests for the smart store loading numerous and/or large entries and querying them back
  */
 @RunWith(AndroidJUnit4.class)
-@SmallTest
+@MediumTest
 public class SmartStoreLoadExternalStorageTest extends SmartStoreLoadTest {
 
     static final int LARGE_BYTES = 512 * 1024;
+
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        super.tearDown();
+    }
 
     @Override
     protected String getEncryptionKey() {
