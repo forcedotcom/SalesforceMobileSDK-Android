@@ -26,9 +26,8 @@
  */
 package com.salesforce.androidsdk.store;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
@@ -39,10 +38,21 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
+import junit.framework.Assert;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 /**
  * Tests for "smart" sql
- *
  */
+@RunWith(AndroidJUnit4.class)
+@SmallTest
 public class SmartSqlExternalStorageTest extends SmartStoreTestCase {
 
 	private static final String BUDGET = "budget";
@@ -61,10 +71,9 @@ public class SmartSqlExternalStorageTest extends SmartStoreTestCase {
 		return Encryptor.hash("test123", "hashing-key");
 	}
 
-	@Override
+	@Before
 	public void setUp() throws Exception {
 		super.setUp();
-
 		registerSoup(store, EMPLOYEES_SOUP, new IndexSpec[] {   // should be TABLE_1
 															   new IndexSpec(FIRST_NAME, Type.string),        // should be TABLE_1_0
 															   new IndexSpec(LAST_NAME, Type.string),         // should be TABLE_1_1
@@ -72,21 +81,26 @@ public class SmartSqlExternalStorageTest extends SmartStoreTestCase {
 															   new IndexSpec(EMPLOYEE_ID, Type.string),       // should be TABLE_1_3
 															   new IndexSpec(MANAGER_ID, Type.string),        // should be TABLE_1_4
 															   new IndexSpec(SALARY, Type.integer)});         // should be TABLE_1_5
-
 		registerSoup(store, DEPARTMENTS_SOUP, new IndexSpec[] { // should be TABLE_2
 															   new IndexSpec(DEPT_CODE, Type.string),         // should be TABLE_2_0
 															   new IndexSpec(NAME, Type.string),              // should be TABLE_2_1
 															   new IndexSpec(BUDGET, Type.integer)});         // should be TABLE_2_2
 	}
 
+	@After
+    public void tearDown() throws Exception {
+        super.tearDown();
+    }
+
 	/**
 	 * Testing simple smart sql to sql conversion
 	 */
+    @Test
 	public void testSimpleConvertSmartSql() {
-		assertEquals("select TABLE_1_0, TABLE_1_1 from TABLE_1 order by TABLE_1_1",
+        Assert.assertEquals("select TABLE_1_0, TABLE_1_1 from TABLE_1 order by TABLE_1_1",
 					 store.convertSmartSql("select {employees:firstName}, {employees:lastName} from {employees} order by {employees:lastName}"));
 
-		assertEquals("select TABLE_2_1 from TABLE_2 order by TABLE_2_0",
+        Assert.assertEquals("select TABLE_2_1 from TABLE_2 order by TABLE_2_0",
 					 store.convertSmartSql("select {departments:name} from {departments} order by {departments:deptCode}"));
 
 	}
@@ -94,8 +108,9 @@ public class SmartSqlExternalStorageTest extends SmartStoreTestCase {
 	/**
 	 * Testing smart sql to sql conversion when there is a join
 	 */
+    @Test
 	public void testConvertSmartSqlWithJoin() {
-		assertEquals("select TABLE_2_1, TABLE_1_0 || ' ' || TABLE_1_1 "
+        Assert.assertEquals("select TABLE_2_1, TABLE_1_0 || ' ' || TABLE_1_1 "
 					 + "from TABLE_1, TABLE_2 "
 					 + "where TABLE_2_0 = TABLE_1_2 "
 					 + "order by TABLE_2_1, TABLE_1_1",
@@ -109,8 +124,9 @@ public class SmartSqlExternalStorageTest extends SmartStoreTestCase {
 	/**
 	 * Testing smart sql to sql conversion when there is a self join
 	 */
+    @Test
 	public void testConvertSmartSqlWithSelfJoin() {
-		assertEquals("select mgr.TABLE_1_1, e.TABLE_1_1 "
+        Assert.assertEquals("select mgr.TABLE_1_1, e.TABLE_1_1 "
 					 + "from TABLE_1 as mgr, TABLE_1 as e "
 					 + "where mgr.TABLE_1_3 = e.TABLE_1_4",
 					 store.convertSmartSql("select mgr.{employees:lastName}, e.{employees:lastName} "
@@ -122,35 +138,39 @@ public class SmartSqlExternalStorageTest extends SmartStoreTestCase {
 	 * Testing smart sql to sql conversion when path is: _soup, _soupEntryId or _soupLastModifiedDate
 	 * Since this has external storage enabled, _soup column is replaced with value of soup name and soup entry id
 	 */
+    @Test
 	public void testConvertSmartSqlWithSpecialColumns() {
-		assertEquals("select TABLE_1.id, TABLE_1.lastModified, 'TABLE_1' as 'externalStorage', TABLE_1.id as '_soupEntryId' from TABLE_1",
+        Assert.assertEquals("select TABLE_1.id, TABLE_1.lastModified, 'TABLE_1' as 'externalStorage', TABLE_1.id as '_soupEntryId' from TABLE_1",
 					 store.convertSmartSql("select {employees:_soupEntryId}, {employees:_soupLastModifiedDate}, {employees:_soup} from {employees}"));
 	}
 
 	/**
 	 * Testing smart sql to sql conversion when path is: _soup, _soupEntryId or _soupLastModifiedDate and there is a join
 	 */
+    @Test
 	public void testConvertSmartSqlWithSpecialColumnsAndJoin() {
-		assertEquals("select TABLE_1.id, TABLE_2.id from TABLE_1, TABLE_2",
+        Assert.assertEquals("select TABLE_1.id, TABLE_2.id from TABLE_1, TABLE_2",
 					 store.convertSmartSql("select {employees:_soupEntryId}, {departments:_soupEntryId} from {employees}, {departments}"));
 	}
 
 	/**
 	 * Testing smart sql to sql conversion when path is: _soup, _soupEntryId or _soupLastModifiedDate and there is a join
 	 */
+    @Test
 	public void testConvertSmartSqlWithSpecialColumnsAndSelfJoin() {
-		assertEquals("select mgr.id, e.id from TABLE_1 as mgr, TABLE_1 as e",
+        Assert.assertEquals("select mgr.id, e.id from TABLE_1 as mgr, TABLE_1 as e",
 					 store.convertSmartSql("select mgr.{employees:_soupEntryId}, e.{employees:_soupEntryId} from {employees} as mgr, {employees} as e"));
 	}
 
 	/**
 	 * Test smart sql to sql conversation with insert/update/delete: expect exception
 	 */
+    @Test
 	public void testConvertSmartSqlWithInsertUpdateDelete() {
 		for (String smartSql : new String[] { "insert into {employees}", "update {employees}", "delete from {employees}"}) {
 			try {
 				store.convertSmartSql(smartSql);
-				fail("Should have thrown exception for " + smartSql);
+                Assert.fail("Should have thrown exception for " + smartSql);
 			}
 			catch (SmartSqlException e) {
 				// Expected
@@ -162,6 +182,7 @@ public class SmartSqlExternalStorageTest extends SmartStoreTestCase {
 	 * Test running smart query that does a select count
 	 * @throws JSONException
 	 */
+    @Test
 	public void testSmartQueryDoingCount() throws JSONException {
 		loadData();
 		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select count(*) from {employees}", 1), 0);
@@ -172,6 +193,7 @@ public class SmartSqlExternalStorageTest extends SmartStoreTestCase {
 	 * Test running smart query that does a select sum
 	 * @throws JSONException
 	 */
+    @Test
 	public void testSmartQueryDoingSum() throws JSONException {
 		loadData();
 		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select sum({departments:budget}) from {departments}", 1), 0);
@@ -182,6 +204,7 @@ public class SmartSqlExternalStorageTest extends SmartStoreTestCase {
 	 * Test running smart query that return one row with one integer
 	 * @throws JSONException
 	 */
+    @Test
 	public void testSmartQueryReturningOneRowWithOneInteger() throws JSONException {
 		loadData();
 		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:salary} from {employees} where {employees:lastName} = 'Haas'", 1), 0);
@@ -192,6 +215,7 @@ public class SmartSqlExternalStorageTest extends SmartStoreTestCase {
 	 * Test running smart query that return one row with two integers
 	 * @throws JSONException
 	 */
+    @Test
 	public void testSmartQueryReturningOneRowWithTwoIntegers() throws JSONException {
 		loadData();
 		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select mgr.{employees:salary}, e.{employees:salary} from {employees} as mgr, {employees} as e where e.{employees:lastName} = 'Thompson' and mgr.{employees:employeeId} = e.{employees:managerId}", 1), 0);
@@ -202,6 +226,7 @@ public class SmartSqlExternalStorageTest extends SmartStoreTestCase {
 	 * Test running smart query that return two rows with one integer each
 	 * @throws JSONException
 	 */
+    @Test
 	public void testSmartQueryReturningTwoRowsWithOneIntegerEach() throws JSONException {
 		loadData();
 		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:salary} from {employees} where {employees:managerId} = '00010' order by {employees:firstName}", 2), 0);
@@ -212,27 +237,27 @@ public class SmartSqlExternalStorageTest extends SmartStoreTestCase {
 	 * Test running smart query that return a soup along with a string and an integer
 	 * @throws JSONException
 	 */
+    @Test
 	public void testSmartQueryReturningSoupStringAndInteger() throws JSONException {
 		loadData();
 		JSONObject christineJson = store.query(QuerySpec.buildExactQuerySpec(EMPLOYEES_SOUP, "employeeId", "00010", null, null, 1), 0).getJSONObject(0);
-		assertEquals("Wrong elt", "Christine", christineJson.getString(FIRST_NAME));
-
+        Assert.assertEquals("Wrong elt", "Christine", christineJson.getString(FIRST_NAME));
 		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:_soup}, {employees:firstName}, {employees:salary} from {employees} where {employees:lastName} = 'Haas'", 1) , 0);
-		assertEquals("Expected one row", 1, result.length());
+        Assert.assertEquals("Expected one row", 1, result.length());
 		JSONTestHelper.assertSameJSON("Wrong soup", christineJson, result.getJSONArray(0).getJSONObject(0));
-		assertEquals("Wrong first name", "Christine", result.getJSONArray(0).getString(1));
-		assertEquals("Wrong salary", 200000, result.getJSONArray(0).getInt(2));
+        Assert.assertEquals("Wrong first name", "Christine", result.getJSONArray(0).getString(1));
+        Assert.assertEquals("Wrong salary", 200000, result.getJSONArray(0).getInt(2));
 	}
 
 	/**
 	 * Test running smart query with paging
 	 * @throws JSONException
 	 */
+    @Test
 	public void testSmartQueryWithPaging() throws JSONException {
 		loadData();
 		QuerySpec query = QuerySpec.buildSmartQuerySpec("select {employees:firstName} from {employees} order by {employees:firstName}", 1);
-		assertEquals("Expected 7 employees", 7, store.countQuery(query));
-
+        Assert.assertEquals("Expected 7 employees", 7, store.countQuery(query));
 		String[] expectedResults = new String[] {"Christine", "Eileen", "Eva", "Irving", "John", "Michael", "Sally"};
 		for (int i = 0; i<7; i++) {
 			JSONArray result = store.query(query , i);
@@ -244,25 +269,24 @@ public class SmartSqlExternalStorageTest extends SmartStoreTestCase {
 	 * Test running smart query that targets _soup, _soupEntryId and _soupLastModifiedDate
 	 * @throws JSONException
 	 */
+    @Test
 	public void testSmartQueryWithSpecialFields() throws JSONException {
 		loadData();
-
 		JSONObject christineJson = store.query(QuerySpec.buildExactQuerySpec(EMPLOYEES_SOUP, "employeeId", "00010", null, null, 1), 0).getJSONObject(0);
-		assertEquals("Wrong elt", "Christine", christineJson.getString(FIRST_NAME));
-
+        Assert.assertEquals("Wrong elt", "Christine", christineJson.getString(FIRST_NAME));
 		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:_soup}, {employees:_soupEntryId}, {employees:_soupLastModifiedDate}, {employees:salary} from {employees} where {employees:lastName} = 'Haas'", 1) , 0);
-		assertEquals("Expected one row", 1, result.length());
+        Assert.assertEquals("Expected one row", 1, result.length());
 		JSONTestHelper.assertSameJSON("Wrong soup", christineJson, result.getJSONArray(0).getJSONObject(0));
 		JSONTestHelper.assertSameJSON("Wrong soupEntryId", christineJson.getString(SmartStore.SOUP_ENTRY_ID), result.getJSONArray(0).getInt(1));
 		JSONTestHelper.assertSameJSON("Wrong soupLastModifiedDate", christineJson.getString(SmartStore.SOUP_LAST_MODIFIED_DATE), result.getJSONArray(0).getLong(2));
 	}
-
 
 	/**
 	 * Load some datq in the smart store
 	 * @throws JSONException
 	 */
 	private void loadData() throws JSONException {
+
 		// Employees
 		createEmployee("Christine", "Haas", "A00", "00010", null, 200000);
 		createEmployee("Michael", "Thompson", "A00", "00020", "00010", 120000);

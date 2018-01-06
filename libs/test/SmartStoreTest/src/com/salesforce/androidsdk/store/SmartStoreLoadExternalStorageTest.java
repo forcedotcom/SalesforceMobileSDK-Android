@@ -26,9 +26,9 @@
  */
 package com.salesforce.androidsdk.store;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
+import android.util.Log;
 
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
@@ -36,11 +36,19 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 
-import android.util.Log;
+import junit.framework.Assert;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Set of tests for the smart store loading numerous and/or large entries and querying them back
  */
+@RunWith(AndroidJUnit4.class)
+@SmallTest
 public class SmartStoreLoadExternalStorageTest extends SmartStoreLoadTest {
 
     static final int LARGE_BYTES = 512 * 1024;
@@ -56,11 +64,10 @@ public class SmartStoreLoadExternalStorageTest extends SmartStoreLoadTest {
     }
 
     // Test very large payloads for smartstore
+    @Test
     public void testUpsertLargePayload() throws JSONException {
         setupSoup(TEST_SOUP, 1, Type.string);
-
         JSONObject entry = new JSONObject();
-
         for (int i = 0; i < 5; i++) {
             StringBuilder sb = new StringBuilder();
             for (int j = 0; j < LARGE_BYTES; j++) {
@@ -79,9 +86,8 @@ public class SmartStoreLoadExternalStorageTest extends SmartStoreLoadTest {
 
         // Verify
         JSONArray result = store.retrieve(TEST_SOUP, 1L);
-
         for (int i = 0; i < 5; i++) {
-            assertTrue("Value at index " + i + " is incorrect", result.getJSONObject(0).getString("value_" + i).startsWith("" + i));
+            Assert.assertTrue("Value at index " + i + " is incorrect", result.getJSONObject(0).getString("value_" + i).startsWith("" + i));
         }
     }
 

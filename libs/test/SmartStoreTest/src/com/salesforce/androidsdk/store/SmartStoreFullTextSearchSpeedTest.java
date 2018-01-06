@@ -26,26 +26,29 @@
  */
 package com.salesforce.androidsdk.store;
 
-import android.content.Context;
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
 
-import com.salesforce.androidsdk.smartstore.store.DBHelper;
-import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 
-import net.sqlcipher.database.SQLiteDatabase;
-import net.sqlcipher.database.SQLiteOpenHelper;
+import junit.framework.Assert;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Tests to compare speed of smartstore full-text-search indices with regular indices
  */
+@RunWith(AndroidJUnit4.class)
+@SmallTest
 public class SmartStoreFullTextSearchSpeedTest extends SmartStoreTestCase {
 
     public static final String TAG = "SmartStoreFTSSpeedTest";
@@ -62,22 +65,37 @@ public class SmartStoreFullTextSearchSpeedTest extends SmartStoreTestCase {
     public static final String ANIMALS_SOUP = "animals";
     public static final String TEXT_COL = "text";
 
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        super.tearDown();
+    }
+
+    @Override
     protected String getEncryptionKey() {
         return "";
     }
 
+    @Test
     public void testSearch1000RowsOneMatch() throws JSONException {
         trySearch(40, 1);
     }
 
+    @Test
     public void testSearch1000RowsManyMatches() throws JSONException {
         trySearch(40, 40);
     }
 
+    @Test
     public void testSearch10000RowsOneMatch() throws JSONException {
         trySearch(400, 1);
     }
 
+    @Test
     public void testSearch10000RowsManyMatches() throws JSONException {
         trySearch(400, 400);
     }
@@ -96,8 +114,7 @@ public class SmartStoreFullTextSearchSpeedTest extends SmartStoreTestCase {
         double totalInsertTimeFullText = setupData(Type.full_text, rowsPerAnimal, matchingRowsPerAnimal);
         double avgQueryTimeFullText = queryData(Type.full_text, rowsPerAnimal, matchingRowsPerAnimal);
         store.dropAllSoups();
-
-            Log.i(TAG, String.format("Search rows=%d matchingRows=%d avgQueryTimeString=%.4fs avgQueryTimeFullText=%.4fs (%.2f%%) totalInsertTimeString=%.3fs totalInsertTimeFullText=%.3fs (%.2f%%)",
+        Log.i(TAG, String.format("Search rows=%d matchingRows=%d avgQueryTimeString=%.4fs avgQueryTimeFullText=%.4fs (%.2f%%) totalInsertTimeString=%.3fs totalInsertTimeFullText=%.3fs (%.2f%%)",
                     rowsPerAnimal * 25,
                     matchingRowsPerAnimal,
                     avgQueryTimeString,
@@ -116,7 +133,6 @@ public class SmartStoreFullTextSearchSpeedTest extends SmartStoreTestCase {
         store.registerSoup(ANIMALS_SOUP, new IndexSpec[]{new IndexSpec(TEXT_COL, textFieldType)});
         try {
             store.beginTransaction();
-
             for (int i=0; i < 25; i++) {
                 int charToMatch = i + 'a';
                 for (int j=0; j < rowsPerAnimal; j++) {
@@ -134,7 +150,6 @@ public class SmartStoreFullTextSearchSpeedTest extends SmartStoreTestCase {
                     totalInsertTime += System.nanoTime() - start;
                 }
             }
-
             store.setTransactionSuccessful();
         } finally {
             store.endTransaction();
@@ -150,7 +165,6 @@ public class SmartStoreFullTextSearchSpeedTest extends SmartStoreTestCase {
         for (String animal : ANIMALS) {
             String prefix = String.format("%07d", (int) (Math.random()*(rowsPerAnimal/matchingRowsPerAnimal)));
             String stringToMatch = prefix + animal;
-
             QuerySpec querySpec = textFieldType == Type.full_text
                     ? QuerySpec.buildMatchQuerySpec(ANIMALS_SOUP, TEXT_COL, stringToMatch, null, null, rowsPerAnimal)
                     : QuerySpec.buildLikeQuerySpec(ANIMALS_SOUP, TEXT_COL, "%" + stringToMatch + "%", null, null, rowsPerAnimal);
@@ -159,18 +173,16 @@ public class SmartStoreFullTextSearchSpeedTest extends SmartStoreTestCase {
             totalQueryTime += System.nanoTime() - start;
             validateResults(matchingRowsPerAnimal, stringToMatch, results);
         }
-
         return nanosToSeconds(totalQueryTime)/ANIMALS.length;
     }
 
     private void validateResults(int expectedRows, String stringToMatch, JSONArray results) throws JSONException {
-        assertEquals("Wrong number of results", expectedRows, results.length());
+        Assert.assertEquals("Wrong number of results", expectedRows, results.length());
         for (int i=0; i<results.length(); i++) {
             String text = results.getJSONObject(i).getString(TEXT_COL);
-            assertTrue("Invalid result [" + text + "] for search on [" + stringToMatch + "]", text.contains(stringToMatch));
+            Assert.assertTrue("Invalid result [" + text + "] for search on [" + stringToMatch + "]", text.contains(stringToMatch));
         }
     }
-
 
     private double nanosToSeconds(long nanos) {
         return nanos / 1000000000.0;

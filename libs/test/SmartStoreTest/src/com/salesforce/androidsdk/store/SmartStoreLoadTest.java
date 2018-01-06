@@ -26,23 +26,22 @@
  */
 package com.salesforce.androidsdk.store;
 
-import android.content.Context;
-import android.test.InstrumentationTestCase;
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
 
-import com.salesforce.androidsdk.smartstore.store.DBHelper;
-import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 
-import net.sqlcipher.database.SQLiteDatabase;
-import net.sqlcipher.database.SQLiteOpenHelper;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +49,8 @@ import java.util.List;
 /**
  * Set of tests for the smart store loading numerous and/or large entries and querying them back
  */
+@RunWith(AndroidJUnit4.class)
+@SmallTest
 public class SmartStoreLoadTest extends SmartStoreTestCase {
 
     protected static final String TEST_SOUP = "test_soup";
@@ -58,54 +59,66 @@ public class SmartStoreLoadTest extends SmartStoreTestCase {
     private static final int NUMBER_ENTRIES_PER_BATCH = 100;
     private static final int NS_IN_MS = 1000000;
 
-    //
-    // Tests
-    //
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+    }
 
+    @After
+    public void tearDown() throws Exception {
+        super.tearDown();
+    }
+
+    @Test
     public void testUpsertQuery1StringIndex1field20characters() throws JSONException {
         tryUpsertQuery(Type.string, NUMBER_ENTRIES, 1, 20, 1);
     }
 
+    @Test
     public void testUpsertQuery1StringIndex1field1000characters() throws JSONException {
         tryUpsertQuery(Type.string, NUMBER_ENTRIES, 1, 1000, 1);
     }
 
+    @Test
     public void testUpsertQuery1StringIndex10fields20characters() throws JSONException {
         tryUpsertQuery(Type.string, NUMBER_ENTRIES, 10, 20, 1);
     }
 
+    @Test
     public void testUpsertQuery10StringIndexes10fields20characters() throws JSONException {
         tryUpsertQuery(Type.string, NUMBER_ENTRIES, 10, 20, 10);
     }
 
+    @Test
     public void testUpsertQuery1JSON1Index1field20characters() throws JSONException {
         tryUpsertQuery(Type.json1, NUMBER_ENTRIES, 1, 20, 1);
     }
 
+    @Test
     public void testUpsertQuery1JSON1Index1field1000characters() throws JSONException {
         tryUpsertQuery(Type.json1, NUMBER_ENTRIES, 1, 1000, 1);
     }
 
+    @Test
     public void testUpsertQuery1JSON1Index10fields20characters() throws JSONException {
         tryUpsertQuery(Type.json1, NUMBER_ENTRIES, 10, 20, 1);
     }
 
+    @Test
     public void testUpsertQuery10JSON1Indexes10fields20characters() throws JSONException {
         tryUpsertQuery(Type.json1, NUMBER_ENTRIES, 10, 20, 10);
     }
 
+    @Test
     public void testAlterSoupClassicIndexing() throws JSONException {
         tryAlterSoup(Type.string);
     }
 
+    @Test
     public void testAlterSoupJSON1Indexing() throws JSONException {
         tryAlterSoup(Type.json1);
     }
 
-
-    //
-    // Helper methods
-    //
     protected String getEncryptionKey() {
         return "";
     }
@@ -153,6 +166,7 @@ public class SmartStoreLoadTest extends SmartStoreTestCase {
     }
 
     private void queryEntries() throws JSONException {
+
         // Should find all
         queryEntries(QuerySpec.buildAllQuerySpec(TEST_SOUP, null, null, 1));
         queryEntries(QuerySpec.buildAllQuerySpec(TEST_SOUP, null, null, 10));
@@ -170,7 +184,6 @@ public class SmartStoreLoadTest extends SmartStoreTestCase {
         // Should find none
         queryEntries(QuerySpec.buildExactQuerySpec(TEST_SOUP, "k_0", "missing", null, null, 1));
     }
-
 
     private void queryEntries(QuerySpec querySpec) throws JSONException {
         List<Long> times = new ArrayList<Long>();
