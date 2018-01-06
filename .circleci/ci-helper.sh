@@ -33,6 +33,8 @@ function startAVD {
 }
 
 function waitForAVD {
+    set +e
+
     if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
         local bootanim=""
         export PATH=$(dirname $(dirname $(which android)))/platform-tools:$PATH
