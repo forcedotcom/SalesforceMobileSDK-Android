@@ -2,8 +2,12 @@ apply plugin: 'com.android.application'
 
 dependencies {
   api project(':libs:SalesforceSDK')
-  androidTestApi 'com.android.support.test:runner:1.0.1'
-  androidTestApi 'com.android.support.test:rules:1.0.1'
+  androidTestApi ('com.android.support.test:runner:1.0.1') {
+    exclude module: 'support-annotations'
+  }
+  androidTestApi ('com.android.support.test:rules:1.0.1') {
+    exclude module: 'support-annotations'
+  }
 }
 
 android {
