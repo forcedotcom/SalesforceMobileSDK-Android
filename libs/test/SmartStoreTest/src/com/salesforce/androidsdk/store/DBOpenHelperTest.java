@@ -43,6 +43,7 @@ import net.sqlcipher.database.SQLiteDatabase;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -78,6 +79,15 @@ public class DBOpenHelperTest {
 		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
 		helper.removeExternalBlobsDirectory(TEST_SOUP);
 	}
+
+	@After
+	public void tearDown() throws Exception {
+        final String dbPath = InstrumentationRegistry.getTargetContext().getApplicationInfo().dataDir + "/databases";
+        final File fileDir = new File(dbPath);
+        DBOpenHelper.deleteAllUserDatabases(InstrumentationRegistry.getTargetContext());
+        DBOpenHelper.deleteDatabase(InstrumentationRegistry.getTargetContext(), null);
+        DBOpenHelper.removeAllFiles(fileDir);
+    }
 
 	/**
 	 * Make sure database name is correct for no account and no communityId.
@@ -243,7 +253,7 @@ public class DBOpenHelperTest {
 		String dbName2 = getBaseName(db2);
 
 		// now, delete all databases related to accounts and ensure they no longer exist
-		DBOpenHelper.deleteDatabase(targetContext,  testAcct);
+		DBOpenHelper.deleteDatabase(targetContext, testAcct);
         Assert.assertFalse("Database should not exist.", databaseExists(targetContext, dbName));
         Assert.assertFalse("Database should not exist.", databaseExists(targetContext, dbName2));
 		
