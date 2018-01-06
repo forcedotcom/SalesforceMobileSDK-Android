@@ -18,6 +18,8 @@ dependencies {
     api 'com.squareup.okhttp3:okhttp:3.9.0'
     api 'com.google.android.gms:play-services-gcm:11.8.0'
     api 'com.android.support:customtabs:25.2.0'
+    androidTestApi 'com.android.support.test:runner:1.0.1'
+    androidTestApi 'com.android.support.test:rules:1.0.1'
 }
 
 android {
@@ -49,7 +51,7 @@ android {
   }
   defaultConfig {
     testApplicationId "com.salesforce.androidsdk.tests"
-    testInstrumentationRunner "com.salesforce.androidsdk.analytics.util.test.JUnitReportTestRunner"
+    testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'

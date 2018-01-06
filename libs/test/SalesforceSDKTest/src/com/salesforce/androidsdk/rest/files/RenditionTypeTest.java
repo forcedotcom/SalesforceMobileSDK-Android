@@ -26,15 +26,24 @@
  */
 package com.salesforce.androidsdk.rest.files;
 
-import junit.framework.TestCase;
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
 
-public class RenditionTypeTest extends TestCase {
+import junit.framework.Assert;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class RenditionTypeTest {
+
+    @Test
     public void testIsPng() {
-        assertTrue(RenditionType.THUMB120BY90.isPNG());
-        assertTrue(RenditionType.THUMB240BY180.isPNG());
-        assertTrue(RenditionType.THUMB720BY480.isPNG());
-        assertFalse(RenditionType.FLASH.isPNG());
-        assertFalse(RenditionType.PDF.isPNG());
+        Assert.assertTrue(RenditionType.THUMB120BY90.isPNG());
+        Assert.assertTrue(RenditionType.THUMB240BY180.isPNG());
+        Assert.assertTrue(RenditionType.THUMB720BY480.isPNG());
+        Assert.assertFalse(RenditionType.FLASH.isPNG());
+        Assert.assertFalse(RenditionType.PDF.isPNG());
     }
 }
