@@ -54,7 +54,7 @@ public class SalesforceKeyGeneratorTest {
     private static final String KEY_2 = "key_2";
 
     @Before
-	protected void setUp() throws Exception {
+	public void setUp() throws Exception {
 		final Application app = Instrumentation.newApplication(TestForceApp.class,
 				InstrumentationRegistry.getTargetContext());
 		InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);

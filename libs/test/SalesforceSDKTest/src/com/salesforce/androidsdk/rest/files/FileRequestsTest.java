@@ -29,10 +29,13 @@ package com.salesforce.androidsdk.rest.files;
 import android.support.test.filters.SmallTest;
 import android.support.test.runner.AndroidJUnit4;
 
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestRequest;
 
 import junit.framework.Assert;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -47,7 +50,14 @@ import java.util.Arrays;
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class FileRequestsTest extends ApiRequestsBaseTest {
+public class FileRequestsTest {
+
+    private String connectPath;
+
+    @Before
+    public void setUp() throws Exception {
+        connectPath = "/services/data/" + ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()) + "/chatter/";
+    }
 
     @Test
     public void testBatchFileInfo() {
@@ -218,4 +228,13 @@ public class FileRequestsTest extends ApiRequestsBaseTest {
 
     private final String userId = "005T0000000ABCD";
     private final String sfdcId = "06930000001LkwtAAC";
+
+    private void doAdditionalVerifications(RestRequest req) {
+        doAdditionalVerifications(RestRequest.RestMethod.GET, req);
+    }
+
+    private void doAdditionalVerifications(RestRequest.RestMethod method, RestRequest req) {
+        Assert.assertEquals(method, req.getMethod());
+        Assert.assertEquals("false", req.getAdditionalHttpHeaders().get("X-Chatter-Entity-Encoding"));
+    }
 }
