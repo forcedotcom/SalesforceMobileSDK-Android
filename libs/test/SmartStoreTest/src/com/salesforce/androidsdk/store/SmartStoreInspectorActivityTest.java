@@ -31,8 +31,6 @@ import android.support.test.InstrumentationRegistry;
 import android.support.test.filters.MediumTest;
 import android.support.test.rule.ActivityTestRule;
 import android.support.test.runner.AndroidJUnit4;
-import android.view.View;
-import android.widget.EditText;
 import android.widget.ListAdapter;
 import android.widget.MultiAutoCompleteTextView;
 import android.widget.TextView;
@@ -59,6 +57,12 @@ import org.junit.runner.RunWith;
 
 import java.util.HashSet;
 import java.util.Set;
+
+import static android.support.test.espresso.Espresso.onView;
+import static android.support.test.espresso.action.ViewActions.click;
+import static android.support.test.espresso.action.ViewActions.closeSoftKeyboard;
+import static android.support.test.espresso.action.ViewActions.typeText;
+import static android.support.test.espresso.matcher.ViewMatchers.withId;
 
 /**
  * Tests for SmartStoreInspectorActivity
@@ -253,12 +257,11 @@ public class SmartStoreInspectorActivityTest {
 	}
 
 	private void clickButton(int id) {
-		clickView(smartStoreInspectorActivityTestRule.getActivity().findViewById(id));
-		waitSome();
-	}
+        onView(withId(id)).perform(click());
+    }
 
 	private void checkText(String message, int id, String expectedString) {
-		TextView view = smartStoreInspectorActivityTestRule.getActivity().findViewById(id);
+        final TextView view = smartStoreInspectorActivityTestRule.getActivity().findViewById(id);
         Assert.assertNotNull("TextView not found", view);
         Assert.assertEquals(message, expectedString, view.getText().toString());
 	}
@@ -298,32 +301,12 @@ public class SmartStoreInspectorActivityTest {
 					actualAlertMessage.contains(expectedAlertMessageSubstring));
 		}
 	}
-
-    private void clickView(final View v) {
-        try {
-            v.performClick();
-        } catch (Throwable t) {
-            Assert.fail("Failed to click view " + v);
-        }
-    }
     
     private void setText(final int textViewId, final String text) {
         try {
-            TextView v = smartStoreInspectorActivityTestRule.getActivity().findViewById(textViewId);
-            v.setText(text);
-            if (v instanceof EditText) {
-                ((EditText) v).setSelection(v.getText().length());
-            }
+            onView(withId(textViewId)).perform(typeText(text), closeSoftKeyboard());
         } catch (Throwable t) {
             Assert.fail("Failed to set text " + text);
-        }
-    }
-    
-    private void waitSome() {
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            Assert.fail("Test interrupted");
         }
     }
 }
