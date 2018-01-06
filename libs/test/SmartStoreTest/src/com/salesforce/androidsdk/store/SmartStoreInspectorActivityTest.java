@@ -61,7 +61,7 @@ import java.util.Set;
 import static android.support.test.espresso.Espresso.onView;
 import static android.support.test.espresso.action.ViewActions.click;
 import static android.support.test.espresso.action.ViewActions.closeSoftKeyboard;
-import static android.support.test.espresso.action.ViewActions.typeText;
+import static android.support.test.espresso.action.ViewActions.replaceText;
 import static android.support.test.espresso.matcher.ViewMatchers.withId;
 
 /**
@@ -304,7 +304,7 @@ public class SmartStoreInspectorActivityTest {
     
     private void setText(final int textViewId, final String text) {
         try {
-            onView(withId(textViewId)).perform(typeText(text), closeSoftKeyboard());
+            onView(withId(textViewId)).perform(replaceText(text), closeSoftKeyboard());
         } catch (Throwable t) {
             Assert.fail("Failed to set text " + text);
         }
