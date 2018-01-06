@@ -212,7 +212,7 @@ public class SmartStoreInspectorActivityTest {
 		MultiAutoCompleteTextView queryTextView = smartStoreInspectorActivityTestRule.getActivity()
 				.findViewById(R.id.sf__inspector_query_text);
 		ListAdapter adapter = queryTextView.getAdapter();
-		Set<String> values = new HashSet<String>();
+		Set<String> values = new HashSet<>();
 		for (int i = 0; i < adapter.getCount(); i++) {
 			values.add((String) adapter.getItem(i));
 		}

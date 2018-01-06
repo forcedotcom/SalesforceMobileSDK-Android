@@ -26,11 +26,13 @@
  */
 package com.salesforce.androidsdk.store;
 
+import android.support.test.InstrumentationRegistry;
 import android.support.test.filters.MediumTest;
 import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
 
 import com.salesforce.androidsdk.analytics.security.Encryptor;
+import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
@@ -46,6 +48,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.File;
+
 /**
  * Set of tests for the smart store loading numerous and/or large entries and querying them back
  */
@@ -57,6 +61,11 @@ public class SmartStoreLoadExternalStorageTest extends SmartStoreLoadTest {
 
     @Before
     public void setUp() throws Exception {
+        final String dbPath = InstrumentationRegistry.getTargetContext().getApplicationInfo().dataDir + "/databases";
+        final File fileDir = new File(dbPath);
+        DBOpenHelper.deleteAllUserDatabases(InstrumentationRegistry.getTargetContext());
+        DBOpenHelper.deleteDatabase(InstrumentationRegistry.getTargetContext(), null);
+        DBOpenHelper.removeAllFiles(fileDir);
         super.setUp();
     }
 
