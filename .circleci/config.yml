@@ -106,7 +106,7 @@ jobs:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
       - run:
           name: Download Dependencies
-          command: ./install.sh && ./gradlew androidDependencies && ./gradlew dependencies
+          command: ./install.sh && ./gradlew androidDependencies && ./gradlew dependencies && ./gradlew build
       - save_cache:
           paths:
             - ~/.gradle
@@ -396,10 +396,10 @@ jobs:
           name: Test forcedroid
           when: always
           command:  |
-            git --version
-            sudo apt-get update
-            sudo apt-get install git
-            git --version
+            wget https://www.kernel.org/pub/software/scm/git/git-2.15.0.tar.gz
+            tar -xvzf git-2.15.0.tar.gz
+            ./configure
+            make && make install
             ./SalesforceMobileSDK-Package/test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native
 
       - run:
@@ -442,7 +442,7 @@ workflows:
   nightly-build:
      triggers:
        - schedule:
-           cron: "15,45 * * * *"
+           cron: "45 12 * * *"
            filters:
              branches:
                only:
@@ -455,7 +455,7 @@ workflows:
   package:
      triggers:
        - schedule:
-           cron: "00,30 * * * *"
+           cron: "30 12 * * *"
            filters:
              branches:
                only:

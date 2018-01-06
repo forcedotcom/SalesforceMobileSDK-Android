@@ -19,4 +19,4 @@ else
 end
 
 # State what Library the test failures are for (or don't post at all).
-markdown "# Tests results for #{ENV['CURRENT_LIB']}" unless status_report[:error].to_s.empty? && status_report[:warning].to_s.empty?
+markdown "# Tests results for #{ENV['CURRENT_LIB']}" unless status_report[:errors].empty? && status_report[:warnings].empty?

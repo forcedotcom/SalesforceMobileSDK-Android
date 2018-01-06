@@ -23,12 +23,12 @@ function startAVD {
     # This indicates a nightly build and what API version to test
     if [ -z "$AVD" ]; then
         if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
-            emulator64-arm -avd test22 -no-audio -no-window -no-skin
+            emulator64-arm -avd test22 -no-audio -no-window
         else
             echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."
         fi
     else
-        emulator -avd "$AVD" -no-audio -no-window -no-skin
+        emulator -avd "$AVD" -no-audio -no-window
     fi
 }
 
