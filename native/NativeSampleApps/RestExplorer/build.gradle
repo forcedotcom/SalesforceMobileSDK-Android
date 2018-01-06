@@ -2,6 +2,8 @@ apply plugin: 'com.android.application'
 
 dependencies {
   api project(':libs:SalesforceSDK')
+  androidTestApi 'com.android.support.test:runner:1.0.1'
+  androidTestApi 'com.android.support.test:rules:1.0.1'
 }
 
 android {
@@ -35,7 +37,7 @@ android {
   }
   defaultConfig {
     testApplicationId "com.salesforce.samples.restexplorer.tests"
-    testInstrumentationRunner "com.salesforce.androidsdk.analytics.util.test.JUnitReportTestRunner"
+    testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'
