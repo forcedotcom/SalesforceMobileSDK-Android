@@ -71,21 +71,37 @@ public class PasscodeActivityTest {
     private PasscodeActivity passcodeActivity;
     private PasscodeManager passcodeManager;
 
+    /**
+     * Custom activity launch rules to run steps before the activity is launched.
+     *
+     * @param <T> Activity.
+     */
+    public class PasscodeActivityRule<T extends PasscodeActivity> extends ActivityTestRule<T> {
+
+        public PasscodeActivityRule(Class<T> activityClass) {
+            super(activityClass);
+        }
+
+        @Override
+        protected void beforeActivityLaunched() {
+            eq = new EventsListenerQueue();
+
+            // Waits for app initialization to complete.
+            if (!SalesforceSDKManager.hasInstance()) {
+                eq.waitForEvent(EventType.AppCreateComplete, 5000);
+            }
+            targetContext = InstrumentationRegistry.getTargetContext();
+            passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
+            passcodeManager.reset(targetContext);
+            passcodeManager.setTimeoutMs(600000);
+        }
+    }
+
     @Rule
-    public ActivityTestRule<PasscodeActivity> passcodeActivityTestRule = new ActivityTestRule<>(PasscodeActivity.class);
+    public PasscodeActivityRule<PasscodeActivity> passcodeActivityTestRule = new PasscodeActivityRule<>(PasscodeActivity.class);
 
     @Before
     public void setUp() throws Exception {
-        eq = new EventsListenerQueue();
-
-        // Waits for app initialization to complete.
-        if (!SalesforceSDKManager.hasInstance()) {
-            eq.waitForEvent(EventType.AppCreateComplete, 5000);
-        }
-        targetContext = InstrumentationRegistry.getTargetContext();
-        passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
-        passcodeManager.reset(targetContext);
-        passcodeManager.setTimeoutMs(600000);
         Assert.assertTrue("Application should be locked", passcodeManager.isLocked());
         Assert.assertFalse("Application should not have a passcode", passcodeManager.hasStoredPasscode(targetContext));
     }
