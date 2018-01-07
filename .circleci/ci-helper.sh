@@ -24,8 +24,8 @@ function startAVD {
     # This indicates a nightly build and what API version to test
     if [ -z "$AVD" ]; then
         if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
-            echo "y" | sdkmanager "system-images;android-25;google_apis;armeabi-v7a"
-            echo "no" | avdmanager create avd -n test25 -k "system-images;android-25;google_apis;armeabi-v7a"
+            echo "y" | sdkmanager "system-images;android-25;google_apis;arm64-v8a"
+            echo "no" | avdmanager create avd -n test25 -k "system-images;android-25;google_apis;arm64-v8a"
 
             export LD_LIBRARY_PATH=${ANDROID_HOME}/emulator/lib64:${ANDROID_HOME}/emulator/lib64/qt/lib
             emulator64-arm -avd test25 -noaudio -no-window -no-boot-anim -accel on

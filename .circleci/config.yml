@@ -396,9 +396,11 @@ jobs:
           name: Update Git
           when: always
           command:  |
-            sudo add-apt-repository ppa:git-core/ppa
-            sudo apt-get update
-            sudo apt-get install git
+            wget https://www.kernel.org/pub/software/scm/git/git-2.15.0.tar.gz
+            tar -xvzf git-2.15.0.tar.gz
+            cd git-2.15.0
+            ./configure
+            make && make install
 
       - run:
           name: Test forcedroid
@@ -459,7 +461,7 @@ workflows:
   package:
      triggers:
        - schedule:
-           cron: "30 19,22 * * *"
+           cron: "45 * * * *"
            filters:
              branches:
                only:
