@@ -55,7 +55,7 @@ import org.junit.runner.RunWith;
 import static android.support.test.espresso.Espresso.onView;
 import static android.support.test.espresso.action.ViewActions.click;
 import static android.support.test.espresso.action.ViewActions.closeSoftKeyboard;
-import static android.support.test.espresso.action.ViewActions.pressKey;
+import static android.support.test.espresso.action.ViewActions.pressImeActionButton;
 import static android.support.test.espresso.action.ViewActions.replaceText;
 import static android.support.test.espresso.matcher.ViewMatchers.withId;
 
@@ -303,6 +303,9 @@ public class PasscodeActivityTest {
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
 
         // Get activity
+        final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+                SalesforceSDKManager.getInstance().getPasscodeActivity());
+        passcodeActivityTestRule.launchActivity(i);
         passcodeActivity = passcodeActivityTestRule.getActivity();
         Assert.assertEquals("Activity expected in check mode", PasscodeMode.Check, passcodeActivity.getMode());
 
@@ -326,6 +329,9 @@ public class PasscodeActivityTest {
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
 
         // Get activity
+        final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+                SalesforceSDKManager.getInstance().getPasscodeActivity());
+        passcodeActivityTestRule.launchActivity(i);
         passcodeActivity = passcodeActivityTestRule.getActivity();
         Assert.assertEquals("Activity expected in check mode", PasscodeMode.Check, passcodeActivity.getMode());
 
@@ -358,6 +364,9 @@ public class PasscodeActivityTest {
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
 
         // Get activity
+        final Intent intent = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+                SalesforceSDKManager.getInstance().getPasscodeActivity());
+        passcodeActivityTestRule.launchActivity(intent);
         passcodeActivity = passcodeActivityTestRule.getActivity();
         Assert.assertEquals("Activity expected in check mode", PasscodeMode.Check, passcodeActivity.getMode());
 
@@ -384,6 +393,9 @@ public class PasscodeActivityTest {
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
 
         // Get activity
+        final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+                SalesforceSDKManager.getInstance().getPasscodeActivity());
+        passcodeActivityTestRule.launchActivity(i);
         passcodeActivity = passcodeActivityTestRule.getActivity();
         Assert.assertEquals("Activity expected in check mode", PasscodeMode.Check, passcodeActivity.getMode());
 
@@ -411,6 +423,9 @@ public class PasscodeActivityTest {
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
 
         // Get activity
+        final Intent intent = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+                SalesforceSDKManager.getInstance().getPasscodeActivity());
+        passcodeActivityTestRule.launchActivity(intent);
         passcodeActivity = passcodeActivityTestRule.getActivity();
         Assert.assertEquals("Activity expected in check mode", PasscodeMode.Check, passcodeActivity.getMode());
         passcodeActivity.enableLogout(false); // logout is async, it creates havoc when running other tests
@@ -438,6 +453,9 @@ public class PasscodeActivityTest {
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
 
         // Get activity
+        final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+                SalesforceSDKManager.getInstance().getPasscodeActivity());
+        passcodeActivityTestRule.launchActivity(i);
         passcodeActivity = passcodeActivityTestRule.getActivity();
         Assert.assertEquals("Activity expected in check mode", PasscodeMode.Check, passcodeActivity.getMode());
         passcodeActivity.enableLogout(false); // logout is async, it creates havoc when running other tests
@@ -497,7 +515,7 @@ public class PasscodeActivityTest {
 
     private void doEditorAction(final int textViewId, final int actionCode) {
         try {
-            onView(withId(textViewId)).perform(pressKey(actionCode));
+            onView(withId(textViewId)).perform(pressImeActionButton());
         } catch (Throwable t) {
             Assert.fail("Failed to do editor action " + actionCode);
         }
