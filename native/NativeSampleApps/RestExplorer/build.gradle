@@ -8,6 +8,9 @@ dependencies {
   androidTestApi ('com.android.support.test:rules:1.0.1') {
     exclude module: 'support-annotations'
   }
+  androidTestApi ('com.android.support.test.espresso:espresso-core:3.0.1') {
+    exclude module: 'support-annotations'
+  }
 }
 
 android {
@@ -48,6 +51,7 @@ android {
     exclude 'META-INF/LICENSE.txt'
     exclude 'META-INF/DEPENDENCIES'
     exclude 'META-INF/NOTICE'
+    pickFirst 'protobuf.meta'
   }
 
   lintOptions {

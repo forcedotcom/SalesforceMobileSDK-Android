@@ -80,7 +80,7 @@ public class SmartStoreInspectorActivityTest {
 	private SmartStore store;
 
 	@Rule
-    public ActivityTestRule<SmartStoreInspectorActivity> smartStoreInspectorActivityTestRule = new ActivityTestRule<SmartStoreInspectorActivity>(SmartStoreInspectorActivity.class);
+    public ActivityTestRule<SmartStoreInspectorActivity> smartStoreInspectorActivityTestRule = new ActivityTestRule<>(SmartStoreInspectorActivity.class);
 
 	@Before
 	public void setUp() throws Exception {

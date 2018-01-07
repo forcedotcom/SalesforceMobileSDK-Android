@@ -28,12 +28,11 @@ package com.salesforce.samples.restexplorer;
 import android.accounts.AccountManager;
 import android.app.AlertDialog;
 import android.content.Context;
-import android.test.ActivityInstrumentationTestCase2;
-import android.view.View;
+import android.support.test.InstrumentationRegistry;
+import android.support.test.filters.LargeTest;
+import android.support.test.rule.ActivityTestRule;
+import android.support.test.runner.AndroidJUnit4;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.RadioButton;
-import android.widget.TabHost;
 import android.widget.TextView;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -44,6 +43,14 @@ import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
+
+import junit.framework.Assert;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -57,6 +64,12 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okio.Buffer;
 
+import static android.support.test.espresso.Espresso.onView;
+import static android.support.test.espresso.action.ViewActions.click;
+import static android.support.test.espresso.action.ViewActions.closeSoftKeyboard;
+import static android.support.test.espresso.action.ViewActions.replaceText;
+import static android.support.test.espresso.matcher.ViewMatchers.withId;
+
 /**
  * Tests for ExplorerActivity
  *
@@ -64,8 +77,9 @@ import okio.Buffer;
  *     instead we inject a mock http accessor in the RestClient
  *     and make sure that the http requests coming through are as expected (method/path/body)
  */
-public class ExplorerActivityTest extends
-        ActivityInstrumentationTestCase2<ExplorerActivity> {
+@RunWith(AndroidJUnit4.class)
+@LargeTest
+public class ExplorerActivityTest {
 
     private static final String TEST_ORG_ID = "test_org_id";
     private static final String TEST_USER_ID = "test_user_id";
@@ -78,74 +92,74 @@ public class ExplorerActivityTest extends
     private static final String TEST_USERNAME = "test_username";
     private static final String TEST_ACCOUNT_NAME = "test_account_name (https://cs1.salesforce.com) (RestExplorerTest)";
 
-    private static final int VERSIONS_TAB = 0;
-    private static final int RESOURCES_TAB = 1;
-    private static final int DESCRIBE_GLOBAL_TAB = 2;
-    private static final int METADATA_TAB = 3;
-    private static final int DESCRIBE_TAB = 4;
-    private static final int CREATE_TAB = 5;
-    private static final int RETRIEVE_TAB = 6;
-    private static final int UPDATE_TAB = 7;
-    private static final int UPSERT_TAB = 8;
-    private static final int DELETE_TAB = 9;
-    private static final int QUERY_TAB = 10;
-    private static final int SEARCH_TAB = 11;
-    private static final int MANUAL_REQUEST_TAB = 12;
-    private static final int SEARCH_SCOPE_AND_ORDER_TAB = 13;
-    private static final int SEARCH_RESULT_LAYOUT_TAB = 14;
-    private static final int OWNED_FILES_LIST_TAB = 15;
-    private static final int FILES_IN_USERS_GROUPS_TAB = 16;
-    private static final int FILES_SHARED_WITH_USER_TAB = 17;
-    private static final int FILE_DETAILS_TAB = 18;
-    private static final int BATCH_FILE_DETAILS_TAB = 19;
-    private static final int FILE_SHARES_TAB = 20;
-    private static final int ADD_FILE_SHARE_TAB = 21;
-    private static final int DELETE_FILE_SHARE_TAB = 22;
-
+    private static final String VERSIONS_TAB = "versions";
+    private static final String RESOURCES_TAB = "resources";
+    private static final String DESCRIBE_GLOBAL_TAB = "describe_global";
+    private static final String METADATA_TAB = "metadata";
+    private static final String DESCRIBE_TAB = "describe";
+    private static final String CREATE_TAB = "create";
+    private static final String RETRIEVE_TAB = "retrieve";
+    private static final String UPDATE_TAB = "update";
+    private static final String UPSERT_TAB = "upsert";
+    private static final String DELETE_TAB = "delete";
+    private static final String QUERY_TAB = "query";
+    private static final String SEARCH_TAB = "search";
+    private static final String MANUAL_REQUEST_TAB = "manual";
+    private static final String SEARCH_SCOPE_AND_ORDER_TAB = "search_scope_and_order";
+    private static final String SEARCH_RESULT_LAYOUT_TAB = "search_result_layout";
+    private static final String OWNED_FILES_LIST_TAB = "owned_files_list";
+    private static final String FILES_IN_USERS_GROUPS_TAB = "files_in_users_groups";
+    private static final String FILES_SHARED_WITH_USER_TAB = "files_shared_with_user";
+    private static final String FILE_DETAILS_TAB = "file_details";
+    private static final String BATCH_FILE_DETAILS_TAB = "batch_file_details";
+    private static final String FILE_SHARES_TAB = "files_shares";
+    private static final String ADD_FILE_SHARE_TAB = "add_file_share";
+    private static final String DELETE_FILE_SHARE_TAB = "delete_file_share";
     public static final MediaType MEDIA_TYPE_PLAIN = okhttp3.MediaType.parse("text/plain; charset=utf-8");
-
 
     private EventsListenerQueue eq;
     private Context targetContext;
     private ClientManager clientManager;
     public static volatile String RESPONSE = null;
 
-    public ExplorerActivityTest() {
-        super(ExplorerActivity.class);
-    }
+    /**
+     * Custom activity launch rules to run steps before the activity is launched.
+     *
+     * @param <T> Activity.
+     */
+    public class ExplorerActivityRule<T extends ExplorerActivity> extends ActivityTestRule<T> {
 
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        setActivityInitialTouchMode(false);
-        eq = new EventsListenerQueue();
-
-        // Waits for app initialization to complete.
-        if (!SalesforceSDKManager.hasInstance()) {
-            eq.waitForEvent(EventType.AppCreateComplete, 5000);
+        public ExplorerActivityRule(Class<T> activityClass) {
+            super(activityClass);
         }
-        targetContext = getInstrumentation().getTargetContext();
-        clientManager = new ClientManager(targetContext, targetContext.getString(R.string.account_type), null, SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
-        clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN,
-                TEST_ACCESS_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_CLIENT_ID,
-                TEST_ORG_ID, TEST_USER_ID, null, null, null, null, null, null, null, null, null);
-        SalesforceSDKManager.getInstance().getPasscodeManager().setTimeoutMs(0);
-        final AccountManager accountManager = AccountManager.get(targetContext);
 
-        /*
-         * Since we are using bogus credentials, we need to explicitly set the auth token value to
-         * prevent ClientManager from attempting a refresh with the bogus refresh token.
-         */
-        accountManager.setAuthToken(clientManager.getAccount(), AccountManager.KEY_AUTHTOKEN, TEST_ACCESS_TOKEN);
+        @Override
+        protected void beforeActivityLaunched() {
+            super.beforeActivityLaunched();
+            eq = new EventsListenerQueue();
 
-        // Plug a modified OkHttpClient that doesn't actually go to the server.
-        final ExplorerActivity activity = getActivity();
-        assertNotNull("Activity should not be null", activity);
-        final RestClient client = activity.getClient();
-        assertNotNull("Rest client should not be null", client);
-        final OkHttpClient mockOkHttpClient = buildMockOkHttpClient();
-        client.setOkHttpClient(mockOkHttpClient);
+            // Waits for app initialization to complete.
+            if (!SalesforceSDKManager.hasInstance()) {
+                eq.waitForEvent(EventType.AppCreateComplete, 5000);
+            }
+            targetContext = InstrumentationRegistry.getTargetContext();
+            clientManager = new ClientManager(targetContext, targetContext.getString(R.string.account_type), null, SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
+            clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN,
+                    TEST_ACCESS_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_CLIENT_ID,
+                    TEST_ORG_ID, TEST_USER_ID, null, null, null, null, null, null, null, null, null);
+            SalesforceSDKManager.getInstance().getPasscodeManager().setTimeoutMs(0);
+            final AccountManager accountManager = AccountManager.get(targetContext);
+
+            /*
+             * Since we are using bogus credentials, we need to explicitly set the auth token value to
+             * prevent ClientManager from attempting a refresh with the bogus refresh token.
+             */
+            accountManager.setAuthToken(clientManager.getAccount(), AccountManager.KEY_AUTHTOKEN, TEST_ACCESS_TOKEN);
+        }
     }
+
+    @Rule
+    public ExplorerActivityRule<ExplorerActivity> explorerActivityTestRule = new ExplorerActivityRule<>(ExplorerActivity.class);
 
     private OkHttpClient buildMockOkHttpClient() {
         OkHttpClient.Builder builder = new OkHttpClient.Builder()
@@ -158,11 +172,9 @@ public class ExplorerActivityTest extends
                             final Buffer buffer = new Buffer();
                             request.body().writeTo(buffer);
                             requestBody = " " + buffer.readUtf8();
-                        }
-                        else {
+                        } else {
                             requestBody = "";
                         }
-
                         RESPONSE = "[" + request.method() + " " + request.url() + requestBody + "]";
                         Response response = new Response.Builder()
                                 .request(request)
@@ -176,95 +188,110 @@ public class ExplorerActivityTest extends
         return builder.build();
     }
 
-    @Override
+    @Before
+    public void setUp() throws Exception {
+
+        // Plug a modified OkHttpClient that doesn't actually go to the server.
+        final ExplorerActivity activity = explorerActivityTestRule.getActivity();
+        Assert.assertNotNull("Activity should not be null", activity);
+        final RestClient client = activity.getClient();
+        Assert.assertNotNull("Rest client should not be null", client);
+        final OkHttpClient mockOkHttpClient = buildMockOkHttpClient();
+        client.setOkHttpClient(mockOkHttpClient);
+    }
+
+    @After
 	public void tearDown() throws Exception {
 		if (eq != null) {
             eq.tearDown();
             eq = null;
         }
 		RESPONSE = null;
-		super.tearDown();
 	}
 
     /**
      * Test clicking clear.
      */
+    @Test
     public void testClickClear() {
-        TextView resultText = (TextView) getActivity().findViewById(R.id.result_text);
+        TextView resultText = explorerActivityTestRule.getActivity().findViewById(R.id.result_text);
 
         // Putting some text in the result text area
         setText(R.id.result_text, "dummy-text");
-        assertFalse("Result text area should not be empty", resultText.getText().length() == 0);
+        Assert.assertFalse("Result text area should not be empty", resultText.getText().length() == 0);
 
         // Click on clear
-        clickView(getActivity().findViewById(R.id.clear_button));
+        clickView(R.id.clear_button);
 
         // Check that result text has been cleared
-        assertEquals("Result text area should habe been cleared", 0, resultText.getText().length());
+        Assert.assertEquals("Result text area should habe been cleared", 0, resultText.getText().length());
     }
 
     /**
      * Test clicking logout and then canceling out.
      */
+    @Test
     public void testClickLogoutThenCancel() {
 
         // Click on logout
-        clickView(getActivity().findViewById(R.id.logout_button));
-        waitSome();
-        waitSome(); // wait more to avoid flapping
+        clickView(R.id.logout_button);
+        //waitSome();
+        //waitSome(); // wait more to avoid flapping
 
         // Check that confirmation dialog is shown
-        final ExplorerActivity activity = getActivity();
-        assertNotNull("Activity should not be null", activity);
+        final ExplorerActivity activity = explorerActivityTestRule.getActivity();
+        Assert.assertNotNull("Activity should not be null", activity);
         final LogoutDialogFragment logoutFrag = activity.getLogoutConfirmationDialog();
-        assertNotNull("Logout dialog fragment should not be null", logoutFrag);
+        Assert.assertNotNull("Logout dialog fragment should not be null", logoutFrag);
         final AlertDialog dialog = (AlertDialog) logoutFrag.getDialog();
-        assertNotNull("Logout dialog should not be null", dialog);
-        // FLAPPING // assertTrue("Logout confirmation dialog should be showing", dialog.isShowing());
+        Assert.assertNotNull("Logout dialog should not be null", dialog);
+        Assert.assertTrue("Logout confirmation dialog should be showing", dialog.isShowing());
 
         // Click no
-        clickView(dialog.getButton(AlertDialog.BUTTON_NEGATIVE));
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
 
         // Wait for dialog to go
-        waitSome();
+        //waitSome();
 
         // Check that confirmation dialog is no longer shown
-        // FLAPPING // assertFalse("Logout confirmation dialog should no longer be showing", dialog.isShowing());
+        Assert.assertFalse("Logout confirmation dialog should no longer be showing", dialog.isShowing());
     }
 
     /**
      * Test clicking logout and then clicking yes - make sure we end up removing
      * the account.
      */
+    @Test
     public void testClickLogoutThenConfirm() {
 
         // Click on logout
-        clickView(getActivity().findViewById(R.id.logout_button));
-        waitSome();
+        clickView(R.id.logout_button);
+        //waitSome();
 
         // Check that confirmation dialog is shown
-        final ExplorerActivity activity = getActivity();
-        assertNotNull("Activity should not be null", activity);
+        final ExplorerActivity activity = explorerActivityTestRule.getActivity();
+        Assert.assertNotNull("Activity should not be null", activity);
         final LogoutDialogFragment logoutFrag = activity.getLogoutConfirmationDialog();
-        assertNotNull("Logout dialog fragment should not be null", logoutFrag);
+        Assert.assertNotNull("Logout dialog fragment should not be null", logoutFrag);
         final AlertDialog dialog = (AlertDialog) logoutFrag.getDialog();
-        assertNotNull("Logout dialog should not be null", dialog);
-        // FLAPPING // assertTrue("Logout confirmation dialog should be showing", dialog.isShowing());
+        Assert.assertNotNull("Logout dialog should not be null", dialog);
+        Assert.assertTrue("Logout confirmation dialog should be showing", dialog.isShowing());
         final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
         UserAccount curUser = userAccMgr.getCurrentUser();
-        assertNotNull("Current user should not be null", curUser);
+        Assert.assertNotNull("Current user should not be null", curUser);
 
         // Click yes
-        clickView(dialog.getButton(AlertDialog.BUTTON_POSITIVE));
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
         final EventsListenerQueue eq = new EventsListenerQueue();
         eq.waitForEvent(EventType.LogoutComplete, 30000);
         curUser = userAccMgr.getCurrentUser();
-        assertNull("Current user should be null", curUser);
+        Assert.assertNull("Current user should be null", curUser);
     }
 
     /**
      * Test going to versions tab - check UI and click "Go".
      */
+    @Test
     public void testGetVersions() {
         gotoTabAndRunAction(VERSIONS_TAB, R.id.versions_button, "Go", null, "[GET " + TEST_INSTANCE_URL + "/services/data/]");
     }
@@ -272,6 +299,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to resources tab - check UI and click "Go".
      */
+    @Test
     public void testGetResources() {
         gotoTabAndRunAction(RESOURCES_TAB, R.id.resources_button, "Go", null, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/]");
     }
@@ -279,6 +307,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to describe global tab - check UI and click "Go".
      */
+    @Test
     public void testDescribeGlobal() {
         gotoTabAndRunAction(DESCRIBE_GLOBAL_TAB, R.id.describe_global_button, "Go", null, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/]");
     }
@@ -286,6 +315,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to metadata tab - check UI and click "Go".
      */
+    @Test
     public void testGetMetadata() {
         Runnable extraSetup = new Runnable() {
             @Override
@@ -299,6 +329,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to describe tab - check UI and click "Go".
      */
+    @Test
     public void testDescribe() {
         Runnable extraSetup = new Runnable() {
             @Override
@@ -312,6 +343,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to create tab - check UI and click "Go".
      */
+    @Test
     public void testCreate() {
         Runnable extraSetup = new Runnable() {
             @Override
@@ -326,6 +358,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to retrieve tab - check UI and click "Go".
      */
+    @Test
     public void testRetrieve() {
         Runnable extraSetup = new Runnable() {
             @Override
@@ -342,6 +375,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to update tab - check UI and click "Go".
      */
+    @Test
     public void testUpdate() {
         Runnable extraSetup = new Runnable() {
             @Override
@@ -357,6 +391,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to upsert tab - check UI and click "Go".
      */
+    @Test
     public void testUpsert() {
         Runnable extraSetup = new Runnable() {
             @Override
@@ -373,6 +408,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to delete tab - check UI and click "Go".
      */
+    @Test
     public void testDelete() {
         Runnable extraSetup = new Runnable() {
             @Override
@@ -388,6 +424,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to query tab - check UI and click "Go".
      */
+    @Test
     public void testQuery() {
         Runnable extraSetup = new Runnable() {
             @Override
@@ -402,6 +439,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to search tab - check UI and click "Go".
      */
+    @Test
     public void testSearch() {
         Runnable extraSetup = new Runnable() {
             @Override
@@ -416,6 +454,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to manual request tab - check UI and click "Go".
      */
+    @Test
     public void testManualRequest() {
         Runnable extraSetup = new Runnable() {
             @Override
@@ -431,6 +470,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to search scope and order tab - check UI and click "Go".
      */
+    @Test
     public void testSearchScopeAndOrderTab() {
         gotoTabAndRunAction(SEARCH_SCOPE_AND_ORDER_TAB, R.id.search_scope_and_order_button, "Go", null, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/search/scopeOrder]");
     }
@@ -438,6 +478,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to search result layout tab - check UI and click "Go".
      */
+    @Test
     public void testSearchResultLayout() {
         Runnable extraSetup = new Runnable() {
             @Override
@@ -451,6 +492,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to owned files list tab - check UI and click "Go".
      */
+    @Test
     public void testOwnedFilesList() {
         Runnable extraSetup = new Runnable() {
             @Override
@@ -465,6 +507,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to files in users groups tab - check UI and click "Go".
      */
+    @Test
     public void testFilesInUsersGroups() {
         Runnable extraSetup = new Runnable() {
             @Override
@@ -479,6 +522,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to files shared with user tab - check UI and click "Go".
      */
+    @Test
     public void testFilesSharedWithUser() {
         Runnable extraSetup = new Runnable() {
             @Override
@@ -493,6 +537,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to file details tab - check UI and click "Go".
      */
+    @Test
     public void testFileDetails() {
         Runnable extraSetup = new Runnable() {
             @Override
@@ -507,6 +552,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to batch file details tab - check UI and click "Go".
      */
+    @Test
     public void testBatchFileDetails() {
         Runnable extraSetup = new Runnable() {
             @Override
@@ -520,6 +566,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to file shares tab - check UI and click "Go".
      */
+    @Test
     public void testFileShares() {
         Runnable extraSetup = new Runnable() {
             @Override
@@ -534,6 +581,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to add file share tab - check UI and click "Go".
      */
+    @Test
     public void testAddFileShare() {
         Runnable extraSetup = new Runnable() {
             @Override
@@ -549,6 +597,7 @@ public class ExplorerActivityTest extends
     /**
      * Test going to delete file share tab - check UI and click "Go".
      */
+    @Test
     public void testDeleteFileShare() {
         Runnable extraSetup = new Runnable() {
             @Override
@@ -559,28 +608,16 @@ public class ExplorerActivityTest extends
         gotoTabAndRunAction(DELETE_FILE_SHARE_TAB, R.id.delete_file_share_button, "Go", extraSetup, "[DELETE " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/ContentDocumentLink/shareIdToDelete]");
     }
 
-    /**
-     * Go to tab (tabId), check button (goButtonId) label is as expected (goButtonLabel)
-     * Do any extra setup (extraSetup)
-     * Click on button and check response is as expected (expectedResponse)
-     *
-     * @param tabIndex
-     * @param goButtonId
-     * @param goButtonLabel
-     * @param extraSetup
-     * @param expectedResponse
-     */
-    private void gotoTabAndRunAction(int tabIndex, int goButtonId, String goButtonLabel, Runnable extraSetup, String expectedResponse) {
+    private void gotoTabAndRunAction(String tabTag, int goButtonId, String goButtonLabel, Runnable extraSetup, String expectedResponse) {
 
         // Go to tab
-        final ExplorerActivity activity = getActivity();
-        assertNotNull("Activity should not be null", activity);
-        TabHost tabHost = (TabHost) activity.findViewById(android.R.id.tabhost);
-        clickTab(tabHost, tabIndex);
+        final ExplorerActivity activity = explorerActivityTestRule.getActivity();
+        Assert.assertNotNull("Activity should not be null", activity);
+        clickTab(R.id.versions_tab);
 
         // Check UI
-        Button runButton = (Button) activity.findViewById(goButtonId);
-        assertEquals(goButtonLabel + " button has wrong label", goButtonLabel, runButton.getText());
+        Button runButton = activity.findViewById(goButtonId);
+        Assert.assertEquals(goButtonLabel + " button has wrong label", goButtonLabel, runButton.getText());
 
         // Do any extra setup
         if (extraSetup != null) {
@@ -588,7 +625,7 @@ public class ExplorerActivityTest extends
         }
 
         // Click resources button
-        clickView(runButton);
+        clickView(goButtonId);
 
         // Wait for call to complete
         long curTime = System.currentTimeMillis();
@@ -598,26 +635,19 @@ public class ExplorerActivityTest extends
         		break;
         	}
         }
-        assertEquals("Wrong request executed", expectedResponse, RESPONSE);
+        Assert.assertEquals("Wrong request executed", expectedResponse, RESPONSE);
 
         // Check result area
         waitForRender();
         TextView resultText = (TextView) activity.findViewById(R.id.result_text);
-        assertTrue("Response not found in text area", resultText.getText().toString().indexOf(expectedResponse) > 0);
+        Assert.assertTrue("Response not found in text area", resultText.getText().toString().indexOf(expectedResponse) > 0);
     }
 
     private void setText(final int textViewId, final String text) {
         try {
-            runTestOnUiThread(new Runnable() {
-                @Override public void run() {
-                    TextView v = (TextView) getActivity().findViewById(textViewId);
-                    v.setText(text);
-                    if (v instanceof EditText)
-                        ((EditText) v).setSelection(v.getText().length());
-                }
-            });
+            onView(withId(textViewId)).perform(replaceText(text), closeSoftKeyboard());
         } catch (Throwable t) {
-            fail("Failed to set text " + text);
+            Assert.fail("Failed to set text " + text);
         }
     }
 
@@ -625,17 +655,11 @@ public class ExplorerActivityTest extends
         eq.waitForEvent(EventType.RenditionComplete, 5000);
     }
 
-    private void clickTab(final TabHost tabHost, final int tabIndex) {
+    private void clickTab(final int tabId) {
         try {
-            runTestOnUiThread(new Runnable() {
-
-                @Override
-                public void run() {
-                    tabHost.setCurrentTab(tabIndex);
-                } 
-            });
+            onView(withId(tabId)).perform(click());
         } catch (Throwable t) {
-            fail("Failed to click tab " + tabIndex);
+            Assert.fail("Failed to click tab " + tabId);
         }
     }
 
@@ -643,36 +667,15 @@ public class ExplorerActivityTest extends
         try {
             Thread.sleep(500);
         } catch (InterruptedException e) {
-            fail("Test interrupted");
+            Assert.fail("Test interrupted");
         }
     }
 
-    private void clickView(final View v) {
-        try {
-            runTestOnUiThread(new Runnable() {
-
-                @Override
-                public void run() {
-                    v.performClick();
-                }
-            });
-        } catch (Throwable t) {
-            fail("Failed to click view " + v);
-        }
+    private void clickView(final int viewId) {
+        onView(withId(viewId)).perform(click());
     }
 
     private void checkRadioButton(final int radioButtonId) {
-        try {
-            runTestOnUiThread(new Runnable() {
-
-                @Override
-                public void run() {
-                    RadioButton v = (RadioButton) getActivity().findViewById(radioButtonId);
-                    v.setChecked(true);
-                }
-            });
-        } catch (Throwable t) {
-            fail("Failed to check radio button " + radioButtonId);
-        }
+        onView(withId(radioButtonId)).perform(click());
     }
 }
