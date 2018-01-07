@@ -21,44 +21,38 @@ function getAndSetLibsToTest {
 }
 
 function startAVD {
+    export LD_LIBRARY_PATH=${ANDROID_HOME}/emulator/lib64:${ANDROID_HOME}/emulator/lib64/qt/lib
+    
     # This indicates a nightly build and what API version to test
     if [ -z "$AVD" ]; then
         if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
-            echo "y" | sdkmanager "system-images;android-25;google_apis;arm64-v8a"
-            echo "no" | avdmanager create avd -n test25 -k "system-images;android-25;google_apis;arm64-v8a"
-
-            export LD_LIBRARY_PATH=${ANDROID_HOME}/emulator/lib64:${ANDROID_HOME}/emulator/lib64/qt/lib
-            emulator64-arm -avd test25 -noaudio -no-window -no-boot-anim -accel on
-            #emulator64-arm -avd test22 -no-audio -no-window
+            emulator64-arm -avd test22 -noaudio -no-window -accel on
         else
             echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."
         fi
     else
-        emulator -avd "$AVD" -no-audio -no-window
+        emulator -avd "$AVD" -no-audio -no-window -accel on
     fi
 }
 
 function waitForAVD {
-    circle-android wait-for-boot
-     # unlock the emulator screen
-    sleep 30
-    adb shell input keyevent 82
+    set +e
 
-    #set +e
-
-    #if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
-    #    local bootanim=""
-    #    export PATH=$(dirname $(dirname $(which android)))/platform-tools:$PATH
-    #    until [[ "$bootanim" =~ "stopped" ]]; do
-    #        sleep 5
-    #        bootanim=$(adb -e shell getprop init.svc.bootanim 2>&1)
-    #        echo "emulator status=$bootanim"
-    #    done
-    #    sleep 30
-    #    echo "Device Booted"
-    #else
-    #    echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."
-    #fi
+    if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
+        local bootanim=""
+        export PATH=$(dirname $(dirname $(which android)))/platform-tools:$PATH
+        until [[ "$bootanim" =~ "stopped" ]]; do
+            sleep 5
+            bootanim=$(adb -e shell getprop init.svc.bootanim 2>&1)
+            echo "emulator status=$bootanim"
+        done
+        sleep 30
+        # unlock the emulator screen
+        adb shell input keyevent 82
+        echo "Device Booted"
+    else
+        echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."
+    fi
 }
 
 function runTests {

@@ -461,7 +461,7 @@ workflows:
   package:
      triggers:
        - schedule:
-           cron: "45 * * * *"
+           cron: "45 18 * * *"
            filters:
              branches:
                only:
