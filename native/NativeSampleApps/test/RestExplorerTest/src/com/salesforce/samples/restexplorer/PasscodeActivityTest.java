@@ -34,7 +34,6 @@ import android.support.test.filters.LargeTest;
 import android.support.test.rule.ActivityTestRule;
 import android.support.test.runner.AndroidJUnit4;
 import android.text.TextUtils;
-import android.view.inputmethod.EditorInfo;
 import android.widget.TextView;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -130,7 +129,7 @@ public class PasscodeActivityTest {
 
         // Entering in 123456 and submitting
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
         Assert.assertEquals("Activity expected in check mode", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
         Assert.assertTrue("Error message should be empty", TextUtils.isEmpty(
@@ -138,7 +137,7 @@ public class PasscodeActivityTest {
 
         // Re-entering 123456 and submitting
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertFalse("Application should be unlocked", passcodeManager.isLocked());
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
     }
@@ -159,7 +158,7 @@ public class PasscodeActivityTest {
 
         // Entering in 123456 and submitting
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
         Assert.assertEquals("Activity expected in check mode", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
         Assert.assertTrue("Error message should be empty", TextUtils.isEmpty(
@@ -167,7 +166,7 @@ public class PasscodeActivityTest {
 
         // Re-entering 123456 and submitting
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertFalse("Application should be unlocked", passcodeManager.isLocked());
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
     }
@@ -184,7 +183,7 @@ public class PasscodeActivityTest {
 
         // Entering nothing and submitting -> expect passcode too short error
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
         Assert.assertEquals("Activity expected in create mode still", PasscodeMode.Create, passcodeActivity.getMode());
         Assert.assertEquals("Error expected", "The passcode must be at least 4 characters long",
@@ -192,7 +191,7 @@ public class PasscodeActivityTest {
 
         // Entering in 123 and submitting -> expect passcode too short error
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
         Assert.assertEquals("Activity expected in create mode still", PasscodeMode.Create, passcodeActivity.getMode());
         Assert.assertEquals("Error expected", "The passcode must be at least 4 characters long",
@@ -200,13 +199,13 @@ public class PasscodeActivityTest {
 
         // Entering in 123456 and submitting
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
         Assert.assertEquals("Activity expected in create confirm mode", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
 
         // Re-entering 123456 and submitting
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertFalse("Application should be unlocked", passcodeManager.isLocked());
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
     }
@@ -223,7 +222,7 @@ public class PasscodeActivityTest {
 
         // Entering nothing and submitting -> expect passcode too short error
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "1234");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
         Assert.assertEquals("Activity expected in create mode still", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
         Assert.assertTrue("Error Message should be empty", TextUtils.isEmpty(
@@ -242,13 +241,13 @@ public class PasscodeActivityTest {
 
         // Entering in 123456 and submitting
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
         Assert.assertEquals("Activity expected in check mode", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
 
         // Entering in 123 and submitting -> expect passcode too short error
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
         Assert.assertEquals("Activity expected in create confirm mode still", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
         Assert.assertEquals("Error expected", "The passcode must be at least 4 characters long",
@@ -256,7 +255,7 @@ public class PasscodeActivityTest {
 
         // Entering 123456 and submitting
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertFalse("Application should be unlocked", passcodeManager.isLocked());
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
     }
@@ -273,13 +272,13 @@ public class PasscodeActivityTest {
 
         // Entering in 123456 and submitting
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertTrue("Application should be still locked", passcodeManager.isLocked());
         Assert.assertEquals("Activity expected in check mode", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
 
         // Entering in 654321 and submitting -> expect passcodes don't match error
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "654321");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertTrue("Application should be still locked", passcodeManager.isLocked());
         Assert.assertEquals("Activity expected in create confirm mode still", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
         Assert.assertEquals("Error expected", "Passcodes don't match!",
@@ -287,7 +286,7 @@ public class PasscodeActivityTest {
 
         // Entering 123456 and submitting
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertFalse("Application should be unlocked", passcodeManager.isLocked());
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
     }
@@ -314,7 +313,7 @@ public class PasscodeActivityTest {
 
         // Entering 123456 and submitting
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertFalse("Application should be unlocked", passcodeManager.isLocked());
     }
 
@@ -340,7 +339,7 @@ public class PasscodeActivityTest {
 
         // Entering 654321 and submitting -> expect passcode incorrect error
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "654321");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
         Assert.assertEquals("Activity expected in check mode still", PasscodeMode.Check, passcodeActivity.getMode());
         Assert.assertEquals("Error expected", "The passcode you entered is incorrect. Please try again. You have 9 attempts remaining.",
@@ -349,7 +348,7 @@ public class PasscodeActivityTest {
 
         // Entering 123456 and submitting
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertFalse("Application should be unlocked", passcodeManager.isLocked());
     }
 
@@ -378,7 +377,7 @@ public class PasscodeActivityTest {
 
         // Entering 123456 and submitting
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertFalse("Application should be unlocked", passcodeManager.isLocked());
     }
 
@@ -404,7 +403,7 @@ public class PasscodeActivityTest {
 
         // Entering 123 and submitting -> expect passcode too short error, not counted as attempt
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "654321");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
         Assert.assertEquals("Activity expected in check mode still", PasscodeMode.Check, passcodeActivity.getMode());
         Assert.assertEquals("Error expected", "The passcode you entered is incorrect. Please try again. You have 9 attempts remaining.",
@@ -438,7 +437,7 @@ public class PasscodeActivityTest {
 
         // Entering 132645 and submitting -> expect passcode manager to be reset
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "132645");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertFalse("Application should not have a passcode", passcodeManager.hasStoredPasscode(targetContext));
     }
 
@@ -487,7 +486,7 @@ public class PasscodeActivityTest {
 
         // Entering 321654 and submitting -> expect passcode incorrect error
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "321654");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
         Assert.assertEquals("Activity expected in check mode still", PasscodeMode.Check, passcodeActivity.getMode());
         if (count == 9) {
@@ -513,11 +512,11 @@ public class PasscodeActivityTest {
         }
     }
 
-    private void doEditorAction(final int textViewId, final int actionCode) {
+    private void doEditorAction(final int textViewId) {
         try {
             onView(withId(textViewId)).perform(pressImeActionButton());
         } catch (Throwable t) {
-            Assert.fail("Failed to do editor action " + actionCode);
+            Assert.fail("Failed to perform editor action");
         }
     }
 
