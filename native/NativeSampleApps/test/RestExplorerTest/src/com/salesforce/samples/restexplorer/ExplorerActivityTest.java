@@ -71,7 +71,7 @@ import static android.support.test.espresso.action.ViewActions.replaceText;
 import static android.support.test.espresso.matcher.ViewMatchers.withId;
 
 /**
- * Tests for ExplorerActivity
+ * Tests for ExplorerActivity.
  *
  * NB: we are not actually talking to a live server
  *     instead we inject a mock http accessor in the RestClient
