@@ -26,12 +26,12 @@
  */
 package com.salesforce.androidsdk.auth;
 
-import java.util.List;
-
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
-import android.test.InstrumentationTestCase;
+import android.support.test.InstrumentationRegistry;
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -40,10 +40,21 @@ import com.salesforce.androidsdk.config.LoginServerManager.LoginServer;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
+import junit.framework.Assert;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.util.List;
+
 /**
  * Tests for LoginServerManager.
  */
-public class LoginServerManagerTest extends InstrumentationTestCase {
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class LoginServerManagerTest {
 
 	private static final String PRODUCTION_URL = "https://login.salesforce.com";
 	private static final String SANDBOX_URL = "https://test.salesforce.com";
@@ -57,22 +68,21 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 	private EventsListenerQueue eq;
 	private Context targetContext;
 
-	@Override
+	@Before
 	public void setUp() throws Exception {
-		super.setUp();
-		targetContext = getInstrumentation().getTargetContext();
+		targetContext = InstrumentationRegistry.getTargetContext();
         eq = new EventsListenerQueue();
 
         // Wait for app initialization to complete.
         final Application app = Instrumentation.newApplication(TestForceApp.class, targetContext);
-        getInstrumentation().callApplicationOnCreate(app);
+        InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
         if (!SalesforceSDKManager.hasInstance()) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
         loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
     	if (loginServerManager != null) {
     		loginServerManager.reset();
@@ -81,25 +91,26 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
             eq.tearDown();
             eq = null;
         }
-        super.tearDown();
     }
 
     /**
 	 * Test for getLoginServerFromURL.
 	 */
+    @Test
 	public void testGetLoginServerFromURL() {
         assertProduction(loginServerManager.getLoginServerFromURL(PRODUCTION_URL));
         assertSandbox(loginServerManager.getLoginServerFromURL(SANDBOX_URL));
         assertOther(loginServerManager.getLoginServerFromURL(OTHER_URL));
-		assertNull("Expected null", loginServerManager.getLoginServerFromURL("https://wrong.salesforce.com"));
+        Assert.assertNull("Expected null", loginServerManager.getLoginServerFromURL("https://wrong.salesforce.com"));
 	}
 
 	/**
 	 * Test for getDefaultLoginServer.
 	 */
+    @Test
 	public void testGetDefaultLoginServers() {
 		final List<LoginServer> servers = loginServerManager.getLoginServers();
-		assertEquals("Wrong number of servers", 3, servers.size());
+        Assert.assertEquals("Wrong number of servers", 3, servers.size());
 		assertProduction(servers.get(0));
 		assertSandbox(servers.get(1));
 		assertOther(servers.get(2));
@@ -108,6 +119,7 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 	/**
 	 * Test for getSelectedLoginServer/setSelectedLoginServer when there is no custom login server.
 	 */
+    @Test
 	public void testGetSetLoginServerWithoutCustomServer() {
 
 		// Starting point, production selected by default.
@@ -132,6 +144,7 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 	/**
 	 * Test for getSelectedLoginServer/setSelectedLoginServer when there is a custom login server.
 	 */
+    @Test
 	public void testGetSetLoginServerWithCustomServer() {
 
 		// Starting point, production selected by default.
@@ -145,30 +158,32 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 	/**
 	 * Test for adding more than one custom server.
 	 */
+    @Test
 	public void testAddMultipleCustomServers() {
 
 		// Starting point, only 3 servers.
 		List<LoginServer> servers = loginServerManager.getLoginServers();
-		assertEquals("Expected no custom login servers", 3, servers.size());
+        Assert.assertEquals("Expected no custom login servers", 3, servers.size());
 
 		// Adding first custom server.
 		loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
 		servers = loginServerManager.getLoginServers();
-		assertEquals("Expected one custom login server", 4, servers.size());
+        Assert.assertEquals("Expected one custom login server", 4, servers.size());
 
 		// Adding second custom server.
 		loginServerManager.addCustomLoginServer(CUSTOM_NAME_2, CUSTOM_URL_2);
 		servers = loginServerManager.getLoginServers();
-		assertEquals("Expected one custom login server", 5, servers.size());
+        Assert.assertEquals("Expected one custom login server", 5, servers.size());
 	}
 
 	/**
 	 * Test for getCustomLoginServer/setCustomLoginServer.
 	 */
+    @Test
 	public void testGetSetCustomLoginServer() {
 
 		// Starting point, custom is null.
-		assertNull("Expected no custom login server", loginServerManager.getLoginServerFromURL(CUSTOM_URL));
+        Assert.assertNull("Expected no custom login server", loginServerManager.getLoginServerFromURL(CUSTOM_URL));
 
 		// Adding custom server.
 		loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
@@ -182,6 +197,7 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 	/**
 	 * Test for useSandbox.
 	 */
+    @Test
 	public void testUseSandbox() {
 
 		// Starting point, production selected by default.
@@ -195,16 +211,17 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 	/**
 	 * Test for reset.
 	 */
+    @Test
 	public void testReset() {
 
 		// Starting point, only 3 servers.
 		List<LoginServer> servers = loginServerManager.getLoginServers();
-		assertEquals("Expected no custom login servers", 3, servers.size());
+        Assert.assertEquals("Expected no custom login servers", 3, servers.size());
 
 		// Adding custom server.
 		loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
 		servers = loginServerManager.getLoginServers();
-		assertEquals("Expected one custom login server", 4, servers.size());
+        Assert.assertEquals("Expected one custom login server", 4, servers.size());
 
 		// Selecting sandbox.
 		loginServerManager.useSandbox();
@@ -216,37 +233,37 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 		 */
 		loginServerManager.reset();
 		servers = loginServerManager.getLoginServers();
-		assertEquals("Expected no custom login servers", 3, servers.size());
+        Assert.assertEquals("Expected no custom login servers", 3, servers.size());
 		assertProduction(loginServerManager.getSelectedLoginServer());
 	}
 
 	private void assertProduction(LoginServer server) {
-		assertEquals("Expected production's name", "Production", server.name);
-		assertEquals("Expected production's url", PRODUCTION_URL, server.url);
-		assertEquals("Expected production to be marked as not custom", false, server.isCustom);
+        Assert.assertEquals("Expected production's name", "Production", server.name);
+        Assert.assertEquals("Expected production's url", PRODUCTION_URL, server.url);
+        Assert.assertEquals("Expected production to be marked as not custom", false, server.isCustom);
 	}
 
 	private void assertSandbox(LoginServer server) {
-		assertEquals("Expected sandbox's name", "Sandbox", server.name);
-		assertEquals("Expected sandbox's url", SANDBOX_URL, server.url);
-		assertEquals("Expected sandbox to be marked as not custom", false, server.isCustom);
+        Assert.assertEquals("Expected sandbox's name", "Sandbox", server.name);
+        Assert.assertEquals("Expected sandbox's url", SANDBOX_URL, server.url);
+        Assert.assertEquals("Expected sandbox to be marked as not custom", false, server.isCustom);
 	}
 
 	private void assertOther(LoginServer server) {
-		assertEquals("Expected other's name", "Other", server.name);
-		assertEquals("Expected other's url", OTHER_URL, server.url);
-		assertEquals("Expected other to be marked as not custom", false, server.isCustom);
+        Assert.assertEquals("Expected other's name", "Other", server.name);
+        Assert.assertEquals("Expected other's url", OTHER_URL, server.url);
+        Assert.assertEquals("Expected other to be marked as not custom", false, server.isCustom);
 	}
 
 	private void assertCustom(LoginServer server) {
-		assertEquals("Expected custom's name", CUSTOM_NAME, server.name);
-		assertEquals("Expected custom's url", CUSTOM_URL, server.url);
-		assertEquals("Expected custom to be marked as not custom", true, server.isCustom);
+        Assert.assertEquals("Expected custom's name", CUSTOM_NAME, server.name);
+        Assert.assertEquals("Expected custom's url", CUSTOM_URL, server.url);
+        Assert.assertEquals("Expected custom to be marked as not custom", true, server.isCustom);
 	}
 
 	private void assertCustom2(LoginServer server) {
-		assertEquals("Expected custom2's name", CUSTOM_NAME_2, server.name);
-		assertEquals("Expected custom2's url", CUSTOM_URL_2, server.url);
-		assertEquals("Expected custom2 to be marked as not custom", true, server.isCustom);
+        Assert.assertEquals("Expected custom2's name", CUSTOM_NAME_2, server.name);
+        Assert.assertEquals("Expected custom2's url", CUSTOM_URL_2, server.url);
+        Assert.assertEquals("Expected custom2 to be marked as not custom", true, server.isCustom);
 	}
 }

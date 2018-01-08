@@ -40,7 +40,7 @@ public class TestForceApp extends Application {
 
     @Override
     public void onCreate() {
-    	SmartStoreSDKManager.initNative(getApplicationContext(), null, MainActivity.class);
+    	SmartStoreSDKManager.initNative(getApplicationContext(), MainActivity.class);
     	super.onCreate();
     	SalesforceSDKManager.getInstance().setIsTestRun(true);
     }

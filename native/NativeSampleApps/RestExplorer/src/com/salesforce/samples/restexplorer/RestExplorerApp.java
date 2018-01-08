@@ -38,7 +38,7 @@ public class RestExplorerApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SalesforceSDKManager.initNative(getApplicationContext(), null, ExplorerActivity.class);
+		SalesforceSDKManager.initNative(getApplicationContext(), ExplorerActivity.class);
 
 		/*
          * Uncomment the following line to enable IDP login flow. This will allow the user to

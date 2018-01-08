@@ -27,60 +27,72 @@
 package com.salesforce.androidsdk.config;
 
 import android.content.Context;
-import android.test.InstrumentationTestCase;
+import android.support.test.InstrumentationRegistry;
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
+
+import junit.framework.Assert;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Tests for BootConfig.
  *
  * @author khawkins
  */
-
-public class BootConfigTest extends InstrumentationTestCase {
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class BootConfigTest {
 
     private static final String BOOTCONFIG_ASSETS_PATH_PREFIX = "www" + System.getProperty("file.separator");
     private Context testContext;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
-        testContext = getInstrumentation().getContext();
+        testContext = InstrumentationRegistry.getContext();
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
         testContext = null;
-        super.tearDown();
     }
 
+    @Test
     public void testNoBootConfig() {
         try {
             BootConfig.validateBootConfig(null);
-            fail("Validation should fail with no boot config.");
+            Assert.fail("Validation should fail with no boot config.");
         } catch (BootConfig.BootConfigException e) {
             // Expected
         }
     }
 
+    @Test
     public void testAbsoluteStartPage() {
         BootConfig config = BootConfig.getHybridBootConfig(testContext, BOOTCONFIG_ASSETS_PATH_PREFIX + "bootconfig_absoluteStartPage.json");
         validateBootConfig(config, "Validation should fail with absolute URL start page.");
     }
 
+    @Test
     public void testRemoteDeferredAuthNoUnauthenticatedStartPage() {
         BootConfig config = BootConfig.getHybridBootConfig(testContext, BOOTCONFIG_ASSETS_PATH_PREFIX + "bootconfig_remoteDeferredAuthNoUnauthenticatedStartPage.json");
         validateBootConfig(config, "Validation should fail with no unauthenticatedStartPage value in remote deferred auth.");
     }
 
+    @Test
     public void testRelativeUnauthenticatedStartPage() {
         BootConfig config = BootConfig.getHybridBootConfig(testContext, BOOTCONFIG_ASSETS_PATH_PREFIX + "bootconfig_relativeUnauthenticatedStartPage.json");
         validateBootConfig(config, "Validation should fail with relative unauthenticatedStartPage value.");
     }
 
     private void validateBootConfig(BootConfig config, String errorMessage) {
-        assertNotNull("Boot config should not be null.", config);
+        Assert.assertNotNull("Boot config should not be null.", config);
         try {
             BootConfig.validateBootConfig(config);
-            fail(errorMessage);
+            Assert.fail(errorMessage);
         } catch (BootConfig.BootConfigException e) {
             // Expected
         }

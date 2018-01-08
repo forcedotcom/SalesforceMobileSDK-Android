@@ -39,7 +39,7 @@ public class TestForceApp extends Application {
 
     @Override
     public void onCreate() {
-    	SmartSyncSDKManager.initNative(getApplicationContext(), null, MainActivity.class);
+    	SmartSyncSDKManager.initNative(getApplicationContext(), MainActivity.class);
     	super.onCreate();
     	SmartSyncSDKManager.getInstance().setIsTestRun(true);
     }

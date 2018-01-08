@@ -26,7 +26,18 @@
  */
 package com.salesforce.androidsdk.rest.files;
 
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
+
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestRequest;
+
+import junit.framework.Assert;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -37,141 +48,158 @@ import java.util.Arrays;
  * 
  * @author jjiang
  */
-public class FileRequestsTest extends ApiRequestsBaseTest {
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class FileRequestsTest {
 
+    private String connectPath;
+
+    @Before
+    public void setUp() throws Exception {
+        connectPath = "/services/data/" + ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()) + "/chatter/";
+    }
+
+    @Test
     public void testBatchFileInfo() {
         RestRequest r = FileRequests.batchFileDetails(Arrays.asList("06930000001LkwtAAC", "06930000001LkwtAAD"));
-        assertEquals(connectPath + "connect/files/batch/06930000001LkwtAAC,06930000001LkwtAAD", r.getPath());
+        Assert.assertEquals(connectPath + "connect/files/batch/06930000001LkwtAAC,06930000001LkwtAAD", r.getPath());
         doAdditionalVerifications(r);
         try {
             FileRequests.batchFileDetails(Arrays.asList("06930000001LkwtAAC", null));
-            fail("should of thrown an exception");
+            Assert.fail("should of thrown an exception");
         } catch (IllegalArgumentException e) { /* expected */
         }
         try {
             FileRequests.batchFileDetails(Arrays.asList("06930000001LkwtAAC", ""));
-            fail("should of thrown an exception");
+            Assert.fail("should of thrown an exception");
         } catch (IllegalArgumentException e) { /* expected */
         }
     }
 
+    @Test
     public void testFileContents() {
-        assertEquals(connectPath + "connect/files/" + sfdcId + "/content?versionNumber=1",
+        Assert.assertEquals(connectPath + "connect/files/" + sfdcId + "/content?versionNumber=1",
                 FileRequests.fileContents(sfdcId, "1").getPath());
         try {
             FileRequests.fileContents("", "1");
-            fail("empty fileId should throw an exception");
+            Assert.fail("empty fileId should throw an exception");
         } catch (IllegalArgumentException e) { /* expected */
         }
         doAdditionalVerifications(FileRequests.fileContents(sfdcId, "1"));
     }
 
+    @Test
     public void testOwnedFilesList() {
-        assertEquals(connectPath + "connect/files/users/me", FileRequests.ownedFilesList(null, null).getPath());
-        assertEquals(connectPath + "connect/files/users/me?page=0", FileRequests.ownedFilesList(null, 0).getPath());
-        assertEquals(connectPath + "connect/files/users/" + userId + "?page=1", FileRequests.ownedFilesList(userId, 1)
+        Assert.assertEquals(connectPath + "connect/files/users/me", FileRequests.ownedFilesList(null, null).getPath());
+        Assert.assertEquals(connectPath + "connect/files/users/me?page=0", FileRequests.ownedFilesList(null, 0).getPath());
+        Assert.assertEquals(connectPath + "connect/files/users/" + userId + "?page=1", FileRequests.ownedFilesList(userId, 1)
                 .getPath());
         try {
             FileRequests.ownedFilesList("", 1);
-            fail("empty user id didn't raise exception as expected");
+            Assert.fail("empty user id didn't raise exception as expected");
         } catch (IllegalArgumentException e) { /* expected */
         }
         doAdditionalVerifications(FileRequests.ownedFilesList(userId, 1));
     }
 
+    @Test
     public void testFilesInUsersGroups() {
-        assertEquals(connectPath + "connect/files/users/me/filter/groups", FileRequests.filesInUsersGroups(null, null)
+        Assert.assertEquals(connectPath + "connect/files/users/me/filter/groups", FileRequests.filesInUsersGroups(null, null)
                 .getPath());
-        assertEquals(connectPath + "connect/files/users/me/filter/groups?page=0", FileRequests.filesInUsersGroups(null, 0)
+        Assert.assertEquals(connectPath + "connect/files/users/me/filter/groups?page=0", FileRequests.filesInUsersGroups(null, 0)
                 .getPath());
-        assertEquals(connectPath + "connect/files/users/" + userId + "/filter/groups?page=1",
+        Assert.assertEquals(connectPath + "connect/files/users/" + userId + "/filter/groups?page=1",
                 FileRequests.filesInUsersGroups(userId, 1).getPath());
         try {
             FileRequests.filesInUsersGroups("", 1);
-            fail("empty user id didn't raise exception as expected");
+            Assert.fail("empty user id didn't raise exception as expected");
         } catch (IllegalArgumentException e) { /* expected */
         }
         doAdditionalVerifications(FileRequests.filesInUsersGroups(userId, 1));
     }
 
+    @Test
     public void testFilesSharedWithUser() {
-        assertEquals(connectPath + "connect/files/users/me/filter/sharedwithme", FileRequests.filesSharedWithUser(null, null)
+        Assert.assertEquals(connectPath + "connect/files/users/me/filter/sharedwithme", FileRequests.filesSharedWithUser(null, null)
                 .getPath());
-        assertEquals(connectPath + "connect/files/users/me/filter/sharedwithme?page=0",
+        Assert.assertEquals(connectPath + "connect/files/users/me/filter/sharedwithme?page=0",
                 FileRequests.filesSharedWithUser(null, 0).getPath());
-        assertEquals(connectPath + "connect/files/users/" + userId + "/filter/sharedwithme?page=1", FileRequests
+        Assert.assertEquals(connectPath + "connect/files/users/" + userId + "/filter/sharedwithme?page=1", FileRequests
                 .filesSharedWithUser(userId, 1).getPath());
         try {
             FileRequests.filesSharedWithUser("", 1);
-            fail("empty user id didn't raise exception as expected");
+            Assert.fail("empty user id didn't raise exception as expected");
         } catch (IllegalArgumentException e) { /* expected */
         }
         doAdditionalVerifications(FileRequests.filesSharedWithUser(userId, 1));
     }
 
+    @Test
     public void testFileDetails() {
-        assertEquals(connectPath + "connect/files/" + sfdcId, FileRequests.fileDetails(sfdcId, null).getPath());
-        assertEquals(connectPath + "connect/files/" + sfdcId + "?versionNumber=2", FileRequests.fileDetails(sfdcId, "2")
+        Assert.assertEquals(connectPath + "connect/files/" + sfdcId, FileRequests.fileDetails(sfdcId, null).getPath());
+        Assert.assertEquals(connectPath + "connect/files/" + sfdcId + "?versionNumber=2", FileRequests.fileDetails(sfdcId, "2")
                 .getPath());
         try {
             FileRequests.fileDetails(null, "3");
-            fail("null sfdcId didn't raise exception as expected");
+            Assert.fail("null sfdcId didn't raise exception as expected");
         } catch (IllegalArgumentException e) { /* expected */
         }
         try {
             FileRequests.fileDetails(sfdcId, "0");
-            fail("invalid version id didn't raise exception as expected");
+            Assert.fail("invalid version id didn't raise exception as expected");
         } catch (IllegalArgumentException e) { /* expected */
         }
         doAdditionalVerifications(FileRequests.fileDetails(sfdcId, "2"));
     }
 
+    @Test
     public void testFileRendition() {
-        assertEquals(connectPath + "connect/files/" + sfdcId + "/rendition?type=PDF",
+        Assert.assertEquals(connectPath + "connect/files/" + sfdcId + "/rendition?type=PDF",
                 FileRequests.fileRendition(sfdcId, null, RenditionType.PDF, null).getPath());
-        assertEquals(connectPath + "connect/files/" + sfdcId + "/rendition?type=PDF&versionNumber=2", FileRequests
+        Assert.assertEquals(connectPath + "connect/files/" + sfdcId + "/rendition?type=PDF&versionNumber=2", FileRequests
                 .fileRendition(sfdcId, "2", RenditionType.PDF, null).getPath());
-        assertEquals(connectPath + "connect/files/" + sfdcId + "/rendition?type=PDF",
+        Assert.assertEquals(connectPath + "connect/files/" + sfdcId + "/rendition?type=PDF",
                 FileRequests.fileRendition(sfdcId, null, RenditionType.PDF, null).getPath());
-        assertEquals(connectPath + "connect/files/" + sfdcId + "/rendition?type=FLASH&page=0",
+        Assert.assertEquals(connectPath + "connect/files/" + sfdcId + "/rendition?type=FLASH&page=0",
                 FileRequests.fileRendition(sfdcId, null, RenditionType.FLASH, 0).getPath());
-        assertEquals(connectPath + "connect/files/" + sfdcId + "/rendition?type=THUMB120BY90&versionNumber=2&page=2",
+        Assert.assertEquals(connectPath + "connect/files/" + sfdcId + "/rendition?type=THUMB120BY90&versionNumber=2&page=2",
                 FileRequests.fileRendition(sfdcId, "2", RenditionType.THUMB120BY90, 2).getPath());
         try {
             FileRequests.fileRendition("", "1", RenditionType.PDF, 3);
-            fail("invalid sfdcId didn't raise exception as expected");
+            Assert.fail("invalid sfdcId didn't raise exception as expected");
         } catch (IllegalArgumentException e) { /* expected */
         }
         try {
             FileRequests.fileRendition(sfdcId, "2", null, 2);
-            fail("null rendition type id didn't raise exception as expected");
+            Assert.fail("null rendition type id didn't raise exception as expected");
         } catch (NullPointerException e) { /* expected */
         }
         try {
             FileRequests.fileRendition(sfdcId, "0", RenditionType.PDF, 2);
-            fail("invalid verion number id didn't raise exception as expected");
+            Assert.fail("invalid verion number id didn't raise exception as expected");
         } catch (IllegalArgumentException e) { /* expected */
         }
         try {
             FileRequests.fileRendition(sfdcId, "4", RenditionType.PDF, -2);
-            fail("negative page number id didn't raise exception as expected");
+            Assert.fail("negative page number id didn't raise exception as expected");
         } catch (IllegalArgumentException e) { /* expected */
         }
         doAdditionalVerifications(FileRequests.fileRendition(sfdcId, "2", RenditionType.THUMB120BY90, 2));
     }
 
+    @Test
     public void testFileShares() {
-        assertEquals(connectPath + "connect/files/" + sfdcId + "/file-shares", FileRequests.fileShares(sfdcId, null).getPath());
-        assertEquals(connectPath + "connect/files/" + sfdcId + "/file-shares?page=4", FileRequests.fileShares(sfdcId, 4)
+        Assert.assertEquals(connectPath + "connect/files/" + sfdcId + "/file-shares", FileRequests.fileShares(sfdcId, null).getPath());
+        Assert.assertEquals(connectPath + "connect/files/" + sfdcId + "/file-shares?page=4", FileRequests.fileShares(sfdcId, 4)
                 .getPath());
         try {
             FileRequests.fileShares(null, 3);
-            fail("null sfdcId didn't raise exception as expected");
+            Assert.fail("null sfdcId didn't raise exception as expected");
         } catch (IllegalArgumentException e) { /* expected */
         }
         try {
             FileRequests.fileShares(sfdcId, -1);
-            fail("negative page number id didn't raise exception as expected");
+            Assert.fail("negative page number id didn't raise exception as expected");
         } catch (IllegalArgumentException e) { /* expected */
         }
         doAdditionalVerifications(FileRequests.fileShares(sfdcId, 4));
@@ -182,6 +210,7 @@ public class FileRequestsTest extends ApiRequestsBaseTest {
      *
      * @throws Exception
      */
+    @Test
     public void testFileUpload() throws Exception {
         final File file = File.createTempFile("MyFile", "txt");
         if (!file.exists()) {
@@ -189,20 +218,23 @@ public class FileRequestsTest extends ApiRequestsBaseTest {
             out.write("This is a test!");
             out.close();
         }
-        assertTrue("File should exist", file.exists());
-
-
+        Assert.assertTrue("File should exist", file.exists());
         RestRequest request = FileRequests.uploadFile(file, file.getName(), "Test Title", "Test Description", "text/plain");
-
-        assertEquals(connectPath + "connect/files/users/me", request.getPath());
+        Assert.assertEquals(connectPath + "connect/files/users/me", request.getPath());
         doAdditionalVerifications(RestRequest.RestMethod.POST, request);
-
         file.delete();
-        assertFalse("File should not exist", file.exists());
+        Assert.assertFalse("File should not exist", file.exists());
     }
-
-
 
     private final String userId = "005T0000000ABCD";
     private final String sfdcId = "06930000001LkwtAAC";
+
+    private void doAdditionalVerifications(RestRequest req) {
+        doAdditionalVerifications(RestRequest.RestMethod.GET, req);
+    }
+
+    private void doAdditionalVerifications(RestRequest.RestMethod method, RestRequest req) {
+        Assert.assertEquals(method, req.getMethod());
+        Assert.assertEquals("false", req.getAdditionalHttpHeaders().get("X-Chatter-Entity-Encoding"));
+    }
 }

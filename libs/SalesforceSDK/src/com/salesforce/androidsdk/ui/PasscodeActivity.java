@@ -49,6 +49,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
 
+import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -74,7 +75,6 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     private EditText entry;
     private PasscodeManager passcodeManager;
     private String firstPasscode;
-    private SalesforceR salesforceR;
     private boolean logoutEnabled;
     private AlertDialog logoutAlertDialog;
     private boolean isLogoutAlertShowing;
@@ -91,9 +91,6 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Object which allows reference to resources living outside the SDK.
-        salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
 
         // Protect against screenshots.
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
@@ -266,6 +263,9 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         return false;
     }
 
+    /*
+     * TODO: Remove this method, along with the one in UpgradeManager, in Mobile SDK 7.0.
+     */
     private void performUpgradeStep(String passcode) {
         final String oldKey = passcodeManager.getLegacyEncryptionKey(passcode);
         final String newKey = SalesforceSDKManager.getEncryptionKey();
@@ -305,87 +305,93 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     }
 
     protected int getLayoutId() {
-        return salesforceR.layoutPasscode();
+        return R.layout.sf__passcode;
     }
 
     protected TextView getTitleView() {
-        return (TextView) findViewById(salesforceR.idPasscodeTitle());
+        return (TextView) findViewById(R.id.sf__passcode_title);
     }
 
     protected TextView getForgotPasscodeView() {
-        return (TextView) findViewById(salesforceR.idPasscodeForgot());
+        return (TextView) findViewById(R.id.sf__passcode_forgot);
     }
 
     protected TextView getErrorView() {
-        return (TextView) findViewById(salesforceR.idPasscodeError());
+        return (TextView) findViewById(R.id.sf__passcode_error);
     }
 
     protected TextView getInstructionsView() {
-        return (TextView) findViewById(salesforceR.idPasscodeInstructions());
+        return (TextView) findViewById(R.id.sf__passcode_instructions);
     }
 
     protected EditText getEntryView() {
-        return (EditText) findViewById(salesforceR.idPasscodeText());
+        return (EditText) findViewById(R.id.sf__passcode_text);
     }
 
     protected String getCreateTitle() {
-    	return String.format(getString(salesforceR.stringPasscodeCreateTitle()), SalesforceSDKManager.getInstance().getAppDisplayString());
+    	return String.format(getString(R.string.sf__passcode_create_title),
+                SalesforceSDKManager.getInstance().getAppDisplayString());
     }
 
     protected String getEnterTitle() {
-    	return String.format(getString(salesforceR.stringPasscodeEnterTitle()), SalesforceSDKManager.getInstance().getAppDisplayString());
+    	return String.format(getString(R.string.sf__passcode_enter_title),
+                SalesforceSDKManager.getInstance().getAppDisplayString());
     }
 
     protected String getConfirmTitle() {
-    	return String.format(getString(salesforceR.stringPasscodeConfirmTitle()), SalesforceSDKManager.getInstance().getAppDisplayString());
+    	return String.format(getString(R.string.sf__passcode_confirm_title),
+                SalesforceSDKManager.getInstance().getAppDisplayString());
     }
 
     protected String getEnterInstructions() {
-    	return String.format(getString(salesforceR.stringPasscodeEnterInstructions()), SalesforceSDKManager.getInstance().getAppDisplayString());
+    	return String.format(getString(R.string.sf__passcode_enter_instructions),
+                SalesforceSDKManager.getInstance().getAppDisplayString());
     }
 
     protected String getForgotPasscodeString() {
-        return getString(salesforceR.stringPasscodeForgot());
+        return getString(R.string.sf__passcode_forgot_string);
     }
 
     protected String getLogoutConfirmationString() {
-        return getString(salesforceR.stringPasscodeLogoutConfirmation());
+        return getString(R.string.sf__passcode_logout_confirmation);
     }
 
     protected String getLogoutYesString() {
-        return getString(salesforceR.stringPasscodeLogoutYes());
+        return getString(R.string.sf__passcode_logout_yes);
     }
 
     protected String getLogoutNoString() {
-        return getString(salesforceR.stringPasscodeLogoutNo());
+        return getString(R.string.sf__passcode_logout_no);
     }
 
     protected String getCreateInstructions() {
-    	return String.format(getString(salesforceR.stringPasscodeCreateInstructions()), SalesforceSDKManager.getInstance().getAppDisplayString());
+    	return String.format(getString(R.string.sf__passcode_create_instructions),
+                SalesforceSDKManager.getInstance().getAppDisplayString());
     }
 
     protected String getChangeInstructions() {
-    	return getString(salesforceR.stringPasscodeChangeInstructions());
+    	return getString(R.string.sf__passcode_change_instructions);
     }
 
     protected String getConfirmInstructions() {
-    	return String.format(getString(salesforceR.stringPasscodeConfirmInstructions()), SalesforceSDKManager.getInstance().getAppDisplayString());
+    	return String.format(getString(R.string.sf__passcode_confirm_instructions),
+                SalesforceSDKManager.getInstance().getAppDisplayString());
     }
 
     protected String getMinLengthInstructions(int minPasscodeLength) {
-        return getString(salesforceR.stringPasscodeMinLength(), minPasscodeLength);
+        return getString(R.string.sf__passcode_min_length, minPasscodeLength);
     }
 
     protected String getPasscodeTryAgainError(int countAttemptsLeft) {
-        return getString(salesforceR.stringPasscodeTryAgain(), countAttemptsLeft);
+        return getString(R.string.sf__passcode_try_again, countAttemptsLeft);
     }
 
     protected String getPasscodeFinalAttemptError() {
-        return getString(salesforceR.stringPasscodeFinal());
+        return getString(R.string.sf__passcode_final);
     }
 
     protected String getPasscodesDontMatchError() {
-        return getString(salesforceR.stringPasscodesDontMatch());
+        return getString(R.string.sf__passcodes_dont_match);
     }
 
     /**
