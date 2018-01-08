@@ -1,17 +1,7 @@
-FROM brandonpage/salesforce-mobilesdk-android-docker-primary:test
+FROM brandonpage/salesforce-mobilesdk-android-docker-primary:0.1.0
 
 MAINTAINER Brandon Page <bpage@salesforce.com>
-
-RUN yes | sdkmanager --licenses
-
-# Android API 23
-RUN echo "y" | sdkmanager "system-images;android-23;google_apis;armeabi-v7a"
-RUN echo "no" | avdmanager create avd -n test23 -k "system-images;android-23;google_apis;armeabi-v7a"
 
 # Android API 24
 RUN echo "y" | sdkmanager "system-images;android-24;default;arm64-v8a"
 RUN echo "no" | avdmanager create avd -n test24 -k "system-images;android-24;default;arm64-v8a"
-
-# Android API 25
-RUN echo "y" | sdkmanager "system-images;android-25;google_apis;arm64-v8a"
-RUN echo "no" | avdmanager create avd -n test25 -k "system-images;android-25;google_apis;arm64-v8a"

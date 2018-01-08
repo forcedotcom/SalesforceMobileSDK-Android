@@ -235,7 +235,7 @@ jobs:
   nightly-test-API24:
     <<: *defaults
     docker:
-      - image: brandonpage/salesforce-mobilesdk-android-docker-nightly:test
+      - image: brandonpage/salesforce-mobilesdk-android-docker-nightly:0.1.0
     environment:
       - AVD: "test24"
     steps:
