@@ -241,7 +241,6 @@ jobs:
     steps:
       - *attach_workspace
       - checkout
-      - run: git checkout nightly_test
       - run: *Launch-Emulator
       - run: *Wait-for-Emulator
       - run: *Run-SalesforceAnalytics
@@ -316,6 +315,6 @@ workflows:
            filters:
              branches:
                only:
-                 - nightly_test
+                 - dev
      jobs:
         - nightly-test-API24
