@@ -26,26 +26,38 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.util.Arrays;
 import java.util.List;
 
-import com.salesforce.androidsdk.phonegap.util.test.JSTestCase;
-
-
 /**
- * Running javascript tests for SDKInfo plugin
+ * Running javascript tests for SDKInfo plugin.
  */
+@RunWith(AndroidJUnit4.class)
+@SmallTest
 public class SDKInfoJSTest extends JSTestCase {
 
     public SDKInfoJSTest() {
         super("SDKInfoTestSuite");
     }
 
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+    }
+
     @Override
     public List<String> getTestNames() {
     	return Arrays.asList("testGetInfo");
     }
-    
+
+    @Test
     public void testGetInfo()  {
     	runTest("testGetInfo");
     }

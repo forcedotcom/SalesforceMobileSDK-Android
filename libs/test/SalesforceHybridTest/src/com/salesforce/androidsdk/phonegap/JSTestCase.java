@@ -24,11 +24,11 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.phonegap.util.test;
+package com.salesforce.androidsdk.phonegap;
 
 import android.app.Instrumentation;
 import android.content.Intent;
-import android.test.InstrumentationTestCase;
+import android.support.test.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.phonegap.plugin.TestRunnerPlugin;
@@ -38,6 +38,8 @@ import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
+import junit.framework.Assert;
+
 import org.apache.cordova.CordovaWebView;
 
 import java.util.HashMap;
@@ -46,28 +48,24 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Extend this class to run tests written in JavaScript
+ * Extend this class to run tests written in JavaScript.
  */
-public abstract class JSTestCase extends InstrumentationTestCase {
+public abstract class JSTestCase {
 
 	private static final String TAG = "JSTestCase";
 
     private String jsSuite;
     private static Map<String, Map<String, TestResult>> testResults; 
-    
-    
+
     public JSTestCase(String jsSuite) {
     	this.jsSuite = jsSuite;
     }
-    
-    @Override
+
     public void setUp() throws Exception {
-    	
     	if (testResults == null || !testResults.containsKey(jsSuite)) {
     		if (testResults == null) {
-    			testResults = new HashMap<String, Map<String, TestResult>>();
+    			testResults = new HashMap<>();
     		}
-    		
     		if (!testResults.containsKey(jsSuite)) {
     			testResults.put(jsSuite, new HashMap<String, TestResult>());
     		}
@@ -79,7 +77,7 @@ public abstract class JSTestCase extends InstrumentationTestCase {
 	        }
 
 			// Start main activity
-    		Instrumentation instrumentation = getInstrumentation();
+    		Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
 			final Intent intent = new Intent(Intent.ACTION_MAIN);
 			intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 			intent.setClassName(instrumentation.getTargetContext(), SalesforceSDKManager.getInstance().getMainActivityClass().getName());
@@ -102,7 +100,7 @@ public abstract class JSTestCase extends InstrumentationTestCase {
                     });
 				}
                 SalesforceHybridLogger.i(TAG, "Running test: " + testName);
-		        
+
 		        // Block until test completes or times out
 		        TestResult result = null;
 	            int timeout = getMaxRuntimeInSecondsForTest(testName);
@@ -111,12 +109,11 @@ public abstract class JSTestCase extends InstrumentationTestCase {
 		            if (result == null) {
 		            	result = new TestResult(testName, false, "Timeout (" + timeout + " seconds) exceeded", timeout);
 		            }
-		        }
-		        catch (Exception e) {
+		        } catch (Exception e) {
 	            	result = new TestResult(testName, false, "Test failed", timeout);
 		        }
                 SalesforceHybridLogger.i(TAG, "Finished running test: " + testName);
-		        
+
 		        // Save result
 		        testResults.get(jsSuite).put(testName, result);
 			}
@@ -147,7 +144,7 @@ public abstract class JSTestCase extends InstrumentationTestCase {
 	 */
     protected void runTest(String testName)  {
     	TestResult result = testResults.get(jsSuite).get(testName);
-        assertNotNull("No test result", result);
-        assertTrue(result.testName + " " + result.message, result.success);
+        Assert.assertNotNull("No test result", result);
+        Assert.assertTrue(result.testName + " " + result.message, result.success);
     }
 }

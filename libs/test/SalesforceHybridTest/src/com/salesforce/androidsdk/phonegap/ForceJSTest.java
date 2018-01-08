@@ -26,69 +26,95 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.util.Arrays;
 import java.util.List;
 
-import com.salesforce.androidsdk.phonegap.util.test.JSTestCase;
-
 /**
- * Running javascript tests for force.js library
+ * Running javascript tests for force.js.
  */
+@RunWith(AndroidJUnit4.class)
+@SmallTest
 public class ForceJSTest extends JSTestCase {
 
 	public ForceJSTest() {
 		super("ForceJSTestSuite");
 	}
 
+    @Before
+    public void setUp() throws Exception {
+	    super.setUp();
+    }
+
 	@Override
 	public List<String> getTestNames() {
 		return Arrays.asList(new String[] {
 				"testParseUrl",
 				"testComputeEndPointIfMissing",
-				"testOwnedFilesList", "testFilesInUsersGroups",
-				"testFilesSharedWithUser", "testFileDetails",
-				"testBatchFileDetails", "testFileShares", "testAddFileShare",
-				"testDeleteFileShare" });
+				"testOwnedFilesList",
+                "testFilesInUsersGroups",
+				"testFilesSharedWithUser",
+                "testFileDetails",
+				"testBatchFileDetails",
+                "testFileShares",
+                "testAddFileShare",
+				"testDeleteFileShare"
+		});
 	}
 
+    @Test
 	public void testParseUrl() {
 		runTest("testParseUrl");
 	}
 
+    @Test
 	public void testComputeEndPointIfMissing() {
 		runTest("testComputeEndPointIfMissing");
 	}
 
+    @Test
 	public void testOwnedFilesList() {
 		runTest("testOwnedFilesList");
 	}
 
+    @Test
 	public void testFilesInUsersGroups() {
 		runTest("testFilesInUsersGroups");
 	}
 
+    @Test
 	public void testFilesSharedWithUser() {
 		runTest("testFilesSharedWithUser");
 	}
 
+    @Test
 	public void testFileDetails() {
 		runTest("testFileDetails");
 	}
 
+    @Test
 	public void testBatchFileDetails() {
 		runTest("testBatchFileDetails");
 	}
-	
+
+    @Test
 	public void testFileShares() {
 		runTest("testFileShares");
 	}
 
+    @Test
 	public void testAddFileShare() {
 		runTest("testAddFileShare");
 	}
 
+    @Test
 	public void testDeleteFileShare() {
 		runTest("testDeleteFileShare");
 	}
-
 }

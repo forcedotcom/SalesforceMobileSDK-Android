@@ -26,26 +26,37 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
+import android.support.test.filters.LargeTest;
+import android.support.test.runner.AndroidJUnit4;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.util.Arrays;
 import java.util.List;
 
-import com.salesforce.androidsdk.phonegap.util.test.JSTestCase;
-
-
 /**
- * Running javascript tests for SmartStore plugin
+ * Running javascript tests for SmartStore plugin.
  */
+@RunWith(AndroidJUnit4.class)
+@LargeTest
 public class SmartStoreLoadJSTest extends JSTestCase {
 
     public SmartStoreLoadJSTest() {
         super("SmartStoreLoadTestSuite");
     }
-    
+
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+    }
+
     @Override
     protected int getMaxRuntimeInSecondsForTest(String testName) {
     	return 60;
-    }    
-    
+    }
+
     @Override
     public List<String> getTestNames() {
     	return Arrays.asList(new String[] {
@@ -57,27 +68,33 @@ public class SmartStoreLoadJSTest extends JSTestCase {
                 "testUpsertConcurrentEntries"
         });
     }
-    
+
+    @Test
     public void testNumerousFields()  {
     	runTest("testNumerousFields");
     }
-    
+
+    @Test
     public void testIncreasingFieldLength() {
     	runTest("testIncreasingFieldLength");
     }
 
+    @Test
     public void testAddAndRetrieveManyEntries()  {
     	runTest("testAddAndRetrieveManyEntries");
     }
-    
+
+    @Test
     public void testUpsertManyEntries()  {
     	runTest("testUpsertManyEntries");
     }
-    
+
+    @Test
     public void testUpsertAndQueryEntries()  {
     	runTest("testUpsertAndQueryEntries");
     }
-    
+
+    @Test
     public void testUpsertConcurrentEntries() {
     	runTest("testUpsertConcurrentEntries");
     }
