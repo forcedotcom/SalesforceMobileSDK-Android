@@ -29,9 +29,12 @@ curl -o ndk_64.zip https://dl.google.com/android/repository/android-ndk-r10e-lin
 unzip -o -q ndk_64.zip \
 rm ndk_64.zip
 
-# Android API 22
-RUN echo "y" | sdkmanager "system-images;android-22;default;armeabi-v7a"
-RUN echo "no" | avdmanager create avd -n test22 -k "system-images;android-22;default;armeabi-v7a"
+RUN sdkmanager --update
+RUN yes | sdkmanager --licenses
 
 RUN sdkmanager "build-tools;27.0.3"
 RUN sdkmanager "extras;android;m2repository"
+
+# Android API 22
+RUN echo "y" | sdkmanager "system-images;android-22;default;armeabi-v7a"
+RUN echo "no" | avdmanager create avd -n test22 -k "system-images;android-22;default;armeabi-v7a"

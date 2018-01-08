@@ -68,7 +68,7 @@ aliases:
 defaults: &defaults
   working_directory: ~/SalesforceMobileSDK-Android
   docker:
-    - image: brandonpage/salesforce-mobilesdk-android-docker-primary:test
+    - image: brandonpage/salesforce-mobilesdk-android-docker-primary:0.1.0
   environment:
     - TERM: "dumb"
     - ADB_INSTALL_TIMEOUT: 15
@@ -87,15 +87,14 @@ defaults: &defaults
         - jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
 
 
-version: 2
-jobs:
-
 #########################
 #                       #
 #        PR Jobs        #
 #                       #
 #########################
 
+version: 2
+jobs:
   setup:
     <<: *defaults
     steps:
@@ -233,50 +232,6 @@ jobs:
 #                        #
 ##########################
 
-  nightly-test-API23:
-    <<: *defaults
-    docker:
-      - image: brandonpage/salesforce-mobilesdk-android-docker-nightly:test
-    environment:
-      - AVD: "test23"
-    steps:
-      - *attach_workspace
-      - checkout
-      - run: git checkout nightly_test
-      - run: *Launch-Emulator
-      - run: *Wait-for-Emulator
-      - run: *Run-SalesforceAnalytics
-      - run: *Run-SalesforceSDK
-      - run: *Run-SmartStore
-      - run: *Run-SmartSync
-      - run: *Run-SalesforceHybrid
-      - run: *Build-SalesforceReact
-      - store_artifacts:
-          path: libs/SalesforceAnalytics/build/reports/
-          destination: SalesforceAnalytics
-      - store_test_results:
-          path: libs/SalesforceAnalytics/build/outputs/androidTest-results/
-      - store_artifacts:
-          path: libs/SalesforceSDK/build/reports/
-          destination: SalesforceSDK
-      - store_test_results:
-          path: libs/SalesforceSDK/build/outputs/androidTest-results/
-      - store_artifacts:
-          path: libs/SmartStore/build/reports/
-          destination: SmartStore
-      - store_test_results:
-          path: libs/SmartStore/build/outputs/androidTest-results/
-      - store_artifacts:
-          path: libs/SmartSync/build/reports/
-          destination: SmartSync
-      - store_test_results:
-          path: libs/SmartSync/build/outputs/androidTest-results/
-      - store_artifacts:
-          path: libs/SalesforceHybrid/build/reports/
-          destination: SalesforceHybrid
-      - store_test_results:
-          path: libs/SalesforceHybrid/build/outputs/androidTest-results/
-
   nightly-test-API24:
     <<: *defaults
     docker:
@@ -321,97 +276,6 @@ jobs:
       - store_test_results:
           path: libs/SalesforceHybrid/build/outputs/androidTest-results/
 
-  nightly-test-API25:
-    <<: *defaults
-    docker:
-      - image: brandonpage/salesforce-mobilesdk-android-docker-nightly:test
-    environment:
-      - AVD: "test25"
-    steps:
-      - *attach_workspace
-      - checkout
-      - run: git checkout nightly_test
-      - run: *Launch-Emulator
-      - run: *Wait-for-Emulator
-      - run: *Run-SalesforceAnalytics
-      - run: *Run-SalesforceSDK
-      - run: *Run-SmartStore
-      - run: *Run-SmartSync
-      - run: *Run-SalesforceHybrid
-      - run: *Build-SalesforceReact
-      - store_artifacts:
-          path: libs/SalesforceAnalytics/build/reports/
-          destination: SalesforceAnalytics
-      - store_test_results:
-          path: libs/SalesforceAnalytics/build/outputs/androidTest-results/
-      - store_artifacts:
-          path: libs/SalesforceSDK/build/reports/
-          destination: SalesforceSDK
-      - store_test_results:
-          path: libs/SalesforceSDK/build/outputs/androidTest-results/
-      - store_artifacts:
-          path: libs/SmartStore/build/reports/
-          destination: SmartStore
-      - store_test_results:
-          path: libs/SmartStore/build/outputs/androidTest-results/
-      - store_artifacts:
-          path: libs/SmartSync/build/reports/
-          destination: SmartSync
-      - store_test_results:
-          path: libs/SmartSync/build/outputs/androidTest-results/
-      - store_artifacts:
-          path: libs/SalesforceHybrid/build/reports/
-          destination: SalesforceHybrid
-      - store_test_results:
-          path: libs/SalesforceHybrid/build/outputs/androidTest-results/
-
-  package:
-    <<: *defaults
-    steps:
-      - run:
-          name: Checkout SalesforceMobileSDK-Package
-          command:  |
-            mkdir -p ~/.ssh
-
-            echo 'github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==
-            bitbucket.org ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAubiN81eDcafrgMeLzaFPsw2kNvEcqTKl/VqLat/MaB33pZy0y3rJZtnqwR2qOOvbwKZYKiEO1O6VqNEBxKvJJelCq0dTXWT5pbO2gDXC6h6QDXCaHo6pOHGPUy+YBaGQRGuSusMEASYiWunYN0vCAI8QaXnWMXNMdFP3jHAJH0eDsoiGnLPBlBp4TNm6rYI74nMzgz3B9IikW4WVK+dc8KZJZWYjAuORU3jc1c/NPskD2ASinf8v3xnfXeukU0sJ5N6m5E8VLjObPEO+mN2t/FZTMZLiFqPWc/ALSqnMnnhwrNi2rbfg/rd/IpL8Le3pSBne8+seeFVBoGqzHM9yXw==
-            ' >> ~/.ssh/known_hosts
-
-            (umask 077; touch ~/.ssh/id_rsa)
-            chmod 0600 ~/.ssh/id_rsa
-            (cat <<EOF > ~/.ssh/id_rsa
-            $CHECKOUT_KEY
-            EOF
-            )
-
-            # use git+ssh instead of https
-            git config --global url."ssh://git@github.com".insteadOf "https://github.com" || true
-
-            git clone git@github.com:forcedotcom/SalesforceMobileSDK-Package.git
-            cd SalesforceMobileSDK-Package
-            git checkout dev
-            node ./install.js
-
-      - run:
-          name: Update Git
-          when: always
-          command:  |
-            wget https://www.kernel.org/pub/software/scm/git/git-2.15.0.tar.gz
-            tar -xvzf git-2.15.0.tar.gz
-            cd git-2.15.0
-            ./configure
-            make && make install
-
-      - run:
-          name: Test forcedroid
-          when: always
-          command: ./SalesforceMobileSDK-Package/test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native
-
-      - run:
-          name: Test sfdx
-          when: always
-          command: ./SalesforceMobileSDK-Package/test/test_force.js --os=android --apptype=native,native_kotlin,hybrid_local,hybrid_remote,react_native --use-sfdx
-
 
 #####################
 #                   #
@@ -448,23 +312,10 @@ workflows:
   nightly-build:
      triggers:
        - schedule:
-           cron: "45 19,22 * * *"
+           cron: "00 8 * * *"
            filters:
              branches:
                only:
                  - nightly_test
      jobs:
-        - nightly-test-API23
         - nightly-test-API24
-        - nightly-test-API25
-
-  package:
-     triggers:
-       - schedule:
-           cron: "45 18 * * *"
-           filters:
-             branches:
-               only:
-                 - nightly_test
-     jobs:
-        - package
