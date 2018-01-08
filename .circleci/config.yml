@@ -222,7 +222,7 @@ jobs:
               ./gradlew :libs:SalesforceReact:assembleDebug -p . --continue --no-daemon --profile --max-workers 2
               ./gradlew :libs:SalesforceReact:assembleRelease -p . --continue --no-daemon --profile --max-workers 2
             else
-              echo "No need to run ${CURRENT_LIB} tests for this PR."
+              echo "No need to build SalesforceReact for this PR."
             fi
 
 
