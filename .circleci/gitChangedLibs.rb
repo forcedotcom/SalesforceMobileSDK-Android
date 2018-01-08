@@ -11,14 +11,14 @@ if not ENV["CIRCLE_PULL_REQUEST"].nil?
   prfiles = JSON.parse(pullfiles)
 
   libsModified = Set.new
-  prfiles.each { |prfile|
+  for prfile in prfiles
     path = prfile["filename"]
-    libsTopoSorted.each { |lib|
+    for lib in libsTopoSorted
       if path.include? lib
         libsModified.add(lib)
       end
-    }
-  }
+    end
+  end
 
   # Print so the bash in the CircleCI yml can get the Libs to run
   print libsModified.to_a.join(",")

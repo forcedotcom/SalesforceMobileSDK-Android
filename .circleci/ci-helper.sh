@@ -6,18 +6,14 @@ function printTestsToRun {
 
         echo "Not a PR.  Run everything"
     else
-        getAndSetLibsToTest
+        LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
+        echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
         if [[ ! -z ${LIBS_TO_TEST} ]]; then
             echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
         else
             echo -e "\n\nNothing to Test."
         fi
     fi
-}
-
-function getAndSetLibsToTest {
-    LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
-    echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
 }
 
 function startAVD {

@@ -213,11 +213,11 @@ jobs:
       - CURRENT_LIB: "SalesforceReact"
     steps:
       - *attach_workspace
+      - run: *Determine-Tests-to-Run
       - run:
           name:  Build SalesforceReact
           halt_build_on_fail: false
           command:  |
-            source .circleci/ci-helper.sh && getAndSetLibsToTest
             if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
               ./gradlew :libs:SalesforceReact:assembleDebug -p . --continue --no-daemon --profile --max-workers 2
               ./gradlew :libs:SalesforceReact:assembleRelease -p . --continue --no-daemon --profile --max-workers 2
