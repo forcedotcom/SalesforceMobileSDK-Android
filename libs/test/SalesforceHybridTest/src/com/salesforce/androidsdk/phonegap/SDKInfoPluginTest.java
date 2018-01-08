@@ -63,7 +63,8 @@ public class SDKInfoPluginTest {
 		JSONObject sdkInfo = SDKInfoPlugin.getSDKInfo(ctx);
 		BootConfig bootconfig = BootConfig.getBootConfig(ctx);
 		Assert.assertEquals("Wrong app name", "SalesforceHybridTest", sdkInfo.getString("appName"));
-		List<String> sdkInfoPlugins = toList(sdkInfo.getJSONArray("forcePluginsAvailable"));
+        Assert.assertEquals("Wrong app version", "1.0", sdkInfo.getString("appVersion"));
+        List<String> sdkInfoPlugins = toList(sdkInfo.getJSONArray("forcePluginsAvailable"));
         Assert.assertEquals("Wrong number of plugins", 7, sdkInfoPlugins.size());
         Assert.assertTrue("network plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.network"));
         Assert.assertTrue("oauth plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.oauth"));
