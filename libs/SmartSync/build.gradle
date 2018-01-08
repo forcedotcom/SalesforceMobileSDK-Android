@@ -15,6 +15,8 @@ apply plugin: 'com.jfrog.bintray'
 
 dependencies {
     api project(':libs:SmartStore')
+    androidTestApi 'com.android.support.test:runner:1.0.1'
+    androidTestApi 'com.android.support.test:rules:1.0.1'
 }
 
 android {
@@ -47,7 +49,7 @@ android {
   }
   defaultConfig {
     testApplicationId "com.salesforce.androidsdk.smartsync.tests"
-    testInstrumentationRunner "com.salesforce.androidsdk.analytics.util.test.JUnitReportTestRunner"
+    testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'

@@ -28,6 +28,9 @@
 package com.salesforce.androidsdk.store;
 
 import android.content.Context;
+import android.support.test.InstrumentationRegistry;
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.MainActivity;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
@@ -35,21 +38,28 @@ import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.ui.LoginActivity;
 
+import junit.framework.Assert;
+
 import org.json.JSONException;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.List;
 
+@RunWith(AndroidJUnit4.class)
+@SmallTest
 public class StoreConfigTest extends SmartStoreTestCase {
 
     private SmartStoreSDKManager sdkManager;
     private SmartStore globalStore;
     private SmartStore userStore;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
         super.setUp();
-
-        SmartStoreSDKTestManager.init(getInstrumentation().getTargetContext(), store);
+        SmartStoreSDKTestManager.init(InstrumentationRegistry.getTargetContext(), store);
         sdkManager = SmartStoreSDKTestManager.getInstance();
         globalStore = sdkManager.getGlobalSmartStore();
         userStore = sdkManager.getSmartStore();
@@ -60,28 +70,27 @@ public class StoreConfigTest extends SmartStoreTestCase {
         return sdkManager.getEncryptionKey();
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
         sdkManager.removeAllGlobalStores();
         super.tearDown();
     }
 
-
+    @Test
     public void testSetupGlobalStoreFromDefaultConfig() throws JSONException {
-        assertFalse(globalStore.hasSoup("globalSoup1"));
-        assertFalse(globalStore.hasSoup("globalSoup2"));
+        Assert.assertFalse(globalStore.hasSoup("globalSoup1"));
+        Assert.assertFalse(globalStore.hasSoup("globalSoup2"));
 
         // Setting up soup
         sdkManager.setupGlobalStoreFromDefaultConfig();
 
         // Checking smartstore
-        assertTrue(globalStore.hasSoup("globalSoup1"));
-        assertTrue(globalStore.hasSoup("globalSoup2"));
-
+        Assert.assertTrue(globalStore.hasSoup("globalSoup1"));
+        Assert.assertTrue(globalStore.hasSoup("globalSoup2"));
         List<String> actualSoupNames = globalStore.getAllSoupNames();
-        assertEquals("Wrong soups found", 2, actualSoupNames.size());
-        assertTrue(actualSoupNames.contains("globalSoup1"));
-        assertTrue(actualSoupNames.contains("globalSoup2"));
+        Assert.assertEquals("Wrong soups found", 2, actualSoupNames.size());
+        Assert.assertTrue(actualSoupNames.contains("globalSoup1"));
+        Assert.assertTrue(actualSoupNames.contains("globalSoup2"));
 
         // Checking first soup in details
         checkIndexSpecs("globalSoup1", new IndexSpec[]{
@@ -102,21 +111,21 @@ public class StoreConfigTest extends SmartStoreTestCase {
         });
     }
 
+    @Test
     public void testSetupUserStoreFromDefaultConfig() throws JSONException {
-        assertFalse(userStore.hasSoup("userSoup1"));
-        assertFalse(userStore.hasSoup("userSoup2"));
+        Assert.assertFalse(userStore.hasSoup("userSoup1"));
+        Assert.assertFalse(userStore.hasSoup("userSoup2"));
 
         // Setting up soup
         sdkManager.setupUserStoreFromDefaultConfig();
 
         // Checking smartstore
-        assertTrue(userStore.hasSoup("userSoup1"));
-        assertTrue(userStore.hasSoup("userSoup2"));
-
+        Assert.assertTrue(userStore.hasSoup("userSoup1"));
+        Assert.assertTrue(userStore.hasSoup("userSoup2"));
         List<String> actualSoupNames = userStore.getAllSoupNames();
-        assertEquals("Wrong soups found", 2, actualSoupNames.size());
-        assertTrue(actualSoupNames.contains("userSoup1"));
-        assertTrue(actualSoupNames.contains("userSoup2"));
+        Assert.assertEquals("Wrong soups found", 2, actualSoupNames.size());
+        Assert.assertTrue(actualSoupNames.contains("userSoup1"));
+        Assert.assertTrue(actualSoupNames.contains("userSoup2"));
 
         // Checking first soup in details
         checkIndexSpecs("userSoup1", new IndexSpec[]{
@@ -142,6 +151,7 @@ public class StoreConfigTest extends SmartStoreTestCase {
      * That way we don't actually have to setup a user account
      */
     private static class SmartStoreSDKTestManager extends SmartStoreSDKManager {
+
         // We don't want to be using INSTANCE defined in SmartStoreSDKManager
         // Otherwise tests in other suites could fail after we call resetInstance(...)
         private static SmartStoreSDKTestManager TEST_INSTANCE = null;
@@ -180,7 +190,7 @@ public class StoreConfigTest extends SmartStoreTestCase {
             if (TEST_INSTANCE != null) {
                 return TEST_INSTANCE;
             } else {
-                throw new RuntimeException("Applications need to call SalesforceSDKManager.init() first.");
+                throw new RuntimeException("Applications need to call SmartStoreSDKManager.init() first.");
             }
         }
 

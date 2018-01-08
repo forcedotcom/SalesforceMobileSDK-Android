@@ -58,8 +58,6 @@ usage ()
     echo "        NoteSync"
     echo "        SmartSyncExplorerHybrid"
     echo "        SmartSyncExplorer"
-    echo "        TemplateApp"
-    echo "        ReactNativeTemplateApp"
     echo "        SalesforceHybridTest"
     echo "    <test_target> can be "
     echo "        all"
@@ -68,7 +66,6 @@ usage ()
     echo "        SalesforceSDKTest"
     echo "        SmartStoreTest"
     echo "        SmartSyncTest"
-    echo "        TemplateAppTest"
     echo "        SalesforceHybridTest"
 }
 
@@ -171,7 +168,6 @@ else
         build_project_if_requested    "SmartSync"                     :libs:SmartSync
         build_project_if_requested    "SalesforceHybrid"              :libs:SalesforceHybrid
         build_project_if_requested    "SalesforceReact"               :libs:SalesforceReact
-        build_project_if_requested    "TemplateApp"                   :native:TemplateApp
         build_project_if_requested    "RestExplorer"                  :native:NativeSampleApps:RestExplorer 
         build_project_if_requested    "AppConfigurator"               :native:NativeSampleApps:AppConfigurator
         build_project_if_requested    "ConfiguredApp"                 :native:NativeSampleApps:ConfiguredApp
@@ -179,7 +175,6 @@ else
         build_project_if_requested    "AccountEditor"                 :hybrid:HybridSampleApps:AccountEditor
         build_project_if_requested    "NoteSync"                      :hybrid:HybridSampleApps:NoteSync
         build_project_if_requested    "SmartSyncExplorerHybrid"       :hybrid:HybridSampleApps:SmartSyncExplorerHybrid
-        build_project_if_requested    "ReactNativeTemplateApp"        :reactnative:ReactNativeTemplateApp
     fi
 
     if ( should_do "test{all}" )
@@ -192,7 +187,6 @@ else
         run_test_project_if_requested "SmartStoreTest"          :libs:SmartStore
         run_test_project_if_requested "SmartSyncTest"           :libs:SmartSync
         run_test_project_if_requested "SalesforceHybridTest"    :libs:SalesforceHybrid
-        run_test_project_if_requested "TemplateAppTest"         :native:TemplateApp
         run_test_project_if_requested "RestExplorerTest"        :native:NativeSampleApps:RestExplorer
     fi
 fi

@@ -26,16 +26,23 @@
  */
 package com.salesforce.androidsdk.store;
 
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
+
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 
-import junit.framework.TestCase;
+import junit.framework.Assert;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Test class for IndexSpec
- *
  */
-public class IndexSpecTest extends TestCase {
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class IndexSpecTest {
 
 	private static final IndexSpec keyStringSpec = new IndexSpec("key", Type.string);
 	private static final IndexSpec keyIntegerSpec = new IndexSpec("key", Type.integer);
@@ -52,71 +59,76 @@ public class IndexSpecTest extends TestCase {
 	/**
 	 * TEST for equals with same index specs
 	 */
+    @Test
 	public void testEqualsWithSame() {
-		assertEquals(keyStringSpec, new IndexSpec("key", Type.string));
-		assertEquals(keyIntegerSpec, new IndexSpec("key", Type.integer));
-		assertEquals(keyFloatingSpec, new IndexSpec("key", Type.floating));
-		assertEquals(keyFullTextSpec, new IndexSpec("key", Type.full_text));
-		assertEquals(keyJSON1Spec, new IndexSpec("key", Type.json1));
-		assertEquals(keyStringSpecWithCol, new IndexSpec("key", Type.string, "COL_1"));
-		assertEquals(keyIntegerSpecWithCol, new IndexSpec("key", Type.integer, "COL_1"));
-		assertEquals(keyFloatingSpecWithCol, new IndexSpec("key", Type.floating, "COL_1"));
-		assertEquals(keyFullTextSpecWithCol, new IndexSpec("key", Type.full_text, "COL_1"));
-		assertEquals(keyJSON1SpecWithCol, new IndexSpec("key", Type.json1, "COL_1"));
+        Assert.assertEquals(keyStringSpec, new IndexSpec("key", Type.string));
+        Assert.assertEquals(keyIntegerSpec, new IndexSpec("key", Type.integer));
+        Assert.assertEquals(keyFloatingSpec, new IndexSpec("key", Type.floating));
+        Assert.assertEquals(keyFullTextSpec, new IndexSpec("key", Type.full_text));
+        Assert.assertEquals(keyJSON1Spec, new IndexSpec("key", Type.json1));
+        Assert.assertEquals(keyStringSpecWithCol, new IndexSpec("key", Type.string, "COL_1"));
+        Assert.assertEquals(keyIntegerSpecWithCol, new IndexSpec("key", Type.integer, "COL_1"));
+        Assert.assertEquals(keyFloatingSpecWithCol, new IndexSpec("key", Type.floating, "COL_1"));
+        Assert.assertEquals(keyFullTextSpecWithCol, new IndexSpec("key", Type.full_text, "COL_1"));
+        Assert.assertEquals(keyJSON1SpecWithCol, new IndexSpec("key", Type.json1, "COL_1"));
 	}
 
 	/**
 	 * TEST for equals with index specs that have different paths / types or columnNames
 	 */
+    @Test
 	public void testEqualsWithDifferent() {
+
 		// Different path
-		assertFalse(keyStringSpec.equals(new IndexSpec("otherKey", Type.string)));
+        Assert.assertFalse(keyStringSpec.equals(new IndexSpec("otherKey", Type.string)));
 
 		// Different type
-		assertFalse(keyStringSpec.equals(new IndexSpec("key", Type.integer)));
-		assertFalse(keyStringSpec.equals(new IndexSpec("key", Type.floating)));
-		assertFalse(keyStringSpec.equals(new IndexSpec("key", Type.full_text)));
-		assertFalse(keyStringSpec.equals(new IndexSpec("key", Type.json1)));
+        Assert.assertFalse(keyStringSpec.equals(new IndexSpec("key", Type.integer)));
+        Assert.assertFalse(keyStringSpec.equals(new IndexSpec("key", Type.floating)));
+        Assert.assertFalse(keyStringSpec.equals(new IndexSpec("key", Type.full_text)));
+        Assert.assertFalse(keyStringSpec.equals(new IndexSpec("key", Type.json1)));
 
 		// Different columnName
-		assertFalse(keyStringSpec.equals(new IndexSpec("key", Type.string, "COL_1")));
-		assertFalse(keyStringSpecWithCol.equals(new IndexSpec("key", Type.string)));
-		assertFalse(keyStringSpecWithCol.equals(new IndexSpec("key", Type.string, "COL_2")));
+        Assert.assertFalse(keyStringSpec.equals(new IndexSpec("key", Type.string, "COL_1")));
+        Assert.assertFalse(keyStringSpecWithCol.equals(new IndexSpec("key", Type.string)));
+        Assert.assertFalse(keyStringSpecWithCol.equals(new IndexSpec("key", Type.string, "COL_2")));
 	}
 
 	/**
 	 * TEST for equals with same index specs
 	 */
+    @Test
 	public void testHashCodeWithSame() {
-		assertEquals(keyStringSpec.hashCode(), new IndexSpec("key", Type.string).hashCode());
-		assertEquals(keyIntegerSpec.hashCode(), new IndexSpec("key", Type.integer).hashCode());
-		assertEquals(keyFloatingSpec.hashCode(), new IndexSpec("key", Type.floating).hashCode());
-		assertEquals(keyFullTextSpec.hashCode(), new IndexSpec("key", Type.full_text).hashCode());
-		assertEquals(keyJSON1Spec.hashCode(), new IndexSpec("key", Type.json1).hashCode());
-
-		assertEquals(keyStringSpecWithCol.hashCode(), new IndexSpec("key", Type.string, "COL_1").hashCode());
-		assertEquals(keyIntegerSpecWithCol.hashCode(), new IndexSpec("key", Type.integer, "COL_1").hashCode());
-		assertEquals(keyFloatingSpecWithCol.hashCode(), new IndexSpec("key", Type.floating, "COL_1").hashCode());
-		assertEquals(keyFullTextSpecWithCol.hashCode(), new IndexSpec("key", Type.full_text, "COL_1").hashCode());
-		assertEquals(keyJSON1SpecWithCol.hashCode(), new IndexSpec("key", Type.json1, "COL_1").hashCode());
+        Assert.assertEquals(keyStringSpec.hashCode(), new IndexSpec("key", Type.string).hashCode());
+        Assert.assertEquals(keyIntegerSpec.hashCode(), new IndexSpec("key", Type.integer).hashCode());
+        Assert.assertEquals(keyFloatingSpec.hashCode(), new IndexSpec("key", Type.floating).hashCode());
+        Assert.assertEquals(keyFullTextSpec.hashCode(), new IndexSpec("key", Type.full_text).hashCode());
+        Assert.assertEquals(keyJSON1Spec.hashCode(), new IndexSpec("key", Type.json1).hashCode());
+        Assert.assertEquals(keyStringSpecWithCol.hashCode(), new IndexSpec("key", Type.string, "COL_1").hashCode());
+        Assert.assertEquals(keyIntegerSpecWithCol.hashCode(), new IndexSpec("key", Type.integer, "COL_1").hashCode());
+        Assert.assertEquals(keyFloatingSpecWithCol.hashCode(), new IndexSpec("key", Type.floating, "COL_1").hashCode());
+        Assert.assertEquals(keyFullTextSpecWithCol.hashCode(), new IndexSpec("key", Type.full_text, "COL_1").hashCode());
+        Assert.assertEquals(keyJSON1SpecWithCol.hashCode(), new IndexSpec("key", Type.json1, "COL_1").hashCode());
 	}
 	
 	/**
 	 * TEST for equals with index specs that have different paths / types or columnNames
 	 */
+    @Test
 	public void testHashCodeWithDifferent() {
+
 		// Different path
-		assertFalse(keyStringSpec.hashCode() == new IndexSpec("otherKey", Type.string).hashCode());
+        Assert.assertFalse(keyStringSpec.hashCode() == new IndexSpec("otherKey", Type.string).hashCode());
 
 		// Different type
-		assertFalse(keyStringSpec.hashCode() == new IndexSpec("key", Type.integer).hashCode());
-		assertFalse(keyStringSpec.hashCode() == new IndexSpec("key", Type.floating).hashCode());
-		assertFalse(keyStringSpec.hashCode() == new IndexSpec("key", Type.full_text).hashCode());
-        assertFalse(keyStringSpec.hashCode() == new IndexSpec("key", Type.json1).hashCode());
+        Assert.assertFalse(keyStringSpec.hashCode() == new IndexSpec("key", Type.integer).hashCode());
+        Assert.assertFalse(keyStringSpec.hashCode() == new IndexSpec("key", Type.floating).hashCode());
+        Assert.assertFalse(keyStringSpec.hashCode() == new IndexSpec("key", Type.full_text).hashCode());
+        Assert.assertFalse(keyStringSpec.hashCode() == new IndexSpec("key", Type.json1).hashCode());
 
 		// Different columnName
-		assertFalse(keyStringSpec.hashCode() == new IndexSpec("key", Type.string, "COL_1").hashCode());
-		assertFalse(keyStringSpecWithCol.hashCode() == new IndexSpec("key", Type.string).hashCode());
-		assertFalse(keyStringSpecWithCol.hashCode() == new IndexSpec("key", Type.string, "COL_2").hashCode());
+        Assert.assertFalse(keyStringSpec.hashCode() == new IndexSpec("key", Type.string, "COL_1").hashCode());
+        Assert.assertFalse(keyStringSpecWithCol.hashCode() == new IndexSpec("key", Type.string).hashCode());
+        Assert.assertFalse(keyStringSpecWithCol.hashCode() == new IndexSpec("key", Type.string, "COL_2").hashCode());
 	}
 }
