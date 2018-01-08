@@ -32,7 +32,7 @@ import com.salesforce.androidsdk.phonegap.ui.SalesforceHybridTestActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
 
 /**
- * Test application for smart store plugin.
+ * Test application for Salesforce Cordova plugins.
  */
 public class SalesforceHybridTestApp extends Application {
 

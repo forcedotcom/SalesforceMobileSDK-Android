@@ -26,114 +26,129 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
-import android.test.InstrumentationTestCase;
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.phonegap.plugin.JavaScriptPluginVersion;
 
+import junit.framework.Assert;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
- * Tests for JavaScriptPluginVersion
- *
+ * Tests for JavaScriptPluginVersion.
  */
-public class JavaScriptPluginVersionTest extends InstrumentationTestCase {
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class JavaScriptPluginVersionTest {
 
 	/**
 	 * Test for safeParseInt
 	 */
+    @Test
 	public void testSafeParseInt() {
-		assertEquals(1, JavaScriptPluginVersion.safeParseInt("1", -1));
-		assertEquals(-1, JavaScriptPluginVersion.safeParseInt("not-a-number", -1));
+		Assert.assertEquals(1, JavaScriptPluginVersion.safeParseInt("1", -1));
+        Assert.assertEquals(-1, JavaScriptPluginVersion.safeParseInt("not-a-number", -1));
 	}
 	
 	/**
 	 * Test for compare versions when the same versions are passed in
 	 */
+    @Test
 	public void testCompareVersionsSameVersion() {
-		assertEquals(0, JavaScriptPluginVersion.compareVersions("1", "1"));
-		assertEquals(0, JavaScriptPluginVersion.compareVersions("1.2", "1.2"));
-		assertEquals(0, JavaScriptPluginVersion.compareVersions("2.2.3", "2.2.3"));
+        Assert.assertEquals(0, JavaScriptPluginVersion.compareVersions("1", "1"));
+        Assert.assertEquals(0, JavaScriptPluginVersion.compareVersions("1.2", "1.2"));
+        Assert.assertEquals(0, JavaScriptPluginVersion.compareVersions("2.2.3", "2.2.3"));
 	}
 	
 	/**
 	 * Test for compare versions when the same versions are passed in and one is marked as dev
 	 * dev version is assumed to be older
 	 */
+    @Test
 	public void testCompareVersionsSameVersionWithDev() {
-		assertEquals(-1, JavaScriptPluginVersion.compareVersions("1.dev", "1"));
-		assertEquals(1, JavaScriptPluginVersion.compareVersions("1", "1.dev"));
-		assertEquals(-1, JavaScriptPluginVersion.compareVersions("1.2.dev", "1.2"));
-		assertEquals(1, JavaScriptPluginVersion.compareVersions("1.2", "1.2.dev"));
-		assertEquals(-1, JavaScriptPluginVersion.compareVersions("2.2.3.dev", "2.2.3"));
-		assertEquals(1, JavaScriptPluginVersion.compareVersions("2.2.3", "2.2.3.dev"));
+        Assert.assertEquals(-1, JavaScriptPluginVersion.compareVersions("1.dev", "1"));
+        Assert.assertEquals(1, JavaScriptPluginVersion.compareVersions("1", "1.dev"));
+        Assert.assertEquals(-1, JavaScriptPluginVersion.compareVersions("1.2.dev", "1.2"));
+        Assert.assertEquals(1, JavaScriptPluginVersion.compareVersions("1.2", "1.2.dev"));
+        Assert.assertEquals(-1, JavaScriptPluginVersion.compareVersions("2.2.3.dev", "2.2.3"));
+        Assert.assertEquals(1, JavaScriptPluginVersion.compareVersions("2.2.3", "2.2.3.dev"));
 	}
 
 	/**
 	 * Test for compare versions when one version is a patch on the other
 	 * NB dev is simply ignored
 	 */
+    @Test
 	public void testCompareVersionsWithPatch() {
-		assertEquals(-1, JavaScriptPluginVersion.compareVersions("1", "1.1"));
-		assertEquals(1, JavaScriptPluginVersion.compareVersions("1.1", "1"));
-		assertEquals(-1, JavaScriptPluginVersion.compareVersions("2.4", "2.4.2"));
-		assertEquals(1, JavaScriptPluginVersion.compareVersions("2.4.2", "2.4"));
-		assertEquals(-1, JavaScriptPluginVersion.compareVersions("3.5.1", "3.5.1.3"));
-		assertEquals(1, JavaScriptPluginVersion.compareVersions("3.5.1.3", "3.5.1"));
-		assertEquals(-1, JavaScriptPluginVersion.compareVersions("3.5", "3.5.1.3"));
-		assertEquals(1, JavaScriptPluginVersion.compareVersions("3.5.1.3", "3.5"));
+        Assert.assertEquals(-1, JavaScriptPluginVersion.compareVersions("1", "1.1"));
+        Assert.assertEquals(1, JavaScriptPluginVersion.compareVersions("1.1", "1"));
+        Assert.assertEquals(-1, JavaScriptPluginVersion.compareVersions("2.4", "2.4.2"));
+        Assert.assertEquals(1, JavaScriptPluginVersion.compareVersions("2.4.2", "2.4"));
+        Assert.assertEquals(-1, JavaScriptPluginVersion.compareVersions("3.5.1", "3.5.1.3"));
+        Assert.assertEquals(1, JavaScriptPluginVersion.compareVersions("3.5.1.3", "3.5.1"));
+        Assert.assertEquals(-1, JavaScriptPluginVersion.compareVersions("3.5", "3.5.1.3"));
+        Assert.assertEquals(1, JavaScriptPluginVersion.compareVersions("3.5.1.3", "3.5"));
 	}
 
 	/**
 	 * Test for compare versions with versions with two digits
 	 * NB dev is simply ignored
 	 */
+    @Test
 	public void testCompareVersionsWithTwoDigits() {
-		assertEquals(-1, JavaScriptPluginVersion.compareVersions("9", "14"));
-		assertEquals(1, JavaScriptPluginVersion.compareVersions("14", "9"));
-		assertEquals(-1, JavaScriptPluginVersion.compareVersions("2.9", "2.14"));
-		assertEquals(1, JavaScriptPluginVersion.compareVersions("2.14", "2.9"));
-		assertEquals(-1, JavaScriptPluginVersion.compareVersions("1.2.9", "1.2.14"));
-		assertEquals(1, JavaScriptPluginVersion.compareVersions("1.2.14", "1.2.9"));
+        Assert.assertEquals(-1, JavaScriptPluginVersion.compareVersions("9", "14"));
+        Assert.assertEquals(1, JavaScriptPluginVersion.compareVersions("14", "9"));
+        Assert.assertEquals(-1, JavaScriptPluginVersion.compareVersions("2.9", "2.14"));
+        Assert.assertEquals(1, JavaScriptPluginVersion.compareVersions("2.14", "2.9"));
+        Assert.assertEquals(-1, JavaScriptPluginVersion.compareVersions("1.2.9", "1.2.14"));
+        Assert.assertEquals(1, JavaScriptPluginVersion.compareVersions("1.2.14", "1.2.9"));
 	}
 
 	/**
 	 * Create JavaScriptPluginVersion for empty version (always considered older)
 	 */
+    @Test
 	public void testJavaScriptPluginVersionsWithNoVersion() {
-		assertEquals(-1, JavaScriptPluginVersion.compareVersions("", "2.0"));
-		assertEquals(0, JavaScriptPluginVersion.compareVersions("", ""));
-		assertEquals(1, JavaScriptPluginVersion.compareVersions("2.0", ""));
+        Assert.assertEquals(-1, JavaScriptPluginVersion.compareVersions("", "2.0"));
+        Assert.assertEquals(0, JavaScriptPluginVersion.compareVersions("", ""));
+        Assert.assertEquals(1, JavaScriptPluginVersion.compareVersions("2.0", ""));
 	}
 	
 	
 	/**
 	 * Create JavaScriptPluginVersion for old versions and make sure isCurrent/isOlder/isNewer returns the value expected
 	 */
+    @Test
 	public void testJavaScriptPluginVersionsWithOldVersions() {
 		for (String version : new String[] {"1.0", "1.1", "1.2", "1.3"}) {
-			assertTrue((new JavaScriptPluginVersion(version)).isOlder());
-			assertFalse((new JavaScriptPluginVersion(version)).isCurrent());
-			assertFalse((new JavaScriptPluginVersion(version)).isNewer());
+            Assert.assertTrue((new JavaScriptPluginVersion(version)).isOlder());
+            Assert.assertFalse((new JavaScriptPluginVersion(version)).isCurrent());
+            Assert.assertFalse((new JavaScriptPluginVersion(version)).isNewer());
 		}
 	}
 
 	/**
 	 * Create JavaScriptPluginVersion for current version and make sure isCurrent/isOlder/isNewer returns the value expected
 	 */
+    @Test
 	public void testJavaScriptPluginVersionsWithCurrentVersion() {
-		assertFalse((new JavaScriptPluginVersion(SalesforceSDKManager.SDK_VERSION)).isOlder());
-		assertTrue((new JavaScriptPluginVersion(SalesforceSDKManager.SDK_VERSION)).isCurrent());
-		assertFalse((new JavaScriptPluginVersion(SalesforceSDKManager.SDK_VERSION)).isNewer());
+        Assert.assertFalse((new JavaScriptPluginVersion(SalesforceSDKManager.SDK_VERSION)).isOlder());
+        Assert.assertTrue((new JavaScriptPluginVersion(SalesforceSDKManager.SDK_VERSION)).isCurrent());
+        Assert.assertFalse((new JavaScriptPluginVersion(SalesforceSDKManager.SDK_VERSION)).isNewer());
 	}
 
 	/**
 	 * Create JavaScriptPluginVersion for future versions and make sure isCurrent/isOlder/isNewer returns the value expected
 	 */
+    @Test
 	public void testJavaScriptPluginVersionsWithNewVersion() {
 		for (String version : new String[] {"6.2.0", "6.3.0", "6.4.0"}) {
-			assertFalse((new JavaScriptPluginVersion(version)).isOlder());
-			assertFalse((new JavaScriptPluginVersion(version)).isCurrent());
-			assertTrue((new JavaScriptPluginVersion(version)).isNewer());
+            Assert.assertFalse((new JavaScriptPluginVersion(version)).isOlder());
+            Assert.assertFalse((new JavaScriptPluginVersion(version)).isCurrent());
+            Assert.assertTrue((new JavaScriptPluginVersion(version)).isNewer());
 		}
 	}
 }
