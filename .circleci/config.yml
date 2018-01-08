@@ -228,7 +228,7 @@ jobs:
 
 ##########################
 #                        #
-#     Nightly Builds     #
+#      Nightly Jobs      #
 #                        #
 ##########################
 
@@ -311,7 +311,7 @@ workflows:
   nightly-build:
      triggers:
        - schedule:
-           cron: "00 8 * * *"
+           cron: "00 8 * * 1,2,3,4,5"
            filters:
              branches:
                only:
