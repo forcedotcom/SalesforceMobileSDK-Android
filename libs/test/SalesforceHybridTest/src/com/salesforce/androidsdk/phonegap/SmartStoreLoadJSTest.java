@@ -26,7 +26,7 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
-import android.support.test.filters.MediumTest;
+import android.support.test.filters.LargeTest;
 import android.support.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
@@ -40,7 +40,7 @@ import java.util.List;
  * Running javascript tests for SmartStore plugin.
  */
 @RunWith(AndroidJUnit4.class)
-@MediumTest
+@LargeTest
 public class SmartStoreLoadJSTest extends JSTestCase {
 
     public SmartStoreLoadJSTest() {
