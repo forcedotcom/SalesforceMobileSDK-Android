@@ -3,10 +3,16 @@ require 'set'
 
 libsTopoSorted = ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "SmartSync", "SalesforceHybrid", "SalesforceReact"]
 
-if not ENV["CIRCLE_PULL_REQUEST"].nil?
+if ENV.has_key?('CIRCLE_PULL_REQUEST')
   $GITPRAPI = "https://api.github.com/repos/%s/SalesforceMobileSDK-android/pulls/%s/files"
 
-  prFilesAPI = $GITPRAPI % [ENV["CIRCLE_PROJECT_USERNAME"], ENV["CIRCLE_PR_NUMBER"]]
+  # No PR Number indicates that this PR is running in a CircleCI env linked to a fork, so force the url to forcedotcom project.
+  if ENV.has_key?('CIRCLE_PR_NUMBER')
+    prFilesAPI = $GITPRAPI % [ENV['CIRCLE_PROJECT_USERNAME'], ENV['CIRCLE_PR_NUMBER']]
+  else
+    prFilesAPI = $GITPRAPI % ['forcedotcom', ENV['CIRCLE_PULL_REQUEST'].split('/').last]
+  end
+
   pullfiles = `#{"curl %s" % [prFilesAPI]}`
   prfiles = JSON.parse(pullfiles)
 
@@ -20,8 +26,9 @@ if not ENV["CIRCLE_PULL_REQUEST"].nil?
     end
   end
 
+  lib_arr = libsModified.to_a
   # Print so the bash in the CircleCI yml can get the Libs to run
-  print libsModified.to_a.join(",")
+  print (lib_arr.size == 1) ? lib_arr.first : lib_arr.join(",")
 else
   print libsTopoSorted.join(",")
 end

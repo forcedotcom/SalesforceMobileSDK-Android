@@ -1,9 +1,24 @@
 #!/usr/bin/env bash
 # inspired by https://github.com/Originate/guide/blob/master/android/guide/Continuous%20Integration.md
 
+function envSetup {
+    sudo apt-get update
+    sudo apt-get install libqt5widgets5
+    sudo npm install -g shelljs@0.7.0
+    sudo npm install -g cordova@7.0.0
+    cordova telemetry off
+
+    ./install.sh
+
+    gem install bundler
+    gem install danger
+    gem install danger-junit
+    gem install danger-android_lint
+    gem install danger-jacoco
+}
+
 function printTestsToRun {
     if [ -z "$CIRCLE_PULL_REQUEST" ]; then
-
         echo "Not a PR.  Run everything"
     else
         LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
@@ -22,11 +37,15 @@ function startAVD {
     # This indicates a nightly build and what API version to test
     if [ -z "$AVD" ]; then
         if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
+            echo "y" | sdkmanager "system-images;android-22;default;armeabi-v7a"
+            echo "no" | avdmanager create avd -n test22 -k "system-images;android-22;default;armeabi-v7a"
             emulator64-arm -avd test22 -noaudio -no-window -accel on
         else
             echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."
         fi
     else
+        echo "y" | sdkmanager "system-images;android-24;default;arm64-v8a"
+        echo "no" | avdmanager create avd -n test24 -k "system-images;android-24;default;arm64-v8a"
         emulator -avd "$AVD" -no-audio -no-window -accel on
     fi
 }
@@ -53,14 +72,18 @@ function waitForAVD {
 
 function runTests {
     if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
-        ./gradlew :libs:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --profile --max-workers 2 --stacktrace
+        if [[ "${CURRENT_LIB}" == "SalesforceReact" ]]; then
+            ./gradlew :libs:SalesforceReact:assemble
+        else
+            ./gradlew :libs:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --profile --max-workers 2 --stacktrace
+        fi
     else
         echo "No need to run ${CURRENT_LIB} tests for this PR."
     fi
 }
 
 function runDanger {
-    if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
+    if [ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
         if [ -z "${CURRENT_LIB}" ]; then
             DANGER_GITHUB_API_TOKEN="c21349d8a97e1bf9cdd9""301fd949a83db862216b" danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
         else

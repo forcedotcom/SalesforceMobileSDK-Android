@@ -1,74 +1,118 @@
 aliases:
-  - &Determine-Tests-to-Run
+  - &setup-env
+    name: Setup Envionrment
+    shell: /bin/bash
+    command: source .circleci/ci-helper.sh && envSetup
+
+  - &determine-tests-to-run
     name: Determine Tests to Run
     shell: /bin/bash
     command: source .circleci/ci-helper.sh && printTestsToRun
 
-  - &Run-Danger
+  - &run-danger
     name:  Run Danger
     when: always
     command:  source .circleci/ci-helper.sh && runDanger
 
-  - &Launch-Emulator
+  - &launch-emulator
     name:  Launch Emulator
     command: source .circleci/ci-helper.sh && startAVD
     background: true
 
-  - &Wait-for-Emulator
+  - &wait-for-emulator
     name:  Wait for Emulator to boot
     command: source .circleci/ci-helper.sh && waitForAVD
 
-  - &Lib-Run-Base
+  - &lib-run-base
     halt_build_on_fail: false
     no_output_timeout: 900
 
-  - &Run-Unit-Tests-PR
-    <<: *Lib-Run-Base
+  - &run-unit-tests
+    <<: *lib-run-base
     command: source .circleci/ci-helper.sh && runTests
 
-  - &Run-SalesforceAnalytics
-    <<: *Lib-Run-Base
-    name: Run SalesforceAnalytics
+  - &test-salesforce-analytics
+    <<: *lib-run-base
+    name: Test SalesforceAnalytics
     command: ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
     when: always
 
-  - &Run-SalesforceSDK
-    <<: *Lib-Run-Base
-    name: Run SalesforceSDK
+  - &test-salesforce-sdk
+    <<: *lib-run-base
+    name: Test SalesforceSDK
     command: ./gradlew :libs:SalesforceSDK:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
     when: always
 
-  - &Run-SmartStore
-    <<: *Lib-Run-Base
-    name: Run SmartStore
+  - &test-smart-store
+    <<: *lib-run-base
+    name: Test SmartStore
     command: ./gradlew :libs:SmartStore:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
     when: always
 
-  - &Run-SmartSync
-    <<: *Lib-Run-Base
-    name: Run SmartSync
+  - &test-smart-sync
+    <<: *lib-run-base
+    name: Test SmartSync
     command: ./gradlew :libs:SmartSync:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
     when: always
 
-  - &Run-SalesforceHybrid
-    <<: *Lib-Run-Base
-    name: Run SalesforceHybird
+  - &test-salesforce-hybrid
+    <<: *lib-run-base
+    name: Test SalesforceHybrid
     command: ./gradlew :libs:SalesforceHybrid:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
     when: always
 
-  - &Build-SalesforceReact
-    <<: *Lib-Run-Base
-    name: Run SalesforceReact
-    command: |
-      ./gradlew :libs:SalesforceReact:assembleDebug -p . --continue --no-daemon --profile --max-workers 2
-      ./gradlew :libs:SalesforceReact:assembleRelease -p . --continue --no-daemon --profile --max-workers 2
+  - &build-salesforce-react
+    <<: *lib-run-base
+    name: Build SalesforceReact
+    command:  |
+      ./gradlew :libs:SalesforceReact:assemble
     when: always
+
+  - &compile-libraries
+    name: Build Libraries
+    command:  |
+      ./gradlew :libs:SalesforceAnalytics:assemble
+      ./gradlew :libs:SalesforceSDK:assemble
+      ./gradlew :libs:SmartStore:assemble
+      ./gradlew :libs:SmartSync:assemble
+      ./gradlew :libs:SalesforceHybrid:assemble
+      ./gradlew :libs:SalesforceReact:assemble
+    when: always
+
+  - &restore-gradle-cache
+    keys:
+      - gradle-cache-{{ checksum "build.gradle" }}
+      - gradle-cache- # used if checksum fails
+
+  - &restore-node-cache
+    keys:
+      - node-cache-{{ checksum "package.json" }}
+      - node-cache- # used if checksum fails
+
+  - &restore-ruby-cache
+    keys:
+      - ruby-cache
+
+  - &save-gradle-cache
+    key: gradle-cache-{{ checksum "build.gradle" }}
+    paths:
+      - ".gradle"
+
+  - &save-node-cache
+    key: node-cache-{{ checksum "package.json" }}
+    paths:
+      - "node_modules"
+
+  - &save-ruby-cache
+    key: ruby-cache
+    paths:
+      - "/opt/circleci/.rvm/gems"
 
 
 defaults: &defaults
   working_directory: ~/SalesforceMobileSDK-Android
   docker:
-    - image: brandonpage/salesforce-mobilesdk-android-docker-primary:0.1.0
+    - image: circleci/android:api-27-node8-alpha
   environment:
     - TERM: "dumb"
     - ADB_INSTALL_TIMEOUT: 15
@@ -80,11 +124,6 @@ defaults: &defaults
   attach_workspace: &attach_workspace
     attach_workspace:
       at: ~/SalesforceMobileSDK-Android
-
-  restore_repo: &restore_repo
-    restore_cache:
-      keys:
-        - jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
 
 
 #########################
@@ -99,22 +138,16 @@ jobs:
     <<: *defaults
     steps:
       - checkout
-      - run: *Determine-Tests-to-Run
-      - run: *Run-Danger
-      - restore_cache:
-          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
-      - run:
-          name: Download Dependencies
-          command: ./install.sh && ./gradlew androidDependencies && ./gradlew dependencies
-      - save_cache:
-          paths:
-            - ~/.gradle
-            - node_modules
-          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "build.gradle" }}
-      - run:
-          name: Run Android Lint
-          when: always
-          command:  ./gradlew lint
+      - run: *determine-tests-to-run
+      - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-node-cache
+      - restore_cache: *restore-ruby-cache
+      - run: *setup-env
+      - run: *compile-libraries
+      - save_cache: *save-gradle-cache
+      - save_cache: *save-node-cache
+      - save_cache: *save-ruby-cache
+      - run: *run-danger
       - persist_to_workspace:
           # Must be an absolute path, or relative path from working_directory
           root: .
@@ -128,16 +161,16 @@ jobs:
       - CURRENT_LIB: "SalesforceAnalytics"
     steps:
       - *attach_workspace
-      - run: *Determine-Tests-to-Run
-      - run: *Launch-Emulator
-      - run: *Wait-for-Emulator
-      - run: *Run-Unit-Tests-PR
+      - run: *determine-tests-to-run
+      - run: *launch-emulator
+      - run: *wait-for-emulator
+      - run: *run-unit-tests
       - store_artifacts:
           path: libs/SalesforceAnalytics/build/reports/
           destination: SalesforceAnalytics
       - store_test_results:
           path: libs/SalesforceAnalytics/build/outputs/androidTest-results/
-      - run: *Run-Danger
+      - run: *run-danger
 
   test-SalesforceSDK:
     <<: *defaults
@@ -145,16 +178,16 @@ jobs:
       - CURRENT_LIB: "SalesforceSDK"
     steps:
       - *attach_workspace
-      - run: *Determine-Tests-to-Run
-      - run: *Launch-Emulator
-      - run: *Wait-for-Emulator
-      - run: *Run-Unit-Tests-PR
+      - run: *determine-tests-to-run
+      - run: *launch-emulator
+      - run: *wait-for-emulator
+      - run: *run-unit-tests
       - store_artifacts:
           path: libs/SalesforceSDK/build/reports/
           destination: SalesforceSDK
       - store_test_results:
           path: libs/SalesforceSDK/build/outputs/androidTest-results/
-      - run: *Run-Danger
+      - run: *run-danger
 
   test-SmartStore:
     <<: *defaults
@@ -162,16 +195,16 @@ jobs:
       - CURRENT_LIB: "SmartStore"
     steps:
       - *attach_workspace
-      - run: *Determine-Tests-to-Run
-      - run: *Launch-Emulator
-      - run: *Wait-for-Emulator
-      - run: *Run-Unit-Tests-PR
+      - run: *determine-tests-to-run
+      - run: *launch-emulator
+      - run: *wait-for-emulator
+      - run: *run-unit-tests
       - store_artifacts:
           path: libs/SmartStore/build/reports/
           destination: SmartStore
       - store_test_results:
           path: libs/SmartStore/build/outputs/androidTest-results/
-      - run: *Run-Danger
+      - run: *run-danger
 
   test-SmartSync:
     <<: *defaults
@@ -179,16 +212,16 @@ jobs:
       - CURRENT_LIB: "SmartSync"
     steps:
       - *attach_workspace
-      - run: *Determine-Tests-to-Run
-      - run: *Launch-Emulator
-      - run: *Wait-for-Emulator
-      - run: *Run-Unit-Tests-PR
+      - run: *determine-tests-to-run
+      - run: *launch-emulator
+      - run: *wait-for-emulator
+      - run: *run-unit-tests
       - store_artifacts:
           path: libs/SmartSync/build/reports/
           destination: SmartSync
       - store_test_results:
           path: libs/SmartSync/build/outputs/androidTest-results/
-      - run: *Run-Danger
+      - run: *run-danger
 
   test-SalesforceHybrid:
     <<: *defaults
@@ -196,16 +229,16 @@ jobs:
       - CURRENT_LIB: "SalesforceHybrid"
     steps:
       - *attach_workspace
-      - run: *Determine-Tests-to-Run
-      - run: *Launch-Emulator
-      - run: *Wait-for-Emulator
-      - run: *Run-Unit-Tests-PR
+      - run: *determine-tests-to-run
+      - run: *launch-emulator
+      - run: *wait-for-emulator
+      - run: *run-unit-tests
       - store_artifacts:
           path: libs/SalesforceHybrid/build/reports/
           destination: SalesforceHybrid
       - store_test_results:
           path: libs/SalesforceHybrid/build/outputs/androidTest-results/
-      - run: *Run-Danger
+      - run: *run-danger
 
   test-SalesforceReact:
     <<: *defaults
@@ -213,17 +246,8 @@ jobs:
       - CURRENT_LIB: "SalesforceReact"
     steps:
       - *attach_workspace
-      - run: *Determine-Tests-to-Run
-      - run:
-          name:  Build SalesforceReact
-          halt_build_on_fail: false
-          command:  |
-            if [ -z "$CIRCLE_PULL_REQUEST" ] || [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
-              ./gradlew :libs:SalesforceReact:assembleDebug -p . --continue --no-daemon --profile --max-workers 2
-              ./gradlew :libs:SalesforceReact:assembleRelease -p . --continue --no-daemon --profile --max-workers 2
-            else
-              echo "No need to build SalesforceReact for this PR."
-            fi
+      - run: *determine-tests-to-run
+      - run: *run-unit-tests
 
 
 ##########################
@@ -234,21 +258,25 @@ jobs:
 
   nightly-test-API24:
     <<: *defaults
-    docker:
-      - image: brandonpage/salesforce-mobilesdk-android-docker-nightly:0.1.0
     environment:
       - AVD: "test24"
     steps:
-      - *attach_workspace
       - checkout
-      - run: *Launch-Emulator
-      - run: *Wait-for-Emulator
-      - run: *Run-SalesforceAnalytics
-      - run: *Run-SalesforceSDK
-      - run: *Run-SmartStore
-      - run: *Run-SmartSync
-      - run: *Run-SalesforceHybrid
-      - run: *Build-SalesforceReact
+      - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-node-cache
+      - restore_cache: *restore-ruby-cache
+      - run: *setup-env
+      - save_cache: *save-gradle-cache
+      - save_cache: *save-node-cache
+      - save_cache: *save-ruby-cache
+      - run: *launch-emulator
+      - run: *wait-for-emulator
+      - run: *test-salesforce-analytics
+      - run: *test-salesforce-sdk
+      - run: *test-smart-store
+      - run: *test-smart-sync
+      - run: *test-salesforce-hybrid
+      - run: *build-salesforce-react
       - store_artifacts:
           path: libs/SalesforceAnalytics/build/reports/
           destination: SalesforceAnalytics
@@ -274,6 +302,73 @@ jobs:
           destination: SalesforceHybrid
       - store_test_results:
           path: libs/SalesforceHybrid/build/outputs/androidTest-results/
+
+  generate-artifacts:
+    <<: *defaults
+    steps:
+      - checkout
+      - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-node-cache
+      - restore_cache: *restore-ruby-cache
+      - run: *setup-env
+      - save_cache: *save-node-cache
+      - save_cache: *save-ruby-cache
+      - run: *compile-libraries
+      - store_artifacts:
+          path: libs/SalesforceAnalytics/build/outputs/aar/
+          destination: libraries
+      - store_artifacts:
+          path: libs/SalesforceSDK/build/outputs/aar/
+          destination: libraries
+      - store_artifacts:
+          path: libs/SmartStore/build/outputs/aar/
+          destination: libraries
+      - store_artifacts:
+          path: libs/SmartSync/build/outputs/aar/
+          destination: libraries
+      - store_artifacts:
+          path: libs/SalesforceHybrid/build/outputs/aar/
+          destination: libraries
+      - store_artifacts:
+          path: libs/SalesforceReact/build/outputs/aar/
+          destination: libraries
+      - run:
+          name: Build Native Sample Apps
+          when: always
+          command:  |
+            ./gradlew :native:NativeSampleApps:AppConfigurator:assemble
+            ./gradlew :native:NativeSampleApps:ConfiguredApp:assemble
+            ./gradlew :native:NativeSampleApps:RestExplorer:assemble
+            ./gradlew :native:NativeSampleApps:SmartSyncExplorer:assemble
+      - store_artifacts:
+          path: native/NativeSampleApps/AppConfigurator/build/outputs/apk/
+          destination: native-apps
+      - store_artifacts:
+          path: native/NativeSampleApps/ConfiguredApp/build/outputs/apk/
+          destination: native-apps
+      - store_artifacts:
+          path: native/NativeSampleApps/RestExplorer/build/outputs/apk/
+          destination: native-apps
+      - store_artifacts:
+          path: native/NativeSampleApps/SmartSyncExplorer/build/outputs/apk/
+          destination: native-apps
+      - run:
+          name: Build Hybrid Sample Apps
+          when: always
+          command:  |
+            ./gradlew :hybrid:HybridSampleApps:AccountEditor:assemble
+            ./gradlew :hybrid:HybridSampleApps:NoteSync:assemble
+            ./gradlew :hybrid:HybridSampleApps:SmartSyncExplorerHybrid:assemble
+      - store_artifacts:
+          path: hybrid/HybridSampleApps/AccountEditor/build/outputs/apk/
+          destination: hybrid-apps
+      - store_artifacts:
+          path: hybrid/HybridSampleApps/NoteSync/build/outputs/apk/
+          destination: hybrid-apps
+      - store_artifacts:
+          path: hybrid/HybridSampleApps/SmartSyncExplorerHybrid/build/outputs/apk/
+          destination: hybrid-apps
+      - save_cache: *save-gradle-cache
 
 
 #####################
@@ -285,7 +380,7 @@ jobs:
 workflows:
   version: 2
 
-  pr-build-and-test:
+  pr-test:
     jobs:
       - setup
       - test-SalesforceAnalytics:
@@ -308,7 +403,7 @@ workflows:
             - setup
 
  # Cron are on a timezone 8 hours ahead of PST
-  nightly-build:
+  nightly-test:
      triggers:
        - schedule:
            cron: "00 8 * * 1,2,3,4,5"
@@ -318,3 +413,4 @@ workflows:
                  - dev
      jobs:
         - nightly-test-API24
+        - generate-artifacts
