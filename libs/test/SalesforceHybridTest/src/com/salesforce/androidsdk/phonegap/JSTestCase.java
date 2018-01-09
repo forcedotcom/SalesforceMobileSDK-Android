@@ -43,7 +43,6 @@ import junit.framework.Assert;
 import org.apache.cordova.CordovaWebView;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -54,95 +53,77 @@ public abstract class JSTestCase {
 
 	private static final String TAG = "JSTestCase";
 
-    private String jsSuite;
-    private static Map<String, Map<String, TestResult>> testResults; 
+    private static Map<String, Map<String, TestResult>> testResults;
 
-    public JSTestCase(String jsSuite) {
-    	this.jsSuite = jsSuite;
-    }
-
-    public void setUp() throws Exception {
+    public static void runJSTestSuite(String jsSuite, Iterable<String> testNames, int timeout) throws InterruptedException {
     	if (testResults == null || !testResults.containsKey(jsSuite)) {
-    		if (testResults == null) {
-    			testResults = new HashMap<>();
-    		}
-    		if (!testResults.containsKey(jsSuite)) {
-    			testResults.put(jsSuite, new HashMap<String, TestResult>());
-    		}
+            if (testResults == null) {
+                testResults = new HashMap<>();
+            }
+            if (!testResults.containsKey(jsSuite)) {
+                testResults.put(jsSuite, new HashMap<String, TestResult>());
+            }
 
-	        // Wait for app initialization to complete
-			EventsListenerQueue eq = new EventsListenerQueue();
-	        if (!SalesforceSDKManager.hasInstance()) {
-	            eq.waitForEvent(EventType.AppCreateComplete, 5000);
-	        }
+            // Wait for app initialization to complete
+            EventsListenerQueue eq = new EventsListenerQueue();
+            if (!SalesforceSDKManager.hasInstance()) {
+                eq.waitForEvent(EventType.AppCreateComplete, 5000);
+            }
 
-			// Start main activity
-    		Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
-			final Intent intent = new Intent(Intent.ACTION_MAIN);
-			intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-			intent.setClassName(instrumentation.getTargetContext(), SalesforceSDKManager.getInstance().getMainActivityClass().getName());
-			SalesforceDroidGapActivity activity = (SalesforceDroidGapActivity) instrumentation.startActivitySync(intent);
-	
-			// Block until the javascript has notified the container that it's ready
-			TestRunnerPlugin.readyForTests.take();
+            // Start main activity
+            Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+            final Intent intent = new Intent(Intent.ACTION_MAIN);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.setClassName(instrumentation.getTargetContext(), SalesforceSDKManager.getInstance().getMainActivityClass().getName());
+            SalesforceDroidGapActivity activity = (SalesforceDroidGapActivity) instrumentation.startActivitySync(intent);
 
-			// Now run all the tests and collect the resuts in testResults
-			for (String testName : getTestNames()) {
-		        final String jsCmd = "javascript:" + "navigator.testrunner.setTestSuite('" + jsSuite + "');" +
-		            "navigator.testrunner.startTest('" + testName + "');";
-				final CordovaWebView appView = activity.getAppView();
-				if (appView != null) {
+            // Block until the javascript has notified the container that it's ready
+            TestRunnerPlugin.readyForTests.take();
+
+            // Now run all the tests and collect the resuts in testResults
+            for (String testName : testNames) {
+                final String jsCmd = "javascript:" + "navigator.testrunner.setTestSuite('" + jsSuite + "');" +
+                    "navigator.testrunner.startTest('" + testName + "');";
+                final CordovaWebView appView = activity.getAppView();
+                if (appView != null) {
                     appView.getView().post(new Runnable() {
                         @Override
                         public void run() {
                                 appView.loadUrl(jsCmd);
                         }
                     });
-				}
+                }
                 SalesforceHybridLogger.i(TAG, "Running test: " + testName);
 
-		        // Block until test completes or times out
-		        TestResult result = null;
-	            int timeout = getMaxRuntimeInSecondsForTest(testName);
-		        try {
-					result = TestRunnerPlugin.testResults.poll(timeout, TimeUnit.SECONDS);
-		            if (result == null) {
-		            	result = new TestResult(testName, false, "Timeout (" + timeout + " seconds) exceeded", timeout);
-		            }
-		        } catch (Exception e) {
-	            	result = new TestResult(testName, false, "Test failed", timeout);
-		        }
+                // Block until test completes or times out
+                TestResult result = null;
+                try {
+                    result = TestRunnerPlugin.testResults.poll(timeout, TimeUnit.SECONDS);
+                    if (result == null) {
+                        result = new TestResult(testName, false, "Timeout (" + timeout + " seconds) exceeded", timeout);
+                    }
+                } catch (Exception e) {
+                    result = new TestResult(testName, false, "Test failed", timeout);
+                }
                 SalesforceHybridLogger.i(TAG, "Finished running test: " + testName);
 
-		        // Save result
-		        testResults.get(jsSuite).put(testName, result);
-			}
-			
-			// Cleanup
-			eq.tearDown();
-			activity.finish();
-    	}
-    }
+                // Save result
+                testResults.get(jsSuite).put(testName, result);
+            }
 
-    /**
-     * @return all the javascript test names in the suite
-     */
-    protected abstract List<String> getTestNames();
-    
-    /**
-     * @param testName
-     * @return maximum time the test should be allowed to run in seconds
-     */
-    protected int getMaxRuntimeInSecondsForTest(String testName) {
-    	return 5;
-    }
-    
+            // Cleanup
+            eq.tearDown();
+            activity.finish();
+        }
+	}
+
 	/**
 	 * Helper method: no longer actually run the javascript test, instead asserts based on saved results
+     * @param jsSuite
 	 * @param testName the name of the test method in the test suite
 	 * @
 	 */
-    protected void runTest(String testName)  {
+    protected void runTest(String jsSuite, String testName)  {
     	TestResult result = testResults.get(jsSuite).get(testName);
         Assert.assertNotNull("No test result", result);
         Assert.assertTrue(result.testName + " " + result.message, result.success);

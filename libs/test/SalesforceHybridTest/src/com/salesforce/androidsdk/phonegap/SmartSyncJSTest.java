@@ -29,9 +29,10 @@ package com.salesforce.androidsdk.phonegap;
 import android.support.test.filters.LargeTest;
 import android.support.test.runner.AndroidJUnit4;
 
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 import java.util.List;
@@ -39,27 +40,18 @@ import java.util.List;
 /**
  * Running javascript tests for smart sync plugin.
  */
-@RunWith(AndroidJUnit4.class)
+@RunWith(Parameterized.class)
 @LargeTest
 public class SmartSyncJSTest extends JSTestCase {
 
-    public SmartSyncJSTest() {
-        super("SmartSyncTestSuite");
-    }
+    private static final String JS_SUITE = "SmartSyncTestSuite";
 
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
-    }
+    @Parameterized.Parameter
+    public String testName;
 
-    @Override
-    protected int getMaxRuntimeInSecondsForTest(String testName) {
-        return 30;
-    }
-
-    @Override
-    public List<String> getTestNames() {
-        return Arrays.asList(new String[] {
+    @Parameterized.Parameters(name = "{0}")
+    public static List<String> data() {
+        return Arrays.asList(new String[]{
                 "testStoreCacheInit",
                 "testStoreCacheRetrieve",
                 "testStoreCacheSave",
@@ -121,311 +113,16 @@ public class SmartSyncJSTest extends JSTestCase {
                 "testSyncDownGetSyncDeleteSyncByName",
                 "testSyncUpGetSyncDeleteSyncById",
                 "testSyncUpGetSyncDeleteSyncByName"
-            });
+        });
+    }
+
+    @BeforeClass
+    public static void runJSTestSuite() throws InterruptedException {
+        JSTestCase.runJSTestSuite(JS_SUITE, data(), 30);
     }
 
     @Test
-    public void testStoreCacheInit() {
-        runTest("testStoreCacheInit");
-    }
-
-    @Test
-    public void testStoreCacheRetrieve() {
-        runTest("testStoreCacheRetrieve");
-    }
-
-    @Test
-    public void testStoreCacheSave() {
-        runTest("testStoreCacheSave");
-    }
-
-    @Test
-    public void testStoreCacheSaveAll() {
-        runTest("testStoreCacheSaveAll");
-    }
-
-    @Test
-    public void testStoreCacheRemove() {
-        runTest("testStoreCacheRemove");
-    }
-
-    @Test
-    public void testStoreCacheFind() {
-        runTest("testStoreCacheFind");
-    }
-
-    @Test
-    public void testStoreCacheAddLocalFields() {
-        runTest("testStoreCacheAddLocalFields");
-    }
-
-    @Test
-    public void testStoreCacheWithGlobalStore() {
-        runTest("testStoreCacheWithGlobalStore");
-    }
-
-    @Test
-    public void testSObjectTypeDescribe() {
-        runTest("testSObjectTypeDescribe");
-    }
-
-    @Test
-    public void testSObjectTypeGetMetadata() {
-        runTest("testSObjectTypeGetMetadata");
-    }
-
-    @Test
-    public void testSObjectTypeDescribeLayout() {
-        runTest("testSObjectTypeDescribeLayout");
-    }
-
-    @Test
-    public void testSObjectTypeCacheOnlyMode() {
-        runTest("testSObjectTypeCacheOnlyMode");
-    }
-
-    @Test
-    public void testSObjectTypeCacheMerge() {
-        runTest("testSObjectTypeCacheMerge");
-    }
-
-    @Test
-    public void testMultiSObjectTypes() {
-        runTest("testMultiSObjectTypes");
-    }
-
-    @Test
-    public void testSObjectTypeReset() {
-        runTest("testSObjectTypeReset");
-    }
-
-    @Test
-    public void testSyncRemoteObjectWithCacheCreate() {
-        runTest("testSyncRemoteObjectWithCacheCreate");
-    }
-
-    @Test
-    public void testSyncRemoteObjectWithCacheRead() {
-        runTest("testSyncRemoteObjectWithCacheRead");
-    }
-
-    @Test
-    public void testSyncRemoteObjectWithCacheUpdate() {
-        runTest("testSyncRemoteObjectWithCacheUpdate");
-    }
-
-    @Test
-    public void testSyncRemoteObjectWithCacheDelete() {
-        runTest("testSyncRemoteObjectWithCacheDelete");
-    }
-
-    @Test
-    public void testSyncSObjectWithServerCreate() {
-        runTest("testSyncSObjectWithServerCreate");
-    }
-
-    @Test
-    public void testSyncSObjectWithServerRead() {
-        runTest("testSyncSObjectWithServerRead");
-    }
-
-    @Test
-    public void testSyncSObjectWithServerUpdate() {
-        runTest("testSyncSObjectWithServerUpdate");
-    }
-
-    @Test
-    public void testSyncSObjectWithServerDelete() {
-        runTest("testSyncSObjectWithServerDelete");
-    }
-
-    @Test
-    public void testSyncSObjectCreate() {
-        runTest("testSyncSObjectCreate");
-    }
-
-    @Test
-    public void testSyncSObjectRetrieve() {
-        runTest("testSyncSObjectRetrieve");
-    }
-
-    @Test
-    public void testSyncSObjectUpdate() {
-        runTest("testSyncSObjectUpdate");
-    }
-
-    @Test
-    public void testSyncSObjectDelete() {
-        runTest("testSyncSObjectDelete");
-    }
-
-    @Test
-    public void testSyncSObjectDetectConflictCreate() {
-        runTest("testSyncSObjectDetectConflictCreate");
-    }
-
-    @Test
-    public void testSyncSObjectDetectConflictRetrieve() {
-        runTest("testSyncSObjectDetectConflictRetrieve");
-    }
-
-    @Test
-    public void testSyncSObjectDetectConflictUpdate() {
-        runTest("testSyncSObjectDetectConflictUpdate");
-    }
-
-    @Test
-    public void testSyncSObjectDetectConflictDelete() {
-        runTest("testSyncSObjectDetectConflictDelete");
-    }
-
-    @Test
-    public void testSObjectFetch() {
-        runTest("testSObjectFetch");
-    }
-
-    @Test
-    public void testSObjectSave() {
-        runTest("testSObjectSave");
-    }
-
-    @Test
-    public void testSObjectDestroy() {
-        runTest("testSObjectDestroy");
-    }
-
-    @Test
-    public void testSyncApexRestObjectWithServerCreate() {
-        runTest("testSyncApexRestObjectWithServerCreate");
-    }
-
-    @Test
-    public void testSyncApexRestObjectWithServerRead() {
-        runTest("testSyncApexRestObjectWithServerRead");
-    }
-
-    @Test
-    public void testSyncApexRestObjectWithServerUpdate() {
-        runTest("testSyncApexRestObjectWithServerUpdate");
-    }
-
-    @Test
-    public void testSyncApexRestObjectWithServerDelete() {
-        runTest("testSyncApexRestObjectWithServerDelete");
-    }
-
-    @Test
-    public void testFetchApexRestObjectsFromServer() {
-        runTest("testFetchApexRestObjectsFromServer");
-    }
-
-    @Test
-    public void testFetchSObjectsFromServer() {
-        runTest("testFetchSObjectsFromServer");
-    }
-
-    @Test
-    public void testFetchSObjects() {
-        runTest("testFetchSObjects");
-    }
-
-    @Test
-    public void testSObjectCollectionFetch() {
-        runTest("testSObjectCollectionFetch");
-    }
-
-    @Test
-    public void testSyncDown() {
-        runTest("testSyncDown");
-    }
-
-    @Test
-    public void testSyncDownToGlobalStore() {
-        runTest("testSyncDownToGlobalStore");
-    }
-
-    @Test
-    public void testSyncDownWithNoOverwrite() {
-        runTest("testSyncDownWithNoOverwrite");
-    }
-
-    @Test
-    public void testReSync() {
-        runTest("testReSync");
-    }
-
-    @Test
-    public void testRefreshSyncDown() {
-        runTest("testRefreshSyncDown");
-    }
-
-    @Test
-    public void testCleanResyncGhosts() {
-        runTest("testCleanResyncGhosts");
-    }
-
-    @Test
-    public void testSyncUpLocallyUpdated() {
-        runTest("testSyncUpLocallyUpdated");
-    }
-
-    @Test
-    public void testSyncUpLocallyUpdatedWithGlobalStore() {
-        runTest("testSyncUpLocallyUpdatedWithGlobalStore");
-    }
-
-    @Test
-    public void testSyncUpLocallyUpdatedWithNoOverwrite() {
-        runTest("testSyncUpLocallyUpdatedWithNoOverwrite");
-    }
-
-    @Test
-    public void testSyncUpLocallyDeleted() {
-        runTest("testSyncUpLocallyDeleted");
-    }
-
-    @Test
-    public void testSyncUpLocallyDeletedWithNoOverwrite() {
-        runTest("testSyncUpLocallyDeletedWithNoOverwrite");
-    }
-
-    @Test
-    public void testSyncUpLocallyCreated() {
-        runTest("testSyncUpLocallyCreated");
-    }
-
-    @Test
-    public void testStoreCacheWithGlobalStoreNamed() {
-        runTest("testStoreCacheWithGlobalStoreNamed");
-    }
-
-    @Test
-    public void testSyncDownToGlobalStoreNamed() {
-        runTest("testSyncDownToGlobalStoreNamed");
-    }
-
-    @Test
-    public void testSyncUpLocallyUpdatedWithGlobalStoreNamed() {
-        runTest("testSyncUpLocallyUpdatedWithGlobalStoreNamed");
-    }
-
-    @Test
-    public void testSyncDownGetSyncDeleteSyncById() {
-        runTest("testSyncDownGetSyncDeleteSyncById");
-    }
-
-    @Test
-    public void testSyncDownGetSyncDeleteSyncByName() {
-        runTest("testSyncDownGetSyncDeleteSyncByName");
-    }
-
-    @Test
-    public void testSyncUpGetSyncDeleteSyncById() {
-        runTest("testSyncUpGetSyncDeleteSyncById");
-    }
-
-    @Test
-    public void testSyncUpGetSyncDeleteSyncByName() {
-        runTest("testSyncUpGetSyncDeleteSyncByName");
+    public void test() {
+        runTest(JS_SUITE, testName);
     }
 }

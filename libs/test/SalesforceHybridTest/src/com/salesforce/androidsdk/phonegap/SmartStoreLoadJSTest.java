@@ -27,11 +27,11 @@
 package com.salesforce.androidsdk.phonegap;
 
 import android.support.test.filters.LargeTest;
-import android.support.test.runner.AndroidJUnit4;
 
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 import java.util.List;
@@ -39,63 +39,35 @@ import java.util.List;
 /**
  * Running javascript tests for SmartStore plugin.
  */
-@RunWith(AndroidJUnit4.class)
+@RunWith(Parameterized.class)
 @LargeTest
 public class SmartStoreLoadJSTest extends JSTestCase {
 
-    public SmartStoreLoadJSTest() {
-        super("SmartStoreLoadTestSuite");
-    }
+    private static final String JS_SUITE = "SmartStoreLoadTestSuite";
 
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
-    }
+    @Parameterized.Parameter
+    public String testName;
 
-    @Override
-    protected int getMaxRuntimeInSecondsForTest(String testName) {
-    	return 60;
-    }
-
-    @Override
-    public List<String> getTestNames() {
-    	return Arrays.asList(new String[] {
+    @Parameterized.Parameters(name = "{0}")
+    public static List<String> data() {
+        return Arrays.asList(new String[]{
                 "testNumerousFields",
                 "testIncreasingFieldLength",
                 "testAddAndRetrieveManyEntries",
                 "testUpsertManyEntries",
                 "testUpsertAndQueryEntries",
                 "testUpsertConcurrentEntries"
+
         });
     }
 
-    @Test
-    public void testNumerousFields()  {
-    	runTest("testNumerousFields");
+    @BeforeClass
+    public static void runJSTestSuite() throws InterruptedException {
+        JSTestCase.runJSTestSuite(JS_SUITE, data(), 60);
     }
 
     @Test
-    public void testIncreasingFieldLength() {
-    	runTest("testIncreasingFieldLength");
-    }
-
-    @Test
-    public void testAddAndRetrieveManyEntries()  {
-    	runTest("testAddAndRetrieveManyEntries");
-    }
-
-    @Test
-    public void testUpsertManyEntries()  {
-    	runTest("testUpsertManyEntries");
-    }
-
-    @Test
-    public void testUpsertAndQueryEntries()  {
-    	runTest("testUpsertAndQueryEntries");
-    }
-
-    @Test
-    public void testUpsertConcurrentEntries() {
-    	runTest("testUpsertConcurrentEntries");
+    public void test() {
+        runTest(JS_SUITE, testName);
     }
 }

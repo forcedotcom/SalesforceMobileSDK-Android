@@ -29,9 +29,10 @@ package com.salesforce.androidsdk.phonegap;
 import android.support.test.filters.SmallTest;
 import android.support.test.runner.AndroidJUnit4;
 
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 import java.util.List;
@@ -39,26 +40,29 @@ import java.util.List;
 /**
  * Running javascript tests for SDKInfo plugin.
  */
-@RunWith(AndroidJUnit4.class)
+@RunWith(Parameterized.class)
 @SmallTest
 public class SDKInfoJSTest extends JSTestCase {
 
-    public SDKInfoJSTest() {
-        super("SDKInfoTestSuite");
+    private static final String JS_SUITE = "SDKInfoTestSuite";
+
+    @Parameterized.Parameter
+    public String testName;
+
+    @Parameterized.Parameters(name = "{0}")
+    public static List<String> data() {
+        return Arrays.asList(new String[]{
+                "testGetInfo"
+        });
     }
 
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
-    }
-
-    @Override
-    public List<String> getTestNames() {
-    	return Arrays.asList("testGetInfo");
+    @BeforeClass
+    public static void runJSTestSuite() throws InterruptedException {
+        JSTestCase.runJSTestSuite(JS_SUITE, data(), 5);
     }
 
     @Test
-    public void testGetInfo()  {
-    	runTest("testGetInfo");
+    public void test() {
+        runTest(JS_SUITE, testName);
     }
 }

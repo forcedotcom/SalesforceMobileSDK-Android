@@ -27,11 +27,12 @@
 package com.salesforce.androidsdk.phonegap;
 
 import android.support.test.filters.SmallTest;
-import android.support.test.runner.AndroidJUnit4;
+import android.util.Log;
 
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 import java.util.List;
@@ -39,82 +40,38 @@ import java.util.List;
 /**
  * Running javascript tests for force.js.
  */
-@RunWith(AndroidJUnit4.class)
+@RunWith(Parameterized.class)
 @SmallTest
 public class ForceJSTest extends JSTestCase {
 
-	public ForceJSTest() {
-		super("ForceJSTestSuite");
-	}
+    private static final String JS_SUITE = "ForceJSTestSuite";
 
-    @Before
-    public void setUp() throws Exception {
-	    super.setUp();
-    }
+    @Parameterized.Parameter
+	public String testName;
 
-	@Override
-	public List<String> getTestNames() {
-		return Arrays.asList(new String[] {
-				"testParseUrl",
-				"testComputeEndPointIfMissing",
-				"testOwnedFilesList",
+    @Parameterized.Parameters(name = "{0}")
+    public static Iterable<String> data() {
+        return Arrays.asList(new String[]{
+                "testParseUrl",
+                "testComputeEndPointIfMissing",
+                "testOwnedFilesList",
                 "testFilesInUsersGroups",
-				"testFilesSharedWithUser",
+                "testFilesSharedWithUser",
                 "testFileDetails",
-				"testBatchFileDetails",
+                "testBatchFileDetails",
                 "testFileShares",
                 "testAddFileShare",
-				"testDeleteFileShare"
-		});
-	}
+                "testDeleteFileShare"
+        });
+    }
+
+    @BeforeClass
+    public static void runJSTestSuite() throws InterruptedException {
+        JSTestCase.runJSTestSuite(JS_SUITE, data(), 5);
+    }
 
     @Test
-	public void testParseUrl() {
-		runTest("testParseUrl");
-	}
-
-    @Test
-	public void testComputeEndPointIfMissing() {
-		runTest("testComputeEndPointIfMissing");
-	}
-
-    @Test
-	public void testOwnedFilesList() {
-		runTest("testOwnedFilesList");
-	}
-
-    @Test
-	public void testFilesInUsersGroups() {
-		runTest("testFilesInUsersGroups");
-	}
-
-    @Test
-	public void testFilesSharedWithUser() {
-		runTest("testFilesSharedWithUser");
-	}
-
-    @Test
-	public void testFileDetails() {
-		runTest("testFileDetails");
-	}
-
-    @Test
-	public void testBatchFileDetails() {
-		runTest("testBatchFileDetails");
-	}
-
-    @Test
-	public void testFileShares() {
-		runTest("testFileShares");
-	}
-
-    @Test
-	public void testAddFileShare() {
-		runTest("testAddFileShare");
-	}
-
-    @Test
-	public void testDeleteFileShare() {
-		runTest("testDeleteFileShare");
-	}
+    public void test() {
+        runTest(JS_SUITE, testName);
+    }
 }
