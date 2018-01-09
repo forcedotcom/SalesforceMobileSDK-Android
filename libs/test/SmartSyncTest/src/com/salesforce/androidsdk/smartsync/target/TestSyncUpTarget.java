@@ -55,6 +55,11 @@ public class TestSyncUpTarget extends SyncUpTarget {
         NO_FAIL;
     }
 
+    public TestSyncUpTarget(JSONObject target) throws JSONException {
+        super(target);
+        this.syncBehavior = SyncBehavior.valueOf(target.getString(SYNC_BEHAVIOR));
+    }
+
     public TestSyncUpTarget(SyncBehavior syncBehavior) {
         super();
         this.syncBehavior = syncBehavior;
