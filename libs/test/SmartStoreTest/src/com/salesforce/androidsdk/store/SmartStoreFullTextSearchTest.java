@@ -27,7 +27,7 @@
 package com.salesforce.androidsdk.store;
 
 import android.database.Cursor;
-import android.support.test.filters.LargeTest;
+import android.support.test.filters.MediumTest;
 import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
@@ -54,7 +54,7 @@ import java.util.Arrays;
  * Tests for full-text search with smartstore
  */
 @RunWith(AndroidJUnit4.class)
-@LargeTest
+@MediumTest
 public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
 
     private static final String EMPLOYEE_ID = "employeeId";

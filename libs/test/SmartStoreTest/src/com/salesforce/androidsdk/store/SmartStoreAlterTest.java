@@ -27,7 +27,7 @@
 package com.salesforce.androidsdk.store;
 
 import android.database.Cursor;
-import android.support.test.filters.LargeTest;
+import android.support.test.filters.MediumTest;
 import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.smartstore.store.AlterSoupLongOperation;
@@ -60,7 +60,7 @@ import java.util.List;
  * Tests to compare speed of smartstore full-text-search indices with regular indices
  */
 @RunWith(AndroidJUnit4.class)
-@LargeTest
+@MediumTest
 public class SmartStoreAlterTest extends SmartStoreTestCase {
 
     private static final String TEST_SOUP = "test_soup";

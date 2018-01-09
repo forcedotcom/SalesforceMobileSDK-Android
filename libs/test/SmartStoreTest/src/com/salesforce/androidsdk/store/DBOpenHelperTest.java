@@ -29,7 +29,7 @@ package com.salesforce.androidsdk.store;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.test.InstrumentationRegistry;
-import android.support.test.filters.LargeTest;
+import android.support.test.filters.SmallTest;
 import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -56,7 +56,7 @@ import java.util.Set;
  * Tests for obtaining and deleting databases via the DBOpenHelper.
  */
 @RunWith(AndroidJUnit4.class)
-@LargeTest
+@SmallTest
 public class DBOpenHelperTest {
 
 	// constants used for building a test user account
