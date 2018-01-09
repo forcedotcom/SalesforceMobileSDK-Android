@@ -27,7 +27,7 @@
 package com.salesforce.androidsdk.store;
 
 
-import android.support.test.filters.SmallTest;
+import android.support.test.filters.MediumTest;
 import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
@@ -40,7 +40,7 @@ import org.junit.runner.RunWith;
  * Tests for full-text search in smartstore soups using external storage
  */
 @RunWith(AndroidJUnit4.class)
-@SmallTest
+@MediumTest
 public class SmartStoreFTSExternalStorageTest extends SmartStoreFullTextSearchTest {
 
     @Override

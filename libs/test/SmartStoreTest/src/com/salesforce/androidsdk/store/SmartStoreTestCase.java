@@ -45,6 +45,8 @@ import net.sqlcipher.database.SQLiteOpenHelper;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.After;
+import org.junit.Before;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -60,7 +62,8 @@ public abstract class SmartStoreTestCase {
 	protected SmartStore store;
 	protected DBHelper dbHelper;
 
-	protected void setUp() throws Exception {
+	@Before
+	public void setUp() throws Exception {
 		EventBuilderHelper.enableDisable(false);
 		targetContext = InstrumentationRegistry.getTargetContext();
 		dbOpenHelper = DBOpenHelper.getOpenHelper(targetContext, null);
@@ -70,7 +73,8 @@ public abstract class SmartStoreTestCase {
 
 	protected abstract String getEncryptionKey();
 
-	protected void tearDown() throws Exception {
+	@After
+	public void tearDown() throws Exception {
 		store.dropAllSoups();
 		dbOpenHelper.close();
 		dbHelper.clearMemoryCache();

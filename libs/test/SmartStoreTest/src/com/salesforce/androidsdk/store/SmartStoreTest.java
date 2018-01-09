@@ -28,7 +28,7 @@ package com.salesforce.androidsdk.store;
 
 import android.database.Cursor;
 import android.os.SystemClock;
-import android.support.test.filters.LargeTest;
+import android.support.test.filters.MediumTest;
 import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
@@ -59,7 +59,7 @@ import java.util.List;
  * Main test suite for SmartStore
  */
 @RunWith(AndroidJUnit4.class)
-@LargeTest
+@MediumTest
 public class SmartStoreTest extends SmartStoreTestCase {
 
 	protected static final String TEST_SOUP = "test_soup";

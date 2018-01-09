@@ -26,7 +26,7 @@
  */
 package com.salesforce.androidsdk.store;
 
-import android.support.test.filters.SmallTest;
+import android.support.test.filters.MediumTest;
 import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.analytics.security.Encryptor;
@@ -52,7 +52,7 @@ import org.junit.runner.RunWith;
  * Tests for "smart" sql
  */
 @RunWith(AndroidJUnit4.class)
-@SmallTest
+@MediumTest
 public class SmartSqlExternalStorageTest extends SmartStoreTestCase {
 
 	private static final String BUDGET = "budget";
