@@ -57,7 +57,7 @@ aliases:
 
   - &test-salesforce-hybrid
     <<: *lib-run-base
-    name: Test SalesforceHybird
+    name: Test SalesforceHybrid
     command: ./gradlew :libs:SalesforceHybrid:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
     when: always
 
@@ -316,22 +316,22 @@ jobs:
       - run: *compile-libraries
       - store_artifacts:
           path: libs/SalesforceAnalytics/build/outputs/aar/
-          destination: Libraries
+          destination: libraries
       - store_artifacts:
           path: libs/SalesforceSDK/build/outputs/aar/
-          destination: Libraries
+          destination: libraries
       - store_artifacts:
           path: libs/SmartStore/build/outputs/aar/
-          destination: Libraries
+          destination: libraries
       - store_artifacts:
           path: libs/SmartSync/build/outputs/aar/
-          destination: Libraries
+          destination: libraries
       - store_artifacts:
           path: libs/SalesforceHybrid/build/outputs/aar/
-          destination: Libraries
+          destination: libraries
       - store_artifacts:
           path: libs/SalesforceReact/build/outputs/aar/
-          destination: Libraries
+          destination: libraries
       - run:
           name: Build Native Sample Apps
           when: always
