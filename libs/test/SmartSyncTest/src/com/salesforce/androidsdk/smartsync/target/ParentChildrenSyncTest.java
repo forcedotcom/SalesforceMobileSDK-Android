@@ -27,6 +27,9 @@
 
 package com.salesforce.androidsdk.smartsync.target;
 
+import android.support.test.filters.LargeTest;
+import android.support.test.runner.AndroidJUnit4;
+
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
@@ -43,9 +46,15 @@ import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncUpdateCallbackQueue;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
+import junit.framework.Assert;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -60,8 +69,10 @@ import java.util.Set;
 import java.util.SortedSet;
 
 /**
- * Test class for ParentChildrenSyncDownTarget and ParentChildrenSyncUpTarget
+ * Test class for ParentChildrenSyncDownTarget and ParentChildrenSyncUpTarget.
  */
+@RunWith(AndroidJUnit4.class)
+@LargeTest
 public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
     private static final String CONTACTS_SOUP = "contacts";
@@ -70,15 +81,14 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     protected Map<String, Map<String, Object>> accountIdToFields;
     protected Map<String, Map<String, Map<String, Object>>> accountIdContactIdToFields;
 
-
-    @Override
+    @Before
     public void setUp() throws Exception {
         super.setUp();
         createAccountsSoup();
         createContactsSoup();
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
         super.tearDown();
         dropContactsSoup();
@@ -88,7 +98,6 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         if (accountIdToFields != null) {
             deleteRecordsOnServer(accountIdToFields.keySet(), Constants.ACCOUNT);
         }
-
         if (accountIdContactIdToFields != null) {
             for (String accountId : accountIdContactIdToFields.keySet()) {
                 Map<String, Map<String, Object>> contactIdToFields = accountIdContactIdToFields.get(accountId);
@@ -100,6 +109,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     /**
      * Test getQuery for ParentChildrenSyncDownTarget
      */
+    @Test
     public void testGetQuery() {
         ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
                 new ParentInfo("Parent", "parentsSoup", "ParentId", "ParentModifiedDate"),
@@ -108,8 +118,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
-
-        assertEquals("select ParentName, Title, ParentId, ParentModifiedDate, (select ChildName, School, ChildId, ChildLastModifiedDate from Children) from Parent where School = 'MIT'", target.getQuery());
+        Assert.assertEquals("select ParentName, Title, ParentId, ParentModifiedDate, (select ChildName, School, ChildId, ChildLastModifiedDate from Children) from Parent where School = 'MIT'", target.getQuery());
 
         // With default id and modification date fields
         target = new ParentChildrenSyncDownTarget(
@@ -119,20 +128,17 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 new ChildrenInfo("Child", "Children", "childrenSoup", "parentId"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
-
-
-        assertEquals("select ParentName, Title, Id, LastModifiedDate, (select ChildName, School, Id, LastModifiedDate from Children) from Parent where School = 'MIT'", target.getQuery());
+        Assert.assertEquals("select ParentName, Title, Id, LastModifiedDate, (select ChildName, School, Id, LastModifiedDate from Children) from Parent where School = 'MIT'", target.getQuery());
     }
-
 
     /**
      * Test query for reSync by calling getQuery with maxTimeStamp for ParentChildrenSyncDownTarget
      */
+    @Test
     public void testGetQueryWithMaxTimeStamp() {
         Date date = new Date();
         String dateStr = Constants.TIMESTAMP_FORMAT.format(date);
         long dateLong = date.getTime();
-
         ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
                 new ParentInfo("Parent", "parentsSoup", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
@@ -140,8 +146,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
-
-        assertEquals("select ParentName, Title, ParentId, ParentModifiedDate, (select ChildName, School, ChildId, ChildLastModifiedDate from Children where ChildLastModifiedDate > " + dateStr + ") from Parent where ParentModifiedDate > " + dateStr + " and School = 'MIT'", target.getQuery(dateLong));
+        Assert.assertEquals("select ParentName, Title, ParentId, ParentModifiedDate, (select ChildName, School, ChildId, ChildLastModifiedDate from Children where ChildLastModifiedDate > " + dateStr + ") from Parent where ParentModifiedDate > " + dateStr + " and School = 'MIT'", target.getQuery(dateLong));
 
         // With default id and modification date fields
         target = new ParentChildrenSyncDownTarget(
@@ -151,15 +156,13 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 new ChildrenInfo("Child", "Children", "childrenSoup", "parentId"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
-
-
-        assertEquals("select ParentName, Title, Id, LastModifiedDate, (select ChildName, School, Id, LastModifiedDate from Children where LastModifiedDate > " + dateStr + ") from Parent where LastModifiedDate > " + dateStr + " and School = 'MIT'", target.getQuery(dateLong));
+        Assert.assertEquals("select ParentName, Title, Id, LastModifiedDate, (select ChildName, School, Id, LastModifiedDate from Children where LastModifiedDate > " + dateStr + ") from Parent where LastModifiedDate > " + dateStr + " and School = 'MIT'", target.getQuery(dateLong));
     }
-
 
     /**
      * Test getSoqlForRemoteIds for ParentChildrenSyncDownTarget
      */
+    @Test
     public void testGetSoqlForRemoteIds() {
         ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
                 new ParentInfo("Parent", "parentsSoup", "ParentId", "ParentModifiedDate"),
@@ -168,8 +171,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 new ChildrenInfo("Child", "Children", "childrenSoup", "ChildParentId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
-
-        assertEquals("select ParentId from Parent where School = 'MIT'", target.getSoqlForRemoteIds());
+        Assert.assertEquals("select ParentId from Parent where School = 'MIT'", target.getSoqlForRemoteIds());
 
         // With default id and modification date fields
         target = new ParentChildrenSyncDownTarget(
@@ -179,13 +181,13 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 new ChildrenInfo("Child", "Children", "childrenSoup", "ChildParentId"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
-
-        assertEquals("select Id from Parent where School = 'MIT'", target.getSoqlForRemoteIds());
+        Assert.assertEquals("select Id from Parent where School = 'MIT'", target.getSoqlForRemoteIds());
     }
 
     /**
      * Test getDirtyRecordIdsSql for ParentChildrenSyncDownTarget
      */
+    @Test
     public void testGetDirtyRecordIdsSql() {
         ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
                 new ParentInfo("Parent", "parentsSoup", "ParentId", "ParentModifiedDate"),
@@ -194,15 +196,14 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 new ChildrenInfo("Child", "Children", "childrenSoup", "ChildParentId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
-
-        assertEquals("SELECT DISTINCT {parentsSoup:IdForQuery} FROM {parentsSoup} WHERE {parentsSoup:__local__} = 'true' OR EXISTS (SELECT {childrenSoup:ChildId} FROM {childrenSoup} WHERE {childrenSoup:ChildParentId} = {parentsSoup:ParentId} AND {childrenSoup:__local__} = 'true')",
+        Assert.assertEquals("SELECT DISTINCT {parentsSoup:IdForQuery} FROM {parentsSoup} WHERE {parentsSoup:__local__} = 'true' OR EXISTS (SELECT {childrenSoup:ChildId} FROM {childrenSoup} WHERE {childrenSoup:ChildParentId} = {parentsSoup:ParentId} AND {childrenSoup:__local__} = 'true')",
                 target.getDirtyRecordIdsSql("parentsSoup", "IdForQuery"));
     }
-
 
     /**
      * Test getNonDirtyRecordIdsSql for ParentChildrenSyncDownTarget
      */
+    @Test
     public void testGetNonDirtyRecordIdsSql() {
         ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
                 new ParentInfo("Parent", "parentsSoup", "ParentId", "ParentModifiedDate"),
@@ -211,8 +212,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 new ChildrenInfo("Child", "Children", "childrenSoup", "ChildParentId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
-
-        assertEquals("SELECT DISTINCT {parentsSoup:IdForQuery} FROM {parentsSoup} WHERE {parentsSoup:__local__} = 'false' AND NOT EXISTS (SELECT {childrenSoup:ChildId} FROM {childrenSoup} WHERE {childrenSoup:ChildParentId} = {parentsSoup:ParentId} AND {childrenSoup:__local__} = 'true')",
+        Assert.assertEquals("SELECT DISTINCT {parentsSoup:IdForQuery} FROM {parentsSoup} WHERE {parentsSoup:__local__} = 'false' AND NOT EXISTS (SELECT {childrenSoup:ChildId} FROM {childrenSoup} WHERE {childrenSoup:ChildParentId} = {parentsSoup:ParentId} AND {childrenSoup:__local__} = 'true')",
                 target.getNonDirtyRecordIdsSql("parentsSoup", "IdForQuery"));
 
     }
@@ -220,6 +220,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     /**
      * Test getDirtyRecordIds and getNonDirtyRecordIds for ParentChildrenSyncDownTarget when parent and/or all and/or some children are dirty
      */
+    @Test
     public void testGetDirtyAndNonDirtyRecordIds() throws JSONException {
         String[] accountNames = new String[]{
                 createRecordName(Constants.ACCOUNT),
@@ -238,7 +239,6 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         // No accounts should be returned
         tryGetNonDirtyRecordIds(new JSONObject[]{});
 
-
         // Cleaning up:
         // accounts[0]: dirty account and dirty contacts
         // accounts[1]: clean account and dirty contacts
@@ -246,7 +246,6 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         // accounts[3]: clean account and clean contacts
         // accounts[4]: dirty account and some dirty contacts
         // accounts[5]: clean account and some dirty contacts
-
         cleanRecord(ACCOUNTS_SOUP, accounts[1]);
         cleanRecords(CONTACTS_SOUP, mapAccountToContacts.get(accounts[2]));
         cleanRecord(ACCOUNTS_SOUP, accounts[3]);
@@ -265,6 +264,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     /**
      * Test saveRecordsToLocalStore
      */
+    @Test
     public void testSaveRecordsToLocalStore() throws JSONException {
         // Putting together a JSONArray of accounts with contacts
         // looking like what we would get back from startFetch/continueFetch
@@ -272,21 +272,16 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         // - not have _soupEntryId field
         final int numberAccounts = 4;
         final int numberContactsPerAccount = 3;
-
         JSONObject accountAttributes = new JSONObject();
         accountAttributes.put(TYPE, Constants.ACCOUNT);
-
         JSONObject contactAttributes = new JSONObject();
         contactAttributes.put(TYPE, Constants.CONTACT);
-
         JSONObject[] accounts = new JSONObject[numberAccounts];
         Map<JSONObject, JSONObject[]> mapAccountContacts = new HashMap<>();
-
         for (int i = 0; i < numberAccounts; i++) {
             JSONObject account = new JSONObject();
             account.put(Constants.ID, createLocalId());
             account.put(Constants.ATTRIBUTES, accountAttributes);
-
             JSONObject[] contacts = new JSONObject[numberContactsPerAccount];
             for (int j = 0; j < numberContactsPerAccount; j++) {
                 JSONObject contact = new JSONObject();
@@ -298,7 +293,6 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
             mapAccountContacts.put(account, contacts);
             accounts[i] = account;
         }
-
         JSONArray records = new JSONArray();
         for (JSONObject account : accounts) {
             JSONObject record = new JSONObject(account.toString());
@@ -317,79 +311,67 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         // Checking accounts and contacts soup
         // Making sure local fields are populated
         // Making sure accountId and accountLocalId fields are populated on contacts
-
         JSONObject[] accountsFromDb = queryWithInClause(ACCOUNTS_SOUP, Constants.ID, JSONObjectHelper.pluck(accounts, Constants.ID).toArray(new String[0]), null);
-        assertEquals("Wrong number of accounts in db", accounts.length, accountsFromDb.length);
+        Assert.assertEquals("Wrong number of accounts in db", accounts.length, accountsFromDb.length);
         for (int i = 0; i < accountsFromDb.length; i++) {
             JSONObject account = accounts[i];
             JSONObject accountFromDb = accountsFromDb[i];
-
-            assertEquals(account.getString(Constants.ID), accountFromDb.getString(Constants.ID));
-            assertEquals(Constants.ACCOUNT, accountFromDb.getJSONObject(Constants.ATTRIBUTES).getString(TYPE));
-            assertEquals(false, accountFromDb.getBoolean(SyncTarget.LOCAL));
-            assertEquals(false, accountFromDb.getBoolean(SyncTarget.LOCALLY_CREATED));
-            assertEquals(false, accountFromDb.getBoolean(SyncTarget.LOCALLY_DELETED));
-            assertEquals(false, accountFromDb.getBoolean(SyncTarget.LOCALLY_UPDATED));
-
+            Assert.assertEquals(account.getString(Constants.ID), accountFromDb.getString(Constants.ID));
+            Assert.assertEquals(Constants.ACCOUNT, accountFromDb.getJSONObject(Constants.ATTRIBUTES).getString(TYPE));
+            Assert.assertEquals(false, accountFromDb.getBoolean(SyncTarget.LOCAL));
+            Assert.assertEquals(false, accountFromDb.getBoolean(SyncTarget.LOCALLY_CREATED));
+            Assert.assertEquals(false, accountFromDb.getBoolean(SyncTarget.LOCALLY_DELETED));
+            Assert.assertEquals(false, accountFromDb.getBoolean(SyncTarget.LOCALLY_UPDATED));
             JSONObject[] contactsFromDb = queryWithInClause(CONTACTS_SOUP, ACCOUNT_ID, new String[]{account.getString(Constants.ID)}, SmartStore.SOUP_ENTRY_ID);
             JSONObject[] contacts = mapAccountContacts.get(account);
-            assertEquals("Wrong number of contacts in db", contacts.length, contactsFromDb.length);
+            Assert.assertEquals("Wrong number of contacts in db", contacts.length, contactsFromDb.length);
             for (int j = 0; j < contactsFromDb.length; j++) {
                 JSONObject contact = contacts[j];
                 JSONObject contactFromDb = contactsFromDb[j];
-
-                assertEquals(contact.getString(Constants.ID), contactFromDb.getString(Constants.ID));
-                assertEquals(Constants.CONTACT, contactFromDb.getJSONObject(Constants.ATTRIBUTES).getString(TYPE));
-                assertEquals(false, contactFromDb.getBoolean(SyncTarget.LOCAL));
-                assertEquals(false, contactFromDb.getBoolean(SyncTarget.LOCALLY_CREATED));
-                assertEquals(false, contactFromDb.getBoolean(SyncTarget.LOCALLY_DELETED));
-                assertEquals(false, contactFromDb.getBoolean(SyncTarget.LOCALLY_UPDATED));
-                assertEquals(accountFromDb.getString(Constants.ID), contactFromDb.getString(ACCOUNT_ID));
+                Assert.assertEquals(contact.getString(Constants.ID), contactFromDb.getString(Constants.ID));
+                Assert.assertEquals(Constants.CONTACT, contactFromDb.getJSONObject(Constants.ATTRIBUTES).getString(TYPE));
+                Assert.assertEquals(false, contactFromDb.getBoolean(SyncTarget.LOCAL));
+                Assert.assertEquals(false, contactFromDb.getBoolean(SyncTarget.LOCALLY_CREATED));
+                Assert.assertEquals(false, contactFromDb.getBoolean(SyncTarget.LOCALLY_DELETED));
+                Assert.assertEquals(false, contactFromDb.getBoolean(SyncTarget.LOCALLY_UPDATED));
+                Assert.assertEquals(accountFromDb.getString(Constants.ID), contactFromDb.getString(ACCOUNT_ID));
             }
-
         }
     }
 
     /**
      * Test getLatestModificationTimeStamp
      */
+    @Test
     public void testGetLatestModificationTimeStamp() throws JSONException {
         // Putting together a JSONArray of accounts with contacts
         // looking like what we would get back from startFetch/continueFetch
         // with different fields for last modified time
         final int numberAccounts = 4;
         final int numberContactsPerAccount = 3;
-
         final long[] timeStamps = new long[]{
                 100000000,
                 200000000,
                 300000000,
                 400000000
         };
-
-
         final String[] timeStampStrs = new String[]{
                 Constants.TIMESTAMP_FORMAT.format(new Date(timeStamps[0])),
                 Constants.TIMESTAMP_FORMAT.format(new Date(timeStamps[1])),
                 Constants.TIMESTAMP_FORMAT.format(new Date(timeStamps[2])),
                 Constants.TIMESTAMP_FORMAT.format(new Date(timeStamps[3])),
         };
-
         JSONObject accountAttributes = new JSONObject();
         accountAttributes.put(TYPE, Constants.ACCOUNT);
-
         JSONObject contactAttributes = new JSONObject();
         contactAttributes.put(TYPE, Constants.CONTACT);
-
         JSONObject[] accounts = new JSONObject[numberAccounts];
         Map<JSONObject, JSONObject[]> mapAccountContacts = new HashMap<>();
-
         for (int i = 0; i < numberAccounts; i++) {
             JSONObject account = new JSONObject();
             account.put(Constants.ID, createLocalId());
             account.put("AccountTimeStamp1", timeStampStrs[i % timeStampStrs.length]);
             account.put("AccountTimeStamp2", timeStampStrs[0]);
-
             JSONObject[] contacts = new JSONObject[numberContactsPerAccount];
             for (int j = 0; j < numberContactsPerAccount; j++) {
                 JSONObject contact = new JSONObject();
@@ -402,7 +384,6 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
             mapAccountContacts.put(account, contacts);
             accounts[i] = account;
         }
-
         JSONArray records = new JSONArray();
         for (JSONObject account : accounts) {
             JSONObject record = new JSONObject(account.toString());
@@ -417,25 +398,25 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         // Maximums
 
         // Get max time stamps based on fields AccountTimeStamp1 / ContactTimeStamp1
-        assertEquals(
+        Assert.assertEquals(
                 timeStamps[3],
                 getAccountContactsSyncDownTarget("AccountTimeStamp1", "ContactTimeStamp1", null).getLatestModificationTimeStamp(records)
         );
 
         // Get max time stamps based on fields AccountTimeStamp1 / ContactTimeStamp2
-        assertEquals(
+        Assert.assertEquals(
                 timeStamps[3],
                 getAccountContactsSyncDownTarget("AccountTimeStamp1", "ContactTimeStamp2", null).getLatestModificationTimeStamp(records)
         );
 
         // Get max time stamps based on fields AccountTimeStamp2 / ContactTimeStamp1
-        assertEquals(
+        Assert.assertEquals(
                 timeStamps[1],
                 getAccountContactsSyncDownTarget("AccountTimeStamp2", "ContactTimeStamp1", null).getLatestModificationTimeStamp(records)
         );
 
         // Get max time stamps based on fields AccountTimeStamp2 / ContactTimeStamp2
-        assertEquals(
+        Assert.assertEquals(
                 timeStamps[2],
                 getAccountContactsSyncDownTarget("AccountTimeStamp2", "ContactTimeStamp2", null).getLatestModificationTimeStamp(records)
         );
@@ -445,10 +426,11 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      * Test ParentChildrenSyncDownTarget's constructor that takes only a SOQL query
      * An exception is expected
      */
+    @Test
     public void testConstructorWithQuery() {
         try {
             new ParentChildrenSyncDownTarget("SELECT Name FROM Account");
-            fail("Exception should have been thrown");
+            Assert.fail("Exception should have been thrown");
         } catch (UnsupportedOperationException e) {
         }
     }
@@ -456,6 +438,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     /**
      * Sync down the test accounts and contacts, check smart store, check status during sync
      */
+    @Test
     public void testSyncDown() throws Exception {
         final int numberAccounts = 4;
         final int numberContactsPerAccount = 3;
@@ -478,6 +461,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     /**
      * Sync down the test accounts that do not have children contacts, check smart store, check status during sync
      */
+    @Test
     public void testSyncDownNoChildren() throws Exception {
         // Creating test accounts on server
         final int numberAccounts = 4;
@@ -496,6 +480,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      * Sync down the test accounts and contacts, make some local changes,
      * then sync down again with merge mode LEAVE_IF_CHANGED then sync down with merge mode OVERWRITE
      */
+    @Test
     public void testSyncDownWithoutOverwrite() throws Exception {
         final int numberAccounts = 4;
         final int numberContactsPerAccount = 3;
@@ -523,7 +508,6 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         Map<String, Map<String, Object>> accountIdToFieldsExpected = new HashMap<>(accountIdToFields);
         accountIdToFieldsExpected.putAll(accountIdToFieldsUpdated);
         checkDb(accountIdToFieldsExpected, ACCOUNTS_SOUP);
-
         for (String accountId : accountIdToFields.keySet()) {
             if (accountId.equals(accountIdUpdated)) {
                 checkDbStateFlags(Arrays.asList(accountId), false, true, false, ACCOUNTS_SOUP);
@@ -539,7 +523,6 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 checkDbStateFlags(accountIdContactIdToFields.get(accountId).keySet(), false, false, false, CONTACTS_SOUP);
             }
         }
-
 
         // Sync down again with MergeMode.OVERWRITE
         trySyncDown(SyncState.MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, numberAccounts, 1);
@@ -557,6 +540,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     /**
      * Sync down the test accounts and contacts, modify accounts, re-sync, make sure only the updated ones are downloaded
      */
+    @Test
     public void testReSyncWithUpdatedParents() throws Exception {
         final int numberAccounts = 4;
         final int numberContactsPerAccount = 3;
@@ -573,7 +557,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         SyncState sync = syncManager.getSyncStatus(syncId);
         SyncOptions options = sync.getOptions();
         long maxTimeStamp = sync.getMaxTimeStamp();
-        assertTrue("Wrong time stamp", maxTimeStamp > 0);
+        Assert.assertTrue("Wrong time stamp", maxTimeStamp > 0);
 
         // Make some remote change to accounts
         Map<String, Map<String, Object>> idToFieldsUpdated = makeRemoteChanges(accountIdToFields, Constants.ACCOUNT);
@@ -591,7 +575,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         checkDb(idToFieldsUpdated, ACCOUNTS_SOUP);
 
         // Check sync time stamp
-        assertTrue("Wrong time stamp", syncManager.getSyncStatus(syncId).getMaxTimeStamp() > maxTimeStamp);
+        Assert.assertTrue("Wrong time stamp", syncManager.getSyncStatus(syncId).getMaxTimeStamp() > maxTimeStamp);
     }
 
     /**
@@ -599,6 +583,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      * Modify an account and some of its contacts and modify other contacts (without changing parent account)
      * Make sure only the modified account and its modified contacts are re-synced
      */
+    @Test
     public void testReSyncWithUpdatedChildren() throws Exception {
         final int numberAccounts = 4;
         final int numberContactsPerAccount = 3;
@@ -615,7 +600,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         SyncState sync = syncManager.getSyncStatus(syncId);
         SyncOptions options = sync.getOptions();
         long maxTimeStamp = sync.getMaxTimeStamp();
-        assertTrue("Wrong time stamp", maxTimeStamp > 0);
+        Assert.assertTrue("Wrong time stamp", maxTimeStamp > 0);
 
         // Make some remote changes
         String[] accountIds = accountIdToFields.keySet().toArray(new String[0]);
@@ -640,14 +625,14 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         checkDb(accountIdContactIdToFields.get(otherAccountId), CONTACTS_SOUP); // updated contacts of non-updated account should not be updated in db
 
         // Check sync time stamp
-        assertTrue("Wrong time stamp", syncManager.getSyncStatus(syncId).getMaxTimeStamp() > maxTimeStamp);
+        Assert.assertTrue("Wrong time stamp", syncManager.getSyncStatus(syncId).getMaxTimeStamp() > maxTimeStamp);
     }
-
 
     /**
      * Sync down the test accounts and contacts
      * Delete account from server - run cleanResyncGhosts
      */
+    @Test
     public void testCleanResyncGhostsForParentChildrenTarget() throws Exception {
         final int numberAccounts = 4;
         final int numberContactsPerAccount = 3;
@@ -685,6 +670,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     /**
      * Create accounts and contacts locally, sync up with merge mode OVERWRITE, check smartstore and server afterwards
      */
+    @Test
     public void testSyncUpWithLocallyCreatedRecords() throws Exception {
         trySyncUpWithLocallyCreatedRecords(SyncState.MergeMode.OVERWRITE);
     }
@@ -692,6 +678,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     /**
      * Create accounts and contacts locally, sync up with mege mode LEAVE_IF_CHANGED, check smartstore and server afterwards
      */
+    @Test
     public void testSyncUpWithLocallyCreatedRecordsWithoutOverwrite() throws Exception {
         trySyncUpWithLocallyCreatedRecords(SyncState.MergeMode.LEAVE_IF_CHANGED);
     }
@@ -702,6 +689,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      * Run sync up
      * Check smartstore and server afterwards
      */
+    @Test
     public void testSyncUpWithLocallyCreatedParentRecords() throws Exception {
         // Create contacts on server
         final Map<String, String> contactIdToName = createRecordsOnServer(6, Constants.CONTACT);
@@ -759,7 +747,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
         // Check that contact use server account id in accountId field
         for (String contactId : contactIdToFieldsUpdated.keySet()) {
-            assertEquals("Wrong accountId", accountNameToServerId.get(contactIdToAccountName.get(contactId)), contactIdToFieldsUpdated.get(contactId).get(ACCOUNT_ID));
+            Assert.assertEquals("Wrong accountId", accountNameToServerId.get(contactIdToAccountName.get(contactId)), contactIdToFieldsUpdated.get(contactId).get(ACCOUNT_ID));
         }
 
         // Check contacts on server
@@ -775,6 +763,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      * Create contacts locally associated the accounts with them and run sync up
      * Check smartstore and server afterwards
      */
+    @Test
     public void testSyncUpWithLocallyCreatedChildrenRecords() throws Exception {
         // Create accounts on server
         final Map<String, String> accountIdToName = createRecordsOnServer(2, Constants.ACCOUNT);
@@ -816,6 +805,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedChild() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.NONE, Change.NONE, Change.UPDATE, Change.NONE);
     }
@@ -825,6 +815,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedChildRemotelyUpdatedChild() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.NONE, Change.NONE, Change.UPDATE, Change.UPDATE);
     }
@@ -834,6 +825,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedChildRemotelyDeletedChild() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.NONE, Change.NONE, Change.UPDATE, Change.DELETE);
     }
@@ -843,6 +835,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyDeletedChild() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.NONE, Change.NONE, Change.DELETE, Change.NONE);
     }
@@ -852,6 +845,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyDeletedChildRemotelyUpdatedChild() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.NONE, Change.NONE, Change.DELETE, Change.UPDATE);
     }
@@ -861,6 +855,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyDeletedChildRemotelyDeletedChild() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.NONE, Change.NONE, Change.DELETE, Change.DELETE);
     }
@@ -870,6 +865,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedParent() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.NONE, Change.NONE, Change.NONE);
     }
@@ -879,6 +875,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedParentRemotelyUpdatedParent() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.UPDATE, Change.NONE, Change.NONE);
     }
@@ -888,6 +885,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedParentRemotelyDeletedParent() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.DELETE, Change.NONE, Change.NONE);
     }
@@ -897,6 +895,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedParentUpdatedChild() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.NONE, Change.UPDATE, Change.NONE);
     }
@@ -906,6 +905,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedParentUpdatedChildRemotelyUpdatedChild() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.NONE, Change.UPDATE, Change.UPDATE);
     }
@@ -915,6 +915,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedParentUpdatedChildRemotelyDeletedChild() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.NONE, Change.UPDATE, Change.DELETE);
     }
@@ -924,6 +925,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedParentUpdatedChildRemotelyUpdatedParent() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.UPDATE, Change.UPDATE, Change.NONE);
     }
@@ -933,6 +935,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedParentUpdatedChildRemotelyUpdatedParentUpdatedChild() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.UPDATE, Change.UPDATE, Change.UPDATE);
     }
@@ -942,6 +945,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedParentUpdatedChildRemotelyUpdatedParentDeletedChild() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.UPDATE, Change.UPDATE, Change.DELETE);
     }
@@ -951,6 +955,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedParentUpdatedChildRemotelyDeletedParent() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.DELETE, Change.UPDATE, Change.NONE);
     }
@@ -960,6 +965,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedParentDeletedChild() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.NONE, Change.DELETE, Change.NONE);
     }
@@ -969,6 +975,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedParentDeletedChildRemotelyUpdatedChild() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.NONE, Change.DELETE, Change.UPDATE);
     }
@@ -978,6 +985,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedParentDeletedChildRemotelyDeletedChild() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.NONE, Change.DELETE, Change.DELETE);
     }
@@ -987,6 +995,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedParentDeletedChildRemotelyUpdatedParent() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.UPDATE, Change.DELETE, Change.NONE);
     }
@@ -996,6 +1005,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedParentDeletedChildRemotelyUpdatedParentUpdatedChild() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.UPDATE, Change.DELETE, Change.UPDATE);
     }
@@ -1005,6 +1015,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedParentDeletedChildRemotelyUpdatedParentDeletedChild() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.UPDATE, Change.DELETE, Change.DELETE);
     }
@@ -1014,6 +1025,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedParentDeletedChildRemotelyDeletedParent() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.DELETE, Change.DELETE, Change.NONE);
     }
@@ -1023,6 +1035,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyDeletedParent() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.DELETE, Change.NONE, Change.NONE, Change.NONE);
     }
@@ -1032,6 +1045,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyDeletedParentRemotelyUpdatedParent() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.DELETE, Change.UPDATE, Change.NONE, Change.NONE);
     }
@@ -1041,6 +1055,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyDeletedParentRemotelyDeletedParent() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.DELETE, Change.DELETE, Change.NONE, Change.NONE);
     }
@@ -1050,6 +1065,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyDeletedParentUpdatedChild() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.DELETE, Change.NONE, Change.UPDATE, Change.NONE);
     }
@@ -1059,6 +1075,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyDeletedParentUpdatedChildRemotelyUpdatedParent() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.DELETE, Change.UPDATE, Change.UPDATE, Change.NONE);
     }
@@ -1068,6 +1085,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyDeletedParentUpdatedChildRemotelyDeletedParent() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.DELETE, Change.DELETE, Change.UPDATE, Change.NONE);
     }
@@ -1077,6 +1095,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyDeletedParentDeletedChild() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.DELETE, Change.NONE, Change.DELETE, Change.NONE);
     }
@@ -1086,6 +1105,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyDeletedParentDeletedChildRemotelyUpdatedParent() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.DELETE, Change.UPDATE, Change.DELETE, Change.NONE);
     }
@@ -1095,6 +1115,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyDeletedParentDeletedChildRemotelyDeletedParent() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.DELETE, Change.DELETE, Change.DELETE, Change.NONE);
     }
@@ -1104,6 +1125,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedParentNoChildren() throws Exception {
         trySyncUpsWithVariousChanges(2, 0, Change.UPDATE, Change.NONE, Change.NONE, Change.NONE);
     }
@@ -1113,6 +1135,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedParentRemotelyUpdatedParentNoChildren() throws Exception {
         trySyncUpsWithVariousChanges(2, 0, Change.UPDATE, Change.UPDATE, Change.NONE, Change.NONE);
     }
@@ -1122,6 +1145,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyUpdatedParentRemotelyDeletedParentNoChildren() throws Exception {
         trySyncUpsWithVariousChanges(2, 0, Change.UPDATE, Change.DELETE, Change.NONE, Change.NONE);
     }
@@ -1131,6 +1155,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyDeletedParentNoChildren() throws Exception {
         trySyncUpsWithVariousChanges(2, 0, Change.DELETE, Change.NONE, Change.NONE, Change.NONE);
     }
@@ -1140,6 +1165,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyDeletedParentRemotelyUpdatedParentNoChildren() throws Exception {
         trySyncUpsWithVariousChanges(2, 0, Change.DELETE, Change.UPDATE, Change.NONE, Change.NONE);
     }
@@ -1149,6 +1175,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testSyncUpLocallyDeletedParentRemotelyDeletedParentNoChildren() throws Exception {
         trySyncUpsWithVariousChanges(2, 0, Change.DELETE, Change.DELETE, Change.NONE, Change.NONE);
     }
@@ -1456,7 +1483,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         String newRecordId = newIdToFields.keySet().toArray(new String[0])[0];
 
         // Make sure new id is really new
-        assertFalse("Record should have new id", newRecordId.equals(recordId));
+        Assert.assertFalse("Record should have new id", newRecordId.equals(recordId));
 
         // Make sure old id is gone from db and server
         checkDbDeleted(soupName, new String[]{recordId}, Constants.ID);
@@ -1582,18 +1609,18 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     private void tryGetDirtyRecordIds(JSONObject[] expectedRecords) throws JSONException {
         ParentChildrenSyncDownTarget target = getAccountContactsSyncDownTarget();
         SortedSet<String> dirtyRecordIds = target.getDirtyRecordIds(syncManager, ACCOUNTS_SOUP, Constants.ID);
-        assertEquals("Wrong number of dirty records", expectedRecords.length, dirtyRecordIds.size());
+        Assert.assertEquals("Wrong number of dirty records", expectedRecords.length, dirtyRecordIds.size());
         for (JSONObject expectedRecord : expectedRecords) {
-            assertTrue(dirtyRecordIds.contains(expectedRecord.getString(Constants.ID)));
+            Assert.assertTrue(dirtyRecordIds.contains(expectedRecord.getString(Constants.ID)));
         }
     }
 
     private void tryGetNonDirtyRecordIds(JSONObject[] expectedRecords) throws JSONException {
         ParentChildrenSyncDownTarget target = getAccountContactsSyncDownTarget();
         SortedSet<String> nonDirtyRecordIds = target.getNonDirtyRecordIds(syncManager, ACCOUNTS_SOUP, Constants.ID);
-        assertEquals("Wrong number of non-dirty records", expectedRecords.length, nonDirtyRecordIds.size());
+        Assert.assertEquals("Wrong number of non-dirty records", expectedRecords.length, nonDirtyRecordIds.size());
         for (JSONObject expectedRecord : expectedRecords) {
-            assertTrue(nonDirtyRecordIds.contains(expectedRecord.getString(Constants.ID)));
+            Assert.assertTrue(nonDirtyRecordIds.contains(expectedRecord.getString(Constants.ID)));
         }
     }
 
@@ -1665,9 +1692,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     private Map<JSONObject, JSONObject[]> createAccountsAndContactsLocally(String[] names, int numberOfContactsPerAccount) throws JSONException {
         JSONObject[] accounts = createAccountsLocally(names);
         String[] accountIds = JSONObjectHelper.pluck(accounts, Constants.ID).toArray(new String[0]);
-
         Map<String, JSONObject[]> accountIdsToContacts = createContactsForAccountsLocally(numberOfContactsPerAccount, accountIds);
-
         Map<JSONObject, JSONObject[]> accountToContacts = new HashMap<>();
         for (JSONObject account : accounts) {
             accountToContacts.put(account, accountIdsToContacts.get(account.getString(Constants.ID)));
@@ -1677,10 +1702,8 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
     private Map<String, JSONObject[]> createContactsForAccountsLocally(int numberOfContactsPerAccount, String... accountIds) throws JSONException {
         Map<String, JSONObject[]> accountIdToContacts = new HashMap<>();
-
         JSONObject attributes = new JSONObject();
         attributes.put(TYPE, Constants.CONTACT);
-
         for (String accountId : accountIds) {
             JSONObject[] contacts = new JSONObject[numberOfContactsPerAccount];
             for (int i = 0; i < numberOfContactsPerAccount; i++) {
@@ -1706,7 +1729,6 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 makeInClause(values),
                 orderBy == null ? "" : String.format(" ORDER BY {%s:%s} ASC", soupName, orderBy)
         );
-
         QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(sql, Integer.MAX_VALUE);
         JSONArray rows = smartStore.query(querySpec, 0);
         JSONObject[] arr = new JSONObject[rows.length()];
@@ -1719,17 +1741,14 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     protected void createAccountsAndContactsOnServer(int numberAccounts, int numberContactsPerAccount) throws Exception {
         accountIdToFields = new HashMap<>();
         accountIdContactIdToFields = new HashMap<>();
-
         Map<String, Map<String, Object>> refIdToFields = new HashMap<>();
         List<RestRequest.SObjectTree> accountTrees = new ArrayList<>();
         List<Map<String, Object>> listAccountFields = buildFieldsMapForRecords(numberAccounts, Constants.ACCOUNT, null);
         for (int i = 0; i<listAccountFields.size(); i++) {
             List<Map<String, Object>> listContactFields = buildFieldsMapForRecords(numberContactsPerAccount, Constants.CONTACT, null);
-
             String refIdAccount = "refAccount_" + i;
             Map<String, Object> accountFields = listAccountFields.get(i);
             refIdToFields.put(refIdAccount, accountFields);
-
             List<RestRequest.SObjectTree> contactTrees = new ArrayList<>();
             for (int j = 0; j<listContactFields.size(); j++) {
                 String refIdContact = refIdAccount + ":refContact_" + j;
@@ -1739,7 +1758,6 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
             }
             accountTrees.add(new RestRequest.SObjectTree(Constants.ACCOUNT, null, refIdAccount, accountFields, contactTrees));
         }
-
         RestRequest request = RestRequest.getRequestForSObjectTree(apiVersion, Constants.ACCOUNT, accountTrees);
 
         // Send request
@@ -1748,7 +1766,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         // Parse response
         Map<String, String> refIdToId = new HashMap<>();
         JSONArray results = response.asJSONObject().getJSONArray("results");
-        for (int i=0; i<results.length(); i++) {
+        for (int i = 0; i < results.length(); i++) {
             JSONObject result = results.getJSONObject(i);
             String refId = result.getString(RestRequest.REFERENCE_ID);
             String id = result.getString(Constants.LID);
@@ -1761,16 +1779,13 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
             String[] parts = refId.split(":");
             String accountId = refIdToId.get(parts[0]);
             String contactId = parts.length > 1 ? refIdToId.get(refId) : null;
-
             if (contactId == null) {
                 accountIdToFields.put(accountId, fields);
-            }
-            else {
+            } else {
                 if (!accountIdContactIdToFields.containsKey(accountId))
                     accountIdContactIdToFields.put(accountId, new HashMap<String, Map<String, Object>>());
                 accountIdContactIdToFields.get(accountId).put(contactId, fields);
             }
         }
     }
-
 }
