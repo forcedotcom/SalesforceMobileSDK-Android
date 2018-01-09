@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.store;
 
 import android.support.test.filters.LargeTest;
+import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
 
 import com.salesforce.androidsdk.analytics.security.Encryptor;
@@ -47,7 +48,7 @@ import org.junit.runners.JUnit4;
 /**
  * More load tests for smartstore - using external storage
  */
-@RunWith(JUnit4.class)
+@RunWith(AndroidJUnit4.class)
 @LargeTest
 public class SmartStoreOtherLoadExternalStorageTest extends SmartStoreOtherLoadTest {
 

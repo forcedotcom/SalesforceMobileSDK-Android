@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.store;
 
 import android.support.test.filters.LargeTest;
+import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
 
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
@@ -35,12 +36,11 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import org.json.JSONException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * More load tests for smartstore
  */
-@RunWith(JUnit4.class)
+@RunWith(AndroidJUnit4.class)
 @LargeTest
 public class SmartStoreOtherLoadTest extends SmartStoreLoadTestCase {
 
