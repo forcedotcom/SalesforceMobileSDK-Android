@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.phonegap;
 
 import android.support.test.filters.SmallTest;
-import android.util.Log;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -35,7 +34,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * Running javascript tests for force.js.
