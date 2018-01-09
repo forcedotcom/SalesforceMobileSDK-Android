@@ -61,10 +61,10 @@ aliases:
     command: ./gradlew :libs:SalesforceHybrid:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
     when: always
 
-  - &test-salesforce-react
+  - &build-salesforce-react
     <<: *lib-run-base
     name: Build SalesforceReact
-    command: |
+    command:  |
       ./gradlew :libs:SalesforceReact:assemble
     when: always
 
@@ -276,7 +276,7 @@ jobs:
       - run: *test-smart-store
       - run: *test-smart-sync
       - run: *test-salesforce-hybrid
-      - run: *test-salesforce-react
+      - run: *build-salesforce-react
       - store_artifacts:
           path: libs/SalesforceAnalytics/build/reports/
           destination: SalesforceAnalytics
@@ -361,13 +361,13 @@ jobs:
             ./gradlew :hybrid:HybridSampleApps:SmartSyncExplorerHybrid:assemble
       - store_artifacts:
           path: hybrid/HybridSampleApps/AccountEditor/build/outputs/apk/
-          destination: hyrbid-apps
+          destination: hybrid-apps
       - store_artifacts:
           path: hybrid/HybridSampleApps/NoteSync/build/outputs/apk/
-          destination: hyrbid-apps
+          destination: hybrid-apps
       - store_artifacts:
           path: hybrid/HybridSampleApps/SmartSyncExplorerHybrid/build/outputs/apk/
-          destination: hyrbid-apps
+          destination: hybrid-apps
       - save_cache: *save-gradle-cache
 
 
