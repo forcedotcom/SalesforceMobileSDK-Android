@@ -1,7 +1,0 @@
-FROM brandonpage/salesforce-mobilesdk-android-docker-primary:0.1.0
-
-MAINTAINER Brandon Page <bpage@salesforce.com>
-
-# Android API 24
-RUN echo "y" | sdkmanager "system-images;android-24;default;arm64-v8a"
-RUN echo "no" | avdmanager create avd -n test24 -k "system-images;android-24;default;arm64-v8a"
