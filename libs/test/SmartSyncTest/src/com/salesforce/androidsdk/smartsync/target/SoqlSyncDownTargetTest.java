@@ -27,52 +27,75 @@
 
 package com.salesforce.androidsdk.smartsync.target;
 
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
+
 import com.salesforce.androidsdk.smartsync.manager.SyncManagerTestCase;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 
+import junit.framework.Assert;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.util.Date;
 
 /**
- * Test class for SoqlSyncDownTarget
- *
+ * Test class for SoqlSyncDownTarget.
  */
+@RunWith(AndroidJUnit4.class)
+@SmallTest
 public class SoqlSyncDownTargetTest extends SyncManagerTestCase {
+
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        super.tearDown();
+    }
+
     /**
      * Test addFilterForReSync with various queries
      */
+    @Test
     public void testAddFilterForResync() {
         Date date = new Date();
         long dateLong = date.getTime();
         String dateStr = Constants.TIMESTAMP_FORMAT.format(date);
-        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr, SoqlSyncDownTarget.addFilterForReSync("select Id from Account", "LastModifiedDate", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where otherDate > " + dateStr, SoqlSyncDownTarget.addFilterForReSync("select Id from Account", "otherDate", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr + " limit 100", SoqlSyncDownTarget.addFilterForReSync("select Id from Account limit 100", "LastModifiedDate", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr + " and Name = 'John'", SoqlSyncDownTarget.addFilterForReSync("select Id from Account where Name = 'John'", "LastModifiedDate", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr + " and Name = 'John' limit 100", SoqlSyncDownTarget.addFilterForReSync("select Id from Account where Name = 'John' limit 100", "LastModifiedDate", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account where LastModifiedDate > " + dateStr, SoqlSyncDownTarget.addFilterForReSync("SELECT Id FROM Account", "LastModifiedDate", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account where LastModifiedDate > " + dateStr + " LIMIT 100", SoqlSyncDownTarget.addFilterForReSync("SELECT Id FROM Account LIMIT 100", "LastModifiedDate", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account WHERE LastModifiedDate > " + dateStr + " and Name = 'John'", SoqlSyncDownTarget.addFilterForReSync("SELECT Id FROM Account WHERE Name = 'John'", "LastModifiedDate", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account WHERE LastModifiedDate > " + dateStr + " and Name = 'John' LIMIT 100", SoqlSyncDownTarget.addFilterForReSync("SELECT Id FROM Account WHERE Name = 'John' LIMIT 100", "LastModifiedDate", dateLong));
+        Assert.assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr, SoqlSyncDownTarget.addFilterForReSync("select Id from Account", "LastModifiedDate", dateLong));
+        Assert.assertEquals("Wrong result for addFilterForReSync", "select Id from Account where otherDate > " + dateStr, SoqlSyncDownTarget.addFilterForReSync("select Id from Account", "otherDate", dateLong));
+        Assert.assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr + " limit 100", SoqlSyncDownTarget.addFilterForReSync("select Id from Account limit 100", "LastModifiedDate", dateLong));
+        Assert.assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr + " and Name = 'John'", SoqlSyncDownTarget.addFilterForReSync("select Id from Account where Name = 'John'", "LastModifiedDate", dateLong));
+        Assert.assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr + " and Name = 'John' limit 100", SoqlSyncDownTarget.addFilterForReSync("select Id from Account where Name = 'John' limit 100", "LastModifiedDate", dateLong));
+        Assert.assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account where LastModifiedDate > " + dateStr, SoqlSyncDownTarget.addFilterForReSync("SELECT Id FROM Account", "LastModifiedDate", dateLong));
+        Assert.assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account where LastModifiedDate > " + dateStr + " LIMIT 100", SoqlSyncDownTarget.addFilterForReSync("SELECT Id FROM Account LIMIT 100", "LastModifiedDate", dateLong));
+        Assert.assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account WHERE LastModifiedDate > " + dateStr + " and Name = 'John'", SoqlSyncDownTarget.addFilterForReSync("SELECT Id FROM Account WHERE Name = 'John'", "LastModifiedDate", dateLong));
+        Assert.assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account WHERE LastModifiedDate > " + dateStr + " and Name = 'John' LIMIT 100", SoqlSyncDownTarget.addFilterForReSync("SELECT Id FROM Account WHERE Name = 'John' LIMIT 100", "LastModifiedDate", dateLong));
     }
 
     /**
      * Test getSoqlForRemoteIds for SoqlSyncDownTarget
      */
+    @Test
     public void testGetSoqlForRemoteIds() {
         SoqlSyncDownTarget target = new SoqlSyncDownTarget("SELECT Name FROM Account WHERE Name = 'James Bond'");
-        assertEquals("SELECT Id FROM Account WHERE Name = 'James Bond'", target.getSoqlForRemoteIds());
+        Assert.assertEquals("SELECT Id FROM Account WHERE Name = 'James Bond'", target.getSoqlForRemoteIds());
     }
-
 
     /**
      * Test query with "From_customer__c" field
      */
+    @Test
     public void testQueryWithFromField() throws Exception {
         final String soqlQueryWithFromField = SOQLBuilder.getInstanceWithFields("From_customer__c, Id")
                 .from(Constants.ACCOUNT).limit(10).build();
         final SoqlSyncDownTarget target = new SoqlSyncDownTarget(soqlQueryWithFromField);
-        assertEquals("SELECT Id FROM Account limit 10", target.getSoqlForRemoteIds());
+        Assert.assertEquals("SELECT Id FROM Account limit 10", target.getSoqlForRemoteIds());
     }
-
 }

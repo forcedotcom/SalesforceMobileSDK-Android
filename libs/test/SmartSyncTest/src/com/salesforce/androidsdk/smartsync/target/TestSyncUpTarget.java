@@ -26,10 +26,7 @@
  */
 package com.salesforce.androidsdk.smartsync.target;
 
-import android.util.Pair;
-
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
-import com.salesforce.androidsdk.smartsync.util.Constants;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -37,13 +34,11 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-
 /**
- * Custom sync up target for tests
+ * Custom sync up target for tests.
  */
 public class TestSyncUpTarget extends SyncUpTarget {
 
@@ -54,16 +49,10 @@ public class TestSyncUpTarget extends SyncUpTarget {
 
     private final SyncBehavior syncBehavior;
 
-
     public enum SyncBehavior {
         SOFT_FAIL_ON_SYNC, // doesn't update server but doesn't throw exception, so sync should not end up in failed state
         HARD_FAIL_ON_SYNC, // doesn't update server and throw exception, so sync should end up in failed state
         NO_FAIL;
-    }
-
-    public TestSyncUpTarget(JSONObject target) throws JSONException {
-        super(target);
-        this.syncBehavior = SyncBehavior.valueOf(target.getString(SYNC_BEHAVIOR));
     }
 
     public TestSyncUpTarget(SyncBehavior syncBehavior) {
@@ -138,5 +127,4 @@ public class TestSyncUpTarget extends SyncUpTarget {
         public List<String> updatedRecordIds = new ArrayList<String>();
         public List<String> deletedRecordIds = new ArrayList<String>();
     }
-
 }
