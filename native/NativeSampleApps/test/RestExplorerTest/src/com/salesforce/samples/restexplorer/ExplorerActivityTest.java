@@ -37,6 +37,7 @@ import android.widget.TextView;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
@@ -155,6 +156,9 @@ public class ExplorerActivityTest {
              * prevent ClientManager from attempting a refresh with the bogus refresh token.
              */
             accountManager.setAuthToken(clientManager.getAccount(), AccountManager.KEY_AUTHTOKEN, TEST_ACCESS_TOKEN);
+            final UserAccount userAccount = UserAccountManager.getInstance().getCurrentUser();
+            final SalesforceAnalyticsManager analyticsManager = SalesforceAnalyticsManager.getInstance(userAccount);
+            analyticsManager.enableLogging(false);
         }
     }
 
@@ -638,7 +642,7 @@ public class ExplorerActivityTest {
 
         // Check result area
         waitForRender();
-        TextView resultText = (TextView) activity.findViewById(R.id.result_text);
+        final TextView resultText = activity.findViewById(R.id.result_text);
         Assert.assertTrue("Response not found in text area", resultText.getText().toString().indexOf(expectedResponse) > 0);
     }
 
