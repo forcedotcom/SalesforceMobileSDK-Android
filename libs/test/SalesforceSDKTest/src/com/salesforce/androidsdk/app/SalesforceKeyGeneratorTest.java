@@ -68,14 +68,14 @@ public class SalesforceKeyGeneratorTest {
 		final String id2 = SalesforceKeyGenerator.getUniqueId(KEY_2);
         // Output: 4*Math.Ceiling(((double)bytes.Length/3))) + length of getAddendum(KEY)
         // 4*Math.Ceiling(32/3)+14 = 58
-        Assert.assertEquals(id1.length(), 58);
+        Assert.assertEquals("The encoded string based on an AES-256 key should have 58 characters", id1.length(), 58);
 		Assert.assertEquals("Unique IDs with the same name should be the same", id1, id1Again);
         Assert.assertNotSame("Unique IDs with different names should be different", id1, id2);
 
         final String id3 = SalesforceKeyGenerator.getUniqueId(KEY_3, 128);
         final String id3Again = SalesforceKeyGenerator.getUniqueId(KEY_3, 128);
         // 4*Math.Ceiling(16/3)+14 = 38
-        Assert.assertEquals(id3.length(), 38);
+        Assert.assertEquals("The encoded string based on an AES-128 key should have 38 characters", id3.length(), 38);
         Assert.assertEquals("Unique IDs with the same name should be the same", id3, id3Again);
     }
 

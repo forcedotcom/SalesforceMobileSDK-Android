@@ -67,12 +67,12 @@ public class SalesforceKeyGenerator {
     private static Map<String, String> CACHED_ENCRYPTION_KEYS = new HashMap<>();
 
     /**
-     * Returns the unique ID being used.
+     * Returns the unique ID being used. The default key length is 256 bits.
      *
      * @param name Unique name associated with this unique ID.
      * @return Unique ID.
      */
-    public static synchronized String getUniqueId(String name) {
+    public static String getUniqueId(String name) {
         return getUniqueId(name, 256);
     }
 
@@ -84,7 +84,7 @@ public class SalesforceKeyGenerator {
      * @param length Key length
      * @return Unique ID.
      */
-    public static String getUniqueId(String name, int length) {
+    public static synchronized String getUniqueId(String name, int length) {
         if (UNIQUE_IDS.get(name) == null) {
             generateUniqueId(name, length);
         }
