@@ -46,8 +46,8 @@ import android.text.TextUtils;
 import android.util.Base64;
 
 /**
- * This class provides methods to generate a unique ID that can be used as an encryption
- * key. The key is derived from an AES-256 base using SecureRandom or AES-128 base using UUID.
+ * This class provides methods to generate a unique ID that can be used as an encryption key. The
+ * key is derived from an AES-256 base using SecureRandom or AES-128 base using UUID.
  *
  * @author bhariharan
  */
@@ -69,9 +69,7 @@ public class SalesforceKeyGenerator {
     /**
      * Returns the unique ID being used. The default key length is 256 bits.
      *
-     * @param name
-     *         Unique name associated with this unique ID.
-     *
+     * @param name Unique name associated with this unique ID.
      * @return Unique ID.
      */
     public static synchronized String getUniqueId(String name) {
@@ -81,11 +79,8 @@ public class SalesforceKeyGenerator {
     /**
      * Returns the unique ID being used based on the key length.
      *
-     * @param name
-     *         Unique name associated with this unique ID.
-     * @param length
-     *         Key length
-     *
+     * @param name Unique name associated with this unique ID.
+     * @param length Key length
      * @return Unique ID.
      */
     public static String getUniqueId(String name, int length) {
@@ -98,9 +93,7 @@ public class SalesforceKeyGenerator {
     /**
      * Returns the encryption key being used.
      *
-     * @param name
-     *         Unique name associated with this encryption key.
-     *
+     * @param name Unique name associated with this encryption key.
      * @return Encryption key.
      */
     public static synchronized String getEncryptionKey(String name) {
@@ -125,9 +118,7 @@ public class SalesforceKeyGenerator {
     /**
      * Returns the SHA-256 hashed value of the supplied private key.
      *
-     * @param privateKey
-     *         Private key.
-     *
+     * @param privateKey Private key.
      * @return SHA-256 hash.
      */
     public static String getSHA256Hash(String privateKey) {
@@ -136,7 +127,9 @@ public class SalesforceKeyGenerator {
         try {
             final MessageDigest digest = MessageDigest.getInstance(SHA256);
             byte[] hash = digest.digest(privateKeyBytes);
-            hashedString = Base64.encodeToString(hash, Base64.URL_SAFE | Base64.NO_WRAP | Base64.NO_PADDING);
+            hashedString =
+                    Base64.encodeToString(
+                            hash, Base64.URL_SAFE | Base64.NO_WRAP | Base64.NO_PADDING);
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Exception thrown while generating SHA-256 hash", e);
         }
@@ -158,7 +151,10 @@ public class SalesforceKeyGenerator {
     }
 
     private static void generateUniqueId(String name, int length) {
-        final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_FILE, 0);
+        final SharedPreferences prefs =
+                SalesforceSDKManager.getInstance()
+                        .getAppContext()
+                        .getSharedPreferences(SHARED_PREF_FILE, 0);
         final String id = prefs.getString(getSharedPrefKey(name), null);
 
         // Checks if we have a unique identifier stored.
@@ -172,12 +168,15 @@ public class SalesforceKeyGenerator {
                 final int outputKeyLength = length;
                 final SecureRandom secureRandom = SecureRandom.getInstance(SHA1PRNG);
 
-                // SecureRandom does not require seeding. It's automatically seeded from system entropy.
+                // SecureRandom does not require seeding. It's automatically seeded from system
+                // entropy.
                 final KeyGenerator keyGenerator = KeyGenerator.getInstance(AES);
                 keyGenerator.init(outputKeyLength, secureRandom);
 
                 // Generates a key based on the input length.
-                uniqueId = Base64.encodeToString(keyGenerator.generateKey().getEncoded(), Base64.NO_WRAP);
+                uniqueId =
+                        Base64.encodeToString(
+                                keyGenerator.generateKey().getEncoded(), Base64.NO_WRAP);
             } catch (NoSuchAlgorithmException e) {
                 SalesforceSDKLogger.e(TAG, "Security exception thrown", e);
 
