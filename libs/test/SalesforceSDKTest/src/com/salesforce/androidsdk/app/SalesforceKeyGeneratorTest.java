@@ -56,9 +56,8 @@ public class SalesforceKeyGeneratorTest {
 
     @Before
     public void setUp() throws Exception {
-        final Application app =
-                Instrumentation.newApplication(
-                        TestForceApp.class, InstrumentationRegistry.getTargetContext());
+        final Application app = Instrumentation.newApplication(TestForceApp.class,
+                                                               InstrumentationRegistry.getTargetContext());
         InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
     }
 
