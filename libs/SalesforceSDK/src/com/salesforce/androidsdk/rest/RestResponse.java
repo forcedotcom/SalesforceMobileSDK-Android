@@ -123,9 +123,8 @@ public class RestResponse {
 					responseAsBytes = new byte[0];
 					responseCharSet = StandardCharsets.UTF_8;
 				}
-
-				consumed = true;
 			} finally {
+				consumed = true;
 				response.close();
 			}
 		}
@@ -138,7 +137,7 @@ public class RestResponse {
 	public void consumeQuietly() {
 		try {
 			consume();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			SalesforceSDKLogger.e(TAG, "Content could not be written to a byte array", e);
 		}
 	}
