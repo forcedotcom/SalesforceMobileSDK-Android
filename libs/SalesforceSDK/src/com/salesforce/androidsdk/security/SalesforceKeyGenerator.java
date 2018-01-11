@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.security;
 
 import android.content.SharedPreferences;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Base64;
 
@@ -35,8 +36,11 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Locale;
@@ -62,6 +66,7 @@ public class SalesforceKeyGenerator {
     private static final String SHA256 = "SHA-256";
     private static final String SHA1PRNG = "SHA1PRNG";
     private static final String AES = "AES";
+    private static final String RSA = "RSA";
 
     private static Map<String, String> UNIQUE_IDS = new HashMap<>();
     private static Map<String, String> CACHED_ENCRYPTION_KEYS = new HashMap<>();
@@ -75,7 +80,6 @@ public class SalesforceKeyGenerator {
     public static String getUniqueId(String name) {
         return getUniqueId(name, 256);
     }
-
 
     /**
      * Returns the unique ID being used based on the key length.
@@ -135,6 +139,33 @@ public class SalesforceKeyGenerator {
         return hashedString;
     }
 
+    /**
+     * Generate a RSA-2048 keypair and get the encoded public key string
+     *
+     * @return RSA-2048 public key string
+     */
+    @Nullable
+    public static synchronized String getRSA2048PublicString(String name) {
+        final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_FILE, 0);
+        final String id = prefs.getString(getSharedPrefKey(name), null);
+
+        if (id != null) {
+            UNIQUE_IDS.put(name, id);
+            return id;
+        } else {
+            String publicKeybase64 = null;
+            KeyPair keyPair = getRSA2048KeyPair();
+
+            if (keyPair != null) {
+                PublicKey publicKey = keyPair.getPublic();
+                publicKeybase64 = Base64.encodeToString(publicKey.getEncoded(), Base64.NO_WRAP);
+            }
+            prefs.edit().putString(getSharedPrefKey(name), publicKeybase64).commit();
+            UNIQUE_IDS.put(name, publicKeybase64);
+            return publicKeybase64;
+        }
+    }
+
     private static void generateEncryptionKey(String name) {
         try {
             final String keyString = getUniqueId(name);
@@ -189,5 +220,18 @@ public class SalesforceKeyGenerator {
     private static String getAddendum(String name) {
         final String suffix = TextUtils.isEmpty(name) ? "" : name;
         return String.format(Locale.US, ADDENDUM, suffix);
+    }
+
+    @Nullable
+    private static KeyPair getRSA2048KeyPair() {
+        KeyPair kp = null;
+        try {
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(RSA);
+            keyPairGenerator.initialize(2048);
+            kp = keyPairGenerator.generateKeyPair();
+        } catch (NoSuchAlgorithmException e) {
+            SalesforceSDKLogger.e(TAG, "Security exception thrown", e);
+        }
+        return kp;
     }
 }

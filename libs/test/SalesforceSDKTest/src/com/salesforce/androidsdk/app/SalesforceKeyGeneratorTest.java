@@ -87,4 +87,13 @@ public class SalesforceKeyGeneratorTest {
         Assert.assertEquals("Encryption keys with the same name should be the same", id1, id1Again);
         Assert.assertNotSame("Encryption keys with different names should be different", id1, id2);
     }
+
+    @Test
+    public void testGetRSA2048PublicString() {
+        final String id1 = SalesforceKeyGenerator.getRSA2048PublicString(KEY_1);
+        final String id1Again = SalesforceKeyGenerator.getRSA2048PublicString(KEY_1);
+        final String id2 = SalesforceKeyGenerator.getRSA2048PublicString(KEY_2);
+        Assert.assertEquals("Public keys with the same name should be the same", id1, id1Again);
+        Assert.assertNotSame("Public keys with different names should be different", id1, id2);
+    }
 }
