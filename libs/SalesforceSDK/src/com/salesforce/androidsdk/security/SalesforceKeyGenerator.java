@@ -73,8 +73,20 @@ public class SalesforceKeyGenerator {
      * @return Unique ID.
      */
     public static synchronized String getUniqueId(String name) {
+        return getUniqueId(name, 256);
+    }
+
+
+    /**
+     * Returns the unique ID being used based on the key length.
+     *
+     * @param name Unique name associated with this unique ID.
+     * @param length Key length
+     * @return Unique ID.
+     */
+    public static String getUniqueId(String name, int length) {
         if (UNIQUE_IDS.get(name) == null) {
-            generateUniqueId(name);
+            generateUniqueId(name, length);
         }
         return UNIQUE_IDS.get(name);
     }
@@ -137,7 +149,7 @@ public class SalesforceKeyGenerator {
         }
     }
 
-    private static void generateUniqueId(String name) {
+    private static void generateUniqueId(String name, int length) {
         final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_FILE, 0);
         final String id = prefs.getString(getSharedPrefKey(name), null);
 
@@ -149,7 +161,7 @@ public class SalesforceKeyGenerator {
             try {
 
                 // Uses SecureRandom to generate an AES-256 key.
-                final int outputKeyLength = 256;
+                final int outputKeyLength = length;
                 final SecureRandom secureRandom = SecureRandom.getInstance(SHA1PRNG);
 
                 // SecureRandom does not require seeding. It's automatically seeded from system entropy.
