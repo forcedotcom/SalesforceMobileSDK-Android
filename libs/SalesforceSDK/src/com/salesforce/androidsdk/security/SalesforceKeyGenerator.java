@@ -26,6 +26,13 @@
  */
 package com.salesforce.androidsdk.security;
 
+import android.content.SharedPreferences;
+import android.text.TextUtils;
+import android.util.Base64;
+
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
+
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -37,13 +44,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import javax.crypto.KeyGenerator;
-
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.util.SalesforceSDKLogger;
-
-import android.content.SharedPreferences;
-import android.text.TextUtils;
-import android.util.Base64;
 
 /**
  * This class provides methods to generate a unique ID that can be used as an encryption
@@ -67,30 +67,14 @@ public class SalesforceKeyGenerator {
     private static Map<String, String> CACHED_ENCRYPTION_KEYS = new HashMap<>();
 
     /**
-     * Returns the unique ID being used. The default key length is 256 bits.
+     * Returns the unique ID being used.
      *
-     * @param name
-     *         Unique name associated with this unique ID.
-     *
+     * @param name Unique name associated with this unique ID.
      * @return Unique ID.
      */
     public static synchronized String getUniqueId(String name) {
-        return getUniqueId(name, 256);
-    }
-
-    /**
-     * Returns the unique ID being used based on the key length.
-     *
-     * @param name
-     *         Unique name associated with this unique ID.
-     * @param length
-     *         Key length
-     *
-     * @return Unique ID.
-     */
-    public static String getUniqueId(String name, int length) {
         if (UNIQUE_IDS.get(name) == null) {
-            generateUniqueId(name, length);
+            generateUniqueId(name);
         }
         return UNIQUE_IDS.get(name);
     }
@@ -98,9 +82,7 @@ public class SalesforceKeyGenerator {
     /**
      * Returns the encryption key being used.
      *
-     * @param name
-     *         Unique name associated with this encryption key.
-     *
+     * @param name Unique name associated with this encryption key.
      * @return Encryption key.
      */
     public static synchronized String getEncryptionKey(String name) {
@@ -119,15 +101,13 @@ public class SalesforceKeyGenerator {
         final SecureRandom secureRandom = new SecureRandom();
         byte[] random = new byte[128];
         secureRandom.nextBytes(random);
-        return Base64.encodeToString(random, Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
+        return Base64.encodeToString(random,Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
     }
 
     /**
      * Returns the SHA-256 hashed value of the supplied private key.
      *
-     * @param privateKey
-     *         Private key.
-     *
+     * @param privateKey Private key.
      * @return SHA-256 hash.
      */
     public static String getSHA256Hash(String privateKey) {
@@ -137,7 +117,7 @@ public class SalesforceKeyGenerator {
             final MessageDigest digest = MessageDigest.getInstance(SHA256);
             byte[] hash = digest.digest(privateKeyBytes);
             hashedString = Base64.encodeToString(hash, Base64.URL_SAFE | Base64.NO_WRAP | Base64.NO_PADDING);
-        } catch (Exception e) {
+        } catch(Exception e) {
             SalesforceSDKLogger.e(TAG, "Exception thrown while generating SHA-256 hash", e);
         }
         return hashedString;
@@ -157,7 +137,7 @@ public class SalesforceKeyGenerator {
         }
     }
 
-    private static void generateUniqueId(String name, int length) {
+    private static void generateUniqueId(String name) {
         final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_FILE, 0);
         final String id = prefs.getString(getSharedPrefKey(name), null);
 
@@ -168,15 +148,15 @@ public class SalesforceKeyGenerator {
             String uniqueId;
             try {
 
-                // Uses SecureRandom to generate an AES key based on input length.
-                final int outputKeyLength = length;
+                // Uses SecureRandom to generate an AES-256 key.
+                final int outputKeyLength = 256;
                 final SecureRandom secureRandom = SecureRandom.getInstance(SHA1PRNG);
 
                 // SecureRandom does not require seeding. It's automatically seeded from system entropy.
                 final KeyGenerator keyGenerator = KeyGenerator.getInstance(AES);
                 keyGenerator.init(outputKeyLength, secureRandom);
 
-                // Generates a key based on the input length.
+                // Generates a 256-bit key.
                 uniqueId = Base64.encodeToString(keyGenerator.generateKey().getEncoded(), Base64.NO_WRAP);
             } catch (NoSuchAlgorithmException e) {
                 SalesforceSDKLogger.e(TAG, "Security exception thrown", e);

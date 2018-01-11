@@ -26,20 +26,20 @@
  */
 package com.salesforce.androidsdk.app;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import android.app.Application;
+import android.app.Instrumentation;
+import android.support.test.InstrumentationRegistry;
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 
 import junit.framework.Assert;
 
-import android.app.Application;
-import android.app.Instrumentation;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.filters.SmallTest;
-import android.support.test.runner.AndroidJUnit4;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Tests for {@link SalesforceKeyGenerator}.
@@ -52,34 +52,24 @@ public class SalesforceKeyGeneratorTest {
 
     private static final String KEY_1 = "key_1";
     private static final String KEY_2 = "key_2";
-    private static final String KEY_3 = "key_3";
 
     @Before
-    public void setUp() throws Exception {
-        final Application app = Instrumentation.newApplication(TestForceApp.class,
-                                                               InstrumentationRegistry.getTargetContext());
-        InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
-    }
+	public void setUp() throws Exception {
+		final Application app = Instrumentation.newApplication(TestForceApp.class,
+				InstrumentationRegistry.getTargetContext());
+		InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
+	}
 
-    @Test
-    public void testGetUniqueId() {
-        final String id1 = SalesforceKeyGenerator.getUniqueId(KEY_1);
+	@Test
+	public void testGetUniqueId() {
+		final String id1 = SalesforceKeyGenerator.getUniqueId(KEY_1);
         final String id1Again = SalesforceKeyGenerator.getUniqueId(KEY_1);
-        final String id2 = SalesforceKeyGenerator.getUniqueId(KEY_2);
-        // 4*Math.Ceiling(((double)bytes.Length/3))) + length of getAddendum(KEY)
-        // 4*Math.Ceiling(32/3)+14 = 58
-        Assert.assertEquals(id1.length(), 58);
-        Assert.assertEquals("Unique IDs with the same name should be the same", id1, id1Again);
+		final String id2 = SalesforceKeyGenerator.getUniqueId(KEY_2);
+		Assert.assertEquals("Unique IDs with the same name should be the same", id1, id1Again);
         Assert.assertNotSame("Unique IDs with different names should be different", id1, id2);
+	}
 
-        final String id3 = SalesforceKeyGenerator.getUniqueId(KEY_3, 128);
-        final String id3Again = SalesforceKeyGenerator.getUniqueId(KEY_3, 128);
-        // 4*Math.Ceiling(16/3)+14 = 38
-        Assert.assertEquals(id3.length(), 38);
-        Assert.assertEquals("Unique IDs with the same name should be the same", id3, id3Again);
-    }
-
-    @Test
+	@Test
     public void testGetEncryptionKey() {
         final String id1 = SalesforceKeyGenerator.getEncryptionKey(KEY_1);
         final String id1Again = SalesforceKeyGenerator.getEncryptionKey(KEY_1);
