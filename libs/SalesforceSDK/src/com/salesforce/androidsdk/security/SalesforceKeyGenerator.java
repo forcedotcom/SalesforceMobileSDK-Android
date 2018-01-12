@@ -31,33 +31,22 @@ import android.os.Build;
 import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
-import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Base64;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.security.cert.CertificateException;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.KeySpec;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Locale;
@@ -166,7 +155,6 @@ public class SalesforceKeyGenerator {
      * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
      * @return RSA public key string.
      */
-    @Nullable
     public static synchronized String getRSAPublicString(String name, int length) {
         final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(ASYMM_SHARED_PREF_FILE, 0);
         final String id = prefs.getString(getSharedPrefKey(name), null);
@@ -193,7 +181,6 @@ public class SalesforceKeyGenerator {
      * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
      * @return A private key for decryption.
      */
-    @Nullable
     public static synchronized PrivateKey getRSAPrivateKey(String name, int length) {
         PrivateKey privateKey = null;
         KeyPair keyPair = getKeyPair(name, length);
@@ -272,6 +259,7 @@ public class SalesforceKeyGenerator {
                         .build());
                 kp = kpg.generateKeyPair();
             } else {
+                // TODO: Remove the 'else' block once minVersion > 23.
                 Calendar start = Calendar.getInstance();
                 Calendar end = Calendar.getInstance();
                 end.add(Calendar.YEAR, 30);
