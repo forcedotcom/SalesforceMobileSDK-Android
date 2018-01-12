@@ -163,7 +163,7 @@ public class SalesforceKeyGenerator {
     /**
      * Generate a keypair and get the encoded public key string.
      *
-     * @param name Unique name associated with this unique ID.
+     * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
      * @return RSA public key string.
      */
     @Nullable
@@ -190,7 +190,7 @@ public class SalesforceKeyGenerator {
     /**
      * Get the private key from the generated key pair.
      *
-     * @param name Unique name associated with this unique ID.
+     * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
      * @return A private key for decryption.
      */
     @Nullable
