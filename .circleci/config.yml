@@ -108,6 +108,7 @@ aliases:
     key: *gradle-cache-key
     paths:
       - .gradle
+      - ~/.gradle
 
   - &save-node-cache
     key: node-cache-{{ checksum "package.json" }}
@@ -165,10 +166,12 @@ jobs:
       - CURRENT_LIB: "SalesforceAnalytics"
     steps:
       - *attach_workspace
+      - restore_cache: *restore-gradle-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
       - run: *run-unit-tests
+      - save_cache: *save-gradle-cache
       - store_artifacts:
           path: libs/SalesforceAnalytics/build/reports/
           destination: SalesforceAnalytics
@@ -182,11 +185,13 @@ jobs:
       - CURRENT_LIB: "SalesforceSDK"
     steps:
       - *attach_workspace
+      - restore_cache: *restore-gradle-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
       - run: *run-unit-tests
       - store_artifacts:
+      - save_cache: *save-gradle-cache
           path: libs/SalesforceSDK/build/reports/
           destination: SalesforceSDK
       - store_test_results:
@@ -199,10 +204,12 @@ jobs:
       - CURRENT_LIB: "SmartStore"
     steps:
       - *attach_workspace
+      - restore_cache: *restore-gradle-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
       - run: *run-unit-tests
+      - save_cache: *save-gradle-cache
       - store_artifacts:
           path: libs/SmartStore/build/reports/
           destination: SmartStore
@@ -216,10 +223,12 @@ jobs:
       - CURRENT_LIB: "SmartSync"
     steps:
       - *attach_workspace
+      - restore_cache: *restore-gradle-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
       - run: *run-unit-tests
+      - save_cache: *save-gradle-cache
       - store_artifacts:
           path: libs/SmartSync/build/reports/
           destination: SmartSync
@@ -233,10 +242,12 @@ jobs:
       - CURRENT_LIB: "SalesforceHybrid"
     steps:
       - *attach_workspace
+      - restore_cache: *restore-gradle-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
       - run: *run-unit-tests
+      - save_cache: *save-gradle-cache
       - store_artifacts:
           path: libs/SalesforceHybrid/build/reports/
           destination: SalesforceHybrid
