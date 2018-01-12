@@ -37,6 +37,7 @@ import android.util.Base64;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -44,12 +45,15 @@ import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.UnrecoverableEntryException;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Locale;
@@ -158,10 +162,13 @@ public class SalesforceKeyGenerator {
      */
     public static synchronized String getRSAPublicString(String name, int length) {
         String publicKeyBase64 = null;
-        KeyPair keyPair = getKeyPair(name, length);
-        if (keyPair != null) {
-            PublicKey publicKey = keyPair.getPublic();
-            publicKeyBase64 = Base64.encodeToString(publicKey.getEncoded(), Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
+        createRSAKeys(name, length);
+        try {
+            publicKeyBase64 = Base64.encodeToString(loadKeyStore().getCertificate(name).getPublicKey().getEncoded(),
+                    Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
+
+        } catch (Exception e) {
+            SalesforceSDKLogger.e(TAG, "Security exception thrown", e);
         }
         return publicKeyBase64;
     }
@@ -174,9 +181,16 @@ public class SalesforceKeyGenerator {
      */
     public static synchronized PrivateKey getRSAPrivateKey(String name, int length) {
         PrivateKey privateKey = null;
-        KeyPair keyPair = getKeyPair(name, length);
-        if (keyPair != null) {
-            privateKey = keyPair.getPrivate();
+        createRSAKeys(name, length);
+        try {
+            KeyStore.Entry entry = loadKeyStore().getEntry(name, null);
+            if (entry == null) {
+                return null;
+            }
+            privateKey = ((KeyStore.PrivateKeyEntry) entry).getPrivateKey();
+
+        } catch (Exception e) {
+            SalesforceSDKLogger.e(TAG, "Security exception thrown", e);
         }
         return privateKey;
     }
@@ -237,12 +251,9 @@ public class SalesforceKeyGenerator {
         return String.format(Locale.US, ADDENDUM, suffix);
     }
 
-    private static KeyPair getKeyPair(String name, int length) {
-        KeyPair kp = null;
-
+    private static void createRSAKeys(String name, int length) {
         try {
-            KeyStore keyStore = KeyStore.getInstance(ANDROID_KEYSTORE);
-            keyStore.load(null);
+            KeyStore keyStore = loadKeyStore();
 
             if (!keyStore.containsAlias(name)) {
                 // Generate a new key pair
@@ -254,7 +265,7 @@ public class SalesforceKeyGenerator {
                             KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
                             .setKeySize(length)
                             .build());
-                    kp = kpg.generateKeyPair();
+                    kpg.generateKeyPair();
                 } else {
                     // TODO: Remove the 'else' block once minVersion > 23.
                     Calendar start = Calendar.getInstance();
@@ -270,23 +281,18 @@ public class SalesforceKeyGenerator {
                             .build();
                     KeyPairGenerator kpg = KeyPairGenerator.getInstance(RSA, ANDROID_KEYSTORE);
                     kpg.initialize(spec);
-                    kp = kpg.generateKeyPair();
-                }
-                // Assigns the given key to the given alias
-                keyStore.setKeyEntry(name, kp.getPrivate(), null, null);
-            } else {
-                // Get the key from the KeyStore
-                Key key = keyStore.getKey(name, null);
-                if (key instanceof PrivateKey) {
-                    Certificate cert = keyStore.getCertificate(name);
-                    return new KeyPair(cert.getPublicKey(), (PrivateKey) key);
-                } else {
-                    return null;
+                    kpg.generateKeyPair();
                 }
             }
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Security exception thrown", e);
         }
-        return kp;
+    }
+
+    private static KeyStore loadKeyStore() throws CertificateException, NoSuchAlgorithmException,
+            IOException, KeyStoreException {
+        KeyStore keyStore = KeyStore.getInstance(ANDROID_KEYSTORE);
+        keyStore.load(null);
+        return keyStore;
     }
 }
