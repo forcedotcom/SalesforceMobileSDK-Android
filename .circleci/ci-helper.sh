@@ -16,7 +16,6 @@ function envSetup {
     gem install danger-junit
     gem install danger-android_lint
     gem install danger-jacoco
-    gem list -d
 }
 
 function printTestsToRun {
