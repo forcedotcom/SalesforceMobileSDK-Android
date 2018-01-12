@@ -95,13 +95,7 @@ aliases:
       - node-cache- # used if checksum fails
 
   - &save-gradle-cache
-    key: gradle-cache-{{ checksum "build.gradle" }-{ checksum "gradle/wrapper/gradle-wrapper.properties" }-{
-          checksum "lib/SalesforceAnalytics/build.gradle" }-{
-          checksum "lib/SalesforceSDK/build.gradle" }-{
-          checksum "lib/SmartStore/build.gradle" }-{
-          checksum "lib/SmartSync/build.gradle" }-{
-          checksum "lib/SalesforceHybrid/build.gradle" }-{
-          checksum "lib/SalesforceReact/build.gradle" }}
+    key: gradle-cache-{{ checksum "build.gradle" }-{ checksum "gradle/wrapper/gradle-wrapper.properties" }-{ checksum "lib/SalesforceAnalytics/build.gradle" }-{ checksum "lib/SalesforceSDK/build.gradle" }-{ checksum "lib/SmartStore/build.gradle" }-{ checksum "lib/SmartSync/build.gradle" }-{ checksum "lib/SalesforceHybrid/build.gradle" }-{ checksum "lib/SalesforceReact/build.gradle" }}
     paths:
       - .gradle
 
