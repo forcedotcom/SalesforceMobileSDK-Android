@@ -40,13 +40,16 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.cert.Certificate;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Locale;
@@ -66,7 +69,6 @@ public class SalesforceKeyGenerator {
 
     private static final String TAG = "SalesforceKeyGenerator";
     private static final String SHARED_PREF_FILE = "identifier.xml";
-    private static final String ASYMM_SHARED_PREF_FILE = "asymm-identifier.xml";
     private static final String ID_SHARED_PREF_KEY = "id_%s";
     private static final String ADDENDUM = "addendum_%s";
     private static final String UTF8 = "UTF-8";
@@ -78,7 +80,6 @@ public class SalesforceKeyGenerator {
     private static final String ANDROID_KEYSTORE = "AndroidKeyStore";
 
     private static Map<String, String> UNIQUE_IDS = new HashMap<>();
-    private static Map<String, String> RSA_IDS = new HashMap<>();
     private static Map<String, String> CACHED_ENCRYPTION_KEYS = new HashMap<>();
 
     /**
@@ -156,23 +157,13 @@ public class SalesforceKeyGenerator {
      * @return RSA public key string.
      */
     public static synchronized String getRSAPublicString(String name, int length) {
-        final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(ASYMM_SHARED_PREF_FILE, 0);
-        final String id = prefs.getString(getSharedPrefKey(name), null);
-
-        if (id != null) {
-            RSA_IDS.put(name, id);
-            return id;
-        } else {
-            String publicKeyBase64 = null;
-            KeyPair keyPair = getKeyPair(name, length);
-            if (keyPair != null) {
-                PublicKey publicKey = keyPair.getPublic();
-                publicKeyBase64 = Base64.encodeToString(publicKey.getEncoded(), Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
-            }
-            prefs.edit().putString(getSharedPrefKey(name), publicKeyBase64).commit();
-            RSA_IDS.put(name, publicKeyBase64);
-            return publicKeyBase64;
+        String publicKeyBase64 = null;
+        KeyPair keyPair = getKeyPair(name, length);
+        if (keyPair != null) {
+            PublicKey publicKey = keyPair.getPublic();
+            publicKeyBase64 = Base64.encodeToString(publicKey.getEncoded(), Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
         }
+        return publicKeyBase64;
     }
 
     /**
@@ -248,32 +239,50 @@ public class SalesforceKeyGenerator {
 
     private static KeyPair getKeyPair(String name, int length) {
         KeyPair kp = null;
+
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                KeyPairGenerator kpg = KeyPairGenerator.getInstance(
-                        KeyProperties.KEY_ALGORITHM_RSA, ANDROID_KEYSTORE);
-                kpg.initialize(new KeyGenParameterSpec.Builder(
-                        name,
-                        KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
-                        .setKeySize(length)
-                        .build());
-                kp = kpg.generateKeyPair();
+            KeyStore keyStore = KeyStore.getInstance(ANDROID_KEYSTORE);
+            keyStore.load(null);
+
+            if (!keyStore.containsAlias(name)) {
+                // Generate a new key pair
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    KeyPairGenerator kpg = KeyPairGenerator.getInstance(
+                            KeyProperties.KEY_ALGORITHM_RSA, ANDROID_KEYSTORE);
+                    kpg.initialize(new KeyGenParameterSpec.Builder(
+                            name,
+                            KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
+                            .setKeySize(length)
+                            .build());
+                    kp = kpg.generateKeyPair();
+                } else {
+                    // TODO: Remove the 'else' block once minVersion > 23.
+                    Calendar start = Calendar.getInstance();
+                    Calendar end = Calendar.getInstance();
+                    end.add(Calendar.YEAR, 30);
+                    KeyPairGeneratorSpec spec = new KeyPairGeneratorSpec.Builder(SalesforceSDKManager.getInstance().getAppContext())
+                            .setAlias(name)
+                            .setSubject(new X500Principal("CN=" + name))
+                            .setSerialNumber(BigInteger.TEN)
+                            .setStartDate(start.getTime())
+                            .setEndDate(end.getTime())
+                            .setKeySize(length)
+                            .build();
+                    KeyPairGenerator kpg = KeyPairGenerator.getInstance(RSA, ANDROID_KEYSTORE);
+                    kpg.initialize(spec);
+                    kp = kpg.generateKeyPair();
+                }
+                // Assigns the given key to the given alias
+                keyStore.setKeyEntry(name, kp.getPrivate(), null, null);
             } else {
-                // TODO: Remove the 'else' block once minVersion > 23.
-                Calendar start = Calendar.getInstance();
-                Calendar end = Calendar.getInstance();
-                end.add(Calendar.YEAR, 30);
-                KeyPairGeneratorSpec spec = new KeyPairGeneratorSpec.Builder(SalesforceSDKManager.getInstance().getAppContext())
-                        .setAlias(name)
-                        .setSubject(new X500Principal("CN=" + name))
-                        .setSerialNumber(BigInteger.TEN)
-                        .setStartDate(start.getTime())
-                        .setEndDate(end.getTime())
-                        .setKeySize(length)
-                        .build();
-                KeyPairGenerator kpg = KeyPairGenerator.getInstance(RSA, ANDROID_KEYSTORE);
-                kpg.initialize(spec);
-                kp = kpg.generateKeyPair();
+                // Get the key from the KeyStore
+                Key key = keyStore.getKey(name, null);
+                if (key instanceof PrivateKey) {
+                    Certificate cert = keyStore.getCertificate(name);
+                    return new KeyPair(cert.getPublicKey(), (PrivateKey) key);
+                } else {
+                    return null;
+                }
             }
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Security exception thrown", e);
