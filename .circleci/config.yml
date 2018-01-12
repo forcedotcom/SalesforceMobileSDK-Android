@@ -85,7 +85,7 @@ aliases:
     when: always
 
   - &gradle-cache-key
-    gradle-cache-{{ checksum "build.gradle" }}-{{
+    gradle-cache-v2-{{ checksum "build.gradle" }}-{{
       checksum "gradle/wrapper/gradle-wrapper.properties" }}-{{
       checksum "libs/SalesforceAnalytics/build.gradle" }}-{{
       checksum "libs/SalesforceSDK/build.gradle" }}-{{
@@ -97,24 +97,29 @@ aliases:
   - &restore-gradle-cache
     keys:
       - *gradle-cache-key
-      - gradle-cache- # used if checksum fails
 
   - &restore-node-cache
     keys:
       - node-cache-{{ checksum "package.json" }}
-      - node-cache- # used if checksum fails
+
+  - &ruby-gem-cache
+    keys: ruby-gem-cache-{{ .BuildNum }}
 
   - &save-gradle-cache
     key: *gradle-cache-key
     paths:
       - .gradle
-      - ~/.gradle
+      - /home/circleci/.gradle
 
   - &save-node-cache
     key: node-cache-{{ checksum "package.json" }}
     paths:
       - node_modules
 
+  - &save-ruby-cache
+    key: ruby-gem-cache-{{ .BuildNum }}
+    paths:
+      - /home/circleci/.rubies
 
 defaults: &defaults
   working_directory: ~/SalesforceMobileSDK-Android
