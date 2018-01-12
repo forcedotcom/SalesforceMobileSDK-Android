@@ -102,8 +102,10 @@ aliases:
     keys:
       - node-cache-{{ checksum "package.json" }}
 
-  - &ruby-gem-cache
-    keys: ruby-gem-cache-{{ .BuildNum }}
+  - &restore-ruby-cache
+    keys:
+      - ruby-gem-cache-{{ .BuildNum }}
+      - ruby-gem-cache-
 
   - &save-gradle-cache
     key: *gradle-cache-key
@@ -153,10 +155,12 @@ jobs:
       - run: *determine-tests-to-run
       - restore_cache: *restore-gradle-cache
       - restore_cache: *restore-node-cache
+      - restore_cache: *restore-ruby-cache
       - run: *setup-env
       - run: *android-lint
       - save_cache: *save-gradle-cache
       - save_cache: *save-node-cache
+      - save_cache: *save-ruby-cache
       - run: *run-danger
       - persist_to_workspace:
           # Must be an absolute path, or relative path from working_directory
@@ -172,6 +176,7 @@ jobs:
     steps:
       - *attach_workspace
       - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
@@ -191,6 +196,7 @@ jobs:
     steps:
       - *attach_workspace
       - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
@@ -210,6 +216,7 @@ jobs:
     steps:
       - *attach_workspace
       - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
@@ -229,6 +236,7 @@ jobs:
     steps:
       - *attach_workspace
       - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
@@ -248,6 +256,7 @@ jobs:
     steps:
       - *attach_workspace
       - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
@@ -285,8 +294,8 @@ jobs:
       - restore_cache: *restore-gradle-cache
       - restore_cache: *restore-node-cache
       - run: *setup-env
-      - save_cache: *save-gradle-cache
       - save_cache: *save-node-cache
+      - save_cache: *save-ruby-cache
       - run: *launch-emulator
       - run: *android-lint
       - run: *wait-for-emulator
@@ -296,6 +305,7 @@ jobs:
       - run: *test-smart-sync
       - run: *test-salesforce-hybrid
       - run: *build-salesforce-react
+      - save_cache: *save-gradle-cache
       - store_artifacts:
           path: libs/SalesforceAnalytics/build/reports/
           destination: SalesforceAnalytics
