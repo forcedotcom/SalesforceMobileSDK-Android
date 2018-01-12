@@ -167,7 +167,7 @@ public class SalesforceKeyGenerator {
             KeyPair keyPair = getKeyPair(name, length);
             if (keyPair != null) {
                 PublicKey publicKey = keyPair.getPublic();
-                publicKeyBase64 = Base64.encodeToString(publicKey.getEncoded(), Base64.NO_WRAP);
+                publicKeyBase64 = Base64.encodeToString(publicKey.getEncoded(), Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
             }
             prefs.edit().putString(getSharedPrefKey(name), publicKeyBase64).commit();
             RSA_IDS.put(name, publicKeyBase64);
