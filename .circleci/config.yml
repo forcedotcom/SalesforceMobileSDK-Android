@@ -85,9 +85,9 @@ aliases:
     when: always
 
   - &gradle-cache-key
-    gradle-cache-{{ checksum "build.gradle" }-{{
+    gradle-cache-{{ checksum "build.gradle" }}-{{
               checksum "gradle/wrapper/gradle-wrapper.properties" }}-{{
-              checksum "lib/SalesforceAnalytics/build.gradle" }]-{{
+              checksum "lib/SalesforceAnalytics/build.gradle" }}-{{
               checksum "lib/SalesforceSDK/build.gradle" }}-{{
               checksum "lib/SmartStore/build.gradle" }}-{{
               checksum "lib/SmartSync/build.gradle" }}-{{
