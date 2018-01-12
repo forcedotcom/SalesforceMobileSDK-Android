@@ -9,12 +9,6 @@ function envSetup {
     cordova telemetry off
 
     ./install.sh
-
-    gem install bundler
-    gem install danger
-    gem install danger-junit
-    gem install danger-android_lint
-    gem install danger-jacoco
 }
 
 function printTestsToRun {
@@ -84,6 +78,12 @@ function runTests {
 
 function runDanger {
     if [ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
+        gem install bundler
+        gem install danger
+        gem install danger-junit
+        gem install danger-android_lint
+        gem install danger-jacoco
+
         if [ -z "${CURRENT_LIB}" ]; then
             DANGER_GITHUB_API_TOKEN="c21349d8a97e1bf9cdd9""301fd949a83db862216b" danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
         else

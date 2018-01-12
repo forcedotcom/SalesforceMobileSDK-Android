@@ -161,7 +161,6 @@ jobs:
       - CURRENT_LIB: "SalesforceAnalytics"
     steps:
       - *attach_workspace
-      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
@@ -179,7 +178,6 @@ jobs:
       - CURRENT_LIB: "SalesforceSDK"
     steps:
       - *attach_workspace
-      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
@@ -197,7 +195,6 @@ jobs:
       - CURRENT_LIB: "SmartStore"
     steps:
       - *attach_workspace
-      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
@@ -215,7 +212,6 @@ jobs:
       - CURRENT_LIB: "SmartSync"
     steps:
       - *attach_workspace
-      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
@@ -233,7 +229,6 @@ jobs:
       - CURRENT_LIB: "SalesforceHybrid"
     steps:
       - *attach_workspace
-      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
@@ -251,7 +246,6 @@ jobs:
       - CURRENT_LIB: "SalesforceReact"
     steps:
       - *attach_workspace
-      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *run-unit-tests
 
