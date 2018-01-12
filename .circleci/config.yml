@@ -190,8 +190,8 @@ jobs:
       - run: *launch-emulator
       - run: *wait-for-emulator
       - run: *run-unit-tests
-      - store_artifacts:
       - save_cache: *save-gradle-cache
+      - store_artifacts:
           path: libs/SalesforceSDK/build/reports/
           destination: SalesforceSDK
       - store_test_results:
