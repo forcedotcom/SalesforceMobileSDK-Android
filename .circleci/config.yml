@@ -94,10 +94,6 @@ aliases:
       - node-cache-{{ checksum "package.json" }}
       - node-cache- # used if checksum fails
 
-  - &restore-ruby-cache
-    keys:
-      - ruby-gems-cache
-
   - &save-gradle-cache
     key: gradle-cache-{{ checksum "build.gradle" }-{ checksum "gradle/wrapper/gradle-wrapper.properties" }-{
           checksum "lib/SalesforceAnalytics/build.gradle" }-{
@@ -113,11 +109,6 @@ aliases:
     key: node-cache-{{ checksum "package.json" }}
     paths:
       - node_modules
-
-  - &save-ruby-cache
-    key: ruby-gems-cache
-    paths:
-      - vendor/bundle
 
 
 defaults: &defaults
@@ -152,13 +143,10 @@ jobs:
       - run: *determine-tests-to-run
       - restore_cache: *restore-gradle-cache
       - restore_cache: *restore-node-cache
-      - restore_cache: *restore-ruby-cache
       - run: *setup-env
-      - run: *compile-libraries
       - run: *android-lint
       - save_cache: *save-gradle-cache
       - save_cache: *save-node-cache
-      - save_cache: *save-ruby-cache
       - run: *run-danger
       - persist_to_workspace:
           # Must be an absolute path, or relative path from working_directory
@@ -173,7 +161,6 @@ jobs:
       - CURRENT_LIB: "SalesforceAnalytics"
     steps:
       - *attach_workspace
-      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
@@ -191,7 +178,6 @@ jobs:
       - CURRENT_LIB: "SalesforceSDK"
     steps:
       - *attach_workspace
-      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
@@ -209,7 +195,6 @@ jobs:
       - CURRENT_LIB: "SmartStore"
     steps:
       - *attach_workspace
-      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
@@ -227,7 +212,6 @@ jobs:
       - CURRENT_LIB: "SmartSync"
     steps:
       - *attach_workspace
-      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
@@ -245,7 +229,6 @@ jobs:
       - CURRENT_LIB: "SalesforceHybrid"
     steps:
       - *attach_workspace
-      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
@@ -263,7 +246,6 @@ jobs:
       - CURRENT_LIB: "SalesforceReact"
     steps:
       - *attach_workspace
-      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *run-unit-tests
 
@@ -282,11 +264,9 @@ jobs:
       - checkout
       - restore_cache: *restore-gradle-cache
       - restore_cache: *restore-node-cache
-      - restore_cache: *restore-ruby-cache
       - run: *setup-env
       - save_cache: *save-gradle-cache
       - save_cache: *save-node-cache
-      - save_cache: *save-ruby-cache
       - run: *launch-emulator
       - run: *android-lint
       - run: *wait-for-emulator
@@ -328,10 +308,8 @@ jobs:
       - checkout
       - restore_cache: *restore-gradle-cache
       - restore_cache: *restore-node-cache
-      - restore_cache: *restore-ruby-cache
       - run: *setup-env
       - save_cache: *save-node-cache
-      - save_cache: *save-ruby-cache
       - run: *compile-libraries
       - store_artifacts:
           path: libs/SalesforceAnalytics/build/outputs/aar/
