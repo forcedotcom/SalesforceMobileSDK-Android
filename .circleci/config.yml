@@ -86,13 +86,13 @@ aliases:
 
   - &gradle-cache-key
     gradle-cache-{{ checksum "build.gradle" }}-{{
-              checksum "gradle/wrapper/gradle-wrapper.properties" }}-{{
-              checksum "lib/SalesforceAnalytics/build.gradle" }}-{{
-              checksum "lib/SalesforceSDK/build.gradle" }}-{{
-              checksum "lib/SmartStore/build.gradle" }}-{{
-              checksum "lib/SmartSync/build.gradle" }}-{{
-              checksum "lib/SalesforceHybrid/build.gradle" }}-{{
-              checksum "lib/SalesforceReact/build.gradle" }}
+      checksum "gradle/wrapper/gradle-wrapper.properties" }}-{{
+      checksum "lib/SalesforceAnalytics/src/build.gradle" }}-{{
+      checksum "lib/SalesforceSDK/src/build.gradle" }}-{{
+      checksum "lib/SmartStore/src/build.gradle" }}-{{
+      checksum "lib/SmartSync/src/build.gradle" }}-{{
+      checksum "lib/SalesforceHybrid/src/build.gradle" }}-{{
+      checksum "lib/SalesforceReact/src/build.gradle" }}
 
   - &restore-gradle-cache
     keys:
