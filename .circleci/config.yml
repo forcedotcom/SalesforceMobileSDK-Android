@@ -96,17 +96,17 @@ aliases:
   - &save-gradle-cache
     key: gradle-cache-{{ checksum "build.gradle" }}
     paths:
-      - ".gradle"
+      - .gradle
 
   - &save-node-cache
     key: node-cache-{{ checksum "package.json" }}
     paths:
-      - "node_modules"
+      - node_modules
 
   - &save-ruby-cache
     key: ruby-cache
     paths:
-      - "/opt/circleci/.rvm/gems"
+      - vendor/bundle
 
 
 defaults: &defaults
@@ -144,6 +144,10 @@ jobs:
       - restore_cache: *restore-ruby-cache
       - run: *setup-env
       - run: *compile-libraries
+      - run:
+          name: Run Android Lint
+          when: always
+          command:  ./gradlew lint
       - save_cache: *save-gradle-cache
       - save_cache: *save-node-cache
       - save_cache: *save-ruby-cache
@@ -161,6 +165,7 @@ jobs:
       - CURRENT_LIB: "SalesforceAnalytics"
     steps:
       - *attach_workspace
+      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
@@ -178,6 +183,7 @@ jobs:
       - CURRENT_LIB: "SalesforceSDK"
     steps:
       - *attach_workspace
+      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
@@ -195,6 +201,7 @@ jobs:
       - CURRENT_LIB: "SmartStore"
     steps:
       - *attach_workspace
+      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
@@ -212,6 +219,7 @@ jobs:
       - CURRENT_LIB: "SmartSync"
     steps:
       - *attach_workspace
+      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
@@ -229,6 +237,7 @@ jobs:
       - CURRENT_LIB: "SalesforceHybrid"
     steps:
       - *attach_workspace
+      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
@@ -246,6 +255,7 @@ jobs:
       - CURRENT_LIB: "SalesforceReact"
     steps:
       - *attach_workspace
+      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
       - run: *run-unit-tests
 
