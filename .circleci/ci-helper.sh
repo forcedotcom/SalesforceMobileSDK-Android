@@ -9,6 +9,7 @@ function envSetup {
     cordova telemetry off
 
     ./install.sh
+    ./gradlew androidDependencies
     gem install bundler
     gem install danger
     gem install danger-junit

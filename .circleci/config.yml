@@ -79,6 +79,11 @@ aliases:
       ./gradlew :libs:SalesforceReact:assemble
     when: always
 
+  - &android-lint
+    name: Run Android Lint
+    command:  ./gradlew lint
+    when: always
+
   - &restore-gradle-cache
     keys:
       - gradle-cache-{{ checksum "build.gradle" }}
@@ -91,10 +96,16 @@ aliases:
 
   - &restore-ruby-cache
     keys:
-      - ruby-cache
+      - ruby-gems-cache
 
   - &save-gradle-cache
-    key: gradle-cache-{{ checksum "build.gradle" }}
+    key: gradle-cache-{{ checksum "build.gradle" }-{ checksum "gradle/wrapper/gradle-wrapper.properties" }-{
+          checksum "lib/SalesforceAnalytics/build.gradle" }-{
+          checksum "lib/SalesforceSDK/build.gradle" }-{
+          checksum "lib/SmartStore/build.gradle" }-{
+          checksum "lib/SmartSync/build.gradle" }-{
+          checksum "lib/SalesforceHybrid/build.gradle" }-{
+          checksum "lib/SalesforceReact/build.gradle" }}
     paths:
       - .gradle
 
@@ -104,7 +115,7 @@ aliases:
       - node_modules
 
   - &save-ruby-cache
-    key: ruby-cache
+    key: ruby-gems-cache
     paths:
       - vendor/bundle
 
@@ -144,10 +155,7 @@ jobs:
       - restore_cache: *restore-ruby-cache
       - run: *setup-env
       - run: *compile-libraries
-      - run:
-          name: Run Android Lint
-          when: always
-          command:  ./gradlew lint
+      - run: *android-lint
       - save_cache: *save-gradle-cache
       - save_cache: *save-node-cache
       - save_cache: *save-ruby-cache
@@ -280,6 +288,7 @@ jobs:
       - save_cache: *save-node-cache
       - save_cache: *save-ruby-cache
       - run: *launch-emulator
+      - run: *android-lint
       - run: *wait-for-emulator
       - run: *test-salesforce-analytics
       - run: *test-salesforce-sdk
