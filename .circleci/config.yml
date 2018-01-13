@@ -330,6 +330,7 @@ jobs:
       - run: *test-smart-store
       - run: *test-smart-sync
       - run: *test-salesforce-hybrid
+      - run: *test-rest-explorer
       - run: *build-salesforce-react
       - save_cache: *save-gradle-cache
       - store_artifacts:
