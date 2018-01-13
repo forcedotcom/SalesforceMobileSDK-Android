@@ -76,7 +76,11 @@ function runTests {
         if [[ "${CURRENT_LIB}" == "SalesforceReact" ]]; then
             ./gradlew :libs:SalesforceReact:assemble
         else
-            ./gradlew :libs:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --profile --max-workers 2 --stacktrace
+            if [[ "${CURRENT_LIB}" == "RestExplorer" ]]; then
+                ./gradlew :native:NativeSampleApps:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --profile --max-workers 2 --stacktrace
+            else
+                ./gradlew :libs:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --profile --max-workers 2 --stacktrace
+            fi
         fi
     else
         echo "No need to run ${CURRENT_LIB} tests for this PR."

@@ -1,7 +1,7 @@
 require 'json'
 require 'set'
 
-libsTopoSorted = ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "SmartSync", "SalesforceHybrid", "SalesforceReact"]
+libsTopoSorted = ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "SmartSync", "SalesforceHybrid", "SalesforceReact", "RestExplorer"]
 
 if ENV.has_key?('CIRCLE_PULL_REQUEST')
   $GITPRAPI = "https://api.github.com/repos/%s/SalesforceMobileSDK-android/pulls/%s/files"
