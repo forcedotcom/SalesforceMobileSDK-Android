@@ -41,6 +41,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.security.PrivateKey;
+
 /**
  * Tests for {@link SalesforceKeyGenerator}.
  *
@@ -86,5 +88,21 @@ public class SalesforceKeyGeneratorTest {
         final String id2 = SalesforceKeyGenerator.getEncryptionKey(KEY_2);
         Assert.assertEquals("Encryption keys with the same name should be the same", id1, id1Again);
         Assert.assertNotSame("Encryption keys with different names should be different", id1, id2);
+    }
+
+    @Test
+    public void testGetRSAPublicString() {
+        final String key1 = SalesforceKeyGenerator.getRSAPublicString(KEY_1, 2048);
+        final String key1Again = SalesforceKeyGenerator.getRSAPublicString(KEY_1, 2048);
+        final String key2 = SalesforceKeyGenerator.getRSAPublicString(KEY_2, 2048);
+        Assert.assertEquals("Public keys with the same name should be the same", key1, key1Again);
+        Assert.assertNotSame("Public keys with different names should be different", key1, key2);
+    }
+
+    @Test
+    public void testGetRSAPrivateKey() {
+        final PrivateKey key1 = SalesforceKeyGenerator.getRSAPrivateKey(KEY_1, 2048);
+        final PrivateKey key1Again = SalesforceKeyGenerator.getRSAPrivateKey(KEY_1, 2048);
+        Assert.assertEquals("Private keys with the same name should be the same", key1, key1Again);
     }
 }
