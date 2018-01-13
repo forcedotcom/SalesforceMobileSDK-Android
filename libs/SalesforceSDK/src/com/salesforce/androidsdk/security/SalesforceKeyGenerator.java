@@ -162,7 +162,7 @@ public class SalesforceKeyGenerator {
      */
     public static synchronized String getRSAPublicString(String name, int length) {
         String publicKeyBase64 = null;
-        createRSAKeys(name, length);
+        createRSAKeysIfNecessary(name, length);
         try {
             publicKeyBase64 = Base64.encodeToString(loadKeyStore().getCertificate(name).getPublicKey().getEncoded(),
                     Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
@@ -181,7 +181,7 @@ public class SalesforceKeyGenerator {
      */
     public static synchronized PrivateKey getRSAPrivateKey(String name, int length) {
         PrivateKey privateKey = null;
-        createRSAKeys(name, length);
+        createRSAKeysIfNecessary(name, length);
         try {
             KeyStore.Entry entry = loadKeyStore().getEntry(name, null);
             if (entry == null) {
@@ -251,7 +251,7 @@ public class SalesforceKeyGenerator {
         return String.format(Locale.US, ADDENDUM, suffix);
     }
 
-    private static void createRSAKeys(String name, int length) {
+    private static void createRSAKeysIfNecessary(String name, int length) {
         try {
             KeyStore keyStore = loadKeyStore();
 
