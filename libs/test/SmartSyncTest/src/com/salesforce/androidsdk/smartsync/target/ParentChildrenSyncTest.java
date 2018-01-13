@@ -170,7 +170,7 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
         Assert.assertEquals("SELECT DISTINCT {parentsSoup:IdForQuery} FROM {parentsSoup} WHERE {parentsSoup:__local__} = 'false' AND NOT EXISTS (SELECT {childrenSoup:ChildId} FROM {childrenSoup} WHERE {childrenSoup:ChildParentId} = {parentsSoup:ParentId} AND {childrenSoup:__local__} = 'true')",
-                target.getNonDirtyRecordIdsSql("parentsSoup", "IdForQuery"));
+                target.getNonDirtyRecordIdsSql("parentsSoup", "IdForQuery", ""));
 
     }
 

@@ -163,16 +163,15 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
 
 
     @Override
-    public int cleanGhosts(SyncManager syncManager, String soupName) throws JSONException, IOException {
+    public int cleanGhosts(SyncManager syncManager, String soupName, long syncId) throws JSONException, IOException {
         // Taking care of ghost parents
-        int localIdsSize = super.cleanGhosts(syncManager, soupName);
+        int localIdsSize = super.cleanGhosts(syncManager, soupName, syncId);
 
         // Taking care of ghost children
 
         // NB: ParentChildrenSyncDownTarget's getNonDirtyRecordIdsSql does a join between parent and children soups
         // We only want to look at the children soup, so using SoqlSyncDownTarget's getNonDirtyRecordIdsSql
-
-        final Set<String> localChildrenIds = getIdsWithQuery(syncManager, super.getNonDirtyRecordIdsSql(childrenInfo.soupName, childrenInfo.idFieldName));
+        final Set<String> localChildrenIds = getIdsWithQuery(syncManager, super.getNonDirtyRecordIdsSql(childrenInfo.soupName, childrenInfo.idFieldName, ""));
         final Set<String> remoteChildrenIds = getChildrenRemoteIdsWithSoql(syncManager, getSoqlForRemoteChildrenIds());
         if (remoteChildrenIds != null) {
             localChildrenIds.removeAll(remoteChildrenIds);
@@ -312,7 +311,7 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
     }
 
     @Override
-    protected String getNonDirtyRecordIdsSql(String soupName, String idField) {
+    protected String getNonDirtyRecordIdsSql(String soupName, String idField, String additionalPredicate) {
         return ParentChildrenSyncTargetHelper.getNonDirtyRecordIdsSql(parentInfo, childrenInfo, idField);
     }
 

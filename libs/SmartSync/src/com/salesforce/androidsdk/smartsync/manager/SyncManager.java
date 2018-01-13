@@ -74,6 +74,9 @@ public class SyncManager {
 
     private static final String FEATURE_SMART_SYNC = "SY";
 
+    // Field added to record to remember sync it came through
+    public static final String SYNC_ID = "__sync_id__";
+
     // Static member
     private static Map<String, SyncManager> INSTANCES = new HashMap<String, SyncManager>();
 
@@ -436,7 +439,7 @@ public class SyncManager {
         final SyncDownTarget target = (SyncDownTarget) sync.getTarget();
 
         // Ask target to clean up ghosts
-        final int localIdSize = target.cleanGhosts(this, soupName);
+        final int localIdSize = target.cleanGhosts(this, soupName, syncId);
         threadPool.execute(new Runnable() {
             @Override
             public void run() {
@@ -634,6 +637,9 @@ public class SyncManager {
             // Figure out records to save
             JSONArray recordsToSave = idsToSkip == null ? records : removeWithIds(records, idsToSkip, idField);
 
+            // Add sync id in records
+            addSyncId(recordsToSave, sync.getId());
+
             // Save to smartstore.
             target.saveRecordsToLocalStore(this, soupName, recordsToSave);
             countSaved += records.length();
@@ -662,6 +668,13 @@ public class SyncManager {
             }
         }
         return arr;
+    }
+
+    private void addSyncId(JSONArray records, long syncId) throws JSONException {
+        for (int i = 0; i < records.length(); i++) {
+            JSONObject record = records.getJSONObject(i);
+            record.put(SYNC_ID, syncId);
+        }
     }
 
     /**

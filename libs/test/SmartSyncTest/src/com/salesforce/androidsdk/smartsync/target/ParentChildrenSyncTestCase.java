@@ -533,7 +533,7 @@ public class ParentChildrenSyncTestCase extends SyncManagerTestCase {
 
     protected void tryGetNonDirtyRecordIds(JSONObject[] expectedRecords) throws JSONException {
         ParentChildrenSyncDownTarget target = getAccountContactsSyncDownTarget();
-        SortedSet<String> nonDirtyRecordIds = target.getNonDirtyRecordIds(syncManager, ACCOUNTS_SOUP, Constants.ID);
+        SortedSet<String> nonDirtyRecordIds = target.getNonDirtyRecordIds(syncManager, ACCOUNTS_SOUP, Constants.ID, "");
         Assert.assertEquals("Wrong number of non-dirty records", expectedRecords.length, nonDirtyRecordIds.size());
         for (JSONObject expectedRecord : expectedRecords) {
             Assert.assertTrue(nonDirtyRecordIds.contains(expectedRecord.getString(Constants.ID)));
