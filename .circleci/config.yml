@@ -463,10 +463,11 @@ workflows:
             - setup
 
  # Cron are on a timezone 8 hours ahead of PST
+ # Nightly run is set for midnight Monday - Friday
   nightly-test:
      triggers:
        - schedule:
-           cron: "00 8 * * 1,2,3,4,5"
+           cron: "00 8 * * 2,3,4,5,6"
            filters:
              branches:
                only:
