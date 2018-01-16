@@ -226,7 +226,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         case CreateConfirm:
             if (enteredPasscode.equals(firstPasscode)) {
                 passcodeManager.store(this, enteredPasscode);
-                passcodeManager.unlock(enteredPasscode);
+                passcodeManager.unlock();
                 done();
             } else {
                 error.setText(getPasscodesDontMatchError());
@@ -236,7 +236,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         case Check:
             if (passcodeManager.check(this, enteredPasscode)) {
                 performUpgradeStep(enteredPasscode);
-                passcodeManager.unlock(enteredPasscode);
+                passcodeManager.unlock();
                 done();
             } else {
                 int attempts = passcodeManager.addFailedPasscodeAttempt();
@@ -489,6 +489,10 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 
     @TargetApi(VERSION_CODES.M)
     private boolean isFingerprintEnabled() {
+
+	    /*
+         * TODO: Remove this check once minAPI > 23.
+         */
         if (VERSION.SDK_INT >= VERSION_CODES.M) {
             fingerprintManager = (FingerprintManager) this.getSystemService(Context.FINGERPRINT_SERVICE);
 

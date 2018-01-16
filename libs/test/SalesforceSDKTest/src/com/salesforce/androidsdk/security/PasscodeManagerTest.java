@@ -48,7 +48,6 @@ import org.junit.runner.RunWith;
 @SmallTest
 public class PasscodeManagerTest {
 
-    private static final String TEST_PASSCODE = "123456";
     private static final HashConfig TEST_HASH_CONFIG = new HashConfig("", "", "dummy-key");
     private static final int TEST_TIMEOUT_MS = 1000;
 
@@ -74,7 +73,7 @@ public class PasscodeManagerTest {
             setTimeoutMs(TEST_TIMEOUT_MS);
             setEnabled(true);
             // start in a known state.
-            unlock(TEST_PASSCODE);
+            unlock();
         }
 
         @Override
@@ -104,7 +103,7 @@ public class PasscodeManagerTest {
         Assert.assertTrue(pm.lockIfNeeded(null, true));
         Assert.assertTrue(pm.isLocked());
         Assert.assertTrue(startedLockActivity);
-        pm.unlock(TEST_PASSCODE);
+        pm.unlock();
         Assert.assertFalse(pm.isLocked());
     }
 
@@ -142,7 +141,7 @@ public class PasscodeManagerTest {
         Assert.assertEquals(0, pm.getFailedPasscodeAttempts());
         pm.addFailedPasscodeAttempt();
         Assert.assertEquals(1, pm.getFailedPasscodeAttempts());
-        pm.unlock(TEST_PASSCODE);
+        pm.unlock();
         Assert.assertEquals(0, pm.getFailedPasscodeAttempts());
     }
 }

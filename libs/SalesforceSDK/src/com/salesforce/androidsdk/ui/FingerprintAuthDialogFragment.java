@@ -74,6 +74,10 @@ public class FingerprintAuthDialogFragment extends DialogFragment {
     @Override
     public void onResume() {
         super.onResume();
+
+        /*
+         * TODO: Remove this check once minAPI > 23.
+         */
         if (VERSION.SDK_INT >= VERSION_CODES.M) {
             FingerprintManager fingerprintManager = (FingerprintManager) mContext.getSystemService(Context.FINGERPRINT_SERVICE);
             if (mContext.checkSelfPermission(permission.USE_FINGERPRINT) != PackageManager.PERMISSION_GRANTED) {
