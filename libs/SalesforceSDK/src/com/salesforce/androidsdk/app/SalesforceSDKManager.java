@@ -49,6 +49,7 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.webkit.CookieManager;
 
+import com.salesforce.androidsdk.BuildConfig;
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
@@ -1515,6 +1516,6 @@ public class SalesforceSDKManager {
         } catch (IllegalAccessException e) {
             SalesforceSDKLogger.e(TAG, "getBuildConfigValue failed", e);
         }
-        return null;
+        return BuildConfig.DEBUG; // we don't want to return a null value; return this value at minimum
     }
 }
