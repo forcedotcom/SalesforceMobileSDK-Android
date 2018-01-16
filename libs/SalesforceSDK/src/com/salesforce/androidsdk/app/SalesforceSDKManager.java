@@ -1515,6 +1515,6 @@ public class SalesforceSDKManager {
         } catch (IllegalAccessException e) {
             SalesforceSDKLogger.e(TAG, "getBuildConfigValue failed", e);
         }
-        return null;
+        return BuildConfig.DEBUG; // we don't want to return a null value; return this value at minimum
     }
 }
