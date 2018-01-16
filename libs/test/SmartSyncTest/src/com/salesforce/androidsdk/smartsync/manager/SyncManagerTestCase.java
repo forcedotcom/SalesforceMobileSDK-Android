@@ -92,7 +92,8 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
                 new IndexSpec(Constants.ID, SmartStore.Type.string),
                 new IndexSpec(Constants.NAME, SmartStore.Type.string),
                 new IndexSpec(Constants.DESCRIPTION, SmartStore.Type.string),
-                new IndexSpec(SyncTarget.LOCAL, SmartStore.Type.string)
+                new IndexSpec(SyncTarget.LOCAL, SmartStore.Type.string),
+                new IndexSpec(SyncTarget.SYNC_ID, SmartStore.Type.integer)
         };
         smartStore.registerSoup(soupName, indexSpecs);
     }
@@ -454,6 +455,24 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
             Assert.assertEquals("Id was not updated", expectLocallyCreated, id.startsWith(LOCAL_ID_PREFIX));
             Assert.assertEquals("Wrong local flag", expectLocallyUpdated, soupElt.getBoolean(SyncTarget.LOCALLY_UPDATED));
             Assert.assertEquals("Wrong local flag", expectLocallyDeleted, soupElt.getBoolean(SyncTarget.LOCALLY_DELETED));
+        }
+    }
+
+    /**
+     * Check records syncId field in db
+     * @param ids
+     * @param syncId value expected in __sync_id__ field
+     * @param soupName
+     * @throws JSONException
+     */
+    protected void checkDbSyncIdField(String[] ids, long syncId, String soupName) throws JSONException {
+        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec(String.format("SELECT {%s:_soup} FROM {%s} WHERE {%s:Id} IN %s", soupName, soupName, soupName, makeInClause(ids)), ids.length);
+        JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
+        for (int i=0; i<accountsFromDb.length(); i++) {
+            JSONArray row = accountsFromDb.getJSONArray(i);
+            JSONObject soupElt = row.getJSONObject(0);
+            String id = soupElt.getString(Constants.ID);
+            Assert.assertEquals("Wrong sync id", syncId, soupElt.getInt(SyncTarget.SYNC_ID));
         }
     }
 

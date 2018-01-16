@@ -878,6 +878,47 @@ public class SyncManagerTest extends SyncManagerTestCase {
     }
 
     /**
+     * Tests clean ghosts when soup is populated through more than one sync down
+     */
+    @Test
+    public void testCleanResyncGhostsWithMultipleSyncs() throws Exception {
+
+        // Creates 6 accounts on the server.
+        final int numberAccounts = 6;
+        final Map<String, String> accounts = createRecordsOnServer(numberAccounts, Constants.ACCOUNT);
+        Assert.assertEquals("Wrong number of accounts created", numberAccounts, accounts.size());
+        final String[] accountIds = accounts.keySet().toArray(new String[0]);
+        final String[] accountIdsFirstSubset = Arrays.copyOfRange(accountIds, 0, 3); // id0, id1, id2
+        final String[] accountIdsSecondSubset = Arrays.copyOfRange(accountIds, 2, 6); //          id2, id3, id4, id5
+
+        // Runs a first SOQL sync down target (bringing down id0, id1, id2)
+        long firstSyncId = trySyncDown(MergeMode.LEAVE_IF_CHANGED, new SoqlSyncDownTarget("SELECT Id, Name FROM Account WHERE Id IN " + makeInClause(accountIdsFirstSubset)), ACCOUNTS_SOUP, accountIdsFirstSubset.length, 1, null);
+        checkDbExist(ACCOUNTS_SOUP, accountIdsFirstSubset, Constants.ID);
+        checkDbSyncIdField(accountIdsFirstSubset, firstSyncId, ACCOUNTS_SOUP);
+
+        // Runs a second SOQL sync down target (bringing down id2, id3, id4, id5)
+        long secondSyncId = trySyncDown(MergeMode.LEAVE_IF_CHANGED, new SoqlSyncDownTarget("SELECT Id, Name FROM Account WHERE Id IN " + makeInClause(accountIdsSecondSubset)), ACCOUNTS_SOUP, accountIdsSecondSubset.length, 1, null);
+        checkDbExist(ACCOUNTS_SOUP, accountIdsSecondSubset, Constants.ID);
+        checkDbSyncIdField(accountIdsSecondSubset, secondSyncId, ACCOUNTS_SOUP);
+
+        // Deletes id0, id2, id5 on the server
+        deleteRecordsOnServer(new HashSet<>(Arrays.asList(accountIds[0], accountIds[2], accountIds[5])), Constants.ACCOUNT);
+
+        // Cleaning ghosts of first sync (should only remove id0)
+        syncManager.cleanResyncGhosts(firstSyncId);
+        checkDbExist(ACCOUNTS_SOUP, new String[] { accountIds[1], accountIds[2], accountIds[3], accountIds[4], accountIds[5]}, Constants.ID);
+        checkDbDeleted(ACCOUNTS_SOUP, new String[] { accountIds[0]}, Constants.ID);
+
+        // Cleaning ghosts of second sync (should remove id2 and id5)
+        syncManager.cleanResyncGhosts(secondSyncId);
+        checkDbExist(ACCOUNTS_SOUP, new String[] { accountIds[1], accountIds[3], accountIds[4]}, Constants.ID);
+        checkDbDeleted(ACCOUNTS_SOUP, new String[] { accountIds[2], accountIds[5]}, Constants.ID);
+
+        // Deletes the remaining accounts on the server.
+        deleteRecordsOnServer(new HashSet<>(Arrays.asList(accountIds[1], accountIds[3], accountIds[4])), Constants.ACCOUNT);
+    }
+
+    /**
      * Tests if ghost records are cleaned locally for a MRU target.
      */
     @Test

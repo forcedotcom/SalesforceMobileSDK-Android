@@ -169,8 +169,8 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
                 new ChildrenInfo("Child", "Children", "childrenSoup", "ChildParentId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
-        Assert.assertEquals("SELECT DISTINCT {parentsSoup:IdForQuery} FROM {parentsSoup} WHERE {parentsSoup:__local__} = 'false' AND NOT EXISTS (SELECT {childrenSoup:ChildId} FROM {childrenSoup} WHERE {childrenSoup:ChildParentId} = {parentsSoup:ParentId} AND {childrenSoup:__local__} = 'true')",
-                target.getNonDirtyRecordIdsSql("parentsSoup", "IdForQuery"));
+        Assert.assertEquals("SELECT DISTINCT {parentsSoup:IdForQuery} FROM {parentsSoup} WHERE {parentsSoup:__local__} = 'false' AND {parentsSoup:__sync_id__} = 123 AND NOT EXISTS (SELECT {childrenSoup:ChildId} FROM {childrenSoup} WHERE {childrenSoup:ChildParentId} = {parentsSoup:ParentId} AND {childrenSoup:__local__} = 'true')",
+                target.getNonDirtyRecordIdsSql("parentsSoup", "IdForQuery", "AND {parentsSoup:__sync_id__} = 123"));
 
     }
 
@@ -229,6 +229,7 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         // - not have _soupEntryId field
         final int numberAccounts = 4;
         final int numberContactsPerAccount = 3;
+        final long syncId = 123;
         JSONObject accountAttributes = new JSONObject();
         accountAttributes.put(TYPE, Constants.ACCOUNT);
         JSONObject contactAttributes = new JSONObject();
@@ -263,7 +264,7 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
 
         // Now calling saveRecordsToLocalStore
         ParentChildrenSyncDownTarget target = getAccountContactsSyncDownTarget();
-        target.saveRecordsToLocalStore(syncManager, ACCOUNTS_SOUP, records);
+        target.saveRecordsToLocalStore(syncManager, ACCOUNTS_SOUP, records, syncId);
 
         // Checking accounts and contacts soup
         // Making sure local fields are populated
@@ -279,6 +280,7 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
             Assert.assertEquals(false, accountFromDb.getBoolean(SyncTarget.LOCALLY_CREATED));
             Assert.assertEquals(false, accountFromDb.getBoolean(SyncTarget.LOCALLY_DELETED));
             Assert.assertEquals(false, accountFromDb.getBoolean(SyncTarget.LOCALLY_UPDATED));
+            Assert.assertEquals(syncId, accountFromDb.getLong(SyncTarget.SYNC_ID));
             JSONObject[] contactsFromDb = queryWithInClause(CONTACTS_SOUP, ACCOUNT_ID, new String[]{account.getString(Constants.ID)}, SmartStore.SOUP_ENTRY_ID);
             JSONObject[] contacts = mapAccountContacts.get(account);
             Assert.assertEquals("Wrong number of contacts in db", contacts.length, contactsFromDb.length);
@@ -291,6 +293,7 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
                 Assert.assertEquals(false, contactFromDb.getBoolean(SyncTarget.LOCALLY_CREATED));
                 Assert.assertEquals(false, contactFromDb.getBoolean(SyncTarget.LOCALLY_DELETED));
                 Assert.assertEquals(false, contactFromDb.getBoolean(SyncTarget.LOCALLY_UPDATED));
+                Assert.assertEquals(syncId, contactFromDb.getLong(SyncTarget.SYNC_ID));
                 Assert.assertEquals(accountFromDb.getString(Constants.ID), contactFromDb.getString(ACCOUNT_ID));
             }
         }
@@ -623,6 +626,66 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
             }
         }
     }
+
+    /**
+     * Tests clean ghosts when soup is populated through more than one sync down
+     */
+    @Test
+    public void testCleanResyncGhostsForParentChildrenWithMultipleSyncs() throws Exception {
+        final int numberAccounts = 6;
+        final int numberContactsPerAccount = 3;
+
+        // Creating up test accounts and contacts on server
+        createAccountsAndContactsOnServer(numberAccounts, numberContactsPerAccount);
+
+        final String[] accountIds = accountIdToFields.keySet().toArray(new String[0]);
+        final String[] accountIdsFirstSubset = Arrays.copyOfRange(accountIds, 0, 3); // id0, id1, id2
+        final String[] accountIdsSecondSubset = Arrays.copyOfRange(accountIds, 2, 6); //          id2, id3, id4, id5
+
+        // Runs a first sync down (bringing down accounts id0, id1, id2 and their contacts)
+        ParentChildrenSyncDownTarget firstTarget = getAccountContactsSyncDownTarget(
+                String.format("%s IN %s", Constants.ID, makeInClause(accountIdsFirstSubset)));
+        long firstSyncId = trySyncDown(SyncState.MergeMode.OVERWRITE, firstTarget, ACCOUNTS_SOUP, accountIdsFirstSubset.length, 1);
+        checkDbExist(ACCOUNTS_SOUP, accountIdsFirstSubset, Constants.ID);
+        checkDbSyncIdField(accountIdsFirstSubset, firstSyncId, ACCOUNTS_SOUP);
+
+        // Runs a first sync down (bringing down accounts id2, id3, id4, id5 and their contacts)
+        ParentChildrenSyncDownTarget secondTarget = getAccountContactsSyncDownTarget(
+                String.format("%s IN %s", Constants.ID, makeInClause(accountIdsSecondSubset)));
+        long secondSyncId = trySyncDown(SyncState.MergeMode.OVERWRITE, secondTarget, ACCOUNTS_SOUP, accountIdsSecondSubset.length, 1);
+        checkDbExist(ACCOUNTS_SOUP, accountIdsSecondSubset, Constants.ID);
+        checkDbSyncIdField(accountIdsSecondSubset, secondSyncId, ACCOUNTS_SOUP);
+
+        // Deletes id0, id2, id5 on the server
+        deleteRecordsOnServer(new HashSet<>(Arrays.asList(accountIds[0], accountIds[2], accountIds[5])), Constants.ACCOUNT);
+
+        // Cleaning ghosts of first sync (should only remove id0 and its contacts)
+        syncManager.cleanResyncGhosts(firstSyncId);
+        checkDbExist(ACCOUNTS_SOUP, new String[] { accountIds[1], accountIds[2], accountIds[3], accountIds[4], accountIds[5]}, Constants.ID);
+        checkDbDeleted(ACCOUNTS_SOUP, new String[] { accountIds[0]}, Constants.ID);
+        for (String accountId : accountIdContactIdToFields.keySet()) {
+            if (accountId == accountIds[0]) {
+                checkDbDeleted(CONTACTS_SOUP, accountIdContactIdToFields.get(accountId).keySet().toArray(new String[0]), Constants.ID);
+            } else {
+                checkDb(accountIdContactIdToFields.get(accountId), CONTACTS_SOUP);
+
+            }
+        }
+
+        // Cleaning ghosts of second sync (should remove id2 and id5 and their contacts)
+        syncManager.cleanResyncGhosts(secondSyncId);
+        checkDbExist(ACCOUNTS_SOUP, new String[] { accountIds[1], accountIds[3], accountIds[4]}, Constants.ID);
+        checkDbDeleted(ACCOUNTS_SOUP, new String[] { accountIds[2], accountIds[5]}, Constants.ID);
+        for (String accountId : accountIdContactIdToFields.keySet()) {
+            if (accountId == accountIds[0] || accountId == accountIds[2] || accountId == accountIds[5]) {
+                checkDbDeleted(CONTACTS_SOUP, accountIdContactIdToFields.get(accountId).keySet().toArray(new String[0]), Constants.ID);
+            } else {
+                checkDb(accountIdContactIdToFields.get(accountId), CONTACTS_SOUP);
+
+            }
+        }
+    }
+
 
     /**
      * Create accounts and contacts locally, sync up with merge mode OVERWRITE, check smartstore and server afterwards

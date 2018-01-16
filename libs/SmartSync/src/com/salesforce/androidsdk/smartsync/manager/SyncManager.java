@@ -436,7 +436,7 @@ public class SyncManager {
         final SyncDownTarget target = (SyncDownTarget) sync.getTarget();
 
         // Ask target to clean up ghosts
-        final int localIdSize = target.cleanGhosts(this, soupName);
+        final int localIdSize = target.cleanGhosts(this, soupName, syncId);
         threadPool.execute(new Runnable() {
             @Override
             public void run() {
@@ -635,7 +635,7 @@ public class SyncManager {
             JSONArray recordsToSave = idsToSkip == null ? records : removeWithIds(records, idsToSkip, idField);
 
             // Save to smartstore.
-            target.saveRecordsToLocalStore(this, soupName, recordsToSave);
+            target.saveRecordsToLocalStore(this, soupName, recordsToSave, sync.getId());
             countSaved += records.length();
             maxTimeStamp = Math.max(maxTimeStamp, target.getLatestModificationTimeStamp(records));
 
