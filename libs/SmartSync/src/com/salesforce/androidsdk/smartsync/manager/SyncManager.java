@@ -673,11 +673,6 @@ public class SyncManager {
 	public RestResponse sendSyncWithSmartSyncUserAgent(RestRequest restRequest) throws IOException {
         SmartSyncLogger.d(TAG, "sendSyncWithSmartSyncUserAgent called with request: ", restRequest);
         RestResponse restResponse = restClient.sendSync(restRequest, new HttpAccess.UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(SMART_SYNC)));
-        if (restResponse.isSuccess()) {
-            SmartSyncLogger.d(TAG, "sendSyncWithSmartSyncUserAgent received response: ", restResponse);
-        } else {
-            SmartSyncLogger.w(TAG, "sendSyncWithSmartSyncUserAgent received response: ", restResponse);
-        }
         return restResponse;
     }
 
