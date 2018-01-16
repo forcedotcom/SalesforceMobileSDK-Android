@@ -49,6 +49,7 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.webkit.CookieManager;
 
+import com.salesforce.androidsdk.BuildConfig;
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
