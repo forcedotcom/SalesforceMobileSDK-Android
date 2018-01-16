@@ -571,10 +571,6 @@ public class PasscodeManager  {
                 UUIDManager.getUuId(VSUFFIX),
                 UUIDManager.getUuId(VKEY)));
     }
-    
-    public String hashForEncryption(String passcode) {
-    	return hash(passcode, encryptionHashConfig);
-    }
 
     /**
      * Returns the legacy encryption key used before Mobile SDK 6.0.
