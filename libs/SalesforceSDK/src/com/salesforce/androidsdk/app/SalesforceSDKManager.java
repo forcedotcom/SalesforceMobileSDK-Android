@@ -1235,7 +1235,7 @@ public class SalesforceSDKManager {
      *
      * @author bhariharan
      */
-    private class RevokeTokenTask extends AsyncTask<Void, Void, Void> {
+    private static class RevokeTokenTask extends AsyncTask<Void, Void, Void> {
 
     	private String refreshToken;
     	private String loginServer;
