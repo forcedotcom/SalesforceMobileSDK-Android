@@ -149,11 +149,8 @@ public abstract class SyncDownTarget extends SyncTarget {
      */
     public int cleanGhosts(SyncManager syncManager, String soupName, long syncId) throws JSONException, IOException {
 
-        // If the soup has an index on __sync_id__, compute predicate to only target records with this syncId
-        String additionalPredicate = buildSyncIdPredicateIfIndexed(syncManager, soupName, syncId);
-
-         // Fetches list of IDs present in local soup that have not been modified locally.
-        final Set<String> localIds = getNonDirtyRecordIds(syncManager, soupName, getIdFieldName(), additionalPredicate);
+        // Fetches list of IDs present in local soup that have not been modified locally.
+        final Set<String> localIds = getNonDirtyRecordIds(syncManager, soupName, getIdFieldName(), buildSyncIdPredicateIfIndexed(syncManager, soupName, syncId));
 
          // Fetches list of IDs still present on the server from the list of local IDs
          // and removes the list of IDs that are still present on the server.
@@ -182,8 +179,8 @@ public abstract class SyncDownTarget extends SyncTarget {
         String additionalPredicate = "";
         IndexSpec[] indexSpecs = syncManager.getSmartStore().getSoupIndexSpecs(soupName);
         for(IndexSpec indexSpec : indexSpecs) {
-            if (indexSpec.path.equals(SyncManager.SYNC_ID)) {
-                additionalPredicate = String.format("AND {%s:%s} = %d", soupName, SyncManager.SYNC_ID, syncId);
+            if (indexSpec.path.equals(SYNC_ID)) {
+                additionalPredicate = String.format("AND {%s:%s} = %d", soupName, SYNC_ID, syncId);
                 break;
             }
         }

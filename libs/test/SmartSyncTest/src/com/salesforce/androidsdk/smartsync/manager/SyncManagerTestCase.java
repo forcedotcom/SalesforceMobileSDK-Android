@@ -93,7 +93,7 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
                 new IndexSpec(Constants.NAME, SmartStore.Type.string),
                 new IndexSpec(Constants.DESCRIPTION, SmartStore.Type.string),
                 new IndexSpec(SyncTarget.LOCAL, SmartStore.Type.string),
-                new IndexSpec(SyncManager.SYNC_ID, SmartStore.Type.integer)
+                new IndexSpec(SyncTarget.SYNC_ID, SmartStore.Type.integer)
         };
         smartStore.registerSoup(soupName, indexSpecs);
     }
@@ -472,7 +472,7 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
             JSONArray row = accountsFromDb.getJSONArray(i);
             JSONObject soupElt = row.getJSONObject(0);
             String id = soupElt.getString(Constants.ID);
-            Assert.assertEquals("Wrong sync id", syncId, soupElt.getInt(SyncManager.SYNC_ID));
+            Assert.assertEquals("Wrong sync id", syncId, soupElt.getInt(SyncTarget.SYNC_ID));
         }
     }
 

@@ -171,7 +171,7 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
 
         // NB: ParentChildrenSyncDownTarget's getNonDirtyRecordIdsSql does a join between parent and children soups
         // We only want to look at the children soup, so using SoqlSyncDownTarget's getNonDirtyRecordIdsSql
-        final Set<String> localChildrenIds = getIdsWithQuery(syncManager, super.getNonDirtyRecordIdsSql(childrenInfo.soupName, childrenInfo.idFieldName, ""));
+        final Set<String> localChildrenIds = getIdsWithQuery(syncManager, super.getNonDirtyRecordIdsSql(childrenInfo.soupName, childrenInfo.idFieldName, buildSyncIdPredicateIfIndexed(syncManager, childrenInfo.soupName, syncId)));
         final Set<String> remoteChildrenIds = getChildrenRemoteIdsWithSoql(syncManager, getSoqlForRemoteChildrenIds());
         if (remoteChildrenIds != null) {
             localChildrenIds.removeAll(remoteChildrenIds);
@@ -312,13 +312,13 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
 
     @Override
     protected String getNonDirtyRecordIdsSql(String soupName, String idField, String additionalPredicate) {
-        return ParentChildrenSyncTargetHelper.getNonDirtyRecordIdsSql(parentInfo, childrenInfo, idField);
+        return ParentChildrenSyncTargetHelper.getNonDirtyRecordIdsSql(parentInfo, childrenInfo, idField, additionalPredicate);
     }
 
     @Override
-    public void saveRecordsToLocalStore(SyncManager syncManager, String soupName, JSONArray records) throws JSONException {
+    public void saveRecordsToLocalStore(SyncManager syncManager, String soupName, JSONArray records, long syncId) throws JSONException {
         // NB: method is called during sync down so for this target records contain parent and children
-        ParentChildrenSyncTargetHelper.saveRecordTreesToLocalStore(syncManager, this, parentInfo, childrenInfo, records);
+        ParentChildrenSyncTargetHelper.saveRecordTreesToLocalStore(syncManager, this, parentInfo, childrenInfo, records, syncId);
     }
 
 }

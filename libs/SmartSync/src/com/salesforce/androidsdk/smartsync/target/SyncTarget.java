@@ -61,6 +61,10 @@ public abstract class SyncTarget {
     public static final String LOCALLY_UPDATED = "__locally_updated__";
     public static final String LOCALLY_DELETED = "__locally_deleted__";
     public static final String LOCAL = "__local__";
+
+    // Field added to record to remember sync it came through
+    public static final String SYNC_ID = "__sync_id__";
+
     private static final String TAG = "SyncTarget";
 
     // Page size used when reading from smartstore
@@ -189,15 +193,17 @@ public abstract class SyncTarget {
      * @param syncManager
      * @param soupName
      * @param records
+     * @param syncId
      * @throws JSONException
      */
-    public void saveRecordsToLocalStore(SyncManager syncManager, String soupName, JSONArray records) throws JSONException {
+    public void saveRecordsToLocalStore(SyncManager syncManager, String soupName, JSONArray records, long syncId) throws JSONException {
         SmartStore smartStore = syncManager.getSmartStore();
         synchronized(smartStore.getDatabase()) {
             try {
                 smartStore.beginTransaction();
                 for (int i = 0; i < records.length(); i++) {
                     JSONObject record = new JSONObject(records.getJSONObject(i).toString());
+                    addSyncId(record, syncId);
                     cleanAndSaveInSmartStore(syncManager.getSmartStore(), soupName, record, getIdFieldName(), false);
                 }
                 smartStore.setTransactionSuccessful();
@@ -205,6 +211,12 @@ public abstract class SyncTarget {
             finally {
                 smartStore.endTransaction();
             }
+        }
+    }
+
+    void addSyncId(JSONObject record, long syncId) throws JSONException {
+        if (syncId >= 0) {
+            record.put(SYNC_ID, syncId);
         }
     }
 
