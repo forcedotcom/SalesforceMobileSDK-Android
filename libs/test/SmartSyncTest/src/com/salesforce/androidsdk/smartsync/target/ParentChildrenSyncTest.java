@@ -646,11 +646,15 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         ParentChildrenSyncDownTarget firstTarget = getAccountContactsSyncDownTarget(
                 String.format("%s IN %s", Constants.ID, makeInClause(accountIdsFirstSubset)));
         long firstSyncId = trySyncDown(SyncState.MergeMode.OVERWRITE, firstTarget, ACCOUNTS_SOUP, accountIdsFirstSubset.length, 1);
+        checkDbExist(ACCOUNTS_SOUP, accountIdsFirstSubset, Constants.ID);
+        checkDbSyncIdField(accountIdsFirstSubset, firstSyncId, ACCOUNTS_SOUP);
 
         // Runs a first sync down (bringing down accounts id2, id3, id4, id5 and their contacts)
         ParentChildrenSyncDownTarget secondTarget = getAccountContactsSyncDownTarget(
                 String.format("%s IN %s", Constants.ID, makeInClause(accountIdsSecondSubset)));
         long secondSyncId = trySyncDown(SyncState.MergeMode.OVERWRITE, secondTarget, ACCOUNTS_SOUP, accountIdsSecondSubset.length, 1);
+        checkDbExist(ACCOUNTS_SOUP, accountIdsSecondSubset, Constants.ID);
+        checkDbSyncIdField(accountIdsSecondSubset, secondSyncId, ACCOUNTS_SOUP);
 
         // Deletes id0, id2, id5 on the server
         deleteRecordsOnServer(new HashSet<>(Arrays.asList(accountIds[0], accountIds[2], accountIds[5])), Constants.ACCOUNT);
