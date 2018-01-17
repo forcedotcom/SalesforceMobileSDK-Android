@@ -559,6 +559,7 @@ public class ParentChildrenSyncTestCase extends SyncManagerTestCase {
                 new IndexSpec(Constants.ID, SmartStore.Type.string),
                 new IndexSpec(Constants.LAST_NAME, SmartStore.Type.string),
                 new IndexSpec(SyncTarget.LOCAL, SmartStore.Type.string),
+                new IndexSpec(SyncTarget.SYNC_ID, SmartStore.Type.integer),
                 new IndexSpec(ACCOUNT_ID, SmartStore.Type.string)
         };
         smartStore.registerSoup(CONTACTS_SOUP, contactsIndexSpecs);
