@@ -78,8 +78,6 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     private boolean logoutEnabled;
     private AlertDialog logoutAlertDialog;
     private boolean isLogoutAlertShowing;
-    private FingerprintManager fingerprintManager;
-    private FingerprintAuthDialogFragment fingerprintAuthDialog;
 
     public enum PasscodeMode {
         Create,
@@ -481,7 +479,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 
     private void showFingerprintDialog() {
         if (passcodeManager != null && isFingerprintEnabled()) {
-            fingerprintAuthDialog = new FingerprintAuthDialogFragment();
+            final FingerprintAuthDialogFragment fingerprintAuthDialog = new FingerprintAuthDialogFragment();
             fingerprintAuthDialog.setContext(this);
             fingerprintAuthDialog.show(getFragmentManager(), "fingerprintDialog");
         }
@@ -494,7 +492,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
          * TODO: Remove this check once minAPI > 23.
          */
         if (VERSION.SDK_INT >= VERSION_CODES.M) {
-            fingerprintManager = (FingerprintManager) this.getSystemService(Context.FINGERPRINT_SERVICE);
+            final FingerprintManager fingerprintManager = (FingerprintManager) this.getSystemService(Context.FINGERPRINT_SERVICE);
 
             // Here, this activity is the current activity.
             if (checkSelfPermission(Manifest.permission.USE_FINGERPRINT) != PackageManager.PERMISSION_GRANTED) {
