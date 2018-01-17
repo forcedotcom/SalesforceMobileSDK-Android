@@ -83,7 +83,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         Create,
         CreateConfirm,
         Check,
-        Change;
+        Change
     }
 
     @Override
@@ -97,8 +97,8 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         final TextView forgotPasscodeView = getForgotPasscodeView();
         if (forgotPasscodeView != null) {
             forgotPasscodeView.setText(Html.fromHtml(getForgotPasscodeString()));
+            forgotPasscodeView.setOnClickListener(this);
         }
-        forgotPasscodeView.setOnClickListener(this);
         logoutAlertDialog = buildLogoutDialog();
         title = getTitleView();
         error = getErrorView();
@@ -114,8 +114,11 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         if (shouldChangePasscode) {
             setMode(PasscodeMode.Change);
         } else {
-            setMode(passcodeManager.hasStoredPasscode(this) ? PasscodeMode.Check : PasscodeMode.Create);
-            showFingerprintDialog();
+            final PasscodeMode mode = passcodeManager.hasStoredPasscode(this) ? PasscodeMode.Check : PasscodeMode.Create;
+            setMode(mode);
+            if (mode == PasscodeMode.Check) {
+                showFingerprintDialog();
+            }
         }
         logoutEnabled = true;
         if (savedInstanceState != null) {
