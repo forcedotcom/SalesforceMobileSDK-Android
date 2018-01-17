@@ -480,10 +480,6 @@ public class PasscodeManager  {
         return minPasscodeLength;
     }
 
-    public boolean setMinPasscodeLength(int minPasscodeLength) {
-        return setMinPasscodeLength(SalesforceSDKManager.getInstance().getAppContext(), minPasscodeLength);
-    }
-
     /**
      * @param ctx
      * @param minPasscodeLength
@@ -566,6 +562,7 @@ public class PasscodeManager  {
      * @deprecated Do not use this starting with Mobile SDK 6.0. This will be removed
      * in Mobile SDK 7.0. This is used to perform upgrade steps from a pre-6.0 SDK app.
      */
+    @Deprecated
     public String legacyHashForVerification(String passcode) {
         return hash(passcode, new HashConfig(UUIDManager.getUuId(VPREFIX),
                 UUIDManager.getUuId(VSUFFIX),
@@ -580,6 +577,7 @@ public class PasscodeManager  {
      * @deprecated Do not use this starting with Mobile SDK 6.0. This will be removed
      * in Mobile SDK 7.0. This is used to perform upgrade steps from a pre-6.0 SDK app.
      */
+    @Deprecated
     public String getLegacyEncryptionKey(String passcode) {
         return Encryptor.hash(UUIDManager.getUuId(EPREFIX) + passcode
                 + UUIDManager.getUuId(ESUFFIX), UUIDManager.getUuId(EKEY));
