@@ -649,7 +649,7 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         checkDbExist(ACCOUNTS_SOUP, accountIdsFirstSubset, Constants.ID);
         checkDbSyncIdField(accountIdsFirstSubset, firstSyncId, ACCOUNTS_SOUP);
 
-        // Runs a first sync down (bringing down accounts id2, id3, id4, id5 and their contacts)
+        // Runs a second sync down (bringing down accounts id2, id3, id4, id5 and their contacts)
         ParentChildrenSyncDownTarget secondTarget = getAccountContactsSyncDownTarget(
                 String.format("%s IN %s", Constants.ID, makeInClause(accountIdsSecondSubset)));
         long secondSyncId = trySyncDown(SyncState.MergeMode.OVERWRITE, secondTarget, ACCOUNTS_SOUP, accountIdsSecondSubset.length, 1);
