@@ -264,6 +264,7 @@ public class SalesforceKeyGenerator {
                             name,
                             KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
                             .setKeySize(length)
+                            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1)
                             .build());
                     kpg.generateKeyPair();
                 } else {
