@@ -89,10 +89,6 @@ public class PasscodeManager  {
     // Key in preference for failed attempts
     private static final String FAILED_ATTEMPTS = "failed_attempts";
 
-    // this is a hash of the passcode to be used as part of the key to encrypt/decrypt oauth tokens
-    // It's using a different salt/key than the one used to verify the entry
-    private String passcodeHash;
-
     // Misc
     private HashConfig verificationHashConfig;
     private HashConfig encryptionHashConfig;
@@ -240,7 +236,6 @@ public class PasscodeManager  {
     	}
     	lastActivity = now();
         locked = true;
-        passcodeHash = null;
         SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME,
         		Context.MODE_PRIVATE);
         Editor e = sp.edit();
@@ -485,10 +480,6 @@ public class PasscodeManager  {
         return minPasscodeLength;
     }
 
-    public boolean setMinPasscodeLength(int minPasscodeLength) {
-        return setMinPasscodeLength(SalesforceSDKManager.getInstance().getAppContext(), minPasscodeLength);
-    }
-
     /**
      * @param ctx
      * @param minPasscodeLength
@@ -539,11 +530,6 @@ public class PasscodeManager  {
         EventsObservable.get().notifyEvent(EventType.AppLocked);
     }
 
-    public void unlock(String passcode) {
-        passcodeHash = hashForEncryption(passcode);
-        unlock();
-    }
-
     /**
      * This is used when unlocking via the fingerprint authentication.
      * The passcode hash isn't updated as the authentication is verified by the OS.
@@ -576,14 +562,11 @@ public class PasscodeManager  {
      * @deprecated Do not use this starting with Mobile SDK 6.0. This will be removed
      * in Mobile SDK 7.0. This is used to perform upgrade steps from a pre-6.0 SDK app.
      */
+    @Deprecated
     public String legacyHashForVerification(String passcode) {
         return hash(passcode, new HashConfig(UUIDManager.getUuId(VPREFIX),
                 UUIDManager.getUuId(VSUFFIX),
                 UUIDManager.getUuId(VKEY)));
-    }
-    
-    public String hashForEncryption(String passcode) {
-    	return hash(passcode, encryptionHashConfig);
     }
 
     /**
@@ -594,6 +577,7 @@ public class PasscodeManager  {
      * @deprecated Do not use this starting with Mobile SDK 6.0. This will be removed
      * in Mobile SDK 7.0. This is used to perform upgrade steps from a pre-6.0 SDK app.
      */
+    @Deprecated
     public String getLegacyEncryptionKey(String passcode) {
         return Encryptor.hash(UUIDManager.getUuId(EPREFIX) + passcode
                 + UUIDManager.getUuId(ESUFFIX), UUIDManager.getUuId(EKEY));

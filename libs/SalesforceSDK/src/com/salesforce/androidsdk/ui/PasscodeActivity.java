@@ -78,14 +78,12 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     private boolean logoutEnabled;
     private AlertDialog logoutAlertDialog;
     private boolean isLogoutAlertShowing;
-    private FingerprintManager fingerprintManager;
-    private FingerprintAuthDialogFragment fingerprintAuthDialog;
 
     public enum PasscodeMode {
         Create,
         CreateConfirm,
         Check,
-        Change;
+        Change
     }
 
     @Override
@@ -99,8 +97,8 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         final TextView forgotPasscodeView = getForgotPasscodeView();
         if (forgotPasscodeView != null) {
             forgotPasscodeView.setText(Html.fromHtml(getForgotPasscodeString()));
+            forgotPasscodeView.setOnClickListener(this);
         }
-        forgotPasscodeView.setOnClickListener(this);
         logoutAlertDialog = buildLogoutDialog();
         title = getTitleView();
         error = getErrorView();
@@ -116,8 +114,11 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         if (shouldChangePasscode) {
             setMode(PasscodeMode.Change);
         } else {
-            setMode(passcodeManager.hasStoredPasscode(this) ? PasscodeMode.Check : PasscodeMode.Create);
-            showFingerprintDialog();
+            final PasscodeMode mode = passcodeManager.hasStoredPasscode(this) ? PasscodeMode.Check : PasscodeMode.Create;
+            setMode(mode);
+            if (mode == PasscodeMode.Check) {
+                showFingerprintDialog();
+            }
         }
         logoutEnabled = true;
         if (savedInstanceState != null) {
@@ -226,7 +227,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         case CreateConfirm:
             if (enteredPasscode.equals(firstPasscode)) {
                 passcodeManager.store(this, enteredPasscode);
-                passcodeManager.unlock(enteredPasscode);
+                passcodeManager.unlock();
                 done();
             } else {
                 error.setText(getPasscodesDontMatchError());
@@ -236,7 +237,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         case Check:
             if (passcodeManager.check(this, enteredPasscode)) {
                 performUpgradeStep(enteredPasscode);
-                passcodeManager.unlock(enteredPasscode);
+                passcodeManager.unlock();
                 done();
             } else {
                 int attempts = passcodeManager.addFailedPasscodeAttempt();
@@ -481,7 +482,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 
     private void showFingerprintDialog() {
         if (passcodeManager != null && isFingerprintEnabled()) {
-            fingerprintAuthDialog = new FingerprintAuthDialogFragment();
+            final FingerprintAuthDialogFragment fingerprintAuthDialog = new FingerprintAuthDialogFragment();
             fingerprintAuthDialog.setContext(this);
             fingerprintAuthDialog.show(getFragmentManager(), "fingerprintDialog");
         }
@@ -489,8 +490,12 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 
     @TargetApi(VERSION_CODES.M)
     private boolean isFingerprintEnabled() {
+
+	    /*
+         * TODO: Remove this check once minAPI > 23.
+         */
         if (VERSION.SDK_INT >= VERSION_CODES.M) {
-            fingerprintManager = (FingerprintManager) this.getSystemService(Context.FINGERPRINT_SERVICE);
+            final FingerprintManager fingerprintManager = (FingerprintManager) this.getSystemService(Context.FINGERPRINT_SERVICE);
 
             // Here, this activity is the current activity.
             if (checkSelfPermission(Manifest.permission.USE_FINGERPRINT) != PackageManager.PERMISSION_GRANTED) {

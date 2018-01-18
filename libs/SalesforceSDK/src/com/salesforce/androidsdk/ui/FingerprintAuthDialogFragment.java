@@ -60,12 +60,12 @@ public class FingerprintAuthDialogFragment extends DialogFragment {
 
     private Button mCancelButton;
     private TextView mStatusText;
-    private Cipher mCipher;
     private PasscodeActivity mContext;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         // Do not create a new Fragment when the Activity is re-created such as orientation changes.
         setRetainInstance(true);
         setStyle(DialogFragment.STYLE_NORMAL, android.R.style.Theme_Material_Light_Dialog);
@@ -74,13 +74,18 @@ public class FingerprintAuthDialogFragment extends DialogFragment {
     @Override
     public void onResume() {
         super.onResume();
+
+        /*
+         * TODO: Remove this check once minAPI > 23.
+         */
         if (VERSION.SDK_INT >= VERSION_CODES.M) {
             FingerprintManager fingerprintManager = (FingerprintManager) mContext.getSystemService(Context.FINGERPRINT_SERVICE);
             if (mContext.checkSelfPermission(permission.USE_FINGERPRINT) != PackageManager.PERMISSION_GRANTED) {
-                //If we got so far, we already got the permission in the PasscodeActivity. This is an OS mandated check.
+
+                // If we got so far, we already got the permission in the PasscodeActivity. This is an OS mandated check.
                 return;
             }
-            fingerprintManager.authenticate(new CryptoObject(mCipher), null, 0, new AuthenticationCallback() {
+            fingerprintManager.authenticate(new CryptoObject((Cipher) null), null, 0, new AuthenticationCallback() {
 
                 @Override
                 public void onAuthenticationError(int errorCode, CharSequence errString) {
