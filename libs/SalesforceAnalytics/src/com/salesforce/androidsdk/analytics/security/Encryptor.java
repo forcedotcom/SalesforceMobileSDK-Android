@@ -39,6 +39,8 @@ import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.SecureRandom;
 
 import javax.crypto.Cipher;
@@ -53,6 +55,7 @@ public class Encryptor {
 
     private static final String TAG = "Encryptor";
     private static final String UTF8 = "UTF-8";
+    private static final String US_ASCII = "US-ASCII";
     private static final String PREFER_CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding";
     private static final String MAC_TRANSFORMATION = "HmacSHA256";
     private static String bestCipherAvailable;
@@ -89,13 +92,7 @@ public class Encryptor {
         return true;
     }
 
-    /**
-     * Returns the best cipher available.
-     *
-     * @return Best cipher available.
-     * @throws GeneralSecurityException
-     */
-    public static Cipher getBestCipher() throws GeneralSecurityException {
+    private static Cipher getBestCipher() throws GeneralSecurityException {
         Cipher cipher = null;
         if (bestCipherAvailable != null) {
             return Cipher.getInstance(bestCipherAvailable, "BC");
@@ -137,6 +134,13 @@ public class Encryptor {
         return decrypt(data.getBytes(), key);
     }
 
+    /**
+     * Decrypts data with key using AES-256.
+     *
+     * @param data Data.
+     * @param key Key.
+     * @return Decrypted data.
+     */
     public static String decrypt(byte[] data, String key) {
         if (TextUtils.isEmpty(key)) {
             if (data != null) {
@@ -146,6 +150,7 @@ public class Encryptor {
             }
         }
         try {
+
             // Decodes with Base64.
             byte[] keyBytes = Base64.decode(key, Base64.DEFAULT);
             byte[] dataBytes = Base64.decode(data, Base64.DEFAULT);
@@ -176,7 +181,7 @@ public class Encryptor {
         }
         try {
             // do as Base64.encodeToString does... return US-ASCII string with the already Base64 encoded bytes.
-            return new String(bytes, "US-ASCII");
+            return new String(bytes, US_ASCII);
         } catch (UnsupportedEncodingException e) {
             SalesforceAnalyticsLogger.w(null, TAG, "Error during encryption", e);
         }
@@ -185,9 +190,10 @@ public class Encryptor {
 
     /**
      * Encrypts data with key using AES-256. Returns Base64 byte[] array.
-     * @param data
-     * @param key
-     * @return
+     *
+     * @param data Data.
+     * @param key Key.
+     * @return Encrypted data.
      */
     public static byte[] encryptBytes(String data, String key) {
         if (TextUtils.isEmpty(key)) {
@@ -247,6 +253,59 @@ public class Encryptor {
             SalesforceAnalyticsLogger.w(null, TAG, "Error during hashing", ex);
             return null;
         }
+    }
+
+    /**
+     * Returns data encrypted with an RSA public key.
+     *
+     * @param publicKey RSA public key.
+     * @param data Data to be encrypted.
+     * @return Encrypted data.
+     */
+    public static String encryptWithRSA(PublicKey publicKey, String data) {
+        if (publicKey == null || TextUtils.isEmpty(data)) {
+            return null;
+        }
+        try {
+            final Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+            byte[] encryptedBytes = cipher.doFinal(data.getBytes());
+            String encryptedData = null;
+            if (encryptedBytes != null) {
+                encryptedData = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
+            }
+            return encryptedData;
+        } catch (Exception e) {
+            SalesforceAnalyticsLogger.e(null, TAG, "Error during asymmetric encryption using RSA", e);
+        }
+        return null;
+    }
+
+    /**
+     * Returns data decrypted with an RSA private key.
+     *
+     * @param privateKey RSA private key.
+     * @param data Data to be decrypted.
+     * @return Decrypted data.
+     */
+    public static String decryptWithRSA(PrivateKey privateKey, String data) {
+        if (privateKey == null || TextUtils.isEmpty(data)) {
+            return null;
+        }
+        try {
+            final Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            cipher.init(Cipher.DECRYPT_MODE, privateKey);
+            byte[] decodedBytes = Base64.decode(data.getBytes(),Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
+            byte[] decryptedBytes = cipher.doFinal(decodedBytes);
+            String decryptedData = null;
+            if (decryptedBytes != null) {
+                decryptedData = new String(decryptedBytes, 0, decryptedBytes.length, UTF8);
+            }
+            return decryptedData;
+        } catch (Exception e) {
+            SalesforceAnalyticsLogger.e(null, TAG, "Error during asymmetric decryption using RSA", e);
+        }
+        return null;
     }
 
     private static byte[] generateInitVector() throws NoSuchAlgorithmException, NoSuchProviderException {
