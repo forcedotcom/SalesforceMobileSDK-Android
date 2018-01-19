@@ -859,7 +859,7 @@ public class SmartStore  {
                     Long soupEntryId = cursor.getLong(i + 1);
                     row.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, soupEntryId, encryptionKey));
                     i++; // skip next column (_soupEntryId)
-                } else if (cursor.getColumnName(i).endsWith(SOUP_COL)) {
+                } else if (cursor.getColumnName(i).startsWith(SOUP_COL)) {
                     row.put(new JSONObject(raw));
                     // Note: we could end up returning a string if you aliased the column
                 }
