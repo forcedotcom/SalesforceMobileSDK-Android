@@ -41,8 +41,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.security.Key;
-import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -51,8 +49,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.security.UnrecoverableEntryException;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -155,7 +151,24 @@ public class SalesforceKeyGenerator {
     }
 
     /**
-     * Generate a keypair and get the encoded public key string.
+     * Generates a keypair and returns the public key.
+     *
+     * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
+     * @return RSA public key.
+     */
+    public static synchronized PublicKey getRSAPublicKey(String name, int length) {
+        PublicKey publicKey = null;
+        createRSAKeysIfNecessary(name, length);
+        try {
+            publicKey = loadKeyStore().getCertificate(name).getPublicKey();
+        } catch (Exception e) {
+            SalesforceSDKLogger.e(TAG, "Security exception thrown", e);
+        }
+        return publicKey;
+    }
+
+    /**
+     * Generates a keypair and returns the encoded public key string.
      *
      * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
      * @return RSA public key string.
@@ -166,7 +179,6 @@ public class SalesforceKeyGenerator {
         try {
             publicKeyBase64 = Base64.encodeToString(loadKeyStore().getCertificate(name).getPublicKey().getEncoded(),
                     Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
-
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Security exception thrown", e);
         }
@@ -174,10 +186,10 @@ public class SalesforceKeyGenerator {
     }
 
     /**
-     * Get the private key from the generated key pair.
+     * Generates a keypair and returns the private key.
      *
      * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
-     * @return A private key for decryption.
+     * @return RSA private key.
      */
     public static synchronized PrivateKey getRSAPrivateKey(String name, int length) {
         PrivateKey privateKey = null;
@@ -188,7 +200,6 @@ public class SalesforceKeyGenerator {
                 return null;
             }
             privateKey = ((KeyStore.PrivateKeyEntry) entry).getPrivateKey();
-
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Security exception thrown", e);
         }
@@ -254,9 +265,9 @@ public class SalesforceKeyGenerator {
     private static void createRSAKeysIfNecessary(String name, int length) {
         try {
             KeyStore keyStore = loadKeyStore();
-
             if (!keyStore.containsAlias(name)) {
-                // Generate a new key pair
+
+                // Generates a new key pair.
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     KeyPairGenerator kpg = KeyPairGenerator.getInstance(
                             KeyProperties.KEY_ALGORITHM_RSA, ANDROID_KEYSTORE);
@@ -268,7 +279,10 @@ public class SalesforceKeyGenerator {
                             .build());
                     kpg.generateKeyPair();
                 } else {
-                    // TODO: Remove the 'else' block once minVersion > 23.
+
+                    /*
+                     * TODO: Remove the 'else' block once minVersion > 23.
+                     */
                     Calendar start = Calendar.getInstance();
                     Calendar end = Calendar.getInstance();
                     end.add(Calendar.YEAR, 30);
