@@ -908,11 +908,35 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 25);
 		final JSONArray result = store.query(querySpec, 0);
         Assert.assertNotNull("Result should not be null", result);
-        Assert.assertEquals("Three results expected", 4, result.length());
+        Assert.assertEquals("Four results expected", 4, result.length());
 		JSONTestHelper.assertSameJSON("Wrong result for query - row 0", new JSONArray(new JSONObject[] { soupElt1Created}), result.get(0));
         JSONTestHelper.assertSameJSON("Wrong result for query - row 1", new JSONArray(new JSONObject[] { soupElt2Created}), result.get(1));
         JSONTestHelper.assertSameJSON("Wrong result for query - row 2", new JSONArray(new JSONObject[] { soupElt3Created}), result.get(2));
         JSONTestHelper.assertSameJSON("Wrong result for query - row 3", new JSONArray(new JSONObject[] { soupElt4Created}), result.get(3));
+	}
+
+	/**
+	 * Test smart sql returning entire soup elements from multiple soups
+	 * @throws JSONException
+	 */
+	@Test
+	public void testSelectUnderscoreSoupFromMultipleSoups() throws JSONException {
+
+		JSONObject soupElt1 = new JSONObject("{'key':'ka', 'value':'va'}");
+		JSONObject soupElt1Created = store.create(TEST_SOUP, soupElt1);
+
+		store.registerSoup(OTHER_TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string)});
+		JSONObject soupElt2 = new JSONObject("{'key':'abcd', 'value':'va1', 'otherValue':'ova1'}");
+		JSONObject soupElt2Created = store.create(OTHER_TEST_SOUP, soupElt2);
+
+		final String smartSql = "SELECT {" + TEST_SOUP + ":_soup}, {" + OTHER_TEST_SOUP + ":_soup} FROM {" + TEST_SOUP + "}, {" + OTHER_TEST_SOUP + "}";
+		final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 25);
+		final JSONArray result = store.query(querySpec, 0);
+		Assert.assertNotNull("Result should not be null", result);
+		Assert.assertEquals("One row expected", 1, result.length());
+		JSONArray firstRow = result.getJSONArray(0);
+		JSONTestHelper.assertSameJSON("Wrong result for query - row 0 - first soup elt", soupElt1Created, firstRow.getJSONObject(0));
+		JSONTestHelper.assertSameJSON("Wrong result for query - row 0 - second soup elt", soupElt2Created, firstRow.getJSONObject(1));
 	}
 
 	/**
