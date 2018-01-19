@@ -934,7 +934,9 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		final JSONArray result = store.query(querySpec, 0);
 		Assert.assertNotNull("Result should not be null", result);
 		Assert.assertEquals("One row expected", 1, result.length());
-		JSONTestHelper.assertSameJSON("Wrong result for query - row 0", new JSONArray(new JSONObject[] { soupElt1Created, soupElt2Created}), result.get(0));
+		JSONArray firstRow = result.getJSONArray(0);
+		JSONTestHelper.assertSameJSON("Wrong result for query - row 0 - first soup elt", soupElt1Created, firstRow.getJSONObject(0));
+		JSONTestHelper.assertSameJSON("Wrong result for query - row 0 - second soup elt", soupElt2Created, firstRow.getJSONObject(1));
 	}
 
 	/**
