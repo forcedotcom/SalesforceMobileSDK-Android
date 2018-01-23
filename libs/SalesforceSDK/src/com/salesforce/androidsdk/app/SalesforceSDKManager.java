@@ -278,13 +278,6 @@ public class SalesforceSDKManager {
         // If your app runs in multiple processes, all the SalesforceSDKManager need to run cleanup during a logout
         cleanupReceiver = new CleanupReceiver();
         context.registerReceiver(cleanupReceiver, new IntentFilter(SalesforceSDKManager.CLEANUP_INTENT_ACTION));
-
-        // Enables IDP login flow if it's set through MDM.
-        final RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(context);
-        final String idpAppUrlScheme = runtimeConfig.getString(RuntimeConfig.ConfigKey.IDPAppURLScheme);
-        if (!TextUtils.isEmpty(idpAppUrlScheme)) {
-            this.idpAppURIScheme = idpAppUrlScheme;
-        }
     }
 
     /**
@@ -466,6 +459,13 @@ public class SalesforceSDKManager {
 
         // Initializes the HTTP client.
         HttpAccess.init(context, INSTANCE.getUserAgent());
+
+        // Enables IDP login flow if it's set through MDM.
+        final RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(context);
+        final String idpAppUrlScheme = runtimeConfig.getString(RuntimeConfig.ConfigKey.IDPAppURLScheme);
+        if (!TextUtils.isEmpty(idpAppUrlScheme)) {
+            INSTANCE.idpAppURIScheme = idpAppUrlScheme;
+        }
     }
 
     /**
