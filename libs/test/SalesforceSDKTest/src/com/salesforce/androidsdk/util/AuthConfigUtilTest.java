@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.util;
 import android.support.test.filters.SmallTest;
 import android.support.test.runner.AndroidJUnit4;
 
-import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -49,19 +48,21 @@ public class AuthConfigUtilTest {
 
     @Test
     public void testGetAuthConfigWithoutForwardSlash() {
-        final JSONObject authConfig = AuthConfigUtil.getSSOAuthConfig(SSO_ENDPOINT);
+        final AuthConfigUtil.SSOAuthConfig authConfig = AuthConfigUtil.getSSOAuthConfig(SSO_ENDPOINT);
         Assert.assertNotNull("Auth config should not be null", authConfig);
+        Assert.assertNotNull("Auth config JSON should not be null", authConfig.getAuthConfig());
     }
 
     @Test
     public void testGetAuthConfigWithForwardSlash() {
-        final JSONObject authConfig = AuthConfigUtil.getSSOAuthConfig(SSO_ENDPOINT + FORWARD_SLASH);
+        final AuthConfigUtil.SSOAuthConfig authConfig = AuthConfigUtil.getSSOAuthConfig(SSO_ENDPOINT + FORWARD_SLASH);
         Assert.assertNotNull("Auth config should not be null", authConfig);
+        Assert.assertNotNull("Auth config JSON should not be null", authConfig.getAuthConfig());
     }
 
     @Test
     public void testGetNoAuthConfig() {
-        final JSONObject authConfig = AuthConfigUtil.getSSOAuthConfig(PROD_ENDPOINT);
+        final AuthConfigUtil.SSOAuthConfig authConfig = AuthConfigUtil.getSSOAuthConfig(PROD_ENDPOINT);
         Assert.assertNull("Auth config should be null", authConfig);
     }
 }

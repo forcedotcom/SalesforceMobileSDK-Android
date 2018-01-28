@@ -54,11 +54,11 @@ public class AuthConfigUtil {
      * @param loginUrl Login URL.
      * @return Auth config.
      */
-    public static JSONObject getSSOAuthConfig(String loginUrl) {
+    public static SSOAuthConfig getSSOAuthConfig(String loginUrl) {
         if (TextUtils.isEmpty(loginUrl)) {
             return null;
         }
-        JSONObject authConfig = null;
+        SSOAuthConfig authConfig = null;
         if (loginUrl.endsWith(FORWARD_SLASH)) {
             loginUrl = loginUrl.substring(0, loginUrl.length() - 1);
         }
@@ -67,11 +67,58 @@ public class AuthConfigUtil {
         try {
             final Response response = HttpAccess.DEFAULT.getOkHttpClient().newCall(request).execute();
             if (response != null && response.isSuccessful()) {
-                authConfig = (new RestResponse(response)).asJSONObject();
+                authConfig = new SSOAuthConfig((new RestResponse(response)).asJSONObject());
             }
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Auth config request was not successful", e);
         }
         return authConfig;
+    }
+
+    /**
+     * This class represents SSO auth config.
+     *
+     * @author bhariharan
+     */
+    public static class SSOAuthConfig {
+
+        private static final String MOBILE_SDK_KEY = "MobileSDK";
+        private static final String USE_NATIVE_BROWSER_KEY = "UseAndroidNativeBrowserForAuthentication";
+
+        private JSONObject authConfig;
+        private boolean browserLoginEnabled;
+
+        /**
+         * Parameterized constructor.
+         *
+         * @param authConfig SSO auth config.
+         */
+        public SSOAuthConfig(JSONObject authConfig) {
+            this.authConfig = authConfig;
+            if (authConfig != null) {
+                final JSONObject mobileSDK = authConfig.optJSONObject(MOBILE_SDK_KEY);
+                if (mobileSDK != null) {
+                    browserLoginEnabled = mobileSDK.optBoolean(USE_NATIVE_BROWSER_KEY);
+                }
+            }
+        }
+
+        /**
+         * Returns the SSO auth config.
+         *
+         * @return Auth config.
+         */
+        public JSONObject getAuthConfig() {
+            return authConfig;
+        }
+
+        /**
+         * Returns whether browser login has been enabled in this auth config.
+         *
+         * @return True - if browser login is enabled, False - otherwise.
+         */
+        public boolean isBrowserLoginEnabled() {
+            return browserLoginEnabled;
+        }
     }
 }
