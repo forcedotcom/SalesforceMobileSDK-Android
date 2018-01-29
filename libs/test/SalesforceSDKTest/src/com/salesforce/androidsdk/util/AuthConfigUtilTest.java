@@ -61,6 +61,14 @@ public class AuthConfigUtilTest {
     }
 
     @Test
+    public void testBrowserBasedLoginEnabled() {
+        final AuthConfigUtil.MyDomainAuthConfig authConfig = AuthConfigUtil.getMyDomainAuthConfig(MY_DOMAIN_ENDPOINT);
+        Assert.assertNotNull("Auth config should not be null", authConfig);
+        Assert.assertNotNull("Auth config JSON should not be null", authConfig.getAuthConfig());
+        Assert.assertTrue("Browser based login should be enabled", authConfig.isBrowserLoginEnabled());
+    }
+
+    @Test
     public void testGetNoAuthConfig() {
         final AuthConfigUtil.MyDomainAuthConfig authConfig = AuthConfigUtil.getMyDomainAuthConfig(SANDBOX_ENDPOINT);
         Assert.assertNull("Auth config should be null", authConfig);
