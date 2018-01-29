@@ -129,6 +129,12 @@ aliases:
     paths:
       - /home/circleci/.rubies
 
+  - &codecov
+    name: Codecov
+    command: bash <(curl -s https://codecov.io/bash)
+    when: always
+    background: true
+
 defaults: &defaults
   working_directory: ~/SalesforceMobileSDK-Android
   docker:
@@ -187,6 +193,7 @@ jobs:
       - run: *launch-emulator
       - run: *wait-for-emulator
       - run: *run-unit-tests
+      - run: *codecov
       - save_cache: *save-gradle-cache
       - store_artifacts:
           path: libs/SalesforceAnalytics/build/reports/
@@ -207,6 +214,7 @@ jobs:
       - run: *launch-emulator
       - run: *wait-for-emulator
       - run: *run-unit-tests
+      - run: *codecov
       - save_cache: *save-gradle-cache
       - store_artifacts:
           path: libs/SalesforceSDK/build/reports/
@@ -227,6 +235,7 @@ jobs:
       - run: *launch-emulator
       - run: *wait-for-emulator
       - run: *run-unit-tests
+      - run: *codecov
       - save_cache: *save-gradle-cache
       - store_artifacts:
           path: libs/SmartStore/build/reports/
@@ -247,6 +256,7 @@ jobs:
       - run: *launch-emulator
       - run: *wait-for-emulator
       - run: *run-unit-tests
+      - run: *codecov
       - save_cache: *save-gradle-cache
       - store_artifacts:
           path: libs/SmartSync/build/reports/
@@ -267,6 +277,7 @@ jobs:
       - run: *launch-emulator
       - run: *wait-for-emulator
       - run: *run-unit-tests
+      - run: *codecov
       - save_cache: *save-gradle-cache
       - store_artifacts:
           path: libs/SalesforceHybrid/build/reports/
@@ -287,6 +298,7 @@ jobs:
       - run: *launch-emulator
       - run: *wait-for-emulator
       - run: *run-unit-tests
+      - run: *codecov
       - save_cache: *save-gradle-cache
       - store_artifacts:
           path: native/NativeSampleApps/RestExplorer/build/reports/
@@ -332,6 +344,7 @@ jobs:
       - run: *test-salesforce-hybrid
       - run: *test-rest-explorer
       - run: *build-salesforce-react
+      - run: *codecov
       - save_cache: *save-gradle-cache
       - store_artifacts:
           path: libs/SalesforceAnalytics/build/reports/

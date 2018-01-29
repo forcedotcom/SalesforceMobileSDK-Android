@@ -1,0 +1,43 @@
+codecov:
+  branch: dev
+
+coverage:
+  precision: 2
+  round: down
+  range: "35...85"
+
+ignore:
+  - "hybrid"
+  - "native"
+  - "test"
+  - "libs/**/src/com/salesforce/androidsdk/**/util/test"
+
+comment:
+  layout: "reach, diff"
+  behavior: default
+  require_changes: false
+
+coverage:
+  status:
+    project:
+      default: false  # disable the default status that measures entire project
+      SalesforceAnalytics:
+        target: auto
+        paths: "libs/SalesforceAnalytics/src/"
+        flags: SalesforceAnalytics
+      SalesforceSDKCore:
+        target: auto
+        paths: "libs/SalesforceSDKCore/src/"
+        flags: SalesforceSDKCore
+      SalesforceHybridSDK:
+        target: auto
+        paths: "libs/SalesforceHybridSDK/src/"
+        flags: SalesforceHybridSDK
+      SmartStore:
+        target: auto
+        paths: "libs/SmartStore/src/"
+        flags: SmartStore
+      SmartSync:
+        target: auto
+        paths: "libs/SmartSync/src/"
+        flags: SmartSync
