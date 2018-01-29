@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.ui;
 import android.app.Activity;
 import android.app.FragmentManager;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -42,7 +41,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer;
 import com.salesforce.androidsdk.config.RuntimeConfig;
-import com.salesforce.androidsdk.util.AuthConfigUtil;
+import com.salesforce.androidsdk.util.AuthConfigTask;
 
 import java.util.List;
 
@@ -54,7 +53,7 @@ import java.util.List;
  * @author bhariharan
  */
 public class ServerPickerActivity extends Activity implements
-        android.widget.RadioGroup.OnCheckedChangeListener {
+        android.widget.RadioGroup.OnCheckedChangeListener, AuthConfigTask.AuthConfigCallbackInterface {
 
     public static final String CHANGE_SERVER_INTENT = "com.salesforce.SERVER_CHANGED";
     private static final String SERVER_DIALOG_NAME = "custom_server_dialog";
@@ -171,7 +170,7 @@ public class ServerPickerActivity extends Activity implements
      * @param v View.
      */
     public void setPositiveReturnValue(View v) {
-        (new AuthConfigTask()).execute();
+        (new AuthConfigTask(this)).execute();
     }
 
     /**
@@ -244,26 +243,11 @@ public class ServerPickerActivity extends Activity implements
         }
     }
 
-    private class AuthConfigTask extends AsyncTask<Void, Void, Void> {
-
-        @Override
-        protected Void doInBackground(Void... nothings) {
-            final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url;
-            final AuthConfigUtil.MyDomainAuthConfig authConfig = AuthConfigUtil.getMyDomainAuthConfig(loginServer);
-            boolean browserLoginEnabled = false;
-            if (authConfig != null) {
-                browserLoginEnabled = authConfig.isBrowserLoginEnabled();
-            }
-            SalesforceSDKManager.getInstance().setBrowserLoginEnabled(browserLoginEnabled);
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void nothing) {
-            ServerPickerActivity.this.setResult(Activity.RESULT_OK, null);
-            final Intent changeServerIntent = new Intent(CHANGE_SERVER_INTENT);
-            ServerPickerActivity.this.sendBroadcast(changeServerIntent);
-            ServerPickerActivity.this.finish();
-        }
+    @Override
+    public void onAuthConfigFetched() {
+        setResult(Activity.RESULT_OK, null);
+        final Intent changeServerIntent = new Intent(CHANGE_SERVER_INTENT);
+        sendBroadcast(changeServerIntent);
+        finish();
     }
 }
