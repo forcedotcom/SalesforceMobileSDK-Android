@@ -182,7 +182,7 @@ public class ServerPickerActivity extends Activity implements
     	final FragmentManager fragMgr = getFragmentManager();
 
         // Adds fragment only if it has not been added already.
-        if(!urlEditDialog.isAdded()) {
+        if (!urlEditDialog.isAdded()) {
             urlEditDialog.show(fragMgr, SERVER_DIALOG_NAME);
         }
     }

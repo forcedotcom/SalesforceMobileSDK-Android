@@ -62,6 +62,7 @@ import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents;
+import com.salesforce.androidsdk.util.AuthConfigTask;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
@@ -79,7 +80,7 @@ import java.util.Map;
  * The bulk of the work for this is actually managed by OAuthWebviewHelper class.
  */
 public class LoginActivity extends AccountAuthenticatorActivity
-		implements OAuthWebviewHelperEvents {
+		implements OAuthWebviewHelperEvents, AuthConfigTask.AuthConfigCallbackInterface {
 
     public static final int PICK_SERVER_REQUEST_CODE = 10;
     private static final String TAG = "LoginActivity";
@@ -135,6 +136,9 @@ public class LoginActivity extends AccountAuthenticatorActivity
             receiverRegistered = true;
         }
         authCallback = new SPAuthCallback();
+
+        // Fetches auth config if required.
+        (new AuthConfigTask(this)).execute();
 	}
 
 	@Override
@@ -372,6 +376,14 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		final Intent i = new Intent(this, ServerPickerActivity.class);
 	    startActivityForResult(i, PICK_SERVER_REQUEST_CODE);
 	}
+
+    /**
+     * Called when the task to fetch auth config has completed.
+     */
+    @Override
+    public void onAuthConfigFetched() {
+        webviewHelper.loadLoginPage();
+    }
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {

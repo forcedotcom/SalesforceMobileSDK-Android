@@ -77,7 +77,6 @@ import com.salesforce.androidsdk.ui.DevInfoActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
-import com.salesforce.androidsdk.util.AuthConfigUtil;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
@@ -467,21 +466,6 @@ public class SalesforceSDKManager {
         if (!TextUtils.isEmpty(idpAppUrlScheme)) {
             INSTANCE.idpAppURIScheme = idpAppUrlScheme;
         }
-
-        // Kicks off a thread to fetch auth config for the current server.
-        (new Thread(new Runnable() {
-
-            @Override
-            public void run() {
-                final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url;
-                final AuthConfigUtil.MyDomainAuthConfig authConfig = AuthConfigUtil.getMyDomainAuthConfig(loginServer);
-                boolean browserLoginEnabled = false;
-                if (authConfig != null) {
-                    browserLoginEnabled = authConfig.isBrowserLoginEnabled();
-                }
-                SalesforceSDKManager.getInstance().setBrowserLoginEnabled(browserLoginEnabled);
-            }
-        })).start();
     }
 
     /**
