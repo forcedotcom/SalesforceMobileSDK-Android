@@ -249,7 +249,7 @@ public class ServerPickerActivity extends Activity implements
         @Override
         protected Void doInBackground(Void... nothings) {
             final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url;
-            final AuthConfigUtil.SSOAuthConfig authConfig = AuthConfigUtil.getSSOAuthConfig(loginServer);
+            final AuthConfigUtil.MyDomainAuthConfig authConfig = AuthConfigUtil.getMyDomainAuthConfig(loginServer);
             boolean browserLoginEnabled = false;
             if (authConfig != null) {
                 browserLoginEnabled = authConfig.isBrowserLoginEnabled();

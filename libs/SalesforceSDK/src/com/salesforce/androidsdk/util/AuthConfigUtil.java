@@ -44,30 +44,30 @@ import okhttp3.Response;
 public class AuthConfigUtil {
 
     private static final String FORWARD_SLASH = "/";
-    private static final String SSO_AUTH_CONFIG_ENDPOINT = "/.well-known/auth-configuration";
+    private static final String MY_DOMAIN_AUTH_CONFIG_ENDPOINT = "/.well-known/auth-configuration";
     private static final String TAG = "AuthConfigUtil";
 
     /**
-     * Returns the auth config associated with an SSO login endpoint. This call
+     * Returns the auth config associated with a my domain login endpoint. This call
      * should be made from a background thread since it makes a network request.
      *
      * @param loginUrl Login URL.
      * @return Auth config.
      */
-    public static SSOAuthConfig getSSOAuthConfig(String loginUrl) {
+    public static MyDomainAuthConfig getMyDomainAuthConfig(String loginUrl) {
         if (TextUtils.isEmpty(loginUrl)) {
             return null;
         }
-        SSOAuthConfig authConfig = null;
+        MyDomainAuthConfig authConfig = null;
         if (loginUrl.endsWith(FORWARD_SLASH)) {
             loginUrl = loginUrl.substring(0, loginUrl.length() - 1);
         }
-        final String authConfigUrl = loginUrl + SSO_AUTH_CONFIG_ENDPOINT;
+        final String authConfigUrl = loginUrl + MY_DOMAIN_AUTH_CONFIG_ENDPOINT;
         final Request request = new Request.Builder().url(authConfigUrl).get().build();
         try {
             final Response response = HttpAccess.DEFAULT.getOkHttpClient().newCall(request).execute();
             if (response != null && response.isSuccessful()) {
-                authConfig = new SSOAuthConfig((new RestResponse(response)).asJSONObject());
+                authConfig = new MyDomainAuthConfig((new RestResponse(response)).asJSONObject());
             }
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Auth config request was not successful", e);
@@ -76,11 +76,11 @@ public class AuthConfigUtil {
     }
 
     /**
-     * This class represents SSO auth config.
+     * This class represents my domain auth config.
      *
      * @author bhariharan
      */
-    public static class SSOAuthConfig {
+    public static class MyDomainAuthConfig {
 
         private static final String MOBILE_SDK_KEY = "MobileSDK";
         private static final String USE_NATIVE_BROWSER_KEY = "UseAndroidNativeBrowserForAuthentication";
@@ -93,7 +93,7 @@ public class AuthConfigUtil {
          *
          * @param authConfig SSO auth config.
          */
-        public SSOAuthConfig(JSONObject authConfig) {
+        public MyDomainAuthConfig(JSONObject authConfig) {
             this.authConfig = authConfig;
             if (authConfig != null) {
                 final JSONObject mobileSDK = authConfig.optJSONObject(MOBILE_SDK_KEY);
@@ -104,7 +104,7 @@ public class AuthConfigUtil {
         }
 
         /**
-         * Returns the SSO auth config.
+         * Returns the my domain auth config.
          *
          * @return Auth config.
          */

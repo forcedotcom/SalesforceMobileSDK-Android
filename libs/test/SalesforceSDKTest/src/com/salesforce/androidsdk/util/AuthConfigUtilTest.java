@@ -42,27 +42,27 @@ import org.junit.runner.RunWith;
 @SmallTest
 public class AuthConfigUtilTest {
 
-    private static final String SSO_ENDPOINT = "https://mobsdktest.my.salesforce.com";
-    private static final String PROD_ENDPOINT = "https://login.salesforce.com";
+    private static final String MY_DOMAIN_ENDPOINT = "https://images.cs4.my.salesforce.com";
+    private static final String SANDBOX_ENDPOINT = "https://test.salesforce.com";
     private static final String FORWARD_SLASH = "/";
 
     @Test
     public void testGetAuthConfigWithoutForwardSlash() {
-        final AuthConfigUtil.SSOAuthConfig authConfig = AuthConfigUtil.getSSOAuthConfig(SSO_ENDPOINT);
+        final AuthConfigUtil.MyDomainAuthConfig authConfig = AuthConfigUtil.getMyDomainAuthConfig(MY_DOMAIN_ENDPOINT);
         Assert.assertNotNull("Auth config should not be null", authConfig);
         Assert.assertNotNull("Auth config JSON should not be null", authConfig.getAuthConfig());
     }
 
     @Test
     public void testGetAuthConfigWithForwardSlash() {
-        final AuthConfigUtil.SSOAuthConfig authConfig = AuthConfigUtil.getSSOAuthConfig(SSO_ENDPOINT + FORWARD_SLASH);
+        final AuthConfigUtil.MyDomainAuthConfig authConfig = AuthConfigUtil.getMyDomainAuthConfig(MY_DOMAIN_ENDPOINT + FORWARD_SLASH);
         Assert.assertNotNull("Auth config should not be null", authConfig);
         Assert.assertNotNull("Auth config JSON should not be null", authConfig.getAuthConfig());
     }
 
     @Test
     public void testGetNoAuthConfig() {
-        final AuthConfigUtil.SSOAuthConfig authConfig = AuthConfigUtil.getSSOAuthConfig(PROD_ENDPOINT);
+        final AuthConfigUtil.MyDomainAuthConfig authConfig = AuthConfigUtil.getMyDomainAuthConfig(SANDBOX_ENDPOINT);
         Assert.assertNull("Auth config should be null", authConfig);
     }
 }
