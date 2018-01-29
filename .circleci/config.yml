@@ -133,7 +133,6 @@ aliases:
     name: Codecov
     command: bash <(curl -s https://codecov.io/bash)
     when: always
-    background: true
 
 defaults: &defaults
   working_directory: ~/SalesforceMobileSDK-Android
@@ -193,7 +192,6 @@ jobs:
       - run: *launch-emulator
       - run: *wait-for-emulator
       - run: *run-unit-tests
-      - run: *codecov
       - save_cache: *save-gradle-cache
       - store_artifacts:
           path: libs/SalesforceAnalytics/build/reports/
@@ -201,6 +199,7 @@ jobs:
       - store_test_results:
           path: libs/SalesforceAnalytics/build/outputs/androidTest-results/
       - run: *run-danger
+      - run: *codecov
 
   test-SalesforceSDK:
     <<: *defaults
@@ -214,7 +213,6 @@ jobs:
       - run: *launch-emulator
       - run: *wait-for-emulator
       - run: *run-unit-tests
-      - run: *codecov
       - save_cache: *save-gradle-cache
       - store_artifacts:
           path: libs/SalesforceSDK/build/reports/
@@ -222,6 +220,7 @@ jobs:
       - store_test_results:
           path: libs/SalesforceSDK/build/outputs/androidTest-results/
       - run: *run-danger
+      - run: *codecov
 
   test-SmartStore:
     <<: *defaults
@@ -235,7 +234,6 @@ jobs:
       - run: *launch-emulator
       - run: *wait-for-emulator
       - run: *run-unit-tests
-      - run: *codecov
       - save_cache: *save-gradle-cache
       - store_artifacts:
           path: libs/SmartStore/build/reports/
@@ -243,6 +241,7 @@ jobs:
       - store_test_results:
           path: libs/SmartStore/build/outputs/androidTest-results/
       - run: *run-danger
+      - run: *codecov
 
   test-SmartSync:
     <<: *defaults
@@ -256,7 +255,6 @@ jobs:
       - run: *launch-emulator
       - run: *wait-for-emulator
       - run: *run-unit-tests
-      - run: *codecov
       - save_cache: *save-gradle-cache
       - store_artifacts:
           path: libs/SmartSync/build/reports/
@@ -264,6 +262,7 @@ jobs:
       - store_test_results:
           path: libs/SmartSync/build/outputs/androidTest-results/
       - run: *run-danger
+      - run: *codecov
 
   test-SalesforceHybrid:
     <<: *defaults
@@ -277,7 +276,6 @@ jobs:
       - run: *launch-emulator
       - run: *wait-for-emulator
       - run: *run-unit-tests
-      - run: *codecov
       - save_cache: *save-gradle-cache
       - store_artifacts:
           path: libs/SalesforceHybrid/build/reports/
@@ -285,6 +283,7 @@ jobs:
       - store_test_results:
           path: libs/SalesforceHybrid/build/outputs/androidTest-results/
       - run: *run-danger
+      - run: *codecov
 
   test-RestExplorer:
     <<: *defaults
@@ -298,7 +297,6 @@ jobs:
       - run: *launch-emulator
       - run: *wait-for-emulator
       - run: *run-unit-tests
-      - run: *codecov
       - save_cache: *save-gradle-cache
       - store_artifacts:
           path: native/NativeSampleApps/RestExplorer/build/reports/
@@ -306,6 +304,7 @@ jobs:
       - store_test_results:
           path: native/NativeSampleApps/RestExplorer/build/outputs/androidTest-results/
       - run: *run-danger
+      - run: *codecov
 
   test-SalesforceReact:
     <<: *defaults
@@ -344,7 +343,6 @@ jobs:
       - run: *test-salesforce-hybrid
       - run: *test-rest-explorer
       - run: *build-salesforce-react
-      - run: *codecov
       - save_cache: *save-gradle-cache
       - store_artifacts:
           path: libs/SalesforceAnalytics/build/reports/
@@ -374,6 +372,7 @@ jobs:
           destination: RestExplorer
       - store_test_results:
           path: libs/SalesforceHybrid/build/outputs/androidTest-results/
+      - run: *codecov
 
   generate-artifacts:
     <<: *defaults

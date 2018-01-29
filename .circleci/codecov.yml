@@ -15,7 +15,7 @@ ignore:
 comment:
   layout: "reach, diff"
   behavior: default
-  require_changes: false
+  require_changes: true
 
 coverage:
   status:
@@ -41,3 +41,7 @@ coverage:
         target: auto
         paths: "libs/SmartSync/src/"
         flags: SmartSync
+      RestExplorer:
+        target: auto
+        paths: "native/test/RestExplorerTest/src/"
+        falgs: RestExplorer
