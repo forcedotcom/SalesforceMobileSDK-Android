@@ -70,8 +70,6 @@ import com.salesforce.androidsdk.util.UriFragmentParser;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 
 /**
  * Login Activity: takes care of authenticating the user.
@@ -82,7 +80,7 @@ import java.util.concurrent.BlockingQueue;
  * The bulk of the work for this is actually managed by OAuthWebviewHelper class.
  */
 public class LoginActivity extends AccountAuthenticatorActivity
-		implements OAuthWebviewHelperEvents, AuthConfigTask.AuthConfigCallbackInterface {
+		implements OAuthWebviewHelperEvents {
 
     public static final int PICK_SERVER_REQUEST_CODE = 10;
     private static final String TAG = "LoginActivity";
@@ -96,7 +94,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
     private String userHint;
     private String spActivityName;
     private Bundle spActivityExtras;
-    private BlockingQueue<Boolean> authConfigReady;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -110,13 +107,9 @@ public class LoginActivity extends AccountAuthenticatorActivity
                 WindowManager.LayoutParams.FLAG_SECURE);
 
         // Fetches auth config if required.
-        authConfigReady = new ArrayBlockingQueue<>(1);
-        (new AuthConfigTask(this)).execute();
-
-        // Waits for auth config to be fetched before continuing to load the activity.
         try {
-            authConfigReady.take();
-        } catch (InterruptedException e) {
+            (new AuthConfigTask(null)).execute().get();
+        } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Exception occurred while fetching auth config", e);
         }
 
@@ -387,14 +380,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		final Intent i = new Intent(this, ServerPickerActivity.class);
 	    startActivityForResult(i, PICK_SERVER_REQUEST_CODE);
 	}
-
-    /**
-     * Called when the task to fetch auth config has completed.
-     */
-    @Override
-    public void onAuthConfigFetched() {
-        authConfigReady.add(Boolean.TRUE);
-    }
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
