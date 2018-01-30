@@ -70,7 +70,8 @@ import com.salesforce.androidsdk.util.UriFragmentParser;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 /**
  * Login Activity: takes care of authenticating the user.
@@ -95,7 +96,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
     private String userHint;
     private String spActivityName;
     private Bundle spActivityExtras;
-    private AtomicBoolean authConfigFetched;
+    private BlockingQueue<Boolean> authConfigReady;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -109,13 +110,14 @@ public class LoginActivity extends AccountAuthenticatorActivity
                 WindowManager.LayoutParams.FLAG_SECURE);
 
         // Fetches auth config if required.
-        authConfigFetched = new AtomicBoolean(false);
-        if (!authConfigFetched.get()) {
-            (new AuthConfigTask(this)).execute();
-        }
+        authConfigReady = new ArrayBlockingQueue<>(1);
+        (new AuthConfigTask(this)).execute();
 
         // Waits for auth config to be fetched before continuing to load the activity.
-        while (!authConfigFetched.get()) {
+        try {
+            authConfigReady.take();
+        } catch (InterruptedException e) {
+            SalesforceSDKLogger.e(TAG, "Exception occurred while fetching auth config", e);
         }
 
         // Setup content view.
@@ -391,7 +393,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
      */
     @Override
     public void onAuthConfigFetched() {
-        authConfigFetched.set(true);
+        authConfigReady.add(Boolean.TRUE);
     }
 
 	@Override
