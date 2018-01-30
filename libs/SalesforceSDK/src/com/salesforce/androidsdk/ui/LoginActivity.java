@@ -70,6 +70,7 @@ import com.salesforce.androidsdk.util.UriFragmentParser;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Login Activity: takes care of authenticating the user.
@@ -94,19 +95,30 @@ public class LoginActivity extends AccountAuthenticatorActivity
     private String userHint;
     private String spActivityName;
     private Bundle spActivityExtras;
+    private AtomicBoolean authConfigFetched;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-        // Getting login options from intent's extras
+        // Getting login options from intent's extras.
         final LoginOptions loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
 
-        // Protect against screenshots
+        // Protect against screenshots.
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
                 WindowManager.LayoutParams.FLAG_SECURE);
 
-        // Setup content view
+        // Fetches auth config if required.
+        authConfigFetched = new AtomicBoolean(false);
+        if (!authConfigFetched.get()) {
+            (new AuthConfigTask(this)).execute();
+        }
+
+        // Waits for auth config to be fetched before continuing to load the activity.
+        while (!authConfigFetched.get()) {
+        }
+
+        // Setup content view.
         setContentView(R.layout.sf__login);
 		if (SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled()) {
             final Button button = findViewById(R.id.sf__idp_login_button);
@@ -136,9 +148,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
             receiverRegistered = true;
         }
         authCallback = new SPAuthCallback();
-
-        // Fetches auth config if required.
-        (new AuthConfigTask(this)).execute();
 	}
 
 	@Override
@@ -382,7 +391,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
      */
     @Override
     public void onAuthConfigFetched() {
-        webviewHelper.loadLoginPage();
+        authConfigFetched.set(true);
     }
 
 	@Override
