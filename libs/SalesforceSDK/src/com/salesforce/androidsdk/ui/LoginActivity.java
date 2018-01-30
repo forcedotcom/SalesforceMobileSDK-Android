@@ -62,6 +62,7 @@ import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents;
+import com.salesforce.androidsdk.util.AuthConfigTask;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
@@ -98,14 +99,21 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-        // Getting login options from intent's extras
+        // Getting login options from intent's extras.
         final LoginOptions loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
 
-        // Protect against screenshots
+        // Protect against screenshots.
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
                 WindowManager.LayoutParams.FLAG_SECURE);
 
-        // Setup content view
+        // Fetches auth config if required.
+        try {
+            (new AuthConfigTask(null)).execute().get();
+        } catch (Exception e) {
+            SalesforceSDKLogger.e(TAG, "Exception occurred while fetching auth config", e);
+        }
+
+        // Setup content view.
         setContentView(R.layout.sf__login);
 		if (SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled()) {
             final Button button = findViewById(R.id.sf__idp_login_button);

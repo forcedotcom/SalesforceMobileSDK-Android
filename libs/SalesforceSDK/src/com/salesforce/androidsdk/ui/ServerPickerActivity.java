@@ -41,6 +41,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer;
 import com.salesforce.androidsdk.config.RuntimeConfig;
+import com.salesforce.androidsdk.util.AuthConfigTask;
 
 import java.util.List;
 
@@ -52,7 +53,7 @@ import java.util.List;
  * @author bhariharan
  */
 public class ServerPickerActivity extends Activity implements
-        android.widget.RadioGroup.OnCheckedChangeListener {
+        android.widget.RadioGroup.OnCheckedChangeListener, AuthConfigTask.AuthConfigCallbackInterface {
 
     public static final String CHANGE_SERVER_INTENT = "com.salesforce.SERVER_CHANGED";
     private static final String SERVER_DIALOG_NAME = "custom_server_dialog";
@@ -169,10 +170,7 @@ public class ServerPickerActivity extends Activity implements
      * @param v View.
      */
     public void setPositiveReturnValue(View v) {
-        setResult(Activity.RESULT_OK, null);
-        final Intent changeServerIntent = new Intent(CHANGE_SERVER_INTENT);
-        sendBroadcast(changeServerIntent);
-        finish();
+        (new AuthConfigTask(this)).execute();
     }
 
     /**
@@ -184,7 +182,7 @@ public class ServerPickerActivity extends Activity implements
     	final FragmentManager fragMgr = getFragmentManager();
 
         // Adds fragment only if it has not been added already.
-        if(!urlEditDialog.isAdded()) {
+        if (!urlEditDialog.isAdded()) {
             urlEditDialog.show(fragMgr, SERVER_DIALOG_NAME);
         }
     }
@@ -243,5 +241,13 @@ public class ServerPickerActivity extends Activity implements
                 }
             }
         }
+    }
+
+    @Override
+    public void onAuthConfigFetched() {
+        setResult(Activity.RESULT_OK, null);
+        final Intent changeServerIntent = new Intent(CHANGE_SERVER_INTENT);
+        sendBroadcast(changeServerIntent);
+        finish();
     }
 }
