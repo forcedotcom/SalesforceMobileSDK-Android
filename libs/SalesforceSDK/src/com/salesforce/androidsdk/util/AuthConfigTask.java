@@ -66,6 +66,7 @@ public class AuthConfigTask extends AsyncTask<Void, Void, Void> {
     protected Void doInBackground(Void... nothings) {
         final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url;
         if (loginServer.equals(LoginServerManager.PRODUCTION_LOGIN_URL) || loginServer.equals(LoginServerManager.SANDBOX_LOGIN_URL)) {
+            SalesforceSDKManager.getInstance().setBrowserLoginEnabled(false);
             return null;
         }
         final AuthConfigUtil.MyDomainAuthConfig authConfig = AuthConfigUtil.getMyDomainAuthConfig(loginServer);
