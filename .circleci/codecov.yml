@@ -25,14 +25,14 @@ coverage:
         target: auto
         paths: "libs/SalesforceAnalytics/src/"
         flags: SalesforceAnalytics
-      SalesforceSDKCore:
+      SalesforceSDK:
         target: auto
-        paths: "libs/SalesforceSDKCore/src/"
-        flags: SalesforceSDKCore
-      SalesforceHybridSDK:
+        paths: "libs/SalesforceSDK/src/"
+        flags: SalesforceSDK
+      SalesforceHybrid:
         target: auto
-        paths: "libs/SalesforceHybridSDK/src/"
-        flags: SalesforceHybridSDK
+        paths: "libs/SalesforceHybrid/src/"
+        flags: SalesforceHybrid
       SmartStore:
         target: auto
         paths: "libs/SmartStore/src/"
