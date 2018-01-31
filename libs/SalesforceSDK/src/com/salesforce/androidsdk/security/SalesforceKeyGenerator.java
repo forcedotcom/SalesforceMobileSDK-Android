@@ -174,13 +174,11 @@ public class SalesforceKeyGenerator {
      * @return RSA public key string.
      */
     public static synchronized String getRSAPublicString(String name, int length) {
+        final PublicKey publicKey = getRSAPublicKey(name, length);
         String publicKeyBase64 = null;
-        createRSAKeysIfNecessary(name, length);
-        try {
-            publicKeyBase64 = Base64.encodeToString(loadKeyStore().getCertificate(name).getPublicKey().getEncoded(),
+        if (publicKey != null) {
+            publicKeyBase64 = Base64.encodeToString(publicKey.getEncoded(),
                     Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
-        } catch (Exception e) {
-            SalesforceSDKLogger.e(TAG, "Security exception thrown", e);
         }
         return publicKeyBase64;
     }
