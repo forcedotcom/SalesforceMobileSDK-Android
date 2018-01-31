@@ -48,7 +48,7 @@ Introduction
 - To define soups for the default global store, provide a file named `globalstore.json`.
 - To define soups for the default user store, provide a file named `userstore.json`.
 
-**SmartSync Enhancements**
+**SmartSync Data Framework Enhancements**
 - Beginning in Mobile SDK 6.0, you can define sync configuration files and assign names to sync configurations.
 - You can use sync names to run, edit, or delete a saved sync operation.
 - You can define “sync down” and “sync up” operations through configuration files rather than code.
