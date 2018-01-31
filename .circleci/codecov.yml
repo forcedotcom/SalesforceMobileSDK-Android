@@ -43,5 +43,5 @@ coverage:
         flags: SmartSync
       RestExplorer:
         target: auto
-        paths: "native/test/RestExplorerTest/src/"
+        paths: "native/NativeSampleApps/RestExplorer/src/"
         falgs: RestExplorer
