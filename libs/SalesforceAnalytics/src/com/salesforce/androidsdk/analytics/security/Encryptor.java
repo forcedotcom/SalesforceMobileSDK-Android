@@ -332,7 +332,7 @@ public class Encryptor {
             byte[] encryptedBytes = cipher.doFinal(data.getBytes());
             String encryptedData = null;
             if (encryptedBytes != null) {
-                encryptedData = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
+                encryptedData = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP | Base64.NO_PADDING);
             }
             return encryptedData;
         } catch (Exception e) {
@@ -355,7 +355,7 @@ public class Encryptor {
         try {
             final Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
             cipher.init(Cipher.DECRYPT_MODE, privateKey);
-            byte[] decodedBytes = Base64.decode(data.getBytes(),Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
+            byte[] decodedBytes = Base64.decode(data.getBytes(),Base64.NO_WRAP | Base64.NO_PADDING);
             byte[] decryptedBytes = cipher.doFinal(decodedBytes);
             String decryptedData = null;
             if (decryptedBytes != null) {
