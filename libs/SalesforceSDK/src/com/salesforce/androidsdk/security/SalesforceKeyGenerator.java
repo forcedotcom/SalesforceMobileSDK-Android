@@ -178,7 +178,7 @@ public class SalesforceKeyGenerator {
         String publicKeyBase64 = null;
         if (publicKey != null) {
             publicKeyBase64 = Base64.encodeToString(publicKey.getEncoded(),
-                    Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
+                    Base64.NO_WRAP | Base64.NO_PADDING);
         }
         return publicKeyBase64;
     }
