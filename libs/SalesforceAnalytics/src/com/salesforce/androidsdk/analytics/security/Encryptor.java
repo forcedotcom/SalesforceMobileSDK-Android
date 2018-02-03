@@ -323,18 +323,29 @@ public class Encryptor {
      * @return Encrypted data.
      */
     public static String encryptWithRSA(PublicKey publicKey, String data) {
+        String encryptedData = null;
+        byte[] encryptedBytes = encryptWithRSABytes(publicKey, data);
+        if (encryptedBytes != null) {
+            encryptedData = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP | Base64.NO_PADDING);
+        }
+        return encryptedData;
+    }
+
+    /**
+     * Returns data encrypted with an RSA public key.
+     *
+     * @param publicKey RSA public key.
+     * @param data Data to be encrypted.
+     * @return Encrypted data.
+     */
+    public static byte[] encryptWithRSABytes(PublicKey publicKey, String data) {
         if (publicKey == null || TextUtils.isEmpty(data)) {
             return null;
         }
         try {
             final Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
             cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-            byte[] encryptedBytes = cipher.doFinal(data.getBytes());
-            String encryptedData = null;
-            if (encryptedBytes != null) {
-                encryptedData = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP | Base64.NO_PADDING);
-            }
-            return encryptedData;
+            return cipher.doFinal(data.getBytes());
         } catch (Exception e) {
             SalesforceAnalyticsLogger.e(null, TAG, "Error during asymmetric encryption using RSA", e);
         }
@@ -349,6 +360,26 @@ public class Encryptor {
      * @return Decrypted data.
      */
     public static String decryptWithRSA(PrivateKey privateKey, String data) {
+        String decryptedData = null;
+        byte[] decryptedBytes = decryptWithRSABytes(privateKey, data);
+        if (decryptedBytes != null) {
+            try {
+                decryptedData = new String(decryptedBytes, 0, decryptedBytes.length, UTF8);
+            } catch (Exception e) {
+                SalesforceAnalyticsLogger.e(null, TAG, "Error during asymmetric decryption using RSA", e);
+            }
+        }
+        return decryptedData;
+    }
+
+    /**
+     * Returns data decrypted with an RSA private key.
+     *
+     * @param privateKey RSA private key.
+     * @param data Data to be decrypted.
+     * @return Decrypted data.
+     */
+    public static byte[] decryptWithRSABytes(PrivateKey privateKey, String data) {
         if (privateKey == null || TextUtils.isEmpty(data)) {
             return null;
         }
@@ -356,12 +387,7 @@ public class Encryptor {
             final Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
             cipher.init(Cipher.DECRYPT_MODE, privateKey);
             byte[] decodedBytes = Base64.decode(data.getBytes(),Base64.NO_WRAP | Base64.NO_PADDING);
-            byte[] decryptedBytes = cipher.doFinal(decodedBytes);
-            String decryptedData = null;
-            if (decryptedBytes != null) {
-                decryptedData = new String(decryptedBytes, 0, decryptedBytes.length, UTF8);
-            }
-            return decryptedData;
+            return cipher.doFinal(decodedBytes);
         } catch (Exception e) {
             SalesforceAnalyticsLogger.e(null, TAG, "Error during asymmetric decryption using RSA", e);
         }
