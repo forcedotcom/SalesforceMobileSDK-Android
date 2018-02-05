@@ -322,10 +322,8 @@ jobs:
 #                        #
 ##########################
 
-  nightly-test-API24:
+  nightly-test:
     <<: *defaults
-    environment:
-      - AVD: "test24"
     steps:
       - checkout
       - restore_cache: *restore-gradle-cache
@@ -485,5 +483,5 @@ workflows:
                only:
                  - dev
      jobs:
-        - nightly-test-API24
+        - nightly-test
         - generate-artifacts
