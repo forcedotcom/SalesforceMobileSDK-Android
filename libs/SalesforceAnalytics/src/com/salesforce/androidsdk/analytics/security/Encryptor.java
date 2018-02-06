@@ -394,6 +394,28 @@ public class Encryptor {
         return null;
     }
 
+    /**
+     * Decrypts the given bytes using key and IV.
+     *
+     * @param data Data bytes.
+     * @param key Key bytes.
+     * @param iv Initialization vector bytes.
+     * @return Decrypted data.
+     */
+    public static String decryptBytes(byte[] data, byte[] key, byte[] iv) {
+        try {
+            final Cipher cipher = getBestCipher();
+            final SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
+            final IvParameterSpec ivSpec = new IvParameterSpec(iv);
+            cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec);
+            byte[] result = cipher.doFinal(data, 0, data.length);
+            return new String(result, 0, result.length, UTF8);
+        } catch (Exception e) {
+            SalesforceAnalyticsLogger.e(null, TAG, "Error during symmetric decryption using AES", e);
+        }
+        return null;
+    }
+
     private static byte[] generateInitVector() throws NoSuchAlgorithmException, NoSuchProviderException {
         final SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
         byte[] iv = new byte[16];
