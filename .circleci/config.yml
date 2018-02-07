@@ -369,7 +369,7 @@ jobs:
           path: native/NativeSampleApps/RestExplorer/build/reports/
           destination: RestExplorer
       - store_test_results:
-          path: libs/SalesforceHybrid/build/outputs/androidTest-results/
+          path: native/NativeSampleApps/RestExplorer/build/outputs/androidTest-results/
       - run: *codecov
 
   generate-artifacts:
