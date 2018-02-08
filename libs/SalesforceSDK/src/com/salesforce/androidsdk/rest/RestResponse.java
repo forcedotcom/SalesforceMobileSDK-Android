@@ -210,7 +210,7 @@ public class RestResponse {
 	 *
 	 * <p>>
 	 * If the response is consumed as a stream, {@link #asBytes()} will return an empty array,
-	 * {@link #asString()} will return an emtpy string and both {@link #asJSONArray()} and
+	 * {@link #asString()} will return an empty string and both {@link #asJSONArray()} and
 	 * {@link #asJSONObject()} will throw exceptions.
 	 * </p>
 	 *

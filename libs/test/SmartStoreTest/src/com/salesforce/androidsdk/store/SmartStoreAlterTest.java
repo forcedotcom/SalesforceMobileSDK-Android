@@ -317,7 +317,7 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
      * Create soup with fts4 virtual table
      * Call alterSoup passing in same index specs
      * Make sure virtual table is recreated with fts5
-     * That way soup created before 4.2 (using fts4 virutal table) can be migrated to fts5 by calling alterSoup
+     * That way soup created before 4.2 (using fts4 virtual table) can be migrated to fts5 by calling alterSoup
      * @throws JSONException
      */
     @Test
