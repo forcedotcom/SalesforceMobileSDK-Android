@@ -420,7 +420,21 @@ public class SyncManager {
      * @throws JSONException
      * @throws IOException
      */
-    public void cleanResyncGhosts(long syncId) throws JSONException, IOException {
+    public void cleanResyncGhosts(final long syncId) throws JSONException, IOException {
+        cleanResyncGhosts(syncId, null);
+    }
+
+
+    /**
+     * Removes local copies of records that have been deleted on the server
+     * or do not match the query results on the server anymore.
+     *
+     * @param syncId
+     * @param callback Callback to get clean resync ghosts completion status.
+     * @throws JSONException
+     * @throws IOException
+     */
+    public void cleanResyncGhosts(final long syncId, final CleanResyncGhostsCallback callback) throws JSONException {
         if (runningSyncIds.contains(syncId)) {
             throw new SmartSyncException("Cannot run cleanResyncGhosts:" + syncId + ": still running");
         }
@@ -436,21 +450,38 @@ public class SyncManager {
         final SyncDownTarget target = (SyncDownTarget) sync.getTarget();
 
         // Ask target to clean up ghosts
-        final int localIdSize = target.cleanGhosts(this, soupName, syncId);
         threadPool.execute(new Runnable() {
             @Override
             public void run() {
-                final JSONObject attributes = new JSONObject();
-                if (localIdSize > 0) {
-                    try {
-                        attributes.put("numRecords", localIdSize);
-                        attributes.put("syncId", sync.getId());
-                        attributes.put("syncTarget", target.getClass().getName());
-                        EventBuilderHelper.createAndStoreEventSync("cleanResyncGhosts", null, TAG, attributes);
-                    } catch (JSONException e) {
-                        SmartSyncLogger.e(TAG, "Unexpected JSON error for cleanResyncGhosts sync tag: " + sync.getId(), e);
+                try {
+                    final int localIdSize = target.cleanGhosts(SyncManager.this, soupName, syncId);
+
+                    final JSONObject attributes = new JSONObject();
+                    if (localIdSize > 0) {
+                        try {
+                            attributes.put("numRecords", localIdSize);
+                            attributes.put("syncId", sync.getId());
+                            attributes.put("syncTarget", target.getClass().getName());
+                            EventBuilderHelper.createAndStoreEventSync("cleanResyncGhosts", null, TAG, attributes);
+                        } catch (JSONException e) {
+                            SmartSyncLogger.e(TAG, "Unexpected JSON error for cleanResyncGhosts sync tag: " + sync.getId(), e);
+                        }
+                    }
+
+                    if (callback != null) {
+                        callback.onSuccess(localIdSize);
+                    }
+
+                }
+                catch (Exception e) {
+
+                    SmartSyncLogger.e(TAG, "Exception thrown cleaning resync ghosts", e);
+
+                    if (callback != null) {
+                        callback.onError(e);
                     }
                 }
+
             }
         });
 
@@ -732,4 +763,23 @@ public class SyncManager {
 	public interface SyncUpdateCallback {
 		void onUpdate(SyncState sync);
 	}
+
+    /**
+     * Callback to get clean resync ghosts completion status
+     */
+    public interface CleanResyncGhostsCallback {
+        /**
+         * Called when clean resync ghosts completes successfully
+         * @param numRecords Number of local ghosts found (and removed)
+         */
+        void onSuccess(int numRecords);
+
+        /**
+         * Called when clean resync ghosts fails with an error
+         * @param e Error
+         */
+        void onError(Exception e);
+    }
+
+
 }
