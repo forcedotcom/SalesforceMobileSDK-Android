@@ -869,7 +869,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Deletes 1 account on the server and verifies the ghost record is cleared from the soup.
         deleteRecordsOnServer(new HashSet<>(Arrays.asList(accountIds[0])), Constants.ACCOUNT);
-        syncManager.cleanResyncGhosts(syncId);
+        tryCleanResyncGhosts(syncId);
         checkDbExist(ACCOUNTS_SOUP, new String[] { accountIds[1], accountIds[2]}, Constants.ID);
         checkDbDeleted(ACCOUNTS_SOUP, new String[] { accountIds[0]}, Constants.ID);
 
@@ -905,12 +905,12 @@ public class SyncManagerTest extends SyncManagerTestCase {
         deleteRecordsOnServer(new HashSet<>(Arrays.asList(accountIds[0], accountIds[2], accountIds[5])), Constants.ACCOUNT);
 
         // Cleaning ghosts of first sync (should only remove id0)
-        syncManager.cleanResyncGhosts(firstSyncId);
+        tryCleanResyncGhosts(firstSyncId);
         checkDbExist(ACCOUNTS_SOUP, new String[] { accountIds[1], accountIds[2], accountIds[3], accountIds[4], accountIds[5]}, Constants.ID);
         checkDbDeleted(ACCOUNTS_SOUP, new String[] { accountIds[0]}, Constants.ID);
 
         // Cleaning ghosts of second sync (should remove id2 and id5)
-        syncManager.cleanResyncGhosts(secondSyncId);
+        tryCleanResyncGhosts(secondSyncId);
         checkDbExist(ACCOUNTS_SOUP, new String[] { accountIds[1], accountIds[3], accountIds[4]}, Constants.ID);
         checkDbDeleted(ACCOUNTS_SOUP, new String[] { accountIds[2], accountIds[5]}, Constants.ID);
 
@@ -939,7 +939,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Deletes 1 account on the server and verifies the ghost record is cleared from the soup.
         deleteRecordsOnServer(new HashSet<>(singletonList(accountIds[0])), Constants.ACCOUNT);
-        syncManager.cleanResyncGhosts(syncId);
+        tryCleanResyncGhosts(syncId);
         checkDbDeleted(ACCOUNTS_SOUP, new String[] {accountIds[0]}, Constants.ID);
 
         // Deletes the remaining accounts on the server.
@@ -967,7 +967,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Deletes 1 account on the server and verifies the ghost record is cleared from the soup.
         deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[0])), Constants.ACCOUNT);
-        syncManager.cleanResyncGhosts(syncId);
+        tryCleanResyncGhosts(syncId);
         checkDbDeleted(ACCOUNTS_SOUP, new String[] {accountIds[0]}, Constants.ID);
 
         // Deletes the remaining accounts on the server.
@@ -1097,7 +1097,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         String[] ids = idToFields.keySet().toArray(new String[0]);
         String idDeleted = ids[0];
         deleteRecordsOnServer(new HashSet<String>(Arrays.asList(idDeleted)), Constants.ACCOUNT);
-        syncManager.cleanResyncGhosts(syncId);
+        tryCleanResyncGhosts(syncId);
 
         // Map of id to names expected to be found in db
         Map<String, Map<String, Object>> idToFieldsLeft = new HashMap<>(idToFields);

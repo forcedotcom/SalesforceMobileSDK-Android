@@ -59,6 +59,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * Abstract super class for all SyncManager test classes.
@@ -159,6 +160,24 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
             createdAccounts[i] = smartStore.create(ACCOUNTS_SOUP, account);
         }
         return createdAccounts;
+    }
+
+    protected boolean tryCleanResyncGhosts(long syncId) throws JSONException, InterruptedException {
+        final ArrayBlockingQueue<Boolean> queue = new ArrayBlockingQueue<Boolean>(1);
+
+        syncManager.cleanResyncGhosts(syncId, new SyncManager.CleanResyncGhostsCallback() {
+            @Override
+            public void onSuccess(int numRecords) {
+                queue.offer(true);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                queue.offer(false);
+            }
+        });
+
+        return queue.take();
     }
 
     /**

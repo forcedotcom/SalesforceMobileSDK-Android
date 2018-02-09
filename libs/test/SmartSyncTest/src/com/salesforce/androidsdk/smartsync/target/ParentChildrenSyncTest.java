@@ -608,7 +608,7 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         // Deletes 1 account on the server and verifies the ghost record is cleared from the soup.
         String accountIdDeleted = accountIdToFields.keySet().toArray(new String[0])[0];
         deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIdDeleted)), Constants.ACCOUNT);
-        syncManager.cleanResyncGhosts(syncId);
+        tryCleanResyncGhosts(syncId);
 
         // Accounts and contacts expected to still be in db
         Map<String, Map<String, Object>> accountIdToFieldsLeft = new HashMap<>(accountIdToFields);
@@ -660,7 +660,7 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         deleteRecordsOnServer(new HashSet<>(Arrays.asList(accountIds[0], accountIds[2], accountIds[5])), Constants.ACCOUNT);
 
         // Cleaning ghosts of first sync (should only remove id0 and its contacts)
-        syncManager.cleanResyncGhosts(firstSyncId);
+        tryCleanResyncGhosts(firstSyncId);
         checkDbExist(ACCOUNTS_SOUP, new String[] { accountIds[1], accountIds[2], accountIds[3], accountIds[4], accountIds[5]}, Constants.ID);
         checkDbDeleted(ACCOUNTS_SOUP, new String[] { accountIds[0]}, Constants.ID);
         for (String accountId : accountIdContactIdToFields.keySet()) {
@@ -673,7 +673,7 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         }
 
         // Cleaning ghosts of second sync (should remove id2 and id5 and their contacts)
-        syncManager.cleanResyncGhosts(secondSyncId);
+        tryCleanResyncGhosts(secondSyncId);
         checkDbExist(ACCOUNTS_SOUP, new String[] { accountIds[1], accountIds[3], accountIds[4]}, Constants.ID);
         checkDbDeleted(ACCOUNTS_SOUP, new String[] { accountIds[2], accountIds[5]}, Constants.ID);
         for (String accountId : accountIdContactIdToFields.keySet()) {
