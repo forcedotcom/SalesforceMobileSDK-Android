@@ -91,7 +91,6 @@ public class PasscodeManager  {
 
     // Misc
     private HashConfig verificationHashConfig;
-    private HashConfig encryptionHashConfig;
     private Activity frontActivity;
     private Handler handler;
     private long lastActivity;
@@ -106,21 +105,15 @@ public class PasscodeManager  {
      * @param ctx Context.
      */
    public PasscodeManager(Context ctx) {
-	   this(ctx,
-		   new HashConfig(SalesforceKeyGenerator.getUniqueId(VPREFIX),
+	   this(ctx, new HashConfig(SalesforceKeyGenerator.getUniqueId(VPREFIX),
                    SalesforceKeyGenerator.getUniqueId(VSUFFIX),
-                   SalesforceKeyGenerator.getUniqueId(VKEY)),
-		   new HashConfig(SalesforceKeyGenerator.getUniqueId(EPREFIX),
-                   SalesforceKeyGenerator.getUniqueId(ESUFFIX),
-                   SalesforceKeyGenerator.getUniqueId(EKEY)));
+                   SalesforceKeyGenerator.getUniqueId(VKEY)));
    }
 
-   public PasscodeManager(Context ctx, HashConfig verificationHashConfig,
-		   HashConfig encryptionHashConfig) {
+   public PasscodeManager(Context ctx, HashConfig verificationHashConfig) {
        this.minPasscodeLength = MIN_PASSCODE_LENGTH;
        this.lastActivity = now();
        this.verificationHashConfig = verificationHashConfig;
-       this.encryptionHashConfig = encryptionHashConfig;
        readMobilePolicy(ctx);
 
        // Locked at app startup if you're authenticated.

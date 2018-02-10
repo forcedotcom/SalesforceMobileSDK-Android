@@ -68,8 +68,7 @@ public class PasscodeManagerTest {
     private class TestPasscodeManager extends PasscodeManager {
 
         TestPasscodeManager() {
-            super(InstrumentationRegistry.getTargetContext(), TEST_HASH_CONFIG,
-            		TEST_HASH_CONFIG);
+            super(InstrumentationRegistry.getTargetContext(), TEST_HASH_CONFIG);
             setTimeoutMs(TEST_TIMEOUT_MS);
             setEnabled(true);
             // start in a known state.
