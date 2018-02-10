@@ -90,6 +90,8 @@ public class PasscodeActivityTest {
 
     @Before
     public void setUp() throws Exception {
+        passcodeManager.reset(targetContext);
+        passcodeManager.setTimeoutMs(600000);
         Assert.assertTrue("Application should be locked", passcodeManager.isLocked());
         Assert.assertFalse("Application should not have a passcode", passcodeManager.hasStoredPasscode(targetContext));
     }
