@@ -40,8 +40,6 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.ui.PasscodeActivity.PasscodeMode;
-import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
 import junit.framework.Assert;
 
@@ -65,7 +63,6 @@ import static android.support.test.espresso.matcher.ViewMatchers.withId;
 @LargeTest
 public class PasscodeActivityTest {
 
-    private EventsListenerQueue eq;
     private Context targetContext;
     private PasscodeActivity passcodeActivity;
     private PasscodeManager passcodeManager;
@@ -83,16 +80,8 @@ public class PasscodeActivityTest {
 
         @Override
         protected void beforeActivityLaunched() {
-            eq = new EventsListenerQueue();
-
-            // Waits for app initialization to complete.
-            if (!SalesforceSDKManager.hasInstance()) {
-                eq.waitForEvent(EventType.AppCreateComplete, 5000);
-            }
             targetContext = InstrumentationRegistry.getTargetContext();
             passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
-            passcodeManager.reset(targetContext);
-            passcodeManager.setTimeoutMs(600000);
         }
     }
 
@@ -107,14 +96,8 @@ public class PasscodeActivityTest {
 
     @After
     public void tearDown() throws Exception {
-        if (passcodeActivity != null) {
-            passcodeActivity.finish();
-            passcodeActivity = null;
-        }
-        if (eq != null) {
-            eq.tearDown();
-            eq = null;
-        }
+        passcodeManager.reset(targetContext);
+        passcodeManager.setTimeoutMs(600000);
     }
 
     /**
