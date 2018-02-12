@@ -365,6 +365,8 @@ jobs:
       - store_artifacts:
           path: libs/SalesforceHybrid/build/reports/
           destination: SalesforceHybrid
+      - store_test_results:
+          path: libs/SalesforceHybrid/build/outputs/androidTest-results/
       - store_artifacts:
           path: native/NativeSampleApps/RestExplorer/build/reports/
           destination: RestExplorer
