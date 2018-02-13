@@ -77,8 +77,8 @@ public class MetadataManagerTest extends ManagerTestCase {
     @Test
     public void testLoadGlobalMRUObjectsFromServer() throws Exception {
 
-        //retrieve the MRU records before test
-        final List<SalesforceObject> mruObjects_before = metadataManager.loadMRUObjects(null,
+        // Retrieves the MRU records before test.
+        final List<SalesforceObject> mruObjectsBefore = metadataManager.loadMRUObjects(null,
                 MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
         int numberOfRecords = 1;
         Map<String, String> idToSubjects = createRecordsOnServer(numberOfRecords, Constants.CASE);
@@ -86,15 +86,16 @@ public class MetadataManagerTest extends ManagerTestCase {
         Set<String> ids = idToSubjects.keySet();
         try {
 
-		/*
-		 * MRU could take a few milliseconds to index on the server. This ensures
-		 * that we don't query too soon and cause the test to flap.
-		 */
+		    /*
+		     * MRU could take a few milliseconds to index on the server. This ensures
+		     * that we don't query too soon and cause the test to flap.
+		     */
 			Thread.sleep(INDEX_WAITINGTIME);
 			final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(null,
                     MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
             Assert.assertNotNull("MRU list should not be null", mruObjects);
-            Assert.assertEquals("MRU list size should not be changed", mruObjects_before.size()+numberOfRecords, mruObjects.size());
+            Assert.assertEquals("MRU list size should not be changed",
+                    mruObjectsBefore.size(), mruObjects.size());
 		} finally {
 			deleteRecordsOnServer(ids, Constants.CASE);
 		}
