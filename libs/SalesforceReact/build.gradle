@@ -16,11 +16,18 @@ apply plugin: 'com.jfrog.bintray'
 dependencies {
   api project(':libs:SmartSync')
   api 'com.facebook.react:react-native:0.50.4'
+  testCompile fileTree('node_modules/react-native/ReactAndroid/src/androidTest')
 }
 
 android {
   compileSdkVersion 27
   buildToolsVersion '27.0.3'
+
+  buildTypes {
+    debug {
+      testCoverageEnabled = true
+    }
+  }
 
   sourceSets {
     main {
@@ -32,7 +39,19 @@ android {
       res.srcDirs = ['res']
       assets.srcDirs = ['assets']
     }
+    androidTest.setRoot('../test/SalesforceReactTest')
+    androidTest {
+      java.srcDirs = ['../test/SalesforceReactTest/src']
+      resources.srcDirs = ['../test/SalesforceReactTest/src']
+      res.srcDirs = ['../test/SalesforceReactTest/res']
+    }
   }
+
+  defaultConfig {
+    testApplicationId "com.salesforce.androidsdk.salesforcehybrid.tests"
+    testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+  }
+
   packagingOptions {
     exclude 'META-INF/LICENSE'
     exclude 'META-INF/LICENSE.txt'

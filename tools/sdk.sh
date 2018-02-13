@@ -67,6 +67,7 @@ usage ()
     echo "        SmartStoreTest"
     echo "        SmartSyncTest"
     echo "        SalesforceHybridTest"
+    echo "        SalesforceReactTest"
 }
 
 verbose ()
@@ -187,6 +188,7 @@ else
         run_test_project_if_requested "SmartStoreTest"          :libs:SmartStore
         run_test_project_if_requested "SmartSyncTest"           :libs:SmartSync
         run_test_project_if_requested "SalesforceHybridTest"    :libs:SalesforceHybrid
+        run_test_project_if_requested "SalesforceReactTest"     :libs:SalesforceReact
         run_test_project_if_requested "RestExplorerTest"        :native:NativeSampleApps:RestExplorer
     fi
 fi
