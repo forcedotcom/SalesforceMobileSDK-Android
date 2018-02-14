@@ -25,10 +25,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.androidsdk.reactnative;
+package com.salesforce.androidsdk.reactnative.util;
 
 
 import android.support.test.filters.SmallTest;
+
+import com.salesforce.androidsdk.reactnative.ReactTestCase;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;

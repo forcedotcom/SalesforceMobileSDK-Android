@@ -37,7 +37,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 public class SalesforceTestBridge extends ReactContextBaseJavaModule {
 
 
-    public static ArrayBlockingQueue<String> completedTests = new ArrayBlockingQueue<String>(1);
+    public static ArrayBlockingQueue<Boolean> testCompleted = new ArrayBlockingQueue<Boolean>(1);
 
     private static final String TAG = "SalesforceTestBridge";
 
@@ -54,7 +54,7 @@ public class SalesforceTestBridge extends ReactContextBaseJavaModule {
     public void markTestCompleted(ReadableMap args,
                                   final Callback successCallback, final Callback errorCallback) {
 
-        completedTests.offer(args.getString("testName"));
+        testCompleted.offer(true);
 
     }
 }

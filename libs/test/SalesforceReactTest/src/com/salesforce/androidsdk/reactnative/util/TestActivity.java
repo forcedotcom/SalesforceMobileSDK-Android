@@ -24,42 +24,16 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.reactnative;
 
-import android.content.Context;
+package com.salesforce.androidsdk.reactnative.util;
 
-import com.salesforce.androidsdk.rest.ApiVersionStrings;
+import com.facebook.react.ReactActivity;
+import com.facebook.react.ReactActivityDelegate;
 
-/**
- * Authentication credentials used to make live server calls in tests.
- */
-public class TestCredentials {
+public class TestActivity extends ReactActivity {
 
-    public static String API_VERSION;
-    public static String ACCOUNT_TYPE;
-    public static String ORG_ID;
-    public static String USERNAME;
-    public static String ACCOUNT_NAME;
-    public static String USER_ID;
-    public static String LOGIN_URL;
-    public static String INSTANCE_URL;
-    public static String COMMUNITY_URL;
-    public static String IDENTITY_URL;
-    public static String CLIENT_ID;
-    public static String REFRESH_TOKEN;
-
-    public static void init(Context ctx) {
-        API_VERSION = ApiVersionStrings.getVersionNumber(ctx);
-        ACCOUNT_TYPE = ctx.getString(R.string.account_type);
-        ORG_ID = ctx.getString(R.string.org_id);
-        USERNAME = ctx.getString(R.string.username);
-        ACCOUNT_NAME = ctx.getString(R.string.account_name);
-        USER_ID = ctx.getString(R.string.user_id);
-        LOGIN_URL = ctx.getString(R.string.login_url);
-        INSTANCE_URL = ctx.getString(R.string.instance_url);
-        COMMUNITY_URL = ctx.getString(R.string.community_url);
-        IDENTITY_URL = ctx.getString(R.string.identity_url);
-        CLIENT_ID = ctx.getString(R.string.remoteAccessConsumerKey);
-        REFRESH_TOKEN = ctx.getString(R.string.oauth_refresh_token);
+    protected ReactActivityDelegate createReactActivityDelegate() {
+        return new TestReactActivityDelegate(this, null);
     }
+
 }

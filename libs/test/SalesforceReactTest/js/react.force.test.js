@@ -26,7 +26,7 @@
 
 import React from 'react';
 import { AppRegistry, NativeModules, View } from 'react-native';
-const { TestModule } = NativeModules;
+const { SalesforceTestBridge, TestModule } = NativeModules;
 const createReactClass = require('create-react-class');
 
 const componentForTest = (test) => {
@@ -46,5 +46,12 @@ export const registerTest = (test) => {
 };
 
 export const testDone = () => {
-    TestModule.markTestCompleted();
+    // iOS
+    if (TestModule) {
+        TestModule.markTestCompleted();
+    }
+    // Android
+    else if (SalesforceTestBridge) {
+        SalesforceTestBridge.markTestCompleted();
+    }
 };

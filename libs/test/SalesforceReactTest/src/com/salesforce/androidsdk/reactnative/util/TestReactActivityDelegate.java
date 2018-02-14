@@ -25,15 +25,37 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.androidsdk.reactnative;
+package com.salesforce.androidsdk.reactnative.util;
 
-import com.facebook.react.ReactActivity;
+import android.app.Activity;
+import android.os.Bundle;
+
 import com.facebook.react.ReactActivityDelegate;
 
-public class TestActivity extends ReactActivity {
+import javax.annotation.Nullable;
 
-    protected ReactActivityDelegate createReactActivityDelegate() {
-        return new TestReactActivityDelegate(this, null);
+public class TestReactActivityDelegate extends ReactActivityDelegate {
+
+    private String mainComponentName;
+
+    private Activity activity;
+
+    public TestReactActivityDelegate(Activity activity, @Nullable String mainComponentName) {
+        super(activity, null);
+        this.activity = activity;
     }
 
+    @Override
+    protected void loadApp(String appKey) {
+        super.loadApp(mainComponentName);
+    }
+
+
+    @Override
+    protected @Nullable
+    Bundle getLaunchOptions() {
+        Bundle extras = activity.getIntent().getExtras();
+        mainComponentName = extras.getString("testSuite");
+        return extras;
+    }
 }

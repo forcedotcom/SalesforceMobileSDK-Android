@@ -34,9 +34,12 @@ import android.support.test.filters.LargeTest;
 import android.support.test.rule.ActivityTestRule;
 import android.support.test.runner.AndroidJUnit4;
 
-import com.salesforce.androidsdk.TestCredentials;
+import com.salesforce.androidsdk.reactnative.util.TestCredentials;
 import com.salesforce.androidsdk.reactnative.bridge.SalesforceTestBridge;
+import com.salesforce.androidsdk.reactnative.util.TestActivity;
 import com.salesforce.androidsdk.rest.ClientManager;
+
+import junit.framework.Assert;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -46,7 +49,6 @@ import java.util.concurrent.TimeUnit;
 
 import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_CALLBACK_URL;
 import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_SCOPES;
-import static org.junit.Assert.assertTrue;
 
 @LargeTest
 @RunWith(AndroidJUnit4.class)
@@ -76,12 +78,12 @@ public abstract class ReactTestCase {
                 null, null, null, null, null, null);
     }
 
-    protected void runReactNativeTest(String testSuite, String testName){
+    protected void runReactNativeTest(String testSuite, String testName) throws InterruptedException {
         Intent intent = new Intent();
         intent.putExtra("testSuite", testSuite);
         intent.putExtra("testName",testName);
         mActivityRule.launchActivity(intent);
 
-        assertTrue(testName + " failed", SalesforceTestBridge.completedTests.poll(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+        Assert.assertTrue(testName + " failed", SalesforceTestBridge.testCompleted.poll(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS));
     }
 }

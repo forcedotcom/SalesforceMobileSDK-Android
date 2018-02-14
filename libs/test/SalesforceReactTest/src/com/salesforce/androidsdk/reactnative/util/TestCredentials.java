@@ -24,38 +24,43 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+package com.salesforce.androidsdk.reactnative.util;
 
-package com.salesforce.androidsdk.reactnative;
+import android.content.Context;
 
-import android.app.Activity;
-import android.os.Bundle;
+import com.salesforce.androidsdk.rest.ApiVersionStrings;
+import com.salesforce.androidsdk.reactnative.tests.R;
 
-import com.facebook.react.ReactActivityDelegate;
+/**
+ * Authentication credentials used to make live server calls in tests.
+ */
+public class TestCredentials {
 
-import javax.annotation.Nullable;
+    public static String API_VERSION;
+    public static String ACCOUNT_TYPE;
+    public static String ORG_ID;
+    public static String USERNAME;
+    public static String ACCOUNT_NAME;
+    public static String USER_ID;
+    public static String LOGIN_URL;
+    public static String INSTANCE_URL;
+    public static String COMMUNITY_URL;
+    public static String IDENTITY_URL;
+    public static String CLIENT_ID;
+    public static String REFRESH_TOKEN;
 
-public class TestReactActivityDelegate extends ReactActivityDelegate {
-
-    private String mainComponentName;
-
-    private Activity activity;
-
-    public TestReactActivityDelegate(Activity activity, @Nullable String mainComponentName) {
-        super(activity, null);
-        this.activity = activity;
-    }
-
-    @Override
-    protected void loadApp(String appKey) {
-        super.loadApp(mainComponentName);
-    }
-
-
-    @Override
-    protected @Nullable
-    Bundle getLaunchOptions() {
-        Bundle extras = activity.getIntent().getExtras();
-        mainComponentName = extras.getString("testSuite");
-        return extras;
+    public static void init(Context ctx) {
+        API_VERSION = ApiVersionStrings.getVersionNumber(ctx);
+        ACCOUNT_TYPE = ctx.getString(R.string.account_type);
+        ORG_ID = ctx.getString(R.string.org_id);
+        USERNAME = ctx.getString(R.string.username);
+        ACCOUNT_NAME = ctx.getString(R.string.account_name);
+        USER_ID = ctx.getString(R.string.user_id);
+        LOGIN_URL = ctx.getString(R.string.login_url);
+        INSTANCE_URL = ctx.getString(R.string.instance_url);
+        COMMUNITY_URL = ctx.getString(R.string.community_url);
+        IDENTITY_URL = ctx.getString(R.string.identity_url);
+        CLIENT_ID = ctx.getString(R.string.remoteAccessConsumerKey);
+        REFRESH_TOKEN = ctx.getString(R.string.oauth_refresh_token);
     }
 }
