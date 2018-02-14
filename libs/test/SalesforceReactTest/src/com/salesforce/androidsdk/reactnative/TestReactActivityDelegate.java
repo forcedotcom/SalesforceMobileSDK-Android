@@ -27,23 +27,35 @@
 
 package com.salesforce.androidsdk.reactnative;
 
-import com.facebook.react.ReactActivity;
+import android.app.Activity;
+import android.os.Bundle;
+
 import com.facebook.react.ReactActivityDelegate;
 
-public class MainActivity extends ReactActivity {
+import javax.annotation.Nullable;
 
-    @Override
-    public boolean shouldAuthenticate() {
-        return false;
+public class TestReactActivityDelegate extends ReactActivityDelegate {
+
+    private String mainComponentName;
+
+    private Activity activity;
+
+    public TestReactActivityDelegate(Activity activity, @Nullable String mainComponentName) {
+        super(activity, null);
+        this.activity = activity;
     }
 
     @Override
-    protected String getMainComponentName() {
-        return "SmartSyncExplorerReactNativeTestApp";
+    protected void loadApp(String appKey) {
+        super.loadApp(mainComponentName);
     }
 
+
     @Override
-    protected ReactActivityDelegate createReactActivityDelegate() {
-        return new ReactActivityTestAppDelegate(this, getMainComponentName());
+    protected @Nullable
+    Bundle getLaunchOptions() {
+        Bundle extras = activity.getIntent().getExtras();
+        mainComponentName = extras.getString("testSuite");
+        return extras;
     }
 }

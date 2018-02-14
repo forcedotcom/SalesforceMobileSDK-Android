@@ -27,36 +27,13 @@
 
 package com.salesforce.androidsdk.reactnative;
 
+import com.facebook.react.ReactActivity;
+import com.facebook.react.ReactActivityDelegate;
 
-import android.support.test.filters.SmallTest;
+public class TestActivity extends ReactActivity {
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import java.util.Arrays;
-import java.util.List;
-
-
-@RunWith(Parameterized.class)
-@SmallTest
-public class ReactOAuthTest extends ReactTestCase {
-
-    private static final String JS_SUITE = "js/oauth.test";
-
-    @Parameterized.Parameter
-    public String testName;
-
-    @Parameterized.Parameters(name = "{0}")
-    public static List<String> data() {
-        return Arrays.asList(new String[]{
-                "testGetAuthCredentials"
-        });
+    protected ReactActivityDelegate createReactActivityDelegate() {
+        return new TestReactActivityDelegate(this, null);
     }
 
-    @Test
-    public void test() throws Exception {
-        runReactNativeTest(JS_SUITE, testName);
-    }
 }
-

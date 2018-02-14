@@ -27,33 +27,53 @@
 
 package com.salesforce.androidsdk.reactnative;
 
+import android.content.Context;
 import android.content.Intent;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.filters.LargeTest;
 import android.support.test.rule.ActivityTestRule;
 import android.support.test.runner.AndroidJUnit4;
-import android.support.test.uiautomator.UiDevice;
-import android.support.test.uiautomator.UiObject;
-import android.support.test.uiautomator.UiSelector;
+
+import com.salesforce.androidsdk.TestCredentials;
+import com.salesforce.androidsdk.reactnative.bridge.SalesforceTestBridge;
+import com.salesforce.androidsdk.rest.ClientManager;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
+import java.util.concurrent.TimeUnit;
+
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_CALLBACK_URL;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_SCOPES;
 import static org.junit.Assert.assertTrue;
 
 @LargeTest
 @RunWith(AndroidJUnit4.class)
-public abstract class ReactNativeTestBase {
+public abstract class ReactTestCase {
+
+    private static final long TEST_TIMEOUT_SECONDS = 5;
 
     @Rule
-    public ActivityTestRule<MainActivity> mActivityRule = new ActivityTestRule<MainActivity>(
-            MainActivity.class, false, false) {
+    public ActivityTestRule<TestActivity> mActivityRule = new ActivityTestRule<TestActivity>(
+            TestActivity.class, false, false) {
     };
 
+
     @Before
-    public void startUiDevice() {
-        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+    public void setUp() {
+        Context targetContext = InstrumentationRegistry.getContext();
+        final ClientManager.LoginOptions loginOptions = new ClientManager.LoginOptions(TestCredentials.LOGIN_URL,
+                TEST_CALLBACK_URL, TestCredentials.CLIENT_ID, TEST_SCOPES);
+        final ClientManager clientManager = new ClientManager(targetContext,
+                TestCredentials.ACCOUNT_TYPE, loginOptions, true);
+        clientManager.createNewAccount(TestCredentials.ACCOUNT_NAME,
+                TestCredentials.USERNAME, TestCredentials.REFRESH_TOKEN,
+                "", TestCredentials.INSTANCE_URL,
+                TestCredentials.LOGIN_URL, TestCredentials.IDENTITY_URL,
+                TestCredentials.CLIENT_ID, TestCredentials.ORG_ID,
+                TestCredentials.USER_ID, null, null, null,
+                null, null, null, null, null, null);
     }
 
     protected void runReactNativeTest(String testSuite, String testName){
@@ -61,9 +81,7 @@ public abstract class ReactNativeTestBase {
         intent.putExtra("testSuite", testSuite);
         intent.putExtra("testName",testName);
         mActivityRule.launchActivity(intent);
-        UiObject uiObject;
-        UiSelector uiSelector = new UiSelector();
-        uiObject = new UiObject(uiSelector.descriptionStartsWith("testResult"));
-        assertTrue(testName + " failed", uiObject.waitForExists(10*1000));
+
+        assertTrue(testName + " failed", SalesforceTestBridge.completedTests.poll(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS));
     }
 }

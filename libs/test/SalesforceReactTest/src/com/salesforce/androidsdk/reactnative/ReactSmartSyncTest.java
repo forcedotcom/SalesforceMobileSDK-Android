@@ -40,7 +40,7 @@ import java.util.List;
 
 @RunWith(Parameterized.class)
 @SmallTest
-public class ReactSmartSyncTest extends ReactNativeTestBase {
+public class ReactSmartSyncTest extends ReactTestCase {
 
     private static final String JS_SUITE = "js/smartsync.test";
 

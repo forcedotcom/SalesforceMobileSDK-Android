@@ -40,7 +40,7 @@ import java.util.List;
 
 @RunWith(Parameterized.class)
 @SmallTest
-public class ReactNetTest extends ReactNativeTestBase {
+public class ReactNetTest extends ReactTestCase {
 
     private static final String JS_SUITE = "js/net.test";
 

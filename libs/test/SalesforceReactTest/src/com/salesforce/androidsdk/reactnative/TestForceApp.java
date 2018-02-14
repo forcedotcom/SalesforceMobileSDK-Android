@@ -32,10 +32,15 @@ import android.app.Application;
 import com.facebook.react.ReactApplication;
 import com.facebook.react.ReactNativeHost;
 import com.facebook.react.ReactPackage;
+import com.facebook.react.bridge.NativeModule;
+import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.shell.MainReactPackage;
+import com.facebook.react.uimanager.ViewManager;
 import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
+import com.salesforce.androidsdk.reactnative.bridge.SalesforceTestBridge;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class TestForceApp extends Application implements ReactApplication {
@@ -50,7 +55,18 @@ public class TestForceApp extends Application implements ReactApplication {
         protected List<ReactPackage> getPackages() {
             return Arrays.<ReactPackage>asList(
                     new MainReactPackage(),
-                    SalesforceReactSDKManager.getInstance().getReactPackage()
+                    SalesforceReactSDKManager.getInstance().getReactPackage(),
+                    new ReactPackage() {
+                        @Override
+                        public List<NativeModule> createNativeModules(ReactApplicationContext reactApplicationContext) {
+                            return Arrays.asList(new NativeModule[] { new SalesforceTestBridge(reactApplicationContext)});
+                        }
+
+                        @Override
+                        public List<ViewManager> createViewManagers(ReactApplicationContext reactApplicationContext) {
+                            return Collections.emptyList();
+                        }
+                    }
             );
         }
 
@@ -68,7 +84,7 @@ public class TestForceApp extends Application implements ReactApplication {
     @Override
     public void onCreate() {
         super.onCreate();
-        SalesforceReactSDKManager.initReactNative(getApplicationContext(), MainActivity.class);
+        SalesforceReactSDKManager.initReactNative(getApplicationContext(), TestActivity.class);
     }
 
 }

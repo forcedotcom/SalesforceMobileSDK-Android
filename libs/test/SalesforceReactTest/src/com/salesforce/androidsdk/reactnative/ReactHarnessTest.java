@@ -40,7 +40,7 @@ import java.util.List;
 
 @RunWith(Parameterized.class)
 @SmallTest
-public class ReactHarnessTest extends ReactNativeTestBase {
+public class ReactHarnessTest extends ReactTestCase {
 
     private static final String JS_SUITE = "js/harness.test";
 

@@ -24,28 +24,37 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+package com.salesforce.androidsdk.reactnative.bridge;
 
-package com.salesforce.androidsdk.reactnative;
+import com.facebook.react.bridge.Callback;
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.ReactContextBaseJavaModule;
+import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.ReadableMap;
 
-import android.app.Activity;
-import android.os.Bundle;
+import java.util.concurrent.ArrayBlockingQueue;
 
-import com.facebook.react.ReactActivityDelegate;
+public class SalesforceTestBridge extends ReactContextBaseJavaModule {
 
-import javax.annotation.Nullable;
 
-public class ReactActivityTestAppDelegate extends ReactActivityDelegate {
+    public static ArrayBlockingQueue<String> completedTests = new ArrayBlockingQueue<String>(1);
 
-    private Activity activity;
+    private static final String TAG = "SalesforceTestBridge";
 
-    public ReactActivityTestAppDelegate(Activity activity, @Nullable String mainComponentName) {
-        super(activity, mainComponentName);
-        this.activity = activity;
+    public SalesforceTestBridge(ReactApplicationContext reactContext) {
+        super(reactContext);
     }
 
     @Override
-    protected @Nullable
-    Bundle getLaunchOptions() {
-        return activity.getIntent().getExtras();
+    public String getName() {
+        return TAG;
+    }
+
+    @ReactMethod
+    public void markTestCompleted(ReadableMap args,
+                                  final Callback successCallback, final Callback errorCallback) {
+
+        completedTests.offer(args.getString("testName"));
+
     }
 }
