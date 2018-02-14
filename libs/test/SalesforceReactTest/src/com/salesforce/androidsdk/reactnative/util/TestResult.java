@@ -24,47 +24,37 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+package com.salesforce.androidsdk.reactnative.util;
 
-package com.salesforce.androidsdk.reactnative;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
+public class TestResult {
 
-import android.support.test.filters.SmallTest;
+    private static ArrayBlockingQueue<TestResult> testCompleted = new ArrayBlockingQueue<TestResult>(1);
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+    public final boolean status;
+    public final String message;
 
-import java.util.Arrays;
-import java.util.Collection;
-
-
-@RunWith(Parameterized.class)
-@SmallTest
-public class ReactHarnessTest extends ReactTestCase {
-
-    private static final String JS_SUITE = "js/harness.test";
-
-    @Parameterized.Parameter(0) public String testName;
-    @Parameterized.Parameter(1) public Boolean shouldSucceed;
-
-
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection<Object[]> data() {
-        return Arrays.asList(new Object[][]{
-                {"testPassing", true},
-                {"testFailing", false}
-//                "testAsyncPassing",
-//                "testAsyncFailing"
-        });
+    private TestResult(boolean status, String message) {
+        this.status = status;
+        this.message = message;
     }
 
-    @Test
-    public void test() throws Exception {
-        if (shouldSucceed) {
-            runReactNativeTest(JS_SUITE, testName);
-        }
-        else {
-            runReactNativeTestFakeFailure(JS_SUITE, testName);
-        }
+    public static TestResult success() {
+        return new TestResult(true, null);
+    }
+
+    public static TestResult failure(String message) {
+        return new TestResult(false, message);
+    }
+
+
+    public static void recordTestResult(TestResult result) {
+        testCompleted.offer(result);
+    }
+
+    public static TestResult waitForTestResult(long timeoutSeconds) throws InterruptedException {
+        return testCompleted.poll(timeoutSeconds, TimeUnit.SECONDS);
     }
 }

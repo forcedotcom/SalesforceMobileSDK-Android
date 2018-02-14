@@ -31,34 +31,53 @@ import android.content.Intent;
 import android.support.test.rule.ActivityTestRule;
 import android.support.test.runner.AndroidJUnit4;
 
-import com.salesforce.androidsdk.reactnative.bridge.SalesforceTestBridge;
-import com.salesforce.androidsdk.reactnative.util.SalesforceReactTestActivity;
+import com.salesforce.androidsdk.reactnative.util.ReactTestActivity;
+import com.salesforce.androidsdk.reactnative.util.TestResult;
 
 import junit.framework.Assert;
 
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
-import java.util.concurrent.TimeUnit;
-
 @RunWith(AndroidJUnit4.class)
 public abstract class ReactTestCase {
 
-    private static final long TEST_TIMEOUT_SECONDS = 5;
+    private static final long TEST_TIMEOUT_SECONDS = 30;
     public static final String TEST_SUITE = "testSuite";
     public static final String TEST_NAME = "testName";
+    public static final String FAKE_FAILURE = "FAKE_FAILURE";
 
     @Rule
-    public ActivityTestRule<SalesforceReactTestActivity> mActivityRule = new ActivityTestRule<SalesforceReactTestActivity>(
-            SalesforceReactTestActivity.class, false, false) {
+    public ActivityTestRule<ReactTestActivity> mActivityRule = new ActivityTestRule<ReactTestActivity>(
+            ReactTestActivity.class, false, false) {
     };
 
     protected void runReactNativeTest(String testSuite, String testName) throws InterruptedException {
+        TestResult result = getTestResult(testSuite, testName);
+        if (result == null) {
+            Assert.fail(testName + " timed out");
+        }
+        else {
+            Assert.assertTrue(result.message, result.status);
+        }
+    }
+
+    protected void runReactNativeTestFakeFailure(String testSuite, String testName) throws InterruptedException {
+        TestResult result = getTestResult(testSuite, testName);
+        if (result == null) {
+            Assert.fail(testName + " timed out");
+        }
+        else {
+            Assert.assertTrue(testName + " should have failure with a FAKE_FAILURE error", !result.status && result.message.contains(FAKE_FAILURE));
+        }
+    }
+
+    private TestResult getTestResult(String testSuite, String testName) throws InterruptedException {
         Intent intent = new Intent();
         intent.putExtra(TEST_SUITE, testSuite);
         intent.putExtra(TEST_NAME,testName);
         mActivityRule.launchActivity(intent);
 
-        Assert.assertTrue(testName + " failed", true == SalesforceTestBridge.testCompleted.poll(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+        return TestResult.waitForTestResult(TEST_TIMEOUT_SECONDS);
     }
 }

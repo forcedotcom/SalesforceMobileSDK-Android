@@ -30,6 +30,10 @@ package com.salesforce.androidsdk.reactnative;
 
 import android.support.test.filters.SmallTest;
 
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
+
+import org.junit.After;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -62,6 +66,12 @@ public class ReactSmartStoreTest extends ReactTestCase {
                 "testGetRemoveStores",
                 "testGetRemoveGlobalStores",
         });
+    }
+
+    @After
+    public void tearDown() {
+        SmartStoreSDKManager.getInstance().removeAllUserStores();
+        SmartStoreSDKManager.getInstance().removeAllGlobalStores();
     }
 
     @Test

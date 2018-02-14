@@ -26,18 +26,12 @@
  */
 package com.salesforce.androidsdk.reactnative.bridge;
 
-import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
-import com.facebook.react.bridge.ReadableMap;
-
-import java.util.concurrent.ArrayBlockingQueue;
+import com.salesforce.androidsdk.reactnative.util.TestResult;
 
 public class SalesforceTestBridge extends ReactContextBaseJavaModule {
-
-
-    public static ArrayBlockingQueue<Boolean> testCompleted = new ArrayBlockingQueue<Boolean>(1);
 
     private static final String TAG = "SalesforceTestBridge";
 
@@ -52,8 +46,7 @@ public class SalesforceTestBridge extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void markTestCompleted() {
-
-        testCompleted.offer(true);
-
+        TestResult.recordTestResult(TestResult.success());
     }
+
 }

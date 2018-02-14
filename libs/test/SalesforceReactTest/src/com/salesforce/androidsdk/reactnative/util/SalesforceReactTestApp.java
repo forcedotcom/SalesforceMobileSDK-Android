@@ -31,51 +31,11 @@ import android.app.Application;
 
 import com.facebook.react.ReactApplication;
 import com.facebook.react.ReactNativeHost;
-import com.facebook.react.ReactPackage;
-import com.facebook.react.bridge.NativeModule;
-import com.facebook.react.bridge.ReactApplicationContext;
-import com.facebook.react.shell.MainReactPackage;
-import com.facebook.react.uimanager.ViewManager;
-import com.salesforce.androidsdk.reactnative.BuildConfig;
 import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
-import com.salesforce.androidsdk.reactnative.bridge.SalesforceTestBridge;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 public class SalesforceReactTestApp extends Application implements ReactApplication {
 
-    private final ReactNativeHost _mReactNativeHost = new ReactNativeHost(this) {
-        @Override
-        public boolean getUseDeveloperSupport() {
-            return BuildConfig.DEBUG;
-        }
-
-        @Override
-        protected List<ReactPackage> getPackages() {
-            return Arrays.<ReactPackage>asList(
-                    new MainReactPackage(),
-                    SalesforceReactSDKManager.getInstance().getReactPackage(),
-                    new ReactPackage() {
-                        @Override
-                        public List<NativeModule> createNativeModules(ReactApplicationContext reactApplicationContext) {
-                            return Arrays.asList(new NativeModule[] { new SalesforceTestBridge(reactApplicationContext)});
-                        }
-
-                        @Override
-                        public List<ViewManager> createViewManagers(ReactApplicationContext reactApplicationContext) {
-                            return Collections.emptyList();
-                        }
-                    }
-            );
-        }
-
-        @Override
-        protected String getJSMainModuleName() {
-            return "js/index";
-        }
-    };
+    private final ReactNativeHost _mReactNativeHost = new ReactNativeTestHost(this);
 
     @Override
     public ReactNativeHost getReactNativeHost() {
@@ -85,7 +45,7 @@ public class SalesforceReactTestApp extends Application implements ReactApplicat
     @Override
     public void onCreate() {
         super.onCreate();
-        SalesforceReactSDKManager.initReactNative(getApplicationContext(), SalesforceReactTestActivity.class);
+        SalesforceReactSDKManager.initReactNative(getApplicationContext(), ReactTestActivity.class);
     }
 
 }

@@ -55,7 +55,7 @@ public class ReactNativeTestRunner extends AndroidJUnitRunner {
                                 String id,
                                 Object lastNonConfigurationInstance)
             throws InstantiationException, IllegalAccessException{
-        return super.newActivity(SalesforceReactTestActivity.class, context, token, application, intent, info, title, parent, id, lastNonConfigurationInstance);
+        return super.newActivity(ReactTestActivity.class, context, token, application, intent, info, title, parent, id, lastNonConfigurationInstance);
     }
 
     @Override
@@ -63,7 +63,7 @@ public class ReactNativeTestRunner extends AndroidJUnitRunner {
                                 Intent intent)
             throws InstantiationException, IllegalAccessException,
             ClassNotFoundException {
-        return super.newActivity(cl, SalesforceReactTestActivity.class.getName(),intent);
+        return super.newActivity(cl, ReactTestActivity.class.getName(),intent);
     }
 
 

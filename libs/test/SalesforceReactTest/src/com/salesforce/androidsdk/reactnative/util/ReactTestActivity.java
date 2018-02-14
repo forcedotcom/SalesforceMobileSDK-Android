@@ -32,7 +32,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.reactnative.ui.SalesforceReactActivity;
 import com.salesforce.androidsdk.rest.ClientManager;
 
-public class SalesforceReactTestActivity extends SalesforceReactActivity {
+public class ReactTestActivity extends SalesforceReactActivity {
 
     static String username = "testuser@cs4.com";
     static String accountName = "testuser@cs4.com (https://cs4.salesforce.com) (test)";

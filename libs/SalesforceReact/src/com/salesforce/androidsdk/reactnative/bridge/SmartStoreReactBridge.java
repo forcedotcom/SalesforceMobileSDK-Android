@@ -154,7 +154,11 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 		// Run retrieve
 		try {
             final SmartStore smartStore = getSmartStore(args);
-            Long[] soupEntryIds = ReactBridgeHelper.toJavaList(args.getArray(ENTRY_IDS)).toArray(new Long[0]);
+			Double[] soupEntryIdsFromJs = ReactBridgeHelper.toJavaList(args.getArray(ENTRY_IDS)).toArray(new Double[0]); // we get Double's back
+			Long[] soupEntryIds  = new Long[soupEntryIdsFromJs.length];
+			for (int i=0; i<soupEntryIdsFromJs.length; i++) {
+				soupEntryIds[i] = soupEntryIdsFromJs[i].longValue();
+			}
 			JSONArray result = smartStore.retrieve(soupName, soupEntryIds);
 			ReactBridgeHelper.invokeSuccess(successCallback, result);
 		} catch (Exception e) {
@@ -588,11 +592,13 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 
 
 	/**
+	 * Native implementation of getAllGlobalStores
 	 * @param args
 	 * @param successCallback
 	 * @param errorCallback
 	 * @return
 	 */
+	@ReactMethod
 	public void getAllGlobalStores(ReadableMap args, final Callback successCallback,
 										   final Callback errorCallback) throws JSONException {
 		// return list of StoreConfigs
@@ -615,12 +621,13 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	}
 
 	/**
-	 *
+	 * Native implementation of getAllStores
 	 * @param args
 	 * @param successCallback
 	 * @param errorCallback
 	 * @return
 	 */
+	@ReactMethod
 	public void getAllStores(ReadableMap args, final Callback successCallback,
 									 final Callback errorCallback) {
 		// return list of StoreConfigs
@@ -643,12 +650,13 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	}
 
 	/**
-	 *
+	 * Native implementation of removeStore
 	 * @param args
 	 * @param successCallback
 	 * @param errorCallback
 	 * @return
 	 */
+	@ReactMethod
 	public void removeStore(ReadableMap args, final Callback successCallback,
 							 final Callback errorCallback){
 
@@ -669,12 +677,13 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	}
 
 	/**
-	 *
+	 * Native implementation of removeAllGlobalStores
 	 * @param args
 	 * @param successCallback
 	 * @param errorCallback
 	 * @return
 	 */
+	@ReactMethod
 	public void removeAllGlobalStores(ReadableMap args, final Callback successCallback,
 							final Callback errorCallback) {
 		SmartStoreSDKManager.getInstance().removeAllGlobalStores();
@@ -682,12 +691,13 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	}
 
 	/**
-	 *
+	 * Native implementation of removeAllStores
 	 * @param args
 	 * @param successCallback
 	 * @param errorCallback
 	 * @return
 	 */
+	@ReactMethod
 	public void removeAllStores(ReadableMap args, final Callback successCallback,
 								final Callback errorCallback) {
 		SmartStoreSDKManager.getInstance().removeAllUserStores();
