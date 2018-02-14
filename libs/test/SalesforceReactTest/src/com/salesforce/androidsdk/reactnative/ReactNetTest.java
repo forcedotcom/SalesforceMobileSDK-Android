@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2018-present, salesforce.com, inc.
  * All rights reserved.
@@ -28,7 +27,51 @@
 
 package com.salesforce.androidsdk.reactnative;
 
-// import com.facebook.react.testing.ReactAppInstrumentationTestCase;
 
-public class ReactTestCase { // extends ReactAppInstrumentationTestCase {
+import android.support.test.filters.SmallTest;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import java.util.Arrays;
+import java.util.List;
+
+
+@RunWith(Parameterized.class)
+@SmallTest
+public class ReactNetTest extends ReactNativeTestBase {
+
+    private static final String JS_SUITE = "js/net.test";
+
+    @Parameterized.Parameter
+    public String testName;
+
+    @Parameterized.Parameters(name = "{0}")
+    public static List<String> data() {
+        return Arrays.asList(new String[]{
+                "testGetApiVersion",
+                "testVersions",
+                "testResources",
+                "testDescribeGlobal",
+                "testMetaData",
+                "testDescribe",
+                "testDescribeLayout",
+                "testCreateRetrieve",
+                "testUpsertUpdateRetrieve",
+                "testCreateDelRetrieve",
+                "testQuery",
+                "testSearch",
+                "testPassing",
+                "testFailing",
+                "testAsyncPassing",
+                "testAsyncFailing"
+        });
+    }
+
+    @Test
+    public void test() throws Exception {
+        runReactNativeTest(JS_SUITE, testName);
+    }
 }
+

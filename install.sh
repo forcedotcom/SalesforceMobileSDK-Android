@@ -8,6 +8,6 @@ git submodule update
 
 
 # get react native
-pushd "libs/SalesforceReact"
+pushd "libs/test/SalesforceReactTest"
 npm install
 popd

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-present, salesforce.com, inc.
+ * Copyright (c) 2018-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -27,48 +27,47 @@
 
 package com.salesforce.androidsdk.reactnative;
 
+import android.app.Activity;
+import android.content.pm.ActivityInfo;
+import android.os.IBinder;
+
+import android.content.Intent;
+
+
+import android.support.test.runner.AndroidJUnitRunner;
 import android.app.Application;
+import android.content.Context;
 
-import com.facebook.react.ReactApplication;
-import com.facebook.react.ReactNativeHost;
-import com.facebook.react.ReactPackage;
-import com.facebook.react.shell.MainReactPackage;
-import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
-
-import java.util.Arrays;
-import java.util.List;
-
-public class TestForceApp extends Application implements ReactApplication {
-
-    private final ReactNativeHost _mReactNativeHost = new ReactNativeHost(this) {
-        @Override
-        public boolean getUseDeveloperSupport() {
-            return BuildConfig.DEBUG;
-        }
-
-        @Override
-        protected List<ReactPackage> getPackages() {
-            return Arrays.<ReactPackage>asList(
-                    new MainReactPackage(),
-                    SalesforceReactSDKManager.getInstance().getReactPackage()
-            );
-        }
-
-        @Override
-        protected String getJSMainModuleName() {
-            return "js/index";
-        }
-    };
+public class ReactNativeTestRunner extends AndroidJUnitRunner {
 
     @Override
-    public ReactNativeHost getReactNativeHost() {
-        return _mReactNativeHost;
+    public Application newApplication(ClassLoader cl, String className, Context context) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
+        return super.newApplication(cl, TestForceApp.class.getName(), context);
+    }
+
+
+    @Override
+    public Activity newActivity(Class<?> clazz,
+                                Context context,
+                                IBinder token,
+                                Application application,
+                                Intent intent,
+                                ActivityInfo info,
+                                CharSequence title,
+                                Activity parent,
+                                String id,
+                                Object lastNonConfigurationInstance)
+            throws InstantiationException, IllegalAccessException{
+        return super.newActivity(MainActivity.class, context, token, application, intent, info, title, parent, id, lastNonConfigurationInstance);
     }
 
     @Override
-    public void onCreate() {
-        super.onCreate();
-        SalesforceReactSDKManager.initReactNative(getApplicationContext(), MainActivity.class);
+    public Activity newActivity(ClassLoader cl, String className,
+                                Intent intent)
+            throws InstantiationException, IllegalAccessException,
+            ClassNotFoundException {
+        return super.newActivity(cl, MainActivity.class.getName(),intent);
     }
+
 
 }

@@ -24,15 +24,26 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.androidsdk.reactnative;
 
-import com.salesforce.androidsdk.reactnative.ui.SalesforceReactActivity;
+import com.facebook.react.ReactActivity;
+import com.facebook.react.ReactActivityDelegate;
 
-public class MainActivity extends SalesforceReactActivity {
+public class MainActivity extends ReactActivity {
 
     @Override
     public boolean shouldAuthenticate() {
         return false;
     }
 
+    @Override
+    protected String getMainComponentName() {
+        return "SmartSyncExplorerReactNativeTestApp";
+    }
+
+    @Override
+    protected ReactActivityDelegate createReactActivityDelegate() {
+        return new ReactActivityTestAppDelegate(this, getMainComponentName());
+    }
 }

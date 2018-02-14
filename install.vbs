@@ -72,7 +72,7 @@ Call CopySymlinkFiles()
 
 ' Getting npm dependencies for react-native
 WScript.Echo "Getting npm dependencies"
-objShell.CurrentDirectory = strWorkingDirectory & "libs\SalesforceReact"
+objShell.CurrentDirectory = strWorkingDirectory & "libs\test\SalesforceReactTest"
 intReturnVal = objShell.Run("npm install --silent", 1, True)
 objShell.CurrentDirectory = strWorkingDirectory
 If intReturnVal <> 0 Then

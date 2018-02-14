@@ -17,7 +17,10 @@ apply plugin: 'com.jfrog.bintray'
 dependencies {
   api project(':libs:SmartSync')
   api 'com.facebook.react:react-native:0.50.4'
-  androidTestImplementation fileTree("node_modules/react-native/ReactAndroid/src/androidTest")
+
+  androidTestApi 'com.android.support.test:runner:1.0.1'
+  androidTestApi 'com.android.support.test:rules:1.0.1'
+  androidTestApi 'com.android.support.test.uiautomator:uiautomator-v18:2.1.2'
 }
 
 android {
@@ -50,7 +53,7 @@ android {
 
   defaultConfig {
     testApplicationId "com.salesforce.androidsdk.salesforcehybrid.tests"
-    testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    testInstrumentationRunner "com.salesforce.androidsdk.reactnative.ReactNativeTestRunner"
   }
 
   packagingOptions {

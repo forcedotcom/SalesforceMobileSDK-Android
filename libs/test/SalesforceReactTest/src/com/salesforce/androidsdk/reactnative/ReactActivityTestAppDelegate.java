@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-present, salesforce.com, inc.
+ * Copyright (c) 2018-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -27,48 +27,25 @@
 
 package com.salesforce.androidsdk.reactnative;
 
-import android.app.Application;
+import android.app.Activity;
+import android.os.Bundle;
 
-import com.facebook.react.ReactApplication;
-import com.facebook.react.ReactNativeHost;
-import com.facebook.react.ReactPackage;
-import com.facebook.react.shell.MainReactPackage;
-import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
+import com.facebook.react.ReactActivityDelegate;
 
-import java.util.Arrays;
-import java.util.List;
+import javax.annotation.Nullable;
 
-public class TestForceApp extends Application implements ReactApplication {
+public class ReactActivityTestAppDelegate extends ReactActivityDelegate {
 
-    private final ReactNativeHost _mReactNativeHost = new ReactNativeHost(this) {
-        @Override
-        public boolean getUseDeveloperSupport() {
-            return BuildConfig.DEBUG;
-        }
+    private Activity activity;
 
-        @Override
-        protected List<ReactPackage> getPackages() {
-            return Arrays.<ReactPackage>asList(
-                    new MainReactPackage(),
-                    SalesforceReactSDKManager.getInstance().getReactPackage()
-            );
-        }
-
-        @Override
-        protected String getJSMainModuleName() {
-            return "js/index";
-        }
-    };
-
-    @Override
-    public ReactNativeHost getReactNativeHost() {
-        return _mReactNativeHost;
+    public ReactActivityTestAppDelegate(Activity activity, @Nullable String mainComponentName) {
+        super(activity, mainComponentName);
+        this.activity = activity;
     }
 
     @Override
-    public void onCreate() {
-        super.onCreate();
-        SalesforceReactSDKManager.initReactNative(getApplicationContext(), MainActivity.class);
+    protected @Nullable
+    Bundle getLaunchOptions() {
+        return activity.getIntent().getExtras();
     }
-
 }

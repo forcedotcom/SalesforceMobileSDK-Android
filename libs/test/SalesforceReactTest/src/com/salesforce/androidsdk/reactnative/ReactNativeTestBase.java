@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-present, salesforce.com, inc.
+ * Copyright (c) 2018-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -27,48 +27,43 @@
 
 package com.salesforce.androidsdk.reactnative;
 
-import android.app.Application;
+import android.content.Intent;
+import android.support.test.InstrumentationRegistry;
+import android.support.test.filters.LargeTest;
+import android.support.test.rule.ActivityTestRule;
+import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.UiDevice;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiSelector;
 
-import com.facebook.react.ReactApplication;
-import com.facebook.react.ReactNativeHost;
-import com.facebook.react.ReactPackage;
-import com.facebook.react.shell.MainReactPackage;
-import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.runner.RunWith;
 
-import java.util.Arrays;
-import java.util.List;
+import static org.junit.Assert.assertTrue;
 
-public class TestForceApp extends Application implements ReactApplication {
+@LargeTest
+@RunWith(AndroidJUnit4.class)
+public abstract class ReactNativeTestBase {
 
-    private final ReactNativeHost _mReactNativeHost = new ReactNativeHost(this) {
-        @Override
-        public boolean getUseDeveloperSupport() {
-            return BuildConfig.DEBUG;
-        }
-
-        @Override
-        protected List<ReactPackage> getPackages() {
-            return Arrays.<ReactPackage>asList(
-                    new MainReactPackage(),
-                    SalesforceReactSDKManager.getInstance().getReactPackage()
-            );
-        }
-
-        @Override
-        protected String getJSMainModuleName() {
-            return "js/index";
-        }
+    @Rule
+    public ActivityTestRule<MainActivity> mActivityRule = new ActivityTestRule<MainActivity>(
+            MainActivity.class, false, false) {
     };
 
-    @Override
-    public ReactNativeHost getReactNativeHost() {
-        return _mReactNativeHost;
+    @Before
+    public void startUiDevice() {
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
     }
 
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        SalesforceReactSDKManager.initReactNative(getApplicationContext(), MainActivity.class);
+    protected void runReactNativeTest(String testSuite, String testName){
+        Intent intent = new Intent();
+        intent.putExtra("testSuite", testSuite);
+        intent.putExtra("testName",testName);
+        mActivityRule.launchActivity(intent);
+        UiObject uiObject;
+        UiSelector uiSelector = new UiSelector();
+        uiObject = new UiObject(uiSelector.descriptionStartsWith("testResult"));
+        assertTrue(testName + " failed", uiObject.waitForExists(10*1000));
     }
-
 }
