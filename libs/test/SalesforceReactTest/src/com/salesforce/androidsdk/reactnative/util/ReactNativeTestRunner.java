@@ -28,21 +28,18 @@
 package com.salesforce.androidsdk.reactnative.util;
 
 import android.app.Activity;
-import android.content.pm.ActivityInfo;
-import android.os.IBinder;
-
-import android.content.Intent;
-
-
-import android.support.test.runner.AndroidJUnitRunner;
 import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.os.IBinder;
+import android.support.test.runner.AndroidJUnitRunner;
 
 public class ReactNativeTestRunner extends AndroidJUnitRunner {
 
     @Override
     public Application newApplication(ClassLoader cl, String className, Context context) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
-        return super.newApplication(cl, TestForceApp.class.getName(), context);
+        return super.newApplication(cl, SalesforceReactTestApp.class.getName(), context);
     }
 
 
@@ -58,7 +55,7 @@ public class ReactNativeTestRunner extends AndroidJUnitRunner {
                                 String id,
                                 Object lastNonConfigurationInstance)
             throws InstantiationException, IllegalAccessException{
-        return super.newActivity(TestActivity.class, context, token, application, intent, info, title, parent, id, lastNonConfigurationInstance);
+        return super.newActivity(SalesforceReactTestActivity.class, context, token, application, intent, info, title, parent, id, lastNonConfigurationInstance);
     }
 
     @Override
@@ -66,7 +63,7 @@ public class ReactNativeTestRunner extends AndroidJUnitRunner {
                                 Intent intent)
             throws InstantiationException, IllegalAccessException,
             ClassNotFoundException {
-        return super.newActivity(cl, TestActivity.class.getName(),intent);
+        return super.newActivity(cl, SalesforceReactTestActivity.class.getName(),intent);
     }
 
 

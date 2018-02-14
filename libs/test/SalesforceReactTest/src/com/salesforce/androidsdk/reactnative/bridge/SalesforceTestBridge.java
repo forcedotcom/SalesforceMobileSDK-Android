@@ -51,8 +51,7 @@ public class SalesforceTestBridge extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void markTestCompleted(ReadableMap args,
-                                  final Callback successCallback, final Callback errorCallback) {
+    public void markTestCompleted() {
 
         testCompleted.offer(true);
 

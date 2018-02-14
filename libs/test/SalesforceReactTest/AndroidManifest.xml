@@ -4,11 +4,11 @@
 	package="com.salesforce.androidsdk.reactnative.tests">
 
 	<application android:label="@string/app_name"
-        android:name="com.salesforce.androidsdk.reactnative.util.TestForceApp"
+        android:name="com.salesforce.androidsdk.reactnative.util.SalesforceReactTestApp"
         android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpaceActivity">
 
 	    <!-- Launcher screen -->
-        <activity android:name="com.salesforce.androidsdk.reactnative.util.TestActivity"
+        <activity android:name="com.salesforce.androidsdk.reactnative.util.SalesforceReactTestActivity"
             android:label="@string/app_name"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
             <intent-filter>

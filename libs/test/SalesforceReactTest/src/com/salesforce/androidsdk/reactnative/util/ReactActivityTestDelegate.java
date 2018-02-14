@@ -27,40 +27,43 @@
 
 package com.salesforce.androidsdk.reactnative.util;
 
+import android.app.Activity;
+import android.os.Bundle;
 
-import android.support.test.filters.SmallTest;
+import com.facebook.react.ReactActivityDelegate;
 
-import com.salesforce.androidsdk.reactnative.ReactTestCase;
+import javax.annotation.Nullable;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import java.util.Arrays;
-import java.util.List;
+import static com.salesforce.androidsdk.reactnative.ReactTestCase.TEST_NAME;
+import static com.salesforce.androidsdk.reactnative.ReactTestCase.TEST_SUITE;
 
 
-@RunWith(Parameterized.class)
-@SmallTest
-public class ReactHarnessTest extends ReactTestCase {
+public class ReactActivityTestDelegate extends ReactActivityDelegate {
 
-    private static final String JS_SUITE = "js/harness.test";
+    public static final String TEST = "test";
 
-    @Parameterized.Parameter
-    public String testName;
+    private Activity activity;
+    private String testSuite;
+    private String testName;
 
-    @Parameterized.Parameters(name = "{0}")
-    public static List<String> data() {
-        return Arrays.asList(new String[]{
-                "testPassing",
-                "testFailing",
-                "testAsyncPassing",
-                "testAsyncFailing"
-        });
+    public ReactActivityTestDelegate(Activity activity, @Nullable String mainComponentName) {
+        super(activity, "xxx" /* the value to use will be computed in loadApp - but we need a non-null value otherwise loadApp won't be called */);
+        this.activity = activity;
     }
 
-    @Test
-    public void test() throws Exception {
-        runReactNativeTest(JS_SUITE, testName);
+    @Override
+    protected void loadApp(String appKey) {
+        Bundle extras = activity.getIntent().getExtras();
+        testSuite = extras.getString(TEST_SUITE);
+        testName = extras.getString(TEST_NAME);
+        super.loadApp(testName.substring(TEST.length()));
+    }
+
+    @Override
+    protected Bundle getLaunchOptions() {
+        Bundle extras = new Bundle();
+        extras.putString(TEST_SUITE, testSuite);
+        extras.putString(TEST_NAME, testName);
+        return extras;
     }
 }

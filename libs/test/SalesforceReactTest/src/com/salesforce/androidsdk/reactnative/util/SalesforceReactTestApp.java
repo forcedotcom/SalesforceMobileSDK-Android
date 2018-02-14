@@ -44,7 +44,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public class TestForceApp extends Application implements ReactApplication {
+public class SalesforceReactTestApp extends Application implements ReactApplication {
 
     private final ReactNativeHost _mReactNativeHost = new ReactNativeHost(this) {
         @Override
@@ -85,7 +85,7 @@ public class TestForceApp extends Application implements ReactApplication {
     @Override
     public void onCreate() {
         super.onCreate();
-        SalesforceReactSDKManager.initReactNative(getApplicationContext(), TestActivity.class);
+        SalesforceReactSDKManager.initReactNative(getApplicationContext(), SalesforceReactTestActivity.class);
     }
 
 }

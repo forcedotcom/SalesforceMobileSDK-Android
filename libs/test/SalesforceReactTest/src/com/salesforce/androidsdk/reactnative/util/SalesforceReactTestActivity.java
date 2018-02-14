@@ -27,35 +27,38 @@
 
 package com.salesforce.androidsdk.reactnative.util;
 
-import android.app.Activity;
-import android.os.Bundle;
-
 import com.facebook.react.ReactActivityDelegate;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.reactnative.ui.SalesforceReactActivity;
+import com.salesforce.androidsdk.rest.ClientManager;
 
-import javax.annotation.Nullable;
+public class SalesforceReactTestActivity extends SalesforceReactActivity {
 
-public class TestReactActivityDelegate extends ReactActivityDelegate {
-
-    private String mainComponentName;
-
-    private Activity activity;
-
-    public TestReactActivityDelegate(Activity activity, @Nullable String mainComponentName) {
-        super(activity, null);
-        this.activity = activity;
-    }
-
-    @Override
-    protected void loadApp(String appKey) {
-        super.loadApp(mainComponentName);
-    }
-
+    static String username = "testuser@cs4.com";
+    static String accountName = "testuser@cs4.com (https://cs4.salesforce.com) (test)";
+    static String refreshToken = "5Aep8610_HRVGlMVK1Ii_.X.2OmSMyFBQAlqyGWdLwdJtsKFYt.3jKG0KkuLUZvsCjW5PHu2F5lpuaAWE0vt3D7";
+    static String authToken = "--will-be-set-through-refresh--";
+    static String identityUrl = "https://test.salesforce.com/id/00DP00000002p6hMAA/005P0000001np0OIAQ";
+    static String instanceUrl = "https://images.cs4.my.salesforce.com";
+    static String loginUrl = "https://test.salesforce.com";
+    static String orgId = "00DP00000002p6hMAA";
+    static String userId = "005P0000001np0OIAQ";
 
     @Override
-    protected @Nullable
-    Bundle getLaunchOptions() {
-        Bundle extras = activity.getIntent().getExtras();
-        mainComponentName = extras.getString("testSuite");
-        return extras;
+    protected ClientManager buildClientManager() {
+        final ClientManager clientManager = super.buildClientManager();
+        final ClientManager.LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
+        clientManager.createNewAccount(accountName,
+                username, refreshToken,
+                authToken, instanceUrl,
+                loginUrl, identityUrl,
+                loginOptions.getOauthClientId(), orgId,
+                userId, null, null, null, null, null, null, null, null, null);
+        return clientManager;
     }
+
+    protected ReactActivityDelegate createReactActivityDelegate() {
+        return new ReactActivityTestDelegate(this, null);
+    }
+
 }

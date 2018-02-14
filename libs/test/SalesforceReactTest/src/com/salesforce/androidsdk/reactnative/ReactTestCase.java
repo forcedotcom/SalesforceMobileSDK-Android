@@ -27,63 +27,38 @@
 
 package com.salesforce.androidsdk.reactnative;
 
-import android.content.Context;
 import android.content.Intent;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.filters.LargeTest;
 import android.support.test.rule.ActivityTestRule;
 import android.support.test.runner.AndroidJUnit4;
 
-import com.salesforce.androidsdk.reactnative.util.TestCredentials;
 import com.salesforce.androidsdk.reactnative.bridge.SalesforceTestBridge;
-import com.salesforce.androidsdk.reactnative.util.TestActivity;
-import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.reactnative.util.SalesforceReactTestActivity;
 
 import junit.framework.Assert;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
 
-import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_CALLBACK_URL;
-import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_SCOPES;
-
-@LargeTest
 @RunWith(AndroidJUnit4.class)
 public abstract class ReactTestCase {
 
     private static final long TEST_TIMEOUT_SECONDS = 5;
+    public static final String TEST_SUITE = "testSuite";
+    public static final String TEST_NAME = "testName";
 
     @Rule
-    public ActivityTestRule<TestActivity> mActivityRule = new ActivityTestRule<TestActivity>(
-            TestActivity.class, false, false) {
+    public ActivityTestRule<SalesforceReactTestActivity> mActivityRule = new ActivityTestRule<SalesforceReactTestActivity>(
+            SalesforceReactTestActivity.class, false, false) {
     };
-
-
-    @Before
-    public void setUp() {
-        Context targetContext = InstrumentationRegistry.getContext();
-        final ClientManager.LoginOptions loginOptions = new ClientManager.LoginOptions(TestCredentials.LOGIN_URL,
-                TEST_CALLBACK_URL, TestCredentials.CLIENT_ID, TEST_SCOPES);
-        final ClientManager clientManager = new ClientManager(targetContext,
-                TestCredentials.ACCOUNT_TYPE, loginOptions, true);
-        clientManager.createNewAccount(TestCredentials.ACCOUNT_NAME,
-                TestCredentials.USERNAME, TestCredentials.REFRESH_TOKEN,
-                "", TestCredentials.INSTANCE_URL,
-                TestCredentials.LOGIN_URL, TestCredentials.IDENTITY_URL,
-                TestCredentials.CLIENT_ID, TestCredentials.ORG_ID,
-                TestCredentials.USER_ID, null, null, null,
-                null, null, null, null, null, null);
-    }
 
     protected void runReactNativeTest(String testSuite, String testName) throws InterruptedException {
         Intent intent = new Intent();
-        intent.putExtra("testSuite", testSuite);
-        intent.putExtra("testName",testName);
+        intent.putExtra(TEST_SUITE, testSuite);
+        intent.putExtra(TEST_NAME,testName);
         mActivityRule.launchActivity(intent);
 
-        Assert.assertTrue(testName + " failed", SalesforceTestBridge.testCompleted.poll(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+        Assert.assertTrue(testName + " failed", true == SalesforceTestBridge.testCompleted.poll(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS));
     }
 }

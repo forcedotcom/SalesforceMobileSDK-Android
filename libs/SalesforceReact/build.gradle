@@ -20,7 +20,6 @@ dependencies {
 
   androidTestApi 'com.android.support.test:runner:1.0.1'
   androidTestApi 'com.android.support.test:rules:1.0.1'
-  androidTestApi 'com.android.support.test.uiautomator:uiautomator-v18:2.1.2'
 }
 
 android {
@@ -52,8 +51,8 @@ android {
   }
 
   defaultConfig {
-    testApplicationId "com.salesforce.androidsdk.salesforcehybrid.tests"
-    testInstrumentationRunner "com.salesforce.androidsdk.reactnative.ReactNativeTestRunner"
+    testApplicationId "com.salesforce.androidsdk.salesforcereact.tests"
+    testInstrumentationRunner "com.salesforce.androidsdk.reactnative.util.ReactNativeTestRunner"
   }
 
   packagingOptions {
