@@ -35,6 +35,9 @@ import android.content.pm.ActivityInfo;
 import android.os.IBinder;
 import android.support.test.runner.AndroidJUnitRunner;
 
+/**
+ * Test runner for react native tests
+ */
 public class ReactNativeTestRunner extends AndroidJUnitRunner {
 
     @Override
@@ -63,7 +66,7 @@ public class ReactNativeTestRunner extends AndroidJUnitRunner {
                                 Intent intent)
             throws InstantiationException, IllegalAccessException,
             ClassNotFoundException {
-        return super.newActivity(cl, ReactTestActivity.class.getName(),intent);
+        return super.newActivity(cl, ReactTestActivity.class.getName(), intent);
     }
 
 

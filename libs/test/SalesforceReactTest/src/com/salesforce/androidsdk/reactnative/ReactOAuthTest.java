@@ -37,12 +37,13 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Running javascript tests for OAuth react module.
+ */
 
 @RunWith(Parameterized.class)
 @SmallTest
 public class ReactOAuthTest extends ReactTestCase {
-
-    private static final String JS_SUITE = "js/oauth.test";
 
     @Parameterized.Parameter
     public String testName;
@@ -56,7 +57,7 @@ public class ReactOAuthTest extends ReactTestCase {
 
     @Test
     public void test() throws Exception {
-        runReactNativeTest(JS_SUITE, testName);
+        runReactNativeTest(testName);
     }
 }
 

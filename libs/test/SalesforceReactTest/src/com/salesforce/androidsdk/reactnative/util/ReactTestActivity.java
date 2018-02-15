@@ -32,6 +32,11 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.reactnative.ui.SalesforceReactActivity;
 import com.salesforce.androidsdk.rest.ClientManager;
 
+/**
+ * Sub-class of SalesforceReactActivity that authenticates using hard-coded credentials.
+ *
+ * Also uses ReactActivityTestDelegate as delegate
+ */
 public class ReactTestActivity extends SalesforceReactActivity {
 
     static String username = "testuser@cs4.com";

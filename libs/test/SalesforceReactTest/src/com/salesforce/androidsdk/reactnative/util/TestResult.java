@@ -29,6 +29,11 @@ package com.salesforce.androidsdk.reactnative.util;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Class to describe a test result
+ *
+ * Also holds a static blocking queue to keep track of current test completion
+ */
 public class TestResult {
 
     private static ArrayBlockingQueue<TestResult> testCompleted = new ArrayBlockingQueue<TestResult>(1);

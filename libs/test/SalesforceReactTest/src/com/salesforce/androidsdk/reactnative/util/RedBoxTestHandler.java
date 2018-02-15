@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-present, salesforce.com, inc.
+ * Copyright (c) 2017-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -25,51 +25,28 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.androidsdk.reactnative;
+package com.salesforce.androidsdk.reactnative.util;
 
-
-import android.support.test.filters.SmallTest;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import java.util.Arrays;
-import java.util.List;
-
+import com.facebook.react.devsupport.RedBoxHandler;
+import com.facebook.react.devsupport.interfaces.StackFrame;
 
 /**
- * Running javascript tests for Net react module.
+ * Subclass of RedBoxHandler used for testing
+ *
+ * Marks the current test running is marked as failed if any javascript error takes place
  */
-
-@RunWith(Parameterized.class)
-@SmallTest
-public class ReactNetTest extends ReactTestCase {
-
-    @Parameterized.Parameter
-    public String testName;
-
-    @Parameterized.Parameters(name = "{0}")
-    public static List<String> data() {
-        return Arrays.asList(new String[]{
-                "testGetApiVersion",
-                "testVersions",
-                "testResources",
-                "testDescribeGlobal",
-                "testMetaData",
-                "testDescribe",
-                "testDescribeLayout",
-                "testCreateRetrieve",
-                "testUpsertUpdateRetrieve",
-                "testCreateDelRetrieve",
-                "testQuery",
-                "testSearch"
-        });
+public class RedBoxTestHandler implements RedBoxHandler {
+    @Override
+    public void handleRedbox(String s, StackFrame[] stackFrames, ErrorType errorType) {
+        TestResult.recordTestResult(TestResult.failure(s));
     }
 
-    @Test
-    public void test() throws Exception {
-        runReactNativeTest(testName);
+    @Override
+    public boolean isReportEnabled() {
+        return false;
+    }
+
+    @Override
+    public void reportRedbox(String s, StackFrame[] stackFrames, String s1, ReportCompletedListener reportCompletedListener) {
     }
 }
-

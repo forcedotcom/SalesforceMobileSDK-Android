@@ -34,20 +34,21 @@ import com.facebook.react.ReactInstanceManager;
 import com.facebook.react.ReactInstanceManagerBuilder;
 import com.facebook.react.ReactNativeHost;
 import com.facebook.react.ReactPackage;
-import com.facebook.react.bridge.NativeModule;
-import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.common.LifecycleState;
-import com.facebook.react.devsupport.RedBoxHandler;
-import com.facebook.react.devsupport.interfaces.StackFrame;
 import com.facebook.react.shell.MainReactPackage;
-import com.facebook.react.uimanager.ViewManager;
 import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
-import com.salesforce.androidsdk.reactnative.bridge.SalesforceTestBridge;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
+/**
+ * Subclass of ReactNativeHost used for testing
+ *
+ * In addition to the SalesforceReact react packages, it loads SalesforceReactTestPackage (which brings SalesforceTestBridge)
+ * It creates an ReactInstanceManager which handles error through RedBoxTestHandler instead of RedBoxHandler
+ * That way the current test running is marked as failed if any javascript error takes place
+ *
+ */
 public class ReactNativeTestHost extends ReactNativeHost {
 
     private final Application mApplication;
@@ -67,17 +68,7 @@ public class ReactNativeTestHost extends ReactNativeHost {
         return Arrays.<ReactPackage>asList(
                 new MainReactPackage(),
                 SalesforceReactSDKManager.getInstance().getReactPackage(),
-                new ReactPackage() {
-                    @Override
-                    public List<NativeModule> createNativeModules(ReactApplicationContext reactApplicationContext) {
-                        return Arrays.asList(new NativeModule[] { new SalesforceTestBridge(reactApplicationContext)});
-                    }
-
-                    @Override
-                    public List<ViewManager> createViewManagers(ReactApplicationContext reactApplicationContext) {
-                        return Collections.emptyList();
-                    }
-                }
+                new SalesforceReactTestPackage()
         );
     }
 
@@ -89,26 +80,13 @@ public class ReactNativeTestHost extends ReactNativeHost {
 
     @Override
     protected ReactInstanceManager createReactInstanceManager() {
+        // Only difference with the super class createReactInstanceManager(): uses  RedBoxTestHandler instead of a RedBoxHandler
+
         ReactInstanceManagerBuilder builder = ReactInstanceManager.builder()
                 .setApplication(mApplication)
                 .setJSMainModulePath(getJSMainModuleName())
                 .setUseDeveloperSupport(getUseDeveloperSupport())
-                .setRedBoxHandler(new RedBoxHandler() {
-                    @Override
-                    public void handleRedbox(String s, StackFrame[] stackFrames, ErrorType errorType) {
-                        TestResult.recordTestResult(TestResult.failure(s));
-                    }
-
-                    @Override
-                    public boolean isReportEnabled() {
-                        return false;
-                    }
-
-                    @Override
-                    public void reportRedbox(String s, StackFrame[] stackFrames, String s1, ReportCompletedListener reportCompletedListener) {
-
-                    }
-                })
+                .setRedBoxHandler(new RedBoxTestHandler())
                 .setJavaScriptExecutorFactory(getJavaScriptExecutorFactory())
                 .setUIImplementationProvider(getUIImplementationProvider())
                 .setInitialLifecycleState(LifecycleState.BEFORE_CREATE);

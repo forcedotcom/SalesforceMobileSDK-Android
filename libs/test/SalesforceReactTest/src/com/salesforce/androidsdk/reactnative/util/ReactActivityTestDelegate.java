@@ -35,15 +35,18 @@ import com.facebook.react.ReactActivityDelegate;
 import javax.annotation.Nullable;
 
 import static com.salesforce.androidsdk.reactnative.ReactTestCase.TEST_NAME;
-import static com.salesforce.androidsdk.reactnative.ReactTestCase.TEST_SUITE;
 
-
+/**
+ * Subclass of ReactActivityDelegate used for testing
+ *
+ * It loads the registered app for the test (if the test is called testxxx, we expected a registered app called xxx)
+ * Also it destroys the instance manager when destroyed so that a fresh one gets build for the next test
+ */
 public class ReactActivityTestDelegate extends ReactActivityDelegate {
 
-    public static final String TEST = "test";
+    public static final String TEST_PREFIX = "test";
 
     private Activity activity;
-    private String testSuite;
     private String testName;
 
     public ReactActivityTestDelegate(Activity activity, @Nullable String mainComponentName) {
@@ -54,9 +57,8 @@ public class ReactActivityTestDelegate extends ReactActivityDelegate {
     @Override
     protected void loadApp(String appKey) {
         Bundle extras = activity.getIntent().getExtras();
-        testSuite = extras.getString(TEST_SUITE);
         testName = extras.getString(TEST_NAME);
-        super.loadApp(testName.substring(TEST.length()));
+        super.loadApp(testName.substring(TEST_PREFIX.length()));
     }
 
     @Override

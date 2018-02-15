@@ -25,51 +25,31 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.androidsdk.reactnative;
+package com.salesforce.androidsdk.reactnative.util;
 
-
-import android.support.test.filters.SmallTest;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import com.facebook.react.ReactPackage;
+import com.facebook.react.bridge.NativeModule;
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.uimanager.ViewManager;
+import com.salesforce.androidsdk.reactnative.bridge.SalesforceTestBridge;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-
 /**
- * Running javascript tests for Net react module.
+ * React package that contains the SalesforceTestBridge module
  */
+public class SalesforceReactTestPackage implements ReactPackage {
 
-@RunWith(Parameterized.class)
-@SmallTest
-public class ReactNetTest extends ReactTestCase {
-
-    @Parameterized.Parameter
-    public String testName;
-
-    @Parameterized.Parameters(name = "{0}")
-    public static List<String> data() {
-        return Arrays.asList(new String[]{
-                "testGetApiVersion",
-                "testVersions",
-                "testResources",
-                "testDescribeGlobal",
-                "testMetaData",
-                "testDescribe",
-                "testDescribeLayout",
-                "testCreateRetrieve",
-                "testUpsertUpdateRetrieve",
-                "testCreateDelRetrieve",
-                "testQuery",
-                "testSearch"
-        });
+    @Override
+    public List<NativeModule> createNativeModules(ReactApplicationContext reactApplicationContext) {
+        return Arrays.asList(new NativeModule[] { new SalesforceTestBridge(reactApplicationContext)});
     }
 
-    @Test
-    public void test() throws Exception {
-        runReactNativeTest(testName);
+    @Override
+    public List<ViewManager> createViewManagers(ReactApplicationContext reactApplicationContext) {
+        return Collections.emptyList();
     }
+
 }
-

@@ -37,12 +37,13 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.Collection;
 
-
+/**
+ * Tests for the harness
+ * To make sure that synchronous/asynchronous passing/failing are correctly reported
+ */
 @RunWith(Parameterized.class)
 @SmallTest
 public class ReactHarnessTest extends ReactTestCase {
-
-    private static final String JS_SUITE = "js/harness.test";
 
     @Parameterized.Parameter(0) public String testName;
     @Parameterized.Parameter(1) public Boolean shouldSucceed;
@@ -61,10 +62,10 @@ public class ReactHarnessTest extends ReactTestCase {
     @Test
     public void test() throws Exception {
         if (shouldSucceed) {
-            runReactNativeTest(JS_SUITE, testName);
+            runReactNativeTest(testName);
         }
         else {
-            runReactNativeTestFakeFailure(JS_SUITE, testName);
+            runReactNativeTestFakeFailure(testName);
         }
     }
 }

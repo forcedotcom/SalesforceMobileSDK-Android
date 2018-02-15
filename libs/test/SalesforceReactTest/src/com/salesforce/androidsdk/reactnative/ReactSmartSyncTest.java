@@ -42,11 +42,13 @@ import java.util.Arrays;
 import java.util.List;
 
 
+/**
+ * Running javascript tests for SmartSync react module.
+ */
+
 @RunWith(Parameterized.class)
 @SmallTest
 public class ReactSmartSyncTest extends ReactTestCase {
-
-    private static final String JS_SUITE = "js/smartsync.test";
 
     @Parameterized.Parameter
     public String testName;
@@ -70,6 +72,6 @@ public class ReactSmartSyncTest extends ReactTestCase {
 
     @Test
     public void test() throws Exception {
-        runReactNativeTest(JS_SUITE, testName);
+        runReactNativeTest(testName);
     }
 }

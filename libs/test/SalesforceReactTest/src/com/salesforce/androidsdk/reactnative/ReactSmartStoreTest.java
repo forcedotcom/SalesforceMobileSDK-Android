@@ -33,7 +33,6 @@ import android.support.test.filters.SmallTest;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 
 import org.junit.After;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -41,12 +40,13 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Running javascript tests for SmartStore react module.
+ */
 
 @RunWith(Parameterized.class)
 @SmallTest
 public class ReactSmartStoreTest extends ReactTestCase {
-
-    private static final String JS_SUITE = "js/smartstore.test";
 
     @Parameterized.Parameter
     public String testName;
@@ -76,6 +76,6 @@ public class ReactSmartStoreTest extends ReactTestCase {
 
     @Test
     public void test() throws Exception {
-        runReactNativeTest(JS_SUITE, testName);
+        runReactNativeTest(testName);
     }
 }

@@ -43,7 +43,6 @@ import org.junit.runner.RunWith;
 public abstract class ReactTestCase {
 
     private static final long TEST_TIMEOUT_SECONDS = 5;
-    public static final String TEST_SUITE = "testSuite";
     public static final String TEST_NAME = "testName";
     public static final String FAKE_FAILURE = "FAKE_FAILURE";
 
@@ -52,8 +51,8 @@ public abstract class ReactTestCase {
             ReactTestActivity.class, false, false) {
     };
 
-    protected void runReactNativeTest(String testSuite, String testName) throws InterruptedException {
-        TestResult result = getTestResult(testSuite, testName);
+    protected void runReactNativeTest(String testName) throws InterruptedException {
+        TestResult result = getTestResult(testName);
         if (result == null) {
             Assert.fail(testName + " timed out");
         }
@@ -62,8 +61,8 @@ public abstract class ReactTestCase {
         }
     }
 
-    protected void runReactNativeTestFakeFailure(String testSuite, String testName) throws InterruptedException {
-        TestResult result = getTestResult(testSuite, testName);
+    protected void runReactNativeTestFakeFailure(String testName) throws InterruptedException {
+        TestResult result = getTestResult(testName);
         if (result == null) {
             Assert.fail(testName + " timed out");
         }
@@ -72,9 +71,8 @@ public abstract class ReactTestCase {
         }
     }
 
-    private TestResult getTestResult(String testSuite, String testName) throws InterruptedException {
+    private TestResult getTestResult(String testName) throws InterruptedException {
         Intent intent = new Intent();
-        intent.putExtra(TEST_SUITE, testSuite);
         intent.putExtra(TEST_NAME,testName);
         mActivityRule.launchActivity(intent);
 

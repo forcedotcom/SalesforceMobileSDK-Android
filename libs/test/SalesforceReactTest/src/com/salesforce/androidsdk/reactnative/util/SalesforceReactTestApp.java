@@ -33,6 +33,9 @@ import com.facebook.react.ReactApplication;
 import com.facebook.react.ReactNativeHost;
 import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
 
+/**
+ * Test application for Salesforce react native modules.
+ */
 public class SalesforceReactTestApp extends Application implements ReactApplication {
 
     private final ReactNativeHost _mReactNativeHost = new ReactNativeTestHost(this);
