@@ -31,6 +31,7 @@ package com.salesforce.androidsdk.reactnative;
 import android.support.test.filters.SmallTest;
 
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 
 import org.junit.After;
 import org.junit.Test;
@@ -63,8 +64,8 @@ public class ReactSmartSyncTest extends ReactTestCase {
 
     @After
     public void tearDown() {
+        SyncManager.reset();
         SmartStoreSDKManager.getInstance().removeAllUserStores();
-        SmartStoreSDKManager.getInstance().removeAllGlobalStores();
     }
 
     @Test
