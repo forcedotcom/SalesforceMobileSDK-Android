@@ -121,10 +121,10 @@ public class Encryptor {
     }
 
     /**
-     * Decrypts data with key using AES-256.
+     * Decrypts data with key using AES-128.
      *
      * @param data Data.
-     * @param key Base64 encoded 256 bit key or null (to leave data unchanged).
+     * @param key Base64 encoded 128 bit key or null (to leave data unchanged).
      * @return Decrypted data.
      */
     public static String decrypt(String data, String key) {
@@ -132,10 +132,10 @@ public class Encryptor {
     }
 
     /**
-     * Decrypts data with key using AES-256.
+     * Decrypts data with key using AES-128.
      *
      * @param data Data.
-     * @param key Base64 encoded 256 bit key or null (to leave data unchanged).
+     * @param key Base64 encoded 128 bit key or null (to leave data unchanged).
      * @param iv Initialization vector.
      * @return Decrypted data.
      */
@@ -147,7 +147,7 @@ public class Encryptor {
     }
 
     /**
-     * Decrypts data with key using AES-256.
+     * Decrypts data with key using AES-128.
      *
      * @param data Data.
      * @param key Key.
@@ -158,7 +158,7 @@ public class Encryptor {
     }
 
     /**
-     * Decrypts data with key using AES-256.
+     * Decrypts data with key using AES-128.
      *
      * @param data Data.
      * @param key Key.
@@ -179,7 +179,7 @@ public class Encryptor {
             byte[] keyBytes = Base64.decode(key, Base64.DEFAULT);
             byte[] dataBytes = Base64.decode(data, Base64.DEFAULT);
 
-            // Decrypts with AES-256.
+            // Decrypts with AES-128.
             byte[] decryptedData = decrypt(dataBytes, 0, dataBytes.length, keyBytes, iv);
             return new String(decryptedData, 0, decryptedData.length, UTF8);
         } catch (Exception ex) {
@@ -189,11 +189,11 @@ public class Encryptor {
     }
 
     /**
-     * Encrypts data with key using AES-256.
+     * Encrypts data with key using AES-128.
      *
      * @param data Data.
-     * @param key Base64 encoded 256 bit key or null (to leave data unchanged).
-     * @return Base64, AES-256 encrypted data.
+     * @param key Base64 encoded 128 bit key or null (to leave data unchanged).
+     * @return Base64, AES-128 encrypted data.
      */
     public static String encrypt(String data, String key) {
         try {
@@ -205,12 +205,12 @@ public class Encryptor {
     }
 
     /**
-     * Encrypts data with key using AES-256.
+     * Encrypts data with key using AES-128.
      *
      * @param data Data.
-     * @param key Base64 encoded 256 bit key or null (to leave data unchanged).
+     * @param key Base64 encoded 128 bit key or null (to leave data unchanged).
      * @param iv Initialization vector.
-     * @return Base64, AES-256 encrypted data.
+     * @return Base64, AES-128 encrypted data.
      */
     public static String encrypt(String data, String key, byte[] iv) {
         if (TextUtils.isEmpty(key) || data == null) {
@@ -231,7 +231,7 @@ public class Encryptor {
     }
 
     /**
-     * Encrypts data with key using AES-256. Returns Base64 byte[] array.
+     * Encrypts data with key using AES-128. Returns Base64 byte[] array.
      *
      * @param data Data.
      * @param key Key.
@@ -247,7 +247,7 @@ public class Encryptor {
     }
 
     /**
-     * Encrypts data with key using AES-256. Returns Base64 byte[] array.
+     * Encrypts data with key using AES-128. Returns Base64 byte[] array.
      *
      * @param data Data.
      * @param key Key.
