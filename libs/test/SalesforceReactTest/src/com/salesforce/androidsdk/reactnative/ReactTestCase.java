@@ -78,6 +78,10 @@ public abstract class ReactTestCase {
         intent.putExtra(TEST_NAME,testName);
         mActivityRule.launchActivity(intent);
 
-        return TestResult.waitForTestResult(TEST_TIMEOUT_SECONDS);
+        return TestResult.waitForTestResult(getTestTimeoutSeconds());
+    }
+
+    protected long getTestTimeoutSeconds() {
+        return TEST_TIMEOUT_SECONDS;
     }
 }
