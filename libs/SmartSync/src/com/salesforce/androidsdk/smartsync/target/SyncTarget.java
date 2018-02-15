@@ -253,7 +253,7 @@ public abstract class SyncTarget {
      * @throws JSONException
      */
     public boolean isLocallyCreated(JSONObject record) throws JSONException {
-        return record.getBoolean(LOCALLY_CREATED);
+        return record.optBoolean(LOCALLY_CREATED);
     }
 
     /**
@@ -263,7 +263,7 @@ public abstract class SyncTarget {
      * @throws JSONException
      */
     public boolean isLocallyUpdated(JSONObject record) throws JSONException {
-        return record.getBoolean(LOCALLY_UPDATED);
+        return record.optBoolean(LOCALLY_UPDATED);
     }
 
     /**
@@ -273,7 +273,7 @@ public abstract class SyncTarget {
      * @throws JSONException
      */
     public boolean isLocallyDeleted(JSONObject record) throws JSONException {
-        return record.getBoolean(LOCALLY_DELETED);
+        return record.optBoolean(LOCALLY_DELETED);
     }
 
     /**
