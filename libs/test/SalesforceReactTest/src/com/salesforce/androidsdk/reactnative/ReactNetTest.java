@@ -61,11 +61,7 @@ public class ReactNetTest extends ReactTestCase {
                 "testUpsertUpdateRetrieve",
                 "testCreateDelRetrieve",
                 "testQuery",
-                "testSearch",
-                "testPassing",
-                "testFailing",
-                "testAsyncPassing",
-                "testAsyncFailing"
+                "testSearch"
         });
     }
 

@@ -64,7 +64,7 @@ public class ReactSmartStoreTest extends ReactTestCase {
                 "testRemoveFromSoup",
                 "testClearSoup",
                 "testGetRemoveStores",
-                "testGetRemoveGlobalStores",
+                "testGetRemoveGlobalStores"
         });
     }
 

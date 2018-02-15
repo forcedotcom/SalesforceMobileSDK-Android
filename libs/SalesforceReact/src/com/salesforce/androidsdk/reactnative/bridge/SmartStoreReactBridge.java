@@ -616,7 +616,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 			ReactBridgeHelper.invokeSuccess(successCallback, storeList);
 		} catch (JSONException e) {
             SalesforceReactLogger.e(TAG, "getAllGlobalStorePrefixes call failed", e);
-				errorCallback.invoke(e.toString());
+			errorCallback.invoke(e.toString());
 		}
 	}
 
