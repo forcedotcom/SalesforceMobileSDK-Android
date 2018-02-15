@@ -120,8 +120,12 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                 @Override
                 public void onSuccess(RestRequest request, RestResponse response) {
                     try {
+                        // Not a 2xx status
+                        if (!response.isSuccess()) {
+                            callbackContext.error(response.asString());
+                        }
                         // Binary response
-                        if (returnBinary) {
+                        else if (returnBinary) {
                             JSONObject result = new JSONObject();
                             result.put(CONTENT_TYPE, response.getContentType());
                             result.put(ENCODED_BODY, Base64.encodeToString(response.asBytes(), Base64.DEFAULT));
