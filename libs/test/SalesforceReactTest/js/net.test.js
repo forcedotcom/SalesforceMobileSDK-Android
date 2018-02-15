@@ -179,7 +179,7 @@ testCreateDelRetrieve = () => {
             throw 'Retrieve following delete should have 404ed';
         })
         .catch((error) => {
-            assert.include(error.message, 'Code=404', 'Retrieve following delete should have 404ed');
+            assert.include(JSON.stringify(error), 'The requested resource does not exist', 'Retrieve following delete should have 404ed');
             testDone();
         });
 };
