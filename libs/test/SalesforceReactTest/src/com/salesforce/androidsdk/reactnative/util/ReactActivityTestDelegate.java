@@ -60,10 +60,8 @@ public class ReactActivityTestDelegate extends ReactActivityDelegate {
     }
 
     @Override
-    protected Bundle getLaunchOptions() {
-        Bundle extras = new Bundle();
-        extras.putString(TEST_SUITE, testSuite);
-        extras.putString(TEST_NAME, testName);
-        return extras;
+    protected void onDestroy() {
+        getReactNativeHost().getReactInstanceManager().destroy();
+        super.onDestroy();
     }
 }

@@ -68,7 +68,7 @@ public abstract class ReactTestCase {
             Assert.fail(testName + " timed out");
         }
         else {
-            Assert.assertTrue(testName + " should have failure with a FAKE_FAILURE error", !result.status && result.message.contains(FAKE_FAILURE));
+            Assert.assertTrue(testName + " should have failed with a FAKE_FAILURE error", !result.status && result.message.contains(FAKE_FAILURE));
         }
     }
 

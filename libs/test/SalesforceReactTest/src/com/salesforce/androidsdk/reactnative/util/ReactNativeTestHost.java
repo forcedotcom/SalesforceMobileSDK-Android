@@ -86,12 +86,13 @@ public class ReactNativeTestHost extends ReactNativeHost {
         return "js/index";
     }
 
+
     @Override
-    public ReactInstanceManager getReactInstanceManager() {
+    protected ReactInstanceManager createReactInstanceManager() {
         ReactInstanceManagerBuilder builder = ReactInstanceManager.builder()
                 .setApplication(mApplication)
                 .setJSMainModulePath(getJSMainModuleName())
-                .setUseDeveloperSupport(true)
+                .setUseDeveloperSupport(getUseDeveloperSupport())
                 .setRedBoxHandler(new RedBoxHandler() {
                     @Override
                     public void handleRedbox(String s, StackFrame[] stackFrames, ErrorType errorType) {

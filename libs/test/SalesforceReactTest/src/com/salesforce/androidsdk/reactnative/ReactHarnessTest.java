@@ -52,9 +52,9 @@ public class ReactHarnessTest extends ReactTestCase {
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {"testPassing", true},
-                {"testFailing", false}
-                "testAsyncPassing",
-                "testAsyncFailing"
+                {"testFailing", false},
+                {"testAsyncPassing", true},
+                {"testAsyncFailing", false}
         });
     }
 
