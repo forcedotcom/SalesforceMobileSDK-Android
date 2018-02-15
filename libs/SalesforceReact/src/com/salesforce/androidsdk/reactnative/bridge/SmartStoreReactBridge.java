@@ -637,7 +637,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 			if(userStoreNames !=null ) {
 				for (int i = 0; i < userStoreNames.size(); i++) {
 					JSONObject dbName = new JSONObject();
-					dbName.put(IS_GLOBAL_STORE,true);
+					dbName.put(IS_GLOBAL_STORE,false);
 					dbName.put(STORE_NAME,userStoreNames.get(i));
 					storeList.put(dbName);
 				}
