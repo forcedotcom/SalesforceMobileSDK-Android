@@ -201,11 +201,19 @@ public class EventStoreManager {
      * @param newKey New encryption key.
      */
     public void changeEncryptionKey(String oldKey, String newKey) {
+
+        /*
+         * We need to disable logging while the upgrade is in progress to
+         * prevent rogue threads from attempting to write data with the old key.
+         */
+        boolean logEnabledStatus = isLoggingEnabled;
+        isLoggingEnabled = false;
         encryptionKey = oldKey;
         final List<InstrumentationEvent> storedEvents = fetchAllEvents();
         deleteAllEvents();
         encryptionKey = newKey;
         storeEvents(storedEvents);
+        isLoggingEnabled = logEnabledStatus;
     }
 
     /**
