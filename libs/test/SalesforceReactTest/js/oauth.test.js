@@ -31,7 +31,7 @@ import { oauth } from 'react-native-force';
 testGetAuthCredentials = () => {
     oauth.getAuthCredentials(
         (creds) => {
-            assert.deepEqual(Object.keys(creds).sort(), ["accessToken","clientId","instanceUrl","loginUrl","orgId","refreshToken","userAgent","userId"], 'Wrong keys in credentials');
+            assert.containsAllKeys(creds, ["accessToken","instanceUrl","loginUrl","orgId","refreshToken","userAgent","userId"], 'Wrong keys in credentials');
             testDone();
         },
         (error) => { throw error; }
