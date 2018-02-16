@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-import './harness.test';
-import './oauth.test';
-import './net.test';
-import './smartstore.test';
-import './smartsync.test';
+import '../node_modules/react-native-force/test/harness.test';
+import '../node_modules/react-native-force/test/oauth.test';
+import '../node_modules/react-native-force/test/net.test';
+import '../node_modules/react-native-force/test/smartstore.test';
+import '../node_modules/react-native-force/test/smartsync.test';
