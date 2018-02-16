@@ -29,12 +29,14 @@ package com.salesforce.androidsdk.reactnative.util;
 
 import android.app.Application;
 
-import com.facebook.infer.annotation.Assertions;
 import com.facebook.react.ReactInstanceManager;
 import com.facebook.react.ReactInstanceManagerBuilder;
 import com.facebook.react.ReactNativeHost;
 import com.facebook.react.ReactPackage;
+import com.facebook.react.bridge.NativeModuleCallExceptionHandler;
 import com.facebook.react.common.LifecycleState;
+import com.facebook.react.devsupport.RedBoxHandler;
+import com.facebook.react.devsupport.interfaces.StackFrame;
 import com.facebook.react.shell.MainReactPackage;
 import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
 
@@ -58,9 +60,20 @@ public class ReactNativeTestHost extends ReactNativeHost {
         mApplication = application;
     }
 
+
+    /**
+     * When modifying javascript tests, change this to return true, and run packager (with npm start)
+     * Once done, run ./tools/generate_react_test_bundle.sh to update index.android.bundle
+     *
+     * @return true if javascript should be loaded from packager or from asset
+     */
+    private boolean usePackager() {
+        return false;
+    }
+
     @Override
     public boolean getUseDeveloperSupport() {
-        return true;
+        return usePackager();
     }
 
     @Override
@@ -73,35 +86,62 @@ public class ReactNativeTestHost extends ReactNativeHost {
     }
 
     @Override
-    protected String getJSMainModuleName() {
-        return "node_modules/react-native-force/test/alltests";
-    }
-
-
-    @Override
     protected ReactInstanceManager createReactInstanceManager() {
-        // Only difference with the super class createReactInstanceManager(): uses  RedBoxTestHandler instead of a RedBoxHandler
-
         ReactInstanceManagerBuilder builder = ReactInstanceManager.builder()
                 .setApplication(mApplication)
-                .setJSMainModulePath(getJSMainModuleName())
-                .setUseDeveloperSupport(getUseDeveloperSupport())
-                .setRedBoxHandler(new RedBoxTestHandler())
                 .setJavaScriptExecutorFactory(getJavaScriptExecutorFactory())
                 .setUIImplementationProvider(getUIImplementationProvider())
                 .setInitialLifecycleState(LifecycleState.BEFORE_CREATE);
 
-        for (ReactPackage reactPackage : getPackages()) {
-            builder.addPackage(reactPackage);
+        if (usePackager()) {
+            builder.setJSMainModulePath("node_modules/react-native-force/test/alltests")
+                    .setUseDeveloperSupport(true)
+                    .setRedBoxHandler(new RedBoxTestHandler());
+        }
+        else {
+            builder.setBundleAssetName("index.android.bundle")
+                    .setUseDeveloperSupport(false)
+                    .setNativeModuleCallExceptionHandler(new NativeModuleCallExceptionTestHandler());
         }
 
-        String jsBundleFile = getJSBundleFile();
-        if (jsBundleFile != null) {
-            builder.setJSBundleFile(jsBundleFile);
-        } else {
-            builder.setBundleAssetName(Assertions.assertNotNull(getBundleAssetName()));
+        for (ReactPackage reactPackage : getPackages()) {
+            builder.addPackage(reactPackage);
         }
         return builder.build();
     }
 
+
+    /**
+     * Implementation of RedBoxHandler used for testing (when using packager)
+     *
+     * Marks the current test running is marked as failed if any javascript error takes place
+     */
+    static class RedBoxTestHandler implements RedBoxHandler {
+        @Override
+        public void handleRedbox(String s, StackFrame[] stackFrames, ErrorType errorType) {
+            TestResult.recordTestResult(TestResult.failure(s));
+        }
+
+        @Override
+        public boolean isReportEnabled() {
+            return false;
+        }
+
+        @Override
+        public void reportRedbox(String s, StackFrame[] stackFrames, String s1, ReportCompletedListener reportCompletedListener) {
+        }
+    }
+
+    /**
+     * Implementation of NativeModuleCallExceptionHandler used for testing (when using bundle)
+     *
+     * Marks the current test running is marked as failed if any javascript error takes place
+     */
+    static class NativeModuleCallExceptionTestHandler implements NativeModuleCallExceptionHandler {
+
+        @Override
+        public void handleException(Exception e) {
+            TestResult.recordTestResult(TestResult.failure(e.getMessage()));
+        }
+    }
 }
