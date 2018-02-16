@@ -48,4 +48,4 @@ coverage:
       RestExplorer:
         target: auto
         paths: "native/NativeSampleApps/RestExplorer/src/"
-        falgs: RestExplorer
+        flags: RestExplorer

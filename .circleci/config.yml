@@ -383,6 +383,11 @@ jobs:
           destination: RestExplorer
       - store_test_results:
           path: native/NativeSampleApps/RestExplorer/build/outputs/androidTest-results/
+      - store_artifacts:
+          path: libs/SalesforceReact/build/reports/
+          destination: SalesforceReact
+      - store_test_results:
+          path: libs/SalesforceReact/build/outputs/androidTest-results/
       - run: *codecov
 
   generate-artifacts:
