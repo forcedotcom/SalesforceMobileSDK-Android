@@ -36,6 +36,7 @@ import com.salesforce.androidsdk.reactnative.util.TestResult;
 
 import junit.framework.Assert;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
@@ -50,6 +51,11 @@ public abstract class ReactTestCase {
     public ActivityTestRule<ReactTestActivity> mActivityRule = new ActivityTestRule<ReactTestActivity>(
             ReactTestActivity.class, false, false) {
     };
+
+    @After
+    public void finishActivity() {
+        mActivityRule.getActivity().finish();
+    }
 
     protected void runReactNativeTest(String testName) throws InterruptedException {
         TestResult result = getTestResult(testName);
@@ -75,7 +81,6 @@ public abstract class ReactTestCase {
         Intent intent = new Intent();
         intent.putExtra(TEST_NAME,testName);
         mActivityRule.launchActivity(intent);
-
         return TestResult.waitForTestResult(getTestTimeoutSeconds());
     }
 
