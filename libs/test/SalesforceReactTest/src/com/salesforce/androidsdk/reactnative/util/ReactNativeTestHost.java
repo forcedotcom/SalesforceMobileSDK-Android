@@ -74,7 +74,7 @@ public class ReactNativeTestHost extends ReactNativeHost {
 
     @Override
     protected String getJSMainModuleName() {
-        return "js/index";
+        return "node_modules/react-native-force/test/alltests";
     }
 
 
