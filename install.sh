@@ -6,5 +6,8 @@ git submodule init
 git submodule sync
 git submodule update
 
-# for react-native
-npm install react-native@0.50.4 react@16.0.0 --silent
+
+# get react native
+pushd "libs/SalesforceReact"
+npm install
+popd

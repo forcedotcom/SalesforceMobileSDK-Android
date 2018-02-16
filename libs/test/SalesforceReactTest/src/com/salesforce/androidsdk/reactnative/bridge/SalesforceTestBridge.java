@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, salesforce.com, inc.
+ * Copyright (c) 2018-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,18 +26,16 @@
  */
 package com.salesforce.androidsdk.reactnative.bridge;
 
-import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
-import com.facebook.react.bridge.ReadableMap;
-import com.salesforce.androidsdk.reactnative.ui.SalesforceReactActivity;
+import com.salesforce.androidsdk.reactnative.util.TestResult;
 
-public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
+public class SalesforceTestBridge extends ReactContextBaseJavaModule {
 
-    private static final String TAG = "SalesforceOauthReactBridge";
+    private static final String TAG = "SalesforceTestBridge";
 
-    public SalesforceOauthReactBridge(ReactApplicationContext reactContext) {
+    public SalesforceTestBridge(ReactApplicationContext reactContext) {
         super(reactContext);
     }
 
@@ -47,24 +45,8 @@ public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void authenticate(ReadableMap args,
-                             Callback successCallback, Callback errorCallback) {
-        final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
-        if (currentActivity != null) currentActivity.authenticate(successCallback, errorCallback);
+    public void markTestCompleted() {
+        TestResult.recordTestResult(TestResult.success());
     }
 
-
-    @ReactMethod
-    public void getAuthCredentials(ReadableMap args,
-                                   Callback successCallback, Callback errorCallback) {
-        final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
-        if (currentActivity != null) currentActivity.getAuthCredentials(successCallback, errorCallback);
-    }
-
-    @ReactMethod
-    public void logoutCurrentUser(ReadableMap args,
-                                  Callback successCallback, Callback errorCallback) {
-        final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
-        if (currentActivity != null) currentActivity.logout(successCallback);
-    }
 }

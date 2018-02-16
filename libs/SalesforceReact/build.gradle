@@ -3,6 +3,7 @@ buildscript {
         jcenter()
     }
 
+
     dependencies {
         classpath 'com.github.dcendents:android-maven-gradle-plugin:2.0'
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
@@ -16,11 +17,20 @@ apply plugin: 'com.jfrog.bintray'
 dependencies {
   api project(':libs:SmartSync')
   api 'com.facebook.react:react-native:0.50.4'
+
+  androidTestApi 'com.android.support.test:runner:1.0.1'
+  androidTestApi 'com.android.support.test:rules:1.0.1'
 }
 
 android {
   compileSdkVersion 27
   buildToolsVersion '27.0.3'
+
+  buildTypes {
+    debug {
+      testCoverageEnabled = true
+    }
+  }
 
   sourceSets {
     main {
@@ -32,7 +42,19 @@ android {
       res.srcDirs = ['res']
       assets.srcDirs = ['assets']
     }
+    androidTest.setRoot('../test/SalesforceReactTest')
+    androidTest {
+      java.srcDirs = ['../test/SalesforceReactTest/src']
+      resources.srcDirs = ['../test/SalesforceReactTest/src']
+      res.srcDirs = ['../test/SalesforceReactTest/res']
+    }
   }
+
+  defaultConfig {
+    testApplicationId "com.salesforce.androidsdk.salesforcereact.tests"
+    testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+  }
+
   packagingOptions {
     exclude 'META-INF/LICENSE'
     exclude 'META-INF/LICENSE.txt'

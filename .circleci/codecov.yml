@@ -41,6 +41,10 @@ coverage:
         target: auto
         paths: "libs/SmartSync/src/"
         flags: SmartSync
+      SalesforceReact:
+        target: auto
+        paths: "libs/SalesforceReact/src/"
+        flags: SalesforceReact
       RestExplorer:
         target: auto
         paths: "native/NativeSampleApps/RestExplorer/src/"

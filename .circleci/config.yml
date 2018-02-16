@@ -67,11 +67,10 @@ aliases:
     command: ./gradlew :native:NativeSampleApps:RestExplorer:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
     when: always
 
-  - &build-salesforce-react
+  - &test-salesforce-react
     <<: *lib-run-base
-    name: Build SalesforceReact
-    command:  |
-      ./gradlew :libs:SalesforceReact:assemble
+    name: Test SalesforceReact
+    command: ./gradlew :libs:SalesforceReact:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
     when: always
 
   - &compile-libraries
@@ -312,8 +311,20 @@ jobs:
       - CURRENT_LIB: "SalesforceReact"
     steps:
       - *attach_workspace
+      - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
+      - run: *launch-emulator
+      - run: *wait-for-emulator
       - run: *run-unit-tests
+      - save_cache: *save-gradle-cache
+      - store_artifacts:
+          path: libs/SalesforceReact/build/reports/
+          destination: SalesforceReact
+      - store_test_results:
+          path: libs/SalesforceReact/build/outputs/androidTest-results/
+      - run: *run-danger
+      - run: *codecov
 
 
 ##########################
@@ -340,7 +351,7 @@ jobs:
       - run: *test-smart-sync
       - run: *test-salesforce-hybrid
       - run: *test-rest-explorer
-      - run: *build-salesforce-react
+      - run: *test-salesforce-react
       - save_cache: *save-gradle-cache
       - store_artifacts:
           path: libs/SalesforceAnalytics/build/reports/
