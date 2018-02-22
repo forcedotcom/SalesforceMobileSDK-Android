@@ -91,8 +91,8 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
  * This class serves as an interface to the various
@@ -255,7 +255,7 @@ public class SalesforceSDKManager {
     	if (loginActivity != null) {
             this.loginActivityClass = loginActivity;
     	}
-        this.features  = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+    	this.features = new ConcurrentSkipListSet<>(String.CASE_INSENSITIVE_ORDER);
 
         /*
          * Checks if an analytics app name has already been set by the app.
@@ -1142,7 +1142,8 @@ public class SalesforceSDKManager {
         }
         String appTypeWithQualifier = getAppType() + qualifier;
         return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s",
-                SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion, appTypeWithQualifier, uid, TextUtils.join(".",features));
+                SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion,
+                appTypeWithQualifier, uid, TextUtils.join(".", features));
     }
 
     /**
