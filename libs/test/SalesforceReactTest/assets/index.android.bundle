@@ -30852,8 +30852,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/ActivityIndicator/ActivityIndicator.js";
-
   var ColorPropType = require(_dependencyMap[0], 'ColorPropType');
 
   var NativeMethodsMixin = require(_dependencyMap[1], 'NativeMethodsMixin');
@@ -30927,23 +30925,9 @@ __d(function (global, require, module, exports, _dependencyMap) {
         View,
         {
           onLayout: onLayout,
-          style: [styles.container, style],
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 114
-          }
+          style: [styles.container, style]
         },
-        Platform.OS === 'ios' ? React.createElement(RCTActivityIndicator, babelHelpers.extends({}, nativeProps, {
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 116
-          }
-        })) : React.createElement(ProgressBarAndroid, babelHelpers.extends({}, nativeProps, {
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 118
-          }
-        }))
+        Platform.OS === 'ios' ? React.createElement(RCTActivityIndicator, nativeProps) : React.createElement(ProgressBarAndroid, nativeProps)
       );
     }
   });
@@ -31322,8 +31306,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/ProgressBarAndroid/ProgressBarAndroid.android.js";
-
   var ColorPropType = require(_dependencyMap[0], 'ColorPropType');
 
   var PropTypes = require(_dependencyMap[1], 'prop-types');
@@ -31366,12 +31348,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
     babelHelpers.createClass(ProgressBarAndroid, [{
       key: "render",
       value: function render() {
-        return React.createElement(AndroidProgressBar, babelHelpers.extends({}, this.props, {
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 112
-          }
-        }));
+        return React.createElement(AndroidProgressBar, this.props);
       }
     }]);
     return ProgressBarAndroid;
@@ -33959,8 +33936,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/View/View.js";
-
   var NativeMethodsMixin = require(_dependencyMap[0], 'NativeMethodsMixin');
 
   var Platform = require(_dependencyMap[1], 'Platform');
@@ -33994,12 +33969,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
     },
     render: function render() {
       invariant(!(this.context.isInAParentText && Platform.OS === 'android'), 'Nesting of <View> within <Text> is not supported on Android.');
-      return React.createElement(RCTView, babelHelpers.extends({}, this.props, {
-        __source: {
-          fileName: _jsxFileName,
-          lineNumber: 71
-        }
-      }));
+      return React.createElement(RCTView, this.props);
     }
   });
   var RCTView = requireNativeComponent('RCTView', View, {
@@ -34496,8 +34466,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/ART/ReactNativeART.js";
-
   var Color = require(_dependencyMap[0], 'art/core/color');
 
   var Path = require(_dependencyMap[1], 'ARTSerializablePath');
@@ -34664,11 +34632,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
             style: [props.style, {
               width: w,
               height: h
-            }],
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 159
-            }
+            }]
           },
           this.props.children
         );
@@ -34732,11 +34696,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           NativeGroup,
           {
             opacity: extractOpacity(props),
-            transform: extractTransform(props),
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 231
-            }
+            transform: extractTransform(props)
           },
           this.props.children
         );
@@ -34774,11 +34734,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           {
             clipping: clipping,
             opacity: extractOpacity(props),
-            transform: extractTransform(propsExcludingXAndY),
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 253
-            }
+            transform: extractTransform(propsExcludingXAndY)
           },
           this.props.children
         );
@@ -34947,11 +34903,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           strokeJoin: extractStrokeJoin(props.strokeJoin),
           strokeWidth: extractNumber(props.strokeWidth, 1),
           transform: extractTransform(props),
-          d: d,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 401
-          }
+          d: d
         });
       }
     }]);
@@ -35059,11 +35011,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           transform: extractTransform(props),
           alignment: extractAlignment(props.alignment),
           frame: textFrame,
-          path: textPath,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 500
-          }
+          path: textPath
         });
       }
     }]);
@@ -35952,8 +35900,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/Button.js";
-
   var ColorPropType = require(_dependencyMap[0], 'ColorPropType');
 
   var Platform = require(_dependencyMap[1], 'Platform');
@@ -36028,30 +35974,18 @@ __d(function (global, require, module, exports, _dependencyMap) {
             hasTVPreferredFocus: hasTVPreferredFocus,
             testID: testID,
             disabled: disabled,
-            onPress: onPress,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 128
-            }
+            onPress: onPress
           },
           React.createElement(
             View,
             {
-              style: buttonStyles,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 136
-              }
+              style: buttonStyles
             },
             React.createElement(
               Text,
               {
                 style: textStyles,
-                disabled: disabled,
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 137
-                }
+                disabled: disabled
               },
               formattedTitle
             )
@@ -36114,8 +36048,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },221,[164,93,171,168,209,222,230,234,211,54],"Button");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Text/Text.js";
 
   var ColorPropType = require(_dependencyMap[0], 'ColorPropType');
 
@@ -36320,19 +36252,9 @@ __d(function (global, require, module, exports, _dependencyMap) {
       }
 
       if (this.context.isInAParentText) {
-        return React.createElement(RCTVirtualText, babelHelpers.extends({}, newProps, {
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 546
-          }
-        }));
+        return React.createElement(RCTVirtualText, newProps);
       } else {
-        return React.createElement(RCTText, babelHelpers.extends({}, newProps, {
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 548
-          }
-        }));
+        return React.createElement(RCTText, newProps);
       }
     }
   });
@@ -36362,8 +36284,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },222,[164,173,166,93,171,168,212,179,192,223,213,197,229,193],"Text");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/Touchable/Touchable.js";
 
   var BoundingDimensions = require(_dependencyMap[0], 'BoundingDimensions');
 
@@ -36816,11 +36736,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           borderWidth: 1,
           borderStyle: 'dashed',
           backgroundColor: hexColor.slice(0, -2) + '0F'
-        }, debugHitSlopStyle),
-        __source: {
-          fileName: _jsxFileName,
-          lineNumber: 793
-        }
+        }, debugHitSlopStyle)
       });
     }
   };
@@ -37385,8 +37301,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/Touchable/TouchableOpacity.js";
-
   var Animated = require(_dependencyMap[0], 'Animated');
 
   var Easing = require(_dependencyMap[1], 'Easing');
@@ -37515,11 +37429,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           onResponderGrant: this.touchableHandleResponderGrant,
           onResponderMove: this.touchableHandleResponderMove,
           onResponderRelease: this.touchableHandleResponderRelease,
-          onResponderTerminate: this.touchableHandleResponderTerminate,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 245
-          }
+          onResponderTerminate: this.touchableHandleResponderTerminate
         },
         this.props.children,
         Touchable.renderDebugView({
@@ -41212,8 +41122,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Animated/src/createAnimatedComponent.js";
-
   var _require = require(_dependencyMap[0], './AnimatedEvent'),
       AnimatedEvent = _require.AnimatedEvent;
 
@@ -41345,11 +41253,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
 
           return React.createElement(Component, babelHelpers.extends({}, props, {
             ref: this._setComponentRef,
-            collapsable: this._propsAnimated.__isNative ? false : props.collapsable,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 147
-            }
+            collapsable: this._propsAnimated.__isNative ? false : props.collapsable
           }));
         }
       }, {
@@ -41389,8 +41293,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },262,[237,250,171,180],"createAnimatedComponent");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Image/Image.android.js";
 
   var ImageResizeMode = require(_dependencyMap[0], 'ImageResizeMode');
 
@@ -41571,19 +41473,9 @@ __d(function (global, require, module, exports, _dependencyMap) {
         });
 
         if (this.context.isInAParentText) {
-          return React.createElement(RCTTextInlineImage, babelHelpers.extends({}, nativeProps, {
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 302
-            }
-          }));
+          return React.createElement(RCTTextInlineImage, nativeProps);
         } else {
-          return React.createElement(RKImage, babelHelpers.extends({}, nativeProps, {
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 304
-            }
-          }));
+          return React.createElement(RKImage, nativeProps);
         }
       }
 
@@ -41632,8 +41524,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },264,[],"fbjs/lib/filterObject.js");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/ScrollView/ScrollView.js";
 
   var Animated = require(_dependencyMap[0], 'Animated');
 
@@ -41942,11 +41832,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
               onLayout: function onLayout(event) {
                 return _this._onStickyHeaderLayout(index, event, key);
               },
-              scrollAnimatedValue: _this._scrollAnimatedValue,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 709
-              }
+              scrollAnimatedValue: _this._scrollAnimatedValue
             },
             child
           );
@@ -41960,11 +41846,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           ref: this._setInnerViewRef,
           style: contentContainerStyle,
           removeClippedSubviews: Platform.OS === 'android' && hasStickyHeaders ? false : this.props.removeClippedSubviews,
-          collapsable: false,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 726
-          }
+          collapsable: false
         }),
         children
       );
@@ -42011,11 +41893,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           return React.createElement(
             ScrollViewClass,
             babelHelpers.extends({}, props, {
-              ref: this._setScrollViewRef,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 798
-              }
+              ref: this._setScrollViewRef
             }),
             Platform.isTVOS ? null : refreshControl,
             contentContainer
@@ -42027,11 +41905,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
             ScrollViewClass,
             babelHelpers.extends({}, props, {
               style: baseStyle,
-              ref: this._setScrollViewRef,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 813
-              }
+              ref: this._setScrollViewRef
             }),
             contentContainer
           ));
@@ -42041,11 +41915,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
       return React.createElement(
         ScrollViewClass,
         babelHelpers.extends({}, props, {
-          ref: this._setScrollViewRef,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 820
-          }
+          ref: this._setScrollViewRef
         }),
         contentContainer
       );
@@ -42595,8 +42465,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/ScrollView/ScrollViewStickyHeader.js";
-
   var Animated = require(_dependencyMap[0], 'Animated');
 
   var React = require(_dependencyMap[1], 'React');
@@ -42682,11 +42550,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
               transform: [{
                 translateY: translateY
               }]
-            }],
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 96
-            }
+            }]
           },
           React.cloneElement(child, {
             style: styles.fill,
@@ -42725,8 +42589,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },276,[],"processDecelerationRate");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/CheckBox/CheckBox.android.js";
 
   var NativeMethodsMixin = require(_dependencyMap[0], 'NativeMethodsMixin');
 
@@ -42787,11 +42649,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
         ref: function ref(_ref) {
           _this._rctCheckBox = _ref;
         },
-        onChange: this._onChange,
-        __source: {
-          fileName: _jsxFileName,
-          lineNumber: 140
-        }
+        onChange: this._onChange
       }));
     }
   });
@@ -42812,8 +42670,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },277,[166,168,171,209,172,213,186],"CheckBox");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/DatePicker/DatePickerIOS.android.js";
 
   var React = require(_dependencyMap[0], 'React');
 
@@ -42837,20 +42693,12 @@ __d(function (global, require, module, exports, _dependencyMap) {
         return React.createElement(
           View,
           {
-            style: [styles.dummyDatePickerIOS, this.props.style],
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 22
-            }
+            style: [styles.dummyDatePickerIOS, this.props.style]
           },
           React.createElement(
             Text,
             {
-              style: styles.datePickerText,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 23
-              }
+              style: styles.datePickerText
             },
             "DatePickerIOS is not supported on this platform!"
           )
@@ -42880,8 +42728,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },278,[171,209,222,211],"DatePickerIOS");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/DrawerAndroid/DrawerLayoutAndroid.android.js";
 
   var ColorPropType = require(_dependencyMap[0], 'ColorPropType');
 
@@ -42957,19 +42803,11 @@ __d(function (global, require, module, exports, _dependencyMap) {
             width: this.props.drawerWidth,
             backgroundColor: this.props.drawerBackgroundColor
           }],
-          collapsable: false,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 176
-          }
+          collapsable: false
         },
         this.props.renderNavigationView(),
         drawStatusBar && React.createElement(View, {
-          style: styles.drawerStatusBar,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 183
-          }
+          style: styles.drawerStatusBar
         })
       );
       var childrenWrapper = React.createElement(
@@ -42977,28 +42815,16 @@ __d(function (global, require, module, exports, _dependencyMap) {
         {
           ref: INNERVIEW_REF,
           style: styles.mainSubview,
-          collapsable: false,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 186
-          }
+          collapsable: false
         },
         drawStatusBar && React.createElement(StatusBar, {
           translucent: true,
-          backgroundColor: this.props.statusBarBackgroundColor,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 188
-          }
+          backgroundColor: this.props.statusBarBackgroundColor
         }),
         drawStatusBar && React.createElement(View, {
           style: [styles.statusBar, {
             backgroundColor: this.props.statusBarBackgroundColor
-          }],
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 193
-          }
+          }]
         }),
         this.props.children
       );
@@ -43013,11 +42839,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           onDrawerSlide: this._onDrawerSlide,
           onDrawerOpen: this._onDrawerOpen,
           onDrawerClose: this._onDrawerClose,
-          onDrawerStateChanged: this._onDrawerStateChanged,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 200
-          }
+          onDrawerStateChanged: this._onDrawerStateChanged
         }),
         childrenWrapper,
         drawerViewWrapper
@@ -43317,8 +43139,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Lists/FlatList.js";
-
   var MetroListView = require(_dependencyMap[0], 'MetroListView');
 
   var React = require(_dependencyMap[1], 'React');
@@ -43480,11 +43300,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
             {
               style: [{
                 flexDirection: 'row'
-              }, columnWrapperStyle],
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 613
-              }
+              }, columnWrapperStyle]
             },
             _item2.map(function (it, kk) {
               var element = renderItem({
@@ -43599,11 +43415,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
         if (this.props.legacyImplementation) {
           return React.createElement(MetroListView, babelHelpers.extends({}, this.props, {
             items: this.props.data,
-            ref: this._captureRef,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 632
-            }
+            ref: this._captureRef
           }));
         } else {
           return React.createElement(VirtualizedList, babelHelpers.extends({}, this.props, {
@@ -43612,11 +43424,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
             getItemCount: this._getItemCount,
             keyExtractor: this._keyExtractor,
             ref: this._captureRef,
-            viewabilityConfigCallbackPairs: this._virtualizedListPairs,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 640
-            }
+            viewabilityConfigCallbackPairs: this._virtualizedListPairs
           }));
         }
       }
@@ -43629,8 +43437,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },281,[282,171,211,289,283,54],"FlatList");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Lists/MetroListView.js";
 
   var ListView = require(_dependencyMap[0], 'ListView');
 
@@ -43674,11 +43480,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
         _this._listRef = ref;
       }, _this._renderFooter = function () {
         return React.createElement(_this2.props.FooterComponent, {
-          key: "$footer",
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 183
-          }
+          key: "$footer"
         });
       }, _this._renderRow = function (item, sectionID, rowID, highlightRow) {
         return _this.props.renderItem({
@@ -43693,11 +43495,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
         });
       }, _this._renderSeparator = function (sID, rID) {
         return React.createElement(_this2.props.SeparatorComponent, {
-          key: sID + rID,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 199
-          }
+          key: sID + rID
         });
       }, _temp), babelHelpers.possibleConstructorReturn(_this, _ret);
     }
@@ -43766,11 +43564,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           renderRow: this._renderRow,
           renderFooter: this.props.FooterComponent && this._renderFooter,
           renderSectionHeader: this.props.sections && this._renderSectionHeader,
-          renderSeparator: this.props.SeparatorComponent && this._renderSeparator,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 143
-          }
+          renderSeparator: this.props.SeparatorComponent && this._renderSeparator
         }));
       }
     }, {
@@ -43811,24 +43605,11 @@ __d(function (global, require, module, exports, _dependencyMap) {
         return React.createElement(ScrollView, babelHelpers.extends({}, props, {
           refreshControl: React.createElement(RefreshControl, {
             refreshing: props.refreshing,
-            onRefresh: props.onRefresh,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 117
-            }
-          }),
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 110
-          }
+            onRefresh: props.onRefresh
+          })
         }));
       } else {
-        return React.createElement(ScrollView, babelHelpers.extends({}, props, {
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 125
-          }
-        }));
+        return React.createElement(ScrollView, props);
       }
     }
   };
@@ -43836,8 +43617,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },282,[283,171,288,265,54],"MetroListView");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Lists/ListView/ListView.js";
 
   var ListViewDataSource = require(_dependencyMap[0], 'ListViewDataSource');
 
@@ -43956,12 +43735,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
         initialListSize: DEFAULT_INITIAL_ROWS,
         pageSize: DEFAULT_PAGE_SIZE,
         renderScrollComponent: function renderScrollComponent(props) {
-          return React.createElement(ScrollView, babelHelpers.extends({}, props, {
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 338
-            }
-          }));
+          return React.createElement(ScrollView, props);
         },
         scrollRenderAheadDistance: DEFAULT_SCROLL_RENDER_AHEAD,
         onEndReachedThreshold: DEFAULT_END_REACHED_THRESHOLD,
@@ -44076,11 +43850,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           var row = React.createElement(StaticRenderer, {
             key: 'r_' + comboID,
             shouldUpdate: !!shouldUpdateRow,
-            render: this.props.renderRow.bind(null, dataSource.getRowData(sectionIdx, rowIdx), sectionID, rowID, this._onRowHighlighted),
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 473
-            }
+            render: this.props.renderRow.bind(null, dataSource.getRowData(sectionIdx, rowIdx), sectionID, rowID, this._onRowHighlighted)
           });
           bodyComponents.push(row);
           totalIndex++;
@@ -44093,11 +43863,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
               bodyComponents.push(React.createElement(
                 View,
                 {
-                  key: 's_' + comboID,
-                  __source: {
-                    fileName: _jsxFileName,
-                    lineNumber: 502
-                  }
+                  key: 's_' + comboID
                 },
                 separator
               ));
@@ -44667,8 +44433,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/RefreshControl/RefreshControl.js";
-
   var ColorPropType = require(_dependencyMap[0], 'ColorPropType');
 
   var NativeMethodsMixin = require(_dependencyMap[1], 'NativeMethodsMixin');
@@ -44734,11 +44498,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
         ref: function ref(_ref) {
           _this._nativeRef = _ref;
         },
-        onRefresh: this._onRefresh,
-        __source: {
-          fileName: _jsxFileName,
-          lineNumber: 156
-        }
+        onRefresh: this._onRefresh
       }));
     },
     _onRefresh: function _onRefresh() {
@@ -44758,8 +44518,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },288,[164,166,93,171,168,172,213,186,148],"RefreshControl");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Lists/VirtualizedList.js";
 
   var Batchinator = require(_dependencyMap[0], 'Batchinator');
 
@@ -45116,11 +44874,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
               return ref;
             }(function (ref) {
               _this3._cellRefs[key] = ref;
-            }),
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 681
-            }
+            })
           }));
           prevCellKey = key;
         };
@@ -45168,31 +44922,18 @@ __d(function (global, require, module, exports, _dependencyMap) {
             stickyHeaderIndices.push(0);
           }
 
-          var element = React.isValidElement(ListHeaderComponent) ? ListHeaderComponent : React.createElement(ListHeaderComponent, {
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 755
-            }
-          });
+          var element = React.isValidElement(ListHeaderComponent) ? ListHeaderComponent : React.createElement(ListHeaderComponent, null);
           cells.push(React.createElement(
             VirtualizedCellWrapper,
             {
               cellKey: this._getCellKey() + '-header',
-              key: "$header",
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 758
-              }
+              key: "$header"
             },
             React.createElement(
               View,
               {
                 onLayout: this._onLayoutHeader,
-                style: inversionStyle,
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 761
-                }
+                style: inversionStyle
               },
               element
             )
@@ -45228,11 +44969,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
                   var leadSpace = stickyBlock.offset - (initBlock.offset + initBlock.length);
                   cells.push(React.createElement(View, {
                     key: "$sticky_lead",
-                    style: babelHelpers.defineProperty({}, spacerKey, leadSpace),
-                    __source: {
-                      fileName: _jsxFileName,
-                      lineNumber: 796
-                    }
+                    style: babelHelpers.defineProperty({}, spacerKey, leadSpace)
                   }));
 
                   this._pushCells(cells, stickyHeaderIndices, stickyIndicesFromProps, ii, ii, inversionStyle);
@@ -45240,11 +44977,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
                   var trailSpace = this._getFrameMetricsApprox(_first).offset - (stickyBlock.offset + stickyBlock.length);
                   cells.push(React.createElement(View, {
                     key: "$sticky_trail",
-                    style: babelHelpers.defineProperty({}, spacerKey, trailSpace),
-                    __source: {
-                      fileName: _jsxFileName,
-                      lineNumber: 810
-                    }
+                    style: babelHelpers.defineProperty({}, spacerKey, trailSpace)
                   }));
                   insertedStickySpacer = true;
                   break;
@@ -45259,11 +44992,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
 
               cells.push(React.createElement(View, {
                 key: "$lead_spacer",
-                style: babelHelpers.defineProperty({}, spacerKey, firstSpace),
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 823
-                }
+                style: babelHelpers.defineProperty({}, spacerKey, firstSpace)
               }));
             }
           }
@@ -45285,63 +45014,37 @@ __d(function (global, require, module, exports, _dependencyMap) {
             var tailSpacerLength = endFrame.offset + endFrame.length - (lastFrame.offset + lastFrame.length);
             cells.push(React.createElement(View, {
               key: "$tail_spacer",
-              style: babelHelpers.defineProperty({}, spacerKey, tailSpacerLength),
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 856
-              }
+              style: babelHelpers.defineProperty({}, spacerKey, tailSpacerLength)
             }));
           }
         } else if (ListEmptyComponent) {
-          var _element = React.isValidElement(ListEmptyComponent) ? ListEmptyComponent : React.createElement(ListEmptyComponent, {
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 864
-            }
-          });
+          var _element = React.isValidElement(ListEmptyComponent) ? ListEmptyComponent : React.createElement(ListEmptyComponent, null);
 
           cells.push(React.createElement(
             View,
             {
               key: "$empty",
               onLayout: this._onLayoutEmpty,
-              style: inversionStyle,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 867
-              }
+              style: inversionStyle
             },
             _element
           ));
         }
 
         if (ListFooterComponent) {
-          var _element2 = React.isValidElement(ListFooterComponent) ? ListFooterComponent : React.createElement(ListFooterComponent, {
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 880
-            }
-          });
+          var _element2 = React.isValidElement(ListFooterComponent) ? ListFooterComponent : React.createElement(ListFooterComponent, null);
 
           cells.push(React.createElement(
             VirtualizedCellWrapper,
             {
               cellKey: this._getCellKey() + '-footer',
-              key: "$footer",
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 883
-              }
+              key: "$footer"
             },
             React.createElement(
               View,
               {
                 onLayout: this._onLayoutFooter,
-                style: inversionStyle,
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 886
-                }
+                style: inversionStyle
               },
               _element2
             )
@@ -45374,10 +45077,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
             {
               style: {
                 flex: 1
-              },
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 921
               }
             },
             ret,
@@ -45481,11 +45180,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
               width: 20,
               borderColor: 'blue',
               borderWidth: 1
-            }),
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 1121
-            }
+            })
           },
           framesInLayout.map(function (f, ii) {
             return React.createElement(View, {
@@ -45495,11 +45190,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
                 top: f.offset * normalize,
                 height: f.length * normalize,
                 backgroundColor: 'orange'
-              }),
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 1130
-              }
+              })
             });
           }),
           React.createElement(View, {
@@ -45509,11 +45200,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
               height: windowLen * normalize,
               borderColor: 'green',
               borderWidth: 2
-            }),
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 1141
-            }
+            })
           }),
           React.createElement(View, {
             style: babelHelpers.extends({}, baseStyle, {
@@ -45522,11 +45209,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
               height: visLen * normalize,
               borderColor: 'red',
               borderWidth: 2
-            }),
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 1151
-            }
+            })
           })
         );
       }
@@ -45733,36 +45416,18 @@ __d(function (global, require, module, exports, _dependencyMap) {
 
     this._defaultRenderScrollComponent = function (props) {
       if (_this8._isNestedWithSameOrientation()) {
-        return React.createElement(View, babelHelpers.extends({}, props, {
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 985
-          }
-        }));
+        return React.createElement(View, props);
       } else if (props.onRefresh) {
         invariant(typeof props.refreshing === 'boolean', '`refreshing` prop must be set as a boolean in order to use `onRefresh`, but got `' + JSON.stringify(props.refreshing) + '`');
         return React.createElement(ScrollView, babelHelpers.extends({}, props, {
           refreshControl: React.createElement(RefreshControl, {
             refreshing: props.refreshing,
             onRefresh: props.onRefresh,
-            progressViewOffset: props.progressViewOffset,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 1000
-            }
-          }),
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 994
-          }
+            progressViewOffset: props.progressViewOffset
+          })
         }));
       } else {
-        return React.createElement(ScrollView, babelHelpers.extends({}, props, {
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 1009
-          }
-        }));
+        return React.createElement(ScrollView, props);
       }
     };
 
@@ -46174,12 +45839,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           separators: this._separators
         });
         var onLayout = getItemLayout && !parentProps.debug && !fillRateHelper.enabled() ? undefined : this.props.onLayout;
-        var itemSeparator = ItemSeparatorComponent && React.createElement(ItemSeparatorComponent, babelHelpers.extends({}, this.state.separatorProps, {
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 1623
-          }
-        }));
+        var itemSeparator = ItemSeparatorComponent && React.createElement(ItemSeparatorComponent, this.state.separatorProps);
         var cellStyle = inversionStyle ? horizontal ? [{
           flexDirection: 'row-reverse'
         }, inversionStyle] : [{
@@ -46193,11 +45853,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
             View,
             {
               style: cellStyle,
-              onLayout: onLayout,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 1632
-              }
+              onLayout: onLayout
             },
             element,
             itemSeparator
@@ -46208,11 +45864,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           CellRendererComponent,
           babelHelpers.extends({}, this.props, {
             style: cellStyle,
-            onLayout: onLayout,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 1639
-            }
+            onLayout: onLayout
           }),
           element,
           itemSeparator
@@ -46912,8 +46564,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Image/ImageBackground.js";
-
   var Image = require(_dependencyMap[0], 'Image');
 
   var React = require(_dependencyMap[1], 'React');
@@ -46966,22 +46616,14 @@ __d(function (global, require, module, exports, _dependencyMap) {
           View,
           {
             style: style,
-            ref: this._captureRef,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 68
-            }
+            ref: this._captureRef
           },
           React.createElement(Image, babelHelpers.extends({}, props, {
             style: [StyleSheet.absoluteFill, {
               width: style.width,
               height: style.height
             }, imageStyle],
-            ref: imageRef,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 69
-            }
+            ref: imageRef
           })),
           children
         );
@@ -47070,8 +46712,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },297,[56],"ImageStore");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/Keyboard/KeyboardAvoidingView.js";
 
   var createReactClass = require(_dependencyMap[0], 'create-react-class');
 
@@ -47198,12 +46838,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
               ref: viewRef,
               style: [style, heightStyle],
               onLayout: this._onLayout
-            }, props, {
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 172
-              }
-            }),
+            }, props),
             children
           );
 
@@ -47218,20 +46853,11 @@ __d(function (global, require, module, exports, _dependencyMap) {
               ref: viewRef,
               style: style,
               onLayout: this._onLayout
-            }, props, {
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 182
-              }
-            }),
+            }, props),
             React.createElement(
               View,
               {
-                style: [contentContainerStyle, positionStyle],
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 183
-                }
+                style: [contentContainerStyle, positionStyle]
               },
               children
             )
@@ -47247,12 +46873,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
               ref: viewRef,
               style: [style, paddingStyle],
               onLayout: this._onLayout
-            }, props, {
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 192
-              }
-            }),
+            }, props),
             children
           );
 
@@ -47263,12 +46884,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
               ref: viewRef,
               onLayout: this._onLayout,
               style: style
-            }, props, {
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 199
-              }
-            }),
+            }, props),
             children
           );
       }
@@ -47283,8 +46899,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },299,[300],"MaskedViewIOS");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/UnimplementedViews/UnimplementedView.js";
 
   var React = require(_dependencyMap[0], 'React');
 
@@ -47309,11 +46923,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
         return React.createElement(
           View,
           {
-            style: [styles.unimplementedView, this.props.style],
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 33
-            }
+            style: [styles.unimplementedView, this.props.style]
           },
           this.props.children
         );
@@ -47334,8 +46944,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Modal/Modal.js",
-      _container;
+  var _container;
 
   var AppContainer = require(_dependencyMap[0], 'AppContainer');
 
@@ -47435,11 +47044,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
         var innerChildren = __DEV__ ? React.createElement(
           AppContainer,
           {
-            rootTag: this.context.rootTag,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 238
-            }
+            rootTag: this.context.rootTag
           },
           this.props.children
         ) : this.props.children;
@@ -47456,20 +47061,12 @@ __d(function (global, require, module, exports, _dependencyMap) {
             style: styles.modal,
             onStartShouldSetResponder: this._shouldSetResponder,
             supportedOrientations: this.props.supportedOrientations,
-            onOrientationChange: this.props.onOrientationChange,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 244
-            }
+            onOrientationChange: this.props.onOrientationChange
           },
           React.createElement(
             View,
             {
-              style: [styles.container, containerStyles],
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 257
-              }
+              style: [styles.container, containerStyles]
             },
             innerChildren
           )
@@ -47524,8 +47121,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },301,[302,321,110,56,93,171,168,209,211,184,186],"Modal");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/ReactNative/AppContainer.js";
 
   var EmitterSubscription = require(_dependencyMap[0], 'EmitterSubscription');
 
@@ -47588,10 +47183,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
                   }, function () {
                     return updateInspectedViewTag(ReactNative.findNodeHandle(_this2._mainRef));
                   });
-                },
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 66
                 }
               });
 
@@ -47620,12 +47211,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           if (!global.__RCTProfileIsProfiling) {
             var YellowBox = require(_dependencyMap[8], 'YellowBox');
 
-            yellowBox = React.createElement(YellowBox, {
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 97
-              }
-            });
+            yellowBox = React.createElement(YellowBox, null);
           }
         }
 
@@ -47638,10 +47224,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
             style: styles.appContainer,
             ref: function ref(_ref2) {
               _this3._mainRef = _ref2;
-            },
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 102
             }
           },
           this.props.children
@@ -47651,12 +47233,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
         if (Wrapper) {
           innerView = React.createElement(
             Wrapper,
-            {
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 119
-              }
-            },
+            null,
             innerView
           );
         }
@@ -47665,11 +47242,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           View,
           {
             style: styles.appContainer,
-            pointerEvents: "box-none",
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 122
-            }
+            pointerEvents: "box-none"
           },
           innerView,
           yellowBox,
@@ -47692,8 +47265,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },302,[106,168,111,171,62,209,211,303,319],"AppContainer");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Inspector/Inspector.js";
 
   var Dimensions = require(_dependencyMap[0], 'Dimensions');
 
@@ -47886,29 +47457,17 @@ __d(function (global, require, module, exports, _dependencyMap) {
           View,
           {
             style: styles.container,
-            pointerEvents: "box-none",
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 232
-            }
+            pointerEvents: "box-none"
           },
           this.state.inspecting && React.createElement(InspectorOverlay, {
             inspected: this.state.inspected,
             inspectedViewTag: this.state.inspectedViewTag,
-            onTouchViewTag: this.onTouchViewTag.bind(this),
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 234
-            }
+            onTouchViewTag: this.onTouchViewTag.bind(this)
           }),
           React.createElement(
             View,
             {
-              style: [styles.panelContainer, panelContainerStyle],
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 239
-              }
+              style: [styles.panelContainer, panelContainerStyle]
             },
             React.createElement(InspectorPanel, {
               devtoolsIsOpen: !!this.state.devtoolsAgent,
@@ -47923,11 +47482,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
               touchTargetting: Touchable.TOUCH_TARGET_DEBUG,
               setTouchTargetting: this.setTouchTargetting.bind(this),
               networking: this.state.networking,
-              setNetworking: this.setNetworking.bind(this),
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 240
-              }
+              setNetworking: this.setNetworking.bind(this)
             })
           )
         );
@@ -48012,8 +47567,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Inspector/InspectorOverlay.js";
-
   var Dimensions = require(_dependencyMap[0], 'Dimensions');
 
   var ElementBox = require(_dependencyMap[1], 'ElementBox');
@@ -48069,11 +47622,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
         if (this.props.inspected) {
           content = React.createElement(ElementBox, {
             frame: this.props.inspected.frame,
-            style: this.props.inspected.style,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 62
-            }
+            style: this.props.inspected.style
           });
         }
 
@@ -48084,11 +47633,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
             onResponderMove: this.findViewForTouchEvent,
             style: [styles.inspector, {
               height: Dimensions.get('window').height
-            }],
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 66
-            }
+            }]
           },
           content
         );
@@ -48118,8 +47663,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },304,[205,305,168,171,209,148,211],"InspectorOverlay");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Inspector/ElementBox.js";
 
   var React = require(_dependencyMap[0], 'React');
 
@@ -48174,38 +47717,22 @@ __d(function (global, require, module, exports, _dependencyMap) {
           View,
           {
             style: [styles.frame, frameStyle],
-            pointerEvents: "none",
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 47
-            }
+            pointerEvents: "none"
           },
           React.createElement(
             BorderBox,
             {
               box: margin,
-              style: styles.margin,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 48
-              }
+              style: styles.margin
             },
             React.createElement(
               BorderBox,
               {
                 box: padding,
-                style: styles.padding,
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 49
-                }
+                style: styles.padding
               },
               React.createElement(View, {
-                style: [styles.content, contentStyle],
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 50
-                }
+                style: [styles.content, contentStyle]
               })
             )
           )
@@ -48233,8 +47760,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },305,[171,211,209,306,307,142],"ElementBox");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Inspector/BorderBox.js";
 
   var React = require(_dependencyMap[0], 'React');
 
@@ -48266,11 +47791,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
         return React.createElement(
           View,
           {
-            style: [style, this.props.style],
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 30
-            }
+            style: [style, this.props.style]
           },
           this.props.children
         );
@@ -48331,8 +47852,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Inspector/InspectorPanel.js";
-
   var ElementProperties = require(_dependencyMap[0], 'ElementProperties');
 
   var NetworkOverlay = require(_dependencyMap[1], 'NetworkOverlay');
@@ -48368,11 +47887,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           return React.createElement(
             Text,
             {
-              style: styles.waitingText,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 29
-              }
+              style: styles.waitingText
             },
             "Tap something to inspect it"
           );
@@ -48381,11 +47896,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
         return React.createElement(
           Text,
           {
-            style: styles.waitingText,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 34
-            }
+            style: styles.waitingText
           },
           "Nothing is inspected"
         );
@@ -48399,11 +47910,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           contents = React.createElement(
             ScrollView,
             {
-              style: styles.properties,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 41
-              }
+              style: styles.properties
             },
             React.createElement(ElementProperties, {
               style: this.props.inspected.style,
@@ -48411,36 +47918,18 @@ __d(function (global, require, module, exports, _dependencyMap) {
               source: this.props.inspected.source,
               hierarchy: this.props.hierarchy,
               selection: this.props.selection,
-              setSelection: this.props.setSelection,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 42
-              }
+              setSelection: this.props.setSelection
             })
           );
         } else if (this.props.perfing) {
-          contents = React.createElement(PerformanceOverlay, {
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 54
-            }
-          });
+          contents = React.createElement(PerformanceOverlay, null);
         } else if (this.props.networking) {
-          contents = React.createElement(NetworkOverlay, {
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 58
-            }
-          });
+          contents = React.createElement(NetworkOverlay, null);
         } else {
           contents = React.createElement(
             View,
             {
-              style: styles.waiting,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 62
-              }
+              style: styles.waiting
             },
             this.renderWaiting()
           );
@@ -48449,57 +47938,33 @@ __d(function (global, require, module, exports, _dependencyMap) {
         return React.createElement(
           View,
           {
-            style: styles.container,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 68
-            }
+            style: styles.container
           },
           !this.props.devtoolsIsOpen && contents,
           React.createElement(
             View,
             {
-              style: styles.buttonRow,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 70
-              }
+              style: styles.buttonRow
             },
             React.createElement(Button, {
               title: 'Inspect',
               pressed: this.props.inspecting,
-              onClick: this.props.setInspecting,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 71
-              }
+              onClick: this.props.setInspecting
             }),
             React.createElement(Button, {
               title: 'Perf',
               pressed: this.props.perfing,
-              onClick: this.props.setPerfing,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 76
-              }
+              onClick: this.props.setPerfing
             }),
             React.createElement(Button, {
               title: 'Network',
               pressed: this.props.networking,
-              onClick: this.props.setNetworking,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 80
-              }
+              onClick: this.props.setNetworking
             }),
             React.createElement(Button, {
               title: 'Touchables',
               pressed: this.props.touchTargetting,
-              onClick: this.props.setTouchTargetting,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 84
-              }
+              onClick: this.props.setTouchTargetting
             })
           )
         );
@@ -48540,20 +48005,12 @@ __d(function (global, require, module, exports, _dependencyMap) {
             onPress: function onPress() {
               return _this3.props.onClick(!_this3.props.pressed);
             },
-            style: [styles.button, this.props.pressed && styles.buttonPressed],
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 110
-            }
+            style: [styles.button, this.props.pressed && styles.buttonPressed]
           },
           React.createElement(
             Text,
             {
-              style: styles.buttonText,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 114
-              }
+              style: styles.buttonText
             },
             this.props.title
           )
@@ -48602,8 +48059,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },308,[309,315,318,171,168,265,209,222,312,211],"InspectorPanel");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Inspector/ElementProperties.js";
 
   var BoxInspector = require(_dependencyMap[0], 'BoxInspector');
 
@@ -48658,21 +48113,13 @@ __d(function (global, require, module, exports, _dependencyMap) {
             TouchableHighlight,
             {
               style: styles.openButton,
-              onPress: openFileInEditor.bind(null, fileName, lineNumber),
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 62
-              }
+              onPress: openFileInEditor.bind(null, fileName, lineNumber)
             },
             React.createElement(
               Text,
               {
                 style: styles.openButtonTitle,
-                numberOfLines: 1,
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 65
-                }
+                numberOfLines: 1
               },
               fileNameShort,
               ":",
@@ -48683,29 +48130,16 @@ __d(function (global, require, module, exports, _dependencyMap) {
 
         return React.createElement(
           TouchableWithoutFeedback,
-          {
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 74
-            }
-          },
+          null,
           React.createElement(
             View,
             {
-              style: styles.info,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 75
-              }
+              style: styles.info
             },
             React.createElement(
               View,
               {
-                style: styles.breadcrumb,
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 76
-                }
+                style: styles.breadcrumb
               },
               mapWithSeparator(this.props.hierarchy, function (hierarchyItem, i) {
                 return React.createElement(
@@ -48715,20 +48149,12 @@ __d(function (global, require, module, exports, _dependencyMap) {
                     style: [styles.breadItem, i === selection && styles.selected],
                     onPress: function onPress() {
                       return _this2.props.setSelection(i);
-                    },
-                    __source: {
-                      fileName: _jsxFileName,
-                      lineNumber: 80
                     }
                   },
                   React.createElement(
                     Text,
                     {
-                      style: styles.breadItemText,
-                      __source: {
-                        fileName: _jsxFileName,
-                        lineNumber: 85
-                      }
+                      style: styles.breadItemText
                     },
                     hierarchyItem.name
                   )
@@ -48738,11 +48164,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
                   Text,
                   {
                     key: 'sep-' + i,
-                    style: styles.breadSep,
-                    __source: {
-                      fileName: _jsxFileName,
-                      lineNumber: 91
-                    }
+                    style: styles.breadSep
                   },
                   "\u25B8"
                 );
@@ -48751,37 +48173,21 @@ __d(function (global, require, module, exports, _dependencyMap) {
             React.createElement(
               View,
               {
-                style: styles.row,
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 97
-                }
+                style: styles.row
               },
               React.createElement(
                 View,
                 {
-                  style: styles.col,
-                  __source: {
-                    fileName: _jsxFileName,
-                    lineNumber: 98
-                  }
+                  style: styles.col
                 },
                 React.createElement(StyleInspector, {
-                  style: style,
-                  __source: {
-                    fileName: _jsxFileName,
-                    lineNumber: 99
-                  }
+                  style: style
                 }),
                 openFileButton
               ),
               React.createElement(BoxInspector, {
                 style: style,
-                frame: this.props.frame,
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 104
-                }
+                frame: this.props.frame
               })
             )
           )
@@ -48852,8 +48258,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Inspector/BoxInspector.js";
-
   var React = require(_dependencyMap[0], 'React');
 
   var StyleSheet = require(_dependencyMap[1], 'StyleSheet');
@@ -48891,38 +48295,21 @@ __d(function (global, require, module, exports, _dependencyMap) {
           {
             title: "margin",
             titleStyle: styles.marginLabel,
-            box: margin,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 34
-            }
+            box: margin
           },
           React.createElement(
             BoxContainer,
             {
               title: "padding",
-              box: padding,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 35
-              }
+              box: padding
             },
             React.createElement(
               View,
-              {
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 36
-                }
-              },
+              null,
               React.createElement(
                 Text,
                 {
-                  style: styles.innerText,
-                  __source: {
-                    fileName: _jsxFileName,
-                    lineNumber: 37
-                  }
+                  style: styles.innerText
                 },
                 "(",
                 (frame.left || 0).toFixed(1),
@@ -48933,11 +48320,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
               React.createElement(
                 Text,
                 {
-                  style: styles.innerText,
-                  __source: {
-                    fileName: _jsxFileName,
-                    lineNumber: 40
-                  }
+                  style: styles.innerText
                 },
                 (frame.width || 0).toFixed(1),
                 " \xD7 ",
@@ -48966,40 +48349,24 @@ __d(function (global, require, module, exports, _dependencyMap) {
         return React.createElement(
           View,
           {
-            style: styles.box,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 54
-            }
+            style: styles.box
           },
           React.createElement(
             View,
             {
-              style: styles.row,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 55
-              }
+              style: styles.row
             },
             React.createElement(
               Text,
               {
-                style: [this.props.titleStyle, styles.label],
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 58
-                }
+                style: [this.props.titleStyle, styles.label]
               },
               this.props.title
             ),
             React.createElement(
               Text,
               {
-                style: styles.boxText,
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 59
-                }
+                style: styles.boxText
               },
               box.top
             )
@@ -49007,20 +48374,12 @@ __d(function (global, require, module, exports, _dependencyMap) {
           React.createElement(
             View,
             {
-              style: styles.row,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 61
-              }
+              style: styles.row
             },
             React.createElement(
               Text,
               {
-                style: styles.boxText,
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 62
-                }
+                style: styles.boxText
               },
               box.left
             ),
@@ -49028,11 +48387,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
             React.createElement(
               Text,
               {
-                style: styles.boxText,
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 64
-                }
+                style: styles.boxText
               },
               box.right
             )
@@ -49040,11 +48395,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           React.createElement(
             Text,
             {
-              style: styles.boxText,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 66
-              }
+              style: styles.boxText
             },
             box.bottom
           )
@@ -49100,8 +48451,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Inspector/StyleInspector.js";
-
   var React = require(_dependencyMap[0], 'React');
 
   var StyleSheet = require(_dependencyMap[1], 'StyleSheet');
@@ -49127,11 +48476,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           return React.createElement(
             Text,
             {
-              style: styles.noStyle,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 22
-              }
+              style: styles.noStyle
             },
             "No style"
           );
@@ -49141,30 +48486,17 @@ __d(function (global, require, module, exports, _dependencyMap) {
         return React.createElement(
           View,
           {
-            style: styles.container,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 26
-            }
+            style: styles.container
           },
           React.createElement(
             View,
-            {
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 27
-              }
-            },
+            null,
             names.map(function (name) {
               return React.createElement(
                 Text,
                 {
                   key: name,
-                  style: styles.attr,
-                  __source: {
-                    fileName: _jsxFileName,
-                    lineNumber: 28
-                  }
+                  style: styles.attr
                 },
                 name,
                 ":"
@@ -49173,23 +48505,14 @@ __d(function (global, require, module, exports, _dependencyMap) {
           ),
           React.createElement(
             View,
-            {
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 31
-              }
-            },
+            null,
             names.map(function (name) {
               var value = typeof _this2.props.style[name] === 'object' ? JSON.stringify(_this2.props.style[name]) : _this2.props.style[name];
               return React.createElement(
                 Text,
                 {
                   key: name,
-                  style: styles.value,
-                  __source: {
-                    fileName: _jsxFileName,
-                    lineNumber: 34
-                  }
+                  style: styles.value
                 },
                 value
               );
@@ -49228,8 +48551,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },311,[171,209,222,211],"StyleInspector");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/Touchable/TouchableHighlight.js";
 
   var ColorPropType = require(_dependencyMap[0], 'ColorPropType');
 
@@ -49396,11 +48717,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           onResponderRelease: this.touchableHandleResponderRelease,
           onResponderTerminate: this.touchableHandleResponderTerminate,
           nativeID: this.props.nativeID,
-          testID: this.props.testID,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 306
-          }
+          testID: this.props.testID
         },
         React.cloneElement(child, {
           style: StyleSheet.compose(child.props.style, this.state.extraChildStyle)
@@ -49452,8 +48769,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },314,[77],"openFileInEditor");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Inspector/NetworkOverlay.js";
 
   var ListView = require(_dependencyMap[0], 'ListView');
 
@@ -49727,47 +49042,26 @@ __d(function (global, require, module, exports, _dependencyMap) {
               _this4._pressRow(rowID);
 
               highlightRow(sectionID, rowID);
-            },
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 300
             }
           },
           React.createElement(
             View,
-            {
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 304
-              }
-            },
+            null,
             React.createElement(
               View,
               {
-                style: styles.tableRow,
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 305
-                }
+                style: styles.tableRow
               },
               React.createElement(
                 View,
                 {
-                  style: urlCellViewStyle,
-                  __source: {
-                    fileName: _jsxFileName,
-                    lineNumber: 306
-                  }
+                  style: urlCellViewStyle
                 },
                 React.createElement(
                   Text,
                   {
                     style: styles.cellText,
-                    numberOfLines: 1,
-                    __source: {
-                      fileName: _jsxFileName,
-                      lineNumber: 307
-                    }
+                    numberOfLines: 1
                   },
                   rowData.url
                 )
@@ -49775,21 +49069,13 @@ __d(function (global, require, module, exports, _dependencyMap) {
               React.createElement(
                 View,
                 {
-                  style: methodCellViewStyle,
-                  __source: {
-                    fileName: _jsxFileName,
-                    lineNumber: 311
-                  }
+                  style: methodCellViewStyle
                 },
                 React.createElement(
                   Text,
                   {
                     style: styles.cellText,
-                    numberOfLines: 1,
-                    __source: {
-                      fileName: _jsxFileName,
-                      lineNumber: 312
-                    }
+                    numberOfLines: 1
                   },
                   this._getTypeShortName(rowData.type)
                 )
@@ -49806,10 +49092,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
           style: {
             height: adjacentRowHighlighted ? SEPARATOR_THICKNESS : 0,
             backgroundColor: adjacentRowHighlighted ? '#3B5998' : '#CCCCCC'
-          },
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 327
           }
         });
       }
@@ -49925,31 +49207,19 @@ __d(function (global, require, module, exports, _dependencyMap) {
             View,
             {
               style: styles.detailViewRow,
-              key: _key,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 442
-              }
+              key: _key
             },
             React.createElement(
               Text,
               {
-                style: [styles.detailViewText, styles.detailKeyCellView],
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 443
-                }
+                style: [styles.detailViewText, styles.detailKeyCellView]
               },
               _key
             ),
             React.createElement(
               Text,
               {
-                style: [styles.detailViewText, styles.detailValueCellView],
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 446
-                }
+                style: [styles.detailViewText, styles.detailValueCellView]
               },
               this._getStringByValue(requestItem[_key])
             )
@@ -49968,38 +49238,21 @@ __d(function (global, require, module, exports, _dependencyMap) {
         return React.createElement(
           View,
           {
-            style: styles.container,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 461
-            }
+            style: styles.container
           },
           this.state.detailRowID != null && React.createElement(
             TouchableHighlight,
             {
               style: styles.closeButton,
-              onPress: this._closeButtonClicked,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 463
-              }
+              onPress: this._closeButtonClicked
             },
             React.createElement(
               View,
-              {
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 466
-                }
-              },
+              null,
               React.createElement(
                 Text,
                 {
-                  style: styles.clostButtonText,
-                  __source: {
-                    fileName: _jsxFileName,
-                    lineNumber: 467
-                  }
+                  style: styles.clostButtonText
                 },
                 "v"
               )
@@ -50009,50 +49262,30 @@ __d(function (global, require, module, exports, _dependencyMap) {
             ScrollView,
             {
               style: styles.detailScrollView,
-              ref: this._captureDetailScrollView,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 471
-              }
+              ref: this._captureDetailScrollView
             },
             this._detailViewItems[this.state.detailRowID]
           ),
           React.createElement(
             View,
             {
-              style: styles.listViewTitle,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 476
-              }
+              style: styles.listViewTitle
             },
             this._requests.length > 0 && React.createElement(
               View,
               {
-                style: styles.tableRow,
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 478
-                }
+                style: styles.tableRow
               },
               React.createElement(
                 View,
                 {
-                  style: styles.urlTitleCellView,
-                  __source: {
-                    fileName: _jsxFileName,
-                    lineNumber: 479
-                  }
+                  style: styles.urlTitleCellView
                 },
                 React.createElement(
                   Text,
                   {
                     style: styles.cellText,
-                    numberOfLines: 1,
-                    __source: {
-                      fileName: _jsxFileName,
-                      lineNumber: 480
-                    }
+                    numberOfLines: 1
                   },
                   "URL"
                 )
@@ -50060,21 +49293,13 @@ __d(function (global, require, module, exports, _dependencyMap) {
               React.createElement(
                 View,
                 {
-                  style: styles.methodTitleCellView,
-                  __source: {
-                    fileName: _jsxFileName,
-                    lineNumber: 482
-                  }
+                  style: styles.methodTitleCellView
                 },
                 React.createElement(
                   Text,
                   {
                     style: styles.cellText,
-                    numberOfLines: 1,
-                    __source: {
-                      fileName: _jsxFileName,
-                      lineNumber: 483
-                    }
+                    numberOfLines: 1
                   },
                   "Type"
                 )
@@ -50088,11 +49313,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
             renderRow: this._renderRow,
             enableEmptySections: true,
             renderSeparator: this._renderSeperator,
-            onLayout: this._listViewOnLayout,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 487
-            }
+            onLayout: this._listViewOnLayout
           })
         );
       }
@@ -50499,8 +49720,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Inspector/PerformanceOverlay.js";
-
   var PerformanceLogger = require(_dependencyMap[0], 'PerformanceLogger');
 
   var React = require(_dependencyMap[1], 'React');
@@ -50532,31 +49751,19 @@ __d(function (global, require, module, exports, _dependencyMap) {
               View,
               {
                 style: styles.row,
-                key: key,
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 29
-                }
+                key: key
               },
               React.createElement(
                 Text,
                 {
-                  style: [styles.text, styles.label],
-                  __source: {
-                    fileName: _jsxFileName,
-                    lineNumber: 30
-                  }
+                  style: [styles.text, styles.label]
                 },
                 key
               ),
               React.createElement(
                 Text,
                 {
-                  style: [styles.text, styles.totalTime],
-                  __source: {
-                    fileName: _jsxFileName,
-                    lineNumber: 31
-                  }
+                  style: [styles.text, styles.totalTime]
                 },
                 perfLogs[key].totalTime + unit
               )
@@ -50567,11 +49774,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
         return React.createElement(
           View,
           {
-            style: styles.container,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 40
-            }
+            style: styles.container
           },
           items
         );
@@ -50604,8 +49807,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },318,[134,171,209,222,211],"PerformanceOverlay");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/ReactNative/YellowBox.js";
 
   var EventEmitter = require(_dependencyMap[0], 'EventEmitter');
 
@@ -50775,22 +49976,14 @@ __d(function (global, require, module, exports, _dependencyMap) {
     var countText = count > 1 ? React.createElement(
       Text,
       {
-        style: styles.listRowCount,
-        __source: {
-          fileName: _jsxFileName,
-          lineNumber: 197
-        }
+        style: styles.listRowCount
       },
       '(' + count + ') '
     ) : null;
     return React.createElement(
       View,
       {
-        style: styles.listRow,
-        __source: {
-          fileName: _jsxFileName,
-          lineNumber: 201
-        }
+        style: styles.listRow
       },
       React.createElement(
         TouchableHighlight,
@@ -50798,21 +49991,13 @@ __d(function (global, require, module, exports, _dependencyMap) {
           activeOpacity: 0.5,
           onPress: onPress,
           style: styles.listRowContent,
-          underlayColor: "transparent",
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 202
-          }
+          underlayColor: "transparent"
         },
         React.createElement(
           Text,
           {
             style: styles.listRowText,
-            numberOfLines: 2,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 207
-            }
+            numberOfLines: 2
           },
           countText,
           warning
@@ -50845,20 +50030,12 @@ __d(function (global, require, module, exports, _dependencyMap) {
         activeOpacity: 0.5,
         style: styles.openInEditorButton,
         underlayColor: "transparent",
-        onPress: openFileInEditor.bind(null, file, lineNumber),
-        __source: {
-          fileName: _jsxFileName,
-          lineNumber: 230
-        }
+        onPress: openFileInEditor.bind(null, file, lineNumber)
       },
       React.createElement(
         Text,
         {
-          style: styles.inspectorCountText,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 235
-          }
+          style: styles.inspectorCountText
         },
         fileName,
         ":",
@@ -50895,20 +50072,12 @@ __d(function (global, require, module, exports, _dependencyMap) {
       stacktraceList = React.createElement(
         View,
         {
-          style: styles.stacktraceList,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 263
-          }
+          style: styles.stacktraceList
         },
         stacktrace.map(function (frame, ii) {
           return React.createElement(StackRow, {
             frame: frame,
-            key: ii,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 264
-            }
+            key: ii
           });
         })
       );
@@ -50917,38 +50086,22 @@ __d(function (global, require, module, exports, _dependencyMap) {
     return React.createElement(
       View,
       {
-        style: styles.inspector,
-        __source: {
-          fileName: _jsxFileName,
-          lineNumber: 270
-        }
+        style: styles.inspector
       },
       React.createElement(
         SafeAreaView,
         {
-          style: styles.safeArea,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 271
-          }
+          style: styles.safeArea
         },
         React.createElement(
           View,
           {
-            style: styles.inspectorCount,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 272
-            }
+            style: styles.inspectorCount
           },
           React.createElement(
             Text,
             {
-              style: styles.inspectorCountText,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 273
-              }
+              style: styles.inspectorCountText
             },
             countSentence
           ),
@@ -50956,20 +50109,12 @@ __d(function (global, require, module, exports, _dependencyMap) {
             TouchableHighlight,
             {
               onPress: toggleStacktrace,
-              underlayColor: "transparent",
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 274
-              }
+              underlayColor: "transparent"
             },
             React.createElement(
               Text,
               {
-                style: styles.inspectorButtonText,
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 277
-                }
+                style: styles.inspectorButtonText
               },
               stacktraceVisible ? "\u25BC" : "\u25B6",
               " Stacktrace"
@@ -50979,21 +50124,13 @@ __d(function (global, require, module, exports, _dependencyMap) {
         React.createElement(
           ScrollView,
           {
-            style: styles.inspectorWarning,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 282
-            }
+            style: styles.inspectorWarning
           },
           stacktraceList,
           React.createElement(
             Text,
             {
-              style: styles.inspectorWarningText,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 284
-              }
+              style: styles.inspectorWarningText
             },
             warning
           )
@@ -51001,11 +50138,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
         React.createElement(
           View,
           {
-            style: styles.inspectorButtons,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 286
-            }
+            style: styles.inspectorButtons
           },
           React.createElement(
             TouchableHighlight,
@@ -51013,20 +50146,12 @@ __d(function (global, require, module, exports, _dependencyMap) {
               activeOpacity: 0.5,
               onPress: onMinimize,
               style: styles.inspectorButton,
-              underlayColor: "transparent",
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 287
-              }
+              underlayColor: "transparent"
             },
             React.createElement(
               Text,
               {
-                style: styles.inspectorButtonText,
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 292
-                }
+                style: styles.inspectorButtonText
               },
               "Minimize"
             )
@@ -51037,20 +50162,12 @@ __d(function (global, require, module, exports, _dependencyMap) {
               activeOpacity: 0.5,
               onPress: onDismiss,
               style: styles.inspectorButton,
-              underlayColor: "transparent",
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 294
-              }
+              underlayColor: "transparent"
             },
             React.createElement(
               Text,
               {
-                style: styles.inspectorButtonText,
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 299
-                }
+                style: styles.inspectorButtonText
               },
               "Dismiss"
             )
@@ -51061,20 +50178,12 @@ __d(function (global, require, module, exports, _dependencyMap) {
               activeOpacity: 0.5,
               onPress: onDismissAll,
               style: styles.inspectorButton,
-              underlayColor: "transparent",
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 301
-              }
+              underlayColor: "transparent"
             },
             React.createElement(
               Text,
               {
-                style: styles.inspectorButtonText,
-                __source: {
-                  fileName: _jsxFileName,
-                  lineNumber: 306
-                }
+                style: styles.inspectorButtonText
               },
               "Dismiss All"
             )
@@ -51185,10 +50294,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
             return _this3.setState({
               stacktraceVisible: !stacktraceVisible
             });
-          },
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 393
           }
         }) : null;
         var rows = [];
@@ -51205,10 +50310,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
               },
               onDismiss: function onDismiss() {
                 return _this3.dismissWarning(warning);
-              },
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 410
               }
             }));
           }
@@ -51219,21 +50320,13 @@ __d(function (global, require, module, exports, _dependencyMap) {
         return React.createElement(
           View,
           {
-            style: inspector ? styles.fullScreen : listStyle,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 427
-            }
+            style: inspector ? styles.fullScreen : listStyle
           },
           React.createElement(
             ScrollView,
             {
               style: listStyle,
-              scrollsToTop: false,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 428
-              }
+              scrollsToTop: false
             },
             rows
           ),
@@ -51372,8 +50465,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/Picker/Picker.js";
-
   var ColorPropType = require(_dependencyMap[0], 'ColorPropType');
 
   var PickerIOS = require(_dependencyMap[1], 'PickerIOS');
@@ -51441,32 +50532,17 @@ __d(function (global, require, module, exports, _dependencyMap) {
         if (Platform.OS === 'ios') {
           return React.createElement(
             PickerIOS,
-            babelHelpers.extends({}, this.props, {
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 157
-              }
-            }),
+            this.props,
             this.props.children
           );
         } else if (Platform.OS === 'android') {
           return React.createElement(
             PickerAndroid,
-            babelHelpers.extends({}, this.props, {
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 160
-              }
-            }),
+            this.props,
             this.props.children
           );
         } else {
-          return React.createElement(UnimplementedView, {
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 162
-            }
-          });
+          return React.createElement(UnimplementedView, null);
         }
       }
     }]);
@@ -51498,8 +50574,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },324,[300],"PickerIOS");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/Picker/PickerAndroid.android.js";
 
   var ColorPropType = require(_dependencyMap[0], 'ColorPropType');
 
@@ -51565,12 +50639,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
         };
         return React.createElement(Picker, babelHelpers.extends({
           ref: REF_PICKER
-        }, nativeProps, {
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 107
-          }
-        }));
+        }, nativeProps));
       }
     }, {
       key: "componentDidMount",
@@ -51666,8 +50735,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/ProgressViewIOS/ProgressViewIOS.android.js";
-
   var React = require(_dependencyMap[0], 'React');
 
   var StyleSheet = require(_dependencyMap[1], 'StyleSheet');
@@ -51690,20 +50757,12 @@ __d(function (global, require, module, exports, _dependencyMap) {
         return React.createElement(
           View,
           {
-            style: [styles.dummy, this.props.style],
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 23
-            }
+            style: [styles.dummy, this.props.style]
           },
           React.createElement(
             Text,
             {
-              style: styles.text,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 24
-              }
+              style: styles.text
             },
             "ProgressViewIOS is not supported on this platform!"
           )
@@ -51733,8 +50792,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },326,[171,209,222,211],"ProgressViewIOS");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Lists/SectionList.js";
 
   var MetroListView = require(_dependencyMap[0], 'MetroListView');
 
@@ -51820,11 +50877,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
       value: function render() {
         var List = this.props.legacyImplementation ? MetroListView : VirtualizedSectionList;
         return React.createElement(List, babelHelpers.extends({}, this.props, {
-          ref: this._captureRef,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 331
-          }
+          ref: this._captureRef
         }));
       }
     }]);
@@ -51836,8 +50889,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },327,[282,93,171,265,328],"SectionList");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Lists/VirtualizedSectionList.js";
 
   var React = require(_dependencyMap[0], 'React');
 
@@ -52053,11 +51104,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
             renderItem: _renderItem,
             section: info.section,
             trailingItem: info.trailingItem,
-            trailingSection: info.trailingSection,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 281
-            }
+            trailingSection: info.trailingSection
           });
         }
       };
@@ -52086,11 +51133,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
       key: "render",
       value: function render() {
         return React.createElement(VirtualizedList, babelHelpers.extends({}, this.state.childProps, {
-          ref: this._captureRef,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 370
-          }
+          ref: this._captureRef
         }));
       }
     }]);
@@ -52214,26 +51257,11 @@ __d(function (global, require, module, exports, _dependencyMap) {
           section: section,
           separators: this._separators
         });
-        var leadingSeparator = LeadingSeparatorComponent && React.createElement(LeadingSeparatorComponent, babelHelpers.extends({}, this.state.leadingSeparatorProps, {
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 491
-          }
-        }));
-        var separator = SeparatorComponent && React.createElement(SeparatorComponent, babelHelpers.extends({}, this.state.separatorProps, {
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 494
-          }
-        }));
+        var leadingSeparator = LeadingSeparatorComponent && React.createElement(LeadingSeparatorComponent, this.state.leadingSeparatorProps);
+        var separator = SeparatorComponent && React.createElement(SeparatorComponent, this.state.separatorProps);
         return leadingSeparator || separator ? React.createElement(
           View,
-          {
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 497
-            }
-          },
+          null,
           leadingSeparator,
           element,
           separator
@@ -52268,8 +51296,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/SegmentedControlIOS/SegmentedControlIOS.android.js";
-
   var React = require(_dependencyMap[0], 'React');
 
   var StyleSheet = require(_dependencyMap[1], 'StyleSheet');
@@ -52292,20 +51318,12 @@ __d(function (global, require, module, exports, _dependencyMap) {
         return React.createElement(
           View,
           {
-            style: [styles.dummy, this.props.style],
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 23
-            }
+            style: [styles.dummy, this.props.style]
           },
           React.createElement(
             Text,
             {
-              style: styles.text,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 24
-              }
+              style: styles.text
             },
             "SegmentedControlIOS is not supported on this platform!"
           )
@@ -52335,8 +51353,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },329,[171,209,222,211],"SegmentedControlIOS");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/Slider/Slider.js";
 
   var Image = require(_dependencyMap[0], 'Image');
 
@@ -52427,10 +51443,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
         },
         onResponderTerminationRequest: function onResponderTerminationRequest() {
           return false;
-        },
-        __source: {
-          fileName: _jsxFileName,
-          lineNumber: 248
         }
       }));
     }
@@ -52469,8 +51481,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },331,[300],"SnapshotViewIOS");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/Switch/Switch.js";
 
   var ColorPropType = require(_dependencyMap[0], 'ColorPropType');
 
@@ -52549,11 +51559,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
         ref: function ref(_ref) {
           _this._rctSwitch = _ref;
         },
-        onChange: this._onChange,
-        __source: {
-          fileName: _jsxFileName,
-          lineNumber: 115
-        }
+        onChange: this._onChange
       }));
     }
   });
@@ -52585,8 +51591,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },332,[164,166,93,171,168,209,172,213,186],"Switch");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Experimental/SwipeableRow/SwipeableFlatList.js";
 
   var PropTypes = require(_dependencyMap[0], 'prop-types');
 
@@ -52647,11 +51651,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
             },
             shouldBounceOnMount: shouldBounceOnMount,
             onSwipeEnd: _this._setListViewScrollable,
-            onSwipeStart: _this._setListViewNotScrollable,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 137
-            }
+            onSwipeStart: _this._setListViewNotScrollable
           },
           _this.props.renderItem(info)
         );
@@ -52682,11 +51682,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
             _this2._flatListRef = _ref;
           },
           onScroll: this._onScroll,
-          renderItem: this._renderItem,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 99
-          }
+          renderItem: this._renderItem
         }));
       }
     }, {
@@ -52740,8 +51736,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },333,[168,171,334,281],"SwipeableFlatList");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Experimental/SwipeableRow/SwipeableRow.js";
 
   var Animated = require(_dependencyMap[0], 'Animated');
 
@@ -52854,11 +51848,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           {
             style: [styles.slideOutContainer, {
               height: this.state.rowHeight
-            }],
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 176
-            }
+            }]
           },
           this.props.slideoutView
         );
@@ -52872,22 +51862,13 @@ __d(function (global, require, module, exports, _dependencyMap) {
             transform: [{
               translateX: this.state.currentLeft
             }]
-          },
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 187
           }
         },
         this.props.children
       );
       return React.createElement(
         View,
-        babelHelpers.extends({}, this._panResponder.panHandlers, {
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 195
-          }
-        }),
+        this._panResponder.panHandlers,
         slideOutView,
         swipeableView
       );
@@ -53197,8 +52178,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Experimental/SwipeableRow/SwipeableListView.js";
-
   var ListView = require(_dependencyMap[0], 'ListView');
 
   var PropTypes = require(_dependencyMap[1], 'prop-types');
@@ -53282,11 +52261,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
             onSwipeStart: function onSwipeStart() {
               return _this._setListViewScrollable(false);
             },
-            shouldBounceOnMount: shouldBounceOnMount,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 185
-            }
+            shouldBounceOnMount: shouldBounceOnMount
           },
           _this.props.renderRow(rowData, sectionID, rowID)
         );
@@ -53319,11 +52294,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           },
           dataSource: this.state.dataSource.getDataSource(),
           onScroll: this._onScroll,
-          renderRow: this._renderRow,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 118
-          }
+          renderRow: this._renderRow
         }));
       }
     }, {
@@ -53462,8 +52433,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/TabBarIOS/TabBarIOS.android.js";
-
   var React = require(_dependencyMap[0], 'React');
 
   var StyleSheet = require(_dependencyMap[1], 'StyleSheet');
@@ -53486,11 +52455,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
         return React.createElement(
           View,
           {
-            style: [this.props.style, styles.tabGroup],
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 25
-            }
+            style: [this.props.style, styles.tabGroup]
           },
           this.props.children
         );
@@ -53510,8 +52475,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/TabBarIOS/TabBarItemIOS.android.js";
-
   var React = require(_dependencyMap[0], 'React');
 
   var View = require(_dependencyMap[1], 'View');
@@ -53530,22 +52493,13 @@ __d(function (global, require, module, exports, _dependencyMap) {
       key: "render",
       value: function render() {
         if (!this.props.selected) {
-          return React.createElement(View, {
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 21
-            }
-          });
+          return React.createElement(View, null);
         }
 
         return React.createElement(
           View,
           {
-            style: [this.props.style, styles.tab],
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 24
-            }
+            style: [this.props.style, styles.tab]
           },
           this.props.children
         );
@@ -53568,8 +52522,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },340,[171,211,209],"TabBarItemIOS");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/TextInput/TextInput.js";
 
   var ColorPropType = require(_dependencyMap[0], 'ColorPropType');
 
@@ -53784,11 +52736,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           onChange: this._onChange,
           onSelectionChange: this._onSelectionChange,
           onSelectionChangeShouldSetResponder: emptyFunction.thatReturnsTrue,
-          text: this._getText(),
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 709
-          }
+          text: this._getText()
         }));
       } else {
         var children = props.children;
@@ -53803,11 +52751,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
             Text,
             {
               style: props.style,
-              allowFontScaling: props.allowFontScaling,
-              __source: {
-                fileName: _jsxFileName,
-                lineNumber: 728
-              }
+              allowFontScaling: props.allowFontScaling
             },
             children
           );
@@ -53831,11 +52775,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           onSelectionChangeShouldSetResponder: emptyFunction.thatReturnsTrue,
           text: this._getText(),
           dataDetectorTypes: this.props.dataDetectorTypes,
-          onScroll: this._onScroll,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 735
-          }
+          onScroll: this._onScroll
         }));
       }
 
@@ -53849,11 +52789,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           accessibilityLabel: props.accessibilityLabel,
           accessibilityTraits: props.accessibilityTraits,
           nativeID: this.props.nativeID,
-          testID: props.testID,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 753
-          }
+          testID: props.testID
         },
         textContainer
       );
@@ -53872,12 +52808,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
       if (childCount > 1) {
         children = React.createElement(
           Text,
-          {
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 785
-            }
-          },
+          null,
           children
         );
       }
@@ -53902,11 +52833,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
         children: children,
         disableFullscreenUI: this.props.disableFullscreenUI,
         textBreakStrategy: this.props.textBreakStrategy,
-        onScroll: this._onScroll,
-        __source: {
-          fileName: _jsxFileName,
-          lineNumber: 793
-        }
+        onScroll: this._onScroll
       }));
       return React.createElement(
         TouchableWithoutFeedback,
@@ -53917,11 +52844,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           accessibilityLabel: this.props.accessibilityLabel,
           accessibilityComponentType: this.props.accessibilityComponentType,
           nativeID: this.props.nativeID,
-          testID: this.props.testID,
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 810
-          }
+          testID: this.props.testID
         },
         textContainer
       );
@@ -54493,8 +53416,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/ToolbarAndroid/ToolbarAndroid.android.js";
-
   var Image = require(_dependencyMap[0], 'Image');
 
   var NativeMethodsMixin = require(_dependencyMap[1], 'NativeMethodsMixin');
@@ -54579,12 +53500,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
 
       return React.createElement(NativeToolbar, babelHelpers.extends({
         onSelect: this._onSelect
-      }, nativeProps, {
-        __source: {
-          fileName: _jsxFileName,
-          lineNumber: 196
-        }
-      }));
+      }, nativeProps));
     },
     _onSelect: function _onSelect(event) {
       var position = event.nativeEvent.position;
@@ -54605,8 +53521,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },348,[263,166,171,168,212,148,172,164,213,186,201],"ToolbarAndroid");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/ViewPager/ViewPagerAndroid.android.js";
 
   var React = require(_dependencyMap[0], 'React');
 
@@ -54704,11 +53618,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
           onPageScroll: this._onPageScroll,
           onPageScrollStateChanged: this._onPageScrollStateChanged,
           onPageSelected: this._onPageSelected,
-          children: this._childrenWithOverridenStyle(),
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 238
-          }
+          children: this._childrenWithOverridenStyle()
         }));
       }
     }]);
@@ -54730,8 +53640,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 },349,[171,168,62,148,172,271,186],"ViewPagerAndroid");
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
-
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/Components/WebView/WebView.android.js";
 
   var EdgeInsetsPropType = require(_dependencyMap[0], 'EdgeInsetsPropType');
 
@@ -54770,18 +53678,10 @@ __d(function (global, require, module, exports, _dependencyMap) {
     return React.createElement(
       View,
       {
-        style: styles.loadingView,
-        __source: {
-          fileName: _jsxFileName,
-          lineNumber: 37
-        }
+        style: styles.loadingView
       },
       React.createElement(ActivityIndicator, {
-        style: styles.loadingProgressBar,
-        __source: {
-          fileName: _jsxFileName,
-          lineNumber: 38
-        }
+        style: styles.loadingProgressBar
       })
     );
   };
@@ -54932,20 +53832,11 @@ __d(function (global, require, module, exports, _dependencyMap) {
           mixedContentMode: this.props.mixedContentMode,
           saveFormDataDisabled: this.props.saveFormDataDisabled,
           urlPrefixesForDefaultIntent: this.props.urlPrefixesForDefaultIntent
-        }, nativeConfig.props, {
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 296
-          }
-        }));
+        }, nativeConfig.props));
         return React.createElement(
           View,
           {
-            style: styles.container,
-            __source: {
-              fileName: _jsxFileName,
-              lineNumber: 325
-            }
+            style: styles.container
           },
           webView,
           otherView
@@ -55372,8 +54263,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
 __d(function (global, require, module, exports, _dependencyMap) {
   'use strict';
 
-  var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native/Libraries/ReactNative/renderApplication.js";
-
   var AppContainer = require(_dependencyMap[0], 'AppContainer');
 
   var React = require(_dependencyMap[1], 'React');
@@ -55390,18 +54279,10 @@ __d(function (global, require, module, exports, _dependencyMap) {
       AppContainer,
       {
         rootTag: rootTag,
-        WrapperComponent: WrapperComponent,
-        __source: {
-          fileName: _jsxFileName,
-          lineNumber: 34
-        }
+        WrapperComponent: WrapperComponent
       },
       React.createElement(RootComponent, babelHelpers.extends({}, initialProps, {
-        rootTag: rootTag,
-        __source: {
-          fileName: _jsxFileName,
-          lineNumber: 35
-        }
+        rootTag: rootTag
       }))
     );
 
@@ -55425,12 +54306,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
 
       renderable = React.createElement(
         AppContainerAsyncWrapper,
-        {
-          __source: {
-            fileName: _jsxFileName,
-            lineNumber: 54
-          }
-        },
+        null,
         renderable
       );
     }
@@ -57765,7 +56641,6 @@ __d(function (global, require, module, exports, _dependencyMap) {
         value: true
     });
     exports.testDone = exports.registerTest = undefined;
-    var _jsxFileName = "/Users/bhariharan/Documents/Github_Projects/My_Forks/SalesforceMobileSDK-Android/libs/SalesforceReact/node_modules/react-native-force/src/react.force.test.js";
 
     var _react = require(_dependencyMap[0], "react");
 
@@ -57784,12 +56659,7 @@ __d(function (global, require, module, exports, _dependencyMap) {
                 test();
             },
             render: function render() {
-                return _react2.default.createElement(_reactNative.View, {
-                    __source: {
-                        fileName: _jsxFileName,
-                        lineNumber: 39
-                    }
-                });
+                return _react2.default.createElement(_reactNative.View, null);
             }
         });
     };
