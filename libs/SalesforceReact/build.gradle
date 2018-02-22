@@ -1,3 +1,5 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
 buildscript {
     repositories {
         jcenter()
@@ -68,7 +70,22 @@ android {
   }
 }
 
+task buildReactTestBundle(type:Exec) {
+  mkdir new File('../test/SalesforceReactTest/assets')
+  if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+    commandLine("cmd", "/c", "node", "node_modules/react-native/local-cli/cli.js", "bundle", "--platform", "android", "--dev", "true",
+        "--entry-file", "node_modules/react-native-force/test/alltests.js", "--bundle-output", "../test/SalesforceReactTest/assets/index.android.bundle")
+
+  } else {
+    commandLine("/usr/local/bin/node", "node_modules/react-native/local-cli/cli.js", "bundle", "--platform", "android", "--dev", "true",
+        "--entry-file", "node_modules/react-native-force/test/alltests.js", "--bundle-output", "../test/SalesforceReactTest/assets/index.android.bundle")
+  }
+}
+
 afterEvaluate {
+  // Generate react tests bundle first
+  processDebugAndroidTestJavaRes.dependsOn(buildReactTestBundle)
+
   // Find all connected Android tests and ensure they log all passed tests. This keeps the Travis
   // from timing out since executing tests are printed to the console.
   tasks.matching { it.name ==~ /^connected.*AndroidTest$/ }*.logging*.setLevel(LogLevel.INFO)
