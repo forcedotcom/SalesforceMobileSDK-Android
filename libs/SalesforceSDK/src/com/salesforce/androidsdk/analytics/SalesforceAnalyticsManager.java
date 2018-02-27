@@ -357,7 +357,7 @@ public class SalesforceAnalyticsManager {
 
     private SalesforceAnalyticsManager(UserAccount account, String communityId) {
         this.account = account;
-        final DeviceAppAttributes deviceAppAttributes = buildDeviceAppAttributes();
+        final DeviceAppAttributes deviceAppAttributes = getDeviceAppAttributes();
         final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
         analyticsManager = new AnalyticsManager(account.getCommunityLevelFilenameSuffix(),
                 sdkManager.getAppContext(),
@@ -377,7 +377,7 @@ public class SalesforceAnalyticsManager {
      *
      * @return Device app attributes.
      */
-    public static DeviceAppAttributes buildDeviceAppAttributes() {
+    public static DeviceAppAttributes getDeviceAppAttributes() {
         final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
         final Context context = sdkManager.getAppContext();
         String appVersion = "";
