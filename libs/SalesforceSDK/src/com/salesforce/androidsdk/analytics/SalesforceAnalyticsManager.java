@@ -372,6 +372,11 @@ public class SalesforceAnalyticsManager {
         enableLogging(enabled);
     }
 
+    /**
+     * Returns the device app attributes associated with this device.
+     *
+     * @return Device app attributes.
+     */
     public static DeviceAppAttributes buildDeviceAppAttributes() {
         final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
         final Context context = sdkManager.getAppContext();
