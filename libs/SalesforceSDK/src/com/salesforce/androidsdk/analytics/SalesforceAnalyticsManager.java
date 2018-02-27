@@ -374,7 +374,7 @@ public class SalesforceAnalyticsManager {
         enableLogging(enabled);
     }
 
-    private DeviceAppAttributes buildDeviceAppAttributes() {
+    public static DeviceAppAttributes buildDeviceAppAttributes() {
         final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
         final Context context = sdkManager.getAppContext();
         String appVersion = "";
