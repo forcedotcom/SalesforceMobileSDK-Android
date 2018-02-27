@@ -43,7 +43,7 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public abstract class ReactTestCase {
 
-    private static final long TEST_TIMEOUT_SECONDS = 30;
+    private static final long TEST_TIMEOUT_SECONDS = 10;
     public static final String TEST_NAME = "testName";
     public static final String FAKE_FAILURE = "FAKE_FAILURE";
 
@@ -85,6 +85,6 @@ public abstract class ReactTestCase {
     }
 
     protected long getTestTimeoutSeconds() {
-        return TEST_TIMEOUT_SECONDS;
+        return ("true".equals(System.getenv("CI")) ? 10 : 1) * TEST_TIMEOUT_SECONDS;
     }
 }
