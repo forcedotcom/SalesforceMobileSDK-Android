@@ -29,8 +29,6 @@ package com.salesforce.androidsdk.analytics;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
-import android.content.res.Resources;
 import android.os.Build;
 import android.text.TextUtils;
 
@@ -359,7 +357,7 @@ public class SalesforceAnalyticsManager {
 
     private SalesforceAnalyticsManager(UserAccount account, String communityId) {
         this.account = account;
-        final DeviceAppAttributes deviceAppAttributes = buildDeviceAppAttributes();
+        final DeviceAppAttributes deviceAppAttributes = getDeviceAppAttributes();
         final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
         analyticsManager = new AnalyticsManager(account.getCommunityLevelFilenameSuffix(),
                 sdkManager.getAppContext(),
@@ -374,7 +372,12 @@ public class SalesforceAnalyticsManager {
         enableLogging(enabled);
     }
 
-    private DeviceAppAttributes buildDeviceAppAttributes() {
+    /**
+     * Returns the device app attributes associated with this device.
+     *
+     * @return Device app attributes.
+     */
+    public static DeviceAppAttributes getDeviceAppAttributes() {
         final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
         final Context context = sdkManager.getAppContext();
         String appVersion = "";
@@ -383,12 +386,8 @@ public class SalesforceAnalyticsManager {
             final PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
             appVersion = packageInfo.versionName;
             appName = SalesforceSDKManager.getAiltnAppName();
-        } catch (PackageManager.NameNotFoundException e) {
+        } catch (Exception e) {
             SalesforceSDKLogger.w(TAG, "Could not read package info", e);
-        } catch (Resources.NotFoundException nfe) {
-
-            // A test harness such as Gradle does NOT have an application name.
-            SalesforceSDKLogger.w(TAG, "Could not read package info", nfe);
         }
         final String osVersion = Build.VERSION.RELEASE;
         final String osName = "android";
