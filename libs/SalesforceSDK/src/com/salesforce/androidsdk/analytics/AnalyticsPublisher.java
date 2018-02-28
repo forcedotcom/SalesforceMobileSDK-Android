@@ -41,5 +41,5 @@ public interface AnalyticsPublisher {
      * @param events Events to be published.
      * @return True - if successful, False - otherwise.
      */
-    public boolean publish(JSONArray events);
+    boolean publish(JSONArray events);
 }
