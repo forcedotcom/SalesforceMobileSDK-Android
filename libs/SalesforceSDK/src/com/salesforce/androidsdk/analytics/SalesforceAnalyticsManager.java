@@ -113,16 +113,16 @@ public class SalesforceAnalyticsManager {
         if (!TextUtils.isEmpty(communityId)) {
             uniqueId = uniqueId + communityId;
         }
-        SalesforceAnalyticsManager instance = null;
+        SalesforceAnalyticsManager instance;
         if (INSTANCES == null) {
-            INSTANCES = new HashMap<String, SalesforceAnalyticsManager>();
-            instance = new SalesforceAnalyticsManager(account, communityId);
+            INSTANCES = new HashMap<>();
+            instance = new SalesforceAnalyticsManager(account);
             INSTANCES.put(uniqueId, instance);
         } else {
             instance = INSTANCES.get(uniqueId);
         }
         if (instance == null) {
-            instance = new SalesforceAnalyticsManager(account, communityId);
+            instance = new SalesforceAnalyticsManager(account);
             INSTANCES.put(uniqueId, instance);
         }
 
@@ -355,7 +355,7 @@ public class SalesforceAnalyticsManager {
         remotes.put(transformer, publisher);
     }
 
-    private SalesforceAnalyticsManager(UserAccount account, String communityId) {
+    private SalesforceAnalyticsManager(UserAccount account) {
         this.account = account;
         final DeviceAppAttributes deviceAppAttributes = getDeviceAppAttributes();
         final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
@@ -364,7 +364,7 @@ public class SalesforceAnalyticsManager {
                 SalesforceSDKManager.getEncryptionKey(),
                 deviceAppAttributes);
         eventStoreManager = analyticsManager.getEventStoreManager();
-        remotes = new HashMap<Class<? extends Transform>, Class<? extends AnalyticsPublisher>>();
+        remotes = new HashMap<>();
         remotes.put(AILTNTransform.class, AILTNPublisher.class);
 
         // Reads the existing analytics policy and sets it upon initialization.
