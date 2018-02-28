@@ -335,7 +335,7 @@ public class SalesforceAnalyticsManager {
         if (event == null) {
             return;
         }
-        final List<InstrumentationEvent> events = new ArrayList<InstrumentationEvent>();
+        final List<InstrumentationEvent> events = new ArrayList<>();
         events.add(event);
         publishEvents(events);
     }
