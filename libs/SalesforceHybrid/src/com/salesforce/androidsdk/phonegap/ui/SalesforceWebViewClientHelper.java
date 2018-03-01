@@ -53,6 +53,9 @@ public class SalesforceWebViewClientHelper {
     private static final String SFDC_WEB_VIEW_CLIENT_SETTINGS = "sfdc_gapviewclient";
     private static final String APP_HOME_URL_PROP_KEY =  "app_home_url";
     private static final String VF_SESSION_PREFIX = "%2Fvisualforce%2Fsession%3Furl%3D";
+    private static final String EMPTY_STRING = "";
+    private static final String EC_PARAM = "ec";
+    private static final String START_URL_PARAM = "startURL";
     private static final List<String> RESERVED_URL_PATTERNS =
             Arrays.asList("/secur/frontdoor.jsp", "/secur/contentDoor");
 
@@ -127,7 +130,7 @@ public class SalesforceWebViewClientHelper {
     }
 
     private static boolean isReservedUrl(String url) {
-        if (url == null || url.trim().equals("")) {
+        if (url == null || url.trim().equals(EMPTY_STRING)) {
             return false;
         }
         for (String reservedUrlPattern : RESERVED_URL_PATTERNS) {
@@ -141,14 +144,14 @@ public class SalesforceWebViewClientHelper {
     private static String isLoginRedirect(String url) {
     	final Uri uri = Uri.parse(url);
         final Map<String, String> params = UriFragmentParser.parse(uri);
-    	final String ec = params.get("ec");
+    	final String ec = params.get(EC_PARAM);
     	int ecInt = (ec != null ? Integer.parseInt(ec) : -1);
-    	String startURL = params.get("startURL");
+    	String startURL = params.get(START_URL_PARAM);
         if ((ecInt == HttpURLConnection.HTTP_MOVED_PERM
     			|| ecInt == HttpURLConnection.HTTP_MOVED_TEMP)
     			&& startURL != null) {
             if (startURL.contains(VF_SESSION_PREFIX)) {
-                startURL = startURL.replace(VF_SESSION_PREFIX, "");
+                startURL = startURL.replace(VF_SESSION_PREFIX, EMPTY_STRING);
             }
     		return startURL;
     	} else {
