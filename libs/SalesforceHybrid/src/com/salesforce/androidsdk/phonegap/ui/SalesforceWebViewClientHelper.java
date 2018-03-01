@@ -52,7 +52,7 @@ public class SalesforceWebViewClientHelper {
 	private static String TAG = "SalesforceWebViewClientHelper";
     private static final String SFDC_WEB_VIEW_CLIENT_SETTINGS = "sfdc_gapviewclient";
     private static final String APP_HOME_URL_PROP_KEY =  "app_home_url";
-    private static final String VF_SESSION_PREFIX = "%2Fvisualforce%2Fsession%3Furl%3D";
+    private static final String VF_SESSION_PREFIX = "/visualforce/session?url=";
     private static final String EMPTY_STRING = "";
     private static final String EC_PARAM = "ec";
     private static final String START_URL_PARAM = "startURL";
