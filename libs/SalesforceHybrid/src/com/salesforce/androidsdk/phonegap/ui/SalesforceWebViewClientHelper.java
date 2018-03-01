@@ -46,25 +46,26 @@ import java.util.Map;
 
 /**
  * Helper class for SalesforceWebViewClient.
- *
  */
 public class SalesforceWebViewClientHelper {
 
-	public static String TAG = "SalesforceWebViewClientHelper";
-    public static final String SFDC_WEB_VIEW_CLIENT_SETTINGS = "sfdc_gapviewclient";
-    public static final String APP_HOME_URL_PROP_KEY =  "app_home_url";
-
-    // Full and partial URLs to exclude from consideration when determining the home page URL.
+	private static String TAG = "SalesforceWebViewClientHelper";
+    private static final String SFDC_WEB_VIEW_CLIENT_SETTINGS = "sfdc_gapviewclient";
+    private static final String APP_HOME_URL_PROP_KEY =  "app_home_url";
+    private static final String VF_SESSION_PREFIX = "/visualforce/session?url=";
+    private static final String EMPTY_STRING = "";
+    private static final String EC_PARAM = "ec";
+    private static final String START_URL_PARAM = "startURL";
     private static final List<String> RESERVED_URL_PATTERNS =
             Arrays.asList("/secur/frontdoor.jsp", "/secur/contentDoor");
 
     /**
      * To be called from shouldOverrideUrlLoading.
      *
-     * @param ctx
-     * @param view
-     * @param url
-     * @return
+     * @param ctx Context.
+     * @param view The WebView initiating the callback.
+     * @param url The URL of the page.
+     * @return True - if loading should be overridden, False - otherwise.
      */
     public static boolean shouldOverrideUrlLoading(Context ctx,
     		WebView view, String url) {
@@ -79,15 +80,19 @@ public class SalesforceWebViewClientHelper {
 
     /**
      * To be called from onPageFinished.
-     * Return true if we have arrived on the actual home page and false otherwise.
      *
-     * @param ctx			Context.
-     * @param view          The webview initiating the callback.
-     * @param url           The url of the page.
+     * @param ctx Context.
+     * @param view The WebView initiating the callback.
+     * @param url The URL of the page.
+     * @return True - if we have arrived on the actual home page, False - otherwise.
      */
     public static boolean onHomePage(Context ctx, WebView view, String url) {
-        // The first URL that's loaded that's not one of the URLs used in the bootstrap process will
-        // be considered the "app home URL", which can be loaded directly in the event that the app is offline.
+
+        /*
+         * The first URL that's loaded that's not one of the URLs used in the bootstrap
+         * process will be considered the "app home URL", which can be loaded directly
+         * in the event that the app is offline.
+         */
         if (!isReservedUrl(url)) {
             SalesforceHybridLogger.i(TAG, "Setting '" + url + "' as the home page URL for this app");
             SharedPreferences sp = ctx.getSharedPreferences(SFDC_WEB_VIEW_CLIENT_SETTINGS, Context.MODE_PRIVATE);
@@ -102,7 +107,10 @@ public class SalesforceWebViewClientHelper {
     }
 
     /**
-     * @return app's home page
+     * Returns the app's home page.
+     *
+     * @param ctx Context.
+     * @return App's home page.
      */
     public static String getAppHomeUrl(Context ctx) {
         SharedPreferences sp = ctx.getSharedPreferences(SalesforceWebViewClientHelper.SFDC_WEB_VIEW_CLIENT_SETTINGS, Context.MODE_PRIVATE);
@@ -111,44 +119,40 @@ public class SalesforceWebViewClientHelper {
     }
 
     /**
-     * @param ctx
-     * @return true if there is a cached version of the app's home page
+     * Returns if the app has a cached app home.
+     *
+     * @param ctx Context.
+     * @return True - if there is a cached version of the app's home page, False - otherwise.
      */
     public static boolean hasCachedAppHome(Context ctx) {
     	String cachedAppHomeUrl = getAppHomeUrl(ctx);
     	return cachedAppHomeUrl != null && (new File(cachedAppHomeUrl)).exists();
     }
 
-    /**
-     * Whether the given URL is one of the expected URLs used in the bootstrapping process
-     * of the app.  Used for determining the app's "home page" URL.
-     * @param url The URL to compare against the reserved list.
-     * @return True if this URL is used in the bootstrapping process, false otherwise.
-     */
     private static boolean isReservedUrl(String url) {
-        if (url == null || url.trim().equals(""))
+        if (url == null || url.trim().equals(EMPTY_STRING)) {
             return false;
+        }
         for (String reservedUrlPattern : RESERVED_URL_PATTERNS) {
-            if (url.toLowerCase(Locale.US).contains(reservedUrlPattern.toLowerCase(Locale.US)))
+            if (url.toLowerCase(Locale.US).contains(reservedUrlPattern.toLowerCase(Locale.US))) {
                 return true;
+            }
         }
         return false;
     }
 
-    /**
-     * Login redirect are of the form https://host/?ec=30x&startURL=xyz
-     * @param url
-     * @return null if this is not a login redirect and return the the value for startURL if this is a login redirect
-     */
     private static String isLoginRedirect(String url) {
     	final Uri uri = Uri.parse(url);
         final Map<String, String> params = UriFragmentParser.parse(uri);
-    	final String ec = params.get("ec");
+    	final String ec = params.get(EC_PARAM);
     	int ecInt = (ec != null ? Integer.parseInt(ec) : -1);
-    	final String startURL = params.get("startURL");
+    	String startURL = params.get(START_URL_PARAM);
         if ((ecInt == HttpURLConnection.HTTP_MOVED_PERM
     			|| ecInt == HttpURLConnection.HTTP_MOVED_TEMP)
     			&& startURL != null) {
+            if (startURL.contains(VF_SESSION_PREFIX)) {
+                startURL = startURL.replace(VF_SESSION_PREFIX, EMPTY_STRING);
+            }
     		return startURL;
     	} else {
     		return null;
