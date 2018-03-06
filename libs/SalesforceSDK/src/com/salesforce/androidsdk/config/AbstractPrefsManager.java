@@ -87,9 +87,11 @@ public abstract class AbstractPrefsManager {
     private SharedPreferences getSharedPreferences(UserAccount account) {
         String sharedPrefPath = getFilenameRoot();
         if (account != null) {
-            sharedPrefPath = getFilenameRoot() + (isOrgLevel() ? account.getOrgLevelFilenameSuffix() : account.getUserLevelFilenameSuffix());
+            sharedPrefPath = getFilenameRoot() + (isOrgLevel() ?
+                    account.getOrgLevelFilenameSuffix() : account.getUserLevelFilenameSuffix());
         }
-        return SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(sharedPrefPath, Context.MODE_PRIVATE);
+        return SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(sharedPrefPath,
+                Context.MODE_PRIVATE);
     }
 
     /**
@@ -140,6 +142,7 @@ public abstract class AbstractPrefsManager {
         final String sharedPrefPath = SalesforceSDKManager.getInstance().getAppContext().getApplicationInfo().dataDir + "/shared_prefs";
         final File dir = new File(sharedPrefPath);
         final FilenameFilter fileFilter = new FilenameFilter() {
+
             @Override
             public boolean accept(File dir, String filename) {
                 return filename != null && filename.startsWith(getFilenameRoot());
@@ -147,6 +150,20 @@ public abstract class AbstractPrefsManager {
         };
         for (final File file : dir.listFiles()) {
             if (file != null && fileFilter.accept(dir, file.getName())) {
+
+                // Removes extension of filename before feeding it to SharedPreferences.
+                String filename = file.getName();
+                filename = filename.substring(0, filename.lastIndexOf('.'));
+
+                /*
+                 * Removes the SharedPreferences object explicitly before removing the
+                 * underlying file. The OS caches the contents of SharedPreferences files
+                 * in memory for fast retrieval. If we don't explicitly remove it here,
+                 * the next write to the same file will result in stale data being re-added.
+                 */
+                final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(filename,
+                        Context.MODE_PRIVATE);
+                sp.edit().clear().commit();
                 file.delete();
             }
         }
