@@ -158,9 +158,10 @@ public class SalesforceKeyGenerator {
      */
     public static synchronized PublicKey getRSAPublicKey(String name, int length) {
         PublicKey publicKey = null;
-        createRSAKeysIfNecessary(name, length);
+        String wrappedName = getNonAlphanumericString(name);
+        createRSAKeysIfNecessary(wrappedName, length);
         try {
-            publicKey = loadKeyStore().getCertificate(name).getPublicKey();
+            publicKey = loadKeyStore().getCertificate(wrappedName).getPublicKey();
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Security exception thrown", e);
         }
@@ -191,9 +192,10 @@ public class SalesforceKeyGenerator {
      */
     public static synchronized PrivateKey getRSAPrivateKey(String name, int length) {
         PrivateKey privateKey = null;
-        createRSAKeysIfNecessary(name, length);
+        String wrappedName = getNonAlphanumericString(name);
+        createRSAKeysIfNecessary(wrappedName, length);
         try {
-            KeyStore.Entry entry = loadKeyStore().getEntry(name, null);
+            KeyStore.Entry entry = loadKeyStore().getEntry(wrappedName, null);
             if (entry == null) {
                 return null;
             }
@@ -277,7 +279,6 @@ public class SalesforceKeyGenerator {
                             .build());
                     kpg.generateKeyPair();
                 } else {
-
                     /*
                      * TODO: Remove the 'else' block once minVersion > 23.
                      */
@@ -307,5 +308,9 @@ public class SalesforceKeyGenerator {
         KeyStore keyStore = KeyStore.getInstance(ANDROID_KEYSTORE);
         keyStore.load(null);
         return keyStore;
+    }
+
+    private static String getNonAlphanumericString(String s) {
+        return s.replaceAll("[^A-Za-z0-9]", "");
     }
 }
