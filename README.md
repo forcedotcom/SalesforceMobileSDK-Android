@@ -23,43 +23,21 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 6.0
-
-**OS Version Support**
-- Android Oreo (API 27) is fully supported in Mobile SDK 6.0.
-- The minimum Android OS version we support has been bumped up from KitKat (API 19) to Lollipop (API 21).
-
-**IDE Support**
-- Android Studio 3.0 and Gradle 4.1 are fully supported in Mobile SDK 6.0.
+### What's New in 6.1
 
 **Library Upgrades**
-- We've updated React Native to version 0.50.4.
-- We've updated Cordova to version 7.0.0.
+- We've updated React Native to version 0.53.3.
 
 **Login Enhancements**
-- In version 6.0, Mobile SDK enhances its authentication handling by adding identity provider services.
-- Identity providers help known users avoid reentering their Salesforce credentials every time they log in to a Mobile SDK app.
-- A Mobile SDK app can be used to provide authentication services to other Mobile SDK apps.
-- We have created a template that can be used with `forcedroid` that demonstrates this functionality. This template can be found [here](https://github.com/forcedotcom/SalesforceMobileSDK-AuthTemplates).
-- Mobile SDK 6.0 allows developers to use Chrome custom tabs for authentication instead of the system WebView.
-
-**SmartStore Enhancements**
-- Mobile SDK 6.0 introduces the ability to define your SmartStore schemas through configuration files rather than code.
-- To define soups for the default global store, provide a file named `globalstore.json`.
-- To define soups for the default user store, provide a file named `userstore.json`.
+- Mobile SDK 6.1 introduces the ability to configure your app remotely through MDM or MyDomain. With these options, your customers can now use Chrome custom tabs for authentication instead of the system WebView.
+- Starting with Mobile SDK 6.1, fingerprint authentication can be used instead of the app passcode on devices that support this feature.
 
 **SmartSync Data Framework Enhancements**
-- Beginning in Mobile SDK 6.0, you can define sync configuration files and assign names to sync configurations.
-- You can use sync names to run, edit, or delete a saved sync operation.
-- You can define “sync down” and “sync up” operations through configuration files rather than code.
-- To define sync operations for the default global store, provide a file named `globalsyncs.json`.
-- To define sync operations for the default user store, provide a file named `usersyncs.json`.
+- We have addressed an issue in Mobile SDK 6.1 where `cleanResyncGhosts` was operating incorrectly.
 
-**Mobile SDK Developer Tools**
-- The Developer Support dialog box is the launchpad for all available support screens and other useful actions.
-- The dialog box presents only the options that are pertinent to the type of app you’re running.
-- During debugging on a desktop, you can access the home screen through a keyboard shortcut or gesture (`⌘m` keyboard shortcut or `adb shell input keyevent 82`).
-- By default, these tools are available only in debug builds. However, you can use an API call to enable or disable the Developer Support screen at other times.
+**Test Framework Enhancements**
+- We have added an entire suite of tests for `SalesforceReact` in Mobile SDK 6.1.
+- Our unit tests now use `Android Test Library` and `Espresso`, based on Google's recommendations.
 
 **Other Technical Improvements**
 - Improvements to sample apps.
