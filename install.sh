@@ -6,5 +6,10 @@ git submodule init
 git submodule sync
 git submodule update
 
-# for react-native
-npm install react-native@0.50.4 react@16.0.0 --silent
+
+# get react native
+pushd "libs/SalesforceReact"
+rm -rf node_modules
+npm install
+./node_modules/.bin/react-native bundle --platform android --dev true --entry-file node_modules/react-native-force/test/alltests.js --bundle-output ../test/SalesforceReactTest/assets/index.android.bundle --assets-dest ../test/SalesforceReactTest/assets/
+popd

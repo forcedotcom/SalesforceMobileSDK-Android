@@ -39,7 +39,7 @@ public class SmartSyncExplorerApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SmartSyncSDKManager.initNative(getApplicationContext(), null, MainActivity.class);
+		SmartSyncSDKManager.initNative(getApplicationContext(), MainActivity.class);
 
 		/*
          * Uncomment the following line to enable IDP login flow. This will allow the user to

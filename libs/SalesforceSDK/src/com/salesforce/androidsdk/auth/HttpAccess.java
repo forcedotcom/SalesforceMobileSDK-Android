@@ -53,7 +53,6 @@ public class HttpAccess {
 
     // User agent header name.
 	private static final String USER_AGENT = "User-Agent";
-    private static final String TAG = "HttpAccess";
 
     private String userAgent;
     private OkHttpClient okHttpClient;

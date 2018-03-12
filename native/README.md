@@ -17,13 +17,11 @@ For the rest of this document, we assume that you have setup three shell variabl
 
 Inside the $NATIVE_DIR, you will find several projects:
 
-1. **TemplateApp**: Template used when creating new native application using SalesforceSDK
-2. **test/TemplateAppTest**: Test project for the TemplateApp project
-3. **SampleApps/RestExplorer**: An app using SalesforceSDK to explore the REST API calls
-4. **SampleApps/test/RestExplorerTest**: Test project for the RestExplorer project
-5. **SampleApps/SmartSyncExplorer**: An app using SmartSync data framework to demonstrate synching a list of contacts from and to the server
-6. **SampleApps/AppConfigurator**: An app to specify runtime configurations for ConfiguredApp (it allows configuration of login server and oauth consumer key and redirect uri) 
-7. **SampleApps/ConfiguredApp**: An app that consumes the runtime configurations specified with AppConfigurator
+1. **NativeSampleApps/RestExplorer**: An app using SalesforceSDK to explore the REST API calls
+2. **NativeSampleApps/test/RestExplorerTest**: Test project for the RestExplorer project
+3. **NativeSampleApps/SmartSyncExplorer**: An app using SmartSync data framework to demonstrate synching a list of contacts from and to the server
+4. **NativeSampleApps/AppConfigurator**: An app to specify runtime configurations for ConfiguredApp (it allows configuration of login server and oauth consumer key and redirect uri) 
+5. **NativeSampleApps/ConfiguredApp**: An app that consumes the runtime configurations specified with AppConfigurator
 
 # Running sample apps from Android Studio
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-present, salesforce.com, inc.
+ * Copyright (c) 2018-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,31 +24,52 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.rest.files;
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.rest.ApiVersionStrings;
-import com.salesforce.androidsdk.rest.RestRequest;
-import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
+package com.salesforce.androidsdk.reactnative;
 
-import junit.framework.TestCase;
 
-public class ApiRequestsBaseTest extends TestCase {
+import android.support.test.filters.SmallTest;
 
-    protected String connectPath;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        connectPath = "/services/data/" + ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()) + "/chatter/";
+import java.util.Arrays;
+import java.util.List;
+
+
+/**
+ * Running javascript tests for Net react module.
+ */
+
+@RunWith(Parameterized.class)
+@SmallTest
+public class ReactNetTest extends ReactTestCase {
+
+    @Parameterized.Parameter
+    public String testName;
+
+    @Parameterized.Parameters(name = "{0}")
+    public static List<String> data() {
+        return Arrays.asList(new String[]{
+                "testGetApiVersion",
+                "testVersions",
+                "testResources",
+                "testDescribeGlobal",
+                "testMetaData",
+                "testDescribe",
+                "testDescribeLayout",
+                "testCreateRetrieve",
+                "testUpsertUpdateRetrieve",
+                "testCreateDelRetrieve",
+                "testQuery",
+                "testSearch"
+        });
     }
 
-    protected void doAdditionalVerifications(RestRequest req) {
-        doAdditionalVerifications(RestMethod.GET, req);
-    }
-
-    protected void doAdditionalVerifications(RestMethod method, RestRequest req) {
-        assertEquals(method, req.getMethod());
-        assertEquals("false", req.getAdditionalHttpHeaders().get("X-Chatter-Entity-Encoding"));
+    @Test
+    public void test() throws Exception {
+        runReactNativeTest(testName);
     }
 }
+

@@ -43,5 +43,5 @@ public interface Transform {
      * @param event Event to be transformed.
      * @return JSON representation after transformation.
      */
-    public JSONObject transform(InstrumentationEvent event);
+    JSONObject transform(InstrumentationEvent event);
 }

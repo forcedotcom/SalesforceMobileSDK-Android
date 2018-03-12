@@ -44,6 +44,8 @@ import com.salesforce.androidsdk.smartsync.util.SyncUpdateCallbackQueue;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
+import junit.framework.Assert;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -57,9 +59,10 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 
 /**
- * Abstract super class for all SyncManager test classes
+ * Abstract super class for all SyncManager test classes.
  */
 abstract public class SyncManagerTestCase extends ManagerTestCase {
 
@@ -90,7 +93,8 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
                 new IndexSpec(Constants.ID, SmartStore.Type.string),
                 new IndexSpec(Constants.NAME, SmartStore.Type.string),
                 new IndexSpec(Constants.DESCRIPTION, SmartStore.Type.string),
-                new IndexSpec(SyncTarget.LOCAL, SmartStore.Type.string)
+                new IndexSpec(SyncTarget.LOCAL, SmartStore.Type.string),
+                new IndexSpec(SyncTarget.SYNC_ID, SmartStore.Type.integer)
         };
         smartStore.registerSoup(soupName, indexSpecs);
     }
@@ -113,7 +117,6 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         smartStore.clearSoup(SyncState.SYNCS_SOUP);
     }
 
-
     /**
      * Delete all syncs in syncs_soup
      */
@@ -124,7 +127,6 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
     /**
      * @return local id of the form local_number where number is different every time and increasing
      */
-    @SuppressWarnings("resource")
     protected String createLocalId() {
         StringBuilder sb = new StringBuilder();
         Formatter formatter = new Formatter(sb, Locale.US);
@@ -144,7 +146,6 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         JSONObject[] createdAccounts = new JSONObject[names.length];
         JSONObject attributes = new JSONObject();
         attributes.put(TYPE, Constants.ACCOUNT);
-
         for (int i = 0; i < names.length; i++) {
             String name = names[i];
             JSONObject account = new JSONObject();
@@ -158,12 +159,28 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
             account.put(SyncTarget.LOCALLY_UPDATED, false);
             createdAccounts[i] = smartStore.create(ACCOUNTS_SOUP, account);
         }
-
         return createdAccounts;
     }
 
+    protected boolean tryCleanResyncGhosts(long syncId) throws JSONException, InterruptedException {
+        final ArrayBlockingQueue<Boolean> queue = new ArrayBlockingQueue<Boolean>(1);
+
+        syncManager.cleanResyncGhosts(syncId, new SyncManager.CleanResyncGhostsCallback() {
+            @Override
+            public void onSuccess(int numRecords) {
+                queue.offer(true);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                queue.offer(false);
+            }
+        });
+
+        return queue.take();
+    }
+
     /**
-     /**
      * Sync down helper.
      *
      * @param mergeMode
@@ -224,7 +241,7 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
     protected void checkDbDeleted(String soupName, String[] ids, String idField) throws JSONException {
         QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":_soup} FROM {" + soupName + "} WHERE {" + soupName + ":" + idField + "} IN " + makeInClause(ids), ids.length);
         JSONArray records = smartStore.query(smartStoreQuery, 0);
-        assertEquals("No records should have been returned from smartstore", 0, records.length());
+        Assert.assertEquals("No records should have been returned from smartstore", 0, records.length());
     }
 
     /**
@@ -238,9 +255,8 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
     protected void checkDbExist(String soupName, String[] ids, String idField) throws JSONException {
         QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":_soup} FROM {" + soupName + "} WHERE {" + soupName + ":" + idField + "} IN " + makeInClause(ids), ids.length);
         JSONArray records = smartStore.query(smartStoreQuery, 0);
-        assertEquals("All records should have been returned from smartstore", ids.length, records.length());
+        Assert.assertEquals("All records should have been returned from smartstore", ids.length, records.length());
     }
-
 
     /**
      * Check relationships field of children
@@ -253,10 +269,10 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
     protected void checkDbRelationships(Collection<String> childrenIds, String expectedParentId, String soupName, String idFieldName, String parentIdFieldName) throws JSONException {
         QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":_soup} FROM {" + soupName + "} WHERE {" + soupName + ":" + idFieldName + "} IN " + makeInClause(childrenIds), childrenIds.size());
         JSONArray rows = smartStore.query(smartStoreQuery, 0);
-        assertEquals("All records should have been returned from smartstore", childrenIds.size(), rows.length());
-        for (int i=0; i<rows.length(); i++) {
+        Assert.assertEquals("All records should have been returned from smartstore", childrenIds.size(), rows.length());
+        for (int i = 0; i < rows.length(); i++) {
             JSONObject childRecord = rows.getJSONArray(i).getJSONObject(0);
-            assertEquals("Wrong parent id", expectedParentId, childRecord.getString(parentIdFieldName));
+            Assert.assertEquals("Wrong parent id", expectedParentId, childRecord.getString(parentIdFieldName));
         }
     }
 
@@ -285,20 +301,20 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
      * @throws JSONException
      */
     protected void checkStatus(SyncState sync, SyncState.Type expectedType, long expectedId, SyncTarget expectedTarget, SyncOptions expectedOptions, SyncState.Status expectedStatus, int expectedProgress, int expectedTotalSize) throws JSONException {
-        assertEquals("Wrong type", expectedType, sync.getType());
-        assertEquals("Wrong id", expectedId, sync.getId());
+        Assert.assertEquals("Wrong type", expectedType, sync.getType());
+        Assert.assertEquals("Wrong id", expectedId, sync.getId());
         JSONTestHelper.assertSameJSON("Wrong target", (expectedTarget == null ? null : expectedTarget.asJSON()), (sync.getTarget() == null ? null : sync.getTarget().asJSON()));
         JSONTestHelper.assertSameJSON("Wrong options", (expectedOptions == null ? null : expectedOptions.asJSON()), (sync.getOptions() == null ? null : sync.getOptions().asJSON()));
-        assertEquals("Wrong status", expectedStatus, sync.getStatus());
-        assertEquals("Wrong progress", expectedProgress, sync.getProgress());
+        Assert.assertEquals("Wrong status", expectedStatus, sync.getStatus());
+        Assert.assertEquals("Wrong progress", expectedProgress, sync.getProgress());
         if (expectedTotalSize != TOTAL_SIZE_UNKNOWN) {
-            assertEquals("Wrong total size", expectedTotalSize, sync.getTotalSize());
+            Assert.assertEquals("Wrong total size", expectedTotalSize, sync.getTotalSize());
         }
         if (sync.getStatus() != SyncState.Status.NEW) {
-            assertTrue("Wrong start time", sync.getStartTime() > 0);
+            Assert.assertTrue("Wrong start time", sync.getStartTime() > 0);
         }
         if (sync.getStatus() == SyncState.Status.DONE || sync.getStatus() == SyncState.Status.FAILED) {
-            assertTrue("Wrong end time", sync.getEndTime() > 0);
+            Assert.assertTrue("Wrong end time", sync.getEndTime() > 0);
         }
     }
 
@@ -322,7 +338,7 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
             String recordId = recordFromDb.getString("Id");
             Map<String, Object> expectedFields = expectedIdToFields.get(recordId);
             for (String fieldName : expectedFields.keySet()) {
-                assertEquals(String.format("Wrong data in db for field %s on record %s", fieldName, recordId),
+                Assert.assertEquals(String.format("Wrong data in db for field %s on record %s", fieldName, recordId),
                         expectedFields.get(fieldName).toString(), recordFromDb.get(fieldName).toString());
             }
         }
@@ -366,7 +382,6 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
      */
     protected Map<String, Map<String, Object>> prepareSomeChanges(Map<String, Map<String, Object>> idToFields, String[] idsToUpdate, String suffix) {
         Map<String, Map<String, Object>> idToFieldsUpdated = new HashMap<>();
-
         for (String idToUpdate : idsToUpdate) {
             idToFieldsUpdated.put(idToUpdate, updatedFields(idToFields.get(idToUpdate), suffix));
         }
@@ -381,7 +396,6 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
      */
     protected Map<String, Object> updatedFields(Map<String, Object> fields, String suffix) {
         Set<String> fieldNamesUpdatable = new HashSet<>(Arrays.asList(new String[] {Constants.NAME, Constants.DESCRIPTION, Constants.LAST_NAME}));
-
         Map<String, Object> updatedFields = new HashMap<>();
         for (String fieldName : fields.keySet()) {
             if (fieldNamesUpdatable.contains(fieldName)) {
@@ -455,12 +469,29 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
             JSONArray row = accountsFromDb.getJSONArray(i);
             JSONObject soupElt = row.getJSONObject(0);
             String id = soupElt.getString(Constants.ID);
+            Assert.assertEquals("Wrong local flag", expectLocallyCreated || expectLocallyUpdated || expectLocallyDeleted, soupElt.getBoolean(SyncTarget.LOCAL));
+            Assert.assertEquals("Wrong local flag", expectLocallyCreated, soupElt.getBoolean(SyncTarget.LOCALLY_CREATED));
+            Assert.assertEquals("Id was not updated", expectLocallyCreated, id.startsWith(LOCAL_ID_PREFIX));
+            Assert.assertEquals("Wrong local flag", expectLocallyUpdated, soupElt.getBoolean(SyncTarget.LOCALLY_UPDATED));
+            Assert.assertEquals("Wrong local flag", expectLocallyDeleted, soupElt.getBoolean(SyncTarget.LOCALLY_DELETED));
+        }
+    }
 
-            assertEquals("Wrong local flag", expectLocallyCreated || expectLocallyUpdated || expectLocallyDeleted, soupElt.getBoolean(SyncTarget.LOCAL));
-            assertEquals("Wrong local flag", expectLocallyCreated, soupElt.getBoolean(SyncTarget.LOCALLY_CREATED));
-            assertEquals("Id was not updated", expectLocallyCreated, id.startsWith(LOCAL_ID_PREFIX));
-            assertEquals("Wrong local flag", expectLocallyUpdated, soupElt.getBoolean(SyncTarget.LOCALLY_UPDATED));
-            assertEquals("Wrong local flag", expectLocallyDeleted, soupElt.getBoolean(SyncTarget.LOCALLY_DELETED));
+    /**
+     * Check records syncId field in db
+     * @param ids
+     * @param syncId value expected in __sync_id__ field
+     * @param soupName
+     * @throws JSONException
+     */
+    protected void checkDbSyncIdField(String[] ids, long syncId, String soupName) throws JSONException {
+        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec(String.format("SELECT {%s:_soup} FROM {%s} WHERE {%s:Id} IN %s", soupName, soupName, soupName, makeInClause(ids)), ids.length);
+        JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
+        for (int i=0; i<accountsFromDb.length(); i++) {
+            JSONArray row = accountsFromDb.getJSONArray(i);
+            JSONObject soupElt = row.getJSONObject(0);
+            String id = soupElt.getString(Constants.ID);
+            Assert.assertEquals("Wrong sync id", syncId, soupElt.getInt(SyncTarget.SYNC_ID));
         }
     }
 
@@ -477,12 +508,12 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         RestRequest request = RestRequest.getRequestForQuery(ApiVersionStrings.getVersionNumber(targetContext), soql);
         RestResponse response = restClient.sendSync(request);
         JSONArray records = response.asJSONObject().getJSONArray(RECORDS);
-        assertEquals("Wrong number of records", idToFields.size(), records.length());
+        Assert.assertEquals("Wrong number of records", idToFields.size(), records.length());
         for (int i=0; i<records.length(); i++) {
             JSONObject row = records.getJSONObject(i);
             Map<String, Object> expectedFields = idToFields.get(row.get(Constants.ID));
             for (String fieldName : fieldNames) {
-                assertEquals("Wrong value for field: " + fieldName, expectedFields.get(fieldName), JSONObjectHelper.opt(row, fieldName));
+                Assert.assertEquals("Wrong value for field: " + fieldName, expectedFields.get(fieldName), JSONObjectHelper.opt(row, fieldName));
             }
         }
     }
@@ -498,7 +529,7 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         RestRequest request = RestRequest.getRequestForQuery(ApiVersionStrings.getVersionNumber(targetContext), soql);
         RestResponse response = restClient.sendSync(request);
         JSONArray records = response.asJSONObject().getJSONArray(RECORDS);
-        assertEquals("No accounts should have been returned from server", 0, records.length());
+        Assert.assertEquals("No accounts should have been returned from server", 0, records.length());
     }
 
     /**
@@ -546,11 +577,9 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
 		// Check status updates
 		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.RUNNING, 0, numberChanges);
-
         if (expectSyncFailure) {
             checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.FAILED, 0, numberChanges);
-        }
-        else {
+        } else {
             for (int i = 1; i < numberChanges; i++) {
                 checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.RUNNING, i * 100 / numberChanges, numberChanges);
             }

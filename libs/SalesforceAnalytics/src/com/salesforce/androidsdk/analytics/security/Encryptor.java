@@ -39,6 +39,8 @@ import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.SecureRandom;
 
 import javax.crypto.Cipher;
@@ -53,6 +55,7 @@ public class Encryptor {
 
     private static final String TAG = "Encryptor";
     private static final String UTF8 = "UTF-8";
+    private static final String US_ASCII = "US-ASCII";
     private static final String PREFER_CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding";
     private static final String MAC_TRANSFORMATION = "HmacSHA256";
     private static String bestCipherAvailable;
@@ -89,13 +92,7 @@ public class Encryptor {
         return true;
     }
 
-    /**
-     * Returns the best cipher available.
-     *
-     * @return Best cipher available.
-     * @throws GeneralSecurityException
-     */
-    public static Cipher getBestCipher() throws GeneralSecurityException {
+    private static Cipher getBestCipher() throws GeneralSecurityException {
         Cipher cipher = null;
         if (bestCipherAvailable != null) {
             return Cipher.getInstance(bestCipherAvailable, "BC");
@@ -124,20 +121,51 @@ public class Encryptor {
     }
 
     /**
-     * Decrypts data with key using AES-256.
+     * Decrypts data with key using AES-128.
      *
      * @param data Data.
-     * @param key Base64 encoded 256 bit key or null (to leave data unchanged).
+     * @param key Base64 encoded 128 bit key or null (to leave data unchanged).
      * @return Decrypted data.
      */
     public static String decrypt(String data, String key) {
+        return decrypt(data, key, new byte[16]);
+    }
+
+    /**
+     * Decrypts data with key using AES-128.
+     *
+     * @param data Data.
+     * @param key Base64 encoded 128 bit key or null (to leave data unchanged).
+     * @param iv Initialization vector.
+     * @return Decrypted data.
+     */
+    public static String decrypt(String data, String key, byte[] iv) {
         if (TextUtils.isEmpty(key) || data == null) {
             return data;
         }
-        return decrypt(data.getBytes(), key);
+        return decrypt(data.getBytes(), key, iv);
     }
 
+    /**
+     * Decrypts data with key using AES-128.
+     *
+     * @param data Data.
+     * @param key Key.
+     * @return Decrypted data.
+     */
     public static String decrypt(byte[] data, String key) {
+        return decrypt(data, key, new byte[16]);
+    }
+
+    /**
+     * Decrypts data with key using AES-128.
+     *
+     * @param data Data.
+     * @param key Key.
+     * @param iv Initialization vector.
+     * @return Decrypted data.
+     */
+    public static String decrypt(byte[] data, String key, byte[] iv) {
         if (TextUtils.isEmpty(key)) {
             if (data != null) {
                 return new String(data, Charset.forName(UTF8));
@@ -146,12 +174,13 @@ public class Encryptor {
             }
         }
         try {
+
             // Decodes with Base64.
             byte[] keyBytes = Base64.decode(key, Base64.DEFAULT);
             byte[] dataBytes = Base64.decode(data, Base64.DEFAULT);
 
-            // Decrypts with AES-256.
-            byte[] decryptedData = decrypt(dataBytes, 0, dataBytes.length, keyBytes);
+            // Decrypts with AES-128.
+            byte[] decryptedData = decrypt(dataBytes, 0, dataBytes.length, keyBytes, iv);
             return new String(decryptedData, 0, decryptedData.length, UTF8);
         } catch (Exception ex) {
             SalesforceAnalyticsLogger.w(null, TAG, "Error during decryption", ex);
@@ -160,23 +189,41 @@ public class Encryptor {
     }
 
     /**
-     * Encrypts data with key using AES-256.
+     * Encrypts data with key using AES-128.
      *
      * @param data Data.
-     * @param key Base64 encoded 256 bit key or null (to leave data unchanged).
-     * @return Base64, AES-256 encrypted data.
+     * @param key Base64 encoded 128 bit key or null (to leave data unchanged).
+     * @return Base64, AES-128 encrypted data.
      */
     public static String encrypt(String data, String key) {
+        try {
+            return encrypt(data, key, generateInitVector());
+        } catch (Exception ex) {
+            SalesforceAnalyticsLogger.w(null, TAG, "Error during encryption", ex);
+        }
+        return null;
+    }
+
+    /**
+     * Encrypts data with key using AES-128.
+     *
+     * @param data Data.
+     * @param key Base64 encoded 128 bit key or null (to leave data unchanged).
+     * @param iv Initialization vector.
+     * @return Base64, AES-128 encrypted data.
+     */
+    public static String encrypt(String data, String key, byte[] iv) {
         if (TextUtils.isEmpty(key) || data == null) {
             return data;
         }
-        byte[] bytes = encryptBytes(data, key);
+        byte[] bytes = encryptBytes(data, key, iv);
         if (bytes == null) {
             return null;
         }
         try {
-            // do as Base64.encodeToString does... return US-ASCII string with the already Base64 encoded bytes.
-            return new String(bytes, "US-ASCII");
+
+            // Do as Base64.encodeToString does, return US-ASCII string with the already Base64 encoded bytes.
+            return new String(bytes, US_ASCII);
         } catch (UnsupportedEncodingException e) {
             SalesforceAnalyticsLogger.w(null, TAG, "Error during encryption", e);
         }
@@ -184,12 +231,30 @@ public class Encryptor {
     }
 
     /**
-     * Encrypts data with key using AES-256. Returns Base64 byte[] array.
-     * @param data
-     * @param key
-     * @return
+     * Encrypts data with key using AES-128. Returns Base64 byte[] array.
+     *
+     * @param data Data.
+     * @param key Key.
+     * @return Encrypted data.
      */
     public static byte[] encryptBytes(String data, String key) {
+        try {
+            return encryptBytes(data, key, generateInitVector());
+        } catch (Exception ex) {
+            SalesforceAnalyticsLogger.w(null, TAG, "Error during encryption", ex);
+        }
+        return null;
+    }
+
+    /**
+     * Encrypts data with key using AES-128. Returns Base64 byte[] array.
+     *
+     * @param data Data.
+     * @param key Key.
+     * @param iv Initialization vector.
+     * @return Encrypted data.
+     */
+    public static byte[] encryptBytes(String data, String key, byte[] iv) {
         if (TextUtils.isEmpty(key)) {
             if (data == null) {
                 return null;
@@ -198,10 +263,11 @@ public class Encryptor {
             }
         }
         try {
+
             // Encrypts with our preferred cipher.
             byte[] keyBytes = Base64.decode(key, Base64.DEFAULT);
             byte[] dataBytes = data.getBytes(UTF8);
-            return Base64.encode(encrypt(dataBytes, keyBytes), Base64.DEFAULT);
+            return Base64.encode(encrypt(dataBytes, keyBytes, iv), Base64.DEFAULT);
         } catch (Exception ex) {
             SalesforceAnalyticsLogger.w(null, TAG, "Error during encryption", ex);
         }
@@ -249,6 +315,107 @@ public class Encryptor {
         }
     }
 
+    /**
+     * Returns data encrypted with an RSA public key.
+     *
+     * @param publicKey RSA public key.
+     * @param data Data to be encrypted.
+     * @return Encrypted data.
+     */
+    public static String encryptWithRSA(PublicKey publicKey, String data) {
+        String encryptedData = null;
+        byte[] encryptedBytes = encryptWithRSABytes(publicKey, data);
+        if (encryptedBytes != null) {
+            encryptedData = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP | Base64.NO_PADDING);
+        }
+        return encryptedData;
+    }
+
+    /**
+     * Returns data encrypted with an RSA public key.
+     *
+     * @param publicKey RSA public key.
+     * @param data Data to be encrypted.
+     * @return Encrypted data.
+     */
+    public static byte[] encryptWithRSABytes(PublicKey publicKey, String data) {
+        if (publicKey == null || TextUtils.isEmpty(data)) {
+            return null;
+        }
+        try {
+            final Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+            return cipher.doFinal(data.getBytes());
+        } catch (Exception e) {
+            SalesforceAnalyticsLogger.e(null, TAG, "Error during asymmetric encryption using RSA", e);
+        }
+        return null;
+    }
+
+    /**
+     * Returns data decrypted with an RSA private key.
+     *
+     * @param privateKey RSA private key.
+     * @param data Data to be decrypted.
+     * @return Decrypted data.
+     */
+    public static String decryptWithRSA(PrivateKey privateKey, String data) {
+        String decryptedData = null;
+        byte[] decryptedBytes = decryptWithRSABytes(privateKey, data);
+        if (decryptedBytes != null) {
+            try {
+                decryptedData = new String(decryptedBytes, 0, decryptedBytes.length, UTF8);
+            } catch (Exception e) {
+                SalesforceAnalyticsLogger.e(null, TAG, "Error during asymmetric decryption using RSA", e);
+            }
+        }
+        return decryptedData;
+    }
+
+    /**
+     * Returns data decrypted with an RSA private key.
+     *
+     * @param privateKey RSA private key.
+     * @param data Data to be decrypted.
+     * @return Decrypted data.
+     */
+    public static byte[] decryptWithRSABytes(PrivateKey privateKey, String data) {
+        if (privateKey == null || TextUtils.isEmpty(data)) {
+            return null;
+        }
+        try {
+            final Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            cipher.init(Cipher.DECRYPT_MODE, privateKey);
+            byte[] decodedBytes = Base64.decode(data.getBytes(),Base64.NO_WRAP | Base64.NO_PADDING);
+            return cipher.doFinal(decodedBytes);
+        } catch (Exception e) {
+            SalesforceAnalyticsLogger.e(null, TAG, "Error during asymmetric decryption using RSA", e);
+        }
+        return null;
+    }
+
+    /**
+     * Decrypts the given bytes using key and IV.
+     *
+     * @param data Data bytes.
+     * @param key Key bytes.
+     * @param iv Initialization vector bytes.
+     * @return Decrypted data.
+     */
+    public static String decryptBytes(byte[] data, byte[] key, byte[] iv) {
+        try {
+            final Cipher cipher = getBestCipher();
+            final SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
+            final IvParameterSpec ivSpec = new IvParameterSpec(iv);
+            cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec);
+            byte[] result = cipher.doFinal(data, 0, data.length);
+            return new String(result, 0, result.length, UTF8);
+        } catch (Exception e) {
+            SalesforceAnalyticsLogger.e(null, TAG, "Error during symmetric decryption using AES", e);
+        }
+        return null;
+    }
+
     private static byte[] generateInitVector() throws NoSuchAlgorithmException, NoSuchProviderException {
         final SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
         byte[] iv = new byte[16];
@@ -256,37 +423,33 @@ public class Encryptor {
         return iv;
     }
 
-    private static byte[] encrypt(byte[] data, byte[] key) throws GeneralSecurityException {
+    private static byte[] encrypt(byte[] data, byte[] key, byte[] iv) throws GeneralSecurityException {
         final Cipher cipher = getBestCipher();
         final SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
-
-        // Generates a unique IV per encryption.
-        byte[] initVector = generateInitVector();
-        final IvParameterSpec ivSpec = new IvParameterSpec(initVector);
+        final IvParameterSpec ivSpec = new IvParameterSpec(iv);
         cipher.init(Cipher.ENCRYPT_MODE, skeySpec, ivSpec);
         byte[] meat = cipher.doFinal(data);
 
         // Prepends the IV to the encoded data (first 16 bytes / 128 bits).
-        byte[] result = new byte[initVector.length + meat.length];
-        System.arraycopy(initVector, 0, result, 0, initVector.length);
-        System.arraycopy(meat, 0, result, initVector.length, meat.length);
+        byte[] result = new byte[iv.length + meat.length];
+        System.arraycopy(iv, 0, result, 0, iv.length);
+        System.arraycopy(meat, 0, result, iv.length, meat.length);
         return result;
     }
 
-    private static byte[] decrypt(byte[] data, int offset, int length, byte[] key) throws GeneralSecurityException {
+    private static byte[] decrypt(byte[] data, int offset, int length, byte[] key, byte[] iv) throws GeneralSecurityException {
 
         // Grabs the init vector prefix (first 16 bytes / 128 bits).
-        byte[] initVector = new byte[16];
-        System.arraycopy(data, offset, initVector, 0, initVector.length);
+        System.arraycopy(data, offset, iv, 0, iv.length);
 
         // Grabs the encrypted body after the init vector prefix.
-        int meatLen = length - initVector.length;
-        int meatOffset = offset + initVector.length;
+        int meatLen = length - iv.length;
+        int meatOffset = offset + iv.length;
         byte[] meat = new byte[meatLen];
         System.arraycopy(data, meatOffset, meat, 0, meatLen);
         final Cipher cipher = getBestCipher();
         final SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
-        final IvParameterSpec ivSpec = new IvParameterSpec(initVector);
+        final IvParameterSpec ivSpec = new IvParameterSpec(iv);
         cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec);
         byte[] result = cipher.doFinal(meat, 0, meatLen);
         return result;

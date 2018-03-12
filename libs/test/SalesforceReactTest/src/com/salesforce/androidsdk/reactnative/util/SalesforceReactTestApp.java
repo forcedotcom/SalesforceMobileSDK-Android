@@ -24,46 +24,31 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.app;
+
+package com.salesforce.androidsdk.reactnative.util;
 
 import android.app.Application;
-import android.app.Instrumentation;
-import android.test.InstrumentationTestCase;
 
-import com.salesforce.androidsdk.TestForceApp;
-import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
+import com.facebook.react.ReactApplication;
+import com.facebook.react.ReactNativeHost;
+import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
 
 /**
- * Tests for {@link SalesforceKeyGenerator}.
- *
- * @author bhariharan
+ * Test application for Salesforce react native modules.
  */
-public class SalesforceKeyGeneratorTest extends InstrumentationTestCase {
+public class SalesforceReactTestApp extends Application implements ReactApplication {
 
-    private static final String KEY_1 = "key_1";
-    private static final String KEY_2 = "key_2";
+    private final ReactNativeHost _mReactNativeHost = new ReactNativeTestHost(this);
 
-	@Override
-	protected void setUp() throws Exception {
-		super.setUp();
-		final Application app = Instrumentation.newApplication(TestForceApp.class,
-				getInstrumentation().getTargetContext());
-		getInstrumentation().callApplicationOnCreate(app);
-	}
-
-	public void testGetUniqueId() {
-		final String id1 = SalesforceKeyGenerator.getUniqueId(KEY_1);
-        final String id1Again = SalesforceKeyGenerator.getUniqueId(KEY_1);
-		final String id2 = SalesforceKeyGenerator.getUniqueId(KEY_2);
-		assertEquals("Unique IDs with the same name should be the same", id1, id1Again);
-		assertNotSame("Unique IDs with different names should be different", id1, id2);
-	}
-
-    public void testGetEncryptionKey() {
-        final String id1 = SalesforceKeyGenerator.getEncryptionKey(KEY_1);
-        final String id1Again = SalesforceKeyGenerator.getEncryptionKey(KEY_1);
-        final String id2 = SalesforceKeyGenerator.getEncryptionKey(KEY_2);
-        assertEquals("Encryption keys with the same name should be the same", id1, id1Again);
-        assertNotSame("Encryption keys with different names should be different", id1, id2);
+    @Override
+    public ReactNativeHost getReactNativeHost() {
+        return _mReactNativeHost;
     }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        SalesforceReactSDKManager.initReactNative(getApplicationContext(), ReactTestActivity.class);
+    }
+
 }

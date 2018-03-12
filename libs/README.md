@@ -29,6 +29,7 @@ Inside the $NATIVE_DIR, you will find several projects:
 9. **test/SmartStoreTest**: Test project for SmartStore
 10. **test/SmartSyncTest**: Test project for SmartSync
 11. **test/SalesforceHybridTest**: Test project for SalesforceHybrid
+12. **test/SalesforceReactTest**: Test project for SalesforceReact
 
 # Running sample apps from Android Studio
 

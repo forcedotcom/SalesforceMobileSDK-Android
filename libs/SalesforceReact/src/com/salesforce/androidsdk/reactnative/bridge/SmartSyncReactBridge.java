@@ -217,8 +217,17 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         long syncId = args.getInt(SYNC_ID);
         try {
             final SyncManager syncManager = getSyncManager(args);
-            syncManager.cleanResyncGhosts(syncId);
-            successCallback.invoke();
+            syncManager.cleanResyncGhosts(syncId, new SyncManager.CleanResyncGhostsCallback() {
+                @Override
+                public void onSuccess(int numRecords) {
+                    successCallback.invoke();
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    errorCallback.invoke(e.toString());
+                }
+            });
         } catch (Exception e) {
             SalesforceReactLogger.e(TAG, "cleanResyncGhosts call failed", e);
             errorCallback.invoke(e.toString());

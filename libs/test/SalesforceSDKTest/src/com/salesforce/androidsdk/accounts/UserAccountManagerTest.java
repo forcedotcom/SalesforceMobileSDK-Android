@@ -31,7 +31,9 @@ import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.os.Bundle;
-import android.test.InstrumentationTestCase;
+import android.support.test.InstrumentationRegistry;
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -41,6 +43,13 @@ import com.salesforce.androidsdk.rest.ClientManagerTest;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
+import junit.framework.Assert;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.util.List;
 
 /**
@@ -48,22 +57,22 @@ import java.util.List;
  *
  * @author bhariharan
  */
-public class UserAccountManagerTest extends InstrumentationTestCase {
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class UserAccountManagerTest {
 
-	private Context targetContext;
     private EventsListenerQueue eq;
     private UserAccountManager userAccMgr;
     private LoginOptions loginOptions;
     private ClientManager clientManager;
     private AccountManager accMgr;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
-        targetContext = getInstrumentation().getTargetContext();
+        final Context targetContext = InstrumentationRegistry.getTargetContext();
         final Application app = Instrumentation.newApplication(TestForceApp.class,
         		targetContext);
-        getInstrumentation().callApplicationOnCreate(app);
+        InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
         eq = new EventsListenerQueue();
         if (!SalesforceSDKManager.hasInstance()) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
@@ -78,7 +87,7 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
         accMgr = clientManager.getAccountManager();
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
         if (eq != null) {
             eq.tearDown();
@@ -89,76 +98,79 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
         loginOptions = null;
         clientManager = null;
         accMgr = null;
-        super.tearDown();
     }
 
     /**
      * Test to get all authenticated users.
      */
+    @Test
     public void testGetAllUserAccounts() {
     	List<UserAccount> users = userAccMgr.getAuthenticatedUsers();
-    	assertNull("There should be no authenticated users", users);
+        Assert.assertNull("There should be no authenticated users", users);
     	createTestAccount();
     	users = userAccMgr.getAuthenticatedUsers();
-    	assertEquals("There should be 1 authenticated user", 1, users.size());
+        Assert.assertEquals("There should be 1 authenticated user", 1, users.size());
     	createOtherTestAccount();
     	users = userAccMgr.getAuthenticatedUsers();
-    	assertEquals("There should be 2 authenticated users", 2, users.size());
+        Assert.assertEquals("There should be 2 authenticated users", 2, users.size());
     }
 
     /**
      * Test to get the current user account.
      */
+    @Test
     public void testGetCurrentUserAccount() {
     	List<UserAccount> users = userAccMgr.getAuthenticatedUsers();
-    	assertNull("There should be no authenticated users", users);
+        Assert.assertNull("There should be no authenticated users", users);
     	createTestAccount();
     	users = userAccMgr.getAuthenticatedUsers();
-    	assertEquals("There should be 1 authenticated user", 1, users.size());
+        Assert.assertEquals("There should be 1 authenticated user", 1, users.size());
     	final UserAccount curUser = userAccMgr.getCurrentUser();
-    	assertNotNull("Current user should not be null", curUser);
-    	assertEquals("User IDs should match", ClientManagerTest.TEST_USER_ID,
+        Assert.assertNotNull("Current user should not be null", curUser);
+        Assert.assertEquals("User IDs should match", ClientManagerTest.TEST_USER_ID,
     			curUser.getUserId());
-    	assertEquals("Org IDs should match", ClientManagerTest.TEST_ORG_ID,
+        Assert.assertEquals("Org IDs should match", ClientManagerTest.TEST_ORG_ID,
     			curUser.getOrgId());
     }
 
     /**
      * Test to switch to a user account.
      */
+    @Test
     public void testSwitchToUserAccount() {
     	List<UserAccount> users = userAccMgr.getAuthenticatedUsers();
-    	assertNull("There should be no authenticated users", users);
+        Assert.assertNull("There should be no authenticated users", users);
     	createTestAccount();
     	users = userAccMgr.getAuthenticatedUsers();
-    	assertEquals("There should be 1 authenticated user", 1, users.size());
+        Assert.assertEquals("There should be 1 authenticated user", 1, users.size());
     	createOtherTestAccount();
     	users = userAccMgr.getAuthenticatedUsers();
-    	assertEquals("There should be 2 authenticated users", 2, users.size());
+        Assert.assertEquals("There should be 2 authenticated users", 2, users.size());
     	UserAccount curUser = userAccMgr.getCurrentUser();
-    	assertNotNull("Current user should not be null", curUser);
-    	assertEquals("User IDs should match", ClientManagerTest.TEST_USER_ID_2,
+        Assert.assertNotNull("Current user should not be null", curUser);
+        Assert.assertEquals("User IDs should match", ClientManagerTest.TEST_USER_ID_2,
     			curUser.getUserId());
-    	assertEquals("Org IDs should match", ClientManagerTest.TEST_ORG_ID_2,
+        Assert.assertEquals("Org IDs should match", ClientManagerTest.TEST_ORG_ID_2,
     			curUser.getOrgId());
     	userAccMgr.switchToUser(users.get(0));
     	curUser = userAccMgr.getCurrentUser();
-    	assertNotNull("Current user should not be null", curUser);
-    	assertEquals("User IDs should match", ClientManagerTest.TEST_USER_ID,
+        Assert.assertNotNull("Current user should not be null", curUser);
+        Assert.assertEquals("User IDs should match", ClientManagerTest.TEST_USER_ID,
     			curUser.getUserId());
-    	assertEquals("Org IDs should match", ClientManagerTest.TEST_ORG_ID,
+        Assert.assertEquals("Org IDs should match", ClientManagerTest.TEST_ORG_ID,
     			curUser.getOrgId());
     }
 
     /**
      * Test to check if a user account exists.
      */
+    @Test
     public void testDoesUserAccountExist() {
     	List<UserAccount> users = userAccMgr.getAuthenticatedUsers();
-    	assertNull("There should be no authenticated users", users);
+        Assert.assertNull("There should be no authenticated users", users);
     	createTestAccount();
     	users = userAccMgr.getAuthenticatedUsers();
-    	assertEquals("There should be 1 authenticated user", 1, users.size());
+        Assert.assertEquals("There should be 1 authenticated user", 1, users.size());
 		UserAccount userAcc = UserAccountBuilder.getInstance().authToken(ClientManagerTest.TEST_AUTH_TOKEN).
                 refreshToken(ClientManagerTest.TEST_REFRESH_TOKEN).loginServer(ClientManagerTest.TEST_LOGIN_URL).
                 idUrl(ClientManagerTest.TEST_IDENTITY_URL).instanceServer(ClientManagerTest.TEST_INSTANCE_URL).
@@ -166,7 +178,7 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
                 username(ClientManagerTest.TEST_USERNAME).accountName(ClientManagerTest.TEST_ACCOUNT_NAME).
                 communityId(null).communityUrl(null).firstName(null).lastName(null).displayName(null).
 				email(null).photoUrl(null).thumbnailUrl(null).additionalOauthValues(null).build();
-    	assertTrue("User account should exist", userAccMgr.doesUserAccountExist(userAcc));
+        Assert.assertTrue("User account should exist", userAccMgr.doesUserAccountExist(userAcc));
     	userAcc = UserAccountBuilder.getInstance().authToken(ClientManagerTest.TEST_AUTH_TOKEN).
                 refreshToken(ClientManagerTest.TEST_REFRESH_TOKEN).loginServer(ClientManagerTest.TEST_LOGIN_URL).
                 idUrl(ClientManagerTest.TEST_IDENTITY_URL).instanceServer(ClientManagerTest.TEST_INSTANCE_URL).
@@ -174,37 +186,39 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
                 username(ClientManagerTest.TEST_OTHER_USERNAME).accountName(ClientManagerTest.TEST_OTHER_ACCOUNT_NAME).
                 communityId(null).communityUrl(null).firstName(null).lastName(null).displayName(null).
                 email(null).photoUrl(null).thumbnailUrl(null).additionalOauthValues(null).build();
-    	assertFalse("User account should not exist", userAccMgr.doesUserAccountExist(userAcc));
+        Assert.assertFalse("User account should not exist", userAccMgr.doesUserAccountExist(userAcc));
     }
 
     /**
      * Test to signout of the current user.
      */
+    @Test
     public void testSignoutCurrentUser() {
     	List<UserAccount> users = userAccMgr.getAuthenticatedUsers();
-    	assertNull("There should be no authenticated users", users);
+        Assert.assertNull("There should be no authenticated users", users);
     	createTestAccount();
     	users = userAccMgr.getAuthenticatedUsers();
-    	assertEquals("There should be 1 authenticated user", 1, users.size());
+        Assert.assertEquals("There should be 1 authenticated user", 1, users.size());
     	userAccMgr.signoutCurrentUser(null);
     	eq.waitForEvent(EventType.LogoutComplete, 30000);
     	users = userAccMgr.getAuthenticatedUsers();
-    	assertNull("There should be no authenticated users", users);
+        Assert.assertNull("There should be no authenticated users", users);
     }
 
     /**
      * Test to signout of a background user.
      */
+    @Test
     public void testSignoutBackgroundUser() {
     	List<UserAccount> users = userAccMgr.getAuthenticatedUsers();
-    	assertNull("There should be no authenticated users", users);
+        Assert.assertNull("There should be no authenticated users", users);
     	createTestAccount();
     	users = userAccMgr.getAuthenticatedUsers();
-    	assertNotNull("There should be at least 1 authenticated user", users);
-    	assertEquals("There should be 1 authenticated user", 1, users.size());
+        Assert.assertNotNull("There should be at least 1 authenticated user", users);
+        Assert.assertEquals("There should be 1 authenticated user", 1, users.size());
     	createOtherTestAccount();
     	users = userAccMgr.getAuthenticatedUsers();
-    	assertEquals("There should be 2 authenticated users", 2, users.size());
+        Assert.assertEquals("There should be 2 authenticated users", 2, users.size());
         final UserAccount userAcc = UserAccountBuilder.getInstance().authToken(ClientManagerTest.TEST_AUTH_TOKEN).
                 refreshToken(ClientManagerTest.TEST_REFRESH_TOKEN).loginServer(ClientManagerTest.TEST_LOGIN_URL).
                 idUrl(ClientManagerTest.TEST_IDENTITY_URL).instanceServer(ClientManagerTest.TEST_INSTANCE_URL).
@@ -215,7 +229,7 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
 		userAccMgr.signoutUser(userAcc, null, false);
     	eq.waitForEvent(EventType.LogoutComplete, 30000);
     	users = userAccMgr.getAuthenticatedUsers();
-    	assertEquals("There should be 1 authenticated user", 1, users.size());
+        Assert.assertEquals("There should be 1 authenticated user", 1, users.size());
     }
 
     /**

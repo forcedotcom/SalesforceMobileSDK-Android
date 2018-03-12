@@ -28,7 +28,9 @@ package com.salesforce.androidsdk.auth;
 
 import android.app.Application;
 import android.app.Instrumentation;
-import android.test.InstrumentationTestCase;
+import android.support.test.InstrumentationRegistry;
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
 
 import com.salesforce.androidsdk.TestCredentials;
@@ -43,12 +45,18 @@ import com.salesforce.androidsdk.rest.ClientManager;
 
 import junit.framework.Assert;
 
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 /**
  * Tests for IDPRequestHandler.
  *
  * @author bhariharan
  */
-public class IDPRequestHandlerTest extends InstrumentationTestCase {
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class IDPRequestHandlerTest {
 
     private static final String TEST_CONSUMER_KEY = "test_consumer_key";
     private static final String TEST_CALLBACK_URL = "test_callback_url";
@@ -58,18 +66,18 @@ public class IDPRequestHandlerTest extends InstrumentationTestCase {
     private static final String TEST_CODE_CHALLENGE = Encryptor.hash("test_salt_1", "test_salt_2");
     private static final String TAG = "IDPRequestHandlerTest";
 
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
         final Application app = Instrumentation.newApplication(TestForceApp.class,
-                getInstrumentation().getContext());
-        getInstrumentation().callApplicationOnCreate(app);
-        TestCredentials.init(getInstrumentation().getContext());
+                InstrumentationRegistry.getContext());
+        InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
+        TestCredentials.init(InstrumentationRegistry.getContext());
     }
 
     /**
      * Test for null SPConfig.
      */
+    @Test
     public void testNullSPConfig() {
         try {
             new IDPRequestHandler(null, buildTestUserAccount());
@@ -82,6 +90,7 @@ public class IDPRequestHandlerTest extends InstrumentationTestCase {
     /**
      * Test for null UserAccount.
      */
+    @Test
     public void testNullUserAccount() {
         final SPConfig spConfig = new SPConfig(TEST_CONSUMER_KEY, TEST_CALLBACK_URL,
                 TEST_CODE_CHALLENGE, TEST_SCOPES, TEST_LOGIN_URL, TEST_USER_HINT);
@@ -96,6 +105,7 @@ public class IDPRequestHandlerTest extends InstrumentationTestCase {
     /**
      * Test for missing client ID from SPConfig.
      */
+    @Test
     public void testMissingClientId() {
         final SPConfig spConfig = new SPConfig(null, TEST_CALLBACK_URL,
                 TEST_CODE_CHALLENGE, TEST_SCOPES, TEST_LOGIN_URL, TEST_USER_HINT);
@@ -110,6 +120,7 @@ public class IDPRequestHandlerTest extends InstrumentationTestCase {
     /**
      * Test for missing callback URL from SPConfig.
      */
+    @Test
     public void testMissingCallbackUrl() {
         final SPConfig spConfig = new SPConfig(TEST_CONSUMER_KEY, null,
                 TEST_CODE_CHALLENGE, TEST_SCOPES, TEST_LOGIN_URL, TEST_USER_HINT);
@@ -124,6 +135,7 @@ public class IDPRequestHandlerTest extends InstrumentationTestCase {
     /**
      * Test for missing code challenge from SPConfig.
      */
+    @Test
     public void testMissingCodeChallenge() {
         final SPConfig spConfig = new SPConfig(TEST_CONSUMER_KEY, TEST_CALLBACK_URL,
                 null, TEST_SCOPES, TEST_LOGIN_URL, TEST_USER_HINT);
@@ -138,6 +150,7 @@ public class IDPRequestHandlerTest extends InstrumentationTestCase {
     /**
      * Test for missing scopes from SPConfig.
      */
+    @Test
     public void testMissingScopes() {
         final SPConfig spConfig = new SPConfig(TEST_CONSUMER_KEY, TEST_CALLBACK_URL,
                 TEST_CODE_CHALLENGE, null, TEST_LOGIN_URL, TEST_USER_HINT);
@@ -152,6 +165,7 @@ public class IDPRequestHandlerTest extends InstrumentationTestCase {
     /**
      * Test for missing login URL from SPConfig.
      */
+    @Test
     public void testMissingLoginUrl() {
         final SPConfig spConfig = new SPConfig(TEST_CONSUMER_KEY, TEST_CALLBACK_URL,
                 TEST_CODE_CHALLENGE, TEST_SCOPES, null, TEST_USER_HINT);
@@ -168,6 +182,7 @@ public class IDPRequestHandlerTest extends InstrumentationTestCase {
     /**
      * Test for missing user hint from SPConfig.
      */
+    @Test
     public void testMissingUserHint() {
         final SPConfig spConfig = new SPConfig(TEST_CONSUMER_KEY, TEST_CALLBACK_URL,
                 TEST_CODE_CHALLENGE, TEST_SCOPES, TEST_LOGIN_URL, null);
@@ -184,6 +199,7 @@ public class IDPRequestHandlerTest extends InstrumentationTestCase {
     /**
      * Test for valid SPConfig and valid UserAccount.
      */
+    @Test
     public void testValidParams() {
         final SPConfig spConfig = new SPConfig(TEST_CONSUMER_KEY, TEST_CALLBACK_URL,
                 TEST_CODE_CHALLENGE, TEST_SCOPES, TEST_LOGIN_URL, TEST_USER_HINT);

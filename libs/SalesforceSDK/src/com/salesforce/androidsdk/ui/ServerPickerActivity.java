@@ -41,6 +41,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer;
 import com.salesforce.androidsdk.config.RuntimeConfig;
+import com.salesforce.androidsdk.util.AuthConfigTask;
 
 import java.util.List;
 
@@ -52,13 +53,12 @@ import java.util.List;
  * @author bhariharan
  */
 public class ServerPickerActivity extends Activity implements
-        android.widget.RadioGroup.OnCheckedChangeListener {
+        android.widget.RadioGroup.OnCheckedChangeListener, AuthConfigTask.AuthConfigCallbackInterface {
 
     public static final String CHANGE_SERVER_INTENT = "com.salesforce.SERVER_CHANGED";
     private static final String SERVER_DIALOG_NAME = "custom_server_dialog";
 
     private CustomServerUrlEditor urlEditDialog;
-    private SalesforceR salesforceR;
     private LoginServerManager loginServerManager;
 
     /**
@@ -82,7 +82,7 @@ public class ServerPickerActivity extends Activity implements
     @Override
     public void onCheckedChanged(RadioGroup group, int checkedId) {
     	if (group != null) {
-    		final SalesforceServerRadioButton rb = (SalesforceServerRadioButton) group.findViewById(checkedId);
+    		final SalesforceServerRadioButton rb = group.findViewById(checkedId);
     		if (rb != null) {
     			final String name = rb.getName();
     			final String url = rb.getUrl();
@@ -108,27 +108,26 @@ public class ServerPickerActivity extends Activity implements
      * @return Server list group ID.
      */
     protected int getServerListGroupId() {
-        return salesforceR.idServerListGroup();
+        return R.id.sf__server_list_group;
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
-        salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
         loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
-        setContentView(salesforceR.layoutServerPicker());
+        setContentView(R.layout.sf__server_picker);
 
         /*
          * Hides the 'Add Connection' button if the MDM variable to disable
          * adding of custom hosts is set.
          */
-        final Button addConnectionButton = (Button) findViewById(R.id.sf__show_custom_url_edit);
+        final Button addConnectionButton = findViewById(R.id.sf__show_custom_url_edit);
         if (addConnectionButton != null) {
             if (RuntimeConfig.getRuntimeConfig(this).getBoolean(RuntimeConfig.ConfigKey.OnlyShowAuthorizedHosts)) {
                 addConnectionButton.setVisibility(View.GONE);
             }
         }
-        final RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
+        final RadioGroup radioGroup = findViewById(getServerListGroupId());
         radioGroup.setOnCheckedChangeListener(this);
     	urlEditDialog = new CustomServerUrlEditor();
     	urlEditDialog.setRetainInstance(true);
@@ -142,7 +141,7 @@ public class ServerPickerActivity extends Activity implements
 
     @Override
     public void onDestroy() {
-        final RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
+        final RadioGroup radioGroup = findViewById(getServerListGroupId());
         radioGroup.setOnCheckedChangeListener(null);
         urlEditDialog = null;
         super.onDestroy();
@@ -150,13 +149,13 @@ public class ServerPickerActivity extends Activity implements
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(salesforceR.menuClearCustomUrl(), menu);
+        getMenuInflater().inflate(R.menu.sf__clear_custom_url, menu);
         return super.onCreateOptionsMenu(menu);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == salesforceR.idMenuClearCustomUrl()) {
+        if (item.getItemId() == R.id.sf__menu_clear_custom_url) {
             clearCustomUrlSetting();
             return true;
         } else {
@@ -171,10 +170,7 @@ public class ServerPickerActivity extends Activity implements
      * @param v View.
      */
     public void setPositiveReturnValue(View v) {
-        setResult(Activity.RESULT_OK, null);
-        final Intent changeServerIntent = new Intent(CHANGE_SERVER_INTENT);
-        sendBroadcast(changeServerIntent);
-        finish();
+        (new AuthConfigTask(this)).execute();
     }
 
     /**
@@ -186,7 +182,7 @@ public class ServerPickerActivity extends Activity implements
     	final FragmentManager fragMgr = getFragmentManager();
 
         // Adds fragment only if it has not been added already.
-        if(!urlEditDialog.isAdded()) {
+        if (!urlEditDialog.isAdded()) {
             urlEditDialog.show(fragMgr, SERVER_DIALOG_NAME);
         }
     }
@@ -216,7 +212,7 @@ public class ServerPickerActivity extends Activity implements
      * Controls the elements in the layout based on past user choices.
      */
     protected void setupRadioButtons() {
-        final RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
+        final RadioGroup radioGroup = findViewById(getServerListGroupId());
         final List<LoginServer> servers = loginServerManager.getLoginServers();
         if (servers != null) {
             for (final LoginServer currentServer : servers) {
@@ -229,7 +225,7 @@ public class ServerPickerActivity extends Activity implements
      * Rebuilds the display.
      */
     public void rebuildDisplay() {
-        final RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
+        final RadioGroup radioGroup = findViewById(getServerListGroupId());
         radioGroup.removeAllViews();
         setupRadioButtons();
 
@@ -245,5 +241,13 @@ public class ServerPickerActivity extends Activity implements
                 }
             }
         }
+    }
+
+    @Override
+    public void onAuthConfigFetched() {
+        setResult(Activity.RESULT_OK, null);
+        final Intent changeServerIntent = new Intent(CHANGE_SERVER_INTENT);
+        sendBroadcast(changeServerIntent);
+        finish();
     }
 }

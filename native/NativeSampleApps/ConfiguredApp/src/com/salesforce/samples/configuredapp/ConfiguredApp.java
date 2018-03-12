@@ -39,7 +39,7 @@ public class ConfiguredApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SalesforceSDKManager.initNative(getApplicationContext(), null, MainActivity.class);
+		SalesforceSDKManager.initNative(getApplicationContext(), MainActivity.class);
 
 		/*
          * Uncomment the following line to enable IDP login flow. This will allow the user to
@@ -56,5 +56,3 @@ public class ConfiguredApp extends Application {
 		// SalesforceSDKManager.getInstance().setBrowserLoginEnabled(true);
 	}
 }
-
-

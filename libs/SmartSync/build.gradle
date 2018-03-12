@@ -15,11 +15,13 @@ apply plugin: 'com.jfrog.bintray'
 
 dependencies {
     api project(':libs:SmartStore')
+    androidTestApi 'com.android.support.test:runner:1.0.1'
+    androidTestApi 'com.android.support.test:rules:1.0.1'
 }
 
 android {
   compileSdkVersion 27
-  buildToolsVersion '26.0.2'
+  buildToolsVersion '27.0.3'
   
   buildTypes {
       debug {
@@ -47,7 +49,7 @@ android {
   }
   defaultConfig {
     testApplicationId "com.salesforce.androidsdk.smartsync.tests"
-    testInstrumentationRunner "com.salesforce.androidsdk.analytics.util.test.JUnitReportTestRunner"
+    testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'
@@ -126,9 +128,9 @@ bintray {
         licenses = ['Apache-2.0']
         labels = ['android', 'salesforce', 'mobilesdk']
         version {
-            name = '6.0.0'
+            name = '6.1.0'
             released  = new Date()
-            vcsTag = 'v6.0.0'
+            vcsTag = 'v6.1.0'
         }
     }
 }

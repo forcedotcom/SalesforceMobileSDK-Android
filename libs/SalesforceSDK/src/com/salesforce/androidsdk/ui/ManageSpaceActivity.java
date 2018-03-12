@@ -31,6 +31,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 
+import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
@@ -41,14 +42,12 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
  */
 public class ManageSpaceActivity extends Activity {
 
-	private SalesforceR salesforceR;
 	private AlertDialog manageSpaceDialog;
 
 	@Override
 	public void onCreate(Bundle savedState) {
 		super.onCreate(savedState);
-		salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
-		setContentView(salesforceR.layoutManageSpace());
+		setContentView(R.layout.sf__manage_space);
 		manageSpaceDialog = buildManageSpaceDialog();
 		manageSpaceDialog.show();
 	}
@@ -68,15 +67,15 @@ public class ManageSpaceActivity extends Activity {
 	 */
     protected AlertDialog buildManageSpaceDialog() {
         return new AlertDialog.Builder(this)
-        .setMessage(salesforceR.stringManageSpaceConfirmation())
-        .setPositiveButton(getString(salesforceR.stringPasscodeLogoutYes()),
+        .setMessage(R.string.sf__manage_space_confirmation)
+        .setPositiveButton(getString(R.string.sf__passcode_logout_yes),
         new DialogInterface.OnClickListener() {
 
         	@Override
         	public void onClick(DialogInterface dialog, int which) {
         		SalesforceSDKManager.getInstance().logout(ManageSpaceActivity.this, false);
         	}
-        }).setNegativeButton(getString(salesforceR.stringPasscodeLogoutNo()),
+        }).setNegativeButton(getString(R.string.sf__passcode_logout_no),
         new DialogInterface.OnClickListener() {
 
         	@Override

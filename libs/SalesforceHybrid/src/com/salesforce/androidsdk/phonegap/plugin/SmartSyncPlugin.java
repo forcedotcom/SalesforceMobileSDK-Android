@@ -283,14 +283,23 @@ public class SmartSyncPlugin extends ForcePlugin {
      * @param callbackContext
      * @throws JSONException
      */
-    private void cleanResyncGhosts(JSONArray args, CallbackContext callbackContext) throws Exception {
+    private void cleanResyncGhosts(JSONArray args, final CallbackContext callbackContext) throws Exception {
 
         // Parse args.
         final JSONObject arg0 = args.getJSONObject(0);
         long syncId = arg0.getLong(SYNC_ID);
         final SyncManager syncManager = getSyncManager(arg0);
-        syncManager.cleanResyncGhosts(syncId);
-        callbackContext.success();
+        syncManager.cleanResyncGhosts(syncId, new SyncManager.CleanResyncGhostsCallback() {
+            @Override
+            public void onSuccess(int numRecords) {
+                callbackContext.success();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                callbackContext.error(e.getMessage());
+            }
+        });
     }
 
     /**

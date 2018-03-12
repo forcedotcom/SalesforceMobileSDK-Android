@@ -62,6 +62,7 @@ import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents;
+import com.salesforce.androidsdk.util.AuthConfigTask;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
@@ -84,7 +85,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
     public static final int PICK_SERVER_REQUEST_CODE = 10;
     private static final String TAG = "LoginActivity";
 
-    private SalesforceR salesforceR;
 	private boolean wasBackgrounded;
 	private OAuthWebviewHelper webviewHelper;
     private ChangeServerReceiver changeServerReceiver;
@@ -99,25 +99,29 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-        // Object which allows reference to resources living outside the SDK
-        salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
-
-        // Getting login options from intent's extras
+        // Getting login options from intent's extras.
         final LoginOptions loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
 
-        // Protect against screenshots
+        // Protect against screenshots.
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
                 WindowManager.LayoutParams.FLAG_SECURE);
 
-        // Setup content view
-        setContentView(salesforceR.layoutLogin());
+        // Fetches auth config if required.
+        try {
+            (new AuthConfigTask(null)).execute().get();
+        } catch (Exception e) {
+            SalesforceSDKLogger.e(TAG, "Exception occurred while fetching auth config", e);
+        }
+
+        // Setup content view.
+        setContentView(R.layout.sf__login);
 		if (SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled()) {
             final Button button = findViewById(R.id.sf__idp_login_button);
             button.setVisibility(View.VISIBLE);
         }
 
         // Setup the WebView.
-        final WebView webView = findViewById(salesforceR.idLoginWebView());
+        final WebView webView = findViewById(R.id.sf__oauth_webview);
         final WebSettings webSettings = webView.getSettings();
         webSettings.setUseWideViewPort(true);
         webSettings.setLayoutAlgorithm(LayoutAlgorithm.NORMAL);
@@ -290,20 +294,20 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(salesforceR.menuLogin(), menu);
+        getMenuInflater().inflate(R.menu.sf__login, menu);
         return super.onCreateOptionsMenu(menu);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int itemId = item.getItemId();
-		if (itemId == salesforceR.idItemClearCookies()) {
+		if (itemId == R.id.sf__menu_clear_cookies) {
         	onClearCookiesClick(null);
         	return true;
-        } else if (itemId == salesforceR.idItemPickServer()) {
+        } else if (itemId == R.id.sf__menu_pick_server) {
         	onPickServerClick(null);
         	return true;
-        } else if (itemId == salesforceR.idItemReload()) {
+        } else if (itemId == R.id.sf__menu_reload) {
         	onReloadClick(null);
         	return true;
         } else {

@@ -48,11 +48,9 @@ import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.rest.files.FileRequests;
-import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.SalesforceActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import com.salesforce.androidsdk.util.UserSwitchReceiver;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -79,7 +77,6 @@ public class ExplorerActivity extends SalesforceActivity {
 	private static final String DOUBLE_LINE = "==============================================================================";
 	private static final String SINGLE_LINE = "------------------------------------------------------------------------------";
 
-	private PasscodeManager passcodeManager;
 	private String apiVersion;
 	private RestClient client;
 	private TextView resultText;
@@ -96,7 +93,6 @@ public class ExplorerActivity extends SalesforceActivity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
 		apiVersion = ApiVersionStrings.getVersionNumber(this);
 		setContentView(R.layout.explorer);
 		tabHost = (TabHost) findViewById(android.R.id.tabhost);
@@ -135,8 +131,6 @@ public class ExplorerActivity extends SalesforceActivity {
 	public void onResume(RestClient client) {
 		this.client = client;
 	}
-
-
 
 	/**
 	 * Returns the logout dialog fragment (used mainly by tests).
@@ -811,5 +805,4 @@ public class ExplorerActivity extends SalesforceActivity {
 							.toArray(new String[] {})));
 		}
 	}
-
 }

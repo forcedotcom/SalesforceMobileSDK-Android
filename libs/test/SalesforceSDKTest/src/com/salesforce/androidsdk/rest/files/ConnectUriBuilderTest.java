@@ -27,101 +27,113 @@
 package com.salesforce.androidsdk.rest.files;
 
 import android.net.Uri;
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 
-import junit.framework.TestCase;
+import junit.framework.Assert;
 
-public class ConnectUriBuilderTest extends TestCase {
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class ConnectUriBuilderTest {
 
     private String connectPath;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
         connectPath = "/services/data/" + ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()) + "/chatter/";
     }
 
+    @Test
     public void testBasePath() {
-        assertEquals(connectPath, new ConnectUriBuilder().toString());
+        Assert.assertEquals(connectPath, new ConnectUriBuilder().toString());
     }
 
+    @Test
     public void testAppendPath() {
-        assertEquals(connectPath + "foo", new ConnectUriBuilder().appendPath("foo").toString());
-        assertEquals(connectPath + "foo/bar", new ConnectUriBuilder().appendPath("foo").appendPath("bar")
+        Assert.assertEquals(connectPath + "foo", new ConnectUriBuilder().appendPath("foo").toString());
+        Assert.assertEquals(connectPath + "foo/bar", new ConnectUriBuilder().appendPath("foo").appendPath("bar")
                 .toString());
-        assertEquals(connectPath + "foo/bar", new ConnectUriBuilder().appendPath("foo/bar").toString());
+        Assert.assertEquals(connectPath + "foo/bar", new ConnectUriBuilder().appendPath("foo/bar").toString());
     }
 
+    @Test
     public void testAppendUserId() {
         String userId = "005T0000000ABCD";
-        assertEquals(connectPath + "users/me", new ConnectUriBuilder().appendPath("users").appendUserId(null)
+        Assert.assertEquals(connectPath + "users/me", new ConnectUriBuilder().appendPath("users").appendUserId(null)
                 .toString());
-        assertEquals(connectPath + "users/" + userId, new ConnectUriBuilder().appendPath("users").appendUserId(userId)
+        Assert.assertEquals(connectPath + "users/" + userId, new ConnectUriBuilder().appendPath("users").appendUserId(userId)
                 .toString());
         try {
             new ConnectUriBuilder().appendPath("users").appendUserId("");
-            fail("empty user id didn't raise exception as expected");
+            Assert.fail("empty user id didn't raise exception as expected");
         } catch (IllegalArgumentException e) { /* expected */
         }
     }
 
+    @Test
     public void testAppendQueryParam() {
-        assertEquals(connectPath + "?user=jjiang", new ConnectUriBuilder().appendQueryParam("user", "jjiang")
+        Assert.assertEquals(connectPath + "?user=jjiang", new ConnectUriBuilder().appendQueryParam("user", "jjiang")
                 .toString());
-        assertEquals(connectPath + "?password=123456",
+        Assert.assertEquals(connectPath + "?password=123456",
                 new ConnectUriBuilder().appendQueryParam("password", Integer.valueOf(123456)).toString());
         String nullString = null;
         Integer nullInt = null;
-        assertEquals(connectPath, new ConnectUriBuilder().appendQueryParam("user", nullString).toString());
-        assertEquals(connectPath, new ConnectUriBuilder().appendQueryParam("user", "").toString());
-        assertEquals(connectPath, new ConnectUriBuilder().appendQueryParam("user", nullInt).toString());
-        assertEquals(connectPath, new ConnectUriBuilder().appendQueryParam(null, "jjiang").toString());
-        assertEquals(connectPath, new ConnectUriBuilder().appendQueryParam(null, Integer.valueOf(123456)).toString());
-        assertEquals(connectPath + "?" + Uri.encode("user_name") + "=" + Uri.encode("jiahan jjiang"),
+        Assert.assertEquals(connectPath, new ConnectUriBuilder().appendQueryParam("user", nullString).toString());
+        Assert.assertEquals(connectPath, new ConnectUriBuilder().appendQueryParam("user", "").toString());
+        Assert.assertEquals(connectPath, new ConnectUriBuilder().appendQueryParam("user", nullInt).toString());
+        Assert.assertEquals(connectPath, new ConnectUriBuilder().appendQueryParam(null, "jjiang").toString());
+        Assert.assertEquals(connectPath, new ConnectUriBuilder().appendQueryParam(null, Integer.valueOf(123456)).toString());
+        Assert.assertEquals(connectPath + "?" + Uri.encode("user_name") + "=" + Uri.encode("jiahan jjiang"),
                 new ConnectUriBuilder().appendQueryParam("user_name", "jiahan jjiang").toString());
     }
 
+    @Test
     public void testAppendPageNum() {
         String filePath = "files/06930000001LkwtAAC/rendition";
-        assertEquals(connectPath + filePath, new ConnectUriBuilder().appendPath(filePath).appendPageNum(null)
+        Assert.assertEquals(connectPath + filePath, new ConnectUriBuilder().appendPath(filePath).appendPageNum(null)
                 .toString());
-        assertEquals(connectPath + filePath + "?page=0", new ConnectUriBuilder().appendPath(filePath).appendPageNum(0)
+        Assert.assertEquals(connectPath + filePath + "?page=0", new ConnectUriBuilder().appendPath(filePath).appendPageNum(0)
                 .toString());
-        assertEquals(connectPath + filePath + "?page=5", new ConnectUriBuilder().appendPath(filePath).appendPageNum(5)
+        Assert.assertEquals(connectPath + filePath + "?page=5", new ConnectUriBuilder().appendPath(filePath).appendPageNum(5)
                 .toString());
         try {
             new ConnectUriBuilder().appendPath(filePath).appendPageNum(-3);
-            fail("negative page number didn't raise exception as expected");
+            Assert.fail("negative page number didn't raise exception as expected");
         } catch (IllegalArgumentException e) { /* expected */
         }
     }
 
+    @Test
     public void testAppendVersionNum() {
         String filePath = "files/06930000001LkwtAAC/rendition";
-        assertEquals(connectPath + filePath + "?versionNumber=3", new ConnectUriBuilder().appendPath(filePath)
+        Assert.assertEquals(connectPath + filePath + "?versionNumber=3", new ConnectUriBuilder().appendPath(filePath)
                 .appendVersionNum("3").toString());
         try {
             new ConnectUriBuilder().appendPath(filePath).appendVersionNum("0");
-            fail("version 0 didn't raise exception as expected");
+            Assert.fail("version 0 didn't raise exception as expected");
         } catch (IllegalArgumentException e) { /* expected */
         }
         try {
             new ConnectUriBuilder().appendPath(filePath).appendVersionNum("abc");
-            fail("invalid version format didn't raise exception as expected");
+            Assert.fail("invalid version format didn't raise exception as expected");
         } catch (IllegalArgumentException e) { /* expected */
         }
         try {
             new ConnectUriBuilder().appendPath(filePath).appendVersionNum("");
-            fail("empty version string didn't raise exception as expected");
+            Assert.fail("empty version string didn't raise exception as expected");
         } catch (IllegalArgumentException e) { /* expected */
         }
         try {
             new ConnectUriBuilder().appendPath(filePath).appendVersionNum("-3");
-            fail("negative version number didn't raise exception as expected");
+            Assert.fail("negative version number didn't raise exception as expected");
         } catch (IllegalArgumentException e) { /* expected */
         }
-
     }
 }

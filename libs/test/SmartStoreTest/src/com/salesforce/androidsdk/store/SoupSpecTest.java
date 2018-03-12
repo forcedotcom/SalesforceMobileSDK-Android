@@ -26,47 +26,52 @@
  */
 package com.salesforce.androidsdk.store;
 
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
+
 import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 
-import junit.framework.TestCase;
+import junit.framework.Assert;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Tests for SoupSpec
  */
-public class SoupSpecTest extends TestCase {
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class SoupSpecTest {
+
     private static final String TEST_SOUP_NAME = "testSoupName";
     private static final String TEST_FEATURE_1 = "testFeature1";
     private static final String TEST_FEATURE_2 = "testFeature2";
 
+    @Test
     public void testSoupSpecNameOnly() {
-
         SoupSpec soupSpec = new SoupSpec(TEST_SOUP_NAME);
-
-        assertEquals("SoupSpec does not have given soup name", TEST_SOUP_NAME, soupSpec.getSoupName());
-        assertTrue("SoupSpec must not have any features", soupSpec.getFeatures().isEmpty());
+        Assert.assertEquals("SoupSpec does not have given soup name", TEST_SOUP_NAME, soupSpec.getSoupName());
+        Assert.assertTrue("SoupSpec must not have any features", soupSpec.getFeatures().isEmpty());
     }
 
+    @Test
     public void testSoupSpecFeatures() {
         SoupSpec soupSpec = new SoupSpec(TEST_SOUP_NAME, TEST_FEATURE_1, TEST_FEATURE_2);
-
-        assertEquals("SoupSpec does not have given soup name", TEST_SOUP_NAME, soupSpec.getSoupName());
-        assertTrue("SoupSpec does not have given feature", soupSpec.getFeatures().contains(TEST_FEATURE_1));
-        assertTrue("SoupSpec does not have given feature", soupSpec.getFeatures().contains(TEST_FEATURE_2));
-
+        Assert.assertEquals("SoupSpec does not have given soup name", TEST_SOUP_NAME, soupSpec.getSoupName());
+        Assert.assertTrue("SoupSpec does not have given feature", soupSpec.getFeatures().contains(TEST_FEATURE_1));
+        Assert.assertTrue("SoupSpec does not have given feature", soupSpec.getFeatures().contains(TEST_FEATURE_2));
         soupSpec = new SoupSpec(TEST_SOUP_NAME, (String[]) null);
-        assertTrue("SoupSpec must not have any features", soupSpec.getFeatures().isEmpty());
+        Assert.assertTrue("SoupSpec must not have any features", soupSpec.getFeatures().isEmpty());
     }
 
+    @Test
     public void testToJSON() throws JSONException {
         SoupSpec soupSpec = new SoupSpec(TEST_SOUP_NAME, TEST_FEATURE_1, TEST_FEATURE_2);
-
         JSONObject result = soupSpec.toJSON();
-
-        assertEquals("Soup name in json representation is incorrect.", TEST_SOUP_NAME, result.getString("name"));
-        assertEquals("Feature 1 in json representation is incorrect.", TEST_FEATURE_1, result.getJSONArray("features").get(0));
-        assertEquals("Feature 1 in json representation is incorrect.", TEST_FEATURE_2, result.getJSONArray("features").get(1));
+        Assert.assertEquals("Soup name in json representation is incorrect.", TEST_SOUP_NAME, result.getString("name"));
+        Assert.assertEquals("Feature 1 in json representation is incorrect.", TEST_FEATURE_1, result.getJSONArray("features").get(0));
+        Assert.assertEquals("Feature 1 in json representation is incorrect.", TEST_FEATURE_2, result.getJSONArray("features").get(1));
     }
 }

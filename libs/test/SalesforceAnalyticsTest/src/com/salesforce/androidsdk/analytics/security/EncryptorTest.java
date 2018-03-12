@@ -27,14 +27,24 @@
 package com.salesforce.androidsdk.analytics.security;
 
 import android.content.Context;
-import android.test.InstrumentationTestCase;
+import android.support.test.InstrumentationRegistry;
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
+
+import junit.framework.Assert;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Tests for Encryptor.
  *
  * @author bhariharan
  */
-public class EncryptorTest extends InstrumentationTestCase {
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class EncryptorTest {
 
 	private static final String[] TEST_KEYS = new String[] {
 			null,
@@ -46,45 +56,42 @@ public class EncryptorTest extends InstrumentationTestCase {
             "fake-token"
     };
 
-	@Override
+	@Before
 	public void setUp() throws Exception {
-		super.setUp();
-		final Context targetContext = getInstrumentation().getTargetContext();
+		final Context targetContext = InstrumentationRegistry.getTargetContext();
 		Encryptor.init(targetContext);
-	}
-
-	@Override
-	public void tearDown() throws Exception {
-        super.tearDown();
 	}
 
 	/**
 	 * Test to make sure that encrypt does nothing when given a null key.
 	 */
+    @Test
 	public void testEncryptWithNullKey() {
 		for (final String data : TEST_DATA) {
-			assertEquals("Encrypt should have left the string unchanged", data, Encryptor.encrypt(data, null));
+            Assert.assertEquals("Encrypt should have left the string unchanged", data, Encryptor.encrypt(data, null));
 		}
 	}
 	
 	/**
 	 * Test to make sure that decrypt does nothing when given a null key.
 	 */
+    @Test
 	public void testDecryptWithNullKey() {
 		for (final String data : TEST_DATA) {
-			assertEquals("Decrypt should have left the string unchanged", data, Encryptor.decrypt(data, null));
+            Assert.assertEquals("Decrypt should have left the string unchanged", data, Encryptor.decrypt(data, null));
 		}
 	}
 
     /**
      * Test to ensure encryption and decryption work as expected.
      */
+    @Test
 	public void testEncryptDecrypt() {
 		for (String key : TEST_KEYS) {
 			for (String data : TEST_DATA) {
 				String encryptedData = Encryptor.encrypt(data, key);
 				String decryptedData = Encryptor.decrypt(encryptedData, key);
-				assertEquals("Decrypt should restore original", data, decryptedData);
+                Assert.assertEquals("Decrypt should restore original", data, decryptedData);
 			}
 		}
 	}
@@ -93,11 +100,12 @@ public class EncryptorTest extends InstrumentationTestCase {
 	 * Test to make sure encrypt returns a string different from the original
      * and that decrypt restores the original.
 	 */
+    @Test
 	public void testEncryptDecryptWithDifferentData() {
 		final String key = makeKey("123456");
 		for (final String data : TEST_DATA) {
-			assertFalse("Encrypted string should be different from original", data.equals(Encryptor.encrypt(data, key)));
-			assertEquals("Decrypt should restore original", data, Encryptor.decrypt(Encryptor.encrypt(data, key), key));
+            Assert.assertFalse("Encrypted string should be different from original", data.equals(Encryptor.encrypt(data, key)));
+            Assert.assertEquals("Decrypt should restore original", data, Encryptor.decrypt(Encryptor.encrypt(data, key), key));
 			for (final String otherData : TEST_DATA) {
                 final String encryptedA = Encryptor.encrypt(data, key);
                 final String decryptedA = Encryptor.decrypt(encryptedA, key);
@@ -105,7 +113,7 @@ public class EncryptorTest extends InstrumentationTestCase {
                 final String decryptedB = Encryptor.decrypt(encryptedB, key);
 				boolean sameDecrypted = decryptedA.equals(decryptedB); 
 				boolean sameData = data.equals(otherData);
-				assertEquals("Decrypted strings '" 
+                Assert.assertEquals("Decrypted strings '"
 						+ decryptedA + "','" + decryptedB 
 						+ "'  should be different for different strings '"
 						+ data +"','" + otherData + "'", 
@@ -117,10 +125,11 @@ public class EncryptorTest extends InstrumentationTestCase {
 	/**
 	 * Test to make sure that encrypting with different keys produces different results.
 	 */
+    @Test
 	public void testEncryptDecryptWithDifferentKeys() {
 		final String data = "fake-token";
 		for (final String key : TEST_KEYS) {
-			assertEquals("Decrypt should restore original", data, Encryptor.decrypt(Encryptor.encrypt(data, key), key));
+            Assert.assertEquals("Decrypt should restore original", data, Encryptor.decrypt(Encryptor.encrypt(data, key), key));
 			for (final String otherKey : TEST_KEYS) {
 				boolean sameKey = (key == null && otherKey == null) || (key != null && key.equals(otherKey));
 				if (!sameKey) {
@@ -128,9 +137,9 @@ public class EncryptorTest extends InstrumentationTestCase {
                     final String decryptedA = Encryptor.decrypt(encryptedA, key);
                     final String encryptedB = Encryptor.encrypt(data, otherKey);
                     final String decryptedB = Encryptor.decrypt(encryptedB, otherKey);
-					assertEquals("Decrypted values should be the same", decryptedA, decryptedB);
-					boolean sameEncrypted = encryptedA.equals(encryptedB); 
-					assertEquals("Encrypted strings '" 
+                    Assert.assertEquals("Decrypted values should be the same", decryptedA, decryptedB);
+					boolean sameEncrypted = encryptedA.equals(encryptedB);
+                    Assert.assertEquals("Encrypted strings '"
 							+ encryptedA + "','" + encryptedB 
 							+ "'  should be different for different keys '"
 							+ key +"','" + otherKey + "'", 

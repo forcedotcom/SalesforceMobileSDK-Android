@@ -1,30 +1,34 @@
 require 'json'
 require 'set'
 
-$GITPRAPI = "https://api.github.com/repos/%s/SalesforceMobileSDK-android/pulls/%s/files"
-libsTopoSorted = ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "SmartSync", "SalesforceHybrid", "SalesforceReact"]
+libsTopoSorted = ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "SmartSync", "SalesforceHybrid", "SalesforceReact", "RestExplorer"]
 
-prFilesAPI = $GITPRAPI % [ENV["CIRCLE_PROJECT_USERNAME"], ENV["CIRCLE_PR_NUMBER"]]
-pullfiles = `#{"curl %s" % [prFilesAPI]}`
-prfiles = JSON.parse(pullfiles)
+if ENV.has_key?('CIRCLE_PULL_REQUEST')
+  $GITPRAPI = "https://api.github.com/repos/%s/SalesforceMobileSDK-android/pulls/%s/files"
 
-libsModified = Set.new
-for prfile in prfiles
-  path = prfile["filename"]
-  for lib in libsTopoSorted
-    if path.include? lib
-      libsModified = libsModified.add(lib)
+  # No PR Number indicates that this PR is running in a CircleCI env linked to a fork, so force the url to forcedotcom project.
+  if ENV.has_key?('CIRCLE_PR_NUMBER')
+    prFilesAPI = $GITPRAPI % [ENV['CIRCLE_PROJECT_USERNAME'], ENV['CIRCLE_PR_NUMBER']]
+  else
+    prFilesAPI = $GITPRAPI % ['forcedotcom', ENV['CIRCLE_PULL_REQUEST'].split('/').last]
+  end
+
+  pullfiles = `#{"curl %s" % [prFilesAPI]}`
+  prfiles = JSON.parse(pullfiles)
+
+  libsModified = Set.new
+  for prfile in prfiles
+    path = prfile["filename"]
+    for lib in libsTopoSorted
+      if path.include? lib
+        libsModified.add(lib)
+      end
     end
   end
+
+  lib_arr = libsModified.to_a
+  # Print so the bash in the CircleCI yml can get the Libs to run
+  print (lib_arr.size == 1) ? lib_arr.first : lib_arr.join(",")
+else
+  print libsTopoSorted.join(",")
 end
-
-# Each Lib in libsTopoSorted depends on the lib that preceeds it.  Find the lowest dependency and take everything after it.
-libsToTest = libsTopoSorted.slice!(libsModified.to_a().map{|l| libsTopoSorted.find_index(l)}.min() .. (libsTopoSorted.length - 1))
-
-# SaleforceReact doesn't depend on SalesforceHybridSDK
-if !libsModified.include?("SalesforceReact") && libsToTest.first.eql?("SalesforceHybrid")
-  libsToTest.pop()
-end
-
-# Print so the bash in the CircleCI yml can get the Libs to run
-print libsToTest.join(",")
