@@ -16,7 +16,6 @@ com.salesforce.androidsdk.phonegap.app
 com.salesforce.androidsdk.phonegap.plugin
 com.salesforce.androidsdk.phonegap.ui
 com.salesforce.androidsdk.phonegap.util
-com.salesforce.androidsdk.phonegap.util.test
 com.salesforce.androidsdk.push
 com.salesforce.androidsdk.reactnative.app
 com.salesforce.androidsdk.reactnative.bridge
