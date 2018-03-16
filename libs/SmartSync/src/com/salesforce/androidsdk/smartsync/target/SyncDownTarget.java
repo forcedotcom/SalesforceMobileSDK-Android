@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.smartsync.target;
 
+import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
@@ -74,7 +75,7 @@ public abstract class SyncDownTarget extends SyncTarget {
         case sosl:    return new SoslSyncDownTarget(target);
         case soql:    return new SoqlSyncDownTarget(target);
         case refresh: return new RefreshSyncDownTarget(target);
-            case parent_children: return new ParentChildrenSyncDownTarget(target);
+        case parent_children: return new ParentChildrenSyncDownTarget(target);
         case custom:
         default:
             try {
@@ -142,12 +143,14 @@ public abstract class SyncDownTarget extends SyncTarget {
      * Delete from local store records that a full sync down would no longer download
      * @param syncManager
      * @param soupName
+     * @param syncId
      * @return
      * @throws JSONException, IOException
      */
-    public int cleanGhosts(SyncManager syncManager, String soupName) throws JSONException, IOException {
-         // Fetches list of IDs present in local soup that have not been modified locally.
-        final Set<String> localIds = getNonDirtyRecordIds(syncManager, soupName, getIdFieldName());
+    public int cleanGhosts(SyncManager syncManager, String soupName, long syncId) throws JSONException, IOException {
+
+        // Fetches list of IDs present in local soup that have not been modified locally.
+        final Set<String> localIds = getNonDirtyRecordIds(syncManager, soupName, getIdFieldName(), buildSyncIdPredicateIfIndexed(syncManager, soupName, syncId));
 
          // Fetches list of IDs still present on the server from the list of local IDs
          // and removes the list of IDs that are still present on the server.
@@ -166,15 +169,35 @@ public abstract class SyncDownTarget extends SyncTarget {
     }
 
     /**
+     * Return predicate to target records with this sync id if there is an index on __sync_id__
+     * @param syncManager
+     * @param soupName
+     * @param syncId
+     * @return
+     */
+    protected String buildSyncIdPredicateIfIndexed(SyncManager syncManager, String soupName, long syncId) {
+        String additionalPredicate = "";
+        IndexSpec[] indexSpecs = syncManager.getSmartStore().getSoupIndexSpecs(soupName);
+        for(IndexSpec indexSpec : indexSpecs) {
+            if (indexSpec.path.equals(SYNC_ID)) {
+                additionalPredicate = String.format("AND {%s:%s} = %d", soupName, SYNC_ID, syncId);
+                break;
+            }
+        }
+        return additionalPredicate;
+    }
+
+    /**
      * Return ids of non-dirty records (records NOT locally created/updated or deleted)
      * @param syncManager
      * @param soupName
      * @param idField
+     * @param additionalPredicate
      * @return
      * @throws JSONException
      */
-    protected SortedSet<String> getNonDirtyRecordIds(SyncManager syncManager, String soupName, String idField) throws JSONException {
-        String nonDirtyRecordsSql = getNonDirtyRecordIdsSql(soupName, idField);
+    protected SortedSet<String> getNonDirtyRecordIds(SyncManager syncManager, String soupName, String idField, String additionalPredicate) throws JSONException {
+        String nonDirtyRecordsSql = getNonDirtyRecordIdsSql(soupName, idField, additionalPredicate);
         return getIdsWithQuery(syncManager, nonDirtyRecordsSql);
     }
 
@@ -182,10 +205,11 @@ public abstract class SyncDownTarget extends SyncTarget {
      * Return SmartSQL to identify non-dirty records
      * @param soupName
      * @param idField
+     * @param additionalPredicate
      * @return
      */
-    protected String getNonDirtyRecordIdsSql(String soupName, String idField) {
-        return String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'false' ORDER BY {%s:%s} ASC", soupName, idField, soupName, soupName, LOCAL, soupName, idField);
+    protected String getNonDirtyRecordIdsSql(String soupName, String idField, String additionalPredicate) {
+        return String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'false' %s ORDER BY {%s:%s} ASC", soupName, idField, soupName, soupName, LOCAL, additionalPredicate, soupName, idField);
     }
 
 

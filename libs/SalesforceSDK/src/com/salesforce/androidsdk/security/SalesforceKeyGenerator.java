@@ -27,23 +27,37 @@
 package com.salesforce.androidsdk.security;
 
 import android.content.SharedPreferences;
+import android.os.Build;
+import android.security.KeyPairGeneratorSpec;
+import android.security.keystore.KeyGenParameterSpec;
+import android.security.keystore.KeyProperties;
 import android.text.TextUtils;
 import android.util.Base64;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
+import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyPairGenerator;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.cert.CertificateException;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
 import javax.crypto.KeyGenerator;
+import javax.security.auth.x500.X500Principal;
 
 /**
  * This class provides methods to generate a unique ID that can be used as an encryption
@@ -62,19 +76,32 @@ public class SalesforceKeyGenerator {
     private static final String SHA256 = "SHA-256";
     private static final String SHA1PRNG = "SHA1PRNG";
     private static final String AES = "AES";
+    private static final String RSA = "RSA";
+    private static final String ANDROID_KEYSTORE = "AndroidKeyStore";
 
     private static Map<String, String> UNIQUE_IDS = new HashMap<>();
     private static Map<String, String> CACHED_ENCRYPTION_KEYS = new HashMap<>();
 
     /**
-     * Returns the unique ID being used.
+     * Returns the unique ID being used. The default key length is 256 bits.
      *
      * @param name Unique name associated with this unique ID.
      * @return Unique ID.
      */
-    public static synchronized String getUniqueId(String name) {
+    public static String getUniqueId(String name) {
+        return getUniqueId(name, 256);
+    }
+
+    /**
+     * Returns the unique ID being used based on the key length.
+     *
+     * @param name Unique name associated with this unique ID.
+     * @param length Key length.
+     * @return Unique ID.
+     */
+    public static synchronized String getUniqueId(String name, int length) {
         if (UNIQUE_IDS.get(name) == null) {
-            generateUniqueId(name);
+            generateUniqueId(name, length);
         }
         return UNIQUE_IDS.get(name);
     }
@@ -123,6 +150,60 @@ public class SalesforceKeyGenerator {
         return hashedString;
     }
 
+    /**
+     * Generates a keypair and returns the public key.
+     *
+     * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
+     * @return RSA public key.
+     */
+    public static synchronized PublicKey getRSAPublicKey(String name, int length) {
+        PublicKey publicKey = null;
+        createRSAKeysIfNecessary(name, length);
+        try {
+            publicKey = loadKeyStore().getCertificate(name).getPublicKey();
+        } catch (Exception e) {
+            SalesforceSDKLogger.e(TAG, "Security exception thrown", e);
+        }
+        return publicKey;
+    }
+
+    /**
+     * Generates a keypair and returns the encoded public key string.
+     *
+     * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
+     * @return RSA public key string.
+     */
+    public static synchronized String getRSAPublicString(String name, int length) {
+        final PublicKey publicKey = getRSAPublicKey(name, length);
+        String publicKeyBase64 = null;
+        if (publicKey != null) {
+            publicKeyBase64 = Base64.encodeToString(publicKey.getEncoded(),
+                    Base64.NO_WRAP | Base64.NO_PADDING);
+        }
+        return publicKeyBase64;
+    }
+
+    /**
+     * Generates a keypair and returns the private key.
+     *
+     * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
+     * @return RSA private key.
+     */
+    public static synchronized PrivateKey getRSAPrivateKey(String name, int length) {
+        PrivateKey privateKey = null;
+        createRSAKeysIfNecessary(name, length);
+        try {
+            KeyStore.Entry entry = loadKeyStore().getEntry(name, null);
+            if (entry == null) {
+                return null;
+            }
+            privateKey = ((KeyStore.PrivateKeyEntry) entry).getPrivateKey();
+        } catch (Exception e) {
+            SalesforceSDKLogger.e(TAG, "Security exception thrown", e);
+        }
+        return privateKey;
+    }
+
     private static void generateEncryptionKey(String name) {
         try {
             final String keyString = getUniqueId(name);
@@ -137,7 +218,7 @@ public class SalesforceKeyGenerator {
         }
     }
 
-    private static void generateUniqueId(String name) {
+    private static void generateUniqueId(String name, int length) {
         final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_FILE, 0);
         final String id = prefs.getString(getSharedPrefKey(name), null);
 
@@ -149,7 +230,7 @@ public class SalesforceKeyGenerator {
             try {
 
                 // Uses SecureRandom to generate an AES-256 key.
-                final int outputKeyLength = 256;
+                final int outputKeyLength = length;
                 final SecureRandom secureRandom = SecureRandom.getInstance(SHA1PRNG);
 
                 // SecureRandom does not require seeding. It's automatically seeded from system entropy.
@@ -177,5 +258,54 @@ public class SalesforceKeyGenerator {
     private static String getAddendum(String name) {
         final String suffix = TextUtils.isEmpty(name) ? "" : name;
         return String.format(Locale.US, ADDENDUM, suffix);
+    }
+
+    private static void createRSAKeysIfNecessary(String name, int length) {
+        try {
+            KeyStore keyStore = loadKeyStore();
+            if (!keyStore.containsAlias(name)) {
+
+                // Generates a new key pair.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    KeyPairGenerator kpg = KeyPairGenerator.getInstance(
+                            KeyProperties.KEY_ALGORITHM_RSA, ANDROID_KEYSTORE);
+                    kpg.initialize(new KeyGenParameterSpec.Builder(
+                            name,
+                            KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
+                            .setKeySize(length)
+                            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1)
+                            .build());
+                    kpg.generateKeyPair();
+                } else {
+
+                    /*
+                     * TODO: Remove the 'else' block once minVersion > 23.
+                     */
+                    Calendar start = Calendar.getInstance();
+                    Calendar end = Calendar.getInstance();
+                    end.add(Calendar.YEAR, 30);
+                    KeyPairGeneratorSpec spec = new KeyPairGeneratorSpec.Builder(SalesforceSDKManager.getInstance().getAppContext())
+                            .setAlias(name)
+                            .setSubject(new X500Principal("CN=" + name))
+                            .setSerialNumber(BigInteger.TEN)
+                            .setStartDate(start.getTime())
+                            .setEndDate(end.getTime())
+                            .setKeySize(length)
+                            .build();
+                    KeyPairGenerator kpg = KeyPairGenerator.getInstance(RSA, ANDROID_KEYSTORE);
+                    kpg.initialize(spec);
+                    kpg.generateKeyPair();
+                }
+            }
+        } catch (Exception e) {
+            SalesforceSDKLogger.e(TAG, "Security exception thrown", e);
+        }
+    }
+
+    private static KeyStore loadKeyStore() throws CertificateException, NoSuchAlgorithmException,
+            IOException, KeyStoreException {
+        KeyStore keyStore = KeyStore.getInstance(ANDROID_KEYSTORE);
+        keyStore.load(null);
+        return keyStore;
     }
 }

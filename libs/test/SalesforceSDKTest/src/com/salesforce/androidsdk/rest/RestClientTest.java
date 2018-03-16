@@ -26,7 +26,9 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import android.test.InstrumentationTestCase;
+import android.support.test.InstrumentationRegistry;
+import android.support.test.filters.LargeTest;
+import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -37,9 +39,15 @@ import com.salesforce.androidsdk.rest.RestClient.AuthTokenProvider;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 
+import junit.framework.Assert;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -64,9 +72,10 @@ import java.util.concurrent.TimeUnit;
  * Tests for RestClient
  *
  * Does live calls to a test org
- *
  */
-public class RestClientTest extends InstrumentationTestCase {
+@RunWith(AndroidJUnit4.class)
+@LargeTest
+public class RestClientTest {
 
     private static final String ENTITY_NAME_PREFIX = "RestClientTest";
     private static final String BAD_TOKEN = "bad-token";
@@ -93,10 +102,9 @@ public class RestClientTest extends InstrumentationTestCase {
     public static final String TEST_CUSTOM_KEY = "test_custom_key";
     public static final String TEST_CUSTOM_VALUE = "test_custom_value";
 
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
-        TestCredentials.init(getInstrumentation().getContext());
+        TestCredentials.init(InstrumentationRegistry.getContext());
         httpAccess = new HttpAccess(null, "dummy-agent");
         TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,
                 new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID,
@@ -118,7 +126,7 @@ public class RestClientTest extends InstrumentationTestCase {
         restClient = new RestClient(clientInfo, authToken, httpAccess, null);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
         cleanup();
         testOauthKeys = null;
@@ -130,34 +138,38 @@ public class RestClientTest extends InstrumentationTestCase {
      * Testing getClientInfo
      * @throws URISyntaxException
      */
+    @Test
     public void testGetClientInfo() throws URISyntaxException {
-        assertEquals("Wrong instance url", new URI(TestCredentials.INSTANCE_URL), restClient.getClientInfo().instanceUrl);
-        assertEquals("Wrong login url", new URI(TestCredentials.LOGIN_URL), restClient.getClientInfo().loginUrl);
-        assertEquals("Wrong account name", TestCredentials.ACCOUNT_NAME, restClient.getClientInfo().accountName);
-        assertEquals("Wrong username", TestCredentials.USERNAME, restClient.getClientInfo().username);
-        assertEquals("Wrong userId", TestCredentials.USER_ID, restClient.getClientInfo().userId);
-        assertEquals("Wrong orgId", TestCredentials.ORG_ID, restClient.getClientInfo().orgId);
-        assertEquals("Wrong firstName", TEST_FIRST_NAME, restClient.getClientInfo().firstName);
-        assertEquals("Wrong lastName", TEST_LAST_NAME, restClient.getClientInfo().lastName);
-        assertEquals("Wrong displayName", TEST_DISPLAY_NAME, restClient.getClientInfo().displayName);
-        assertEquals("Wrong email", TEST_EMAIL, restClient.getClientInfo().email);
-        assertEquals("Wrong photoUrl", TEST_PHOTO_URL, restClient.getClientInfo().photoUrl);
-        assertEquals("Wrong thumbnailUrl", TEST_THUMBNAIL_URL, restClient.getClientInfo().thumbnailUrl);
-        assertEquals("Wrong additional OAuth value", testOauthValues, restClient.getClientInfo().additionalOauthValues);
+        Assert.assertEquals("Wrong instance url", new URI(TestCredentials.INSTANCE_URL), restClient.getClientInfo().instanceUrl);
+        Assert.assertEquals("Wrong login url", new URI(TestCredentials.LOGIN_URL), restClient.getClientInfo().loginUrl);
+        Assert.assertEquals("Wrong account name", TestCredentials.ACCOUNT_NAME, restClient.getClientInfo().accountName);
+        Assert.assertEquals("Wrong username", TestCredentials.USERNAME, restClient.getClientInfo().username);
+        Assert.assertEquals("Wrong userId", TestCredentials.USER_ID, restClient.getClientInfo().userId);
+        Assert.assertEquals("Wrong orgId", TestCredentials.ORG_ID, restClient.getClientInfo().orgId);
+        Assert.assertEquals("Wrong firstName", TEST_FIRST_NAME, restClient.getClientInfo().firstName);
+        Assert.assertEquals("Wrong lastName", TEST_LAST_NAME, restClient.getClientInfo().lastName);
+        Assert.assertEquals("Wrong displayName", TEST_DISPLAY_NAME, restClient.getClientInfo().displayName);
+        Assert.assertEquals("Wrong email", TEST_EMAIL, restClient.getClientInfo().email);
+        Assert.assertEquals("Wrong photoUrl", TEST_PHOTO_URL, restClient.getClientInfo().photoUrl);
+        Assert.assertEquals("Wrong thumbnailUrl", TEST_THUMBNAIL_URL, restClient.getClientInfo().thumbnailUrl);
+        Assert.assertEquals("Wrong additional OAuth value", testOauthValues, restClient.getClientInfo().additionalOauthValues);
     }
 
+    @Test
     public void testClientInfoResolveUrl() {
-    	assertEquals("Wrong url", TestCredentials.INSTANCE_URL + "/a/b/", clientInfo.resolveUrl("a/b/").toString());
-    	assertEquals("Wrong url", TestCredentials.INSTANCE_URL + "/a/b/", clientInfo.resolveUrl("/a/b/").toString());
+        Assert.assertEquals("Wrong url", TestCredentials.INSTANCE_URL + "/a/b/", clientInfo.resolveUrl("a/b/").toString());
+        Assert.assertEquals("Wrong url", TestCredentials.INSTANCE_URL + "/a/b/", clientInfo.resolveUrl("/a/b/").toString());
     }
 
+    @Test
     public void testClientInfoResolveUrlForHttpsUrl() {
-        assertEquals("Wrong url", "https://testurl", clientInfo.resolveUrl("https://testurl").toString());
-        assertEquals("Wrong url", "http://testurl", clientInfo.resolveUrl("http://testurl").toString());
-        assertEquals("Wrong url", "HTTPS://testurl", clientInfo.resolveUrl("HTTPS://testurl").toString());
-        assertEquals("Wrong url", "HTTP://testurl", clientInfo.resolveUrl("HTTP://testurl").toString());
+        Assert.assertEquals("Wrong url", "https://testurl", clientInfo.resolveUrl("https://testurl").toString());
+        Assert.assertEquals("Wrong url", "http://testurl", clientInfo.resolveUrl("http://testurl").toString());
+        Assert.assertEquals("Wrong url", "HTTPS://testurl", clientInfo.resolveUrl("HTTPS://testurl").toString());
+        Assert.assertEquals("Wrong url", "HTTP://testurl", clientInfo.resolveUrl("HTTP://testurl").toString());
     }
 
+    @Test
     public void testClientInfoResolveUrlForCommunityUrl() throws Exception {
         final ClientInfo info = new ClientInfo(new URI(TestCredentials.INSTANCE_URL),
         		new URI(TestCredentials.LOGIN_URL),
@@ -165,10 +177,11 @@ public class RestClientTest extends InstrumentationTestCase {
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null,
         		TestCredentials.COMMUNITY_URL, null, null, null, null, null, null, testOauthValues);
-    	assertEquals("Wrong url", TestCredentials.COMMUNITY_URL + "/a/b/", info.resolveUrl("a/b/").toString());
-    	assertEquals("Wrong url", TestCredentials.COMMUNITY_URL + "/a/b/", info.resolveUrl("/a/b/").toString());
+        Assert.assertEquals("Wrong url", TestCredentials.COMMUNITY_URL + "/a/b/", info.resolveUrl("a/b/").toString());
+        Assert.assertEquals("Wrong url", TestCredentials.COMMUNITY_URL + "/a/b/", info.resolveUrl("/a/b/").toString());
     }
 
+    @Test
     public void testGetInstanceUrlForCommunity() throws Exception {
         final ClientInfo info = new ClientInfo(new URI(TestCredentials.INSTANCE_URL),
         		new URI(TestCredentials.LOGIN_URL),
@@ -176,18 +189,20 @@ public class RestClientTest extends InstrumentationTestCase {
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null,
         		TestCredentials.COMMUNITY_URL, null, null, null, null, null, null, testOauthValues);
-        assertEquals("Wrong url", TestCredentials.COMMUNITY_URL, info.getInstanceUrlAsString());
+        Assert.assertEquals("Wrong url", TestCredentials.COMMUNITY_URL, info.getInstanceUrlAsString());
     }
 
+    @Test
     public void testGetInstanceUrl() {
-        assertEquals("Wrong url", TestCredentials.INSTANCE_URL, clientInfo.getInstanceUrlAsString());
+        Assert.assertEquals("Wrong url", TestCredentials.INSTANCE_URL, clientInfo.getInstanceUrlAsString());
     }
 
     /**
      * Testing getAuthToken
      */
+    @Test
     public void testGetAuthToken() {
-        assertEquals("Wrong auth token", authToken, restClient.getAuthToken());
+        Assert.assertEquals("Wrong auth token", authToken, restClient.getAuthToken());
     }
 
     /**
@@ -196,11 +211,12 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws URISyntaxException
      * @throws IOException
      */
+    @Test
     public void testCallWithBadAuthToken() throws URISyntaxException, IOException {
         RestClient.clearCaches();
         RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, null);
         RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
-        assertFalse("Expected error", response.isSuccess());
+        Assert.assertFalse("Expected error", response.isSuccess());
         checkResponse(response, HttpURLConnection.HTTP_UNAUTHORIZED, true);
     }
 
@@ -210,6 +226,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws URISyntaxException
      * @throws IOException
      */
+    @Test
     public void testCallWithBadTokenAndTokenProvider() throws URISyntaxException, IOException {
         RestClient.clearCaches();
         AuthTokenProvider authTokenProvider = new AuthTokenProvider() {
@@ -232,10 +249,10 @@ public class RestClientTest extends InstrumentationTestCase {
             public String getInstanceUrl() { return instanceUrl; }
         };
         RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, authTokenProvider);
-        assertEquals("RestClient should be using the bad token initially", BAD_TOKEN, unauthenticatedRestClient.getAuthToken());
+        Assert.assertEquals("RestClient should be using the bad token initially", BAD_TOKEN, unauthenticatedRestClient.getAuthToken());
         RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
-        assertEquals("RestClient should now be using the good token", authToken, unauthenticatedRestClient.getAuthToken());
-        assertTrue("Expected success", response.isSuccess());
+        Assert.assertEquals("RestClient should now be using the good token", authToken, unauthenticatedRestClient.getAuthToken());
+        Assert.assertTrue("Expected success", response.isSuccess());
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
     }
 
@@ -245,6 +262,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws URISyntaxException
      * @throws IOException
      */
+    @Test
     public void testCallWithBadInstanceUrl() throws URISyntaxException, IOException {
         RestClient.clearCaches();
         AuthTokenProvider authTokenProvider = new AuthTokenProvider() {
@@ -267,10 +285,10 @@ public class RestClientTest extends InstrumentationTestCase {
             public String getInstanceUrl() { return instanceUrl; }
         };
         RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, authTokenProvider);
-        assertEquals("RestClient has bad instance url", new URI(TestCredentials.INSTANCE_URL), unauthenticatedRestClient.getClientInfo().instanceUrl);
+        Assert.assertEquals("RestClient has bad instance url", new URI(TestCredentials.INSTANCE_URL), unauthenticatedRestClient.getClientInfo().instanceUrl);
         RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
-        assertEquals("RestClient should now have the correct instance url", new URI(instanceUrl), unauthenticatedRestClient.getClientInfo().instanceUrl);
-        assertTrue("Expected success", response.isSuccess());
+        Assert.assertEquals("RestClient should now have the correct instance url", new URI(instanceUrl), unauthenticatedRestClient.getClientInfo().instanceUrl);
+        Assert.assertTrue("Expected success", response.isSuccess());
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
     }
 
@@ -279,6 +297,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * Testing a get versions call to the server - check response
      * @throws Exception
      */
+    @Test
     public void testGetVersions() throws Exception {
         // We don't need to be authenticated
         RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, null);
@@ -291,6 +310,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * Testing a get resources call to the server - check response
      * @throws Exception
      */
+    @Test
     public void testGetResources() throws Exception {
         RestResponse response = restClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
@@ -301,6 +321,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * Testing a get resources async call to the server - check response
      * @throws Exception
      */
+    @Test
     public void testGetResourcesAsync() throws Exception {
         RestResponse response = sendAsync(restClient, RestRequest.getRequestForResources(TestCredentials.API_VERSION));
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
@@ -311,6 +332,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * Testing a describe global call to the server - check response
      * @throws Exception
      */
+    @Test
     public void testDescribeGlobal() throws Exception {
         RestResponse response = restClient.sendSync(RestRequest.getRequestForDescribeGlobal(TestCredentials.API_VERSION));
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
@@ -323,6 +345,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * Testing a describe global async call to the server - check response
      * @throws Exception
      */
+    @Test
     public void testDescribeGlobalAsync() throws Exception {
         RestResponse response = sendAsync(restClient, RestRequest.getRequestForDescribeGlobal(TestCredentials.API_VERSION));
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
@@ -335,31 +358,34 @@ public class RestClientTest extends InstrumentationTestCase {
      * Testing a metadata call to the server - check response
      * @throws Exception
      */
+    @Test
     public void testMetadata() throws Exception {
         RestResponse response = restClient.sendSync(RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, ACCOUNT));
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
         JSONObject jsonResponse = response.asJSONObject();
         checkKeys(jsonResponse, "objectDescribe", "recentItems");
         checkKeys(jsonResponse.getJSONObject("objectDescribe"), LNAME, "label", "keyPrefix");
-        assertEquals("Wrong object name", "Account", jsonResponse.getJSONObject("objectDescribe").getString(LNAME));
+        Assert.assertEquals("Wrong object name", "Account", jsonResponse.getJSONObject("objectDescribe").getString(LNAME));
     }
 
     /**
      * Testing a describe call to the server - check response
      * @throws Exception
      */
+    @Test
     public void testDescribe() throws Exception {
         RestResponse response = restClient.sendSync(RestRequest.getRequestForDescribe(TestCredentials.API_VERSION, ACCOUNT));
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
         JSONObject jsonResponse = response.asJSONObject();
         checkKeys(jsonResponse, LNAME, "fields", "urls", "label");
-        assertEquals("Wrong object name", "Account", jsonResponse.getString(LNAME));
+        Assert.assertEquals("Wrong object name", "Account", jsonResponse.getString(LNAME));
     }
 
     /**
      * Testing a create call to the server - check response
      * @throws Exception
      */
+    @Test
     public void testCreate() throws Exception {
         Map<String, Object> fields = new HashMap<String, Object>();
         String newAccountName = ENTITY_NAME_PREFIX + System.nanoTime();
@@ -367,7 +393,7 @@ public class RestClientTest extends InstrumentationTestCase {
         RestResponse response = restClient.sendSync(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, ACCOUNT, fields));
         JSONObject jsonResponse = response.asJSONObject();
         checkKeys(jsonResponse, "id", "errors", "success");
-        assertTrue("Create failed", jsonResponse.getBoolean("success"));
+        Assert.assertTrue("Create failed", jsonResponse.getBoolean("success"));
     }
 
     /**
@@ -375,6 +401,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * Create new account then retrieve it.
      * @throws Exception
      */
+    @Test
     public void testRetrieve() throws Exception {
         List<String> fields = Arrays.asList(NAME, "ownerId");
         IdName newAccountIdName = createAccount();
@@ -382,7 +409,7 @@ public class RestClientTest extends InstrumentationTestCase {
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
         JSONObject jsonResponse = response.asJSONObject();
         checkKeys(jsonResponse, "attributes", NAME, "OwnerId", "Id");
-        assertEquals("Wrong row returned", newAccountIdName.name, jsonResponse.getString(NAME));
+        Assert.assertEquals("Wrong row returned", newAccountIdName.name, jsonResponse.getString(NAME));
     }
 
     /**
@@ -390,6 +417,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * Create new account then update it then get it back
      * @throws Exception
      */
+    @Test
     public void testUpdate() throws Exception {
 
         // Create
@@ -400,11 +428,11 @@ public class RestClientTest extends InstrumentationTestCase {
         String updatedAccountName = ENTITY_NAME_PREFIX + "-" + System.nanoTime();
         fields.put(NAME, updatedAccountName);
         RestResponse updateResponse = restClient.sendSync(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, fields));
-        assertTrue("Update failed", updateResponse.isSuccess());
+        Assert.assertTrue("Update failed", updateResponse.isSuccess());
 
         // Retrieve - expect updated name
         RestResponse response = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, Arrays.asList(NAME)));
-        assertEquals("Wrong row returned", updatedAccountName, response.asJSONObject().getString(NAME));
+        Assert.assertEquals("Wrong row returned", updatedAccountName, response.asJSONObject().getString(NAME));
     }
 
     /**
@@ -412,6 +440,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * Create new account using a first upsert call then update it with a second upsert call then get it back
      * @throws Exception
      */
+    @Test
     public void testUpsert() throws Exception {
 
         // Create with upsert call
@@ -419,7 +448,7 @@ public class RestClientTest extends InstrumentationTestCase {
         String accountName = ENTITY_NAME_PREFIX + "-" + System.nanoTime();
         fields.put(NAME, accountName);
         RestResponse response = restClient.sendSync(RestRequest.getRequestForUpsert(TestCredentials.API_VERSION, ACCOUNT, "Id", null, fields));
-        assertTrue("Create with upsert failed", response.isSuccess());
+        Assert.assertTrue("Create with upsert failed", response.isSuccess());
         String accountId = response.asJSONObject().getString("id");
 
         // Update with upsert call
@@ -427,11 +456,11 @@ public class RestClientTest extends InstrumentationTestCase {
         String updatedAccountName = ENTITY_NAME_PREFIX + "-" + System.nanoTime();
         fields.put(NAME, updatedAccountName);
         response = restClient.sendSync(RestRequest.getRequestForUpsert(TestCredentials.API_VERSION, ACCOUNT, "Id", accountId, fields));
-        assertTrue("Update with upsert failed", response.isSuccess());
+        Assert.assertTrue("Update with upsert failed", response.isSuccess());
 
         // Retrieve - expect updated name
         response = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, ACCOUNT, accountId, Arrays.asList(NAME)));
-        assertEquals("Wrong row returned", updatedAccountName, response.asJSONObject().getString(NAME));
+        Assert.assertEquals("Wrong row returned", updatedAccountName, response.asJSONObject().getString(NAME));
     }
 
 
@@ -442,6 +471,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * then update it again with created date for unmodified since date (should not update)
      * @throws Exception
      */
+    @Test
     public void testUpdateWithIfUnmodifiedSince() throws Exception {
         Map<String, Object> fields = new HashMap<String, Object>();
         Date pastDate = new Date(new Date().getTime() - 3600*1000); // an hour ago
@@ -461,21 +491,21 @@ public class RestClientTest extends InstrumentationTestCase {
         String updatedName = originalName + "_upd";
         fields.put(NAME, updatedName);
         RestResponse updateResponse = restClient.sendSync(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, fields, createdDate));
-        assertTrue("Update failed", updateResponse.isSuccess());
+        Assert.assertTrue("Update failed", updateResponse.isSuccess());
 
         // Retrieve - expect updated name
         retrieveResponse = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, Arrays.asList(NAME)));
-        assertEquals("Wrong row returned", updatedName, retrieveResponse.asJSONObject().getString(NAME));
+        Assert.assertEquals("Wrong row returned", updatedName, retrieveResponse.asJSONObject().getString(NAME));
 
         // Second update with if-unmodified-since with created date - should not update
         String blockedUpdatedName = originalName + "_blocked_upd";
         fields.put(NAME, blockedUpdatedName);
         RestResponse blockedUpdateResponse = restClient.sendSync(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, fields, createdDate));
-        assertEquals("Expected 412", HttpURLConnection.HTTP_PRECON_FAILED, blockedUpdateResponse.getStatusCode());
+        Assert.assertEquals("Expected 412", HttpURLConnection.HTTP_PRECON_FAILED, blockedUpdateResponse.getStatusCode());
 
         // Retrieve - expect name from first update
         retrieveResponse = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, Arrays.asList(NAME)));
-        assertEquals("Wrong row returned", updatedName, retrieveResponse.asJSONObject().getString(NAME));
+        Assert.assertEquals("Wrong row returned", updatedName, retrieveResponse.asJSONObject().getString(NAME));
 
     }
 
@@ -484,6 +514,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * Create new account then delete it then try to retrieve it again (expect 404).
      * @throws Exception
      */
+    @Test
     public void testDelete() throws Exception {
 
         // Create
@@ -491,17 +522,17 @@ public class RestClientTest extends InstrumentationTestCase {
 
         // Delete
         RestResponse deleteResponse = restClient.sendSync(RestRequest.getRequestForDelete(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id));
-        assertTrue("Delete failed", deleteResponse.isSuccess());
+        Assert.assertTrue("Delete failed", deleteResponse.isSuccess());
 
         // Retrieve - expect 404
         List<String> fields = Arrays.asList(NAME);
         RestResponse response = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, fields));
-        assertEquals("404 was expected", HttpURLConnection.HTTP_NOT_FOUND, response.getStatusCode());
+        Assert.assertEquals("404 was expected", HttpURLConnection.HTTP_NOT_FOUND, response.getStatusCode());
     }
 
     /**
      *
-     * if-unmodified-since not supported for delete
+     * TODO: if-unmodified-since not supported for delete
      * Bring this test back once it is
      *
      * Testing delete calls to the server with if-unmodified-since.
@@ -512,6 +543,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws Exception
      */
     /*
+    @Test
     public void testDeleteWithIfUnmodifiedSince() throws Exception {
         Map<String, Object> fields = new HashMap<>();
 
@@ -530,31 +562,31 @@ public class RestClientTest extends InstrumentationTestCase {
         String updatedName = originalName + "_upd";
         fields.put(NAME, updatedName);
         RestResponse updateResponse = restClient.sendSync(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, fields));
-        assertTrue("Update failed", updateResponse.isSuccess());
+        Assert.assertTrue("Update failed", updateResponse.isSuccess());
 
         // Retrieve - expect updated name
         retrieveResponse = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, Arrays.asList(new String[]{NAME, LAST_MODIFIED_DATE})));
-        assertEquals("Wrong row returned", updatedName, retrieveResponse.asJSONObject().getString(NAME));
+        Assert.assertEquals("Wrong row returned", updatedName, retrieveResponse.asJSONObject().getString(NAME));
         Date lastModifiedDate = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")).parse(retrieveResponse.asJSONObject().getString(LAST_MODIFIED_DATE));
 
         // Delete with if-unmodified-since with created date - should not delete
         RestResponse blockedDeleteResponse = restClient.sendSync(RestRequest.getRequestForDelete(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, createdDate));
-        assertFalse("Delete should have failed", blockedDeleteResponse.isSuccess());
-        assertEquals("Expected 412", HttpURLConnection.HTTP_PRECON_FAILED, blockedDeleteResponse.getStatusCode());
+        Assert.assertFalse("Delete should have failed", blockedDeleteResponse.isSuccess());
+        Assert.assertEquals("Expected 412", HttpURLConnection.HTTP_PRECON_FAILED, blockedDeleteResponse.getStatusCode());
 
         // Retrieve - expect success
         retrieveResponse = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, Arrays.asList(new String[]{NAME})));
-        assertTrue("Retrieve should have succeeded", retrieveResponse.isSuccess());
-        assertEquals("Wrong row returned", updatedName, retrieveResponse.asJSONObject().getString(NAME));
+        Assert.assertTrue("Retrieve should have succeeded", retrieveResponse.isSuccess());
+        Assert.assertEquals("Wrong row returned", updatedName, retrieveResponse.asJSONObject().getString(NAME));
 
         // Delete with if-unmodified-since with created date - should delete
         RestResponse deleteResponse = restClient.sendSync(RestRequest.getRequestForDelete(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, lastModifiedDate));
-        assertTrue("Delete should have succeeded", deleteResponse.isSuccess());
+        Assert.assertTrue("Delete should have succeeded", deleteResponse.isSuccess());
 
         // Retrieve - expect 404
         retrieveResponse = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, Arrays.asList(new String[]{NAME})));
-        assertFalse("Retrieve should have failed", retrieveResponse.isSuccess());
-        assertEquals("Expected 404", HttpURLConnection.HTTP_NOT_FOUND, retrieveResponse.getStatusCode());
+        Assert.assertFalse("Retrieve should have failed", retrieveResponse.isSuccess());
+        Assert.assertEquals("Expected 404", HttpURLConnection.HTTP_NOT_FOUND, retrieveResponse.getStatusCode());
     }
     */
 
@@ -563,20 +595,22 @@ public class RestClientTest extends InstrumentationTestCase {
      * Create new account then look for it using soql.
      * @throws Exception
      */
+    @Test
     public void testQuery() throws Exception {
         IdName newAccountIdName = createAccount();
         RestResponse response = restClient.sendSync(RestRequest.getRequestForQuery(TestCredentials.API_VERSION, "select name from account where id = '" + newAccountIdName.id + "'"));
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
         JSONObject jsonResponse = response.asJSONObject();
         checkKeys(jsonResponse, "done", "totalSize", "records");
-        assertEquals("Expected one row", 1, jsonResponse.getInt("totalSize"));
-        assertEquals("Wrong row returned", newAccountIdName.name, jsonResponse.getJSONArray("records").getJSONObject(0).get(NAME));
+        Assert.assertEquals("Expected one row", 1, jsonResponse.getInt("totalSize"));
+        Assert.assertEquals("Wrong row returned", newAccountIdName.name, jsonResponse.getJSONArray("records").getJSONObject(0).get(NAME));
     }
 
     /**
      * Testing that calling resume more than once on a RestResponse doesn't throw an exception
      * @throws Exception 
      */
+    @Test
     public void testDoubleConsume() throws Exception {
         RestResponse response = restClient.sendSync(RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, ACCOUNT));
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
@@ -585,7 +619,7 @@ public class RestClientTest extends InstrumentationTestCase {
         	response.consume();
         }
         catch (IllegalStateException e) {
-        	fail("Calling consume should not have thrown an exception");
+            Assert.fail("Calling consume should not have thrown an exception");
         }
     }
 
@@ -594,12 +628,13 @@ public class RestClientTest extends InstrumentationTestCase {
      * Create new account then ensure the results of SOSL don't have an error.
      * @throws Exception
      */
+    @Test
     public void testSearch() throws Exception {
         createAccount();
         createAccount();
         RestResponse response = restClient.sendSync(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + ENTITY_NAME_PREFIX + "}"));
         JSONArray jsonResults = response.asJSONObject().getJSONArray("searchRecords");
-        assertNotNull("Results expected", jsonResults);
+        Assert.assertNotNull("Results expected", jsonResults);
     }
 
     /**
@@ -607,6 +642,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * @return
      * @throws Exception
      */
+    @Test
     public void testRestClientUnauthenticatedlientInfo() throws Exception {
         RestClient unauthenticatedRestClient = new RestClient(new RestClient.UnauthenticatedClientInfo(), null, HttpAccess.DEFAULT, null);
         RestRequest request = new RestRequest(RestMethod.GET, "https://na1.salesforce.com/services/data");
@@ -621,6 +657,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * @return
      * @throws Exception
      */
+    @Test
     public void testRestClientUnauthenticatedlientInfoAsync() throws Exception {
         RestClient unauthenticatedRestClient = new RestClient(new RestClient.UnauthenticatedClientInfo(), null, HttpAccess.DEFAULT, null);
         RestRequest request = new RestRequest(RestMethod.GET, "https://na1.salesforce.com/services/data");
@@ -635,16 +672,16 @@ public class RestClientTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testResponseStreamIsReadable() throws Exception {
         final RestResponse response = getStreamTestResponse();
-
         try {
             InputStream in = response.asInputStream();
             assertStreamTestResponseStreamIsValid(in);
         } catch (IOException e) {
-            fail("The InputStream should be readable and an IOException should not have been thrown");
+            Assert.fail("The InputStream should be readable and an IOException should not have been thrown");
         } catch (JSONException e) {
-            fail("Valid JSON data should have been returned");
+            Assert.fail("Valid JSON data should have been returned");
         } finally {
             response.consumeQuietly();
         }
@@ -655,19 +692,19 @@ public class RestClientTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testResponseStreamConsumedByReadingStream() throws Exception {
         final RestResponse response = getStreamTestResponse();
-
         try {
             InputStream in = response.asInputStream();
             inputStreamToString(in);
         } catch (IOException e) {
-            fail("The InputStream should be readable and an IOException should not have been thrown");
+            Assert.fail("The InputStream should be readable and an IOException should not have been thrown");
         }
 
         // We read the entire stream but forgot to call consume() or consumeQuietly() - can another REST call be made?
         final RestResponse anotherResponse = getStreamTestResponse();
-        assertNotNull(anotherResponse);
+        Assert.assertNotNull(anotherResponse);
     }
 
     /**
@@ -675,19 +712,18 @@ public class RestClientTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testResponseStreamCannotBeReadTwice() throws Exception {
         final RestResponse response = getStreamTestResponse();
-
         try {
             final InputStream in = response.asInputStream();
             inputStreamToString(in);
         } catch (IOException e) {
-            fail("The InputStream should be readable and an IOException should not have been thrown");
+            Assert.fail("The InputStream should be readable and an IOException should not have been thrown");
         }
-
         try {
             response.asInputStream();
-            fail("An IOException should have been thrown while trying to read the InputStream a second time");
+            Assert.fail("An IOException should have been thrown while trying to read the InputStream a second time");
         } catch (IOException e) {
             // Expected
         } finally {
@@ -700,42 +736,40 @@ public class RestClientTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testOtherAccessorsNotAvailableAfterResponseStreaming() throws Exception {
         final RestResponse response = getStreamTestResponse();
-
         final Runnable testAccessorsNotAccessible = new Runnable() {
             @Override
             public void run() {
                 try {
                     // The other accessors should not return valid data as soon as the stream is opened
-                    assertNotNull(response.asBytes());
-                    assertEquals("asBytes() array should be empty", 0, response.asBytes().length);
-                    assertEquals("asString() should return the empty string", "", response.asString());
+                    Assert.assertNotNull(response.asBytes());
+                    Assert.assertEquals("asBytes() array should be empty", 0, response.asBytes().length);
+                    Assert.assertEquals("asString() should return the empty string", "", response.asString());
 
                     try {
-                        assertNull(response.asJSONObject());
-                        fail("asJSONObject() should fail");
+                        Assert.assertNull(response.asJSONObject());
+                        Assert.fail("asJSONObject() should fail");
                     } catch (JSONException e) {
                         // Expected
                     }
-
                     try {
-                        assertNull(response.asJSONArray());
-                        fail("asJSONArray() should fail");
+                        Assert.assertNull(response.asJSONArray());
+                        Assert.fail("asJSONArray() should fail");
                     } catch (JSONException e) {
                         // Expected
                     }
                 } catch (IOException e) {
-                    fail("IOException not expected");
+                    Assert.fail("IOException not expected");
                 }
             }
         };
-
         try {
             response.asInputStream();
             testAccessorsNotAccessible.run();
         } catch (IOException e) {
-            fail("The InputStream should be readable and an IOException should not have been thrown");
+            Assert.fail("The InputStream should be readable and an IOException should not have been thrown");
         } finally {
             response.consumeQuietly();
         }
@@ -749,13 +783,13 @@ public class RestClientTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testAccessorMethodsPreventResponseStreaming() throws Exception {
         final RestResponse response = getStreamTestResponse();
         response.asBytes();
-
         try {
             response.asInputStream();
-            fail("The InputStream should not be readable after an accessor method is called");
+            Assert.fail("The InputStream should not be readable after an accessor method is called");
         } catch (IOException e) {
             // Expected
         } finally {
@@ -775,20 +809,18 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws IOException
      * @throws JSONException
      */
+    @Test
     public void testBatchRequest() throws IOException, JSONException {
         Map<String, Object> accountFields = new HashMap<String, Object>();
         String accountName = ENTITY_NAME_PREFIX + System.nanoTime();
         accountFields.put(NAME, accountName);
         RestRequest firstRequest = RestRequest.getRequestForCreate(TestCredentials.API_VERSION, ACCOUNT, accountFields);
-
         Map<String, Object> contactFields = new HashMap<String, Object>();
         String contactName = ENTITY_NAME_PREFIX + System.nanoTime();
         contactFields.put("LastName", contactName);
         RestRequest secondRequest = RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "contact", contactFields);
-
         RestRequest thirdRequest = RestRequest.getRequestForQuery(TestCredentials.API_VERSION, "select Id from Account where Name = '" + accountName + "'");
         RestRequest fourthRequest = RestRequest.getRequestForQuery(TestCredentials.API_VERSION, "select Id from Contact where Name = '" + contactName + "'");
-
 
         // Build batch request
         RestRequest batchRequest = RestRequest.getBatchRequest(TestCredentials.API_VERSION, false, Arrays.asList(firstRequest, secondRequest, thirdRequest, fourthRequest));
@@ -798,23 +830,22 @@ public class RestClientTest extends InstrumentationTestCase {
 
         // Checking response
         JSONObject jsonResponse = response.asJSONObject();
-
         checkKeys(jsonResponse, "hasErrors", "results");
-        assertFalse("Batch had errors", jsonResponse.getBoolean("hasErrors"));
+        Assert.assertFalse("Batch had errors", jsonResponse.getBoolean("hasErrors"));
         JSONArray jsonResults = jsonResponse.getJSONArray("results");
-        assertEquals("Wrong number of results", 4, jsonResults.length());
-        assertEquals("Wrong status for first request", HttpURLConnection.HTTP_CREATED, jsonResults.getJSONObject(0).getInt("statusCode"));
-        assertEquals("Wrong status for second request", HttpURLConnection.HTTP_CREATED, jsonResults.getJSONObject(1).getInt("statusCode"));
-        assertEquals("Wrong status for third request", HttpURLConnection.HTTP_OK, jsonResults.getJSONObject(2).getInt("statusCode"));
-        assertEquals("Wrong status for fourth request", HttpURLConnection.HTTP_OK, jsonResults.getJSONObject(3).getInt("statusCode"));
+        Assert.assertEquals("Wrong number of results", 4, jsonResults.length());
+        Assert.assertEquals("Wrong status for first request", HttpURLConnection.HTTP_CREATED, jsonResults.getJSONObject(0).getInt("statusCode"));
+        Assert.assertEquals("Wrong status for second request", HttpURLConnection.HTTP_CREATED, jsonResults.getJSONObject(1).getInt("statusCode"));
+        Assert.assertEquals("Wrong status for third request", HttpURLConnection.HTTP_OK, jsonResults.getJSONObject(2).getInt("statusCode"));
+        Assert.assertEquals("Wrong status for fourth request", HttpURLConnection.HTTP_OK, jsonResults.getJSONObject(3).getInt("statusCode"));
 
         // Queries should have returned ids of newly created account and contact
         String accountId =  jsonResults.getJSONObject(0).getJSONObject("result").getString("id");
         String contactId =  jsonResults.getJSONObject(1).getJSONObject("result").getString("id");
         String idFromFirstQuery = jsonResults.getJSONObject(2).getJSONObject("result").getJSONArray("records").getJSONObject(0).getString("Id");
         String idFromSecondQuery = jsonResults.getJSONObject(3).getJSONObject("result").getJSONArray("records").getJSONObject(0).getString("Id");
-        assertEquals("Account id not returned by query", accountId, idFromFirstQuery);
-        assertEquals("Contact id not returned by query", contactId, idFromSecondQuery);
+        Assert.assertEquals("Account id not returned by query", accountId, idFromFirstQuery);
+        Assert.assertEquals("Contact id not returned by query", contactId, idFromSecondQuery);
     }
 
     /**
@@ -828,20 +859,18 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws IOException
      * @throws JSONException
      */
+    @Test
     public void testCompositeRequest() throws IOException, JSONException {
         Map<String, Object> accountFields = new HashMap<String, Object>();
         String accountName = ENTITY_NAME_PREFIX + System.nanoTime();
         accountFields.put(NAME, accountName);
         RestRequest firstRequest = RestRequest.getRequestForCreate(TestCredentials.API_VERSION, ACCOUNT, accountFields);
-
         Map<String, Object> contactFields = new HashMap<String, Object>();
         String contactName = ENTITY_NAME_PREFIX + System.nanoTime();
         contactFields.put("LastName", contactName);
         contactFields.put("AccountId", "@{refAccount.id}");
         RestRequest secondRequest = RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "contact", contactFields);
-
         RestRequest thirdRequest = RestRequest.getRequestForQuery(TestCredentials.API_VERSION, "select Id, AccountId from Contact where LastName = '" + contactName + "'");
-
         LinkedHashMap<String, RestRequest> refIdToRequests = new LinkedHashMap<>();
         refIdToRequests.put("refAccount", firstRequest);
         refIdToRequests.put("refContact", secondRequest);
@@ -855,20 +884,19 @@ public class RestClientTest extends InstrumentationTestCase {
 
         // Checking response
         JSONObject jsonResponse = response.asJSONObject();
-
         JSONArray jsonResults = jsonResponse.getJSONArray("compositeResponse");
-        assertEquals("Wrong number of results", 3, jsonResults.length());
-        assertEquals("Wrong status for first request", HttpURLConnection.HTTP_CREATED, jsonResults.getJSONObject(0).getInt("httpStatusCode"));
-        assertEquals("Wrong status for second request", HttpURLConnection.HTTP_CREATED, jsonResults.getJSONObject(1).getInt("httpStatusCode"));
-        assertEquals("Wrong status for third request", HttpURLConnection.HTTP_OK, jsonResults.getJSONObject(2).getInt("httpStatusCode"));
+        Assert.assertEquals("Wrong number of results", 3, jsonResults.length());
+        Assert.assertEquals("Wrong status for first request", HttpURLConnection.HTTP_CREATED, jsonResults.getJSONObject(0).getInt("httpStatusCode"));
+        Assert.assertEquals("Wrong status for second request", HttpURLConnection.HTTP_CREATED, jsonResults.getJSONObject(1).getInt("httpStatusCode"));
+        Assert.assertEquals("Wrong status for third request", HttpURLConnection.HTTP_OK, jsonResults.getJSONObject(2).getInt("httpStatusCode"));
 
         // Query should have returned ids of newly created account and contact
         String accountId =  jsonResults.getJSONObject(0).getJSONObject("body").getString("id");
         String contactId =  jsonResults.getJSONObject(1).getJSONObject("body").getString("id");
         JSONArray queryRecords = jsonResults.getJSONObject(2).getJSONObject("body").getJSONArray("records");
-        assertEquals("wrong number of results for query request", 1, queryRecords.length());
-        assertEquals("Account id not returned by query", accountId, queryRecords.getJSONObject(0).getString("AccountId"));
-        assertEquals("Contact id not returned by query", contactId, queryRecords.getJSONObject(0).getString("Id"));
+        Assert.assertEquals("wrong number of results for query request", 1, queryRecords.length());
+        Assert.assertEquals("Account id not returned by query", accountId, queryRecords.getJSONObject(0).getString("AccountId"));
+        Assert.assertEquals("Contact id not returned by query", contactId, queryRecords.getJSONObject(0).getString("Id"));
     }
 
     /**
@@ -883,23 +911,20 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws IOException
      * @throws JSONException
      */
+    @Test
     public void testSObjectTreeRequest() throws IOException, JSONException {
         Map<String, Object> accountFields = new HashMap<String, Object>();
         String accountName = ENTITY_NAME_PREFIX + System.nanoTime();
         accountFields.put(NAME, accountName);
-
         Map<String, Object> contactFields = new HashMap<String, Object>();
         String contactName = ENTITY_NAME_PREFIX + System.nanoTime();
         contactFields.put("LastName", contactName);
-
         Map<String, Object> otherContactFields = new HashMap<String, Object>();
         String otherContactName = ENTITY_NAME_PREFIX + System.nanoTime();
         otherContactFields.put("LastName", otherContactName);
-
         List<RestRequest.SObjectTree> childrenTrees = new ArrayList<>();
         childrenTrees.add(new RestRequest.SObjectTree("contact", "Contacts", "refContact", contactFields, null));
         childrenTrees.add(new RestRequest.SObjectTree("contact", "Contacts", "refOtherContact", otherContactFields, null));
-
         List<RestRequest.SObjectTree> recordTrees = new ArrayList<>();
         recordTrees.add(new RestRequest.SObjectTree(ACCOUNT, null, "refAccount", accountFields, childrenTrees));
 
@@ -911,12 +936,10 @@ public class RestClientTest extends InstrumentationTestCase {
 
         // Checking response
         JSONObject jsonResponse = response.asJSONObject();
-
         checkKeys(jsonResponse, "hasErrors", "results");
-        assertFalse("SObject tree request had errors", jsonResponse.getBoolean("hasErrors"));
-
+        Assert.assertFalse("SObject tree request had errors", jsonResponse.getBoolean("hasErrors"));
         JSONArray jsonResults = jsonResponse.getJSONArray("results");
-        assertEquals("Wrong number of results", 3, jsonResults.length());
+        Assert.assertEquals("Wrong number of results", 3, jsonResults.length());
         String accountId =  jsonResults.getJSONObject(0).getString("id");
         String contactId =  jsonResults.getJSONObject(1).getString("id");
         String otherContactId =  jsonResults.getJSONObject(2).getString("id");
@@ -925,17 +948,17 @@ public class RestClientTest extends InstrumentationTestCase {
         RestRequest queryRequest = RestRequest.getRequestForQuery(TestCredentials.API_VERSION, "select Id, AccountId from Contact where LastName = '" + contactName + "'");
         RestResponse queryResponse = restClient.sendSync(queryRequest);
         JSONArray queryRecords = queryResponse.asJSONObject().getJSONArray("records");
-        assertEquals("wrong number of results for query request", 1, queryRecords.length());
-        assertEquals("Account id not returned by query", accountId, queryRecords.getJSONObject(0).getString("AccountId"));
-        assertEquals("Contact id not returned by query", contactId, queryRecords.getJSONObject(0).getString("Id"));
+        Assert.assertEquals("wrong number of results for query request", 1, queryRecords.length());
+        Assert.assertEquals("Account id not returned by query", accountId, queryRecords.getJSONObject(0).getString("AccountId"));
+        Assert.assertEquals("Contact id not returned by query", contactId, queryRecords.getJSONObject(0).getString("Id"));
 
         // Running other query that should match other contact and its parent
         RestRequest otherQueryRequest = RestRequest.getRequestForQuery(TestCredentials.API_VERSION, "select Id, AccountId from Contact where LastName = '" + otherContactName + "'");
         RestResponse otherQueryResponse = restClient.sendSync(otherQueryRequest);
         JSONArray otherQueryRecords = otherQueryResponse.asJSONObject().getJSONArray("records");
-        assertEquals("wrong number of results for query request", 1, otherQueryRecords.length());
-        assertEquals("Account id not returned by query", accountId, otherQueryRecords.getJSONObject(0).getString("AccountId"));
-        assertEquals("Contact id not returned by query", otherContactId, otherQueryRecords.getJSONObject(0).getString("Id"));
+        Assert.assertEquals("wrong number of results for query request", 1, otherQueryRecords.length());
+        Assert.assertEquals("Account id not returned by query", accountId, otherQueryRecords.getJSONObject(0).getString("AccountId"));
+        Assert.assertEquals("Contact id not returned by query", otherContactId, otherQueryRecords.getJSONObject(0).getString("Id"));
     }
 
     //
@@ -948,7 +971,7 @@ public class RestClientTest extends InstrumentationTestCase {
      */
     private RestResponse getStreamTestResponse() throws IOException {
         final RestResponse response = restClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
-        assertEquals("Response code should be HTTP OK", response.getStatusCode(), HttpURLConnection.HTTP_OK);
+        Assert.assertEquals("Response code should be HTTP OK", response.getStatusCode(), HttpURLConnection.HTTP_OK);
         return response;
     }
 
@@ -960,8 +983,7 @@ public class RestClientTest extends InstrumentationTestCase {
      */
     private void assertStreamTestResponseStreamIsValid(InputStream in) throws IOException, JSONException {
         final String responseData = inputStreamToString(in);
-        assertNotNull("The response should contain data", responseData);
-
+        Assert.assertNotNull("The response should contain data", responseData);
         final JSONObject responseJson = new JSONObject(responseData);
         checkKeys(responseJson, "sobjects", "search", "recent");
     }
@@ -970,11 +992,9 @@ public class RestClientTest extends InstrumentationTestCase {
         StringBuilder builder = new StringBuilder();
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
         String line;
-
         while ((line = reader.readLine()) != null) {
             builder.append(line);
         }
-
         return builder.toString();
     }
 
@@ -1035,7 +1055,6 @@ public class RestClientTest extends InstrumentationTestCase {
             if (requests.size() > 0) {
                 restClient.sendSync(RestRequest.getBatchRequest(TestCredentials.API_VERSION, false, requests));
             }
-
         }
         catch(Exception e) {
             // We tried our best :-(
@@ -1049,7 +1068,7 @@ public class RestClientTest extends InstrumentationTestCase {
      */
     private void checkResponse(RestResponse response, int expectedStatusCode, boolean isJsonArray) {
         // Check status code
-        assertEquals(expectedStatusCode  + " response expected", expectedStatusCode, response.getStatusCode());
+        Assert.assertEquals(expectedStatusCode  + " response expected", expectedStatusCode, response.getStatusCode());
 
         // Try to parse as json
         try {
@@ -1061,8 +1080,7 @@ public class RestClientTest extends InstrumentationTestCase {
             }
         }
         catch (Exception e) {
-            fail("Failed to parse response body");
-            e.printStackTrace();
+            Assert.fail("Failed to parse response body");
         }
     }
 
@@ -1073,7 +1091,7 @@ public class RestClientTest extends InstrumentationTestCase {
      */
     private void checkKeys(JSONObject jsonObject, String... expectedKeys) {
         for (String expectedKey : expectedKeys) {
-            assertTrue("Object should have key: " + expectedKey, jsonObject.has(expectedKey));
+            Assert.assertTrue("Object should have key: " + expectedKey, jsonObject.has(expectedKey));
         }
     }
 

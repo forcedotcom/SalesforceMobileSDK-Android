@@ -1,7 +1,10 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
 buildscript {
     repositories {
         jcenter()
     }
+
 
     dependencies {
         classpath 'com.github.dcendents:android-maven-gradle-plugin:2.0'
@@ -15,12 +18,21 @@ apply plugin: 'com.jfrog.bintray'
 
 dependencies {
   api project(':libs:SmartSync')
-  api 'com.facebook.react:react-native:0.50.4'
+  api 'com.facebook.react:react-native:0.53.3'
+
+  androidTestApi 'com.android.support.test:runner:1.0.1'
+  androidTestApi 'com.android.support.test:rules:1.0.1'
 }
 
 android {
   compileSdkVersion 27
-  buildToolsVersion '26.0.2'
+  buildToolsVersion '27.0.3'
+
+  buildTypes {
+    debug {
+      testCoverageEnabled = true
+    }
+  }
 
   sourceSets {
     main {
@@ -32,7 +44,19 @@ android {
       res.srcDirs = ['res']
       assets.srcDirs = ['assets']
     }
+    androidTest.setRoot('../test/SalesforceReactTest')
+    androidTest {
+      java.srcDirs = ['../test/SalesforceReactTest/src']
+      resources.srcDirs = ['../test/SalesforceReactTest/src']
+      res.srcDirs = ['../test/SalesforceReactTest/res']
+    }
   }
+
+  defaultConfig {
+    testApplicationId "com.salesforce.androidsdk.salesforcereact.tests"
+    testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+  }
+
   packagingOptions {
     exclude 'META-INF/LICENSE'
     exclude 'META-INF/LICENSE.txt'
@@ -46,7 +70,34 @@ android {
   }
 }
 
+def assetsFolder = new File('libs/test/SalesforceReactTest/assets')
+def reactTestsBundleFile = new File(assetsFolder, 'index.android.bundle')
+
+task buildReactTestBundle(type:Exec) {
+  if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+    commandLine("cmd", "/c", "node", "node_modules/react-native/local-cli/cli.js", "bundle", "--platform", "android", "--dev", "true",
+        "--entry-file", "node_modules/react-native-force/test/alltests.js", "--bundle-output", reactTestsBundleFile.absolutePath,
+        "--assets-dest", assetsFolder.absolutePath)
+  } else {
+    commandLine("/usr/local/bin/node", "node_modules/react-native/local-cli/cli.js", "bundle", "--platform", "android", "--dev", "true",
+        "--entry-file", "node_modules/react-native-force/test/alltests.js", "--bundle-output", reactTestsBundleFile.absolutePath,
+        "--assets-dest", assetsFolder.absolutePath)
+  }
+}
+
+task buildReactTestBundleIfNotExists {
+  doLast {
+    if (!reactTestsBundleFile.exists()) {
+      assetsFolder.mkdirs()
+      tasks.buildReactTestBundle.execute()
+    }
+  }
+}
+
 afterEvaluate {
+  // Generate react tests bundle first
+  preDebugAndroidTestBuild.dependsOn(buildReactTestBundleIfNotExists)
+
   // Find all connected Android tests and ensure they log all passed tests. This keeps the Travis
   // from timing out since executing tests are printed to the console.
   tasks.matching { it.name ==~ /^connected.*AndroidTest$/ }*.logging*.setLevel(LogLevel.INFO)
@@ -110,9 +161,9 @@ bintray {
         licenses = ['Apache-2.0']
         labels = ['android', 'salesforce', 'mobilesdk']
         version {
-            name = '6.0.0'
+            name = '6.1.0'
             released  = new Date()
-            vcsTag = 'v6.0.0'
+            vcsTag = 'v6.1.0'
         }
     }
 }

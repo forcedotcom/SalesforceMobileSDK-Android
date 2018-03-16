@@ -848,18 +848,19 @@ public class SmartStore  {
 		int columnCount = cursor.getColumnCount();
 		for (int i=0; i<columnCount; i++) {
             int valueType = cursor.getType(i);
+			String columnName = cursor.getColumnName(i);
             if (valueType == Cursor.FIELD_TYPE_NULL) {
                 row.put(null);
             }
             else if (valueType == Cursor.FIELD_TYPE_STRING) {
                 String raw = cursor.getString(i);
-                if (cursor.getColumnName(i).equals(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
+                if (columnName.equals(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
                     // Presence of external storage column implies we must fetch from storage. Soup name and entry id values can be extracted
                     String soupTableName = cursor.getString(i);
                     Long soupEntryId = cursor.getLong(i + 1);
                     row.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, soupEntryId, encryptionKey));
                     i++; // skip next column (_soupEntryId)
-                } else if (cursor.getColumnName(i).endsWith(SOUP_COL)) {
+                } else if (columnName.equals(SOUP_COL) || columnName.startsWith(SOUP_COL + ":") /* :num is appended to column name when result set has more than one column with same name */) {
                     row.put(new JSONObject(raw));
                     // Note: we could end up returning a string if you aliased the column
                 }

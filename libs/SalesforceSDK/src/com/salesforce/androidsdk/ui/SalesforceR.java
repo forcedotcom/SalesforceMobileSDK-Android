@@ -35,8 +35,9 @@ import com.salesforce.androidsdk.R;
  * Since 1.3, SalesforceSDK is packaged as a library project and therefore contains its resources.
  * We are only keeping this class for backward compatibility reason, for projects that use the SDK as a jar or that have
  * provided custom screens (login, passcode etc) and used SalesforceR to point to their own screens.
+ * @deprecated Will be removed in Mobile SDK 7.0. Resources can be referenced directly in a library project.
  */
-
+@Deprecated
 public class SalesforceR {
 	/* Login */
 	public int stringAccountType() { return R.string.account_type; }

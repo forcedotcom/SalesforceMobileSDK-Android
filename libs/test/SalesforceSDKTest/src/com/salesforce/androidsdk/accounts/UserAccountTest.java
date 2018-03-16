@@ -30,7 +30,9 @@ import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.os.Bundle;
-import android.test.InstrumentationTestCase;
+import android.support.test.InstrumentationRegistry;
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -38,8 +40,14 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.MapUtil;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
+import junit.framework.Assert;
+
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -52,7 +60,9 @@ import java.util.Set;
  *
  * @author aghoneim
  */
-public class UserAccountTest extends InstrumentationTestCase {
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class UserAccountTest {
 
     public static final String TEST_ORG_ID = "test_org_id";
     public static final String TEST_USER_ID = "test_user_id";
@@ -77,12 +87,11 @@ public class UserAccountTest extends InstrumentationTestCase {
 
     private EventsListenerQueue eq;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
-        final Context targetContext = getInstrumentation().getTargetContext();
+        final Context targetContext = InstrumentationRegistry.getTargetContext();
         final Application app = Instrumentation.newApplication(TestForceApp.class, targetContext);
-        getInstrumentation().callApplicationOnCreate(app);
+        InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
         eq = new EventsListenerQueue();
         if (!SalesforceSDKManager.hasInstance()) {
             eq.waitForEvent(EventsObservable.EventType.AppCreateComplete, 5000);
@@ -90,19 +99,19 @@ public class UserAccountTest extends InstrumentationTestCase {
         SalesforceSDKManager.getInstance().setAdditionalOauthKeys(createAdditionalOauthKeys());
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
         if (eq != null) {
             eq.tearDown();
             eq = null;
         }
         SalesforceSDKManager.getInstance().setAdditionalOauthKeys(null);
-        super.tearDown();
     }
 
     /**
      * Tests bundle creation.
      */
+    @Test
     public void testConvertAccountToBundle() {
         final UserAccount account = UserAccountBuilder.getInstance().authToken(TEST_AUTH_TOKEN).
                 refreshToken(TEST_REFRESH_TOKEN).loginServer(TEST_LOGIN_URL).
@@ -114,59 +123,61 @@ public class UserAccountTest extends InstrumentationTestCase {
                 additionalOauthValues(createAdditionalOauthValues()).build();
         final Bundle bundle = account.toBundle();
         final Bundle expectedBundle = createTestAccountBundle();
-        assertTrue(equalBundles(bundle, expectedBundle));
+        Assert.assertTrue(equalBundles(bundle, expectedBundle));
     }
 
     /**
      * Tests creating an account from a bundle.
      */
+    @Test
     public void testCreateAccountFromBundle() {
         final Bundle testBundle = createTestAccountBundle();
         final UserAccount account = new UserAccount(testBundle);
-        assertEquals("Auth token should match", TEST_AUTH_TOKEN, account.getAuthToken());
-        assertEquals("Refresh token should match", TEST_REFRESH_TOKEN, account.getRefreshToken());
-        assertEquals("Login server URL should match", TEST_LOGIN_URL, account.getLoginServer());
-        assertEquals("Identity URL should match", TEST_IDENTITY_URL, account.getIdUrl());
-        assertEquals("Instance URL should match", TEST_INSTANCE_URL, account.getInstanceServer());
-        assertEquals("Org ID should match", TEST_ORG_ID, account.getOrgId());
-        assertEquals("User ID should match", TEST_USER_ID, account.getUserId());
-        assertEquals("User name should match", TEST_USERNAME, account.getUsername());
-        assertEquals("Account name should match", TEST_ACCOUNT_NAME, account.getAccountName());
-        assertEquals("Community ID should match", TEST_COMMUNITY_ID, account.getCommunityId());
-        assertEquals("Community URL should match", TEST_COMMUNITY_URL, account.getCommunityUrl());
-        assertEquals("First name should match", TEST_FIRST_NAME, account.getFirstName());
-        assertEquals("Last name should match", TEST_LAST_NAME, account.getLastName());
-        assertEquals("Display name should match", TEST_DISPLAY_NAME, account.getDisplayName());
-        assertEquals("Email should match", TEST_EMAIL, account.getEmail());
-        assertEquals("Photo URL should match", TEST_PHOTO_URL, account.getPhotoUrl());
-        assertEquals("Thumbnail URL should match", TEST_THUMBNAIL_URL, account.getThumbnailUrl());
-        assertEquals("Additional OAuth values should match", createAdditionalOauthValues(), account.getAdditionalOauthValues());
+        Assert.assertEquals("Auth token should match", TEST_AUTH_TOKEN, account.getAuthToken());
+        Assert.assertEquals("Refresh token should match", TEST_REFRESH_TOKEN, account.getRefreshToken());
+        Assert.assertEquals("Login server URL should match", TEST_LOGIN_URL, account.getLoginServer());
+        Assert.assertEquals("Identity URL should match", TEST_IDENTITY_URL, account.getIdUrl());
+        Assert.assertEquals("Instance URL should match", TEST_INSTANCE_URL, account.getInstanceServer());
+        Assert.assertEquals("Org ID should match", TEST_ORG_ID, account.getOrgId());
+        Assert.assertEquals("User ID should match", TEST_USER_ID, account.getUserId());
+        Assert.assertEquals("User name should match", TEST_USERNAME, account.getUsername());
+        Assert.assertEquals("Account name should match", TEST_ACCOUNT_NAME, account.getAccountName());
+        Assert.assertEquals("Community ID should match", TEST_COMMUNITY_ID, account.getCommunityId());
+        Assert.assertEquals("Community URL should match", TEST_COMMUNITY_URL, account.getCommunityUrl());
+        Assert.assertEquals("First name should match", TEST_FIRST_NAME, account.getFirstName());
+        Assert.assertEquals("Last name should match", TEST_LAST_NAME, account.getLastName());
+        Assert.assertEquals("Display name should match", TEST_DISPLAY_NAME, account.getDisplayName());
+        Assert.assertEquals("Email should match", TEST_EMAIL, account.getEmail());
+        Assert.assertEquals("Photo URL should match", TEST_PHOTO_URL, account.getPhotoUrl());
+        Assert.assertEquals("Thumbnail URL should match", TEST_THUMBNAIL_URL, account.getThumbnailUrl());
+        Assert.assertEquals("Additional OAuth values should match", createAdditionalOauthValues(), account.getAdditionalOauthValues());
     }
 
     /**
      * Tests creating an account from JSON
      */
+    @Test
     public void testCreateAccountFromJSON() throws JSONException {
         JSONObject testJSON = createTestAccountJSON();
         UserAccount account = new UserAccount(testJSON);
-        assertEquals("Auth token should match", TEST_AUTH_TOKEN, account.getAuthToken());
-        assertEquals("Refresh token should match", TEST_REFRESH_TOKEN, account.getRefreshToken());
-        assertEquals("Login server URL should match", TEST_LOGIN_URL, account.getLoginServer());
-        assertEquals("Identity URL should match", TEST_IDENTITY_URL, account.getIdUrl());
-        assertEquals("Instance URL should match", TEST_INSTANCE_URL, account.getInstanceServer());
-        assertEquals("Org ID should match", TEST_ORG_ID, account.getOrgId());
-        assertEquals("User ID should match", TEST_USER_ID, account.getUserId());
-        assertEquals("User name should match", TEST_USERNAME, account.getUsername());
-        assertEquals("Community ID should match", TEST_COMMUNITY_ID, account.getCommunityId());
-        assertEquals("Community URL should match", TEST_COMMUNITY_URL, account.getCommunityUrl());
-        assertEquals("First name should match", TEST_FIRST_NAME, account.getFirstName());
-        assertEquals("Last name should match", TEST_LAST_NAME, account.getLastName());
-        assertEquals("Display name should match", TEST_DISPLAY_NAME, account.getDisplayName());
-        assertEquals("Email should match", TEST_EMAIL, account.getEmail());
-        assertEquals("Photo URL should match", TEST_PHOTO_URL, account.getPhotoUrl());
-        assertEquals("Thumbnail URL should match", TEST_THUMBNAIL_URL, account.getThumbnailUrl());
-        assertEquals("Additional OAuth values should match", createAdditionalOauthValues(), account.getAdditionalOauthValues());
-        assertEquals("Account name should match",
+        Assert.assertEquals("Auth token should match", TEST_AUTH_TOKEN, account.getAuthToken());
+        Assert.assertEquals("Refresh token should match", TEST_REFRESH_TOKEN, account.getRefreshToken());
+        Assert.assertEquals("Login server URL should match", TEST_LOGIN_URL, account.getLoginServer());
+        Assert.assertEquals("Identity URL should match", TEST_IDENTITY_URL, account.getIdUrl());
+        Assert.assertEquals("Instance URL should match", TEST_INSTANCE_URL, account.getInstanceServer());
+        Assert.assertEquals("Org ID should match", TEST_ORG_ID, account.getOrgId());
+        Assert.assertEquals("User ID should match", TEST_USER_ID, account.getUserId());
+        Assert.assertEquals("User name should match", TEST_USERNAME, account.getUsername());
+        Assert.assertEquals("Community ID should match", TEST_COMMUNITY_ID, account.getCommunityId());
+        Assert.assertEquals("Community URL should match", TEST_COMMUNITY_URL, account.getCommunityUrl());
+        Assert.assertEquals("First name should match", TEST_FIRST_NAME, account.getFirstName());
+        Assert.assertEquals("Last name should match", TEST_LAST_NAME, account.getLastName());
+        Assert.assertEquals("Display name should match", TEST_DISPLAY_NAME, account.getDisplayName());
+        Assert.assertEquals("Email should match", TEST_EMAIL, account.getEmail());
+        Assert.assertEquals("Photo URL should match", TEST_PHOTO_URL, account.getPhotoUrl());
+        Assert.assertEquals("Thumbnail URL should match", TEST_THUMBNAIL_URL, account.getThumbnailUrl());
+        Assert.assertEquals("Additional OAuth values should match", createAdditionalOauthValues(), account.getAdditionalOauthValues());
+        Assert.assertEquals("Account name should match",
                 String.format("%s (%s) (%s)", TEST_USERNAME, TEST_INSTANCE_URL, SalesforceSDKManager.getInstance().getApplicationName()),
                 account.getAccountName());
     }
@@ -248,7 +259,7 @@ public class UserAccountTest extends InstrumentationTestCase {
             if (valueOne instanceof Bundle && valueTwo instanceof Bundle &&
                     !equalBundles((Bundle) valueOne, (Bundle) valueTwo)) {
                 return false;
-            } else if(valueOne == null) {
+            } else if (valueOne == null) {
                 if (valueTwo != null || !two.containsKey(key))
                     return false;
             } else if (!valueOne.equals(valueTwo))

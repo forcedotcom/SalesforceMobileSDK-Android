@@ -129,6 +129,9 @@ public class SPRequestHandler {
 
     private void handleError(String error) {
         SalesforceSDKLogger.e(TAG, "Error received from IDP app: " + error);
+        if (authCallback != null) {
+            authCallback.receivedErrorResponse(error);
+        }
     }
 
     private void handleSuccess(String code, String loginUrl) {

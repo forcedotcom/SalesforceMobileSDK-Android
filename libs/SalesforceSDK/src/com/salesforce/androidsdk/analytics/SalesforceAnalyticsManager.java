@@ -29,8 +29,6 @@ package com.salesforce.androidsdk.analytics;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
-import android.content.res.Resources;
 import android.os.Build;
 import android.text.TextUtils;
 
@@ -115,16 +113,16 @@ public class SalesforceAnalyticsManager {
         if (!TextUtils.isEmpty(communityId)) {
             uniqueId = uniqueId + communityId;
         }
-        SalesforceAnalyticsManager instance = null;
+        SalesforceAnalyticsManager instance;
         if (INSTANCES == null) {
-            INSTANCES = new HashMap<String, SalesforceAnalyticsManager>();
-            instance = new SalesforceAnalyticsManager(account, communityId);
+            INSTANCES = new HashMap<>();
+            instance = new SalesforceAnalyticsManager(account);
             INSTANCES.put(uniqueId, instance);
         } else {
             instance = INSTANCES.get(uniqueId);
         }
         if (instance == null) {
-            instance = new SalesforceAnalyticsManager(account, communityId);
+            instance = new SalesforceAnalyticsManager(account);
             INSTANCES.put(uniqueId, instance);
         }
 
@@ -337,7 +335,7 @@ public class SalesforceAnalyticsManager {
         if (event == null) {
             return;
         }
-        final List<InstrumentationEvent> events = new ArrayList<InstrumentationEvent>();
+        final List<InstrumentationEvent> events = new ArrayList<>();
         events.add(event);
         publishEvents(events);
     }
@@ -357,16 +355,16 @@ public class SalesforceAnalyticsManager {
         remotes.put(transformer, publisher);
     }
 
-    private SalesforceAnalyticsManager(UserAccount account, String communityId) {
+    private SalesforceAnalyticsManager(UserAccount account) {
         this.account = account;
-        final DeviceAppAttributes deviceAppAttributes = buildDeviceAppAttributes();
+        final DeviceAppAttributes deviceAppAttributes = getDeviceAppAttributes();
         final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
         analyticsManager = new AnalyticsManager(account.getCommunityLevelFilenameSuffix(),
                 sdkManager.getAppContext(),
                 SalesforceSDKManager.getEncryptionKey(),
                 deviceAppAttributes);
         eventStoreManager = analyticsManager.getEventStoreManager();
-        remotes = new HashMap<Class<? extends Transform>, Class<? extends AnalyticsPublisher>>();
+        remotes = new HashMap<>();
         remotes.put(AILTNTransform.class, AILTNPublisher.class);
 
         // Reads the existing analytics policy and sets it upon initialization.
@@ -374,7 +372,12 @@ public class SalesforceAnalyticsManager {
         enableLogging(enabled);
     }
 
-    private DeviceAppAttributes buildDeviceAppAttributes() {
+    /**
+     * Returns the device app attributes associated with this device.
+     *
+     * @return Device app attributes.
+     */
+    public static DeviceAppAttributes getDeviceAppAttributes() {
         final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
         final Context context = sdkManager.getAppContext();
         String appVersion = "";
@@ -383,12 +386,8 @@ public class SalesforceAnalyticsManager {
             final PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
             appVersion = packageInfo.versionName;
             appName = SalesforceSDKManager.getAiltnAppName();
-        } catch (PackageManager.NameNotFoundException e) {
+        } catch (Exception e) {
             SalesforceSDKLogger.w(TAG, "Could not read package info", e);
-        } catch (Resources.NotFoundException nfe) {
-
-            // A test harness such as Gradle does NOT have an application name.
-            SalesforceSDKLogger.w(TAG, "Could not read package info", nfe);
         }
         final String osVersion = Build.VERSION.RELEASE;
         final String osName = "android";

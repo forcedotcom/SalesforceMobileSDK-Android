@@ -27,13 +27,20 @@
 package com.salesforce.androidsdk.store;
 
 
+import android.support.test.filters.MediumTest;
+import android.support.test.runner.AndroidJUnit4;
+
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 
+import org.junit.runner.RunWith;
+
 /**
  * Tests for full-text search in smartstore soups using external storage
  */
+@RunWith(AndroidJUnit4.class)
+@MediumTest
 public class SmartStoreFTSExternalStorageTest extends SmartStoreFullTextSearchTest {
 
     @Override
@@ -45,5 +52,4 @@ public class SmartStoreFTSExternalStorageTest extends SmartStoreFullTextSearchTe
     protected String[] getExpectedColumns() {
         return new String[]{"id", "created", "lastModified", FIRST_NAME_COL, LAST_NAME_COL, EMPLOYEE_ID_COL};
     }
-
 }

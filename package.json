@@ -1,6 +1,6 @@
 {
   "name": "SalesforceMobileSDK-Android",
-  "version": "6.0.0",
+  "version": "6.1.0",
   "description": "Salesforce Mobile SDK for Android",
   "keywords": [
     "mobilesdk",
@@ -40,9 +40,7 @@
   ],
   "files": [
     "libs"
-  ],
+  ] ,
   "dependencies": {
-    "react": "^16.0.0",
-    "react-native": "^0.50.4"
   }
 }
