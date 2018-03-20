@@ -80,6 +80,7 @@ public class PushService extends IntentService {
 	// Retry time constants.
     private static final long MILLISECONDS_IN_SIX_DAYS = 518400000L;
     private static final long SFDC_REGISTRATION_RETRY = 30000;
+    private static final long WAKE_LOCK_TIMEOUT_IN_MILLIS = 30000;
 
     // Salesforce push notification constants.
     private static final String MOBILE_PUSH_SERVICE_DEVICE = "MobilePushServiceDevice";
@@ -105,9 +106,13 @@ public class PushService extends IntentService {
         final Context context = SalesforceSDKManager.getInstance().getAppContext();
         if (WAKE_LOCK == null) {
             final PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-            WAKE_LOCK = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+            if (pm != null) {
+                WAKE_LOCK = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+            }
         }
-        WAKE_LOCK.acquire();
+        if (WAKE_LOCK != null) {
+            WAKE_LOCK.acquire(WAKE_LOCK_TIMEOUT_IN_MILLIS);
+        }
         intent.setClassName(context, PushService.class.getName());
         final ComponentName name = context.startService(intent);
         if (name == null) {
@@ -125,6 +130,7 @@ public class PushService extends IntentService {
 
 	@Override
 	protected void onHandleIntent(Intent intent) {
+
 		/*
 		 * Grabs the extras from the intent, and determines based on the
 		 * bundle whether to perform the operation for all accounts or
@@ -150,7 +156,11 @@ public class PushService extends IntentService {
                 if (allAccounts) {
                     if (accounts != null) {
                         for (final UserAccount userAcc : accounts) {
-                            // If 'register' is true, we are registering, if it's false, we must be unregistering, because of the if gate above
+
+                            /*
+                             * If 'register' is true, we are registering, if it's false, we must be
+                             * un-registering, because of the if gate above.
+                             */
                             performRegistrationChange(register, userAcc);
                         }
                     }
@@ -158,7 +168,11 @@ public class PushService extends IntentService {
                     if (account == null) {
                         account = userAccMgr.getCurrentUser();
                     }
-                    // If 'register' is true, we are registering, if it's false, we must be unregistering, because of the if gate above
+
+                    /*
+                     * If 'register' is true, we are registering, if it's false, we must be
+                     * un-registering, because of the if gate above.
+                     */
                     performRegistrationChange(register, account);
                 }
             }
@@ -182,12 +196,6 @@ public class PushService extends IntentService {
 		}
 	}
 
-    /**
-     * Schedules retry of SFDC registration.
-     *
-     * @param when When to retry.
-     * @param account User account.
-     */
     private void scheduleSFDCRegistrationRetry(long when, UserAccount account) {
         final Calendar cal = Calendar.getInstance();
         cal.add(Calendar.MILLISECOND, (int) when);
@@ -205,12 +213,6 @@ public class PushService extends IntentService {
         am.set(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), retryPIntent);
     }
 
-    /**
-     * This method is called when registration with GCM is successful.
-     *
-     * @param registrationId Registration ID received from GCM service.
-     * @param account User account.
-     */
     private void onRegistered(String registrationId, UserAccount account) {
         if (account == null) {
             SalesforceSDKLogger.e(TAG, "Account is null, will retry registration later");
@@ -233,11 +235,6 @@ public class PushService extends IntentService {
     	}
     }
 
-    /**
-     * This method is called when the device has been un-registered.
-     *
-     * @param account User account.
-     */
     private void onUnregistered(UserAccount account) {
     	try {
         	final String id = PushMessaging.getDeviceId(context, account);
@@ -251,13 +248,6 @@ public class PushService extends IntentService {
         }
     }
 
-    /**
-     * Hits the Salesforce endpoint to register for push notifications.
-     *
-     * @param registrationId Registration ID.
-     * @param account User account.
-     * @return Salesforce ID that uniquely identifies the registered device.
-     */
     private String registerSFDCPushNotification(String registrationId,
     		UserAccount account) {
     	final Map<String, Object> fields = new HashMap<String, Object>();
@@ -296,13 +286,6 @@ public class PushService extends IntentService {
     	return null;
     }
 
-    /**
-     * Hits the Salesforce endpoint to un-register from push notifications.
-     *
-     * @param registeredId Salesforce ID that uniquely identifies the registered device.
-     * @param account User account.
-     * @return True - if un-registration was successful, False - otherwise.
-     */
     private boolean unregisterSFDCPushNotification(String registeredId,
     		UserAccount account) {
     	final RestRequest req = RestRequest.getRequestForDelete(ApiVersionStrings.getVersionNumber(context),
@@ -322,12 +305,6 @@ public class PushService extends IntentService {
     	return false;
     }
 
-    /**
-     * Gets an instance of RestClient.
-     *
-     * @param account User account.
-     * @return Instance of RestClient.
-     */
     private RestClient getRestClient(UserAccount account) {
     	final ClientManager cm = SalesforceSDKManager.getInstance().getClientManager();
     	RestClient client = null;
