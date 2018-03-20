@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.analytics.security;
 
-import android.app.Service;
-import android.app.admin.DevicePolicyManager;
 import android.content.Context;
 import android.text.TextUtils;
 import android.util.Base64;
@@ -59,7 +57,6 @@ public class Encryptor {
     private static final String PREFER_CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding";
     private static final String MAC_TRANSFORMATION = "HmacSHA256";
     private static String bestCipherAvailable;
-    private static boolean isFileSystemEncrypted;
 
     /**
      * Initializes this module.
@@ -68,10 +65,6 @@ public class Encryptor {
      * @return True - if the cryptographic module was successfully initialized, False - otherwise.
      */
     public static boolean init(Context ctx) {
-
-    	// Checks if file system encryption is available and active.
-        DevicePolicyManager devicePolicyManager = (DevicePolicyManager) ctx.getSystemService(Service.DEVICE_POLICY_SERVICE);
-        isFileSystemEncrypted = devicePolicyManager.getStorageEncryptionStatus() == DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE;
 
         // Make sure the cryptographic transformations we want to use are available.
         bestCipherAvailable = null;
@@ -109,15 +102,6 @@ public class Encryptor {
             SalesforceAnalyticsLogger.e(null, TAG, "No cipher transformation available");
         }
         return cipher;
-    }
-
-    /**
-     * Checks if the file system is encrypted.
-     *
-     * @return True - if file system encryption is available and active, False - otherwise.
-     */
-    public static boolean isFileSystemEncrypted() {
-        return isFileSystemEncrypted;
     }
 
     /**
