@@ -55,6 +55,8 @@ public class Encryptor {
     private static final String US_ASCII = "US-ASCII";
     private static final String PREFER_CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding";
     private static final String MAC_TRANSFORMATION = "HmacSHA256";
+    private static final String SHA1PRNG = "SHA1PRNG";
+    private static final String RSA_PKCS1 = "RSA/ECB/PKCS1Padding";
 
     /**
      * Decrypts data with key using AES-128.
@@ -279,7 +281,7 @@ public class Encryptor {
             return null;
         }
         try {
-            final Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            final Cipher cipher = Cipher.getInstance(RSA_PKCS1);
             cipher.init(Cipher.ENCRYPT_MODE, publicKey);
             return cipher.doFinal(data.getBytes());
         } catch (Exception e) {
@@ -320,7 +322,7 @@ public class Encryptor {
             return null;
         }
         try {
-            final Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            final Cipher cipher = Cipher.getInstance(RSA_PKCS1);
             cipher.init(Cipher.DECRYPT_MODE, privateKey);
             byte[] decodedBytes = Base64.decode(data.getBytes(),Base64.NO_WRAP | Base64.NO_PADDING);
             return cipher.doFinal(decodedBytes);
@@ -353,7 +355,7 @@ public class Encryptor {
     }
 
     private static byte[] generateInitVector() throws NoSuchAlgorithmException, NoSuchProviderException {
-        final SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
+        final SecureRandom random = SecureRandom.getInstance(SHA1PRNG);
         byte[] iv = new byte[16];
         random.nextBytes(iv);
         return iv;
@@ -387,8 +389,7 @@ public class Encryptor {
         final SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
         final IvParameterSpec ivSpec = new IvParameterSpec(iv);
         cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec);
-        byte[] result = cipher.doFinal(meat, 0, meatLen);
-        return result;
+        return cipher.doFinal(meat, 0, meatLen);
     }
 
     private static Cipher getBestCipher() throws GeneralSecurityException {
