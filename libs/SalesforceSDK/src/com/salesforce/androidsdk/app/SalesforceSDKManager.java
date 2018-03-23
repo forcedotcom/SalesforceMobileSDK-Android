@@ -454,9 +454,6 @@ public class SalesforceSDKManager {
         // Upgrades to the latest version.
         SalesforceSDKUpgradeManager.getInstance().upgrade();
 
-        // Initializes the encryption module.
-        Encryptor.init(context);
-
         // Initializes the HTTP client.
         HttpAccess.init(context, INSTANCE.getUserAgent());
 

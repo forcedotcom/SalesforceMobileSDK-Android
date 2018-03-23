@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.analytics.security;
 
-import android.content.Context;
 import android.text.TextUtils;
 import android.util.Base64;
 
@@ -56,53 +55,6 @@ public class Encryptor {
     private static final String US_ASCII = "US-ASCII";
     private static final String PREFER_CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding";
     private static final String MAC_TRANSFORMATION = "HmacSHA256";
-    private static String bestCipherAvailable;
-
-    /**
-     * Initializes this module.
-     *
-     * @param ctx Context.
-     * @return True - if the cryptographic module was successfully initialized, False - otherwise.
-     */
-    public static boolean init(Context ctx) {
-
-        // Make sure the cryptographic transformations we want to use are available.
-        bestCipherAvailable = null;
-        try {
-            getBestCipher();
-        } catch (GeneralSecurityException gex) {
-            SalesforceAnalyticsLogger.e(ctx, TAG, "Security exception thrown", gex);
-        }
-        if (bestCipherAvailable == null) {
-            return false;
-        }
-        try {
-            Mac.getInstance(MAC_TRANSFORMATION, "BC");
-        } catch (GeneralSecurityException e) {
-            SalesforceAnalyticsLogger.e(ctx, TAG, "No MAC transformation available", e);
-            return false;
-        }
-        return true;
-    }
-
-    private static Cipher getBestCipher() throws GeneralSecurityException {
-        Cipher cipher = null;
-        if (bestCipherAvailable != null) {
-            return Cipher.getInstance(bestCipherAvailable, "BC");
-        }
-        try {
-            cipher = Cipher.getInstance(PREFER_CIPHER_TRANSFORMATION, "BC");
-            if (cipher != null) {
-                bestCipherAvailable = PREFER_CIPHER_TRANSFORMATION;
-            }
-        } catch (GeneralSecurityException gex1) {
-            SalesforceAnalyticsLogger.e(null, TAG, "Preferred combo not available", gex1);
-        }
-        if (bestCipherAvailable == null) {
-            SalesforceAnalyticsLogger.e(null, TAG, "No cipher transformation available");
-        }
-        return cipher;
-    }
 
     /**
      * Decrypts data with key using AES-128.
@@ -286,8 +238,8 @@ public class Encryptor {
             // Signs with SHA-256.
             byte [] keyBytes = key.getBytes(UTF8);
             byte [] dataBytes = data.getBytes(UTF8);
-            Mac sha = Mac.getInstance(MAC_TRANSFORMATION, "BC");
-            SecretKeySpec keySpec = new SecretKeySpec(keyBytes, sha.getAlgorithm());
+            final Mac sha = Mac.getInstance(MAC_TRANSFORMATION);
+            final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, sha.getAlgorithm());
             sha.init(keySpec);
             byte [] sig = sha.doFinal(dataBytes);
 
@@ -437,5 +389,16 @@ public class Encryptor {
         cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec);
         byte[] result = cipher.doFinal(meat, 0, meatLen);
         return result;
+    }
+
+    private static Cipher getBestCipher() throws GeneralSecurityException {
+        Cipher cipher = null;
+        try {
+            cipher = Cipher.getInstance(PREFER_CIPHER_TRANSFORMATION);
+        } catch (Exception e) {
+            SalesforceAnalyticsLogger.e(null, TAG,
+                    "No cipher transformation available", e);
+        }
+        return cipher;
     }
 }
