@@ -57,6 +57,7 @@ public class Encryptor {
     private static final String MAC_TRANSFORMATION = "HmacSHA256";
     private static final String SHA1PRNG = "SHA1PRNG";
     private static final String RSA_PKCS1 = "RSA/ECB/PKCS1Padding";
+    private static final String BOUNCY_CASTLE = "BC";
 
     /**
      * Decrypts data with key using AES-128.
@@ -240,7 +241,7 @@ public class Encryptor {
             // Signs with SHA-256.
             byte [] keyBytes = key.getBytes(UTF8);
             byte [] dataBytes = data.getBytes(UTF8);
-            final Mac sha = Mac.getInstance(MAC_TRANSFORMATION);
+            final Mac sha = Mac.getInstance(MAC_TRANSFORMATION, getEncryptionProvider());
             final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, sha.getAlgorithm());
             sha.init(keySpec);
             byte [] sig = sha.doFinal(dataBytes);
@@ -395,11 +396,15 @@ public class Encryptor {
     private static Cipher getBestCipher() throws GeneralSecurityException {
         Cipher cipher = null;
         try {
-            cipher = Cipher.getInstance(PREFER_CIPHER_TRANSFORMATION);
+            cipher = Cipher.getInstance(PREFER_CIPHER_TRANSFORMATION, getEncryptionProvider());
         } catch (Exception e) {
             SalesforceAnalyticsLogger.e(null, TAG,
                     "No cipher transformation available", e);
         }
         return cipher;
+    }
+
+    private static String getEncryptionProvider() {
+        return BOUNCY_CASTLE;
     }
 }
