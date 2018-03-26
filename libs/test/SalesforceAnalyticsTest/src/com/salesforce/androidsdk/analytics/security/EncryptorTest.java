@@ -26,14 +26,11 @@
  */
 package com.salesforce.androidsdk.analytics.security;
 
-import android.content.Context;
-import android.support.test.InstrumentationRegistry;
 import android.support.test.filters.SmallTest;
 import android.support.test.runner.AndroidJUnit4;
 
 import junit.framework.Assert;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -55,12 +52,6 @@ public class EncryptorTest {
             "hello world",
             "fake-token"
     };
-
-	@Before
-	public void setUp() throws Exception {
-		final Context targetContext = InstrumentationRegistry.getTargetContext();
-		Encryptor.init(targetContext);
-	}
 
 	/**
 	 * Test to make sure that encrypt does nothing when given a null key.

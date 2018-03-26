@@ -26,9 +26,6 @@
  */
 package com.salesforce.androidsdk.analytics.security;
 
-import android.app.Service;
-import android.app.admin.DevicePolicyManager;
-import android.content.Context;
 import android.text.TextUtils;
 import android.util.Base64;
 
@@ -58,67 +55,9 @@ public class Encryptor {
     private static final String US_ASCII = "US-ASCII";
     private static final String PREFER_CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding";
     private static final String MAC_TRANSFORMATION = "HmacSHA256";
-    private static String bestCipherAvailable;
-    private static boolean isFileSystemEncrypted;
-
-    /**
-     * Initializes this module.
-     *
-     * @param ctx Context.
-     * @return True - if the cryptographic module was successfully initialized, False - otherwise.
-     */
-    public static boolean init(Context ctx) {
-
-    	// Checks if file system encryption is available and active.
-        DevicePolicyManager devicePolicyManager = (DevicePolicyManager) ctx.getSystemService(Service.DEVICE_POLICY_SERVICE);
-        isFileSystemEncrypted = devicePolicyManager.getStorageEncryptionStatus() == DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE;
-
-        // Make sure the cryptographic transformations we want to use are available.
-        bestCipherAvailable = null;
-        try {
-            getBestCipher();
-        } catch (GeneralSecurityException gex) {
-            SalesforceAnalyticsLogger.e(ctx, TAG, "Security exception thrown", gex);
-        }
-        if (bestCipherAvailable == null) {
-            return false;
-        }
-        try {
-            Mac.getInstance(MAC_TRANSFORMATION, "BC");
-        } catch (GeneralSecurityException e) {
-            SalesforceAnalyticsLogger.e(ctx, TAG, "No MAC transformation available", e);
-            return false;
-        }
-        return true;
-    }
-
-    private static Cipher getBestCipher() throws GeneralSecurityException {
-        Cipher cipher = null;
-        if (bestCipherAvailable != null) {
-            return Cipher.getInstance(bestCipherAvailable, "BC");
-        }
-        try {
-            cipher = Cipher.getInstance(PREFER_CIPHER_TRANSFORMATION, "BC");
-            if (cipher != null) {
-                bestCipherAvailable = PREFER_CIPHER_TRANSFORMATION;
-            }
-        } catch (GeneralSecurityException gex1) {
-            SalesforceAnalyticsLogger.e(null, TAG, "Preferred combo not available", gex1);
-        }
-        if (bestCipherAvailable == null) {
-            SalesforceAnalyticsLogger.e(null, TAG, "No cipher transformation available");
-        }
-        return cipher;
-    }
-
-    /**
-     * Checks if the file system is encrypted.
-     *
-     * @return True - if file system encryption is available and active, False - otherwise.
-     */
-    public static boolean isFileSystemEncrypted() {
-        return isFileSystemEncrypted;
-    }
+    private static final String SHA1PRNG = "SHA1PRNG";
+    private static final String RSA_PKCS1 = "RSA/ECB/PKCS1Padding";
+    private static final String BOUNCY_CASTLE = "BC";
 
     /**
      * Decrypts data with key using AES-128.
@@ -302,8 +241,8 @@ public class Encryptor {
             // Signs with SHA-256.
             byte [] keyBytes = key.getBytes(UTF8);
             byte [] dataBytes = data.getBytes(UTF8);
-            Mac sha = Mac.getInstance(MAC_TRANSFORMATION, "BC");
-            SecretKeySpec keySpec = new SecretKeySpec(keyBytes, sha.getAlgorithm());
+            final Mac sha = Mac.getInstance(MAC_TRANSFORMATION, getEncryptionProvider());
+            final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, sha.getAlgorithm());
             sha.init(keySpec);
             byte [] sig = sha.doFinal(dataBytes);
 
@@ -343,7 +282,7 @@ public class Encryptor {
             return null;
         }
         try {
-            final Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            final Cipher cipher = Cipher.getInstance(RSA_PKCS1);
             cipher.init(Cipher.ENCRYPT_MODE, publicKey);
             return cipher.doFinal(data.getBytes());
         } catch (Exception e) {
@@ -384,7 +323,7 @@ public class Encryptor {
             return null;
         }
         try {
-            final Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            final Cipher cipher = Cipher.getInstance(RSA_PKCS1);
             cipher.init(Cipher.DECRYPT_MODE, privateKey);
             byte[] decodedBytes = Base64.decode(data.getBytes(),Base64.NO_WRAP | Base64.NO_PADDING);
             return cipher.doFinal(decodedBytes);
@@ -417,7 +356,7 @@ public class Encryptor {
     }
 
     private static byte[] generateInitVector() throws NoSuchAlgorithmException, NoSuchProviderException {
-        final SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
+        final SecureRandom random = SecureRandom.getInstance(SHA1PRNG);
         byte[] iv = new byte[16];
         random.nextBytes(iv);
         return iv;
@@ -451,7 +390,21 @@ public class Encryptor {
         final SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
         final IvParameterSpec ivSpec = new IvParameterSpec(iv);
         cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec);
-        byte[] result = cipher.doFinal(meat, 0, meatLen);
-        return result;
+        return cipher.doFinal(meat, 0, meatLen);
+    }
+
+    private static Cipher getBestCipher() throws GeneralSecurityException {
+        Cipher cipher = null;
+        try {
+            cipher = Cipher.getInstance(PREFER_CIPHER_TRANSFORMATION, getEncryptionProvider());
+        } catch (Exception e) {
+            SalesforceAnalyticsLogger.e(null, TAG,
+                    "No cipher transformation available", e);
+        }
+        return cipher;
+    }
+
+    private static String getEncryptionProvider() {
+        return BOUNCY_CASTLE;
     }
 }

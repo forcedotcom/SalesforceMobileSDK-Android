@@ -454,9 +454,6 @@ public class SalesforceSDKManager {
         // Upgrades to the latest version.
         SalesforceSDKUpgradeManager.getInstance().upgrade();
 
-        // Initializes the encryption module.
-        Encryptor.init(context);
-
         // Initializes the HTTP client.
         HttpAccess.init(context, INSTANCE.getUserAgent());
 
@@ -1192,7 +1189,7 @@ public class SalesforceSDKManager {
           .append("   accountType: ").append(getAccountType()).append("\n")
           .append("   userAgent: ").append(getUserAgent()).append("\n")
           .append("   mainActivityClass: ").append(getMainActivityClass()).append("\n")
-          .append("   isFileSystemEncrypted: ").append(Encryptor.isFileSystemEncrypted()).append("\n");
+          .append("\n");
         if (passcodeManager != null) {
 
             // passcodeManager may be null at startup if the app is running in debug mode.
