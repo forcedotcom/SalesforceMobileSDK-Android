@@ -117,11 +117,16 @@ public class RestRequest {
 	public enum RestMethod {
 		GET, POST, PUT, DELETE, HEAD, PATCH
 	}
+
+	public enum RestEndpoint {
+		LOGIN, INSTANCE
+	}
 	
 	/**
 	 * Enumeration for all REST API actions.
 	 */
 	private enum RestAction {
+		USERINFO("/services/oauth2/userinfo"),
 		VERSIONS(SERVICES_DATA),
 		RESOURCES(SERVICES_DATA + "%s/"),
 		DESCRIBE_GLOBAL(SERVICES_DATA + "%s/sobjects/"),
@@ -152,6 +157,7 @@ public class RestRequest {
 	}
 
 	private final RestMethod method;
+	private final RestEndpoint endpoint;
 	private final String path;
 	private final RequestBody requestBody;
 	private final Map<String, String> additionalHttpHeaders;
@@ -218,11 +224,7 @@ public class RestRequest {
      * Note: Do not use this constructor if requestBody is not null and you want to build a batch or composite request.
      */
     public RestRequest(RestMethod method, String path, RequestBody requestBody, Map<String, String> additionalHttpHeaders) {
-        this.method = method;
-        this.path = path;
-        this.requestBody = requestBody;
-        this.additionalHttpHeaders = additionalHttpHeaders;
-        this.requestBodyAsJson = null;
+    	this(method, RestEndpoint.INSTANCE, path, requestBody, additionalHttpHeaders);
     }
 
 
@@ -236,8 +238,22 @@ public class RestRequest {
      *
      * Note: Use this constructor if requestBody is not null and you want to build a batch or composite request.
      */
-	public RestRequest(RestMethod method, String path, JSONObject requestBodyAsJson,  Map<String, String> additionalHttpHeaders) {
+    public RestRequest(RestMethod method, String path, JSONObject requestBodyAsJson,  Map<String, String> additionalHttpHeaders) {
+        this(method, RestEndpoint.INSTANCE, path, requestBodyAsJson, additionalHttpHeaders);
+    }
+
+    public RestRequest(RestMethod method, RestEndpoint endpoint, String path, RequestBody requestBody, Map<String, String> additionalHttpHeaders) {
         this.method = method;
+        this.endpoint = endpoint;
+        this.path = path;
+        this.requestBody = requestBody;
+        this.additionalHttpHeaders = additionalHttpHeaders;
+        this.requestBodyAsJson = null;
+    }
+
+    public RestRequest(RestMethod method, RestEndpoint endpoint, String path, JSONObject requestBodyAsJson,  Map<String, String> additionalHttpHeaders) {
+        this.method = method;
+        this.endpoint = endpoint;
         this.path = path;
         this.requestBody = requestBodyAsJson == null ? null : RequestBody.create(MEDIA_TYPE_JSON, requestBodyAsJson.toString());
         this.additionalHttpHeaders = additionalHttpHeaders;
@@ -250,6 +266,8 @@ public class RestRequest {
 	public RestMethod getMethod() {
 		return method;
 	}
+
+	public RestEndpoint getEndpoint() { return endpoint; }
 
 	/**
 	 * @return  Path of the request.
@@ -277,6 +295,10 @@ public class RestRequest {
 	 */
 	public Map<String, String> getAdditionalHttpHeaders() {
 		return additionalHttpHeaders;
+	}
+
+	public static RestRequest getRequestForUserInfo() {
+		return new RestRequest(RestMethod.GET, RestEndpoint.LOGIN, RestAction.USERINFO.getPath(), (RequestBody) null, null);
 	}
 
 	/**

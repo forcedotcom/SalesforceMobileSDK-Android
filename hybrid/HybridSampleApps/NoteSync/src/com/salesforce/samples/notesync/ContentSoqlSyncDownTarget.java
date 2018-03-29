@@ -97,7 +97,7 @@ public class ContentSoqlSyncDownTarget extends SoqlSyncDownTarget {
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
         String queryToRun = maxTimeStamp > 0 ? SoqlSyncDownTarget.addFilterForReSync(getQuery(maxTimeStamp), getModificationDateFieldName(), maxTimeStamp) : getQuery(maxTimeStamp);
-        syncManager.getRestClient().sendSync(RestRequest.getRequestForResources(syncManager.apiVersion)); // cheap call to refresh session
+        syncManager.getRestClient().sendSync(RestRequest.getRequestForUserInfo()); // cheap call to refresh session
         RestRequest request = buildQueryRequest(syncManager.getRestClient().getAuthToken(), queryToRun);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
         JSONArray records = parseSoapResponse(response);
