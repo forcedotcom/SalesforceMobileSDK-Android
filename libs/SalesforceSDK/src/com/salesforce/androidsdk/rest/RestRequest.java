@@ -242,6 +242,16 @@ public class RestRequest {
         this(method, RestEndpoint.INSTANCE, path, requestBodyAsJson, additionalHttpHeaders);
     }
 
+    /**
+     * Generic constructor for arbitrary requests.
+     *
+     * @param method				HTTP method used for the request (GET/POST/DELETE etc).
+     * @param endpoint				The endpoint associated with the request.
+     * @param path					URI path. This will be resolved against the user's current
+     * 								Rest endpoint, as specified by the endpoint parameter.
+     * @param requestBody			Request body, if one exists. Can be null.
+     * @param additionalHttpHeaders	Additional headers.
+     */
     public RestRequest(RestMethod method, RestEndpoint endpoint, String path, RequestBody requestBody, Map<String, String> additionalHttpHeaders) {
         this.method = method;
         this.endpoint = endpoint;
@@ -251,6 +261,16 @@ public class RestRequest {
         this.requestBodyAsJson = null;
     }
 
+    /**
+     * Generic constructor for arbitrary requests.
+     *
+     * @param method				HTTP method used for the request (GET/POST/DELETE etc).
+     * @param endpoint				The endpoint associated with the request.
+     * @param path					URI path. This will be resolved against the user's current
+     * 								Rest endpoint, as specified by the endpoint parameter.
+     * @param requestBodyAsJson		Request body as JSON, if one exists. Can be null.
+     * @param additionalHttpHeaders	Additional headers.
+     */
     public RestRequest(RestMethod method, RestEndpoint endpoint, String path, JSONObject requestBodyAsJson,  Map<String, String> additionalHttpHeaders) {
         this.method = method;
         this.endpoint = endpoint;
@@ -267,6 +287,9 @@ public class RestRequest {
 		return method;
 	}
 
+	/**
+	 * @return The endpoint of the request.
+	 */
 	public RestEndpoint getEndpoint() { return endpoint; }
 
 	/**
@@ -297,6 +320,11 @@ public class RestRequest {
 		return additionalHttpHeaders;
 	}
 
+	/**
+	 * Request to get information about the user making the request.
+	 * @return RestRequest object that requests user info.
+	 * @see <a href="https://help.salesforce.com/articleView?id=remoteaccess_using_userinfo_endpoint.htm">https://help.salesforce.com/articleView?id=remoteaccess_using_userinfo_endpoint.htm</a></a>
+	 */
 	public static RestRequest getRequestForUserInfo() {
 		return new RestRequest(RestMethod.GET, RestEndpoint.LOGIN, RestAction.USERINFO.getPath(), (RequestBody) null, null);
 	}

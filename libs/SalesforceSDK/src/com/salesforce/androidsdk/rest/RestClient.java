@@ -520,12 +520,13 @@ public class RestClient {
 			return instanceUrl;
 		}
 
+		/**
+		 * Resolves the given {@link RestRequest} to its URL.
+		 * @param request The Rest request to resolve.
+		 * @return The URI associated with the Rest request.
+		 */
 		public URI resolveUrl(RestRequest request) {
 			return resolveUrl(request.getPath(), request.getEndpoint());
-		}
-
-		public URI resolveUrl(String path) {
-			return resolveUrl(path, RestRequest.RestEndpoint.INSTANCE);
 		}
 
 		/**
@@ -535,7 +536,20 @@ public class RestClient {
 		 * @param path Path.
 		 * @return Resolved URL.
 		 */
-		private URI resolveUrl(String path, RestRequest.RestEndpoint endpoint) {
+		public URI resolveUrl(String path) {
+			return resolveUrl(path, RestRequest.RestEndpoint.INSTANCE);
+		}
+
+		/**
+		 * Resolves the given path against the community URL, login URL, or instance
+		 * URL.  If the user is a community user, the community URL will be used.  Otherwise,
+		 * the URL will be built from the
+		 * {@link com.salesforce.androidsdk.rest.RestRequest.RestEndpoint} parameter.
+		 * @param path Path
+		 * @param endpoint The Rest endpoint of the URL.
+		 * @return Resolved URL.
+		 */
+		public URI resolveUrl(String path, RestRequest.RestEndpoint endpoint) {
 			String resolvedPathStr = path;
 
 			// Resolve URL only for a relative URL.
