@@ -333,11 +333,17 @@ public class OAuth2 {
                                                          String clientId, String refreshToken,
                                                          Map<String,String> addlParams)
             throws OAuthFailedException, IOException {
-        final FormBody.Builder formBodyBuilder = makeTokenEndpointParams(REFRESH_TOKEN,
-                clientId, addlParams);
-        formBodyBuilder.add(REFRESH_TOKEN, refreshToken);
-        formBodyBuilder.add(FORMAT, JSON);
-        return makeTokenEndpointRequest(httpAccessor, loginServer, formBodyBuilder);
+        final FormBody.Builder builder = new FormBody.Builder();
+        builder.add(GRANT_TYPE, REFRESH_TOKEN);
+        builder.add(CLIENT_ID, clientId);
+        builder.add(REFRESH_TOKEN, refreshToken);
+        builder.add(FORMAT, JSON);
+        if (addlParams != null ) {
+            for (final Map.Entry<String,String> entry : addlParams.entrySet()) {
+                builder.add(entry.getKey(),entry.getValue());
+            }
+        }
+        return makeTokenEndpointRequest(httpAccessor, loginServer, builder);
     }
 
     /**
@@ -433,17 +439,6 @@ public class OAuth2 {
         } else {
             throw new OAuthFailedException(new TokenErrorResponse(response), response.code());
         }
-    }
-
-    private static FormBody.Builder makeTokenEndpointParams(String grantType, String clientId,
-                                                            Map<String,String> addlParams) {
-        final FormBody.Builder builder = new FormBody.Builder().add(GRANT_TYPE, grantType).add(CLIENT_ID, clientId);
-        if (addlParams != null ) {
-            for (final Map.Entry<String,String> entry : addlParams.entrySet()) {
-                builder.add(entry.getKey(),entry.getValue());
-            }
-        }
-        return builder;
     }
 
     /**

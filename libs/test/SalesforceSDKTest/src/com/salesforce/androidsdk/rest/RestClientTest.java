@@ -107,7 +107,7 @@ public class RestClientTest {
         TestCredentials.init(InstrumentationRegistry.getContext());
         httpAccess = new HttpAccess(null, "dummy-agent");
         TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,
-                new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID,
+                new URI(TestCredentials.LOGIN_URL), TestCredentials.CLIENT_ID,
                 TestCredentials.REFRESH_TOKEN, null);
         authToken = refreshResponse.authToken;
         instanceUrl = refreshResponse.instanceUrl;

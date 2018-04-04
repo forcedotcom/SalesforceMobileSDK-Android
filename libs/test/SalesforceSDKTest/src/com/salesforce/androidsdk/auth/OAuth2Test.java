@@ -252,7 +252,7 @@ public class OAuth2Test {
 
 		// Get an auth token using the refresh token
 		TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,
-				new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID,
+				new URI(TestCredentials.LOGIN_URL), TestCredentials.CLIENT_ID,
                 TestCredentials.REFRESH_TOKEN, null);
         Assert.assertNotNull("Auth token should not be null", refreshResponse.authToken);
 		
@@ -282,7 +282,7 @@ public class OAuth2Test {
 
 		// Get an auth token using the refresh token
 		TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,
-                new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID,
+                new URI(TestCredentials.LOGIN_URL), TestCredentials.CLIENT_ID,
                 TestCredentials.REFRESH_TOKEN, null);
         Assert.assertNotNull("Auth token should not be null", refreshResponse.authToken);
 
