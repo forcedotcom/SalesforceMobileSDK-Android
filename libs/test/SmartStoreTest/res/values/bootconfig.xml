@@ -14,7 +14,7 @@
     <string name="instance_url">https://images.cs4.my.salesforce.com</string>
     <string name="identity_url">https://test.salesforce.com/id/00DP00000002p6hMAA/005P0000001np0OIAQ</string>
     <string name="login_url">https://test.salesforce.com</string>
-    <string name="oauth_refresh_token">5Aep8610_HRVGlMVK1Ii_.X.2OmSMyFBQAlqyGWdLwdJtsKFYt.3jKG0KkuLUZvsCjW5PHu2F5lpuaAWE0vt3D7</string>
+    <string name="oauth_refresh_token">5Aep8610_HRVGlMVK1Ii_.X.2OmSMyFBQAlqyGWdLwdJtsKFYv_3FEV69S37RgGhDJyvmBuicOXPWCFO_WXooPK</string>
     <string name="org_id">00DP00000002p6hMAA</string>
     <string name="user_id">005P0000001np0OIAQ</string>
     <string name="username">testuser@cs4.com</string>
