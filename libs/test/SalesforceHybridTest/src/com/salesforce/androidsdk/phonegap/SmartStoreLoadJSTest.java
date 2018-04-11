@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
+import android.os.Build;
 import android.support.test.filters.LargeTest;
 
 import org.junit.BeforeClass;
@@ -63,7 +64,9 @@ public class SmartStoreLoadJSTest extends JSTestCase {
 
     @BeforeClass
     public static void runJSTestSuite() throws InterruptedException {
-        JSTestCase.runJSTestSuite(JS_SUITE, data(), 60);
+        // FIXME Update this when we stop using ARM Emulators
+        int timeout = Build.SUPPORTED_ABIS[0].contains("armeabi") ? 180 : 60;
+        JSTestCase.runJSTestSuite(JS_SUITE, data(), timeout);
     }
 
     @Test

@@ -458,7 +458,7 @@ public class SmartStorePlugin extends ForcePlugin {
 			smartStore.registerSoup(soupName, indexSpecs);
 		}
 
-		callbackContext.success(soupName);
+		callbackContext.success(soupSpec != null ? soupSpec.getSoupName() : soupName);
 	}
 
 	/**
