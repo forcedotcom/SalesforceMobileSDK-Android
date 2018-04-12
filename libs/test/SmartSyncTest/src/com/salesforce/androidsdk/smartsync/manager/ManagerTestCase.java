@@ -141,7 +141,7 @@ abstract public class ManagerTestCase {
     private RestClient initRestClient() throws Exception {
         httpAccess = new HttpAccess(null, "dummy-agent");
         final TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,
-        		new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID,
+        		new URI(TestCredentials.LOGIN_URL), TestCredentials.CLIENT_ID,
         		TestCredentials.REFRESH_TOKEN, null);
         final String authToken = refreshResponse.authToken;
         final ClientInfo clientInfo = new ClientInfo(new URI(TestCredentials.INSTANCE_URL),

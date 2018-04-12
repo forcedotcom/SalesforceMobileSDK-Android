@@ -16,8 +16,8 @@ apply plugin: 'com.jfrog.bintray'
 dependencies {
   api project(':libs:SmartSync')
   api 'org.apache.cordova:framework:7.0.0'
-  androidTestApi 'com.android.support.test:runner:1.0.1'
-  androidTestApi 'com.android.support.test:rules:1.0.1'
+  androidTestImplementation 'com.android.support.test:runner:1.0.1'
+  androidTestImplementation 'com.android.support.test:rules:1.0.1'
 }
 
 android {

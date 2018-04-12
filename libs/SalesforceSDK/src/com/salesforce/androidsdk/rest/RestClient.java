@@ -318,7 +318,7 @@ public class RestClient {
      */
     public Request buildRequest(RestRequest restRequest) {
         Request.Builder builder =  new Request.Builder()
-                .url(HttpUrl.get(this.oAuthRefreshInterceptor.clientInfo.resolveUrl(restRequest.getPath())))
+                .url(HttpUrl.get(this.oAuthRefreshInterceptor.clientInfo.resolveUrl(restRequest)))
                 .method(restRequest.getMethod().toString(), restRequest.getRequestBody());
 
         // Adding addition headers
@@ -521,6 +521,15 @@ public class RestClient {
 		}
 
 		/**
+		 * Resolves the given {@link RestRequest} to its URL.
+		 * @param request The Rest request to resolve.
+		 * @return The URI associated with the Rest request.
+		 */
+		public URI resolveUrl(RestRequest request) {
+			return resolveUrl(request.getPath(), request.getEndpoint());
+		}
+
+		/**
 		 * Resolves the given path against the community URL or the instance
 		 * URL, depending on whether the user is a community user or not.
 		 *
@@ -528,24 +537,39 @@ public class RestClient {
 		 * @return Resolved URL.
 		 */
 		public URI resolveUrl(String path) {
+			return resolveUrl(path, RestRequest.RestEndpoint.INSTANCE);
+		}
+
+		/**
+		 * Resolves the given path against the community URL, login URL, or instance
+		 * URL.  If the user is a community user, the community URL will be used.  Otherwise,
+		 * the URL will be built from the
+		 * {@link com.salesforce.androidsdk.rest.RestRequest.RestEndpoint} parameter.
+		 * @param path Path
+		 * @param endpoint The Rest endpoint of the URL.
+		 * @return Resolved URL.
+		 */
+		public URI resolveUrl(String path, RestRequest.RestEndpoint endpoint) {
 			String resolvedPathStr = path;
 
 			// Resolve URL only for a relative URL.
 			if (!path.matches("[hH][tT][tT][pP][sS]?://.*")) {
-				final StringBuilder commInstanceUrl = new StringBuilder();
+				final StringBuilder resolvedUrlBuilder = new StringBuilder();
 				if (communityUrl != null && !"".equals(communityUrl.trim())) {
-					commInstanceUrl.append(communityUrl);
-				} else {
-					commInstanceUrl.append(instanceUrl.toString());
+					resolvedUrlBuilder.append(communityUrl);
+				} else if (endpoint == RestRequest.RestEndpoint.INSTANCE) {
+					resolvedUrlBuilder.append(instanceUrl.toString());
+				} else if (endpoint == RestRequest.RestEndpoint.LOGIN) {
+					resolvedUrlBuilder.append(loginUrl.toString());
 				}
-				if (!commInstanceUrl.toString().endsWith("/")) {
-					commInstanceUrl.append("/");
+				if (!resolvedUrlBuilder.toString().endsWith("/")) {
+					resolvedUrlBuilder.append("/");
 				}
 				if (path.startsWith("/")) {
 					path = path.substring(1);
 				}
-				commInstanceUrl.append(path);
-				resolvedPathStr = commInstanceUrl.toString();
+				resolvedUrlBuilder.append(path);
+				resolvedPathStr = resolvedUrlBuilder.toString();
 			}
 			URI uri = null;
 			try {

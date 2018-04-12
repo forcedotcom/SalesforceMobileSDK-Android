@@ -90,6 +90,19 @@ public class RestRequestTest {
     }
 
 	/**
+	 * Test for getRequestForUserInfo
+	 */
+	@Test
+	public void testGetRequestForUserInfo() {
+		RestRequest request = RestRequest.getRequestForUserInfo();
+		Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+		Assert.assertEquals("Wrong path", "/services/oauth2/userinfo", request.getPath());
+		Assert.assertEquals("Wrong endpoint", RestRequest.RestEndpoint.LOGIN, request.getEndpoint());
+		Assert.assertNull("Wrong request entity", request.getRequestBody());
+		Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+	}
+
+	/**
 	 * Test for getRequestForVersions
 	 */
     @Test
