@@ -815,9 +815,7 @@ public class SalesforceSDKManager {
 
         // Finishes front activity if specified, and if this is the last account.
         if (frontActivity != null && (users == null || users.size() <= 1)) {
-            // only finish if it isn't hybrid or if hybrid, requires authentication
-            if (!isHybrid() || BootConfig.getBootConfig(frontActivity).shouldAuthenticate())
-                frontActivity.finish();
+            frontActivity.finish();
         }
 
         /*
