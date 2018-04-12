@@ -64,9 +64,8 @@ public class SmartStoreLoadJSTest extends JSTestCase {
 
     @BeforeClass
     public static void runJSTestSuite() throws InterruptedException {
-        // FIXME Update this when we stop using ARM Emulators
-        int timeout = Build.SUPPORTED_ABIS[0].contains("armeabi") ? 180 : 60;
-        JSTestCase.runJSTestSuite(JS_SUITE, data(), timeout);
+        // FIXME Change timeout back to 60 when we stop using ARM Emulators
+        JSTestCase.runJSTestSuite(JS_SUITE, data(), 180);
     }
 
     @Test
