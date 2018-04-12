@@ -43,6 +43,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
@@ -106,7 +107,7 @@ public class RestRequest {
     /**
      * HTTP date format
      */
-    public static final DateFormat HTTP_DATE_FORMAT = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z");
+    public static final DateFormat HTTP_DATE_FORMAT = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
     static {
         HTTP_DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
     }
@@ -126,6 +127,7 @@ public class RestRequest {
 	 * Enumeration for all REST API actions.
 	 */
 	private enum RestAction {
+
 		USERINFO("/services/oauth2/userinfo"),
 		VERSIONS(SERVICES_DATA),
 		RESOURCES(SERVICES_DATA + "%s/"),
@@ -669,7 +671,6 @@ public class RestRequest {
         }
     }
 
-
     /**
      * Helper class for getRequestForSObjectTree.
      */
@@ -690,22 +691,19 @@ public class RestRequest {
 
         public JSONObject asJSON() throws JSONException {
             JSONObject parentJson = buildJsonForRecord(objectType, referenceId, fields);
-
             if (childrenTrees != null) {
+
                 // Grouping children trees by type and figuring out object type to object type plural mapping
                 Map<String, String> objectTypeToObjectTypePlural = new HashMap<>();
                 Map<String, List<SObjectTree>> objectTypeToChildrenTrees = new HashMap<>();
                 for (SObjectTree childTree : childrenTrees) {
                     String childObjectType = childTree.objectType;
-
                     if (!objectTypeToObjectTypePlural.containsKey(childObjectType)) {
                         objectTypeToObjectTypePlural.put(childObjectType, childTree.objectTypePlural);
                     }
-
                     if (!objectTypeToChildrenTrees.containsKey(childObjectType)) {
                         objectTypeToChildrenTrees.put(childObjectType, new ArrayList<SObjectTree>());
                     }
-
                     objectTypeToChildrenTrees.get(childObjectType).add(childTree);
                 }
 
@@ -718,7 +716,6 @@ public class RestRequest {
                         JSONObject childJson = buildJsonForRecord(childrenObjectType, childTree.referenceId, childTree.fields);
                         childrenJsonArray.put(childJson);
                     }
-
                     parentJson.put(objectTypeToObjectTypePlural.get(childrenObjectType), JSONObjectHelper.makeJSONObject(RECORDS, childrenJsonArray));
                 }
             }
@@ -731,12 +728,9 @@ public class RestRequest {
             JSONObject jsonForAttributes = new JSONObject();
             jsonForAttributes.put(REFERENCE_ID, referenceId);
             jsonForAttributes.put(TYPE, objectType);
-
             JSONObject jsonForRecord = new JSONObject(fields);
             jsonForRecord.put(ATTRIBUTES, jsonForAttributes);
-
             return jsonForRecord;
         }
     }
-
 }
