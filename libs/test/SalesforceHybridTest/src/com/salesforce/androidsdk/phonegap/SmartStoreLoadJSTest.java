@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
-import android.os.Build;
 import android.support.test.filters.LargeTest;
 
 import org.junit.BeforeClass;
