@@ -94,6 +94,7 @@ public class RestClient {
 	 * Interface through which the result of an asynchronous request is handled.
 	 */
 	public interface AsyncRequestCallback {
+
 		/**
 		 * NB: onSuccess runs on a network thread
 		 *     If you are making your call from an activity and need to make UI changes
@@ -198,6 +199,7 @@ public class RestClient {
 	private synchronized void setOkHttpClientBuilder() {
 		final String cacheKey = getCacheKey();
 		OkHttpClient.Builder okHttpClientBuilder = OK_CLIENT_BUILDERS.get(cacheKey);
+
 		// If none cached, create new one
 		if (okHttpClientBuilder == null) {
 			okHttpClientBuilder = httpAccessor.getOkHttpClientBuilder()
@@ -219,8 +221,8 @@ public class RestClient {
 		if (okHttpClient != null) {
 			OK_CLIENTS.put(cacheKey, okHttpClient);
 		}
-
 		okHttpClient = OK_CLIENTS.get(cacheKey);
+
 		// If none cached, create new one
 		if (okHttpClient == null) {
 			okHttpClient = getOkHttpClientBuilder().build();
@@ -261,9 +263,6 @@ public class RestClient {
 		StringBuilder sb = new StringBuilder();
 		sb.append("RestClient: {\n")
 		  .append(this.oAuthRefreshInterceptor.clientInfo.toString())
-		  // Un-comment if you must: tokens should not be printed to the log
-		  // .append("   authToken: ").append(getAuthToken()).append("\n")
-		  // .append("   refreshToken: ").append(getRefreshToken()).append("\n")
 		  .append("   timeSinceLastRefresh: ").append(oAuthRefreshInterceptor.getElapsedTimeSinceLastRefresh()).append("\n")
 		  .append("}\n");
 		return sb.toString();
@@ -321,14 +320,13 @@ public class RestClient {
                 .url(HttpUrl.get(this.oAuthRefreshInterceptor.clientInfo.resolveUrl(restRequest)))
                 .method(restRequest.getMethod().toString(), restRequest.getRequestBody());
 
-        // Adding addition headers
+        // Adding additional headers
         final Map<String, String> additionalHttpHeaders = restRequest.getAdditionalHttpHeaders();
         if (additionalHttpHeaders != null) {
             for (Map.Entry<String, String> entry : additionalHttpHeaders.entrySet()) {
                 builder.addHeader(entry.getKey(), entry.getValue());
             }
         }
-
         return builder.build();
     }
 
@@ -338,23 +336,23 @@ public class RestClient {
 	 * @param restRequest
 	 * @param callback
 	 * @return okHttp Call object (through which you can cancel the request or get the request back)
-		 */
-		public Call sendAsync(final RestRequest restRequest, final AsyncRequestCallback callback) {
-			Request request = buildRequest(restRequest);
-			Call call = okHttpClient.newCall(request);
-			call.enqueue(new Callback() {
-								 @Override
-								 public void onFailure(Call call, IOException e) {
+	 */
+    public Call sendAsync(final RestRequest restRequest, final AsyncRequestCallback callback) {
+	    Request request = buildRequest(restRequest);
+		Call call = okHttpClient.newCall(request);
+		call.enqueue(new Callback() {
+
+            @Override
+			public void onFailure(Call call, IOException e) {
 									 callback.onError(e);
 								 }
 
-								 @Override
-								 public void onResponse(Call call, Response response) throws IOException {
-									 callback.onSuccess(restRequest, new RestResponse(response));
-								 }
-							 }
-					);
-			return call;
+			@Override
+			public void onResponse(Call call, Response response) throws IOException {
+			    callback.onSuccess(restRequest, new RestResponse(response));
+            }
+		});
+		return call;
 	}
 
 	/**
@@ -370,7 +368,6 @@ public class RestClient {
         return new RestResponse(response);
 	}
 
-
     /**
      * Send the given restRequest synchronously and return a RestResponse
      * Note: Cannot be used by code on the UI thread (use sendAsync instead).
@@ -381,6 +378,7 @@ public class RestClient {
      */
     public RestResponse sendSync(RestRequest restRequest, Interceptor... interceptors) throws IOException {
         Request request = buildRequest(restRequest);
+
         // builder that shares the same connection pool, dispatcher, and configuration with the original client
         OkHttpClient.Builder clientBuilder = getOkHttpClient().newBuilder();
         for (Interceptor interceptor : interceptors) {
@@ -591,7 +589,9 @@ public class RestClient {
         public static final String NOUSER = "nouser";
 
         public UnauthenticatedClientInfo() {
-            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null,
+                    null, null, null, null, null,
+                    null, null, null, null, null, null);
         }
 
         @Override
@@ -753,6 +753,7 @@ public class RestClient {
          * Swaps the existing access token for a new one.
          */
         private void refreshAccessToken() throws IOException {
+
             // If we haven't retried already and we have an accessTokenProvider
             // Then let's try to get a new authToken
             if (authTokenProvider != null) {
@@ -769,6 +770,7 @@ public class RestClient {
                 String instanceUrl = authTokenProvider.getInstanceUrl();
                 if (!clientInfo.instanceUrl.toString().equalsIgnoreCase(instanceUrl)) {
                     try {
+
                         // Create a new ClientInfo
                         clientInfo = new ClientInfo(new URI(instanceUrl),
                                 clientInfo.loginUrl, clientInfo.identityUrl,
