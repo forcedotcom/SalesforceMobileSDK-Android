@@ -39,15 +39,15 @@ import com.salesforce.androidsdk.rest.ClientManager;
  */
 public class ReactTestActivity extends SalesforceReactActivity {
 
-    static String username = "testuser@cs4.com";
-    static String accountName = "testuser@cs4.com (https://cs4.salesforce.com) (test)";
-    static String refreshToken = "5Aep8610_HRVGlMVK1Ii_.X.2OmSMyFBQAlqyGWdLwdJtsKFYv_3FEV69S37RgGhDJyvmBuicOXPWCFO_WXooPK";
+    static String username = "sdkuser@cs1.com";
+    static String accountName = "sdkuser@cs1.com (https://cs1.salesforce.com) (test)";
+    static String refreshToken = "5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBS.SiQYYAy5ID_gSrAfcuOnfHywbI8qDc0bQuV5ysWaV3LeEU";
     static String authToken = "--will-be-set-through-refresh--";
-    static String identityUrl = "https://test.salesforce.com/id/00DP00000002p6hMAA/005P0000001np0OIAQ";
-    static String instanceUrl = "https://images.cs4.my.salesforce.com";
+    static String identityUrl = "https://test.salesforce.com/id/00DS0000000HDptMAG/005S0000003yaERIAY";
+    static String instanceUrl = "https://cs1.salesforce.com";
     static String loginUrl = "https://test.salesforce.com";
-    static String orgId = "00DP00000002p6hMAA";
-    static String userId = "005P0000001np0OIAQ";
+    static String orgId = "00DS0000000HDptMAG";
+    static String userId = "005S0000003yaERIAY";
 
     @Override
     protected ClientManager buildClientManager() {
