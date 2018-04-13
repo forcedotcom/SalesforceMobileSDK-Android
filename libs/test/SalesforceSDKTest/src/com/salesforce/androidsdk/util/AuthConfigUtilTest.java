@@ -42,7 +42,7 @@ import org.junit.runner.RunWith;
 @SmallTest
 public class AuthConfigUtilTest {
 
-    private static final String MY_DOMAIN_ENDPOINT = "https://images.cs4.my.salesforce.com";
+    private static final String MY_DOMAIN_ENDPOINT = "https://sdk.cs1.my.salesforce.com";
     private static final String SANDBOX_ENDPOINT = "https://test.salesforce.com";
     private static final String FORWARD_SLASH = "/";
 
