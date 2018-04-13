@@ -240,7 +240,7 @@ public class PushService extends IntentService {
         	final String id = PushMessaging.getDeviceId(context, account);
         	unregisterSFDCPushNotification(id, account);
     	} catch (Exception e) {
-            SalesforceSDKLogger.e(TAG, "Error occurred during SFDC unregistration", e);
+            SalesforceSDKLogger.e(TAG, "Error occurred during SFDC un-registration", e);
     	} finally {
         	PushMessaging.clearRegistrationInfo(context, account);
             context.sendBroadcast((new Intent(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT)).setPackage(context.getPackageName()));
@@ -250,7 +250,7 @@ public class PushService extends IntentService {
 
     private String registerSFDCPushNotification(String registrationId,
     		UserAccount account) {
-    	final Map<String, Object> fields = new HashMap<String, Object>();
+    	final Map<String, Object> fields = new HashMap<>();
     	fields.put(CONNECTION_TOKEN, registrationId);
     	fields.put(SERVICE_TYPE, ANDROID_GCM);
     	try {
@@ -286,23 +286,18 @@ public class PushService extends IntentService {
     	return null;
     }
 
-    private boolean unregisterSFDCPushNotification(String registeredId,
+    private void unregisterSFDCPushNotification(String registeredId,
     		UserAccount account) {
     	final RestRequest req = RestRequest.getRequestForDelete(ApiVersionStrings.getVersionNumber(context),
     			MOBILE_PUSH_SERVICE_DEVICE, registeredId);
     	try {
     		final RestClient client = getRestClient(account);
     		if (client != null) {
-            	final RestResponse res = client.sendSync(req);
-            	if (res.getStatusCode() == HttpURLConnection.HTTP_NO_CONTENT) {
-            		return true;
-            	}
-            	res.consume();
+            	client.sendSync(req).consume();
     		}
     	} catch (IOException e) {
-			SalesforceSDKLogger.e(TAG, "Push notification unregistration failed", e);
+			SalesforceSDKLogger.e(TAG, "Push notification un-registration failed", e);
     	}
-    	return false;
     }
 
     private RestClient getRestClient(UserAccount account) {
