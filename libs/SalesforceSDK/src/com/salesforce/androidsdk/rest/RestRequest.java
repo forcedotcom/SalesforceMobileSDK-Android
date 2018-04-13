@@ -119,10 +119,13 @@ public class RestRequest {
 		GET, POST, PUT, DELETE, HEAD, PATCH
 	}
 
+    /**
+     * Enumeration for all REST API endpoints.
+     */
 	public enum RestEndpoint {
 		LOGIN, INSTANCE
 	}
-	
+
 	/**
 	 * Enumeration for all REST API actions.
 	 */
