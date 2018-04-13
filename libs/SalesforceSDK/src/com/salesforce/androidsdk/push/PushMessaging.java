@@ -30,9 +30,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
-import android.content.pm.ServiceInfo;
 import android.os.Bundle;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -73,7 +70,7 @@ public class PushMessaging {
     private static final String IN_PROGRESS = "inprogress";
     private static final long DEFAULT_BACKOFF = 30000;
 
-    // background executor
+    // Background executor.
     private static final ExecutorService threadPool = Executors.newFixedThreadPool(2);
 
     /**
@@ -95,8 +92,7 @@ public class PushMessaging {
         if (account != null && !isRegistered(context, account)) {
             setInProgress(context, true, account);
             if (checkPlayServices(context)) {
-                // Start IntentService to register this application with GCM.
-                Intent intent = new Intent(context, SFDCRegistrationIntentService.class);
+                final Intent intent = new Intent(context, SFDCRegistrationIntentService.class);
                 context.startService(intent);
             }
         } else {
@@ -105,31 +101,32 @@ public class PushMessaging {
     }
 
     /**
-     * Performs GCM and SFDC un-registration from push notifications for the
-     * specified user account.
+     * Performs SFDC un-registration from push notifications for the specified user account.
+     * Performs GCM un-registration only if this is the last account being logged out.
      *
-     * @param context
-     *         Context.
-     * @param account
-     *         User account.
+     * @param context Context.
+     * @param account User account.
+     * @param isLastAccount True - if this is the last logged in account, False - otherwise.
      */
-    public static void unregister(Context context, UserAccount account) {
+    public static void unregister(Context context, UserAccount account, boolean isLastAccount) {
         if (isRegistered(context, account)) {
             setInProgress(context, true, account);
-            final InstanceID instanceID = InstanceID.getInstance(context);
 
-            threadPool.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        // avoid running on main thread
-                        instanceID.deleteInstanceID();
-                    } catch (IOException e) {
-                        SalesforceSDKLogger.e(TAG, "Error deleting InstanceID", e);
+            // Deletes InstanceID only if there are no other logged in accounts.
+            if (isLastAccount) {
+                final InstanceID instanceID = InstanceID.getInstance(context);
+                threadPool.execute(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        try {
+                            instanceID.deleteInstanceID();
+                        } catch (IOException e) {
+                            SalesforceSDKLogger.e(TAG, "Error deleting InstanceID", e);
+                        }
                     }
-                }
-            });
-
+                });
+            }
             unregisterSFDCPush(context, account);
         }
     }
@@ -146,7 +143,7 @@ public class PushMessaging {
     }
 
     /**
-     * Initiates push unregistration against the SFDC endpoint.
+     * Initiates push un-registration against the SFDC endpoint.
      *
      * @param context Context.
      * @param account User account.
@@ -362,37 +359,12 @@ public class PushMessaging {
         editor.commit();
     }
 
-    /**
-     * Returns the name of the shared pref file for the specified account.
-     *
-     * @param account User account.
-     * @return Name of the shared pref file.
-     */
     private static String getSharedPrefFile(UserAccount account) {
     	String sharedPrefFile = GCM_PREFS;
     	if (account != null) {
     		sharedPrefFile = sharedPrefFile + account.getUserLevelFilenameSuffix();
     	}
     	return sharedPrefFile;
-    }
-
-    /**
-     * Returns the service info associated with an intent.
-     *
-     * @param context Context.
-     * @param intent Intent.
-     * @return Service info.
-     */
-    private static ServiceInfo getServiceInfo(Context context, Intent intent) {
-    	ServiceInfo si = null;
-    	final PackageManager pm = context.getPackageManager();
-        if (pm != null) {
-        	final ResolveInfo ri = pm.resolveService(intent, 0);
-        	if (ri != null) {
-        		si = ri.serviceInfo;
-        	}
-        }
-        return si;
     }
 
     private static boolean checkPlayServices(Context context) {
