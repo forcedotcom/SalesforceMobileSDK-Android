@@ -8,7 +8,7 @@
         <item>web</item>
     </string-array>
     <string name="androidPushNotificationClientId"></string>
-    <string name="account_name">sdkuser@cs1.com (https://cs1.salesforce.com) (test)</string>
+    <string name="account_name">sdktest@cs1.com (https://cs1.salesforce.com) (test)</string>
     <string name="account_type">com.salesforce.androidsdk.analytics.login</string>
     <string name="encoding">UTF-8</string>
     <string name="instance_url">https://sdk.cs1.my.salesforce.com</string>
@@ -17,5 +17,5 @@
     <string name="oauth_refresh_token">5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBS.SiQYYAy5ID_gSrAfcuOnfHywbI8qDc0bQuV5ysWaV3LeEU</string>
     <string name="org_id">00DS0000000HDptMAG</string>
     <string name="user_id">005S0000003yaERIAY</string>
-    <string name="username">sdkuser@cs1.com</string>
+    <string name="username">sdktest@cs1.com</string>
 </resources>
