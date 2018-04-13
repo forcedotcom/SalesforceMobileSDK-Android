@@ -168,7 +168,6 @@ public class RestRequest {
 	private final Map<String, String> additionalHttpHeaders;
 	private final JSONObject requestBodyAsJson; // needed for composite and batch requests
 
-
     /**
      * Generic constructor for arbitrary requests without a body.
      *
@@ -231,7 +230,6 @@ public class RestRequest {
     public RestRequest(RestMethod method, String path, RequestBody requestBody, Map<String, String> additionalHttpHeaders) {
     	this(method, RestEndpoint.INSTANCE, path, requestBody, additionalHttpHeaders);
     }
-
 
     /**
      * Generic constructor for arbitrary requests.
@@ -423,7 +421,6 @@ public class RestRequest {
 			path.append("?fields=");
 			path.append(URLEncoder.encode(toCsv(fieldList).toString(), UTF_8));
 		}
-
 		return new RestRequest(RestMethod.GET, path.toString());
 	}
 
@@ -587,7 +584,6 @@ public class RestRequest {
 		JSONObject compositeRequestJson =  new JSONObject();
 		compositeRequestJson.put(COMPOSITE_REQUEST, requestsArrayJson);
         compositeRequestJson.put(ALL_OR_NONE, allOrNone);
-
 		return new RestRequest(RestMethod.POST, RestAction.COMPOSITE.getPath(apiVersion), compositeRequestJson);
 	}
 
@@ -633,7 +629,6 @@ public class RestRequest {
         JSONObject batchRequestJson =  new JSONObject();
         batchRequestJson.put(BATCH_REQUESTS, requestsArrayJson);
         batchRequestJson.put(HALT_ON_ERROR, haltOnError);
-
         return new RestRequest(RestMethod.POST, RestAction.BATCH.getPath(apiVersion), batchRequestJson);
     }
 
@@ -652,7 +647,6 @@ public class RestRequest {
         for (SObjectTree objectTree : objectTrees) {
             jsonTrees.put(objectTree.asJSON());
         }
-
         RequestBody body = RequestBody.create(MEDIA_TYPE_JSON, JSONObjectHelper.makeJSONObject(RECORDS, jsonTrees).toString());
         return new RestRequest(RestMethod.POST, RestAction.SOBJECT_TREE.getPath(apiVersion, objectType), body);
     }
@@ -678,6 +672,7 @@ public class RestRequest {
      * Helper class for getRequestForSObjectTree.
      */
     public static class SObjectTree {
+
         final String objectType;
         final String objectTypePlural;
         final String referenceId;
