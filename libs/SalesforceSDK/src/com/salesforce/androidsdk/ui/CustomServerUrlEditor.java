@@ -98,7 +98,7 @@ public class CustomServerUrlEditor extends DialogFragment {
 				}
 
 				// Saves state and dismisses the dialog.
-				loginServerManager.addCustomLoginServer(lbl, val);
+				loginServerManager.addCustomLoginServer(lbl.trim(), val.trim());
 				dismiss();
 			}
 		});
