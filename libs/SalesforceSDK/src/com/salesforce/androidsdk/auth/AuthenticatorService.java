@@ -105,8 +105,7 @@ public class AuthenticatorService extends Service {
                         String accountType,
                         String authTokenType,
                         String[] requiredFeatures,
-                        Bundle options)
-                throws NetworkErrorException {
+                        Bundle options) {
         	if (isAddFromSettings(options)) {
         		options.putAll(SalesforceSDKManager.getInstance().getLoginOptions().asBundle());
         	}
@@ -281,13 +280,13 @@ public class AuthenticatorService extends Service {
 
         @Override
         public Bundle updateCredentials(AccountAuthenticatorResponse response, Account account,
-                                        String authTokenType, Bundle options) throws NetworkErrorException {
+                                        String authTokenType, Bundle options) {
             return null;
         }
 
         @Override
         public Bundle confirmCredentials(AccountAuthenticatorResponse response, Account account,
-                                         Bundle options) throws NetworkErrorException {
+                                         Bundle options) {
             return null;
         }
 
@@ -303,7 +302,7 @@ public class AuthenticatorService extends Service {
 
         @Override
         public Bundle hasFeatures(AccountAuthenticatorResponse response, Account account,
-                                  String[] features) throws NetworkErrorException {
+                                  String[] features) {
             return null;
         }
     }
