@@ -35,6 +35,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.security.KeyChain;
 import android.text.TextUtils;
 import android.view.KeyEvent;
@@ -495,8 +497,15 @@ public class LoginActivity extends AccountAuthenticatorActivity
          *
          * @param errorMessage Error message.
          */
-        public void receivedErrorResponse(String errorMessage) {
-            Toast.makeText(LoginActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+        public void receivedErrorResponse(final String errorMessage) {
+            final Handler toastHandler = new Handler(Looper.getMainLooper());
+            toastHandler.post(new Runnable() {
+
+                @Override
+                public void run() {
+                    Toast.makeText(getApplicationContext(), errorMessage, Toast.LENGTH_LONG).show();
+                }
+            });
         }
     }
 }
