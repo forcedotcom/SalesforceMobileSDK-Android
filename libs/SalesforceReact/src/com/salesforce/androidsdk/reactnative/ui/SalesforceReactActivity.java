@@ -204,6 +204,7 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
     public void logout(Callback successCallback) {
         SalesforceReactLogger.i(TAG, "logout called");
         SalesforceSDKManager.getInstance().logout(this);
+        ReactBridgeHelper.invokeSuccess(successCallback, "logout success");
     }
 
     /**
