@@ -65,6 +65,6 @@ public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
     public void logoutCurrentUser(ReadableMap args,
                                   Callback successCallback, Callback errorCallback) {
         final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
-        if (currentActivity != null) currentActivity.logout(successCallback);
+        if (currentActivity != null) currentActivity.logout();
     }
 }

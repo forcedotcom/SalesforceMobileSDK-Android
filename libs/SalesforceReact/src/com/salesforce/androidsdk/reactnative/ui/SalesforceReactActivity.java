@@ -37,8 +37,8 @@ import android.widget.Toast;
 import com.facebook.react.ReactActivity;
 import com.facebook.react.ReactActivityDelegate;
 import com.facebook.react.bridge.Callback;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.reactnative.R;
+import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
 import com.salesforce.androidsdk.reactnative.bridge.ReactBridgeHelper;
 import com.salesforce.androidsdk.reactnative.util.SalesforceReactLogger;
 import com.salesforce.androidsdk.rest.ClientManager;
@@ -123,7 +123,7 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
         if (shouldAuthenticate()) {
 
             // Online.
-            if (SalesforceSDKManager.getInstance().hasNetwork()) {
+            if (SalesforceReactSDKManager.getInstance().hasNetwork()) {
                 SalesforceReactLogger.i(TAG, "onResumeNotLoggedIn - should authenticate/online - authenticating");
                 login();
             }
@@ -170,11 +170,12 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
     protected void login() {
         SalesforceReactLogger.i(TAG, "login called");
         clientManager.getRestClient(this, new RestClientCallback() {
+
             @Override
             public void authenticatedRestClient(RestClient client) {
                 if (client == null) {
                     SalesforceReactLogger.i(TAG, "login callback triggered with null client");
-                    logout(null);
+                    logout();
                 } else {
                     SalesforceReactLogger.i(TAG, "login callback triggered with actual client");
                     SalesforceReactActivity.this.restartReactNativeApp();
@@ -185,12 +186,10 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
 
     /**
      * Method called from bridge to logout.
-     *
-     * @param successCallback Success callback.
      */
-    public void logout(Callback successCallback) {
+    public void logout() {
         SalesforceReactLogger.i(TAG, "logout called");
-        SalesforceSDKManager.getInstance().logout(this);
+        SalesforceReactSDKManager.getInstance().logout(this);
     }
 
     /**
@@ -247,9 +246,9 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
     }
 
     protected ClientManager buildClientManager() {
-        return new ClientManager(this, SalesforceSDKManager.getInstance().getAccountType(),
-                SalesforceSDKManager.getInstance().getLoginOptions(),
-                SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
+        return new ClientManager(this, SalesforceReactSDKManager.getInstance().getAccountType(),
+                SalesforceReactSDKManager.getInstance().getLoginOptions(),
+                SalesforceReactSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
     }
 
     @Override
@@ -304,6 +303,7 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
             builder.setCancelable(false);
             builder.setPositiveButton("Continue", new DialogInterface.OnClickListener() {
 
+                @Override
                 public void onClick(DialogInterface dialog, int id) {
                     dialog.dismiss();
                     SalesforceReactActivity.this.recreate();
