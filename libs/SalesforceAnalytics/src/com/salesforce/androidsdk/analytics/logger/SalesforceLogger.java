@@ -63,7 +63,7 @@ public class SalesforceLogger {
      * An enumeration of log levels.
      */
     public enum Level {
-        OFF(0),
+        OFF(6),
         ERROR(5),
         WARN(4),
         INFO(3),
@@ -357,7 +357,7 @@ public class SalesforceLogger {
       }
         }
 
-        if (level != Level.OFF) {
+        if (level.severity < Level.OFF.severity) {
             logToFile(getTimeFromUTC(), level, tag, message, null);
         }
     }
@@ -394,7 +394,7 @@ public class SalesforceLogger {
           Log.d(tag, message, e);
       }
     }
-    if (level != Level.OFF) {
+    if (level.severity < Level.OFF.severity) {
       logToFile(getTimeFromUTC(), level, tag, message, e);
     }
     }
