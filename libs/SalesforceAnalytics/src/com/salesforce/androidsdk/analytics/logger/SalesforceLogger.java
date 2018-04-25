@@ -333,28 +333,27 @@ public class SalesforceLogger {
      */
     public void log(Level level, String tag, String message) {
         if (level.severity >= logLevel.severity) {
-
-      switch (level) {
-        case OFF:
-          break;
-        case ERROR:
-          Log.e(tag, message);
-          break;
-        case WARN:
-          Log.w(tag, message);
-          break;
-        case INFO:
-          Log.i(tag, message);
-          break;
-        case DEBUG:
-          Log.d(tag, message);
-          break;
-        case VERBOSE:
-          Log.v(tag, message);
-          break;
-        default:
-          Log.d(tag, message);
-      }
+            switch (level) {
+                case OFF:
+                    break;
+                case ERROR:
+                    Log.e(tag, message);
+                    break;
+                case WARN:
+                    Log.w(tag, message);
+                    break;
+                case INFO:
+                    Log.i(tag, message);
+                    break;
+                case DEBUG:
+                    Log.d(tag, message);
+                    break;
+                case VERBOSE:
+                    Log.v(tag, message);
+                    break;
+                default:
+                    Log.d(tag, message);
+            }
         }
 
         if (level.severity < Level.OFF.severity) {
@@ -371,32 +370,32 @@ public class SalesforceLogger {
    * @param e Exception to be logged.
    */
   public void log(Level level, String tag, String message, Throwable e) {
-    if (level.severity >= logLevel.severity) {
-      switch (level) {
-        case OFF:
-          break;
-        case ERROR:
-          Log.e(tag, message, e);
-          break;
-        case WARN:
-          Log.w(tag, message, e);
-          break;
-        case INFO:
-          Log.i(tag, message, e);
-          break;
-        case DEBUG:
-          Log.d(tag, message, e);
-          break;
-        case VERBOSE:
-          Log.v(tag, message, e);
-          break;
-        default:
-          Log.d(tag, message, e);
+      if (level.severity >= logLevel.severity) {
+          switch (level) {
+              case OFF:
+              break;
+          case ERROR:
+              Log.e(tag, message, e);
+              break;
+          case WARN:
+              Log.w(tag, message, e);
+              break;
+          case INFO:
+              Log.i(tag, message, e);
+              break;
+          case DEBUG:
+              Log.d(tag, message, e);
+              break;
+          case VERBOSE:
+              Log.v(tag, message, e);
+              break;
+          default:
+              Log.d(tag, message, e);
+          }
       }
-    }
-    if (level.severity < Level.OFF.severity) {
-      logToFile(getTimeFromUTC(), level, tag, message, e);
-    }
+      if (level.severity < Level.OFF.severity) {
+          logToFile(getTimeFromUTC(), level, tag, message, e);
+      }
     }
 
     private void logToFile(final String curTime, final Level level, final String tag, final String message, final Throwable e) {
