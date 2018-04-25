@@ -114,4 +114,23 @@ public class SalesforceLoggerTest {
         logLevel = logger.getLogLevel();
         Assert.assertEquals("Log levels should be the same", SalesforceLogger.Level.VERBOSE, logLevel);
     }
+
+    /**
+     * Test for setting global log level.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testSetGlobalLogLevel() throws Exception {
+        final SalesforceLogger logger1 = SalesforceLogger.getLogger(TEST_COMPONENT_1, targetContext);
+        final SalesforceLogger logger2 = SalesforceLogger.getLogger(TEST_COMPONENT_2, targetContext);
+        Assert.assertEquals("Default log level is DEBUG", SalesforceLogger.Level.DEBUG, logger1.getLogLevel());
+        Assert.assertEquals("Default log level is DEBUG", SalesforceLogger.Level.DEBUG, logger2.getLogLevel());
+        logger1.setLogLevel(SalesforceLogger.Level.INFO);
+        Assert.assertEquals("New log level should be INFO for logger1", SalesforceLogger.Level.INFO, logger1.getLogLevel());
+        Assert.assertEquals("Default log level is still DEBUG for logger2", SalesforceLogger.Level.DEBUG, logger2.getLogLevel());
+        SalesforceLogger.setGlobalLogLevel(SalesforceLogger.Level.VERBOSE);
+        Assert.assertEquals("New log level should be VERBOSE for all loggers", SalesforceLogger.Level.VERBOSE, logger1.getLogLevel());
+        Assert.assertEquals("New log level should be VERBOSE for all loggers", SalesforceLogger.Level.VERBOSE, logger2.getLogLevel());
+    }
 }
