@@ -36,9 +36,9 @@ import android.util.Log;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -63,12 +63,18 @@ public class SalesforceLogger {
      * An enumeration of log levels.
      */
     public enum Level {
-        OFF,
-        ERROR,
-        WARN,
-        INFO,
-        DEBUG,
-        VERBOSE
+        OFF(0),
+        ERROR(5),
+        WARN(4),
+        INFO(3),
+        DEBUG(2),
+        VERBOSE(1);
+
+        private Integer severity;
+
+        Level(int severity){
+            this.severity = severity;
+        }
     }
 
     private FileLogger fileLogger;
@@ -85,7 +91,7 @@ public class SalesforceLogger {
      */
     public synchronized static SalesforceLogger getLogger(String componentName, Context context) {
         if (LOGGERS == null) {
-            LOGGERS = new HashMap<>();
+            LOGGERS = new ConcurrentHashMap<>();
         }
         if (!LOGGERS.containsKey(componentName)) {
             final SalesforceLogger logger = new SalesforceLogger(componentName, context);
@@ -172,6 +178,12 @@ public class SalesforceLogger {
      */
     public void setLogLevel(Level level) {
         storeLoggerPrefs(level);
+    }
+
+    public static void setGlobalLogLevel(Level level) {
+        for (SalesforceLogger logger : LOGGERS.values()) {
+            logger.setLogLevel(level);
+        }
     }
 
     /**
@@ -320,65 +332,71 @@ public class SalesforceLogger {
      * @param message Log message.
      */
     public void log(Level level, String tag, String message) {
-        switch (level) {
-            case OFF:
-                break;
-            case ERROR:
-                Log.e(tag, message);
-                break;
-            case WARN:
-                Log.w(tag, message);
-                break;
-            case INFO:
-                Log.i(tag, message);
-                break;
-            case DEBUG:
-                Log.d(tag, message);
-                break;
-            case VERBOSE:
-                Log.v(tag, message);
-                break;
-            default:
-                Log.d(tag, message);
+        if (level.severity >= logLevel.severity) {
+
+      switch (level) {
+        case OFF:
+          break;
+        case ERROR:
+          Log.e(tag, message);
+          break;
+        case WARN:
+          Log.w(tag, message);
+          break;
+        case INFO:
+          Log.i(tag, message);
+          break;
+        case DEBUG:
+          Log.d(tag, message);
+          break;
+        case VERBOSE:
+          Log.v(tag, message);
+          break;
+        default:
+          Log.d(tag, message);
+      }
         }
+
         if (level != Level.OFF) {
             logToFile(getTimeFromUTC(), level, tag, message, null);
         }
     }
 
-    /**
-     * Logs a log line of the specified level.
-     *
-     * @param level Log level.
-     * @param tag Log tag.
-     * @param message Log message.
-     * @param e Exception to be logged.
-     */
-    public void log(Level level, String tag, String message, Throwable e) {
-        switch (level) {
-            case OFF:
-                break;
-            case ERROR:
-                Log.e(tag, message, e);
-                break;
-            case WARN:
-                Log.w(tag, message, e);
-                break;
-            case INFO:
-                Log.i(tag, message, e);
-                break;
-            case DEBUG:
-                Log.d(tag, message, e);
-                break;
-            case VERBOSE:
-                Log.v(tag, message, e);
-                break;
-            default:
-                Log.d(tag, message, e);
-        }
-        if (level != Level.OFF) {
-            logToFile(getTimeFromUTC(), level, tag, message, e);
-        }
+  /**
+   * Logs a log line of the specified level.
+   *
+   * @param level Log level.
+   * @param tag Log tag.
+   * @param message Log message.
+   * @param e Exception to be logged.
+   */
+  public void log(Level level, String tag, String message, Throwable e) {
+    if (level.severity >= logLevel.severity) {
+      switch (level) {
+        case OFF:
+          break;
+        case ERROR:
+          Log.e(tag, message, e);
+          break;
+        case WARN:
+          Log.w(tag, message, e);
+          break;
+        case INFO:
+          Log.i(tag, message, e);
+          break;
+        case DEBUG:
+          Log.d(tag, message, e);
+          break;
+        case VERBOSE:
+          Log.v(tag, message, e);
+          break;
+        default:
+          Log.d(tag, message, e);
+      }
+    }
+    if (level != Level.OFF) {
+      logToFile(getTimeFromUTC(), level, tag, message, e);
+    }
     }
 
     private void logToFile(final String curTime, final Level level, final String tag, final String message, final Throwable e) {
