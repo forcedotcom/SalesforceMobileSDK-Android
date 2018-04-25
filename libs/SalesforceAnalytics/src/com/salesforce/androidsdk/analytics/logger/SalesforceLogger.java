@@ -180,6 +180,10 @@ public class SalesforceLogger {
         storeLoggerPrefs(level);
     }
 
+    /**
+     * Sets the log level for all loggers currently stored
+     * @param level Log level.
+     */
     public static void setGlobalLogLevel(Level level) {
         for (SalesforceLogger logger : LOGGERS.values()) {
             logger.setLogLevel(level);
