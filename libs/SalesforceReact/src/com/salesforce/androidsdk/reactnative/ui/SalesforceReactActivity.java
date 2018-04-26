@@ -175,7 +175,7 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
             public void authenticatedRestClient(RestClient client) {
                 if (client == null) {
                     SalesforceReactLogger.i(TAG, "login callback triggered with null client");
-                    logout();
+                    logout(null);
                 } else {
                     SalesforceReactLogger.i(TAG, "login callback triggered with actual client");
                     SalesforceReactActivity.this.restartReactNativeApp();
@@ -186,10 +186,15 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
 
     /**
      * Method called from bridge to logout.
+     *
+     * @param successCallback Success callback.
      */
-    public void logout() {
+    public void logout(final Callback successCallback) {
         SalesforceReactLogger.i(TAG, "logout called");
         SalesforceReactSDKManager.getInstance().logout(this);
+        if (successCallback != null) {
+            ReactBridgeHelper.invokeSuccess(successCallback, "Logout complete");
+        }
     }
 
     /**

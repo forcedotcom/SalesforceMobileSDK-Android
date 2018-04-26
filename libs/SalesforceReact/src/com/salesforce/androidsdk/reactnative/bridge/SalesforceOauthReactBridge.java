@@ -50,7 +50,9 @@ public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
     public void authenticate(ReadableMap args,
                              Callback successCallback, Callback errorCallback) {
         final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
-        if (currentActivity != null) currentActivity.authenticate(successCallback, errorCallback);
+        if (currentActivity != null) {
+            currentActivity.authenticate(successCallback, errorCallback);
+        }
     }
 
 
@@ -58,13 +60,17 @@ public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
     public void getAuthCredentials(ReadableMap args,
                                    Callback successCallback, Callback errorCallback) {
         final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
-        if (currentActivity != null) currentActivity.getAuthCredentials(successCallback, errorCallback);
+        if (currentActivity != null) {
+            currentActivity.getAuthCredentials(successCallback, errorCallback);
+        }
     }
 
     @ReactMethod
     public void logoutCurrentUser(ReadableMap args,
                                   Callback successCallback, Callback errorCallback) {
         final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
-        if (currentActivity != null) currentActivity.logout();
+        if (currentActivity != null) {
+            currentActivity.logout(successCallback);
+        }
     }
 }
