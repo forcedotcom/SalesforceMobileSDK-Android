@@ -348,9 +348,6 @@ public class SalesforceLogger {
                 default:
                     Log.d(tag, message);
             }
-        }
-
-        if (level.severity < Level.OFF.severity) {
             logToFile(getTimeFromUTC(), level, tag, message, null);
         }
     }
@@ -386,8 +383,6 @@ public class SalesforceLogger {
           default:
               Log.d(tag, message, e);
           }
-      }
-      if (level.severity < Level.OFF.severity) {
           logToFile(getTimeFromUTC(), level, tag, message, e);
       }
     }
