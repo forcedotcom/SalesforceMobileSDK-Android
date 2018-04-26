@@ -277,6 +277,10 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
     }
 
     private boolean shouldAskOverlayPermission() {
+
+        /*
+         * TODO: Remove this check once minAPI > 23.
+         */
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().getDevSupportManager().getDevSupportEnabled()) {
                 if (!Settings.canDrawOverlays(this)) {
