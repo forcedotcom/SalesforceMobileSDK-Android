@@ -72,7 +72,7 @@ public class SalesforceLogger {
 
         private Integer severity;
 
-        Level(int severity){
+        Level(int severity) {
             this.severity = severity;
         }
     }
@@ -178,16 +178,6 @@ public class SalesforceLogger {
      */
     public void setLogLevel(Level level) {
         storeLoggerPrefs(level);
-    }
-
-    /**
-     * Sets the log level for all loggers currently stored
-     * @param level Log level.
-     */
-    public static void setGlobalLogLevel(Level level) {
-        for (SalesforceLogger logger : LOGGERS.values()) {
-            logger.setLogLevel(level);
-        }
     }
 
     /**
