@@ -240,7 +240,7 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
 
     protected void setRestClient(RestClient restClient) {
         client = restClient;
-        if (client != null ) {
+        if (client != null) {
             loadReactAppOnceIfReady();
         }
     }

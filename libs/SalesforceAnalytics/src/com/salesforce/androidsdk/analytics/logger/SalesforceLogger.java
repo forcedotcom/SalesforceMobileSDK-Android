@@ -36,6 +36,7 @@ import android.util.Log;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -364,30 +365,31 @@ public class SalesforceLogger {
       if (level.severity >= logLevel.severity) {
           switch (level) {
               case OFF:
-              break;
-          case ERROR:
-              Log.e(tag, message, e);
-              break;
-          case WARN:
-              Log.w(tag, message, e);
-              break;
-          case INFO:
-              Log.i(tag, message, e);
-              break;
-          case DEBUG:
-              Log.d(tag, message, e);
-              break;
-          case VERBOSE:
-              Log.v(tag, message, e);
-              break;
-          default:
-              Log.d(tag, message, e);
+                break;
+            case ERROR:
+                Log.e(tag, message, e);
+                break;
+            case WARN:
+                Log.w(tag, message, e);
+                break;
+            case INFO:
+                Log.i(tag, message, e);
+                break;
+            case DEBUG:
+                Log.d(tag, message, e);
+                break;
+            case VERBOSE:
+                Log.v(tag, message, e);
+                break;
+            default:
+                Log.d(tag, message, e);
           }
           logToFile(getTimeFromUTC(), level, tag, message, e);
       }
     }
 
-    private void logToFile(final String curTime, final Level level, final String tag, final String message, final Throwable e) {
+    private void logToFile(final String curTime, final Level level, final String tag,
+                           final String message, final Throwable e) {
         THREAD_POOL.execute(new Runnable() {
 
             @Override
@@ -395,7 +397,8 @@ public class SalesforceLogger {
                 if (fileLogger != null) {
                     String logLine;
                     if (e != null) {
-                        logLine = String.format(LOG_LINE_FORMAT_WITH_EXCEPTION, curTime, level, tag, message, Log.getStackTraceString(e));
+                        logLine = String.format(LOG_LINE_FORMAT_WITH_EXCEPTION, curTime, level,
+                                tag, message, Log.getStackTraceString(e));
                     } else {
                         logLine = String.format(LOG_LINE_FORMAT, curTime, level, tag, message);
                     }
@@ -408,7 +411,7 @@ public class SalesforceLogger {
     private String getTimeFromUTC() {
         long curTime = System.currentTimeMillis();
         final Date date = new Date(curTime);
-        final SimpleDateFormat dateFormat = new SimpleDateFormat(US_DATE_FORMAT);
+        final SimpleDateFormat dateFormat = new SimpleDateFormat(US_DATE_FORMAT, Locale.US);
         return dateFormat.format(date);
     }
 
