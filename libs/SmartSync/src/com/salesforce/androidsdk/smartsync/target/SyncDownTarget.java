@@ -39,6 +39,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import java.util.SortedSet;
 
@@ -180,7 +181,7 @@ public abstract class SyncDownTarget extends SyncTarget {
         IndexSpec[] indexSpecs = syncManager.getSmartStore().getSoupIndexSpecs(soupName);
         for(IndexSpec indexSpec : indexSpecs) {
             if (indexSpec.path.equals(SYNC_ID)) {
-                additionalPredicate = String.format("AND {%s:%s} = %d", soupName, SYNC_ID, syncId);
+                additionalPredicate = String.format(Locale.US, "AND {%s:%s} = %d", soupName, SYNC_ID, syncId);
                 break;
             }
         }
@@ -211,8 +212,6 @@ public abstract class SyncDownTarget extends SyncTarget {
     protected String getNonDirtyRecordIdsSql(String soupName, String idField, String additionalPredicate) {
         return String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'false' %s ORDER BY {%s:%s} ASC", soupName, idField, soupName, soupName, LOCAL, additionalPredicate, soupName, idField);
     }
-
-
 
     /**
      * Fetches remote IDs still present on the server from the list of local IDs.
@@ -302,7 +301,7 @@ public abstract class SyncDownTarget extends SyncTarget {
      * @return Set of IDs.
      */
     protected Set<String> parseIdsFromResponse(JSONArray records) {
-        final Set<String> remoteIds = new HashSet<String>();
+        final Set<String> remoteIds = new HashSet<>();
         if (records != null) {
             for (int i = 0; i < records.length(); i++) {
                 final JSONObject idJson = records.optJSONObject(i);
