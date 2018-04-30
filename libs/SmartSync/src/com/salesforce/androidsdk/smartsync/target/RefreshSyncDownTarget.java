@@ -70,7 +70,6 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
     private boolean isResync = false;
     private int page = 0;
 
-
     /**
      * Return number of ids to pack in a single SOQL call
      */
@@ -106,7 +105,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
      * @param fieldlist
      * @param objectType
      */
-    public RefreshSyncDownTarget(List<String> fieldlist, String objectType, String soupName) throws JSONException {
+    public RefreshSyncDownTarget(List<String> fieldlist, String objectType, String soupName) {
         super();
         this.queryType = QueryType.refresh;
         this.fieldlist = fieldlist;
@@ -147,7 +146,6 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         final QuerySpec querySpec;
         final List<String> idsInSmartStore = new ArrayList<>();
         final long maxTimeStamp;
-
         if (isResync) {
             // Getting full records from SmartStore to compute maxTimeStamp
             // So doing more db work in the hope of doing less server work
@@ -182,7 +180,6 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         if (page == 0) {
             totalSize = syncManager.getSmartStore().countQuery(querySpec);
         }
-
         if (idsInSmartStore.size() > 0) {
             // Get records from server that have changed after maxTimeStamp
             final JSONArray records = fetchFromServer(syncManager, idsInSmartStore, fieldlist, maxTimeStamp);
@@ -190,7 +187,6 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
             // Increment page if there is more to fetch
             boolean done = getCountIdsPerSoql() * (page + 1) >= totalSize;
             page = (done ? 0 : page + 1);
-
             return records;
         }
         else {
@@ -216,9 +212,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         if (localIds == null) {
             return null;
         }
-
         Set<String> remoteIds = new HashSet<>();
-
         List<String> localIdsList = new ArrayList<>(localIds);
         int sliceSize = getCountIdsPerSoql();
         int countSlices = (int) Math.ceil((double) localIds.size() / sliceSize);
@@ -227,7 +221,6 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
             JSONArray records = fetchFromServer(syncManager, idsToFetch, Arrays.asList(getIdFieldName()), 0 /* get all */);
             remoteIds.addAll(parseIdsFromResponse(records));
         }
-
         return remoteIds;
     }
 

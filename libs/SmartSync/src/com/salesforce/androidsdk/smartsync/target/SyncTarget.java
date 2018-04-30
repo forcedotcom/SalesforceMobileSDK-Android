@@ -144,7 +144,7 @@ public abstract class SyncTarget {
     }
 
     protected SortedSet<String> getIdsWithQuery(SyncManager syncManager, String idsSql) throws JSONException {
-        final SortedSet<String> ids = new TreeSet<String>();
+        final SortedSet<String> ids = new TreeSet<>();
         final QuerySpec smartQuerySpec = QuerySpec.buildSmartQuerySpec(idsSql, PAGE_SIZE);
         boolean hasMore = true;
         for (int pageIndex = 0; hasMore; pageIndex++) {
@@ -152,7 +152,6 @@ public abstract class SyncTarget {
             hasMore = (results.length() == PAGE_SIZE);
             ids.addAll(toSortedSet(results));
         }
-
         return ids;
     }
 
@@ -169,7 +168,6 @@ public abstract class SyncTarget {
 
     protected void cleanAndSaveInSmartStore(SmartStore smartStore, String soupName, JSONObject record, String idFieldName, boolean handleTx) throws JSONException {
         cleanRecord(record);
-
         if (record.has(SmartStore.SOUP_ENTRY_ID)) {
             // Record came from smartstore
             smartStore.update(soupName, record, record.getLong(SmartStore.SOUP_ENTRY_ID), handleTx);
@@ -186,7 +184,6 @@ public abstract class SyncTarget {
         record.put(LOCALLY_UPDATED, false);
         record.put(LOCALLY_DELETED, false);
     }
-
 
     /**
      * Save records to local store
@@ -232,15 +229,14 @@ public abstract class SyncTarget {
             String smartSql = String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} IN (%s)",
                     soupName, SmartStore.SOUP_ENTRY_ID, soupName, soupName, idField,
                     "'" + TextUtils.join("', '", ids) + "'");
-
             QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, Integer.MAX_VALUE /* delete all */);
             syncManager.getSmartStore().deleteByQuery(soupName, querySpec);
         }
     }
 
     private SortedSet<String> toSortedSet(JSONArray jsonArray) throws JSONException {
-        SortedSet<String> set = new TreeSet<String>();
-        for (int i=0; i<jsonArray.length(); i++) {
+        SortedSet<String> set = new TreeSet<>();
+        for (int i = 0; i < jsonArray.length(); i++) {
             set.add(jsonArray.getJSONArray(i).getString(0));
         }
         return set;
@@ -250,9 +246,8 @@ public abstract class SyncTarget {
      * Given a record, return true if it was locally created
      * @param record
      * @return
-     * @throws JSONException
      */
-    public boolean isLocallyCreated(JSONObject record) throws JSONException {
+    public boolean isLocallyCreated(JSONObject record) {
         return record.optBoolean(LOCALLY_CREATED);
     }
 
@@ -260,9 +255,8 @@ public abstract class SyncTarget {
      * Given a record, return true if it was locally updated
      * @param record
      * @return
-     * @throws JSONException
      */
-    public boolean isLocallyUpdated(JSONObject record) throws JSONException {
+    public boolean isLocallyUpdated(JSONObject record) {
         return record.optBoolean(LOCALLY_UPDATED);
     }
 
@@ -270,9 +264,8 @@ public abstract class SyncTarget {
      * Given a record, return true if it was locally deleted
      * @param record
      * @return
-     * @throws JSONException
      */
-    public boolean isLocallyDeleted(JSONObject record) throws JSONException {
+    public boolean isLocallyDeleted(JSONObject record) {
         return record.optBoolean(LOCALLY_DELETED);
     }
 
