@@ -70,6 +70,18 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
     private List<String> childrenUpdateFieldlist;
     private RelationshipType relationshipType;
 
+    public ParentChildrenSyncUpTarget(JSONObject target) throws JSONException {
+        this(
+            new ParentInfo(target.getJSONObject(ParentChildrenSyncTargetHelper.PARENT)),
+            JSONObjectHelper.<String>toList(target.optJSONArray(CREATE_FIELDLIST)),
+            JSONObjectHelper.<String>toList(target.optJSONArray(UPDATE_FIELDLIST)),
+            new ChildrenInfo(target.getJSONObject(ParentChildrenSyncTargetHelper.CHILDREN)),
+            JSONObjectHelper.<String>toList(target.optJSONArray(CHILDREN_CREATE_FIELDLIST)),
+            JSONObjectHelper.<String>toList(target.optJSONArray(CHILDREN_UPDATE_FIELDLIST)),
+            RelationshipType.valueOf(target.getString(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE))
+        );
+    }
+
     public ParentChildrenSyncUpTarget(ParentInfo parentInfo,
                                       List<String> parentCreateFieldlist,
                                       List<String> parentUpdateFieldlist,
