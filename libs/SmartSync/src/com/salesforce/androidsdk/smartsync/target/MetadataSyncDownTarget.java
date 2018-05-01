@@ -26,21 +26,15 @@
  */
 package com.salesforce.androidsdk.smartsync.target;
 
-import android.text.TextUtils;
-
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
-import com.salesforce.androidsdk.smartsync.util.Constants;
-import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
-import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -92,16 +86,12 @@ public class MetadataSyncDownTarget extends SyncDownTarget {
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
         final RestRequest request = RestRequest.getRequestForDescribe(syncManager.apiVersion, objectType);
         final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+        final JSONArray records = new JSONArray();
+        records.put(response.asJSONObject());
 
-
-
-
-        final List<String> recentItems = JSONObjectHelper.pluck(response.asJSONObject().getJSONArray(Constants.RECENT_ITEMS), Constants.ID);
-
-        // Building SOQL query to get requested at.
-        final String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(objectType).where(getIdFieldName()
-                + " IN ('" + TextUtils.join("', '", recentItems) + "')").build();
-        return startFetch(syncManager, maxTimeStamp, soql);
+        // Recording total size.
+        totalSize = 1;
+        return records;
 
     }
 
@@ -111,8 +101,13 @@ public class MetadataSyncDownTarget extends SyncDownTarget {
     }
 
     @Override
-    protected Set<String> getRemoteIds(SyncManager syncManager, Set<String> localIds) throws IOException, JSONException {
+    protected Set<String> getRemoteIds(SyncManager syncManager, Set<String> localIds) {
+        return null;
+    }
 
+    @Override
+    public int cleanGhosts(SyncManager syncManager, String soupName, long syncId) {
+        return 0;
     }
 
     /**

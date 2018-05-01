@@ -148,7 +148,8 @@ public abstract class SyncDownTarget extends SyncTarget {
     public int cleanGhosts(SyncManager syncManager, String soupName, long syncId) throws JSONException, IOException {
 
         // Fetches list of IDs present in local soup that have not been modified locally.
-        final Set<String> localIds = getNonDirtyRecordIds(syncManager, soupName, getIdFieldName(), buildSyncIdPredicateIfIndexed(syncManager, soupName, syncId));
+        final Set<String> localIds = getNonDirtyRecordIds(syncManager, soupName, getIdFieldName(),
+                buildSyncIdPredicateIfIndexed(syncManager, soupName, syncId));
 
          // Fetches list of IDs still present on the server from the list of local IDs
          // and removes the list of IDs that are still present on the server.
@@ -193,7 +194,8 @@ public abstract class SyncDownTarget extends SyncTarget {
      * @return
      * @throws JSONException
      */
-    protected SortedSet<String> getNonDirtyRecordIds(SyncManager syncManager, String soupName, String idField, String additionalPredicate) throws JSONException {
+    protected SortedSet<String> getNonDirtyRecordIds(SyncManager syncManager, String soupName,
+                                                     String idField, String additionalPredicate) throws JSONException {
         String nonDirtyRecordsSql = getNonDirtyRecordIdsSql(soupName, idField, additionalPredicate);
         return getIdsWithQuery(syncManager, nonDirtyRecordsSql);
     }
@@ -206,7 +208,8 @@ public abstract class SyncDownTarget extends SyncTarget {
      * @return
      */
     protected String getNonDirtyRecordIdsSql(String soupName, String idField, String additionalPredicate) {
-        return String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'false' %s ORDER BY {%s:%s} ASC", soupName, idField, soupName, soupName, LOCAL, additionalPredicate, soupName, idField);
+        return String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'false' %s ORDER BY {%s:%s} ASC",
+                soupName, idField, soupName, soupName, LOCAL, additionalPredicate, soupName, idField);
     }
 
     /**

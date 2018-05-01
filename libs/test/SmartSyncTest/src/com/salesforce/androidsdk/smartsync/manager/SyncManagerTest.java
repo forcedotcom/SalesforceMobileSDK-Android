@@ -30,11 +30,14 @@ package com.salesforce.androidsdk.smartsync.manager;
 import android.support.test.filters.LargeTest;
 import android.support.test.runner.AndroidJUnit4;
 
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartsync.target.MetadataSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.MruSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.RefreshSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SoqlSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SoslSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
+import com.salesforce.androidsdk.smartsync.target.SyncTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 import com.salesforce.androidsdk.smartsync.target.TestSyncUpTarget;
 import com.salesforce.androidsdk.smartsync.util.Constants;
@@ -111,6 +114,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 	 */
     @Test
 	public void testSyncDown() throws Exception {
+
 		// first sync down
 		trySyncDown(MergeMode.OVERWRITE);
 
@@ -123,6 +127,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
      */
     @Test
     public void testSyncDownWithoutOverwrite() throws Exception {
+
         // first sync down
         trySyncDown(MergeMode.OVERWRITE);
 
@@ -142,6 +147,20 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Check db
         checkDb(idToFields, ACCOUNTS_SOUP);
+    }
+
+    /**
+     * Test for sync down with metadata target.
+     */
+    @Test
+    public void testSyncDownForMetadataTarget() throws Exception {
+
+        // Builds metadata sync down target and performs sync.
+        trySyncDown(MergeMode.LEAVE_IF_CHANGED, new MetadataSyncDownTarget(Constants.ACCOUNT), ACCOUNTS_SOUP);
+        final QuerySpec smartStoreQuery = QuerySpec.buildAllQuerySpec(ACCOUNTS_SOUP,
+                SyncTarget.SYNC_ID, QuerySpec.Order.ascending, 1);
+        final JSONArray rows = smartStore.query(smartStoreQuery, 0);
+        Assert.assertEquals("Number of rows should be 1", rows.length(), 1);
     }
 
     /**
