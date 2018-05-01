@@ -92,7 +92,6 @@ public class MetadataSyncDownTarget extends SyncDownTarget {
         // Recording total size.
         totalSize = 1;
         return records;
-
     }
 
     @Override
