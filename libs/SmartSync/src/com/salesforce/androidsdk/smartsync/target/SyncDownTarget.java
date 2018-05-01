@@ -66,17 +66,17 @@ public abstract class SyncDownTarget extends SyncTarget {
 	 */
 	@SuppressWarnings("unchecked")
 	public static SyncDownTarget fromJSON(JSONObject target) throws JSONException {
-		if (target == null)
-			return null;
-
-		QueryType queryType = QueryType.valueOf(target.getString(QUERY_TYPE));
-
+		if (target == null) {
+            return null;
+        }
+		final QueryType queryType = QueryType.valueOf(target.getString(QUERY_TYPE));
         switch (queryType) {
-        case mru:     return new MruSyncDownTarget(target);
-        case sosl:    return new SoslSyncDownTarget(target);
-        case soql:    return new SoqlSyncDownTarget(target);
+        case mru: return new MruSyncDownTarget(target);
+        case sosl: return new SoslSyncDownTarget(target);
+        case soql: return new SoqlSyncDownTarget(target);
         case refresh: return new RefreshSyncDownTarget(target);
         case parent_children: return new ParentChildrenSyncDownTarget(target);
+        case metadata: return new MetadataSyncDownTarget(target);
         case custom:
         default:
             try {
@@ -96,11 +96,9 @@ public abstract class SyncDownTarget extends SyncTarget {
         super();
     }
 
-
     public SyncDownTarget(String idFieldName, String modificationDateFieldName) {
         super(idFieldName, modificationDateFieldName);
     }
-
 
     /**
      * Construct SyncDownTarget from json
@@ -139,7 +137,6 @@ public abstract class SyncDownTarget extends SyncTarget {
      */
     public abstract JSONArray continueFetch(SyncManager syncManager) throws IOException, JSONException;
 
-
     /**
      * Delete from local store records that a full sync down would no longer download
      * @param syncManager
@@ -165,7 +162,6 @@ public abstract class SyncDownTarget extends SyncTarget {
         if (localIdSize > 0) {
             deleteRecordsFromLocalStore(syncManager, soupName, localIds, getIdFieldName());
         }
-
         return localIdSize;
     }
 
@@ -291,7 +287,8 @@ public abstract class SyncDownTarget extends SyncTarget {
     	soql,
         refresh,
         parent_children,
-        custom
+        custom,
+        metadata
     }
 
     /**
