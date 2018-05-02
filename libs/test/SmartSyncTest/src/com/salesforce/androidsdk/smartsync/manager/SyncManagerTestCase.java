@@ -163,7 +163,7 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
     }
 
     protected boolean tryCleanResyncGhosts(long syncId) throws JSONException, InterruptedException {
-        final ArrayBlockingQueue<Boolean> queue = new ArrayBlockingQueue<Boolean>(1);
+        final ArrayBlockingQueue<Boolean> queue = new ArrayBlockingQueue<>(1);
 
         syncManager.cleanResyncGhosts(syncId, new SyncManager.CleanResyncGhostsCallback() {
             @Override
