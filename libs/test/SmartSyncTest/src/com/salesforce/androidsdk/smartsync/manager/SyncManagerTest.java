@@ -160,7 +160,13 @@ public class SyncManagerTest extends SyncManagerTestCase {
         final QuerySpec smartStoreQuery = QuerySpec.buildAllQuerySpec(ACCOUNTS_SOUP,
                 SyncTarget.SYNC_ID, QuerySpec.Order.ascending, 1);
         final JSONArray rows = smartStore.query(smartStoreQuery, 0);
-        Assert.assertEquals("Number of rows should be 1", rows.length(), 1);
+        Assert.assertEquals("Number of rows should be 1", 1, rows.length());
+        final JSONObject metadata = rows.optJSONObject(0);
+        Assert.assertNotNull("Metadata should not be null", metadata);
+        final String keyPrefix = metadata.optString(Constants.KEYPREFIX_FIELD);
+        final String label = metadata.optString(Constants.LABEL_FIELD);
+        Assert.assertEquals("Key prefix should be 001", Constants.ACCOUNT_KEY_PREFIX, keyPrefix);
+        Assert.assertEquals("Label should be " + Constants.ACCOUNT, Constants.ACCOUNT, label);
     }
 
     /**
