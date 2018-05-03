@@ -77,6 +77,7 @@ public abstract class SyncDownTarget extends SyncTarget {
         case refresh: return new RefreshSyncDownTarget(target);
         case parent_children: return new ParentChildrenSyncDownTarget(target);
         case metadata: return new MetadataSyncDownTarget(target);
+        case layout: return new LayoutSyncDownTarget(target);
         case custom:
         default:
             try {
@@ -282,7 +283,7 @@ public abstract class SyncDownTarget extends SyncTarget {
     }
 
     /**
-     * Enum for query type
+     * Enum for query type.
      */
     public enum QueryType {
     	mru,
@@ -291,7 +292,8 @@ public abstract class SyncDownTarget extends SyncTarget {
         refresh,
         parent_children,
         custom,
-        metadata
+        metadata,
+        layout
     }
 
     /**
