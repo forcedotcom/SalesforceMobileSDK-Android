@@ -31,6 +31,7 @@ import android.support.test.filters.LargeTest;
 import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartsync.target.LayoutSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.MetadataSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.MruSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.RefreshSyncDownTarget;
@@ -167,6 +168,26 @@ public class SyncManagerTest extends SyncManagerTestCase {
         final String label = metadata.optString(Constants.LABEL_FIELD);
         Assert.assertEquals("Key prefix should be 001", Constants.ACCOUNT_KEY_PREFIX, keyPrefix);
         Assert.assertEquals("Label should be " + Constants.ACCOUNT, Constants.ACCOUNT, label);
+    }
+
+    /**
+     * Test for sync down with layout target.
+     */
+    @Test
+    public void testSyncDownForLayoutTarget() throws Exception {
+
+        // Builds layout sync down target and performs sync.
+        trySyncDown(MergeMode.LEAVE_IF_CHANGED, new LayoutSyncDownTarget(Constants.ACCOUNT,
+                Constants.LAYOUT_TYPE_COMPACT), ACCOUNTS_SOUP);
+        final QuerySpec smartStoreQuery = QuerySpec.buildAllQuerySpec(ACCOUNTS_SOUP,
+                SyncTarget.SYNC_ID, QuerySpec.Order.ascending, 1);
+        final JSONArray rows = smartStore.query(smartStoreQuery, 0);
+        Assert.assertEquals("Number of rows should be 1", 1, rows.length());
+        final JSONObject layout = rows.optJSONObject(0);
+        Assert.assertNotNull("Layout should not be null", layout);
+        final String layoutType = layout.optString(LayoutSyncDownTarget.LAYOUT_TYPE);
+        Assert.assertEquals("Layout type should be " + Constants.LAYOUT_TYPE_COMPACT,
+                Constants.LAYOUT_TYPE_COMPACT, layoutType);
     }
 
     /**

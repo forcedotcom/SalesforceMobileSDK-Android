@@ -86,6 +86,7 @@ public class Constants {
     /**
      * Salesforce object layout column field constants.
      */
+    public static final String LAYOUT_TYPE_COMPACT = "Compact";
     public static final String LAYOUT_NAME_FIELD = "name";
     public static final String LAYOUT_FIELD_FIELD = "field";
     public static final String LAYOUT_FORMAT_FIELD = "format";
