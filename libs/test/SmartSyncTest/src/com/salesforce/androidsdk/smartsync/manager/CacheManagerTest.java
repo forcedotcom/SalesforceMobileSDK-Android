@@ -47,9 +47,11 @@ import java.util.List;
  * Test class for CacheManager.
  *
  * @author bhariharan
+ * @deprecated Will be removed in Mobile SDK 7.0.
  */
 @RunWith(AndroidJUnit4.class)
 @MediumTest
+@Deprecated
 public class CacheManagerTest extends ManagerTestCase {
 
 	private static final long REFRESH_INTERVAL = 24 * 60 * 60 * 1000;

@@ -26,17 +26,19 @@
  */
 package com.salesforce.androidsdk.smartsync.model;
 
-import java.util.Locale;
+import com.salesforce.androidsdk.smartsync.util.Constants;
 
 import org.json.JSONObject;
 
-import com.salesforce.androidsdk.smartsync.util.Constants;
+import java.util.Locale;
 
 /**
  * This class represents a typical Salesforce object.
  *
  * @author bhariharan
+ * @deprecated Will be removed in Mobile SDK 7.0.
  */
+@Deprecated
 public class SalesforceObject {
 
     protected String objectType;
@@ -48,7 +50,9 @@ public class SalesforceObject {
      * Parameterized constructor.
      *
      * @param object Raw data for object.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public SalesforceObject(JSONObject object) {
         objectId = object.optString(Constants.ID);
         if (objectId == null || Constants.EMPTY_STRING.equals(objectId)) {
@@ -73,7 +77,9 @@ public class SalesforceObject {
      * Returns the object type.
      *
      * @return Object type.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public String getObjectType() {
         return objectType;
     }
@@ -82,7 +88,9 @@ public class SalesforceObject {
      * Sets the object type.
      *
      * @param objectType Object type.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public void setObjectType(String objectType) {
         this.objectType = objectType;
     }
@@ -91,7 +99,9 @@ public class SalesforceObject {
      * Returns the name.
      *
      * @return Name.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public String getName() {
         return name;
     }
@@ -100,7 +110,9 @@ public class SalesforceObject {
      * Sets the object name.
      *
      * @param name Object name.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public void setName(String name) {
         this.name = name;
     }
@@ -109,7 +121,9 @@ public class SalesforceObject {
      * Returns the object ID.
      *
      * @return Object ID.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public String getObjectId() {
         return objectId;
     }
@@ -118,7 +132,9 @@ public class SalesforceObject {
      * Returns the complete metadata.
      *
      * @return Complete metadata.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public JSONObject getRawData() {
         return rawData;
     }

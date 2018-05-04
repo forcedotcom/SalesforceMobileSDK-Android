@@ -52,7 +52,9 @@ import java.util.Set;
  * Test class for MetadataManager.
  *
  * @author bhariharan
+ * @deprecated Will be removed in Mobile SDK 7.0.
  */
+@Deprecated
 @RunWith(AndroidJUnit4.class)
 @LargeTest
 public class MetadataManagerTest extends ManagerTestCase {

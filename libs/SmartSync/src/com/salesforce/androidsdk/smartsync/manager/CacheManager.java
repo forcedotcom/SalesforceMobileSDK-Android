@@ -56,7 +56,9 @@ import java.util.Map;
  * metadata, object layouts and MRU objects from a simple cache.
  *
  * @author bhariharan
+ * @deprecated Will be removed in Mobile SDK 7.0. Use {@link SyncManager} instead for synching data.
  */
+@Deprecated
 public class CacheManager {
 
     private static final String TAG = "SmartSync: CacheManager";
@@ -77,7 +79,9 @@ public class CacheManager {
      * This enum defines different possible cache policies.
      *
      * @author bhariharan
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public enum CachePolicy {
         IGNORE_CACHE_DATA, // Ignores cache data and always loads from server.
         RELOAD_AND_RETURN_CACHE_ON_FAILURE, // Always reloads data and returns cache data only on failure.
@@ -93,7 +97,9 @@ public class CacheManager {
      *
      * @param account User account.
      * @return Instance of this class.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public static synchronized CacheManager getInstance(UserAccount account) {
         return getInstance(account, null);
     }
@@ -104,7 +110,9 @@ public class CacheManager {
      * @param account User account.
      * @param communityId Community ID.
      * @return Instance of this class.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public static synchronized CacheManager getInstance(UserAccount account, String communityId) {
         if (account == null) {
             account = SmartStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser();
@@ -140,7 +148,9 @@ public class CacheManager {
      * only the in memory cache.
      *
      * @param account User account.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public static synchronized void softReset(UserAccount account) {
         softReset(account, null);
     }
@@ -151,7 +161,9 @@ public class CacheManager {
      *
      * @param account User account.
      * @param communityId Community ID.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public static synchronized void softReset(UserAccount account, String communityId) {
         if (account == null) {
             account = SmartStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser();
@@ -178,7 +190,9 @@ public class CacheManager {
      * the in memory cache and the underlying cache in the database.
      *
      * @param account User account.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public static synchronized void hardReset(UserAccount account) {
         hardReset(account, null);
     }
@@ -189,7 +203,9 @@ public class CacheManager {
      *
      * @param account User account.
      * @param communityId Community ID.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public static synchronized void hardReset(UserAccount account, String communityId) {
         if (account == null) {
             account = SmartStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser();
@@ -211,12 +227,6 @@ public class CacheManager {
         }
     }
 
-    /**
-     * Private parameterized constructor.
-     *
-     * @param account User account.
-     * @param communityId Community ID.
-     */
     private CacheManager(UserAccount account, String communityId) {
         smartStore = SmartSyncSDKManager.getInstance().getSmartStore(account, communityId);
         resetInMemoryCache();
@@ -227,7 +237,9 @@ public class CacheManager {
      *
      * @param soupName Soup name.
      * @return True - if the cache exists, False - otherwise.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public boolean doesCacheExist(String soupName) {
         if (soupName == null || Constants.EMPTY_STRING.equals(soupName)
                 || !smartStore.hasSoup(soupName)) {
@@ -241,7 +253,9 @@ public class CacheManager {
      *
      * @param cacheType Cache type.
      * @param cacheKey Cache key.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public void removeCache(String cacheType, String cacheKey) {
         if (cacheType == null || cacheKey == null ||
                 Constants.EMPTY_STRING.equals(cacheType) ||
@@ -267,7 +281,9 @@ public class CacheManager {
      * @param refreshIfOlderThan Refresh time interval. A negative value will
      *        result in the cache not being refreshed.
      * @return True - if cache needs to be refreshed, False - otherwise.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public boolean needToReloadCache(boolean cacheExists, CachePolicy cachePolicy,
             long lastCachedTime, long refreshIfOlderThan) {
         if (cachePolicy == CachePolicy.IGNORE_CACHE_DATA ||
@@ -293,7 +309,9 @@ public class CacheManager {
      * @param cacheType Cache type.
      * @param cacheKey Cache key.
      * @return Last update time of the cache.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public long getLastCacheUpdateTime(String cacheType, String cacheKey) {
         try {
             if (cacheType == null || cacheKey == null ||
@@ -329,7 +347,9 @@ public class CacheManager {
      * @param cacheType Cache type.
      * @param cacheKey Cache key.
      * @return List of Salesforce object types.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public List<SalesforceObjectType> readObjectTypes(String cacheType,
             String cacheKey) {
         if (cacheType == null || cacheKey == null ||
@@ -394,7 +414,9 @@ public class CacheManager {
      * @param cacheType Cache type.
      * @param cacheKey Cache key.
      * @return List of Salesforce objects.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public List<SalesforceObject> readObjects(String cacheType, String cacheKey) {
         if (cacheType == null || cacheKey == null ||
         		Constants.EMPTY_STRING.equals(cacheType) ||
@@ -458,7 +480,9 @@ public class CacheManager {
      * @param cacheType Cache type.
      * @param cacheKey Cache key.
      * @return List of Salesforce object layouts.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public List<SalesforceObjectTypeLayout> readObjectLayouts(String cacheType, String cacheKey) {
         if (cacheType == null || cacheKey == null ||
         		Constants.EMPTY_STRING.equals(cacheType) ||
@@ -527,7 +551,9 @@ public class CacheManager {
      * @param objectTypes List of Salesforce object types.
      * @param cacheKey Cache key.
      * @param cacheType Cache type.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public void writeObjectTypes(List<SalesforceObjectType> objectTypes,
             String cacheKey, String cacheType) {
         if (objectTypes == null || cacheType == null || cacheKey == null ||
@@ -571,8 +597,10 @@ public class CacheManager {
      *
      * @param objects List of Salesforce object layouts.
      * @param cacheKey Cache key.
-     * @param cacheType Cache type.O
+     * @param cacheType Cache type.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public void writeObjectLayouts(List<SalesforceObjectTypeLayout> objects,
     		String cacheKey, String cacheType) {
     	if (objects == null || cacheType == null || cacheKey == null ||
@@ -624,7 +652,9 @@ public class CacheManager {
      * @param objects List of Salesforce objects.
      * @param cacheKey Cache key.
      * @param cacheType Cache type.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public void writeObjects(List<SalesforceObject> objects, String cacheKey,
             String cacheType) {
     	if (objects == null || cacheType == null || cacheKey == null ||
@@ -662,20 +692,11 @@ public class CacheManager {
             }
         }
     }
-    
-    /**
-     * @return SmartStore instance used by this CacheManager
-     */
+
     SmartStore getSmartStore() {
     	return smartStore;
     }
 
-    /**
-     * Helper method that registers a soup with index specs.
-     *
-     * @param soupName Soup name.
-     * @param cacheKey Cache key.
-     */
     private void registerSoup(String soupName, String cacheKey) {
     	registerMasterSoup();
         if (!doesCacheExist(soupName)) {
@@ -686,9 +707,6 @@ public class CacheManager {
         }
     }
 
-    /**
-     * Helper method that registers the master soup, if necessary.
-     */
     private void registerMasterSoup() {
     	if (doesCacheExist(SOUP_OF_SOUPS)) {
     		return;
@@ -699,13 +717,6 @@ public class CacheManager {
     	smartStore.registerSoup(SOUP_OF_SOUPS, indexSpecs);
     }
 
-    /**
-     * Helper method that inserts/updates a record in the cache.
-     *
-     * @param soupName Soup name.
-     * @param object Object to be inserted.
-     * @param cacheKey Cache key.
-     */
     private void upsertData(String soupName, JSONObject object, String cacheKey) {
         if (soupName == null || object == null ||
         		Constants.EMPTY_STRING.equals(soupName)) {
@@ -722,13 +733,6 @@ public class CacheManager {
         }
     }
 
-    /**
-     * Helper method that returns whether the specified soup name exists
-     * in the master soup.
-     *
-     * @param soupName Soup name.
-     * @return True - if it exists, False - otherwise.
-     */
     private boolean doesMasterSoupContainSoup(String soupName) {
         final JSONArray soupNames = getAllSoupNames();
         for (int i = 0; i < soupNames.length(); i++) {
@@ -743,11 +747,6 @@ public class CacheManager {
         return false;
     }
 
-    /**
-     * Returns the list of soups being used in the cache.
-     *
-     * @return List of soup names.
-     */
     private JSONArray getAllSoupNames() {
         JSONArray results = null;
 
@@ -773,11 +772,6 @@ public class CacheManager {
 		return results;
     }
 
-    /**
-     * Adds a soup name to the master soup, if it does not exist.
-     *
-     * @param soupName Soup name to be added.
-     */
     private void addSoupNameToMasterSoup(String soupName) {
     	if (doesMasterSoupContainSoup(soupName)) {
     		return;
@@ -793,11 +787,6 @@ public class CacheManager {
         }
     }
 
-    /**
-     * Removes a soup name from the master soup, if it exists.
-     *
-     * @param soupName Soup name to be removed.
-     */
     private void removeSoupNameFromMasterSoup(String soupName) {
     	if (!doesMasterSoupContainSoup(soupName)) {
     		return;
@@ -811,16 +800,10 @@ public class CacheManager {
         }
     }
 
-    /**
-     * Clears the master soup of all data.
-     */
     private void clearMasterSoup() {
     	smartStore.dropSoup(SOUP_OF_SOUPS);
     }
 
-    /**
-     * Clears all soups used by this class and the master soup.
-     */
     private void clearAllSoups() {
     	final JSONArray soupNames = getAllSoupNames();
     	for (int i = 0; i < soupNames.length(); i++) {
@@ -835,18 +818,12 @@ public class CacheManager {
     	clearMasterSoup();
     }
 
-    /**
-     * Resets the in memory cache.
-     */
     private void resetInMemoryCache() {
         objectCacheMap = new HashMap<String, List<SalesforceObject>>();
         objectTypeCacheMap = new HashMap<String, List<SalesforceObjectType>>();
         objectTypeLayoutCacheMap = new HashMap<String, List<SalesforceObjectTypeLayout>>();
     }
 
-    /**
-     * Clears the cache and creates a new clean cache.
-     */
     private void cleanCache() {
         resetInMemoryCache();
 
