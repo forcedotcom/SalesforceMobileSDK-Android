@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import android.text.TextUtils;
+
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
@@ -143,6 +145,7 @@ public class RestRequest {
 		SEARCH(SERVICES_DATA + "%s/search"),
 		SEARCH_SCOPE_AND_ORDER(SERVICES_DATA + "%s/search/scopeOrder"),
 		SEARCH_RESULT_LAYOUT(SERVICES_DATA + "%s/search/layout"),
+        OBJECT_LAYOUT(SERVICES_DATA + "%s/ui-api/layout/%s"),
 		COMPOSITE(SERVICES_DATA + "%s/composite"),
         BATCH(SERVICES_DATA + "%s/composite/batch"),
         SOBJECT_TREE(SERVICES_DATA + "%s/composite/tree/%s");
@@ -426,7 +429,7 @@ public class RestRequest {
      * @param apiVersion    Salesforce API version.
      * @param objectType    Type of the requested record.
      * @param objectId      Salesforce ID of the requested record.
-     * @param fields        List of requested field names.
+     * @param fieldList     List of requested field names.
      * @return              RestRequest object that requests a record.
 	 * @throws UnsupportedEncodingException
      * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm</a>
@@ -579,6 +582,24 @@ public class RestRequest {
 		return new RestRequest(RestMethod.GET, path.toString());
 	}
 
+	/**
+	 * Request to get object layout data.
+	 *
+	 * @param apiVersion Salesforce API version.
+	 * @param objectType Object type.
+     * @param layoutType Layout type. Could be "Compact" or "Full".
+	 * @return RestRequest object that requests the object layout for the given object and layout types.
+	 * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_resources_record_layout.htm">https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_resources_record_layout.htm</a>
+	 */
+	public static RestRequest getRequestForObjectLayout(String apiVersion, String objectType, String layoutType)  {
+		final StringBuilder path = new StringBuilder(RestAction.OBJECT_LAYOUT.getPath(apiVersion, objectType));
+		if (!TextUtils.isEmpty(layoutType)) {
+            path.append("?layoutType=");
+            path.append(layoutType);
+        }
+		return new RestRequest(RestMethod.GET, path.toString());
+	}
+
     /**
 	 * Composite request
 	 *
@@ -590,7 +611,7 @@ public class RestRequest {
 	 */
 	public static RestRequest getCompositeRequest(String apiVersion, boolean allOrNone, LinkedHashMap<String, RestRequest> refIdToRequests) throws JSONException {
 		JSONArray requestsArrayJson = new JSONArray();
-        for(Map.Entry<String,RestRequest> entry : refIdToRequests.entrySet()) {
+        for (Map.Entry<String,RestRequest> entry : refIdToRequests.entrySet()) {
             String referenceId = entry.getKey();
             RestRequest request = entry.getValue();
             JSONObject requestJson = request.asJSON();
