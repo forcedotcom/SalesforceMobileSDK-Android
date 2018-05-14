@@ -95,7 +95,7 @@ public class CustomServerUrlEditor extends DialogFragment {
 					return;
 				}
 				final String val = validateInput(R.id.sf__picker_custom_url);
-				if (val == null || HttpUrl.parse(val) == null) {
+				if (val == null) {
 					return;
 				}
 
@@ -173,7 +173,8 @@ public class CustomServerUrlEditor extends DialogFragment {
 		 * Ensures that the URL is a 'https://' URL, since OAuth requires 'https://'.
 		 */
 		if (editId == R.id.sf__picker_custom_url) {
-			isInvalidValue = !URLUtil.isHttpsUrl(etVal.toString());
+			String url = etVal.toString();
+			isInvalidValue = !URLUtil.isHttpsUrl(url) || HttpUrl.parse(url) == null;
 			if (isInvalidValue) {
 				Toast.makeText(context, getString(R.string.sf__invalid_server_url),
 						Toast.LENGTH_SHORT).show();
