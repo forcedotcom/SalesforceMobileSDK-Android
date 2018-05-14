@@ -37,7 +37,7 @@
 	<string name="sf__server_url_default_cancel">Cancel</string>
 	<string name="sf__server_url_default_apply">Apply</string>
 	<string name="sf__server_url_reset">Reset</string>
-
+	
 	<!-- Passcode entry screen -->
 	<string name="sf__passcode_create_title">Create %s passcode</string>
 	<string name="sf__passcode_create_instructions">For increased security, please create a passcode that you will use to access %s when the session has timed out due to inactivity.</string>
