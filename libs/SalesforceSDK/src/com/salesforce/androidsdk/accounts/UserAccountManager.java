@@ -314,11 +314,11 @@ public class UserAccountManager {
 	 * @param url Instance/My domain URL.
 	 */
 	public void switchToNewUser(String jwt, String url) {
-        Bundle options = SalesforceSDKManager.getInstance().getLoginOptions(jwt, url).asBundle();
+        final Bundle options = SalesforceSDKManager.getInstance().getLoginOptions(jwt, url).asBundle();
         switchToNewUserWithOptions(options);
 	}
 
-	private void switchToNewUserWithOptions (Bundle options) {
+	private void switchToNewUserWithOptions(Bundle options) {
 		final Bundle reply = new Bundle();
 		final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
 		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -441,10 +441,12 @@ public class UserAccountManager {
 		if (authToken == null || instanceServer == null || userId == null || orgId == null) {
 			return null;
 		}
-		return new UserAccount(authToken, refreshToken, loginServer, idUrl,
-				instanceServer, orgId, userId, username, accountName, clientId,
-				communityId, communityUrl, firstName, lastName, displayName, email, photoUrl,
-				thumbnailUrl, additionalOauthValues);
+		return UserAccountBuilder.getInstance().authToken(authToken).refreshToken(refreshToken).
+                loginServer(loginServer).idUrl(idUrl).instanceServer(instanceServer).orgId(orgId).
+                userId(userId).username(username).accountName(accountName).communityId(communityId).
+                communityUrl(communityUrl).firstName(firstName).lastName(lastName).displayName(displayName).
+                email(email).photoUrl(photoUrl).thumbnailUrl(thumbnailUrl).
+                additionalOauthValues(additionalOauthValues).build();
 	}
 
 	/**
@@ -507,4 +509,27 @@ public class UserAccountManager {
         }
 		SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
 	}
+
+    /**
+     * Retrieves a stored user account from org ID and user ID.
+     *
+     * @param orgId Org ID.
+     * @param userId User ID.
+     * @return User account.
+     */
+	public UserAccount getUserFromOrgAndUserId(String orgId, String userId) {
+        if (TextUtils.isEmpty(orgId) || TextUtils.isEmpty(userId)) {
+            return null;
+        }
+        final List<UserAccount> userAccounts = getAuthenticatedUsers();
+        if (userAccounts == null || userAccounts.size() == 0) {
+            return null;
+        }
+        for (final UserAccount userAccount : userAccounts) {
+            if (orgId.equals(userAccount.getOrgId()) && userId.equals(userAccount.getUserId())) {
+                return userAccount;
+            }
+        }
+        return null;
+    }
 }

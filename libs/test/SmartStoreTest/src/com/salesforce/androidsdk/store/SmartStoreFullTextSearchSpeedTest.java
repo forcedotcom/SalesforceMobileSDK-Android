@@ -26,26 +26,30 @@
  */
 package com.salesforce.androidsdk.store;
 
-import android.content.Context;
+import android.support.test.filters.LargeTest;
 import android.util.Log;
 
-import com.salesforce.androidsdk.smartstore.store.DBHelper;
-import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 
-import net.sqlcipher.database.SQLiteDatabase;
-import net.sqlcipher.database.SQLiteOpenHelper;
+import junit.framework.Assert;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import java.util.Arrays;
+import java.util.Collection;
 
 /**
  * Tests to compare speed of smartstore full-text-search indices with regular indices
  */
+@RunWith(Parameterized.class)
+@LargeTest
 public class SmartStoreFullTextSearchSpeedTest extends SmartStoreTestCase {
 
     public static final String TAG = "SmartStoreFTSSpeedTest";
@@ -62,32 +66,30 @@ public class SmartStoreFullTextSearchSpeedTest extends SmartStoreTestCase {
     public static final String ANIMALS_SOUP = "animals";
     public static final String TEXT_COL = "text";
 
-    protected String getPasscode() {
+    @Parameterized.Parameter(0) public String testName;
+    @Parameterized.Parameter(1) public int rowsPerAnimal;
+    @Parameterized.Parameter(2) public int matchingRowsPerAnimal;
+
+    @Parameterized.Parameters(name = "{0}")
+    public static Collection<Object[]> data() {
+        return Arrays.asList(new Object[][]{
+                {"Search1000RowsOneMatch", 40, 1},
+                {"Search1000RowsManyMatches", 40, 40},
+                {"Search10000RowsOneMatch", 400, 1},
+                {"Search10000RowsManyMatches", 400, 400} //,
+                // {"testSearch100000RowsOneMatch", 4000, 1} // Slow - uncomment when collecting performance data
+        });
+    }
+
+    @Override
+    protected String getEncryptionKey() {
         return "";
     }
 
-    public void testSearch1000RowsOneMatch() throws JSONException {
-        trySearch(40, 1);
+    @Test
+    public void test() throws JSONException {
+        trySearch(rowsPerAnimal, matchingRowsPerAnimal);
     }
-
-    public void testSearch1000RowsManyMatches() throws JSONException {
-        trySearch(40, 40);
-    }
-
-    public void testSearch10000RowsOneMatch() throws JSONException {
-        trySearch(400, 1);
-    }
-
-    public void testSearch10000RowsManyMatches() throws JSONException {
-        trySearch(400, 400);
-    }
-
-    /*
-    // Slow - uncomment when collecting performance data
-    public void testSearch100000RowsOneMatch() throws JSONException {
-        trySearch(4000, 1);
-    }
-    */
 
     private void trySearch(int rowsPerAnimal, int matchingRowsPerAnimal) throws JSONException {
         double totalInsertTimeString = setupData(Type.string, rowsPerAnimal, matchingRowsPerAnimal);
@@ -96,8 +98,7 @@ public class SmartStoreFullTextSearchSpeedTest extends SmartStoreTestCase {
         double totalInsertTimeFullText = setupData(Type.full_text, rowsPerAnimal, matchingRowsPerAnimal);
         double avgQueryTimeFullText = queryData(Type.full_text, rowsPerAnimal, matchingRowsPerAnimal);
         store.dropAllSoups();
-
-            Log.i(TAG, String.format("Search rows=%d matchingRows=%d avgQueryTimeString=%.4fs avgQueryTimeFullText=%.4fs (%.2f%%) totalInsertTimeString=%.3fs totalInsertTimeFullText=%.3fs (%.2f%%)",
+        Log.i(TAG, String.format("Search rows=%d matchingRows=%d avgQueryTimeString=%.4fs avgQueryTimeFullText=%.4fs (%.2f%%) totalInsertTimeString=%.3fs totalInsertTimeFullText=%.3fs (%.2f%%)",
                     rowsPerAnimal * 25,
                     matchingRowsPerAnimal,
                     avgQueryTimeString,
@@ -116,7 +117,6 @@ public class SmartStoreFullTextSearchSpeedTest extends SmartStoreTestCase {
         store.registerSoup(ANIMALS_SOUP, new IndexSpec[]{new IndexSpec(TEXT_COL, textFieldType)});
         try {
             store.beginTransaction();
-
             for (int i=0; i < 25; i++) {
                 int charToMatch = i + 'a';
                 for (int j=0; j < rowsPerAnimal; j++) {
@@ -134,7 +134,6 @@ public class SmartStoreFullTextSearchSpeedTest extends SmartStoreTestCase {
                     totalInsertTime += System.nanoTime() - start;
                 }
             }
-
             store.setTransactionSuccessful();
         } finally {
             store.endTransaction();
@@ -150,7 +149,6 @@ public class SmartStoreFullTextSearchSpeedTest extends SmartStoreTestCase {
         for (String animal : ANIMALS) {
             String prefix = String.format("%07d", (int) (Math.random()*(rowsPerAnimal/matchingRowsPerAnimal)));
             String stringToMatch = prefix + animal;
-
             QuerySpec querySpec = textFieldType == Type.full_text
                     ? QuerySpec.buildMatchQuerySpec(ANIMALS_SOUP, TEXT_COL, stringToMatch, null, null, rowsPerAnimal)
                     : QuerySpec.buildLikeQuerySpec(ANIMALS_SOUP, TEXT_COL, "%" + stringToMatch + "%", null, null, rowsPerAnimal);
@@ -159,18 +157,16 @@ public class SmartStoreFullTextSearchSpeedTest extends SmartStoreTestCase {
             totalQueryTime += System.nanoTime() - start;
             validateResults(matchingRowsPerAnimal, stringToMatch, results);
         }
-
         return nanosToSeconds(totalQueryTime)/ANIMALS.length;
     }
 
     private void validateResults(int expectedRows, String stringToMatch, JSONArray results) throws JSONException {
-        assertEquals("Wrong number of results", expectedRows, results.length());
+        Assert.assertEquals("Wrong number of results", expectedRows, results.length());
         for (int i=0; i<results.length(); i++) {
             String text = results.getJSONObject(i).getString(TEXT_COL);
-            assertTrue("Invalid result [" + text + "] for search on [" + stringToMatch + "]", text.contains(stringToMatch));
+            Assert.assertTrue("Invalid result [" + text + "] for search on [" + stringToMatch + "]", text.contains(stringToMatch));
         }
     }
-
 
     private double nanosToSeconds(long nanos) {
         return nanos / 1000000000.0;

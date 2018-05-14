@@ -26,17 +26,19 @@
  */
 package com.salesforce.androidsdk.smartsync.app;
 
-import android.accounts.Account;
 import android.app.Activity;
 import android.content.Context;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.accounts.SmartSyncUserAccountManager;
+import com.salesforce.androidsdk.smartsync.config.SyncsConfig;
 import com.salesforce.androidsdk.smartsync.manager.CacheManager;
 import com.salesforce.androidsdk.smartsync.manager.MetadataManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -46,13 +48,30 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
  */
 public class SmartSyncSDKManager extends SmartStoreSDKManager {
 
-    /**
+	private static final String TAG = "SmartSyncSDKManager";
+
+	/**
+	 * Protected constructor.
+     *
+	 * @param context Application context.
+	 * @param mainActivity Activity that should be launched after the login flow.
+	 * @param loginActivity Login activity.
+	 */
+	protected SmartSyncSDKManager(Context context, Class<? extends Activity> mainActivity,
+                                  Class<? extends Activity> loginActivity) {
+		super(context, mainActivity, loginActivity);
+	}
+
+	/**
      * Protected constructor.
+     *
      * @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
 	 * @param mainActivity Activity that should be launched after the login flow.
 	 * @param loginActivity Login activity.
+     * @deprecated Will be removed in Mobile SDK 7.0. Use {@link #SmartSyncSDKManager(Context, Class, Class)} instead.
 	 */
+	@Deprecated
     protected SmartSyncSDKManager(Context context, KeyInterface keyImpl,
 								  Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
     	super(context, keyImpl, mainActivity, loginActivity);
@@ -62,6 +81,7 @@ public class SmartSyncSDKManager extends SmartStoreSDKManager {
 	 * Initializes components required for this class
 	 * to properly function. This method should be called
 	 * by apps using the Salesforce Mobile SDK.
+     *
 	 * @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
 	 * @param mainActivity Activity that should be launched after the login flow.
@@ -79,6 +99,18 @@ public class SmartSyncSDKManager extends SmartStoreSDKManager {
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
 	}
 
+    /**
+     * Initializes components required for this class
+     * to properly function. This method should be called
+     * by native apps using the Salesforce Mobile SDK.
+     *
+     * @param context Application context.
+     * @param mainActivity Activity that should be launched after the login flow.
+     */
+    public static void initNative(Context context, Class<? extends Activity> mainActivity) {
+        SmartSyncSDKManager.init(context, null, mainActivity, LoginActivity.class);
+    }
+
 	/**
 	 * Initializes components required for this class
 	 * to properly function. This method should be called
@@ -87,10 +119,26 @@ public class SmartSyncSDKManager extends SmartStoreSDKManager {
 	 * @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
      * @param mainActivity Activity that should be launched after the login flow.
+     * @deprecated Will be removed in Mobile SDK 7.0. Use {@link #initNative(Context, Class)} instead.
 	 */
+	@Deprecated
     public static void initNative(Context context, KeyInterface keyImpl,
     		Class<? extends Activity> mainActivity) {
     	SmartSyncSDKManager.init(context, keyImpl, mainActivity, LoginActivity.class);
+    }
+
+    /**
+     * Initializes components required for this class
+     * to properly function. This method should be called
+     * by native apps using the Salesforce Mobile SDK.
+     *
+     * @param context Application context.
+     * @param mainActivity Activity that should be launched after the login flow.
+     * @param loginActivity Login activity.
+     */
+    public static void initNative(Context context, Class<? extends Activity> mainActivity,
+                                  Class<? extends Activity> loginActivity) {
+        SmartSyncSDKManager.init(context, null, mainActivity, loginActivity);
     }
 
 	/**
@@ -102,7 +150,9 @@ public class SmartSyncSDKManager extends SmartStoreSDKManager {
      * @param keyImpl Implementation of KeyInterface.
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
+     * @deprecated Will be removed in Mobile SDK 7.0. Use {@link #initNative(Context, Class, Class)} instead.
 	 */
+	@Deprecated
     public static void initNative(Context context, KeyInterface keyImpl,
     		Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
     	SmartSyncSDKManager.init(context, keyImpl, mainActivity, loginActivity);
@@ -138,4 +188,31 @@ public class SmartSyncSDKManager extends SmartStoreSDKManager {
     public UserAccountManager getUserAccountManager() {
     	return SmartSyncUserAccountManager.getInstance();
     }
+
+	/**
+	 * Setup global syncs using config found in res/raw/globalsyncs.json
+	 */
+	public void setupGlobalSyncsFromDefaultConfig() {
+		SmartSyncLogger.d(TAG, "Setting up global syncs using config found in res/raw/globalsyncs.json");
+		setupSyncsFromConfig(getGlobalSmartStore(), com.salesforce.androidsdk.smartsync.R.raw.globalsyncs);
+	}
+
+	/**
+	 * Setup user syncs using config found in res/raw/usersyncs.json
+	 */
+	public void setupUserSyncsFromDefaultConfig() {
+		SmartSyncLogger.d(TAG, "Setting up user syncs using config found in res/raw/usersyncs.json");
+		setupSyncsFromConfig(getSmartStore(), com.salesforce.androidsdk.smartsync.R.raw.usersyncs);
+	}
+
+	/**
+	 * Setup syncs in given store using config found in given json resource file
+	 *
+	 * @param store
+	 * @param resourceId
+	 */
+	private void setupSyncsFromConfig(SmartStore store, int resourceId) {
+		SyncsConfig config = new SyncsConfig(context, resourceId);
+		config.createSyncs(store);
+	}
 }

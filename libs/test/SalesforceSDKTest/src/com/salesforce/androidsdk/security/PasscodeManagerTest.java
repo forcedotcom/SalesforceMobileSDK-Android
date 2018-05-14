@@ -29,24 +29,30 @@ package com.salesforce.androidsdk.security;
 
 import android.content.Context;
 import android.os.Looper;
-import android.test.InstrumentationTestCase;
+import android.support.test.InstrumentationRegistry;
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.security.PasscodeManager.HashConfig;
 
+import junit.framework.Assert;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 /**
  * Tests for PasscodeManager
- *
  */
-public class PasscodeManagerTest extends InstrumentationTestCase {
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class PasscodeManagerTest {
 
-    private static final String TEST_PASSCODE = "123456";
     private static final HashConfig TEST_HASH_CONFIG = new HashConfig("", "", "dummy-key");
     private static final int TEST_TIMEOUT_MS = 1000;
 
-
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
         if (Looper.myLooper() == null) {
             Looper.prepare();	
     	}
@@ -62,12 +68,11 @@ public class PasscodeManagerTest extends InstrumentationTestCase {
     private class TestPasscodeManager extends PasscodeManager {
 
         TestPasscodeManager() {
-            super(getInstrumentation().getTargetContext(), TEST_HASH_CONFIG,
-            		TEST_HASH_CONFIG);
+            super(InstrumentationRegistry.getTargetContext(), TEST_HASH_CONFIG);
             setTimeoutMs(TEST_TIMEOUT_MS);
             setEnabled(true);
             // start in a known state.
-            unlock(TEST_PASSCODE);
+            unlock();
         }
 
         @Override
@@ -77,6 +82,7 @@ public class PasscodeManagerTest extends InstrumentationTestCase {
 
         @Override
         public void showLockActivity(Context ctx, boolean changePasscodeFlow) {
+            locked = true;
             startedLockActivity = true;
         }
     }
@@ -84,53 +90,57 @@ public class PasscodeManagerTest extends InstrumentationTestCase {
     /**
      * Check that app does get locked if no user interaction is reported to the PasscodeManager for a long enough time.
      */
+    @Test
     public void testLocksAfterTimeout() {
-        assertFalse(pm.isLocked());
-        assertFalse(startedLockActivity);
+        Assert.assertFalse(pm.isLocked());
+        Assert.assertFalse(startedLockActivity);
         now += 500;
-        assertFalse(pm.lockIfNeeded(null, true));
-        assertFalse(pm.isLocked());
-        assertFalse(startedLockActivity);
+        Assert.assertFalse(pm.lockIfNeeded(null, true));
+        Assert.assertFalse(pm.isLocked());
+        Assert.assertFalse(startedLockActivity);
         now += 1001;
-        assertTrue(pm.lockIfNeeded(null, true));
-        assertTrue(pm.isLocked());
-        assertTrue(startedLockActivity);
-        pm.unlock(TEST_PASSCODE);
-        assertFalse(pm.isLocked());
+        Assert.assertTrue(pm.lockIfNeeded(null, true));
+        Assert.assertTrue(pm.isLocked());
+        Assert.assertTrue(startedLockActivity);
+        pm.unlock();
+        Assert.assertFalse(pm.isLocked());
     }
 
     /**
      * Check that app doesn't get locked if recordUserInteraction is called often enough.
      */
+    @Test
     public void testActivityPreventsLock() {
-        assertFalse(pm.isLocked());
+        Assert.assertFalse(pm.isLocked());
         now += 500;
         pm.recordUserInteraction();
         now += 700;
-        assertFalse(pm.lockIfNeeded(null, true));
-        assertFalse(pm.isLocked());
+        Assert.assertFalse(pm.lockIfNeeded(null, true));
+        Assert.assertFalse(pm.isLocked());
     }
 
     /**
      * Check that app gets locked when expected after the lock timeout is changed.
      */
+    @Test
     public void testTimeoutChange() {
-        assertFalse(pm.isLocked());
-        pm.setTimeoutMs(2000);
-        now += 1700;
-        assertFalse(pm.shouldLock());
-        now += 301;
-        assertTrue(pm.shouldLock());
+        Assert.assertFalse(pm.isLocked());
+        pm.setTimeoutMs(800);
+        now += 700;
+        Assert.assertFalse(pm.shouldLock());
+        now += 101;
+        Assert.assertTrue(pm.shouldLock());
     }
 
     /**
      * Check that failure count is reset on unlock.
      */
+    @Test
     public void testUnlockResetsFailureCount() {
-        assertEquals(0, pm.getFailedPasscodeAttempts());
+        Assert.assertEquals(0, pm.getFailedPasscodeAttempts());
         pm.addFailedPasscodeAttempt();
-        assertEquals(1, pm.getFailedPasscodeAttempts());
-        pm.unlock(TEST_PASSCODE);
-        assertEquals(0, pm.getFailedPasscodeAttempts());
+        Assert.assertEquals(1, pm.getFailedPasscodeAttempts());
+        pm.unlock();
+        Assert.assertEquals(0, pm.getFailedPasscodeAttempts());
     }
 }

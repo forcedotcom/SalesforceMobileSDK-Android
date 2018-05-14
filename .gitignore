@@ -17,3 +17,5 @@ build/
 bower_components/
 node_modules/
 .github/
+package-lock.json
+index.android.bundle*

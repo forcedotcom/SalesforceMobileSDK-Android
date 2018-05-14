@@ -26,27 +26,33 @@
  */
 package com.salesforce.androidsdk.util;
 
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
+import android.util.Pair;
+
+import junit.framework.Assert;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
-import junit.framework.TestCase;
-import android.util.Pair;
-
 /**
  * Tests for LogUtil
- *
  */
-public class LogUtilTest extends TestCase {
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class LogUtilTest {
 
 	private static final String PAIR_DELIM = "#";
-	
 	private static final String DELIM = ",";
 	private static final String OTHER_DELIM = " AND ";
 	private static final String OPERATOR = "=";
 	private static final String OTHER_OPERATOR= "<>";
-	
+
 	private static final String[] EMPTY_ARRAY = new String[0];
 	private static final String[] ONE_ELT_ARRAY = new String[]{"a"};
 	private static final String[] TWO_ELTS_ARRAY = new String[]{"a", "b"};
@@ -69,8 +75,7 @@ public class LogUtilTest extends TestCase {
 		}
 		return map.entrySet();
 	}
-	
-	
+
 	private static final Set<Entry<String, Object>> EMPTY_SET = buildMapValues(EMPTY_ARRAY);
 	private static final Set<Entry<String, Object>> ONE_ELT_SET = buildMapValues(ONE_ELT_ARRAY);
 	private static final Set<Entry<String, Object>> TWO_ELTS_SET = buildMapValues(TWO_ELTS_ARRAY);
@@ -80,28 +85,30 @@ public class LogUtilTest extends TestCase {
 	/**
 	 * Test getAsSTring(...)
 	 */
+    @Test
 	public void testGetAsStrings() {
-		assertEquals("Wrong return value for null", "#", merge(LogUtil.getAsStrings(null, DELIM)));
-		assertEquals("Wrong return value for empty set", "#", merge(LogUtil.getAsStrings(EMPTY_SET, DELIM)));
-		assertEquals("Wrong return value for one element set", "ka#'va'", merge(LogUtil.getAsStrings(ONE_ELT_SET, DELIM)));
-		assertEquals("Wrong return value for two elements set", "ka,kb#'va','vb'", merge(LogUtil.getAsStrings(TWO_ELTS_SET, DELIM)));
-		assertEquals("Wrong return value for three elements set", "ka,kb,kcccc#'va','vb','vcccc'", merge(LogUtil.getAsStrings(THREE_ELTS_SET, DELIM)));
-		assertEquals("Wrong return value for other delimiter", "ka AND kb AND kcccc#'va' AND 'vb' AND 'vcccc'", merge(LogUtil.getAsStrings(THREE_ELTS_SET, OTHER_DELIM)));
-		assertEquals("Wrong return value for integers values set", "ka,kb,kcccc#0,1,2", merge(LogUtil.getAsStrings(INTEGER_VALUES_SET, DELIM)));
+        Assert.assertEquals("Wrong return value for null", "#", merge(LogUtil.getAsStrings(null, DELIM)));
+        Assert.assertEquals("Wrong return value for empty set", "#", merge(LogUtil.getAsStrings(EMPTY_SET, DELIM)));
+        Assert.assertEquals("Wrong return value for one element set", "ka#'va'", merge(LogUtil.getAsStrings(ONE_ELT_SET, DELIM)));
+        Assert.assertEquals("Wrong return value for two elements set", "ka,kb#'va','vb'", merge(LogUtil.getAsStrings(TWO_ELTS_SET, DELIM)));
+        Assert.assertEquals("Wrong return value for three elements set", "ka,kb,kcccc#'va','vb','vcccc'", merge(LogUtil.getAsStrings(THREE_ELTS_SET, DELIM)));
+        Assert.assertEquals("Wrong return value for other delimiter", "ka AND kb AND kcccc#'va' AND 'vb' AND 'vcccc'", merge(LogUtil.getAsStrings(THREE_ELTS_SET, OTHER_DELIM)));
+        Assert.assertEquals("Wrong return value for integers values set", "ka,kb,kcccc#0,1,2", merge(LogUtil.getAsStrings(INTEGER_VALUES_SET, DELIM)));
 	}
 	
 	/**
 	 * Test zipJoin
 	 */
+    @Test
 	public void testZipJoin() {
-		assertEquals("Wrong return value for null", "", LogUtil.zipJoin(null, OPERATOR, DELIM));
-		assertEquals("Wrong return value for empty set", "", LogUtil.zipJoin(EMPTY_SET, OPERATOR, DELIM));
-		assertEquals("Wrong return value for one element set", "ka='va'", LogUtil.zipJoin(ONE_ELT_SET, OPERATOR, DELIM));
-		assertEquals("Wrong return value for two elements set", "ka='va',kb='vb'", LogUtil.zipJoin(TWO_ELTS_SET, OPERATOR, DELIM));
-		assertEquals("Wrong return value for three elements set", "ka='va',kb='vb',kcccc='vcccc'", LogUtil.zipJoin(THREE_ELTS_SET, OPERATOR, DELIM));
-		assertEquals("Wrong return value for other delimiter", "ka='va' AND kb='vb' AND kcccc='vcccc'", LogUtil.zipJoin(THREE_ELTS_SET, OPERATOR, OTHER_DELIM));
-		assertEquals("Wrong return value for other operator", "ka<>'va',kb<>'vb',kcccc<>'vcccc'", LogUtil.zipJoin(THREE_ELTS_SET, OTHER_OPERATOR, DELIM));
-		assertEquals("Wrong return value for integers values set", "ka=0,kb=1,kcccc=2",  LogUtil.zipJoin(INTEGER_VALUES_SET, OPERATOR, DELIM));
+        Assert.assertEquals("Wrong return value for null", "", LogUtil.zipJoin(null, OPERATOR, DELIM));
+        Assert.assertEquals("Wrong return value for empty set", "", LogUtil.zipJoin(EMPTY_SET, OPERATOR, DELIM));
+        Assert.assertEquals("Wrong return value for one element set", "ka='va'", LogUtil.zipJoin(ONE_ELT_SET, OPERATOR, DELIM));
+        Assert.assertEquals("Wrong return value for two elements set", "ka='va',kb='vb'", LogUtil.zipJoin(TWO_ELTS_SET, OPERATOR, DELIM));
+        Assert.assertEquals("Wrong return value for three elements set", "ka='va',kb='vb',kcccc='vcccc'", LogUtil.zipJoin(THREE_ELTS_SET, OPERATOR, DELIM));
+        Assert.assertEquals("Wrong return value for other delimiter", "ka='va' AND kb='vb' AND kcccc='vcccc'", LogUtil.zipJoin(THREE_ELTS_SET, OPERATOR, OTHER_DELIM));
+        Assert.assertEquals("Wrong return value for other operator", "ka<>'va',kb<>'vb',kcccc<>'vcccc'", LogUtil.zipJoin(THREE_ELTS_SET, OTHER_OPERATOR, DELIM));
+        Assert.assertEquals("Wrong return value for integers values set", "ka=0,kb=1,kcccc=2",  LogUtil.zipJoin(INTEGER_VALUES_SET, OPERATOR, DELIM));
 	}
 	
 	/**

@@ -93,7 +93,7 @@ public class SoslSyncDownTarget extends SyncDownTarget {
     }
 
     @Override
-    public JSONArray continueFetch(SyncManager syncManager) throws IOException, JSONException {
+    public JSONArray continueFetch(SyncManager syncManager) {
         return null;
     }
 
@@ -102,13 +102,10 @@ public class SoslSyncDownTarget extends SyncDownTarget {
         if (localIds == null) {
             return null;
         }
-        final Set<String> remoteIds = new HashSet<String>();
 
         // Makes network request and parses the response.
         final JSONArray records = startFetch(syncManager, 0, query);
-        remoteIds.addAll(parseIdsFromResponse(records));
-
-        return remoteIds;
+        return new HashSet<>(parseIdsFromResponse(records));
     }
 
     /**

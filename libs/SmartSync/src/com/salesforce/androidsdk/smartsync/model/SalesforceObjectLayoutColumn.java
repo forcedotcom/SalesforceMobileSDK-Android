@@ -26,16 +26,18 @@
  */
 package com.salesforce.androidsdk.smartsync.model;
 
-import org.json.JSONObject;
-
 import com.salesforce.androidsdk.smartsync.util.Constants;
+
+import org.json.JSONObject;
 
 /**
  * This class contains information about a
  * column returned by search layout.
  *
  * @author bhariharan
+ * @deprecated Will be removed in Mobile SDK 7.0.
  */
+@Deprecated
 public class SalesforceObjectLayoutColumn {
 
     private final String name;
@@ -48,7 +50,9 @@ public class SalesforceObjectLayoutColumn {
      * Returns the name field value.
      *
      * @return Name field value.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public String getName() {
         return name;
     }
@@ -57,7 +61,9 @@ public class SalesforceObjectLayoutColumn {
      * Returns the field field value.
      *
      * @return Field field value.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public String getField() {
         return field;
     }
@@ -66,7 +72,9 @@ public class SalesforceObjectLayoutColumn {
      * Returns the format field value.
      *
      * @return Format field value.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public String getFormat() {
         return format;
     }
@@ -75,7 +83,9 @@ public class SalesforceObjectLayoutColumn {
      * Returns the label field value.
      *
      * @return Label field value.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public String getLabel() {
         return label;
     }
@@ -84,7 +94,9 @@ public class SalesforceObjectLayoutColumn {
      * Returns the raw data.
      *
      * @return Raw data.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public JSONObject getRawData() {
         return rawData;
     }
@@ -93,7 +105,9 @@ public class SalesforceObjectLayoutColumn {
      * Parameterized constructor.
      *
      * @param object Layout column JSON object.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public SalesforceObjectLayoutColumn(JSONObject object) {
         name = object.optString(Constants.LAYOUT_NAME_FIELD);
         field = object.optString(Constants.LAYOUT_FIELD_FIELD);

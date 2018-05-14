@@ -39,7 +39,14 @@ public class SmartSyncExplorerApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SmartSyncSDKManager.initNative(getApplicationContext(), null, MainActivity.class);
+		SmartSyncSDKManager.initNative(getApplicationContext(), MainActivity.class);
+
+		/*
+         * Uncomment the following line to enable IDP login flow. This will allow the user to
+         * either authenticate using the current app or use a designated IDP app for login.
+         * Replace 'idpAppURIScheme' with the URI scheme of the IDP app meant to be used.
+         */
+        // SmartSyncSDKManager.getInstance().setIDPAppURIScheme(idpAppURIScheme);
 
         /*
          * Uncomment the following line to enable browser based login. This will use a

@@ -28,18 +28,22 @@ package com.salesforce.androidsdk.phonegap.app;
 
 import android.app.Application;
 
-import com.salesforce.androidsdk.analytics.security.Encryptor;
-import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
-
 /**
- * Application class used by hybrid applications
+ * Application class used by hybrid applications.
  */
 public class HybridApp extends Application {
 
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SalesforceHybridSDKManager.initHybrid(getApplicationContext(), new HybridKeyImpl());
+		SalesforceHybridSDKManager.initHybrid(getApplicationContext());
+
+		/*
+         * Uncomment the following line to enable IDP login flow. This will allow the user to
+         * either authenticate using the current app or use a designated IDP app for login.
+         * Replace 'idpAppURIScheme' with the URI scheme of the IDP app meant to be used.
+         */
+        // SalesforceHybridSDKManager.getInstance().setIDPAppURIScheme(idpAppURIScheme);
 
         /*
          * Uncomment the following line to enable browser based login. This will use a
@@ -47,13 +51,5 @@ public class HybridApp extends Application {
          * to uncomment a few lines of code in SalesforceSDK library project's AndroidManifest.xml.
          */
 		// SalesforceHybridSDKManager.getInstance().setBrowserLoginEnabled(true);
-	}
-}
-
-class HybridKeyImpl implements KeyInterface {
-
-	@Override
-	public String getKey(String name) {
-        return Encryptor.hash(name + "12s9adpahk;n12-97sdainkasd=012", name + "12kl0dsakj4-cxh1qewkjasdol8");
 	}
 }

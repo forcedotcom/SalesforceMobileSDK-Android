@@ -1,11 +1,5 @@
-| Android API | Build Status |
-|-------------|--------------|
-| android-21  |[![Build Status](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-21/dev/latest/buildstatus.svg)](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-21/dev/latest/index.html)|
-| android-22  |[![Build Status](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-22/dev/latest/buildstatus.svg)](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-22/dev/latest/index.html)|
-| android-23  |[![Build Status](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-23/dev/latest/buildstatus.svg)](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-23/dev/latest/index.html)|
-| android-24  |[![Build Status](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-24/dev/latest/buildstatus.svg)](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-24/dev/latest/index.html)|
-| android-25  |[![Build Status](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-25/dev/latest/buildstatus.svg)](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-25/dev/latest/index.html)|
-| android-26  |[![Build Status](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-26/dev/latest/buildstatus.svg)](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-26/dev/latest/index.html)|
+[![CircleCI](https://circleci.com/gh/forcedotcom/SalesforceMobileSDK-Android/tree/dev.svg?style=svg)](https://circleci.com/gh/forcedotcom/workflows/SalesforceMobileSDK-Android/tree/dev)
+[![codecov](https://codecov.io/gh/forcedotcom/SalesforceMobileSDK-Android/branch/dev/graph/badge.svg)](https://codecov.io/gh/forcedotcom/SalesforceMobileSDK-Android/branch/dev)
 
 # Salesforce.com Mobile SDK for Android
 
@@ -29,23 +23,21 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 5.2
-
-**Login Enhancements**
-- We have added support for branded community login pages by adding methods to configure the brand parameter in your Mobile SDK app.
-
-**SmartSync Enhancements**
-- In Mobile SDK 5.2, we've added new sync targets to allow related records to be synced down or synced up in one call.
-
-**New Logging Framework**
-- We've added a new logging framework in Mobile SDK 5.2 with the following features:
-	- Writes log lines to both console and a rolling log file on the filesystem.
-	- Supports component-specific loggers.
-	- Lets you configure log levels per component.
-	- Lets you configure maximum log file size per component.
+### What's New in 6.1
 
 **Library Upgrades**
-- We've updated Cordova to version 6.2.3.
+- We've updated React Native to version 0.53.3.
+
+**Login Enhancements**
+- Mobile SDK 6.1 introduces the ability to configure your app remotely through MDM or MyDomain. With these options, your customers can now use Chrome custom tabs for authentication instead of the system WebView.
+- Starting with Mobile SDK 6.1, fingerprint authentication can be used instead of the app passcode on devices that support this feature.
+
+**SmartSync Data Framework Enhancements**
+- We have addressed an issue in Mobile SDK 6.1 where `cleanResyncGhosts` was operating incorrectly.
+
+**Test Framework Enhancements**
+- We have added an entire suite of tests for `SalesforceReact` in Mobile SDK 6.1.
+- Our unit tests now use `Android Test Library` and `Espresso`, based on Google's recommendations.
 
 **Other Technical Improvements**
 - Improvements to sample apps.

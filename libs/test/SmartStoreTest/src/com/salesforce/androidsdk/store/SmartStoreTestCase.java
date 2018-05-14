@@ -26,13 +26,9 @@
  */
 package com.salesforce.androidsdk.store;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import android.content.Context;
+import android.database.Cursor;
+import android.support.test.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
@@ -41,42 +37,48 @@ import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
+import junit.framework.Assert;
+
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteOpenHelper;
 
-import android.content.Context;
-import android.database.Cursor;
-import android.test.InstrumentationTestCase;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.junit.After;
+import org.junit.Before;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Abstract super class for smart store tests
- *
  */
-public abstract class SmartStoreTestCase extends InstrumentationTestCase {
+public abstract class SmartStoreTestCase {
 
 	protected Context targetContext;
 	protected SQLiteOpenHelper dbOpenHelper;
 	protected SmartStore store;
+	protected DBHelper dbHelper;
 
-	@Override
+	@Before
 	public void setUp() throws Exception {
-		super.setUp();
 		EventBuilderHelper.enableDisable(false);
-		targetContext = getInstrumentation().getTargetContext();
+		targetContext = InstrumentationRegistry.getTargetContext();
 		dbOpenHelper = DBOpenHelper.getOpenHelper(targetContext, null);
-		DBHelper.getInstance(dbOpenHelper.getWritableDatabase(getPasscode())).reset(targetContext, null);
-		store = new SmartStore(dbOpenHelper, getPasscode());
-		store.dropAllSoups();
+		dbHelper = DBHelper.getInstance(dbOpenHelper.getWritableDatabase(getEncryptionKey()));
+		store = new SmartStore(dbOpenHelper, getEncryptionKey());
 	}
 
-	protected abstract String getPasscode();
+	protected abstract String getEncryptionKey();
 
-	@Override
-	protected void tearDown() throws Exception {
-		dbOpenHelper.close();
+	@After
+	public void tearDown() throws Exception {
 		store.dropAllSoups();
+		dbOpenHelper.close();
+		dbHelper.clearMemoryCache();
 		DBOpenHelper.deleteDatabase(targetContext, null);
-		super.tearDown();
 	}
 
 	/**
@@ -86,7 +88,7 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 	 */
 	protected boolean hasTable(String tableName) {
 		Cursor c = null;
-		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 		try {
 			c = DBHelper.getInstance(db).query(db, "sqlite_master", null, null, null, "type = ? and name = ?", "table", tableName);
 			return c.getCount() == 1;
@@ -103,7 +105,7 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
      */
 	protected void checkColumns(String tableName, List<String> expectedColumnNames) {
 		Cursor c = null;
-		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 		try {
 			List<String> actualColumnNames = new ArrayList<>();
 			c = db.rawQuery(String.format("PRAGMA table_info(%s)", tableName), null);
@@ -113,7 +115,7 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 			JSONTestHelper.assertSameJSONArray("Wrong columns", new JSONArray(expectedColumnNames), new JSONArray(actualColumnNames));
 		}
 		catch (Exception e) {
-			fail("Failed with error:" + e.getMessage());
+			Assert.fail("Failed with error:" + e.getMessage());
 		}
 		finally {
 			safeClose(c);
@@ -135,17 +137,17 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 	 */
 	protected void checkCreateTableStatement(String tableName, String subStringExpected) {
 		Cursor c = null;
-		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 		try {
 			List<String> actualSqlStatements = new ArrayList<>();
 			c = db.rawQuery(String.format("SELECT sql FROM sqlite_master WHERE type='table' AND tbl_name='%s' ORDER BY name", tableName), null);
-			assertEquals("Expected one statement", 1, c.getCount());
+			Assert.assertEquals("Expected one statement", 1, c.getCount());
 			c.moveToFirst();
 			String actualStatement = c.getString(0);
-			assertTrue("Wrong statement: " + actualStatement, actualStatement.contains(subStringExpected));
+			Assert.assertTrue("Wrong statement: " + actualStatement, actualStatement.contains(subStringExpected));
 		}
 		catch (Exception e) {
-			fail("Failed with error:" + e.getMessage());
+			Assert.fail("Failed with error:" + e.getMessage());
 		}
 		finally {
 			safeClose(c);
@@ -159,7 +161,7 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
      */
     protected void checkDatabaseIndexes(String tableName, List<String> expectedSqlStatements) {
         Cursor c = null;
-        final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+        final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
         try {
             List<String> actualSqlStatements = new ArrayList<>();
             c = db.rawQuery(String.format("SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name='%s' ORDER BY name", tableName), null);
@@ -169,7 +171,7 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
             JSONTestHelper.assertSameJSONArray("Wrong indexes", new JSONArray(expectedSqlStatements), new JSONArray(actualSqlStatements));
         }
         catch (Exception e) {
-            fail("Failed with error:" + e.getMessage());
+			Assert.fail("Failed with error:" + e.getMessage());
         }
         finally {
             safeClose(c);
@@ -183,25 +185,24 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 	 * @param covering
 	 * @param dbOperation e.g. SCAN or SEARCH
 	 */
-    public void checkExplainQueryPlan(String soupName, int index, boolean covering, String dbOperation) throws JSONException {
+    protected void checkExplainQueryPlan(String soupName, int index, boolean covering, String dbOperation) throws JSONException {
         JSONObject explainQueryPlan = store.getLastExplainQueryPlan();
         String soupTableName = getSoupTableName(soupName);
         String indexName = soupTableName + "_" + index + "_idx";
         String expectedDetailPrefix = String.format("%s TABLE %s USING %sINDEX %s", dbOperation, soupTableName, covering ? "COVERING " : "", indexName);
         String detail = explainQueryPlan.getJSONArray(DBHelper.EXPLAIN_ROWS).getJSONObject(0).getString("detail");
-
-        assertTrue("Wrong query plan:" + detail, detail.startsWith(expectedDetailPrefix));
+		Assert.assertTrue("Wrong query plan:" + detail, detail.startsWith(expectedDetailPrefix));
     }
 
-	public void checkFileSystem(String soupName, long[] expectedIds, boolean shouldExist) {
+	protected void checkFileSystem(String soupName, long[] expectedIds, boolean shouldExist) {
 		String soupTableName = getSoupTableName(soupName);
 		for (long expectedId : expectedIds) {
 			File file = ((DBOpenHelper) dbOpenHelper).getSoupBlobFile(soupTableName, expectedId);
 			if (shouldExist) {
-				assertTrue("External file for " + expectedId + " should exist", file.exists());
+				Assert.assertTrue("External file for " + expectedId + " should exist", file.exists());
 			}
 			else {
-				assertFalse("External file for " + expectedId + " should not exist", file.exists());
+				Assert.assertFalse("External file for " + expectedId + " should not exist", file.exists());
 			}
 		}
 	}
@@ -221,7 +222,7 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 	 * @return table name for soup
 	 */
 	protected String getSoupTableName(String soupName) {
-		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 		return DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	}
 

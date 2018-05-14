@@ -23,5 +23,6 @@
     <string name="yes">Yes</string>
     <string name="cancel">No</string>
     <string name="delete">Delete</string>
+    <string name="undelete">Undelete</string>
     <string name="delete_title">Are you sure?</string>
 </resources>

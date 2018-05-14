@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.smartsync.target;
 
+import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
@@ -38,6 +39,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import java.util.SortedSet;
 
@@ -64,17 +66,18 @@ public abstract class SyncDownTarget extends SyncTarget {
 	 */
 	@SuppressWarnings("unchecked")
 	public static SyncDownTarget fromJSON(JSONObject target) throws JSONException {
-		if (target == null)
-			return null;
-
-		QueryType queryType = QueryType.valueOf(target.getString(QUERY_TYPE));
-
+		if (target == null) {
+            return null;
+        }
+		final QueryType queryType = QueryType.valueOf(target.getString(QUERY_TYPE));
         switch (queryType) {
-        case mru:     return new MruSyncDownTarget(target);
-        case sosl:    return new SoslSyncDownTarget(target);
-        case soql:    return new SoqlSyncDownTarget(target);
+        case mru: return new MruSyncDownTarget(target);
+        case sosl: return new SoslSyncDownTarget(target);
+        case soql: return new SoqlSyncDownTarget(target);
         case refresh: return new RefreshSyncDownTarget(target);
-            case parent_children: return new ParentChildrenSyncDownTarget(target);
+        case parent_children: return new ParentChildrenSyncDownTarget(target);
+        case metadata: return new MetadataSyncDownTarget(target);
+        case layout: return new LayoutSyncDownTarget(target);
         case custom:
         default:
             try {
@@ -94,11 +97,9 @@ public abstract class SyncDownTarget extends SyncTarget {
         super();
     }
 
-
     public SyncDownTarget(String idFieldName, String modificationDateFieldName) {
         super(idFieldName, modificationDateFieldName);
     }
-
 
     /**
      * Construct SyncDownTarget from json
@@ -137,17 +138,19 @@ public abstract class SyncDownTarget extends SyncTarget {
      */
     public abstract JSONArray continueFetch(SyncManager syncManager) throws IOException, JSONException;
 
-
     /**
      * Delete from local store records that a full sync down would no longer download
      * @param syncManager
      * @param soupName
+     * @param syncId
      * @return
      * @throws JSONException, IOException
      */
-    public int cleanGhosts(SyncManager syncManager, String soupName) throws JSONException, IOException {
-         // Fetches list of IDs present in local soup that have not been modified locally.
-        final Set<String> localIds = getNonDirtyRecordIds(syncManager, soupName, getIdFieldName());
+    public int cleanGhosts(SyncManager syncManager, String soupName, long syncId) throws JSONException, IOException {
+
+        // Fetches list of IDs present in local soup that have not been modified locally.
+        final Set<String> localIds = getNonDirtyRecordIds(syncManager, soupName, getIdFieldName(),
+                buildSyncIdPredicateIfIndexed(syncManager, soupName, syncId));
 
          // Fetches list of IDs still present on the server from the list of local IDs
          // and removes the list of IDs that are still present on the server.
@@ -161,8 +164,26 @@ public abstract class SyncDownTarget extends SyncTarget {
         if (localIdSize > 0) {
             deleteRecordsFromLocalStore(syncManager, soupName, localIds, getIdFieldName());
         }
-
         return localIdSize;
+    }
+
+    /**
+     * Return predicate to target records with this sync id if there is an index on __sync_id__
+     * @param syncManager
+     * @param soupName
+     * @param syncId
+     * @return
+     */
+    protected String buildSyncIdPredicateIfIndexed(SyncManager syncManager, String soupName, long syncId) {
+        String additionalPredicate = "";
+        IndexSpec[] indexSpecs = syncManager.getSmartStore().getSoupIndexSpecs(soupName);
+        for(IndexSpec indexSpec : indexSpecs) {
+            if (indexSpec.path.equals(SYNC_ID)) {
+                additionalPredicate = String.format(Locale.US, "AND {%s:%s} = %d", soupName, SYNC_ID, syncId);
+                break;
+            }
+        }
+        return additionalPredicate;
     }
 
     /**
@@ -170,11 +191,13 @@ public abstract class SyncDownTarget extends SyncTarget {
      * @param syncManager
      * @param soupName
      * @param idField
+     * @param additionalPredicate
      * @return
      * @throws JSONException
      */
-    protected SortedSet<String> getNonDirtyRecordIds(SyncManager syncManager, String soupName, String idField) throws JSONException {
-        String nonDirtyRecordsSql = getNonDirtyRecordIdsSql(soupName, idField);
+    protected SortedSet<String> getNonDirtyRecordIds(SyncManager syncManager, String soupName,
+                                                     String idField, String additionalPredicate) throws JSONException {
+        String nonDirtyRecordsSql = getNonDirtyRecordIdsSql(soupName, idField, additionalPredicate);
         return getIdsWithQuery(syncManager, nonDirtyRecordsSql);
     }
 
@@ -182,13 +205,13 @@ public abstract class SyncDownTarget extends SyncTarget {
      * Return SmartSQL to identify non-dirty records
      * @param soupName
      * @param idField
+     * @param additionalPredicate
      * @return
      */
-    protected String getNonDirtyRecordIdsSql(String soupName, String idField) {
-        return String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'false' ORDER BY {%s:%s} ASC", soupName, idField, soupName, soupName, LOCAL, soupName, idField);
+    protected String getNonDirtyRecordIdsSql(String soupName, String idField, String additionalPredicate) {
+        return String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'false' %s ORDER BY {%s:%s} ASC",
+                soupName, idField, soupName, soupName, LOCAL, additionalPredicate, soupName, idField);
     }
-
-
 
     /**
      * Fetches remote IDs still present on the server from the list of local IDs.
@@ -260,7 +283,7 @@ public abstract class SyncDownTarget extends SyncTarget {
     }
 
     /**
-     * Enum for query type
+     * Enum for query type.
      */
     public enum QueryType {
     	mru,
@@ -268,7 +291,9 @@ public abstract class SyncDownTarget extends SyncTarget {
     	soql,
         refresh,
         parent_children,
-        custom
+        custom,
+        metadata,
+        layout
     }
 
     /**
@@ -278,7 +303,7 @@ public abstract class SyncDownTarget extends SyncTarget {
      * @return Set of IDs.
      */
     protected Set<String> parseIdsFromResponse(JSONArray records) {
-        final Set<String> remoteIds = new HashSet<String>();
+        final Set<String> remoteIds = new HashSet<>();
         if (records != null) {
             for (int i = 0; i < records.length(); i++) {
                 final JSONObject idJson = records.optJSONObject(i);

@@ -32,9 +32,8 @@ import android.content.SharedPreferences.Editor;
 import android.content.res.XmlResourceParser;
 import android.text.TextUtils;
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
-import com.salesforce.androidsdk.ui.SalesforceR;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import org.xmlpull.v1.XmlPullParserException;
@@ -289,12 +288,11 @@ public class LoginServerManager {
 	 * (only called when servers.xml is missing).
 	 */
 	private List<LoginServer> getLegacyLoginServers() {
-		final SalesforceR salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
 		final List<LoginServer> loginServers = new ArrayList<LoginServer>();
-		final LoginServer productionServer = new LoginServer(ctx.getString(salesforceR.stringAuthLoginProduction()),
+		final LoginServer productionServer = new LoginServer(ctx.getString(R.string.sf__auth_login_production),
 				PRODUCTION_LOGIN_URL, false);
 		loginServers.add(productionServer);
-		final LoginServer sandboxServer = new LoginServer(ctx.getString(salesforceR.stringAuthLoginSandbox()),
+		final LoginServer sandboxServer = new LoginServer(ctx.getString(R.string.sf__auth_login_sandbox),
 				SANDBOX_LOGIN_URL, false);
 		loginServers.add(sandboxServer);
 		return loginServers;

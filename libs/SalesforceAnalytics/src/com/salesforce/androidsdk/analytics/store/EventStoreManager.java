@@ -144,7 +144,7 @@ public class EventStoreManager {
      */
     public List<InstrumentationEvent> fetchAllEvents() {
         final List<File> files = getAllFiles();
-        final List<InstrumentationEvent> events = new ArrayList<InstrumentationEvent>();
+        final List<InstrumentationEvent> events = new ArrayList<>();
         for (final File file : files) {
             final InstrumentationEvent event = fetchEvent(file);
             if (event != null) {
@@ -201,10 +201,19 @@ public class EventStoreManager {
      * @param newKey New encryption key.
      */
     public void changeEncryptionKey(String oldKey, String newKey) {
+
+        /*
+         * We need to disable logging while the upgrade is in progress to
+         * prevent rogue threads from attempting to write data with the old key.
+         */
+        boolean logEnabledStatus = isLoggingEnabled;
+        isLoggingEnabled = false;
+        encryptionKey = oldKey;
         final List<InstrumentationEvent> storedEvents = fetchAllEvents();
         deleteAllEvents();
         encryptionKey = newKey;
         storeEvents(storedEvents);
+        isLoggingEnabled = logEnabledStatus;
     }
 
     /**
@@ -298,7 +307,7 @@ public class EventStoreManager {
     }
 
     private List<File> getAllFiles() {
-        final List<File> files = new ArrayList<File>();
+        final List<File> files = new ArrayList<>();
         final File[] listOfFiles = rootDir.listFiles();
         for (final File file : listOfFiles) {
             if (file != null && fileFilter.accept(rootDir, file.getName())) {

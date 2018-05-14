@@ -4,7 +4,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.5'
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:2.0'
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
     }
 }
@@ -14,13 +14,16 @@ apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 
 dependencies {
-  compile project(':libs:SalesforceSDK')
-  compile 'net.zetetic:android-database-sqlcipher:3.5.7'
+    api project(':libs:SalesforceSDK')
+    api 'net.zetetic:android-database-sqlcipher:3.5.7'
+    androidTestImplementation 'com.android.support.test:runner:1.0.1'
+    androidTestImplementation 'com.android.support.test:rules:1.0.1'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
 }
 
 android {
-  compileSdkVersion 26
-  buildToolsVersion '25.0.0'
+  compileSdkVersion 27
+  buildToolsVersion '27.0.3'
   
   buildTypes {
       debug {
@@ -48,16 +51,18 @@ android {
   }
   defaultConfig {
     testApplicationId "com.salesforce.androidsdk.smartstore.tests"
-    testInstrumentationRunner "com.salesforce.androidsdk.analytics.util.test.JUnitReportTestRunner"
+    testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'
     exclude 'META-INF/LICENSE.txt'
     exclude 'META-INF/DEPENDENCIES'
     exclude 'META-INF/NOTICE'
+    pickFirst 'protobuf.meta'
   }
 
   lintOptions {
+    xmlReport true
     abortOnError false
   }
 }
@@ -126,9 +131,9 @@ bintray {
         licenses = ['Apache-2.0']
         labels = ['android', 'salesforce', 'mobilesdk']
         version {
-            name = '6.0.0'
+            name = '6.2.0'
             released  = new Date()
-            vcsTag = 'v6.0.0'
+            vcsTag = 'v6.2.0'
         }
     }
 }

@@ -229,7 +229,7 @@ public class ClientManager {
         try {
             final AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(this,
                     instanceServer, authToken, refreshToken);
-            final ClientInfo clientInfo = new ClientInfo(clientId, new URI(instanceServer),
+            final ClientInfo clientInfo = new ClientInfo(new URI(instanceServer),
             		new URI(loginServer), new URI(idUrl), accountName, username,
             		userId, orgId, communityId, communityUrl,
                     firstName, lastName, displayName, email, photoUrl, thumbnailUrl, values);
@@ -241,7 +241,7 @@ public class ClientManager {
     }
 
     /**
-     * Invalidate current auth token.  The next call to {@link #getRestClient(Activity, RestClientCallback) getRestClient} will do a refresh.
+     * Invalidate current auth token. The next call to {@link #getRestClient(Activity, RestClientCallback) getRestClient} will do a refresh.
      */
     public void invalidateToken(String lastNewAuthToken) {
         accountManager.invalidateAuthToken(getAccountType(), lastNewAuthToken);
@@ -311,7 +311,6 @@ public class ClientManager {
      * @param clientId Client ID.
      * @param orgId Org ID.
      * @param userId User ID.
-     * @param clientSecret Client secret.
      * @param communityId Community ID.
      * @param communityUrl Community URL.
      * @param firstName First name.
@@ -325,8 +324,7 @@ public class ClientManager {
      */
     public Bundle createNewAccount(String accountName, String username, String refreshToken,
     		String authToken, String instanceUrl, String loginUrl, String idUrl,
-    		String clientId, String orgId, String userId,
-            String clientSecret, String communityId, String communityUrl,
+    		String clientId, String orgId, String userId, String communityId, String communityUrl,
             String firstName, String lastName, String displayName, String email, String photoUrl,
             String thumbnailUrl, Map<String, String> additionalOauthValues) {
         Bundle extras = new Bundle();
@@ -339,9 +337,6 @@ public class ClientManager {
         extras.putString(AuthenticatorService.KEY_CLIENT_ID, SalesforceSDKManager.encrypt(clientId));
         extras.putString(AuthenticatorService.KEY_ORG_ID, SalesforceSDKManager.encrypt(orgId));
         extras.putString(AuthenticatorService.KEY_USER_ID, SalesforceSDKManager.encrypt(userId));
-        if (clientSecret != null) {
-            extras.putString(AuthenticatorService.KEY_CLIENT_SECRET, SalesforceSDKManager.encrypt(clientSecret));
-        }
         if (communityId != null) {
             extras.putString(AuthenticatorService.KEY_COMMUNITY_ID, SalesforceSDKManager.encrypt(communityId));
         }
@@ -367,10 +362,20 @@ public class ClientManager {
         }
         Account acc = new Account(accountName, getAccountType());
         accountManager.addAccountExplicitly(acc, SalesforceSDKManager.encrypt(refreshToken), new Bundle());
+        final Account[] accounts = getAccounts();
+        int numAuthenticatedUsers = accounts == null ? 0 : accounts.length;
+        boolean isFirstUserOrNotIDPFlow = !SalesforceSDKManager.getInstance().isIDPAppLoginFlowActive()
+                || (numAuthenticatedUsers <= 1);
 
-        // Caching auth token otherwise the first call to accountManager.getAuthToken will go to the AuthenticatorService which will do a refresh
-        // That is problematic when the refresh token is set to expire immediately
-        accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encrypt(authToken));
+        /*
+         * Sets auth token only if this user is the first user being logged in or NOT an IDP login.
+         * Caching auth token otherwise the first call to 'accountManager.getAuthToken()' will go
+         * to the AuthenticatorService which will do a refresh. That is problematic when the
+         * refresh token is set to expire immediately.
+         */
+        if (isFirstUserOrNotIDPFlow) {
+            accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encrypt(authToken));
+        }
 
         // There is a bug in AccountManager::addAccountExplicitly() that sometimes causes user data to not be
         // saved when the user data is passed in through that method. The work-around is to call setUserData()
@@ -379,7 +384,14 @@ public class ClientManager {
             // WARNING! This assumes all user data is a String!
             accountManager.setUserData(acc, key, extras.getString(key));
         }
-        SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUserInfo(userId, orgId);
+
+        /*
+         * Sets this user as the current user only if this is the first user being logged in
+         * or NOT an IDP login initiated by an SP app.
+         */
+        if (isFirstUserOrNotIDPFlow) {
+            SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUserInfo(userId, orgId);
+        }
         return extras;
     }
 
@@ -590,11 +602,6 @@ public class ClientManager {
                     AuthenticatorService.KEY_CLIENT_ID));
             final String instServer = SalesforceSDKManager.decrypt(mgr.getUserData(account,
                     AuthenticatorService.KEY_INSTANCE_URL));
-            final String encClientSecret = mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_SECRET);
-            String clientSecret = null;
-            if (encClientSecret != null) {
-                clientSecret = SalesforceSDKManager.decrypt(encClientSecret);
-            }
             final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
             Map<String, String> values = null;
             if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
@@ -610,7 +617,7 @@ public class ClientManager {
             final Map<String,String> addlParamsMap = SalesforceSDKManager.getInstance().getLoginOptions().getAdditionalParameters();
             try {
                 final OAuth2.TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
-                        new URI(loginServer), clientId, refreshToken, clientSecret, addlParamsMap);
+                        new URI(loginServer), clientId, refreshToken, addlParamsMap);
                 if (!instServer.equalsIgnoreCase(tr.instanceUrl)) {
                     mgr.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL,
                             SalesforceSDKManager.encrypt(tr.instanceUrl));
@@ -690,36 +697,33 @@ public class ClientManager {
         private static final String OAUTH_SCOPES = "oauthScopes";
         private static final String OAUTH_CLIENT_ID = "oauthClientId";
         private static final String OAUTH_CALLBACK_URL = "oauthCallbackUrl";
-        private static final String CLIENT_SECRET = "clientSecret";
         private static final String KEY_ADDL_PARAMS ="addlParams";
 
         private String loginUrl;
         private final String oauthCallbackUrl;
         private final String oauthClientId;
         private final String[] oauthScopes;
-        private final String clientSecret;
         private String jwt;
         private Map<String,String> additionalParameters;
 
         public LoginOptions(String loginUrl, String oauthCallbackUrl,
-                            String oauthClientId, String[] oauthScopes, String clientSecret) {
+                            String oauthClientId, String[] oauthScopes) {
             this.loginUrl = loginUrl;
             this.oauthCallbackUrl = oauthCallbackUrl;
             this.oauthClientId = oauthClientId;
             this.oauthScopes = oauthScopes;
-            this.clientSecret = clientSecret;
         }
 
         public LoginOptions(String loginUrl, String oauthCallbackUrl,
-                            String oauthClientId, String[] oauthScopes, String clientSecret, String jwt) {
-            this(loginUrl, oauthCallbackUrl, oauthClientId, oauthScopes, clientSecret);
+                            String oauthClientId, String[] oauthScopes, String jwt) {
+            this(loginUrl, oauthCallbackUrl, oauthClientId, oauthScopes);
             this.setJwt(jwt);
         }
 
         public LoginOptions(String loginUrl, String oauthCallbackUrl,
-                            String oauthClientId, String[] oauthScopes, String clientSecret, String jwt,
+                            String oauthClientId, String[] oauthScopes, String jwt,
                             Map<String,String> additionalParameters) {
-            this(loginUrl, oauthCallbackUrl, oauthClientId, oauthScopes,clientSecret,jwt);
+            this(loginUrl, oauthCallbackUrl, oauthClientId, oauthScopes, jwt);
             this.additionalParameters = additionalParameters;
         }
 
@@ -755,10 +759,6 @@ public class ClientManager {
             return oauthScopes;
         }
 
-        public String getClientSecret() {
-            return clientSecret;
-        }
-
         public String getJwt() {
             return jwt;
         }
@@ -773,7 +773,6 @@ public class ClientManager {
             bundle.putString(OAUTH_CALLBACK_URL, oauthCallbackUrl);
             bundle.putString(OAUTH_CLIENT_ID, oauthClientId);
             bundle.putStringArray(OAUTH_SCOPES, oauthScopes);
-            bundle.putString(CLIENT_SECRET, clientSecret);
             bundle.putString(JWT, jwt);
             if (additionalParameters != null && additionalParameters.size() > 0) {
                 final HashMap<String, String> serializableMap = new HashMap<>();
@@ -784,16 +783,15 @@ public class ClientManager {
         }
 
         public static LoginOptions fromBundle(Bundle options) {
-            Map<String,String> additionalParameters = null;
-            Serializable serializable =  options.getSerializable(KEY_ADDL_PARAMS);
+            Map<String, String> additionalParameters = null;
+            final Serializable serializable = options.getSerializable(KEY_ADDL_PARAMS);
             if (serializable != null) {
-                additionalParameters = (HashMap<String,String>) serializable;
+                additionalParameters = (HashMap<String, String>) serializable;
             }
             return new LoginOptions(options.getString(LOGIN_URL),
                                     options.getString(OAUTH_CALLBACK_URL),
                                     options.getString(OAUTH_CLIENT_ID),
                                     options.getStringArray(OAUTH_SCOPES),
-                                    options.getString(CLIENT_SECRET),
                                     options.getString(JWT),
                                     additionalParameters);
         }

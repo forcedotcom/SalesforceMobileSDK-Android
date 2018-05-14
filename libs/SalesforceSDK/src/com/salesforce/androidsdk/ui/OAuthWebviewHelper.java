@@ -53,6 +53,7 @@ import android.widget.Toast;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountBuilder;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -109,7 +110,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     public static final String RESPONSE_ERROR_DESCRIPTION_INTENT = "com.salesforce.auth.intent.RESPONSE_ERROR_DESCRIPTION";
     private static final String TAG = "OAuthWebViewHelper";
     private static final String ACCOUNT_OPTIONS = "accountOptions";
-    private static final String FEATURE_BROWSER_LOGIN = "BW";
 
     // background executor
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
@@ -128,7 +128,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         void onAccountAuthenticatorResult(Bundle authResult);
 
         /** we're in some end state and requesting that the host activity be finished/closed. */
-        void finish();
+        void finish(UserAccount userAccount);
     }
 
     /**
@@ -203,8 +203,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     	 * care of in the 'Confirm Passcode' step in PasscodeActivity.
     	 */
         if (accountOptions != null) {
-            addAccount();
-            callback.finish();
+            final UserAccount addedAccount = addAccount();
+            callback.finish(addedAccount);
         }
     }
 
@@ -248,9 +248,10 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             Toast t = Toast.makeText(webview.getContext(), error + " : " + errorDesc,
                     Toast.LENGTH_LONG);
             webview.postDelayed(new Runnable() {
+
                 @Override
                 public void run() {
-                    callback.finish();
+                    callback.finish(null);
                 }
             }, t.getDuration());
             t.show();
@@ -273,7 +274,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
     protected void showError(Exception exception) {
         Toast.makeText(getContext(),
-                getContext().getString(SalesforceSDKManager.getInstance().getSalesforceR().stringGenericError(), exception.toString()),
+                getContext().getString(R.string.sf__generic_error, exception.toString()),
                 Toast.LENGTH_LONG).show();
     }
 
@@ -306,7 +307,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     }
 
     private void loadLoginPageInChrome(URI uri) {
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BROWSER_LOGIN);
         final Uri url = Uri.parse(uri.toString());
         final CustomTabsIntent.Builder intentBuilder = new CustomTabsIntent.Builder();
 
@@ -371,24 +371,21 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
     protected URI getAuthorizationUrl(Boolean jwtFlow) throws URISyntaxException {
         if (jwtFlow) {
-            return OAuth2.getAuthorizationUrl(
-                    new URI(loginOptions.getLoginUrl()),
+            return OAuth2.getAuthorizationUrl(new URI(loginOptions.getLoginUrl()),
                     getOAuthClientId(),
                     loginOptions.getOauthCallbackUrl(),
                     loginOptions.getOauthScopes(),
-                    null,
                     getAuthorizationDisplayType(),
                     loginOptions.getJwt(),
                     loginOptions.getLoginUrl(),
                     loginOptions.getAdditionalParameters());
         }
-        return OAuth2.getAuthorizationUrl(
-                new URI(loginOptions.getLoginUrl()),
+        return OAuth2.getAuthorizationUrl(new URI(loginOptions.getLoginUrl()),
                 getOAuthClientId(),
                 loginOptions.getOauthCallbackUrl(),
                 loginOptions.getOauthScopes(),
-                null,
-                getAuthorizationDisplayType(),loginOptions.getAdditionalParameters());
+                getAuthorizationDisplayType(),
+                loginOptions.getAdditionalParameters());
     }
 
     protected URI getAuthorizationUrl() throws URISyntaxException {
@@ -452,19 +449,17 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         @Override
         public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
             int primError = error.getPrimaryError();
-
-            // Figuring out string resource id
-            SalesforceR r = SalesforceSDKManager.getInstance().getSalesforceR();
-            int primErrorStringId = r.stringSSLUnknownError();
+            int primErrorStringId = R.string.sf__ssl_unknown_error;
             switch (primError) {
-            case SslError.SSL_EXPIRED:      primErrorStringId = r.stringSSLExpired(); break;
-            case SslError.SSL_IDMISMATCH:   primErrorStringId = r.stringSSLIdMismatch(); break;
-            case SslError.SSL_NOTYETVALID:  primErrorStringId = r.stringSSLNotYetValid(); break;
-            case SslError.SSL_UNTRUSTED:    primErrorStringId = r.stringSSLUntrusted(); break;
+                case SslError.SSL_EXPIRED:      primErrorStringId = R.string.sf__ssl_expired; break;
+                case SslError.SSL_IDMISMATCH:   primErrorStringId = R.string.sf__ssl_id_mismatch; break;
+                case SslError.SSL_NOTYETVALID:  primErrorStringId = R.string.sf__ssl_not_yet_valid; break;
+                case SslError.SSL_UNTRUSTED:    primErrorStringId = R.string.sf__ssl_untrusted; break;
             }
 
             // Building text message to show
-            String text = getContext().getString(r.stringSSLError(), getContext().getString(primErrorStringId));
+            String text = getContext().getString(R.string.sf__ssl_error, getContext().getString(primErrorStringId));
+            SalesforceSDKLogger.e(TAG, "Received SSL error for server: " + text);
 
             // Bringing up toast
             Toast.makeText(getContext(), text, Toast.LENGTH_LONG).show();
@@ -473,6 +468,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
 		@Override
         public void onReceivedClientCertRequest(WebView view, ClientCertRequest request) {
+            SalesforceSDKLogger.d(TAG, "Received client certificate request from server");
         	request.proceed(key, certChain);
         }
     }
@@ -517,8 +513,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
         private void handleJWTError() {
             final SalesforceSDKManager mgr = SalesforceSDKManager.getInstance();
-            onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
-                    getContext().getString(mgr.getSalesforceR().stringJWTAuthenticationErrorBody()), backgroundException);
+            onAuthFlowError(getContext().getString(R.string.sf__generic_authentication_error_title),
+                    getContext().getString(R.string.sf__jwt_authentication_error), backgroundException);
         }
     }
 
@@ -554,17 +550,17 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             // Failure cases.
             if (backgroundException != null) {
                 SalesforceSDKLogger.w(TAG, "Exception thrown while retrieving token response", backgroundException);
-                onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
-                        getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorBody()), backgroundException);
-                callback.finish();
+                onAuthFlowError(getContext().getString(R.string.sf__generic_authentication_error_title),
+                        getContext().getString(R.string.sf__generic_authentication_error), backgroundException);
+                callback.finish(null);
                 return;
             }
             if (id.customPermissions != null) {
                 final boolean mustBeManagedApp = id.customPermissions.optBoolean(MUST_BE_MANAGED_APP_PERM);
                 if (mustBeManagedApp && !RuntimeConfig.getRuntimeConfig(getContext()).isManagedApp()) {
-                    onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
-                            getContext().getString(mgr.getSalesforceR().stringManagedAppError()), backgroundException);
-                    callback.finish();
+                    onAuthFlowError(getContext().getString(R.string.sf__generic_authentication_error_title),
+                            getContext().getString(R.string.sf__managed_app_error), backgroundException);
+                    callback.finish(null);
                     return;
                 }
             }
@@ -576,16 +572,16 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     id.displayName, id.email, id.pictureUrl, id.thumbnailUrl, tr.additionalOauthValues);
 
             // Sets additional admin prefs, if they exist.
-            final UserAccount account = new UserAccount(accountOptions.authToken,
-                    accountOptions.refreshToken, loginOptions.getLoginUrl(),
-                    accountOptions.identityUrl, accountOptions.instanceUrl,
-                    accountOptions.orgId, accountOptions.userId,
-                    accountOptions.username, buildAccountName(accountOptions.username,
-                    accountOptions.instanceUrl), loginOptions.getClientSecret(),
-                    accountOptions.communityId, accountOptions.communityUrl,
-                    accountOptions.firstName, accountOptions.lastName, accountOptions.displayName,
-                    accountOptions.email, accountOptions.photoUrl,
-                    accountOptions.thumbnailUrl, accountOptions.additionalOauthValues);
+            final UserAccount account = UserAccountBuilder.getInstance().authToken(accountOptions.authToken).
+                    refreshToken(accountOptions.refreshToken).loginServer(loginOptions.getLoginUrl()).
+                    idUrl(accountOptions.identityUrl).instanceServer(accountOptions.instanceUrl).
+                    orgId(accountOptions.orgId).userId(accountOptions.userId).username(accountOptions.username).
+                    accountName(buildAccountName(accountOptions.username, accountOptions.instanceUrl)).
+                    communityId(accountOptions.communityId).communityUrl(accountOptions.communityUrl).
+                    firstName(accountOptions.firstName).lastName(accountOptions.lastName).
+                    displayName(accountOptions.displayName).email(accountOptions.email).
+                    photoUrl(accountOptions.photoUrl).thumbnailUrl(accountOptions.thumbnailUrl).
+                    additionalOauthValues(accountOptions.additionalOauthValues).build();
             if (id.customAttributes != null) {
                 mgr.getAdminSettingsManager().setPrefs(id.customAttributes, account);
             }
@@ -615,8 +611,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 } else if (!changeRequired) {
 
                     // If a passcode change is required, the lock screen will have already been set in setMinPasscodeLength.
-                    addAccount();
-                    callback.finish();
+                    final UserAccount addedAccount = addAccount();
+                    callback.finish(addedAccount);
                 }
             }
 
@@ -624,8 +620,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             else {
                 final PasscodeManager passcodeManager = mgr.getPasscodeManager();
                 passcodeManager.storeMobilePolicyForOrg(account, 0, PasscodeManager.MIN_PASSCODE_LENGTH);
-                addAccount();
-                callback.finish();
+                final UserAccount addedAccount = addAccount();
+                callback.finish(addedAccount);
             }
         }
 
@@ -655,7 +651,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         }
     }
 
-    protected void addAccount() {
+    protected UserAccount addAccount() {
         ClientManager clientManager = new ClientManager(getContext(),
                 SalesforceSDKManager.getInstance().getAccountType(),
                 loginOptions, SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
@@ -675,7 +671,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 getOAuthClientId(),
                 accountOptions.orgId,
                 accountOptions.userId,
-                loginOptions.getClientSecret(),
                 accountOptions.communityId,
                 accountOptions.communityUrl,
                 accountOptions.firstName,
@@ -693,15 +688,16 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     	 */
         final Context appContext = SalesforceSDKManager.getInstance().getAppContext();
         final String pushNotificationId = BootConfig.getBootConfig(appContext).getPushNotificationClientId();
-        final UserAccount account = new UserAccount(accountOptions.authToken,
-                accountOptions.refreshToken, loginOptions.getLoginUrl(),
-                accountOptions.identityUrl, accountOptions.instanceUrl,
-                accountOptions.orgId, accountOptions.userId,
-                accountOptions.username, accountName,
-                loginOptions.getClientSecret(), accountOptions.communityId,
-                accountOptions.communityUrl, accountOptions.firstName,
-                accountOptions.lastName, accountOptions.displayName, accountOptions.email,
-                accountOptions.photoUrl, accountOptions.thumbnailUrl, accountOptions.additionalOauthValues);
+        final UserAccount account = UserAccountBuilder.getInstance().authToken(accountOptions.authToken).
+                refreshToken(accountOptions.refreshToken).loginServer(loginOptions.getLoginUrl()).
+                idUrl(accountOptions.identityUrl).instanceServer(accountOptions.instanceUrl).
+                orgId(accountOptions.orgId).userId(accountOptions.userId).username(accountOptions.username).
+                accountName(accountName).communityId(accountOptions.communityId).
+                communityUrl(accountOptions.communityUrl).firstName(accountOptions.firstName).
+                lastName(accountOptions.lastName).displayName(accountOptions.displayName).
+                email(accountOptions.email).photoUrl(accountOptions.photoUrl).
+                thumbnailUrl(accountOptions.thumbnailUrl).
+                additionalOauthValues(accountOptions.additionalOauthValues).build();
         if (!TextUtils.isEmpty(pushNotificationId)) {
             PushMessaging.register(appContext, account);
         }
@@ -714,9 +710,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         } catch (JSONException e) {
             SalesforceSDKLogger.e(TAG, "Exception thrown while creating JSON", e);
         }
-
         callback.onAccountAuthenticatorResult(extras);
-
         if (SalesforceSDKManager.getInstance().getIsTestRun()) {
             logAddAccount(account);
         } else {
@@ -727,6 +721,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 }
             });
         }
+        return account;
     }
 
     /**
@@ -879,6 +874,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 	@Override
 	public void alias(String alias) {
 		try {
+            SalesforceSDKLogger.d(TAG, "Keychain alias callback received");
 			certChain = KeyChain.getCertificateChain(activity, alias);
 			key = KeyChain.getPrivateKey(activity, alias);
 			activity.runOnUiThread(new Runnable() {

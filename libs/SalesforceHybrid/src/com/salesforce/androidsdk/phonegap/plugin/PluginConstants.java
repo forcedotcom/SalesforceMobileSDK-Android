@@ -26,17 +26,16 @@
  */
 package com.salesforce.androidsdk.phonegap.plugin;
 
+import com.salesforce.androidsdk.smartstore.config.StoreConfig;
+import com.salesforce.androidsdk.smartsync.config.SyncsConfig;
+
 public final class PluginConstants {
 
-    static final String TARGET = "target";
+    static final String TARGET = SyncsConfig.TARGET;
 
-    static final String OPTIONS = "options";
+    static final String OPTIONS = SyncsConfig.OPTIONS;
 
     static final String SOUP_SPEC = "soupSpec";
-
-    static final String SOUP_SPEC_NAME = "name";
-
-    static final String SOUP_SPEC_FEATURES = "features";
 
     static final String RE_INDEX_DATA = "reIndexData";
 
@@ -44,7 +43,7 @@ public final class PluginConstants {
 
     static final String TYPE = "type";
 
-    static final String SOUP_NAME = "soupName";
+    static final String SOUP_NAME = StoreConfig.SOUP_NAME;
 
     static final String PATH = "path";
 
@@ -60,10 +59,11 @@ public final class PluginConstants {
 
     static final String INDEX = "index";
 
-    static final String INDEXES = "indexes";
+    static final String INDEXES = StoreConfig.INDEXES;
 
     static final String IS_GLOBAL_STORE = "isGlobalStore";
 
     static final String STORE_NAME = "storeName";
 
+    static final String SYNC_NAME = SyncsConfig.SYNC_NAME;
 }

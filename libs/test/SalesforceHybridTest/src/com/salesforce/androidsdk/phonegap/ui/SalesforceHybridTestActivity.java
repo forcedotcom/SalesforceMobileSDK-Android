@@ -32,20 +32,19 @@ import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 
 /**
- * Sub-class of SalesforceDroidGapActivity that authenticates using hard-coded credentials
- *
+ * Sub-class of SalesforceDroidGapActivity that authenticates using hard-coded credentials.
  */
 public class SalesforceHybridTestActivity extends SalesforceDroidGapActivity {
 
-	static String username = "ut2@cs1.mobilesdk.org";
-	static String accountName = username + " (SalesforceHybridTest)";
-	static String refreshToken = "5Aep861KIwKdekr90IDidO4EhfJiYo3fzEvTvsEgM9sfDpGX0qFFeQzHG2mZeUH_.XNSBE0Iz38fnWsyYYkUgTz";
+	static String username = "sdktest@cs1.com";
+	static String accountName = "sdktest@cs1.com (https://cs1.salesforce.com) (test)";
+	static String refreshToken = "5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBS.SiQYYAy5ID_gSrAfcuOnfHywbI8qDc0bQuV5ysWaV3LeEU";
 	static String authToken = "--will-be-set-through-refresh--";
-	static String identityUrl = "https://test.salesforce.com";
-	static String instanceUrl = "https://cs1.salesforce.com";
+	static String identityUrl = "https://test.salesforce.com/id/00DS0000000HDptMAG/005S0000003yaERIAY";
+	static String instanceUrl = "https://sdk.cs1.my.salesforce.com";
 	static String loginUrl = "https://test.salesforce.com";
-	static String orgId = "00DS0000003E98jMAC";
-	static String userId = "005S0000004s2iyIAA";
+	static String orgId = "00DS0000000HDptMAG";
+	static String userId = "005S0000003yaERIAY";
 	
 	@Override
 	protected ClientManager buildClientManager() {
@@ -56,7 +55,7 @@ public class SalesforceHybridTestActivity extends SalesforceDroidGapActivity {
         		authToken, instanceUrl,
         		loginUrl, identityUrl,
         		loginOptions.getOauthClientId(), orgId,
-        		userId, null, null, null, null, null, null, null, null, null, null);
+        		userId, null, null, null, null, null, null, null, null, null);
 		return clientManager;
 	}
 }

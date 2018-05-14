@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.smartstore.store;
 
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
@@ -847,18 +848,19 @@ public class SmartStore  {
 		int columnCount = cursor.getColumnCount();
 		for (int i=0; i<columnCount; i++) {
             int valueType = cursor.getType(i);
+			String columnName = cursor.getColumnName(i);
             if (valueType == Cursor.FIELD_TYPE_NULL) {
                 row.put(null);
             }
             else if (valueType == Cursor.FIELD_TYPE_STRING) {
                 String raw = cursor.getString(i);
-                if (cursor.getColumnName(i).equals(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
+                if (columnName.equals(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
                     // Presence of external storage column implies we must fetch from storage. Soup name and entry id values can be extracted
                     String soupTableName = cursor.getString(i);
                     Long soupEntryId = cursor.getLong(i + 1);
                     row.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, soupEntryId, encryptionKey));
                     i++; // skip next column (_soupEntryId)
-                } else if (cursor.getColumnName(i).endsWith(SOUP_COL)) {
+                } else if (columnName.equals(SOUP_COL) || columnName.startsWith(SOUP_COL + ":") /* :num is appended to column name when result set has more than one column with same name */) {
                     row.put(new JSONObject(raw));
                     // Note: we could end up returning a string if you aliased the column
                 }
@@ -1608,4 +1610,39 @@ public class SmartStore  {
 			return DBHelper.getInstance(db).getFeatures(db, soupName).contains(SoupSpec.FEATURE_EXTERNAL_STORAGE);
 		}
 	}
+
+	/**
+	 * Get compile options
+	 *
+	 * @return list of compile options
+	 */
+	public List<String> getCompileOptions() {
+		return queryPragma("compile_options");
+	}
+
+	/**
+	 * Get sqlcipher version
+	 *
+	 * @return sqlcipher version
+	 */
+	public String getSQLCipherVersion() {
+		return TextUtils.join(" ", queryPragma("cipher_version"));
+	}
+
+	@NonNull
+	private List<String> queryPragma(String pragma) {
+		final SQLiteDatabase db = getDatabase();
+		ArrayList<String> results = new ArrayList<>();
+		Cursor c = null;
+		try {
+			c = db.rawQuery("PRAGMA " + pragma, null);
+			while (c.moveToNext()) {
+				results.add(c.getString(0));
+			}
+		} finally {
+			safeClose(c);
+		}
+		return results;
+	}
+
 }

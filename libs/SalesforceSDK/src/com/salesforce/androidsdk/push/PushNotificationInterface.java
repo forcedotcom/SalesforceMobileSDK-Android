@@ -37,5 +37,5 @@ import android.os.Bundle;
  */
 public interface PushNotificationInterface {
 
-	public void onPushMessageReceived(Bundle message);
+	void onPushMessageReceived(Bundle message);
 }

@@ -26,14 +26,19 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import android.support.test.filters.LargeTest;
+import android.support.test.runner.AndroidJUnit4;
+
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
-import junit.framework.TestCase;
+import junit.framework.Assert;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -47,10 +52,13 @@ import java.util.Map;
 
 import okio.Buffer;
 
-public class RestRequestTest extends TestCase {
+@RunWith(AndroidJUnit4.class)
+@LargeTest
+public class RestRequestTest {
 	
 	private static final String TEST_API_VERSION = "v99.0";
 	private static final String TEST_OBJECT_TYPE = "testObjectType";
+	private static final String LAYOUT_TYPE_COMPACT = "Compact";
     private static final String TEST_OTHER_OBJECT_TYPE = "testOtherObjectType";
 	private static final String TEST_OBJECT_ID = "testObjectId";
 	private static final String TEST_EXTERNAL_ID_FIELD = "testExternalIdField";
@@ -82,64 +90,106 @@ public class RestRequestTest extends TestCase {
         TEST_OTHER_FIELDS = Collections.unmodifiableMap(fields);
     }
 
+	/**
+	 * Test for getRequestForUserInfo
+	 */
+	@Test
+	public void testGetRequestForUserInfo() {
+		RestRequest request = RestRequest.getRequestForUserInfo();
+		Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+		Assert.assertEquals("Wrong path", "/services/oauth2/userinfo", request.getPath());
+		Assert.assertEquals("Wrong endpoint", RestRequest.RestEndpoint.LOGIN, request.getEndpoint());
+		Assert.assertNull("Wrong request entity", request.getRequestBody());
+		Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+	}
 
 	/**
 	 * Test for getRequestForVersions
 	 */
+    @Test
 	public void testGetRequestForVersions() {
 		RestRequest request = RestRequest.getRequestForVersions();
-		assertEquals("Wrong method", RestMethod.GET, request.getMethod());
-		assertEquals("Wrong path", "/services/data/", request.getPath());
-		assertNull("Wrong request entity", request.getRequestBody());
-		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+        Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/", request.getPath());
+        Assert.assertNull("Wrong request entity", request.getRequestBody());
+        Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 	
 	/**
 	 * Test for getRequestForResources
 	 */
+    @Test
 	public void testGetRequestForResources() {
 		RestRequest request = RestRequest.getRequestForResources(TEST_API_VERSION);
-		assertEquals("Wrong method", RestMethod.GET, request.getMethod());
-		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/", request.getPath());
-		assertNull("Wrong request entity", request.getRequestBody());
-		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+        Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/", request.getPath());
+        Assert.assertNull("Wrong request entity", request.getRequestBody());
+        Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 
-	
 	/**
 	 * Test for getRequestForDescribeGlobal
 	 */
+    @Test
 	public void testGetRequestForDescribeGlobal() {
 		RestRequest request = RestRequest.getRequestForDescribeGlobal(TEST_API_VERSION);
-		assertEquals("Wrong method", RestMethod.GET, request.getMethod());
-		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/", request.getPath());
-		assertNull("Wrong request entity", request.getRequestBody());
-		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+        Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/", request.getPath());
+        Assert.assertNull("Wrong request entity", request.getRequestBody());
+        Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 
-	
 	/**
 	 * Test for getRequestForMetadata
 	 */
+    @Test
 	public void testGetRequestForMetadata() {
 		RestRequest request = RestRequest.getRequestForMetadata(TEST_API_VERSION, TEST_OBJECT_TYPE);
-		assertEquals("Wrong method", RestMethod.GET, request.getMethod());
-		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE + "/", request.getPath());
-		assertNull("Wrong request entity", request.getRequestBody());
-		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+        Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE + "/", request.getPath());
+        Assert.assertNull("Wrong request entity", request.getRequestBody());
+        Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 
 	/**
 	 * Test for getRequestForDescribe
 	 */
+    @Test
 	public void testGetRequestForDescribe() {
 		RestRequest request = RestRequest.getRequestForDescribe(TEST_API_VERSION, TEST_OBJECT_TYPE);
-		assertEquals("Wrong method", RestMethod.GET, request.getMethod());
-		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE + "/describe/", request.getPath());
-		assertNull("Wrong request entity", request.getRequestBody());
-		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+        Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE + "/describe/", request.getPath());
+        Assert.assertNull("Wrong request entity", request.getRequestBody());
+        Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 
+	/**
+	 * Test for getRequestForObjectLayout without layoutType.
+	 */
+	@Test
+	public void testGetRequestForObjectLayoutWithoutLayoutType() {
+		RestRequest request = RestRequest.getRequestForObjectLayout(TEST_API_VERSION,
+                TEST_OBJECT_TYPE, null);
+		Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+		Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION +
+                "/ui-api/layout/" + TEST_OBJECT_TYPE, request.getPath());
+		Assert.assertNull("Wrong request entity", request.getRequestBody());
+		Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+	}
+
+    /**
+     * Test for getRequestForObjectLayout with layoutType.
+     */
+    @Test
+    public void testGetRequestForObjectLayoutWithLayoutType() {
+        RestRequest request = RestRequest.getRequestForObjectLayout(TEST_API_VERSION,
+                TEST_OBJECT_TYPE, LAYOUT_TYPE_COMPACT);
+        Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION +
+                "/ui-api/layout/" + TEST_OBJECT_TYPE + "?layoutType=" + LAYOUT_TYPE_COMPACT, request.getPath());
+        Assert.assertNull("Wrong request entity", request.getRequestBody());
+        Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+    }
 	
 	/**
 	 * Test for getRequestForCreate
@@ -147,24 +197,26 @@ public class RestRequestTest extends TestCase {
 	 * @throws UnsupportedEncodingException 
 	 * @throws JSONException 
 	 */
+    @Test
 	public void testGetRequestForCreate() throws UnsupportedEncodingException, IOException, JSONException {
 		RestRequest request = RestRequest.getRequestForCreate(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_FIELDS);
-		assertEquals("Wrong method", RestMethod.POST, request.getMethod());
-		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE, request.getPath());
+        Assert.assertEquals("Wrong method", RestMethod.POST, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE, request.getPath());
 		JSONTestHelper.assertSameJSON("Wrong request entity", new JSONObject(TEST_FIELDS_STRING), new JSONObject(bodyToString(request)));
-		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+        Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 	
 	/**
 	 * Test for getRequestForRetrieve
 	 * @throws UnsupportedEncodingException 
 	 */
+    @Test
 	public void testGetRequestForRetrieve() throws UnsupportedEncodingException {
 		RestRequest request = RestRequest.getRequestForRetrieve(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_OBJECT_ID, TEST_FIELDS_LIST);
-		assertEquals("Wrong method", RestMethod.GET, request.getMethod());
-		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE + "/" + TEST_OBJECT_ID + "?fields=" + TEST_FIELDS_LIST_STRING, request.getPath());
-		assertNull("Wrong request entity", request.getRequestBody());
-		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+        Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE + "/" + TEST_OBJECT_ID + "?fields=" + TEST_FIELDS_LIST_STRING, request.getPath());
+        Assert.assertNull("Wrong request entity", request.getRequestBody());
+        Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 
 	/**
@@ -173,12 +225,13 @@ public class RestRequestTest extends TestCase {
 	 * @throws UnsupportedEncodingException 
 	 * @throws JSONException 
 	 */
+    @Test
 	public void testGetRequestForUpdate() throws IOException, JSONException {
 		RestRequest request = RestRequest.getRequestForUpdate(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_OBJECT_ID, TEST_FIELDS);
-		assertEquals("Wrong method", RestMethod.PATCH, request.getMethod());
-		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE + "/" + TEST_OBJECT_ID, request.getPath());
+        Assert.assertEquals("Wrong method", RestMethod.PATCH, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE + "/" + TEST_OBJECT_ID, request.getPath());
 		JSONTestHelper.assertSameJSON("Wrong request entity", new JSONObject(TEST_FIELDS_STRING), new JSONObject(bodyToString(request)));
-		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+        Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 	
 	/**
@@ -187,97 +240,103 @@ public class RestRequestTest extends TestCase {
 	 * @throws UnsupportedEncodingException 
 	 * @throws JSONException 
 	 */
+    @Test
 	public void testGetRequestForUpsert() throws IOException, JSONException {
 		RestRequest request = RestRequest.getRequestForUpsert(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_EXTERNAL_ID_FIELD, TEST_EXTERNAL_ID, TEST_FIELDS);
-		assertEquals("Wrong method", RestMethod.PATCH, request.getMethod());
-		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE + "/" + TEST_EXTERNAL_ID_FIELD + "/" + TEST_EXTERNAL_ID, request.getPath());
+        Assert.assertEquals("Wrong method", RestMethod.PATCH, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE + "/" + TEST_EXTERNAL_ID_FIELD + "/" + TEST_EXTERNAL_ID, request.getPath());
 		JSONTestHelper.assertSameJSON("Wrong request entity", new JSONObject(TEST_FIELDS_STRING), new JSONObject(bodyToString(request)));
-		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+        Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 
 	/**
 	 * Test for getRequestForDelete
 	 */
+    @Test
 	public void testGetRequestForDelete() {
 		RestRequest request = RestRequest.getRequestForDelete(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_OBJECT_ID);
-		assertEquals("Wrong method", RestMethod.DELETE, request.getMethod());
-		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE + "/" + TEST_OBJECT_ID, request.getPath());
-		assertNull("Wrong request entity", request.getRequestBody());
-		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+        Assert.assertEquals("Wrong method", RestMethod.DELETE, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE + "/" + TEST_OBJECT_ID, request.getPath());
+        Assert.assertNull("Wrong request entity", request.getRequestBody());
+        Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 	
 	/**
 	 * Test for getRequestForQuery
 	 * @throws UnsupportedEncodingException 
 	 */
+    @Test
 	public void testGetRequestForQuery() throws UnsupportedEncodingException {
 		RestRequest request = RestRequest.getRequestForQuery(TEST_API_VERSION, TEST_QUERY);
-		assertEquals("Wrong method", RestMethod.GET, request.getMethod());
-		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/query?q=" + TEST_QUERY, request.getPath());
-		assertNull("Wrong request entity", request.getRequestBody());
-		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+        Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/query?q=" + TEST_QUERY, request.getPath());
+        Assert.assertNull("Wrong request entity", request.getRequestBody());
+        Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 
 	/**
 	 * Test for getRequestForSearch
 	 * @throws UnsupportedEncodingException 
 	 */
+    @Test
 	public void testGetRequestForSeach() throws UnsupportedEncodingException {
 		RestRequest request = RestRequest.getRequestForSearch(TEST_API_VERSION, TEST_SEARCH);
-		assertEquals("Wrong method", RestMethod.GET, request.getMethod());
-		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/search?q=" + TEST_SEARCH, request.getPath());
-		assertNull("Wrong request entity", request.getRequestBody());
-		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+        Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/search?q=" + TEST_SEARCH, request.getPath());
+        Assert.assertNull("Wrong request entity", request.getRequestBody());
+        Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 
 	/**
 	 * Test for getRequestForSearchScopeAndOrder
 	 * @throws UnsupportedEncodingException 
 	 */
+    @Test
 	public void testGetRequestForSeachScopeAndOrder() throws UnsupportedEncodingException {
 		RestRequest request = RestRequest.getRequestForSearchScopeAndOrder(TEST_API_VERSION);
-		assertEquals("Wrong method", RestMethod.GET, request.getMethod());
-		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/search/scopeOrder", request.getPath());
-		assertNull("Wrong request entity", request.getRequestBody());
-		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+        Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/search/scopeOrder", request.getPath());
+        Assert.assertNull("Wrong request entity", request.getRequestBody());
+        Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 	
 	/**
 	 * Test for getRequestForSearchResultLayout
 	 * @throws UnsupportedEncodingException 
 	 */
+    @Test
 	public void testGetRequestForSearchResultLayout() throws UnsupportedEncodingException {
 		RestRequest request = RestRequest.getRequestForSearchResultLayout(TEST_API_VERSION, TEST_OBJECTS_LIST);
-		assertEquals("Wrong method", RestMethod.GET, request.getMethod());
-		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/search/layout?q=" + TEST_OBJECTS_LIST_STRING, request.getPath());
-		assertNull("Wrong request entity", request.getRequestBody());
-		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+        Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/search/layout?q=" + TEST_OBJECTS_LIST_STRING, request.getPath());
+        Assert.assertNull("Wrong request entity", request.getRequestBody());
+        Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 
+    @Test
 	public void testAdditionalHeaders() {
 		Map<String, String> headers = new HashMap<String, String>();
-		headers.put("X-Foo", getName());
+		headers.put("X-Foo", "x-foo-header");
 		RestRequest req = new RestRequest(RestMethod.GET, "/my/foo/", headers);
-		assertEquals("Wrong method", RestMethod.GET, req.getMethod());
-		assertEquals("Wrong path", "/my/foo/", req.getPath());
-		assertNull("Wrong entity", req.getRequestBody());
-		assertEquals("Wrong headers", headers, req.getAdditionalHttpHeaders());
+        Assert.assertEquals("Wrong method", RestMethod.GET, req.getMethod());
+        Assert.assertEquals("Wrong path", "/my/foo/", req.getPath());
+        Assert.assertNull("Wrong entity", req.getRequestBody());
+        Assert.assertEquals("Wrong headers", headers, req.getAdditionalHttpHeaders());
 	}
 
     /**
      * Test for getCompositeRequest
      * @throws JSONException
      */
+    @Test
     public void testGetCompositeRequest() throws JSONException, IOException {
         LinkedHashMap<String, RestRequest> requests = new LinkedHashMap<>();
         requests.put("ref1", RestRequest.getRequestForUpdate(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_OBJECT_ID, TEST_FIELDS));
         requests.put("ref2", RestRequest.getRequestForDelete(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_OBJECT_ID));
-
         RestRequest request = RestRequest.getCompositeRequest(TEST_API_VERSION, true, requests);
-        assertEquals("Wrong method", RestMethod.POST, request.getMethod());
-        assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/composite", request.getPath());
-        assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
-
+        Assert.assertEquals("Wrong method", RestMethod.POST, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/composite", request.getPath());
+        Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
         JSONObject expectedBodyJson = new JSONObject();
         expectedBodyJson.put("allOrNone", true);
         expectedBodyJson.put("compositeRequest",
@@ -297,9 +356,7 @@ public class RestRequestTest extends TestCase {
                                 + "]",
                         TEST_OBJECT_TYPE, TEST_OBJECT_ID, new JSONObject(TEST_FIELDS),
                         TEST_OBJECT_TYPE, TEST_OBJECT_ID)));
-
         JSONObject actualBodyJson = new JSONObject(bodyToString(request));
-
         JSONTestHelper.assertSameJSON("Wrong request entity", expectedBodyJson, actualBodyJson);
     }
 
@@ -307,17 +364,16 @@ public class RestRequestTest extends TestCase {
      * Test for getBatchRequest
      * @throws JSONException
      */
+    @Test
     public void testGetBatchRequest() throws JSONException, IOException {
         RestRequest[] requests = new RestRequest[]{
                 RestRequest.getRequestForUpdate(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_OBJECT_ID, TEST_FIELDS),
                 RestRequest.getRequestForDelete(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_OBJECT_ID)
         };
-
         RestRequest request = RestRequest.getBatchRequest(TEST_API_VERSION, true, Arrays.asList(requests));
-        assertEquals("Wrong method", RestMethod.POST, request.getMethod());
-        assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/composite/batch", request.getPath());
-        assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
-
+        Assert.assertEquals("Wrong method", RestMethod.POST, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/composite/batch", request.getPath());
+        Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
         JSONObject expectedBodyJson = new JSONObject();
         expectedBodyJson.put("haltOnError", true);
         expectedBodyJson.put("batchRequests",
@@ -335,9 +391,7 @@ public class RestRequestTest extends TestCase {
                         + "]",
                 TEST_OBJECT_TYPE, TEST_OBJECT_ID, new JSONObject(TEST_FIELDS),
                 TEST_OBJECT_TYPE, TEST_OBJECT_ID)));
-
         JSONObject actualBodyJson = new JSONObject(bodyToString(request));
-
         JSONTestHelper.assertSameJSON("Wrong request entity", expectedBodyJson, actualBodyJson);
     }
 
@@ -345,17 +399,16 @@ public class RestRequestTest extends TestCase {
      * Test for getRequestForSObjectTree
      * @throws JSONException
      */
+    @Test
     public void testGetRequestForSObjectTree() throws JSONException, IOException {
         List<RestRequest.SObjectTree> childrenTrees = new ArrayList<>();
         childrenTrees.add(new RestRequest.SObjectTree(TEST_OTHER_OBJECT_TYPE, TEST_OTHER_OBJECT_TYPE_PLURAL, TEST_REF_CHILD, TEST_OTHER_FIELDS, null));
         List<RestRequest.SObjectTree> recordTrees = new ArrayList<>();
         recordTrees.add(new RestRequest.SObjectTree(TEST_OBJECT_TYPE, null, TEST_REF_PARENT, TEST_FIELDS, childrenTrees));
-
         RestRequest request = RestRequest.getRequestForSObjectTree(TEST_API_VERSION, TEST_OBJECT_TYPE, recordTrees);
-        assertEquals("Wrong method", RestMethod.POST, request.getMethod());
-        assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/composite/tree/" + TEST_OBJECT_TYPE, request.getPath());
-        assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
-
+        Assert.assertEquals("Wrong method", RestMethod.POST, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/composite/tree/" + TEST_OBJECT_TYPE, request.getPath());
+        Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
         JSONObject expectedBodyJson = new JSONObject();
         expectedBodyJson.put("records",
                 new JSONArray(String.format(""

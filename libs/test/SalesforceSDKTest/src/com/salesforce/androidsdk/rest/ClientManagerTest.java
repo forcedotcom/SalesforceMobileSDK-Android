@@ -34,7 +34,9 @@ import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.os.Bundle;
-import android.test.InstrumentationTestCase;
+import android.support.test.InstrumentationRegistry;
+import android.support.test.filters.MediumTest;
+import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.TestForceApp;
@@ -45,6 +47,13 @@ import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
+
+import junit.framework.Assert;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -58,7 +67,9 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-public class ClientManagerTest extends InstrumentationTestCase {
+@RunWith(AndroidJUnit4.class)
+@MediumTest
+public class ClientManagerTest {
 
     public static final String TEST_ORG_ID = "test_org_id";
     public static final String TEST_USER_ID = "test_user_id";
@@ -94,15 +105,14 @@ public class ClientManagerTest extends InstrumentationTestCase {
     private List<String> testOauthKeys;
     private Map<String, String> testOauthValues;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
-        targetContext = getInstrumentation().getTargetContext();
+        targetContext = InstrumentationRegistry.getTargetContext();
         final Application app = Instrumentation.newApplication(TestForceApp.class, targetContext);
-        getInstrumentation().callApplicationOnCreate(app);
-        TestCredentials.init(getInstrumentation().getContext());
+        InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
+        TestCredentials.init(InstrumentationRegistry.getContext());
         loginOptions = new LoginOptions(TEST_LOGIN_URL, TEST_CALLBACK_URL,
-                TEST_CLIENT_ID, TEST_SCOPES, null);
+                TEST_CLIENT_ID, TEST_SCOPES);
         clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE,
         		loginOptions, true);
         accountManager = clientManager.getAccountManager();
@@ -117,7 +127,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
         SalesforceSDKManager.getInstance().setAdditionalOauthKeys(testOauthKeys);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
         if (eq != null) {
             eq.tearDown();
@@ -128,49 +138,51 @@ public class ClientManagerTest extends InstrumentationTestCase {
         testOauthKeys = null;
         testOauthValues = null;
         SalesforceSDKManager.getInstance().setAdditionalOauthKeys(testOauthKeys);
-        super.tearDown();
     }
 
     /**
      * Test getAccountType
      */
+    @Test
     public void testGetAccountType() {
-        assertEquals("Wrong account type", TEST_ACCOUNT_TYPE,
+        Assert.assertEquals("Wrong account type", TEST_ACCOUNT_TYPE,
                 clientManager.getAccountType());
     }
 
     /**
      * Test setting/get of Login Optionsas a bundle
      */
+    @Test
     public void testLoginOptionsWithAddlParams() {
         Map<String,String> additionalParams = new HashMap<String,String>();
         additionalParams.put("p1","v1");
         additionalParams.put("p2","v2");
         additionalParams.put("p3",null);
         LoginOptions loginOptions = new LoginOptions(TEST_LOGIN_URL,
-                TEST_CALLBACK_URL, TEST_CLIENT_ID, TEST_SCOPES, null, null, additionalParams);
-        assertNotNull("LoginOptions must not be null",loginOptions);
-        assertNotNull("LoginOptions must not be null",loginOptions.getAdditionalParameters());
-        assertEquals("# of LoginOptions must be correct",additionalParams.size(),loginOptions.getAdditionalParameters().size());
-        assertEquals("LoginOptions must be correct",additionalParams.get("p1"),loginOptions.getAdditionalParameters().get("p1"));
+                TEST_CALLBACK_URL, TEST_CLIENT_ID, TEST_SCOPES, null, additionalParams);
+        Assert.assertNotNull("LoginOptions must not be null",loginOptions);
+        Assert.assertNotNull("LoginOptions must not be null",loginOptions.getAdditionalParameters());
+        Assert.assertEquals("# of LoginOptions must be correct",additionalParams.size(),loginOptions.getAdditionalParameters().size());
+        Assert.assertEquals("LoginOptions must be correct",additionalParams.get("p1"),loginOptions.getAdditionalParameters().get("p1"));
         additionalParams = new HashMap<String, String>();
         additionalParams.put("p4","v1");
         additionalParams.put("p5","v2");
         loginOptions.setAdditionalParameters(additionalParams);
-        assertEquals("# of LoginOptions must be correct",additionalParams.size(),loginOptions.getAdditionalParameters().size());
+        Assert.assertEquals("# of LoginOptions must be correct",additionalParams.size(),loginOptions.getAdditionalParameters().size());
         Bundle bundle = loginOptions.asBundle();
-        assertNotNull("LoginOptions Bundle must not be null",bundle);
-        assertNotNull("LoginOptions Bundle must have parameter map",bundle.getSerializable("addlParams"));
+        Assert.assertNotNull("LoginOptions Bundle must not be null",bundle);
+        Assert.assertNotNull("LoginOptions Bundle must have parameter map",bundle.getSerializable("addlParams"));
         loginOptions = LoginOptions.fromBundle(bundle);
-        assertNotNull("LoginOptions from bundle should not be null",loginOptions);
-        assertNotNull("LoginOptions.additionalParameters from bundle should not be null",loginOptions.getAdditionalParameters());
-        assertEquals("LoginOptions.additionalParameters from bundle should not be null",additionalParams.size(),loginOptions.getAdditionalParameters().size());
-        assertEquals("LoginOptions.additionalParameters must have parameter",additionalParams.get("p4"),loginOptions.getAdditionalParameters().get("p4"));
+        Assert.assertNotNull("LoginOptions from bundle should not be null",loginOptions);
+        Assert.assertNotNull("LoginOptions.additionalParameters from bundle should not be null",loginOptions.getAdditionalParameters());
+        Assert.assertEquals("LoginOptions.additionalParameters from bundle should not be null",additionalParams.size(),loginOptions.getAdditionalParameters().size());
+        Assert.assertEquals("LoginOptions.additionalParameters must have parameter",additionalParams.get("p4"),loginOptions.getAdditionalParameters().get("p4"));
     }
 
     /**
      * Test createNewAccount
      */
+    @Test
     public void testCreateAccount() {
 
         // Make sure we have no accounts initially
@@ -181,14 +193,15 @@ public class ClientManagerTest extends InstrumentationTestCase {
 
         // Check that the account did get created
         Account[] accounts = clientManager.getAccounts();
-        assertEquals("One account should have been returned", 1, accounts.length);
-        assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
-        assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, accounts[0].type);
+        Assert.assertEquals("One account should have been returned", 1, accounts.length);
+        Assert.assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
+        Assert.assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, accounts[0].type);
     }
 
     /**
      * Test getAccount
      */
+    @Test
     public void testGetAccount() {
 
         // Make sure we have no accounts initially
@@ -199,30 +212,31 @@ public class ClientManagerTest extends InstrumentationTestCase {
 
         // Call getAccount
         Account account = clientManager.getAccount();
-        assertNotNull("Account should have been returned", account);
-        assertEquals("Wrong account name", TEST_ACCOUNT_NAME, account.name);
-        assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
+        Assert.assertNotNull("Account should have been returned", account);
+        Assert.assertEquals("Wrong account name", TEST_ACCOUNT_NAME, account.name);
+        Assert.assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
         String encryptedAuthToken = accountManager.getUserData(account, AccountManager.KEY_AUTHTOKEN);
         String decryptedAuthToken = SalesforceSDKManager.decrypt(encryptedAuthToken);
-        assertEquals("Wrong auth token", TEST_AUTH_TOKEN, decryptedAuthToken);
+        Assert.assertEquals("Wrong auth token", TEST_AUTH_TOKEN, decryptedAuthToken);
         String encryptedRefreshToken = accountManager.getPassword(account);
         String decryptedRefreshToken = SalesforceSDKManager.decrypt(encryptedRefreshToken);
-        assertEquals("Wrong refresh token", TEST_REFRESH_TOKEN, decryptedRefreshToken);
-        assertEquals("Wrong instance url", TEST_INSTANCE_URL, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL)));
-        assertEquals("Wrong login url", TEST_LOGIN_URL, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL)));
-        assertEquals("Wrong client id", TEST_CLIENT_ID, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID)));
-        assertEquals("Wrong user id", TEST_USER_ID, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_USER_ID)));
-        assertEquals("Wrong org id", TEST_ORG_ID, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_ORG_ID)));
-        assertEquals("Wrong username", TEST_USERNAME, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_USERNAME)));
-        assertEquals("Wrong last name", TEST_LAST_NAME, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LAST_NAME)));
-        assertEquals("Wrong display name", TEST_DISPLAY_NAME, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_DISPLAY_NAME)));
-        assertEquals("Wrong email", TEST_EMAIL, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_EMAIL)));
-        assertEquals("Wrong additional OAuth value", TEST_CUSTOM_VALUE, SalesforceSDKManager.decrypt(accountManager.getUserData(account, TEST_CUSTOM_KEY)));
+        Assert.assertEquals("Wrong refresh token", TEST_REFRESH_TOKEN, decryptedRefreshToken);
+        Assert.assertEquals("Wrong instance url", TEST_INSTANCE_URL, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL)));
+        Assert.assertEquals("Wrong login url", TEST_LOGIN_URL, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL)));
+        Assert.assertEquals("Wrong client id", TEST_CLIENT_ID, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID)));
+        Assert.assertEquals("Wrong user id", TEST_USER_ID, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_USER_ID)));
+        Assert.assertEquals("Wrong org id", TEST_ORG_ID, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_ORG_ID)));
+        Assert.assertEquals("Wrong username", TEST_USERNAME, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_USERNAME)));
+        Assert.assertEquals("Wrong last name", TEST_LAST_NAME, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LAST_NAME)));
+        Assert.assertEquals("Wrong display name", TEST_DISPLAY_NAME, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_DISPLAY_NAME)));
+        Assert.assertEquals("Wrong email", TEST_EMAIL, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_EMAIL)));
+        Assert.assertEquals("Wrong additional OAuth value", TEST_CUSTOM_VALUE, SalesforceSDKManager.decrypt(accountManager.getUserData(account, TEST_CUSTOM_KEY)));
     }
 
     /**
      * Test getAccounts - when there is only one
      */
+    @Test
     public void testGetAccountsWithSingleAccount() {
 
         // Make sure we have no accounts initially
@@ -233,14 +247,15 @@ public class ClientManagerTest extends InstrumentationTestCase {
 
         // Call getAccounts
         Account[] accounts = clientManager.getAccounts();
-        assertEquals("One account should have been returned", 1, accounts.length);
-        assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
-        assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, accounts[0].type);
+        Assert.assertEquals("One account should have been returned", 1, accounts.length);
+        Assert.assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
+        Assert.assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, accounts[0].type);
     }
 
     /**
      * Test getAccounts - when there are several accounts
      */
+    @Test
     public void testGetAccountsWithSeveralAccounts() {
 
         // Make sure we have no accounts initially
@@ -252,7 +267,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 
         // Call getAccounts
         Account[] accounts = clientManager.getAccounts();
-        assertEquals("Two accounts should have been returned", 2, accounts.length);
+        Assert.assertEquals("Two accounts should have been returned", 2, accounts.length);
 
         // Sorting
         Arrays.sort(accounts, new Comparator<Account>() {
@@ -261,13 +276,14 @@ public class ClientManagerTest extends InstrumentationTestCase {
                 return account1.name.compareTo(account2.name);
             }
         });
-        assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
-        assertEquals("Wrong account name", TEST_OTHER_ACCOUNT_NAME, accounts[1].name);
+        Assert.assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
+        Assert.assertEquals("Wrong account name", TEST_OTHER_ACCOUNT_NAME, accounts[1].name);
     }
 
     /**
      * Test getAccountByName
      */
+    @Test
     public void testGetAccountByName() {
 
         // Make sure we have no accounts initially
@@ -279,25 +295,26 @@ public class ClientManagerTest extends InstrumentationTestCase {
 
         // Check that the accounts did get created
         Account[] accounts = clientManager.getAccounts();
-        assertEquals("Two accounts should have been returned", 2, accounts.length);
+        Assert.assertEquals("Two accounts should have been returned", 2, accounts.length);
 
         // Get the first one by name
         Account account = clientManager.getAccountByName(TEST_ACCOUNT_NAME);
-        assertNotNull("An account should have been returned", account);
-        assertEquals("Wrong account name", TEST_ACCOUNT_NAME, account.name);
-        assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
+        Assert.assertNotNull("An account should have been returned", account);
+        Assert.assertEquals("Wrong account name", TEST_ACCOUNT_NAME, account.name);
+        Assert.assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
 
         // Get the second one by name
         account = clientManager.getAccountByName(TEST_OTHER_ACCOUNT_NAME);
-        assertNotNull("An account should have been returned", account);
-        assertEquals("Wrong account name", TEST_OTHER_ACCOUNT_NAME, account.name);
-        assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
+        Assert.assertNotNull("An account should have been returned", account);
+        Assert.assertEquals("Wrong account name", TEST_OTHER_ACCOUNT_NAME, account.name);
+        Assert.assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
     }
 
 
     /**
      * Test removeAccounts when there is only one
      */
+    @Test
     public void testRemoveOnlyAccount() {
 
         // Make sure we have no accounts initially
@@ -308,8 +325,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
 
         // Check that the account did get created
         Account[] accounts = clientManager.getAccounts();
-        assertEquals("One account should have been returned", 1, accounts.length);
-        assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
+        Assert.assertEquals("One account should have been returned", 1, accounts.length);
+        Assert.assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
 
         // Remove the account
         clientManager.removeAccounts(accounts);
@@ -321,6 +338,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
     /**
      * Test removeAccounts - removing one account where there are several
      */
+    @Test
     public void testRemoveOneOfSeveralAccounts() {
 
         // Make sure we have no accounts initially
@@ -332,20 +350,21 @@ public class ClientManagerTest extends InstrumentationTestCase {
 
         // Check that the accounts did get created
         Account[] accounts = clientManager.getAccounts();
-        assertEquals("Two accounts should have been returned", 2, accounts.length);
+        Assert.assertEquals("Two accounts should have been returned", 2, accounts.length);
 
         // Remove one of them
         clientManager.removeAccounts(new Account[]{accounts[0]});
 
         // Make sure the other account is still there
         Account[] accountsLeft = clientManager.getAccounts();
-        assertEquals("One account should have been returned", 1, accountsLeft.length);
-        assertEquals("Wrong account name", accounts[1].name, accountsLeft[0].name);
+        Assert.assertEquals("One account should have been returned", 1, accountsLeft.length);
+        Assert.assertEquals("Wrong account name", accounts[1].name, accountsLeft[0].name);
     }
 
     /**
      * Test removeAccounts - removing two accounts
      */
+    @Test
     public void testRemoveSeveralAccounts() {
 
         // Make sure we have no accounts initially
@@ -357,7 +376,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 
         // Check that the accounts did get created
         Account[] accounts = clientManager.getAccounts();
-        assertEquals("Two accounts should have been returned", 2, accounts.length);
+        Assert.assertEquals("Two accounts should have been returned", 2, accounts.length);
 
         // Remove one of them
         clientManager.removeAccounts(accounts);
@@ -369,6 +388,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
     /**
      * Test peekRestClient - when there is no account
      */
+    @Test
     public void testPeekRestClientWhenNoAccounts() {
 
         // Make sure we have no accounts initially
@@ -377,7 +397,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
         // Call peekRestClient - expect exception
         try {
             clientManager.peekRestClient();
-            fail("Expected AccountInfoNotFoundException");
+            Assert.fail("Expected AccountInfoNotFoundException");
         } catch (AccountInfoNotFoundException e) {
             // as expected
         }
@@ -387,6 +407,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
      * Test peekRestClient - when there is an account
      * @throws URISyntaxException
      */
+    @Test
     public void testPeekRestClientWithAccountSetup() throws URISyntaxException {
 
         // Make sure we have no accounts initially
@@ -398,11 +419,11 @@ public class ClientManagerTest extends InstrumentationTestCase {
         // Call peekRestClient - expect restClient
         try {
             RestClient restClient = clientManager.peekRestClient();
-            assertNotNull("RestClient expected", restClient);
-            assertEquals("Wrong authToken", TEST_AUTH_TOKEN, restClient.getAuthToken());
-            assertEquals("Wrong instance Url", new URI(TEST_INSTANCE_URL), restClient.getClientInfo().instanceUrl);
+            Assert.assertNotNull("RestClient expected", restClient);
+            Assert.assertEquals("Wrong authToken", TEST_AUTH_TOKEN, restClient.getAuthToken());
+            Assert.assertEquals("Wrong instance Url", new URI(TEST_INSTANCE_URL), restClient.getClientInfo().instanceUrl);
         } catch (AccountInfoNotFoundException e) {
-            fail("Did not expect AccountInfoNotFoundException");
+            Assert.fail("Did not expect AccountInfoNotFoundException");
         }
     }
 
@@ -410,6 +431,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
      * Test getRestClient - when there is an account
      * @throws URISyntaxException
      */
+    @Test
     public void testGetRestClientWithAccountSetup() throws URISyntaxException {
 
         // Make sure we have no accounts initially
@@ -430,17 +452,18 @@ public class ClientManagerTest extends InstrumentationTestCase {
         // Wait for getRestClient to complete
         try {
             RestClient restClient = q.poll(10L, TimeUnit.SECONDS);
-            assertNotNull("RestClient expected", restClient);
-            assertEquals("Wrong authToken", TEST_AUTH_TOKEN, restClient.getAuthToken());
-            assertEquals("Wrong instance Url", new URI(TEST_INSTANCE_URL), restClient.getClientInfo().instanceUrl);
+            Assert.assertNotNull("RestClient expected", restClient);
+            Assert.assertEquals("Wrong authToken", TEST_AUTH_TOKEN, restClient.getAuthToken());
+            Assert.assertEquals("Wrong instance Url", new URI(TEST_INSTANCE_URL), restClient.getClientInfo().instanceUrl);
         } catch (InterruptedException e) {
-            fail("getRestClient did not return after 5s");
+            Assert.fail("getRestClient did not return after 5s");
         }
     }
 
     /**
      * Test removeAccountAsync
      */
+    @Test
     public void testRemoveAccountAsync() throws Exception {
 
         // Make sure we have no accounts initially
@@ -451,7 +474,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 
         // Check that the accounts did get created
         Account[] accounts = clientManager.getAccounts();
-        assertEquals("Two accounts should have been returned", 1, accounts.length);
+        Assert.assertEquals("Two accounts should have been returned", 1, accounts.length);
 
         // Call removeAccountAsync
         final BlockingQueue<AccountManagerFuture<Boolean>> q = new ArrayBlockingQueue<AccountManagerFuture<Boolean>>(1);
@@ -466,14 +489,14 @@ public class ClientManagerTest extends InstrumentationTestCase {
         // Wait for removeAccountAsync to complete
         try {
             AccountManagerFuture<Boolean> f = q.poll(10L, TimeUnit.SECONDS);
-            assertNotNull("AccountManagerFuture expected", f);
-            assertTrue("Removal should have returned true", f.getResult());
+            Assert.assertNotNull("AccountManagerFuture expected", f);
+            Assert.assertTrue("Removal should have returned true", f.getResult());
 
             // Make sure there are no accounts left
             assertNoAccounts();
 
         } catch (InterruptedException e) {
-            fail("removeAccountAsync did not return after 5s");
+            Assert.fail("removeAccountAsync did not return after 5s");
         }
     }
 
@@ -481,7 +504,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
      * Checks there are no test accounts
      */
     private void assertNoAccounts() {
-        assertEquals("There should be no accounts", 0, accountManager.getAccountsByType(TEST_ACCOUNT_TYPE).length);
+        Assert.assertEquals("There should be no accounts", 0, accountManager.getAccountsByType(TEST_ACCOUNT_TYPE).length);
     }
 
     /**
@@ -498,8 +521,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
     private Bundle createTestAccount() {
         return clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN,
                 TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_CLIENT_ID,
-                TEST_ORG_ID, TEST_USER_ID, null, null, null, TEST_FIRST_NAME,
-                TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL, testOauthValues);
+                TEST_ORG_ID, TEST_USER_ID, null, null, TEST_FIRST_NAME, TEST_LAST_NAME,
+                TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL, testOauthValues);
     }
 
     /**
@@ -510,7 +533,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
         return clientManager.createNewAccount(TEST_OTHER_ACCOUNT_NAME, TEST_OTHER_USERNAME,
                 TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL,
                 TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID_2, TEST_USER_ID_2,
-                null, null, null, TEST_FIRST_NAME, TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL,
+                null, null, TEST_FIRST_NAME, TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL,
                 TEST_THUMBNAIL_URL, testOauthValues);
     }
 }

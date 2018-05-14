@@ -80,7 +80,6 @@ public class SyncUpTarget extends SyncTarget {
     public static final String CREATE_FIELDLIST = "createFieldlist";
     public static final String UPDATE_FIELDLIST = "updateFieldlist";
 
-
     // Fields
     protected List<String> createFieldlist;
     protected List<String> updateFieldlist;
@@ -177,7 +176,6 @@ public class SyncUpTarget extends SyncTarget {
     protected String createOnServer(SyncManager syncManager, String objectType, Map<String, Object> fields) throws IOException, JSONException {
         RestRequest request = RestRequest.getRequestForCreate(syncManager.apiVersion, objectType, fields);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
-
         return response.isSuccess()
                 ? response.asJSONObject().getString(Constants.LID)
                 : null;
@@ -194,7 +192,6 @@ public class SyncUpTarget extends SyncTarget {
     public int deleteOnServer(SyncManager syncManager, JSONObject record) throws JSONException, IOException {
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
         final String objectId = record.getString(getIdFieldName());
-
         return deleteOnServer(syncManager, objectType, objectId);
     }
 
@@ -210,7 +207,6 @@ public class SyncUpTarget extends SyncTarget {
     protected int deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws IOException {
         RestRequest request = RestRequest.getRequestForDelete(syncManager.apiVersion, objectType, objectId);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
-
         return response.getStatusCode();
     }
 
@@ -228,7 +224,6 @@ public class SyncUpTarget extends SyncTarget {
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
         final String objectId = record.getString(getIdFieldName());
         final Map<String,Object> fields = buildFieldsMap(record, fieldlist, getIdFieldName(), getModificationDateFieldName());
-
         return updateOnServer(syncManager, objectType, objectId, fields);
     }
 
@@ -245,7 +240,6 @@ public class SyncUpTarget extends SyncTarget {
     protected int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws IOException {
         RestRequest request = RestRequest.getRequestForUpdate(syncManager.apiVersion, objectType, objectId, fields);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
-
         return response.getStatusCode();
     }
 
@@ -258,10 +252,8 @@ public class SyncUpTarget extends SyncTarget {
     protected RecordModDate fetchLastModifiedDate(SyncManager syncManager, JSONObject record) throws JSONException, IOException {
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
         final String objectId = record.getString(getIdFieldName());
-
-        RestRequest lastModRequest = RestRequest.getRequestForRetrieve(syncManager.apiVersion, objectType, objectId, Arrays.asList(new String[]{getModificationDateFieldName()}));
+        RestRequest lastModRequest = RestRequest.getRequestForRetrieve(syncManager.apiVersion, objectType, objectId, Arrays.asList(getModificationDateFieldName()));
         RestResponse lastModResponse = syncManager.sendSyncWithSmartSyncUserAgent(lastModRequest);
-
         return new RecordModDate(
                 lastModResponse.isSuccess() ? lastModResponse.asJSONObject().getString(getModificationDateFieldName()) : null,
                 lastModResponse.getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND
@@ -284,14 +276,11 @@ public class SyncUpTarget extends SyncTarget {
         if (isLocallyCreated(record)) {
             return true;
         }
-
         final RecordModDate localModDate = new RecordModDate(
                 JSONObjectHelper.optString(record, getModificationDateFieldName()),
                 isLocallyDeleted(record)
         );
-
         final RecordModDate remoteModDate = fetchLastModifiedDate(syncManager, record);
-
         return isNewerThanServer(localModDate, remoteModDate);
     }
 
@@ -304,15 +293,10 @@ public class SyncUpTarget extends SyncTarget {
      * @return
      */
     protected boolean isNewerThanServer(RecordModDate localModDate, RecordModDate remoteModDate) {
-
-        if ((localModDate.timestamp != null && remoteModDate.timestamp != null
+        return (localModDate.timestamp != null && remoteModDate.timestamp != null
                 && localModDate.timestamp.compareTo(remoteModDate.timestamp) >= 0) // we got a local and remote mod date and the local one is greater
-            || (localModDate.isDeleted && remoteModDate.isDeleted)                 // or we have a local delete and a remote delete
-            || localModDate.timestamp == null)                                     // or we don't have a local mod date
-        {
-            return true;
-        }
-        return false;
+                || (localModDate.isDeleted && remoteModDate.isDeleted)                 // or we have a local delete and a remote delete
+                || localModDate.timestamp == null;
     }
 
     /**
@@ -347,6 +331,7 @@ public class SyncUpTarget extends SyncTarget {
      * Helper class used by isNewerThanServer
      */
     protected static class RecordModDate {
+
         public final String timestamp;   // time stamp in the Constants.TIMESTAMP_FORMAT format - can be null if unknown
         public final boolean isDeleted;  // true if the record was deleted
 

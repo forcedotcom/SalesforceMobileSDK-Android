@@ -26,10 +26,8 @@
  */
 package com.salesforce.samples.restexplorer;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
 import android.view.View;
@@ -42,21 +40,17 @@ import android.widget.RadioGroup;
 import android.widget.TabHost;
 import android.widget.TextView;
 
-import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
-import com.salesforce.androidsdk.rest.ClientManager;
-import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.rest.files.FileRequests;
-import com.salesforce.androidsdk.security.PasscodeManager;
+import com.salesforce.androidsdk.ui.SalesforceActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import com.salesforce.androidsdk.util.UserSwitchReceiver;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -78,16 +72,14 @@ import okhttp3.RequestBody;
 /**
  * Main activity for REST explorer.
  */
-public class ExplorerActivity extends Activity {
+public class ExplorerActivity extends SalesforceActivity {
 
 	private static final String DOUBLE_LINE = "==============================================================================";
 	private static final String SINGLE_LINE = "------------------------------------------------------------------------------";
 
-	private PasscodeManager passcodeManager;
 	private String apiVersion;
 	private RestClient client;
 	private TextView resultText;
-    private UserSwitchReceiver userSwitchReceiver;
     private TabHost tabHost;
     private LogoutDialogFragment logoutConfirmationDialog;
 
@@ -101,7 +93,6 @@ public class ExplorerActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
 		apiVersion = ApiVersionStrings.getVersionNumber(this);
 		setContentView(R.layout.explorer);
 		tabHost = (TabHost) findViewById(android.R.id.tabhost);
@@ -133,56 +124,12 @@ public class ExplorerActivity extends Activity {
 		// Makes the result area scrollable.
 		resultText = (TextView) findViewById(R.id.result_text);
 		resultText.setMovementMethod(new ScrollingMovementMethod());
-        userSwitchReceiver = new ExplorerUserSwitchReceiver();
-        registerReceiver(userSwitchReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
         logoutConfirmationDialog = new LogoutDialogFragment();
 	}
 
-	@Override 
-	public void onResume() {
-		super.onResume();
-		
-		// Hides everything until we are logged in.
-		findViewById(R.id.root).setVisibility(View.INVISIBLE);
-		
-		// Brings up the passcode screen if needed.
-		if (passcodeManager.onResume(this)) {
-			String accountType = SalesforceSDKManager.getInstance().getAccountType();
-
-			// Gets a rest client.
-			new ClientManager(this, accountType, SalesforceSDKManager.getInstance().getLoginOptions(),
-					SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
-
-				@Override
-				public void authenticatedRestClient(RestClient client) {
-					if (client == null) {
-						SalesforceSDKManager.getInstance().logout(ExplorerActivity.this);
-						return;
-					}
-					ExplorerActivity.this.client = client;
-					
-					// Shows everything.
-					findViewById(R.id.root).setVisibility(View.VISIBLE);				
-				}
-			});
-		}
-	}
-
-    @Override
-    public void onPause() {
-    	super.onPause();
-    	passcodeManager.onPause(this);
-    }
-
-    @Override
-    public void onDestroy() {
-    	unregisterReceiver(userSwitchReceiver);
-    	super.onDestroy();
-    }
-
 	@Override
-	public void onUserInteraction() {
-		passcodeManager.recordUserInteraction();
+	public void onResume(RestClient client) {
+		this.client = client;
 	}
 
 	/**
@@ -858,40 +805,4 @@ public class ExplorerActivity extends Activity {
 							.toArray(new String[] {})));
 		}
 	}
-
-    /**
-     * Refreshes the client if the user has been switched.
-     */
-	private void refreshIfUserSwitched() {
-		if (passcodeManager.onResume(this)) {
-			final String accountType = SalesforceSDKManager.getInstance().getAccountType();
-
-			// Gets a rest client.
-			new ClientManager(this, accountType, SalesforceSDKManager.getInstance().getLoginOptions(),
-					SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
-
-				@Override
-				public void authenticatedRestClient(RestClient client) {
-					if (client == null) {
-						SalesforceSDKManager.getInstance().logout(ExplorerActivity.this);
-						return;
-					}
-					ExplorerActivity.this.client = client;
-				}
-			});
-		}
-	}
-
-    /**
-     * Acts on the user switch event.
-     *
-     * @author bhariharan
-     */
-    private class ExplorerUserSwitchReceiver extends UserSwitchReceiver {
-
-		@Override
-		protected void onUserSwitch() {
-			refreshIfUserSwitched();
-		}
-    }
 }

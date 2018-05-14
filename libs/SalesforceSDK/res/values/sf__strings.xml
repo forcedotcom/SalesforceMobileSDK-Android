@@ -23,6 +23,7 @@
 	<string name="sf__pick_server">Change Server</string>
 	<string name="sf__clear_cookies">Clear Cookies</string>
 	<string name="sf__reload">Reload</string>
+	<string name="sf__launch_idp">Launch IDP App</string>
 
 	<!-- Server picker -->
 	<string name="sf__server_picker_title">Pick Login Server</string>
@@ -60,6 +61,7 @@
 	<!-- Account switcher screen -->
 	<string name="sf__add_new_account">Add New Account</string>
 	<string name="sf__switch_account">Switch Account</string>
+	<string name="sf__idp_account_selector">Select Account</string>
 
     <!-- Managed app restrictions -->
     <string name="sf__app_service_hosts_description">Used to specify login hosts for the application.</string>
@@ -69,6 +71,7 @@
     <string name="sf__require_cert_auth_description">Used to specify if certificate based authentication is required for the application.</string>
     <string name="sf__managed_app_cert_alias_description">Used to specify the certificate alias required for the application.</string>
 	<string name="sf__only_show_authorized_hosts_description">Used to specify that only authorized hosts can be shown.</string>
+    <string name="sf__idp_app_url_scheme_description">Used to specify IDP app\'s URL scheme to be used.</string>
 
 	<!-- Fingerprint Auth Resources-->
 	<string name="sf__fingerprint_description">Confirm fingerprint to continue</string>
@@ -76,4 +79,8 @@
 	<string name="sf__fingerprint_cancel">Use Passcode</string>
 	<string name="sf__fingerprint_success">Success</string>
 	<string name="sf__fingerprint_failed">Fingerprint Authentication Failed</string>
+
+	<!-- Dev support -->
+	<string name="sf__dev_support_title">Mobile SDK Dev Support</string>
+
 </resources>

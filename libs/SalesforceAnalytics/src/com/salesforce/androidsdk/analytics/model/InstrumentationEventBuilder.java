@@ -298,9 +298,9 @@ public class InstrumentationEventBuilder {
                 final String subtype = networkInfo.getSubtypeName();
                 if (!TextUtils.isEmpty(type)) {
                     connectionType.append(type);
-                    connectionType.append(";");
                 }
                 if (!TextUtils.isEmpty(subtype)) {
+                    connectionType.append(";");
                     connectionType.append(subtype);
                 }
             }

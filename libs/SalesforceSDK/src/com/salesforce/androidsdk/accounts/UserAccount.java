@@ -56,7 +56,6 @@ public class UserAccount {
 	public static final String USER_ID = "userId";
 	public static final String USERNAME = "username";
 	public static final String ACCOUNT_NAME = "accountName";
-	public static final String CLIENT_ID = "clientId";
 	public static final String COMMUNITY_ID = "communityId";
 	public static final String COMMUNITY_URL = "communityUrl";
 	public static final String INTERNAL_COMMUNITY_ID = "000000000000000AAA";
@@ -82,7 +81,6 @@ public class UserAccount {
 	private String userId;
 	private String username;
 	private String accountName;
-	private String clientId;
 	private String communityId;
 	private String communityUrl;
     private String firstName;
@@ -105,34 +103,6 @@ public class UserAccount {
 	 * @param userId User ID.
 	 * @param username Username.
 	 * @param accountName Account name.
-	 * @param clientId Client ID.
-	 * @param communityId Community ID.
-	 * @param communityUrl Community URL.
-	 */
-    public UserAccount(String authToken, String refreshToken,
-                       String loginServer, String idUrl, String instanceServer,
-                       String orgId, String userId, String username, String accountName,
-                       String clientId, String communityId, String communityUrl) {
-        this(authToken, refreshToken,
-                loginServer, idUrl, instanceServer,
-                orgId, userId, username, accountName,
-                clientId, communityId, communityUrl,
-                null, null, null, null, null, null, null);
-    }
-
-	/**
-	 * Parameterized constructor.
-	 *
-	 * @param authToken Auth token.
-	 * @param refreshToken Refresh token.
-	 * @param loginServer Login server.
-	 * @param idUrl Identity URL.
-	 * @param instanceServer Instance server.
-	 * @param orgId Org ID.
-	 * @param userId User ID.
-	 * @param username Username.
-	 * @param accountName Account name.
-	 * @param clientId Client ID.
 	 * @param communityId Community ID.
 	 * @param communityUrl Community URL.
 	 * @param firstName First Name.
@@ -143,11 +113,11 @@ public class UserAccount {
 	 * @param thumbnailUrl Thumbnail URL.
 	 * @param additionalOauthValues Additional OAuth values.
 	 */
-	public UserAccount(String authToken, String refreshToken,
+	UserAccount(String authToken, String refreshToken,
 					   String loginServer, String idUrl, String instanceServer,
 					   String orgId, String userId, String username, String accountName,
-					   String clientId, String communityId, String communityUrl,
-					   String firstName, String lastName, String displayName, String email, String photoUrl,
+					   String communityId, String communityUrl, String firstName, String lastName,
+                       String displayName, String email, String photoUrl,
 					   String thumbnailUrl, Map<String, String> additionalOauthValues) {
 		this.authToken = authToken;
 		this.refreshToken = refreshToken;
@@ -158,7 +128,6 @@ public class UserAccount {
 		this.userId = userId;
 		this.username = username;
 		this.accountName = accountName;
-		this.clientId = clientId;
 		this.communityId = communityId;
 		this.communityUrl = communityUrl;
 		this.firstName = firstName;
@@ -186,7 +155,6 @@ public class UserAccount {
 			orgId = object.optString(ORG_ID, null);
 			userId = object.optString(USER_ID, null);
 			username = object.optString(USERNAME, null);
-			clientId = object.optString(CLIENT_ID, null);
 			if (!TextUtils.isEmpty(username) && !TextUtils.isEmpty(instanceServer)) {
 				accountName = String.format("%s (%s) (%s)", username, instanceServer,
 						SalesforceSDKManager.getInstance().getApplicationName());
@@ -219,7 +187,6 @@ public class UserAccount {
 			orgId = bundle.getString(ORG_ID);
 			userId = bundle.getString(USER_ID);
 			username = bundle.getString(USERNAME);
-			clientId = bundle.getString(CLIENT_ID);
 			accountName = bundle.getString(ACCOUNT_NAME);
 			communityId = bundle.getString(COMMUNITY_ID);
 			communityUrl = bundle.getString(COMMUNITY_URL);
@@ -313,15 +280,6 @@ public class UserAccount {
 	 */
 	public String getAccountName() {
 		return accountName;
-	}
-
-	/**
-	 * Returns the client ID for this user account.
-	 *
-	 * @return Client ID.
-	 */
-	public String getClientId() {
-		return clientId;
 	}
 
 	/**
@@ -598,7 +556,6 @@ public class UserAccount {
         	object.put(ORG_ID, orgId);
         	object.put(USER_ID, userId);
         	object.put(USERNAME, username);
-        	object.put(CLIENT_ID, clientId);
         	object.put(COMMUNITY_ID, communityId);
         	object.put(COMMUNITY_URL, communityUrl);
             object.put(FIRST_NAME, firstName);
@@ -630,7 +587,6 @@ public class UserAccount {
         object.putString(ORG_ID, orgId);
         object.putString(USER_ID, userId);
         object.putString(USERNAME, username);
-        object.putString(CLIENT_ID, clientId);
         object.putString(ACCOUNT_NAME, accountName);
         object.putString(COMMUNITY_ID, communityId);
         object.putString(COMMUNITY_URL, communityUrl);

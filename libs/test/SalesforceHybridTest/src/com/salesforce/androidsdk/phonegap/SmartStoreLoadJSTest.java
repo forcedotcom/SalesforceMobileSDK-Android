@@ -26,59 +26,49 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
+import android.support.test.filters.LargeTest;
+
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.util.Arrays;
 import java.util.List;
 
-import com.salesforce.androidsdk.phonegap.util.test.JSTestCase;
-
-
 /**
- * Running javascript tests for SmartStore plugin
+ * Running javascript tests for SmartStore plugin.
  */
+@RunWith(Parameterized.class)
+@LargeTest
 public class SmartStoreLoadJSTest extends JSTestCase {
 
-    public SmartStoreLoadJSTest() {
-        super("SmartStoreLoadTestSuite");
-    }
-    
-    @Override
-    protected int getMaxRuntimeInSecondsForTest(String testName) {
-    	return 60;
-    }    
-    
-    @Override
-    public List<String> getTestNames() {
-    	return Arrays.asList(new String[] {
+    private static final String JS_SUITE = "SmartStoreLoadTestSuite";
+
+    @Parameterized.Parameter
+    public String testName;
+
+    @Parameterized.Parameters(name = "{0}")
+    public static List<String> data() {
+        return Arrays.asList(new String[]{
                 "testNumerousFields",
                 "testIncreasingFieldLength",
                 "testAddAndRetrieveManyEntries",
                 "testUpsertManyEntries",
                 "testUpsertAndQueryEntries",
                 "testUpsertConcurrentEntries"
+
         });
     }
-    
-    public void testNumerousFields()  {
-    	runTest("testNumerousFields");
-    }
-    
-    public void testIncreasingFieldLength() {
-    	runTest("testIncreasingFieldLength");
+
+    @BeforeClass
+    public static void runJSTestSuite() throws InterruptedException {
+        // FIXME Change timeout back to 60 when we stop using ARM Emulators
+        JSTestCase.runJSTestSuite(JS_SUITE, data(), 180);
     }
 
-    public void testAddAndRetrieveManyEntries()  {
-    	runTest("testAddAndRetrieveManyEntries");
-    }
-    
-    public void testUpsertManyEntries()  {
-    	runTest("testUpsertManyEntries");
-    }
-    
-    public void testUpsertAndQueryEntries()  {
-    	runTest("testUpsertAndQueryEntries");
-    }
-    
-    public void testUpsertConcurrentEntries() {
-    	runTest("testUpsertConcurrentEntries");
+    @Test
+    public void test() {
+        runTest(JS_SUITE, testName);
     }
 }

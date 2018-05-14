@@ -252,11 +252,6 @@ public class SalesforceSDKUpgradeManager {
                             }
                         }
                     }
-                    final String encClientSecret = acctManager.getUserData(account, AuthenticatorService.KEY_CLIENT_SECRET);
-                    String clientSecret = null;
-                    if (encClientSecret != null) {
-                        clientSecret = Encryptor.decrypt(encClientSecret, oldKey);
-                    }
                     final String encCommunityId = acctManager.getUserData(account, AuthenticatorService.KEY_COMMUNITY_ID);
                     String communityId = null;
                     if (encCommunityId != null) {
@@ -299,9 +294,6 @@ public class SalesforceSDKUpgradeManager {
                                 acctManager.setUserData(account, key, Encryptor.encrypt(value, newKey));
                             }
                         }
-                    }
-                    if (clientSecret != null) {
-                        acctManager.setUserData(account, AuthenticatorService.KEY_CLIENT_SECRET, Encryptor.encrypt(clientSecret, newKey));
                     }
                     if (communityId != null) {
                         acctManager.setUserData(account, AuthenticatorService.KEY_COMMUNITY_ID, Encryptor.encrypt(communityId, newKey));

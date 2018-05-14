@@ -45,7 +45,8 @@ public class AppConfiguratorState {
 		ManagedAppCallbackURL,
 		RequireCertAuth,
 		ManagedAppCertAlias,
-        OnlyShowAuthorizedHosts
+        OnlyShowAuthorizedHosts,
+        IDPAppURLScheme
     }
 
     // Default values
@@ -63,6 +64,7 @@ public class AppConfiguratorState {
     private boolean requireCertAuth;
     private String certAlias;
     private boolean onlyShowAuthorizedHosts;
+    private String idpAppURLScheme;
 
     // Singleton instance
     private static AppConfiguratorState INSTANCE;
@@ -83,6 +85,7 @@ public class AppConfiguratorState {
         requireCertAuth = prefs.getBoolean(ConfigKey.RequireCertAuth.name(), false);
         certAlias = prefs.getString(ConfigKey.ManagedAppCertAlias.name(), null);
         onlyShowAuthorizedHosts = prefs.getBoolean(ConfigKey.OnlyShowAuthorizedHosts.name(), false);
+        idpAppURLScheme = prefs.getString(ConfigKey.IDPAppURLScheme.name(), null);
     }
 
     public String getTargetApp() {
@@ -117,6 +120,10 @@ public class AppConfiguratorState {
         return onlyShowAuthorizedHosts;
     }
 
+    public String getIDPAppURLScheme() {
+        return idpAppURLScheme;
+    }
+
     /**
      * Save configurations to preferences and as app restrictions on target app
      * @param loginServers
@@ -126,11 +133,12 @@ public class AppConfiguratorState {
      * @param requireCertAuth
      * @param certAlias
      * @param onlyShowAuthorizedHosts
+     * @param idpAppURLScheme
      */
     public void saveConfigurations(Context ctx, String loginServers,
     		String loginServersLabels, String remoteAccessConsumerKey,
     		String oauthRedirectURI, boolean requireCertAuth, String certAlias,
-            boolean onlyShowAuthorizedHosts) {
+            boolean onlyShowAuthorizedHosts, String idpAppURLScheme) {
 
         // Save to fields
         this.loginServers = loginServers;
@@ -140,6 +148,7 @@ public class AppConfiguratorState {
         this.requireCertAuth = requireCertAuth;
         this.certAlias = certAlias;
         this.onlyShowAuthorizedHosts = onlyShowAuthorizedHosts;
+        this.idpAppURLScheme = idpAppURLScheme;
 
         // Save to preferences
         ctx.getSharedPreferences(PREFS_KEY, Context.MODE_PRIVATE)
@@ -151,6 +160,7 @@ public class AppConfiguratorState {
                 .putBoolean(ConfigKey.RequireCertAuth.name(), requireCertAuth)
                 .putString(ConfigKey.ManagedAppCertAlias.name(), certAlias)
                 .putBoolean(ConfigKey.OnlyShowAuthorizedHosts.name(), onlyShowAuthorizedHosts)
+                .putString(ConfigKey.IDPAppURLScheme.name(), idpAppURLScheme)
                 .apply();
 
         // Save to app restrictions on target app
@@ -164,6 +174,7 @@ public class AppConfiguratorState {
         restrictions.putBoolean(ConfigKey.RequireCertAuth.name(), requireCertAuth);
         if (!certAlias.isEmpty()) restrictions.putString(ConfigKey.ManagedAppCertAlias.name(), certAlias);
         restrictions.putBoolean(ConfigKey.OnlyShowAuthorizedHosts.name(), onlyShowAuthorizedHosts);
+        if (!idpAppURLScheme.isEmpty()) restrictions.putString(ConfigKey.IDPAppURLScheme.name(), idpAppURLScheme);
         devicePolicyManager.setApplicationRestrictions(
                 AppConfiguratorAdminReceiver.getComponentName(ctx),
                 getTargetApp(), restrictions);

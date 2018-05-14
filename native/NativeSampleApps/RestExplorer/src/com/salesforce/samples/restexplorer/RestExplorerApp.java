@@ -38,7 +38,14 @@ public class RestExplorerApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SalesforceSDKManager.initNative(getApplicationContext(), null, ExplorerActivity.class);
+		SalesforceSDKManager.initNative(getApplicationContext(), ExplorerActivity.class);
+
+		/*
+         * Uncomment the following line to enable IDP login flow. This will allow the user to
+         * either authenticate using the current app or use a designated IDP app for login.
+         * Replace 'idpAppURIScheme' with the URI scheme of the IDP app meant to be used.
+         */
+        // SalesforceSDKManager.getInstance().setIDPAppURIScheme(idpAppURIScheme);
 
 		/*
          * Uncomment the following line to enable browser based login. This will use a

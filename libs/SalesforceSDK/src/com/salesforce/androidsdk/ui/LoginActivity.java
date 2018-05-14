@@ -35,27 +35,39 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.security.KeyChain;
+import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.WebSettings;
+import android.webkit.WebSettings.LayoutAlgorithm;
 import android.webkit.WebView;
+import android.widget.Button;
+import android.widget.Toast;
 
+import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity;
+import com.salesforce.androidsdk.auth.idp.IDPInititatedLoginReceiver;
+import com.salesforce.androidsdk.auth.idp.SPRequestHandler;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents;
+import com.salesforce.androidsdk.util.AuthConfigTask;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import com.salesforce.androidsdk.util.UriFragmentParser;
 
 import java.util.List;
@@ -73,39 +85,48 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		implements OAuthWebviewHelperEvents {
 
     public static final int PICK_SERVER_REQUEST_CODE = 10;
+    private static final String TAG = "LoginActivity";
 
-    private SalesforceR salesforceR;
 	private boolean wasBackgrounded;
 	private OAuthWebviewHelper webviewHelper;
     private ChangeServerReceiver changeServerReceiver;
     private boolean receiverRegistered;
-
-    /**************************************************************************************************
-     *
-     * Activity lifecycle
-     *
-     **************************************************************************************************/
+    private SPRequestHandler spRequestHandler;
+    private SPAuthCallback authCallback;
+    private String userHint;
+    private String spActivityName;
+    private Bundle spActivityExtras;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-        // Object which allows reference to resources living outside the SDK
-        salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
-
-        // Getting login options from intent's extras
+        // Getting login options from intent's extras.
         final LoginOptions loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
 
-        // Protect against screenshots
+        // Protect against screenshots.
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
                 WindowManager.LayoutParams.FLAG_SECURE);
 
-        // Setup content view
-        setContentView(salesforceR.layoutLogin());
+        // Fetches auth config if required.
+        try {
+            (new AuthConfigTask(null)).execute().get();
+        } catch (Exception e) {
+            SalesforceSDKLogger.e(TAG, "Exception occurred while fetching auth config", e);
+        }
+
+        // Setup content view.
+        setContentView(R.layout.sf__login);
+		if (SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled()) {
+            final Button button = findViewById(R.id.sf__idp_login_button);
+            button.setVisibility(View.VISIBLE);
+        }
 
         // Setup the WebView.
-        final WebView webView = (WebView) findViewById(salesforceR.idLoginWebView());
+        final WebView webView = findViewById(R.id.sf__oauth_webview);
         final WebSettings webSettings = webView.getSettings();
+        webSettings.setUseWideViewPort(true);
+        webSettings.setLayoutAlgorithm(LayoutAlgorithm.NORMAL);
         webSettings.setJavaScriptEnabled(true);
         webSettings.setAllowFileAccessFromFileURLs(true);
         webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
@@ -123,6 +144,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
             registerReceiver(changeServerReceiver, changeServerFilter);
             receiverRegistered = true;
         }
+        authCallback = new SPAuthCallback();
 	}
 
 	@Override
@@ -137,16 +159,38 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	@Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+
+        // If this is a callback from Chrome, processes it and does nothing else.
         if (isChromeCallback(intent)) {
             completeAuthFlow(intent);
+            return;
+        }
+
+        // Reloads login page for every new intent to ensure the correct login server is selected.
+        webviewHelper.loadLoginPage();
+
+        // Launches IDP login flow directly for IDP initiated login flow.
+        if (intent != null) {
+            final Bundle extras = intent.getExtras();
+            if (extras != null) {
+                userHint = extras.getString(IDPInititatedLoginReceiver.USER_HINT_KEY);
+                spActivityName = extras.getString(IDPInititatedLoginReceiver.SP_ACTVITY_NAME_KEY);
+                spActivityExtras = extras.getBundle(IDPInititatedLoginReceiver.SP_ACTVITY_EXTRAS_KEY);
+                boolean isIdpInitFlow = extras.getBoolean(IDPInititatedLoginReceiver.IDP_INIT_LOGIN_KEY);
+                if (isIdpInitFlow) {
+                    onIDPLoginClick(null);
+                }
+            }
         }
     }
 
     protected void certAuthOrLogin() {
         if (shouldUseCertBasedAuth()) {
             final String alias = RuntimeConfig.getRuntimeConfig(this).getString(ConfigKey.ManagedAppCertAlias);
+            SalesforceSDKLogger.d(TAG, "Cert based login flow being triggered with alias: " + alias);
             KeyChain.choosePrivateKeyAlias(this, webviewHelper, null, null, null, 0, alias);
         } else {
+            SalesforceSDKLogger.d(TAG, "User agent login flow being triggered");
             webviewHelper.loadLoginPage();
         }
     }
@@ -224,12 +268,12 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	protected boolean fixBackButtonBehavior(int keyCode) {
 		if (keyCode == KeyEvent.KEYCODE_BACK) {
 
-		/*
-		 * If there are no accounts signed in, we need the login screen
-		 * to go away, and go back to the home screen. However, if the
-		 * login screen has been brought up from the switcher screen,
-		 * the back button should take the user back to the previous screen.
-		 */
+            /*
+		     * If there are no accounts signed in, we need the login screen
+		     * to go away, and go back to the home screen. However, if the
+		     * login screen has been brought up from the switcher screen,
+		     * the back button should take the user back to the previous screen.
+		     */
 			final UserAccountManager accMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
 			if (accMgr.getAuthenticatedUsers() == null) {
 				wasBackgrounded = true;
@@ -252,20 +296,20 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(salesforceR.menuLogin(), menu);
+        getMenuInflater().inflate(R.menu.sf__login, menu);
         return super.onCreateOptionsMenu(menu);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int itemId = item.getItemId();
-		if (itemId == salesforceR.idItemClearCookies()) {
+		if (itemId == R.id.sf__menu_clear_cookies) {
         	onClearCookiesClick(null);
         	return true;
-        } else if (itemId == salesforceR.idItemPickServer()) {
+        } else if (itemId == R.id.sf__menu_pick_server) {
         	onPickServerClick(null);
         	return true;
-        } else if (itemId == salesforceR.idItemReload()) {
+        } else if (itemId == R.id.sf__menu_reload) {
         	onReloadClick(null);
         	return true;
         } else {
@@ -308,6 +352,18 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		webviewHelper.loadLoginPage();
 	}
 
+    /**
+     * Called when the IDP login button is clicked.
+     *
+     * @param v IDP login button.
+     */
+    public void onIDPLoginClick(View v) {
+        final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url.trim();
+        SalesforceSDKLogger.d(TAG, "Launching IDP app for authentication with login host: " + loginServer);
+        spRequestHandler = new SPRequestHandler(loginServer, userHint, authCallback);
+        spRequestHandler.launchIDPApp(this);
+    }
+
 	/**
 	 * Called when "Reload" button is clicked.
 	 * Reloads login page.
@@ -323,49 +379,84 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	 * @param v
 	 */
 	public void onPickServerClick(View v) {
-		Intent i = new Intent(this, ServerPickerActivity.class);
+		final Intent i = new Intent(this, ServerPickerActivity.class);
 	    startActivityForResult(i, PICK_SERVER_REQUEST_CODE);
 	}
 
-	/**
-	 * Called when ServerPickerActivity completes.
-	 * Reload login page.
-	 */
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (requestCode == PasscodeManager.PASSCODE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
 			webviewHelper.onNewPasscode();
-		} else {
+		} else if (requestCode == SPRequestHandler.IDP_REQUEST_CODE) {
+            spRequestHandler.handleIDPResponse(resultCode, data);
+        } else {
 	        super.onActivityResult(requestCode, resultCode, data);
 	    }
 	}
 
 	@Override
-	public void finish() {
-        initAnalyticsManager();
+	public void finish(UserAccount userAccount) {
+        initAnalyticsManager(userAccount);
         final UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
         final List<UserAccount> authenticatedUsers = userAccountManager.getAuthenticatedUsers();
         final int numAuthenticatedUsers = authenticatedUsers == null ? 0 : authenticatedUsers.size();
-        final int userSwitchType;
-        if (numAuthenticatedUsers == 1) {
 
-            // We've already authenticated the first user, so there should be one.
-            userSwitchType = UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN;
-        } else if (numAuthenticatedUsers > 1) {
+        /*
+         * Sends user switch intents only if this login flow is not a login triggered due
+         * to an incoming authentication request from an SP app or first user to login on IDP.
+         * If it is an incoming SP request, we should add the user account but NOT switch to
+         * the user or send user switch intents unless it's the first user being logged in.
+         */
+        boolean isFirstUserOrNotIDPFlow = !SalesforceSDKManager.getInstance().isIDPAppLoginFlowActive()
+                || (numAuthenticatedUsers <= 1);
+        if (isFirstUserOrNotIDPFlow) {
+            final int userSwitchType;
+            if (numAuthenticatedUsers == 1) {
 
-            // Otherwise we're logging in with an additional user.
-            userSwitchType = UserAccountManager.USER_SWITCH_TYPE_LOGIN;
-        } else {
+                // We've already authenticated the first user, so there should be one.
+                userSwitchType = UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN;
+            } else if (numAuthenticatedUsers > 1) {
 
-            // This should never happen but if it does, pass in the "unknown" value.
-            userSwitchType = UserAccountManager.USER_SWITCH_TYPE_DEFAULT;
+                // Otherwise we're logging in with an additional user.
+                userSwitchType = UserAccountManager.USER_SWITCH_TYPE_LOGIN;
+            } else {
+
+                // This should never happen but if it does, pass in the "unknown" value.
+                userSwitchType = UserAccountManager.USER_SWITCH_TYPE_DEFAULT;
+            }
+            userAccountManager.sendUserSwitchIntent(userSwitchType, null);
         }
-        userAccountManager.sendUserSwitchIntent(userSwitchType, null);
-        super.finish();
+
+        /*
+         * Passes back the added user account object if this is a login flow in the IDP app
+         * initiated by an incoming request for authentication from an SP app.
+         */
+        if (userAccount != null && SalesforceSDKManager.getInstance().isIDPAppLoginFlowActive()) {
+            final Intent intent = new Intent(IDPAccountPickerActivity.IDP_LOGIN_COMPLETE_ACTION);
+            intent.putExtra(IDPAccountPickerActivity.USER_ACCOUNT_KEY, userAccount.toBundle());
+            sendBroadcast(intent);
+        }
+
+        // If the IDP app specified a component to launch after login, launches that component.
+        if (!TextUtils.isEmpty(spActivityName)) {
+            try {
+                final Intent intent = new Intent(this, Class.forName(spActivityName));
+                intent.addCategory(Intent.CATEGORY_DEFAULT);
+                intent.putExtra(IDPInititatedLoginReceiver.SP_ACTVITY_EXTRAS_KEY, spActivityExtras);
+                startActivity(intent);
+            } catch (Exception e) {
+                SalesforceSDKLogger.e(TAG, "Could not start activity", e);
+            }
+        }
+
+        // Cleans up some state before dismissing activity.
+        userHint = null;
+        spActivityName = null;
+        spActivityExtras = null;
+        finish();
 	}
 
-    private void initAnalyticsManager() {
-        final UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+    private void initAnalyticsManager(UserAccount account) {
         final SalesforceAnalyticsManager analyticsManager = SalesforceAnalyticsManager.getInstance(account);
 	    if (analyticsManager != null) {
             analyticsManager.updateLoggingPrefs();
@@ -382,6 +473,39 @@ public class LoginActivity extends AccountAuthenticatorActivity
                     webviewHelper.loadLoginPage();
                 }
             }
+        }
+    }
+
+    /**
+     * Callbacks for SP authentication flow.
+     *
+     * @author bhariharan
+     */
+    public class SPAuthCallback {
+
+        /**
+         * Called when the flow was successful and token response is received.
+         *
+         * @param tokenResponse Token response.
+         */
+        public void receivedTokenResponse(OAuth2.TokenEndpointResponse tokenResponse) {
+            webviewHelper.onAuthFlowComplete(tokenResponse);
+        }
+
+        /**
+         * Called when the flow was not successful.
+         *
+         * @param errorMessage Error message.
+         */
+        public void receivedErrorResponse(final String errorMessage) {
+            final Handler toastHandler = new Handler(Looper.getMainLooper());
+            toastHandler.post(new Runnable() {
+
+                @Override
+                public void run() {
+                    Toast.makeText(getApplicationContext(), errorMessage, Toast.LENGTH_LONG).show();
+                }
+            });
         }
     }
 }

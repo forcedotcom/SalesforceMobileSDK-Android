@@ -31,11 +31,15 @@ import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.os.AsyncTask;
@@ -45,6 +49,8 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.webkit.CookieManager;
 
+import com.salesforce.androidsdk.BuildConfig;
+import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
@@ -53,10 +59,12 @@ import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity;
 import com.salesforce.androidsdk.config.AdminPermsManager;
 import com.salesforce.androidsdk.config.AdminSettingsManager;
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.config.LoginServerManager;
+import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.push.PushNotificationInterface;
 import com.salesforce.androidsdk.rest.ClientManager;
@@ -65,6 +73,7 @@ import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
+import com.salesforce.androidsdk.ui.DevInfoActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
@@ -72,11 +81,18 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
+import org.json.JSONObject;
+
+import java.lang.reflect.Field;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
  * This class serves as an interface to the various
@@ -91,7 +107,7 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "6.0.0.dev";
+    public static final String SDK_VERSION = "6.2.0.dev";
 
     /**
      * Intent action meant for instances of SalesforceSDKManager residing in other processes
@@ -128,11 +144,9 @@ public class SalesforceSDKManager {
      * Instance of the SalesforceSDKManager to use for this process.
      */
     protected static SalesforceSDKManager INSTANCE;
-
-    /**
-     * Timeout value for push un-registration.
-     */
     private static final int PUSH_UNREGISTER_TIMEOUT_MILLIS = 30000;
+    private static final String FEATURE_BROWSER_LOGIN = "BW";
+    private static final String FEATURE_APP_IS_SP = "SP";
 
     protected Context context;
     protected KeyInterface keyImpl;
@@ -155,11 +169,19 @@ public class SalesforceSDKManager {
     private List<String> additionalOauthKeys;
     private String loginBrand;
     private boolean browserLoginEnabled;
+    private String idpAppURIScheme;
+    private boolean idpAppLoginFlowActive;
 
     /**
      * PasscodeManager object lock.
      */
     private Object passcodeManagerLock = new Object();
+
+    /**
+     * Dev support
+     */
+    private AlertDialog devActionsDialog;
+    private Boolean isDevSupportEnabled; // NB: if null, it defaults to BuildConfig.DEBUG
 
     /**
      * Returns a singleton instance of this class.
@@ -204,11 +226,26 @@ public class SalesforceSDKManager {
 
     /**
      * Protected constructor.
+     *
+     * @param context Application context.
+     * @param mainActivity Activity that should be launched after the login flow.
+     * @param loginActivity Login activity.
+     */
+    protected SalesforceSDKManager(Context context, Class<? extends Activity> mainActivity,
+                                   Class<? extends Activity> loginActivity) {
+        this(context, null, mainActivity, loginActivity);
+    }
+
+    /**
+     * Protected constructor.
+     *
      * @param context Application context.
      * @param keyImpl Implementation for KeyInterface.
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
+     * @deprecated Will be removed in Mobile SDK 7.0. Use {@link #SalesforceSDKManager(Context, Class, Class)} instead.
      */
+    @Deprecated
     protected SalesforceSDKManager(Context context, KeyInterface keyImpl,
                                    Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
         this.uid = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
@@ -218,7 +255,7 @@ public class SalesforceSDKManager {
     	if (loginActivity != null) {
             this.loginActivityClass = loginActivity;
     	}
-        this.features  = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+    	this.features = new ConcurrentSkipListSet<>(String.CASE_INSENSITIVE_ORDER);
 
         /*
          * Checks if an analytics app name has already been set by the app.
@@ -272,9 +309,12 @@ public class SalesforceSDKManager {
     	}
     }
 
-    /*
-     * TODO: Mark this deprecated and remove it in Mobile SDK 7.0.
+    /**
+     * @deprecated This interface has been deprecated in Mobile SDK 6.1 and will be removed
+     * in Mobile SDK 7.0. This is required to upgrade an app built on an older version of
+     * Mobile SDK to Mobile SDK 6.x.
      */
+    @Deprecated
     public interface KeyInterface {
 
         /**
@@ -298,7 +338,11 @@ public class SalesforceSDKManager {
          *
          * @param name The name associated with the key.
          * @return The key used for encrypting salts and keys.
+         * @deprecated This interface has been deprecated in Mobile SDK 6.1 and will be removed
+         * in Mobile SDK 7.0. This is required to upgrade an app built on an older version of
+         * Mobile SDK to Mobile SDK 6.x.
          */
+        @Deprecated
         public String getKey(String name);
     }
 
@@ -320,10 +364,11 @@ public class SalesforceSDKManager {
      *
      * @param name The name associated with the key.
      * @return The key used for encrypting salts and keys.
+     * @deprecated This interface has been deprecated in Mobile SDK 6.1 and will be removed
+     * in Mobile SDK 7.0. This is required to upgrade an app built on an older version of
+     * Mobile SDK to Mobile SDK 6.x.
      */
-    /*
-     * TODO: Mark this deprecated and remove it in Mobile SDK 7.0.
-     */
+    @Deprecated
     public String getKey(String name) {
     	String key = null;
     	if (keyImpl != null) {
@@ -338,7 +383,9 @@ public class SalesforceSDKManager {
      *
      * Since 1.3, SalesforceSDK is packaged as a library project, so the SalesforceR subclass is no longer needed.
      * @return SalesforceR object which allows reference to resources living outside the SDK.
+     * @deprecated Will be removed in Mobile SDK 7.0. Resources can be referenced directly in a library project.
      */
+    @Deprecated
     public SalesforceR getSalesforceR() {
         return salesforceR;
     }
@@ -375,10 +422,10 @@ public class SalesforceSDKManager {
             final BootConfig config = BootConfig.getBootConfig(context);
             if (TextUtils.isEmpty(jwt)) {
                 loginOptions = new LoginOptions(url, config.getOauthRedirectURI(),
-                        config.getRemoteAccessConsumerKey(), config.getOauthScopes(), null);
+                        config.getRemoteAccessConsumerKey(), config.getOauthScopes());
             } else {
                 loginOptions = new LoginOptions(url, config.getOauthRedirectURI(),
-                        config.getRemoteAccessConsumerKey(), config.getOauthScopes(), null, jwt);
+                        config.getRemoteAccessConsumerKey(), config.getOauthScopes(), jwt);
             }
         } else {
             loginOptions.setJwt(jwt);
@@ -407,11 +454,26 @@ public class SalesforceSDKManager {
         // Upgrades to the latest version.
         SalesforceSDKUpgradeManager.getInstance().upgrade();
 
-        // Initializes the encryption module.
-        Encryptor.init(context);
-
         // Initializes the HTTP client.
         HttpAccess.init(context, INSTANCE.getUserAgent());
+
+        // Enables IDP login flow if it's set through MDM.
+        final RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(context);
+        final String idpAppUrlScheme = runtimeConfig.getString(RuntimeConfig.ConfigKey.IDPAppURLScheme);
+        if (!TextUtils.isEmpty(idpAppUrlScheme)) {
+            INSTANCE.idpAppURIScheme = idpAppUrlScheme;
+        }
+    }
+
+    /**
+     * Initializes required components. Native apps must call one overload of
+     * this method before using the Salesforce Mobile SDK.
+     *
+     * @param context Application context.
+     * @param mainActivity Activity that should be launched after the login flow.
+     */
+    public static void initNative(Context context, Class<? extends Activity> mainActivity) {
+        SalesforceSDKManager.init(context, null, mainActivity, LoginActivity.class);
     }
 
     /**
@@ -421,9 +483,24 @@ public class SalesforceSDKManager {
      * @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
      * @param mainActivity Activity that should be launched after the login flow.
+     * @deprecated Will be removed in Mobile SDK 7.0. Use {@link #initNative(Context, Class)} instead.
      */
+    @Deprecated
     public static void initNative(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity) {
         SalesforceSDKManager.init(context, keyImpl, mainActivity, LoginActivity.class);
+    }
+
+    /**
+     * Initializes required components. Native apps must call one overload of
+     * this method before using the Salesforce Mobile SDK.
+     *
+     * @param context Application context.
+     * @param mainActivity Activity that should be launched after the login flow.
+     * @param loginActivity Login activity.
+     */
+    public static void initNative(Context context, Class<? extends Activity> mainActivity,
+                                  Class<? extends Activity> loginActivity) {
+        SalesforceSDKManager.init(context, null, mainActivity, loginActivity);
     }
 
     /**
@@ -434,7 +511,9 @@ public class SalesforceSDKManager {
      * @param keyImpl Implementation of KeyInterface.
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
+     * @deprecated Will be removed in Mobile SDK 7.0. Use {@link #initNative(Context, Class, Class)} instead.
      */
+    @Deprecated
     public static void initNative(Context context, KeyInterface keyImpl,
                                   Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
         SalesforceSDKManager.init(context, keyImpl, mainActivity, loginActivity);
@@ -595,6 +674,81 @@ public class SalesforceSDKManager {
      */
     public synchronized void setBrowserLoginEnabled(boolean browserLoginEnabled) {
         this.browserLoginEnabled = browserLoginEnabled;
+        if (browserLoginEnabled) {
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BROWSER_LOGIN);
+        } else {
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_BROWSER_LOGIN);
+        }
+    }
+
+    /**
+     * Returns whether the IDP login flow is enabled.
+     *
+     * @return True - if IDP login flow is enabled, False - otherwise.
+     */
+    public boolean isIDPLoginFlowEnabled() {
+        boolean isIDPFlowEnabled = !TextUtils.isEmpty(idpAppURIScheme);
+        if (isIDPFlowEnabled) {
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_APP_IS_SP);
+        } else {
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_APP_IS_SP);
+        }
+        return isIDPFlowEnabled;
+    }
+
+    /**
+     * Checks for IDPAccountPickerActivity in manifest
+     * @return True - if this application is configured as a Identity Provider
+     */
+    private boolean isIdentityProvider() {
+        try {
+            PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(),
+                    PackageManager.GET_ACTIVITIES);
+            for (ActivityInfo activityInfo : packageInfo.activities) {
+                if (activityInfo.name.equals(IDPAccountPickerActivity.class.getName())) {
+                    return true;
+                }
+            }
+        } catch (NameNotFoundException e) {
+            SalesforceSDKLogger.e(TAG, "Exception occurred while examining application info", e);
+        }
+        return false;
+    }
+
+    /**
+     * Returns whether the IDP app is currently going through a login flow.
+     *
+     * @return True - if the IDP app is currently going through a login flow, False - otherwise.
+     */
+    public boolean isIDPAppLoginFlowActive() {
+        return idpAppLoginFlowActive;
+    }
+
+    /**
+     * Sets whether the IDP app is currently going through a login flow.
+     *
+     * @param idpAppLoginFlowActive True - if the IDP app is kicking off login, False - otherwise.
+     */
+    public synchronized void setIDPAppLoginFlowActive(boolean idpAppLoginFlowActive) {
+        this.idpAppLoginFlowActive = idpAppLoginFlowActive;
+    }
+
+    /**
+     * Returns the configured IDP app's URI scheme.
+     *
+     * @return IDP app's URI scheme.
+     */
+    public String getIDPAppURIScheme() {
+        return idpAppURIScheme;
+    }
+
+    /**
+     * Sets the IDP app's URI scheme.
+     *
+     * @param idpAppURIScheme IDP app's URI scheme.
+     */
+    public synchronized void setIDPAppURIScheme(String idpAppURIScheme) {
+        this.idpAppURIScheme = idpAppURIScheme;
     }
 
     /**
@@ -736,30 +890,15 @@ public class SalesforceSDKManager {
         }
 	}
 
-    /**
-     * Unregisters from push notifications for both GCM (Android) and SFDC, and waits either for
-     * unregistration to complete or for the operation to time out. The timeout period is defined
-     * in PUSH_UNREGISTER_TIMEOUT_MILLIS. 
-     *
-     * If timeout occurs while the user is logged in, this method attempts to unregister the push
-     * unregistration receiver, and then removes the user's account.
-     *
-     * @param clientMgr ClientManager instance.
-     * @param showLoginPage True - if the login page should be shown, False - otherwise.
-     * @param refreshToken Refresh token.
-     * @param loginServer Login server.
-     * @param account Account instance.
-     * @param frontActivity Front activity.
-     */
     private void unregisterPush(final ClientManager clientMgr, final boolean showLoginPage,
     		final String refreshToken, final String loginServer,
-            final Account account, final Activity frontActivity) {
+            final Account account, final Activity frontActivity, boolean isLastAccount) {
         final IntentFilter intentFilter = new IntentFilter(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT);
         final BroadcastReceiver pushUnregisterReceiver = new BroadcastReceiver() {
 
             @Override
             public void onReceive(Context context, Intent intent) {
-                if (intent.getAction().equals(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT)) {
+                if (PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT.equals(intent.getAction())) {
                     postPushUnregister(this, clientMgr, showLoginPage,
                     		refreshToken, loginServer, account, frontActivity);
                 }
@@ -769,7 +908,7 @@ public class SalesforceSDKManager {
 
         // Unregisters from notifications on logout.
 		final UserAccount userAcc = getUserAccountManager().buildUserAccount(account);
-        PushMessaging.unregister(context, userAcc);
+        PushMessaging.unregister(context, userAcc, isLastAccount);
 
         /*
          * Starts a background thread to wait up to the timeout period. If
@@ -778,7 +917,8 @@ public class SalesforceSDKManager {
         (new Thread() {
             public void run() {
                 long startTime = System.currentTimeMillis();
-                while ((System.currentTimeMillis() - startTime) < PUSH_UNREGISTER_TIMEOUT_MILLIS && !loggedOut) {
+                while ((System.currentTimeMillis() - startTime) < PUSH_UNREGISTER_TIMEOUT_MILLIS
+                        && !loggedOut) {
 
                     // Waits for half a second at a time.
                     SystemClock.sleep(500);
@@ -789,20 +929,6 @@ public class SalesforceSDKManager {
         }).start();
     }
 
-    /**
-     * This method is called either when unregistration for push notifications 
-     * is complete and the user has logged out, or when a timeout occurs while waiting. 
-     * If the user has not logged out, this method attempts to unregister the push 
-     * notification unregistration receiver, and then removes the user's account.
-     *
-     * @param pushReceiver Broadcast receiver.
-     * @param clientMgr ClientManager instance.
-     * @param showLoginPage True - if the login page should be shown, False - otherwise.
-     * @param refreshToken Refresh token.
-     * @param loginServer Login server.
-     * @param account Account instance.
-     * @param frontActivity Front activity.
-     */
     private synchronized void postPushUnregister(BroadcastReceiver pushReceiver,
     		final ClientManager clientMgr, final boolean showLoginPage,
     		final String refreshToken, final String loginServer,
@@ -811,7 +937,7 @@ public class SalesforceSDKManager {
             try {
                 context.unregisterReceiver(pushReceiver);
             } catch (Exception e) {
-                SalesforceSDKLogger.e(TAG, "Exception occurred while unregistering", e);
+                SalesforceSDKLogger.e(TAG, "Exception occurred while un-registering", e);
             }
     		removeAccount(clientMgr, showLoginPage, refreshToken, loginServer, account, frontActivity);
         }
@@ -877,10 +1003,11 @@ public class SalesforceSDKManager {
 		 * if the refresh token is available.
 		 */
 		final UserAccount userAcc = getUserAccountManager().buildUserAccount(account);
+		int numAccounts = mgr.getAccountsByType(getAccountType()).length;
     	if (PushMessaging.isRegistered(context, userAcc) && refreshToken != null) {
     		loggedOut = false;
     		unregisterPush(clientMgr, showLoginPage, refreshToken,
-    				loginServer, account, frontActivity);
+    				loginServer, account, frontActivity, (numAccounts == 1));
     	} else {
     		removeAccount(clientMgr, showLoginPage, refreshToken,
                     loginServer, account, frontActivity);
@@ -985,7 +1112,8 @@ public class SalesforceSDKManager {
         }
         String appTypeWithQualifier = getAppType() + qualifier;
         return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s",
-                SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion, appTypeWithQualifier, uid, TextUtils.join(".",features));
+                SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion,
+                appTypeWithQualifier, uid, TextUtils.join(".", features));
     }
 
     /**
@@ -1024,7 +1152,7 @@ public class SalesforceSDKManager {
      * @return Account type string.
      */
     public String getAccountType() {
-        return context.getString(getSalesforceR().stringAccountType());
+        return context.getString(R.string.account_type);
     }
 
     @Override
@@ -1034,7 +1162,7 @@ public class SalesforceSDKManager {
           .append("   accountType: ").append(getAccountType()).append("\n")
           .append("   userAgent: ").append(getUserAgent()).append("\n")
           .append("   mainActivityClass: ").append(getMainActivityClass()).append("\n")
-          .append("   isFileSystemEncrypted: ").append(Encryptor.isFileSystemEncrypted()).append("\n");
+          .append("\n");
         if (passcodeManager != null) {
 
             // passcodeManager may be null at startup if the app is running in debug mode.
@@ -1078,7 +1206,7 @@ public class SalesforceSDKManager {
      *
      * @author bhariharan
      */
-    private class RevokeTokenTask extends AsyncTask<Void, Void, Void> {
+    private static class RevokeTokenTask extends AsyncTask<Void, Void, Void> {
 
     	private String refreshToken;
     	private String loginServer;
@@ -1152,6 +1280,144 @@ public class SalesforceSDKManager {
         CookieManager.getInstance().flush();
     }
 
+
+    /**
+     * Show dev support dialog
+     */
+    public void showDevSupportDialog(final Activity frontActivity) {
+        if (!isDevSupportEnabled()) {
+            return;
+        }
+
+        frontActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                final LinkedHashMap<String, DevActionHandler> devActions = getDevActions(frontActivity);
+                final DevActionHandler[] devActionHandlers = devActions.values().toArray(new DevActionHandler[0]);
+
+                devActionsDialog =
+                        new AlertDialog.Builder(frontActivity)
+                                .setItems(
+                                        devActions.keySet().toArray(new String[0]),
+                                        new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                devActionHandlers[which].onSelected();
+                                                devActionsDialog = null;
+                                            }
+                                        })
+                                .setOnCancelListener(new DialogInterface.OnCancelListener() {
+                                    @Override
+                                    public void onCancel(DialogInterface dialog) {
+                                        devActionsDialog = null;
+                                    }
+                                })
+                                .setTitle(R.string.sf__dev_support_title)
+                                .create();
+                devActionsDialog.show();
+            }
+        });
+    }
+
+    /**
+     * Build dev actions to display in dev support dialog
+     * @param frontActivity
+     * @return map of title to dev actions handlers to display
+     */
+    protected LinkedHashMap<String,DevActionHandler> getDevActions(final Activity frontActivity) {
+        LinkedHashMap<String, DevActionHandler> devActions = new LinkedHashMap<>();
+        devActions.put(
+                "Show dev info", new DevActionHandler() {
+                    @Override
+                    public void onSelected() {
+                        frontActivity.startActivity(new Intent(frontActivity, DevInfoActivity.class));
+                    }
+                });
+        devActions.put(
+                "Logout", new DevActionHandler() {
+                    @Override
+                    public void onSelected() {
+                        SalesforceSDKManager.getInstance().logout(frontActivity);
+                    }
+                });
+        devActions.put(
+                "Switch user", new DevActionHandler() {
+                    @Override
+                    public void onSelected() {
+                        final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+                                SalesforceSDKManager.getInstance().getAccountSwitcherActivityClass());
+                        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        SalesforceSDKManager.getInstance().getAppContext().startActivity(i);
+                    }
+                });
+        return devActions;
+    }
+
+    /**
+     * If the application did not call setDevSupportEnabled(..) then it defaults to BuildConfig.DEBUG
+     * @return true if dev support is enabled
+     */
+    public boolean isDevSupportEnabled() {
+        return isDevSupportEnabled == null ? isDebugBuild() : isDevSupportEnabled.booleanValue();
+    }
+
+    /**
+     * Set isDevSupportEnabled
+     * @param isDevSupportEnabled
+     */
+    public void setDevSupportEnabled(boolean isDevSupportEnabled) {
+        this.isDevSupportEnabled = isDevSupportEnabled;
+    }
+
+    /**
+     * @return Dev info (list of name1, value1, name2, value2 etc) to show in DevInfoActivity
+     */
+    public List<String> getDevSupportInfos() {
+
+        List<String> devInfos =  new ArrayList<>(Arrays.asList(
+                "SDK Version", SDK_VERSION,
+                "App Type", getAppType(),
+                "User Agent", getUserAgent(),
+                "Browser Login Enabled", isBrowserLoginEnabled() + "",
+                "IDP Enabled", isIDPLoginFlowEnabled() + "",
+                "Identity Provider", isIdentityProvider() + "",
+                "Current User", usersToString(getUserAccountManager().getCurrentUser()),
+                "Authenticated Users", usersToString(getUserAccountManager().getAuthenticatedUsers().toArray(new UserAccount[0]))
+        ));
+
+        devInfos.addAll(getDevInfosFor(BootConfig.getBootConfig(context).asJSON(), "BootConfig"));
+        RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(context);
+        devInfos.addAll(Arrays.asList("Managed?", runtimeConfig.isManagedApp() + ""));
+        if (runtimeConfig.isManagedApp()) {
+            devInfos.addAll(getDevInfosFor(runtimeConfig.asJSON(), "Managed Pref"));
+        }
+
+        return devInfos;
+    }
+
+    private List<String> getDevInfosFor(JSONObject jsonObject, String keyPrefix) {
+        List<String> devInfos = new ArrayList<>();
+        if (jsonObject != null) {
+            Iterator<String> keys = jsonObject.keys();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                devInfos.add(keyPrefix + " - " + key);
+                devInfos.add(jsonObject.opt(key) + "");
+            }
+        }
+        return devInfos;
+    }
+
+    private String usersToString(UserAccount... userAccounts) {
+        List<String> accountNames = new ArrayList<>();
+        if (userAccounts != null) {
+            for (UserAccount userAccount : userAccounts) {
+                accountNames.add(userAccount.getAccountName());
+            }
+        }
+        return TextUtils.join(", ", accountNames);
+    }
+
     private void sendLogoutCompleteIntent() {
         final Intent intent = new Intent(LOGOUT_COMPLETE_INTENT_ACTION);
         intent.setPackage(context.getPackageName());
@@ -1185,4 +1451,42 @@ public class SalesforceSDKManager {
         }
     }
 
+    /**
+     * Action handler in dev support dialog
+     */
+    public interface DevActionHandler {
+        /**
+         * Triggered in case when user select the action
+         */
+        void onSelected();
+    }
+
+    /**
+     * Get BuildConfig.DEBUG by reflection (since it's only available in the app project)
+     * @return true if app's BuildConfig.DEBUG is true
+     */
+    private boolean isDebugBuild() {
+        return ((Boolean) getBuildConfigValue(getAppContext(), "DEBUG")).booleanValue();
+    }
+
+    /**
+     * Gets a field from the project's BuildConfig.
+     * @param context       Used to find the correct file
+     * @param fieldName     The name of the field-to-access
+     * @return              The value of the field, or {@code null} if the field is not found.
+     */
+    private Object getBuildConfigValue(Context context, String fieldName) {
+        try {
+            Class<?> clazz = Class.forName(context.getPackageName() + ".BuildConfig");
+            Field field = clazz.getField(fieldName);
+            return field.get(null);
+        } catch (ClassNotFoundException e) {
+            SalesforceSDKLogger.e(TAG, "getBuildConfigValue failed", e);
+        } catch (NoSuchFieldException e) {
+            SalesforceSDKLogger.e(TAG, "getBuildConfigValue failed", e);
+        } catch (IllegalAccessException e) {
+            SalesforceSDKLogger.e(TAG, "getBuildConfigValue failed", e);
+        }
+        return BuildConfig.DEBUG; // we don't want to return a null value; return this value at minimum
+    }
 }

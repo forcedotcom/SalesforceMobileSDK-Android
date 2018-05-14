@@ -27,26 +27,34 @@
 package com.salesforce.androidsdk.store;
 
 import android.database.Cursor;
+import android.support.test.filters.MediumTest;
+import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
-import com.salesforce.androidsdk.smartstore.store.SoupSpec;
+
+import junit.framework.Assert;
 
 import net.sqlcipher.database.SQLiteDatabase;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 
 /**
  * Tests for full-text search with smartstore
- *
  */
+@RunWith(AndroidJUnit4.class)
+@MediumTest
 public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
 
     private static final String EMPLOYEE_ID = "employeeId";
@@ -63,13 +71,22 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     private long christineHaasId;
     private long michaelThompsonId;
     private long aliHaasId;
-    private long johnGeyerId;
     private long irvingSternId;
     private long evaPulaskiId;
     private long eileenEvaId;
 
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        super.tearDown();
+    }
+
     @Override
-    protected String getPasscode() {
+    protected String getEncryptionKey() {
         return "";
     }
 
@@ -85,13 +102,15 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test that fts5 is used by default
      */
+    @Test
     public void testFtsExtension() {
-        assertEquals("Expected fts5", store.getFtsExtension(), SmartStore.FtsExtension.fts5);
+        Assert.assertEquals("Expected fts5", store.getFtsExtension(), SmartStore.FtsExtension.fts5);
     }
 
     /**
      * Test register/drop soup that uses full-text search indices with fts4
      */
+    @Test
     public void testRegisterDropSoupFts4() {
         tryRegisterDropSoup(SmartStore.FtsExtension.fts4);
     }
@@ -99,33 +118,34 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test register/drop soup that uses full-text search indices with fts5
      */
+    @Test
     public void testRegisterDropSoupFts5() {
         tryRegisterDropSoup(SmartStore.FtsExtension.fts5);
     }
 
     private void tryRegisterDropSoup(SmartStore.FtsExtension ftsExtension) {
         setupSoup(ftsExtension);
-
         String soupTableName = getSoupTableName(EMPLOYEES_SOUP);
-        assertEquals("getSoupTableName should have returned TABLE_1", TABLE_NAME, soupTableName);
-        assertTrue("Table for soup employees does exist", hasTable(soupTableName));
-        assertTrue("FTS table for soup employees does exist", hasTable(soupTableName + SmartStore.FTS_SUFFIX));
-        assertTrue("Register soup call failed", store.hasSoup(EMPLOYEES_SOUP));
+        Assert.assertEquals("getSoupTableName should have returned TABLE_1", TABLE_NAME, soupTableName);
+        Assert.assertTrue("Table for soup employees does exist", hasTable(soupTableName));
+        Assert.assertTrue("FTS table for soup employees does exist", hasTable(soupTableName + SmartStore.FTS_SUFFIX));
+        Assert.assertTrue("Register soup call failed", store.hasSoup(EMPLOYEES_SOUP));
         checkCreateTableStatement(soupTableName + SmartStore.FTS_SUFFIX, "CREATE VIRTUAL TABLE " + soupTableName + SmartStore.FTS_SUFFIX + " USING " + ftsExtension);
 
         // Drop
         store.dropSoup(EMPLOYEES_SOUP);
 
         // After
-        assertFalse("Soup employees should no longer exist", store.hasSoup(EMPLOYEES_SOUP));
-        assertNull("getSoupTableName should have returned null", getSoupTableName(EMPLOYEES_SOUP));
-        assertFalse("Table for soup employees should not exist", hasTable(soupTableName));
-        assertFalse("FTS table for soup employees should not exist", hasTable(soupTableName + SmartStore.FTS_SUFFIX));
+        Assert.assertFalse("Soup employees should no longer exist", store.hasSoup(EMPLOYEES_SOUP));
+        Assert.assertNull("getSoupTableName should have returned null", getSoupTableName(EMPLOYEES_SOUP));
+        Assert.assertFalse("Table for soup employees should not exist", hasTable(soupTableName));
+        Assert.assertFalse("FTS table for soup employees should not exist", hasTable(soupTableName + SmartStore.FTS_SUFFIX));
     }
 
     /**
      * Test inserting rows with fts4
      */
+    @Test
     public void testInsertWithFts4() throws JSONException {
         tryInsert(SmartStore.FtsExtension.fts4);
     }
@@ -133,6 +153,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test inserting rows with fts5
      */
+    @Test
     public void testInsertWithFts5() throws JSONException {
         tryInsert(SmartStore.FtsExtension.fts5);
     }
@@ -149,61 +170,52 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         Cursor c = null;
         try {
             String soupTableName = getSoupTableName(EMPLOYEES_SOUP);
-            assertEquals("getSoupTableName should have returned TABLE_1", "TABLE_1", soupTableName);
-            assertTrue("Table for soup employees does exist", hasTable(soupTableName));
-
-            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+            Assert.assertEquals("getSoupTableName should have returned TABLE_1", "TABLE_1", soupTableName);
+            Assert.assertTrue("Table for soup employees does exist", hasTable(soupTableName));
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 
             // Check soup table
             c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
-            assertTrue("Expected a row", c.moveToFirst());
-            assertEquals("Expected two rows", 3, c.getCount());
-            assertTrue("Wrong columns", Arrays.deepEquals(getExpectedColumns(), c.getColumnNames()));
-
-            assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("id")));
-            assertEquals("Wrong value in index column", "Christine", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
-            assertEquals("Wrong value in index column", "Haas", c.getString(c.getColumnIndex(LAST_NAME_COL)));
-            assertEquals("Wrong value in index column", "00010", c.getString(c.getColumnIndex(EMPLOYEE_ID_COL)));
-
+            Assert.assertTrue("Expected a row", c.moveToFirst());
+            Assert.assertEquals("Expected two rows", 3, c.getCount());
+            Assert.assertTrue("Wrong columns", Arrays.deepEquals(getExpectedColumns(), c.getColumnNames()));
+            Assert.assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("id")));
+            Assert.assertEquals("Wrong value in index column", "Christine", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
+            Assert.assertEquals("Wrong value in index column", "Haas", c.getString(c.getColumnIndex(LAST_NAME_COL)));
+            Assert.assertEquals("Wrong value in index column", "00010", c.getString(c.getColumnIndex(EMPLOYEE_ID_COL)));
             c.moveToNext();
-            assertEquals("Wrong id", secondEmployeeId, c.getLong(c.getColumnIndex("id")));
-            assertEquals("Wrong value in index column", "Michael", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
-            assertEquals("Wrong value in index column", "Thompson", c.getString(c.getColumnIndex(LAST_NAME_COL)));
-            assertEquals("Wrong value in index column", "00020", c.getString(c.getColumnIndex(EMPLOYEE_ID_COL)));
-
+            Assert.assertEquals("Wrong id", secondEmployeeId, c.getLong(c.getColumnIndex("id")));
+            Assert.assertEquals("Wrong value in index column", "Michael", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
+            Assert.assertEquals("Wrong value in index column", "Thompson", c.getString(c.getColumnIndex(LAST_NAME_COL)));
+            Assert.assertEquals("Wrong value in index column", "00020", c.getString(c.getColumnIndex(EMPLOYEE_ID_COL)));
             c.moveToNext();
-            assertEquals("Wrong id", thirdEmployeeId, c.getLong(c.getColumnIndex("id")));
-            assertEquals("Wrong value in index column", null, c.getString(c.getColumnIndex(FIRST_NAME_COL)));
-            assertEquals("Wrong value in index column", null, c.getString(c.getColumnIndex(LAST_NAME_COL)));
-            assertEquals("Wrong value in index column", null, c.getString(c.getColumnIndex(EMPLOYEE_ID_COL)));
-
+            Assert.assertEquals("Wrong id", thirdEmployeeId, c.getLong(c.getColumnIndex("id")));
+            Assert.assertEquals("Wrong value in index column", null, c.getString(c.getColumnIndex(FIRST_NAME_COL)));
+            Assert.assertEquals("Wrong value in index column", null, c.getString(c.getColumnIndex(LAST_NAME_COL)));
+            Assert.assertEquals("Wrong value in index column", null, c.getString(c.getColumnIndex(EMPLOYEE_ID_COL)));
             safeClose(c);
 
             // Check fts table columns
             c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, null, "rowid ASC", null, null);
-            assertTrue("Expected a row", c.moveToFirst());
-            assertTrue("Wrong columns", Arrays.deepEquals(new String[]{FIRST_NAME_COL, LAST_NAME_COL}, c.getColumnNames()));
-
+            Assert.assertTrue("Expected a row", c.moveToFirst());
+            Assert.assertTrue("Wrong columns", Arrays.deepEquals(new String[]{FIRST_NAME_COL, LAST_NAME_COL}, c.getColumnNames()));
             safeClose(c);
 
             // Check fts table data
             c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, new String[] {"rowid", FIRST_NAME_COL, LAST_NAME_COL}, "rowid ASC", null, null);
-            assertTrue("Expected a row", c.moveToFirst());
-            assertEquals("Expected two rows", 3, c.getCount());
-
-            assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("rowid")));
-            assertEquals("Wrong value in index column", "Christine", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
-            assertEquals("Wrong value in index column", "Haas", c.getString(c.getColumnIndex(LAST_NAME_COL)));
-
+            Assert.assertTrue("Expected a row", c.moveToFirst());
+            Assert.assertEquals("Expected two rows", 3, c.getCount());
+            Assert.assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("rowid")));
+            Assert.assertEquals("Wrong value in index column", "Christine", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
+            Assert.assertEquals("Wrong value in index column", "Haas", c.getString(c.getColumnIndex(LAST_NAME_COL)));
             c.moveToNext();
-            assertEquals("Wrong id", secondEmployeeId, c.getLong(c.getColumnIndex("rowid")));
-            assertEquals("Wrong value in index column", "Michael", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
-            assertEquals("Wrong value in index column", "Thompson", c.getString(c.getColumnIndex(LAST_NAME_COL)));
-
+            Assert.assertEquals("Wrong id", secondEmployeeId, c.getLong(c.getColumnIndex("rowid")));
+            Assert.assertEquals("Wrong value in index column", "Michael", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
+            Assert.assertEquals("Wrong value in index column", "Thompson", c.getString(c.getColumnIndex(LAST_NAME_COL)));
             c.moveToNext();
-            assertEquals("Wrong id", thirdEmployeeId, c.getLong(c.getColumnIndex("rowid")));
-            assertEquals("Wrong value in index column", null, c.getString(c.getColumnIndex(FIRST_NAME_COL)));
-            assertEquals("Wrong value in index column", null, c.getString(c.getColumnIndex(LAST_NAME_COL)));
+            Assert.assertEquals("Wrong id", thirdEmployeeId, c.getLong(c.getColumnIndex("rowid")));
+            Assert.assertEquals("Wrong value in index column", null, c.getString(c.getColumnIndex(FIRST_NAME_COL)));
+            Assert.assertEquals("Wrong value in index column", null, c.getString(c.getColumnIndex(LAST_NAME_COL)));
         }
         finally {
             safeClose(c);
@@ -213,6 +225,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test deleting rows with fts4
      */
+    @Test
     public void testDeleteWithFts4() throws JSONException {
         tryDelete(SmartStore.FtsExtension.fts4);
     }
@@ -220,6 +233,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test deleting rows with fts5
      */
+    @Test
     public void testDeleteWithFts5() throws JSONException {
         tryDelete(SmartStore.FtsExtension.fts5);
     }
@@ -235,19 +249,18 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         Cursor c = null;
         try {
             String soupTableName = getSoupTableName(EMPLOYEES_SOUP);
-            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 
             // Check soup table
             c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
-            assertTrue("Expected a row", c.moveToFirst());
-            assertEquals("Expected two rows", 2, c.getCount());
-
+            Assert.assertTrue("Expected a row", c.moveToFirst());
+            Assert.assertEquals("Expected two rows", 2, c.getCount());
             safeClose(c);
 
             // Check fts table data
             c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, null, "rowid ASC", null, null);
-            assertTrue("Expected a row", c.moveToFirst());
-            assertEquals("Expected two rows", 2, c.getCount());
+            Assert.assertTrue("Expected a row", c.moveToFirst());
+            Assert.assertEquals("Expected two rows", 2, c.getCount());
         }
         finally {
             safeClose(c);
@@ -259,21 +272,20 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         // Check DB
         try {
             String soupTableName = getSoupTableName(EMPLOYEES_SOUP);
-            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 
             // Check soup table
             c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
-            assertTrue("Expected a row", c.moveToFirst());
-            assertEquals("Expected one row", 1, c.getCount());
-            assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("id")));
-
+            Assert.assertTrue("Expected a row", c.moveToFirst());
+            Assert.assertEquals("Expected one row", 1, c.getCount());
+            Assert.assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("id")));
             safeClose(c);
 
             // Check fts table data
             c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, new String[] {"rowid", FIRST_NAME_COL, LAST_NAME_COL}, "rowid ASC", null, null);
-            assertTrue("Expected a row", c.moveToFirst());
-            assertEquals("Expected one row", 1, c.getCount());
-            assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("rowid")));
+            Assert.assertTrue("Expected a row", c.moveToFirst());
+            Assert.assertEquals("Expected one row", 1, c.getCount());
+            Assert.assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("rowid")));
         }
         finally {
             safeClose(c);
@@ -285,17 +297,16 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         // Check DB
         try {
             String soupTableName = getSoupTableName(EMPLOYEES_SOUP);
-            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 
             // Check soup table
             c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
-            assertFalse("Expected no rows", c.moveToFirst());
-
+            Assert.assertFalse("Expected no rows", c.moveToFirst());
             safeClose(c);
 
             // Check fts table data
             c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, null, "rowid ASC", null, null);
-            assertFalse("Expected no rows", c.moveToFirst());
+            Assert.assertFalse("Expected no rows", c.moveToFirst());
         }
         finally {
             safeClose(c);
@@ -305,6 +316,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test clearing soup with fts4
      */
+    @Test
     public void testClearWithFts4() throws JSONException {
         tryClear(SmartStore.FtsExtension.fts4);
     }
@@ -312,6 +324,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test clearing soup with fts5
      */
+    @Test
     public void testClearWithFts5() throws JSONException {
         tryClear(SmartStore.FtsExtension.fts5);
     }
@@ -327,19 +340,18 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         Cursor c = null;
         try {
             String soupTableName = getSoupTableName(EMPLOYEES_SOUP);
-            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 
             // Check soup table
             c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
-            assertTrue("Expected a row", c.moveToFirst());
-            assertEquals("Expected two rows", 2, c.getCount());
-
+            Assert.assertTrue("Expected a row", c.moveToFirst());
+            Assert.assertEquals("Expected two rows", 2, c.getCount());
             safeClose(c);
 
             // Check fts table data
             c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, null, "rowid ASC", null, null);
-            assertTrue("Expected a row", c.moveToFirst());
-            assertEquals("Expected two rows", 2, c.getCount());
+            Assert.assertTrue("Expected a row", c.moveToFirst());
+            Assert.assertEquals("Expected two rows", 2, c.getCount());
         }
         finally {
             safeClose(c);
@@ -351,17 +363,16 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         // Check DB
         try {
             String soupTableName = getSoupTableName(EMPLOYEES_SOUP);
-            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 
             // Check soup table
             c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
-            assertFalse("Expected no rows", c.moveToFirst());
-
+            Assert.assertFalse("Expected no rows", c.moveToFirst());
             safeClose(c);
 
             // Check fts table data
             c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, null, "rowid ASC", null, null);
-            assertFalse("Expected no rows", c.moveToFirst());
+            Assert.assertFalse("Expected no rows", c.moveToFirst());
         }
         finally {
             safeClose(c);
@@ -371,6 +382,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test updating rows with fts4
      */
+    @Test
     public void testUpdateWithFts4() throws JSONException {
         setupSoup(SmartStore.FtsExtension.fts4);
     }
@@ -378,6 +390,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test updating rows with fts5
      */
+    @Test
     public void testUpdateWithFts5() throws JSONException {
         setupSoup(SmartStore.FtsExtension.fts5);
     }
@@ -388,7 +401,6 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         // Insert a couple of rows
         long firstEmployeeId = createEmployee("Christine", "Haas", "00010");
         long secondEmployeeId = createEmployee("Michael", "Thompson", "00020");
-
 
         // Update second employee
         JSONObject updatedEmployee = new JSONObject();
@@ -401,52 +413,46 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         Cursor c = null;
         try {
             String soupTableName = getSoupTableName(EMPLOYEES_SOUP);
-            assertEquals("getSoupTableName should have returned TABLE_1", "TABLE_1", soupTableName);
-            assertTrue("Table for soup employees does exist", hasTable(soupTableName));
-
-            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+            Assert.assertEquals("getSoupTableName should have returned TABLE_1", "TABLE_1", soupTableName);
+            Assert.assertTrue("Table for soup employees does exist", hasTable(soupTableName));
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
 
             // Check soup table
             c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
-            assertTrue("Expected a row", c.moveToFirst());
-            assertEquals("Expected two rows", 2, c.getCount());
-
-            assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("id")));
-            assertEquals("Wrong value in index column", "Christine", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
-            assertEquals("Wrong value in index column", "Haas", c.getString(c.getColumnIndex(LAST_NAME_COL)));
-            assertEquals("Wrong value in index column", "00010", c.getString(c.getColumnIndex(EMPLOYEE_ID_COL)));
-
+            Assert.assertTrue("Expected a row", c.moveToFirst());
+            Assert.assertEquals("Expected two rows", 2, c.getCount());
+            Assert.assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("id")));
+            Assert.assertEquals("Wrong value in index column", "Christine", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
+            Assert.assertEquals("Wrong value in index column", "Haas", c.getString(c.getColumnIndex(LAST_NAME_COL)));
+            Assert.assertEquals("Wrong value in index column", "00010", c.getString(c.getColumnIndex(EMPLOYEE_ID_COL)));
             c.moveToNext();
-            assertEquals("Wrong id", secondEmployeeId, c.getLong(c.getColumnIndex("id")));
-            assertEquals("Wrong value in index column", "Michael-updated", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
-            assertEquals("Wrong value in index column", "Thompson", c.getString(c.getColumnIndex(LAST_NAME_COL)));
-            assertEquals("Wrong value in index column", "00020-updated", c.getString(c.getColumnIndex(EMPLOYEE_ID_COL)));
-
+            Assert.assertEquals("Wrong id", secondEmployeeId, c.getLong(c.getColumnIndex("id")));
+            Assert.assertEquals("Wrong value in index column", "Michael-updated", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
+            Assert.assertEquals("Wrong value in index column", "Thompson", c.getString(c.getColumnIndex(LAST_NAME_COL)));
+            Assert.assertEquals("Wrong value in index column", "00020-updated", c.getString(c.getColumnIndex(EMPLOYEE_ID_COL)));
             safeClose(c);
 
             // Check fts table data
             c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, new String[] {"rowid", FIRST_NAME_COL, LAST_NAME_COL}, "rowid ASC", null, null);
-            assertTrue("Expected a row", c.moveToFirst());
-            assertEquals("Expected two rows", 2, c.getCount());
-
-            assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("rowid")));
-            assertEquals("Wrong value in index column", "Christine", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
-            assertEquals("Wrong value in index column", "Haas", c.getString(c.getColumnIndex(LAST_NAME_COL)));
-
+            Assert.assertTrue("Expected a row", c.moveToFirst());
+            Assert.assertEquals("Expected two rows", 2, c.getCount());
+            Assert.assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("rowid")));
+            Assert.assertEquals("Wrong value in index column", "Christine", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
+            Assert.assertEquals("Wrong value in index column", "Haas", c.getString(c.getColumnIndex(LAST_NAME_COL)));
             c.moveToNext();
-            assertEquals("Wrong id", secondEmployeeId, c.getLong(c.getColumnIndex("rowid")));
-            assertEquals("Wrong value in index column", "Michael-updated", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
-            assertEquals("Wrong value in index column", "Thompson", c.getString(c.getColumnIndex(LAST_NAME_COL)));
+            Assert.assertEquals("Wrong id", secondEmployeeId, c.getLong(c.getColumnIndex("rowid")));
+            Assert.assertEquals("Wrong value in index column", "Michael-updated", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
+            Assert.assertEquals("Wrong value in index column", "Thompson", c.getString(c.getColumnIndex(LAST_NAME_COL)));
         }
         finally {
             safeClose(c);
         }
     }
 
-
     /**
      * Test search on single field returning no results with fts4 table
      */
+    @Test
     public void testSearchSingleFiedlNoResultsWithFts4() throws JSONException {
         trySearchSingleFieldNoResults(SmartStore.FtsExtension.fts4);
     }
@@ -454,6 +460,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test search on single field returning no results with fts5 table
      */
+    @Test
     public void testSearchSingleFieldNoResultsWithFts5() throws JSONException {
         trySearchSingleFieldNoResults(SmartStore.FtsExtension.fts5);
     }
@@ -476,6 +483,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test search on single field returning a single result with fts4
      */
+    @Test
     public void testSearchSingleFieldSingleResultWithFts4() throws JSONException {
         trySearchSingleFieldSingleResult(SmartStore.FtsExtension.fts4);
     }
@@ -483,6 +491,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test search on single field returning a single result with fts5
      */
+    @Test
     public void testSearchSingleFieldSingleResultWithFts5() throws JSONException {
         trySearchSingleFieldSingleResult(SmartStore.FtsExtension.fts5);
     }
@@ -505,6 +514,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test search on single field returning multiple results - testing ordering - with fts4
      */
+    @Test
     public void testSearchSingleFieldMultipleResultsWithFts4() throws JSONException {
         trySearchSingleFieldMultipleResults(SmartStore.FtsExtension.fts4);
     }
@@ -512,6 +522,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test search on single field returning multiple results - testing ordering - with fts5
      */
+    @Test
     public void testSearchSingleFieldMultipleResultsWithFts5() throws JSONException {
         trySearchSingleFieldMultipleResults(SmartStore.FtsExtension.fts5);
     }
@@ -533,12 +544,12 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         // One field - set operation - more than one results
         trySearch(new long[]{evaPulaskiId, eileenEvaId}, FIRST_NAME, "Eva OR Eileen", EMPLOYEE_ID);
         trySearch(new long[]{eileenEvaId, evaPulaskiId}, FIRST_NAME, "Eva OR Eileen", FIRST_NAME);
-
     }
 
     /**
      * Test search on all fields returning no results with fts4
      */
+    @Test
     public void testSearchAllFieldsNoResultsWithFts4() throws JSONException {
         trySearchAllFieldsNoResults(SmartStore.FtsExtension.fts4);
     }
@@ -546,6 +557,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test search on all fields returning no results with fts5
      */
+    @Test
     public void testSearchAllFieldsNoResultsWithFts5() throws JSONException {
         trySearchAllFieldsNoResults(SmartStore.FtsExtension.fts5);
     }
@@ -572,6 +584,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test search on all fields returning a single result with fts4
      */
+    @Test
     public void testSearchAllFieldsSingleResultWithFts4() throws JSONException {
         trySearchAllFieldsSingleResult(SmartStore.FtsExtension.fts4);
     }
@@ -579,6 +592,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test search on all fields returning a single result with fts5
      */
+    @Test
     public void testSearchAllFieldsSingleResultWithFts5() throws JSONException {
         trySearchAllFieldsSingleResult(SmartStore.FtsExtension.fts5);
     }
@@ -602,6 +616,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test search on all fields returning multiple results - testing ordering
      */
+    @Test
     public void testSearchAllFieldMultipleResultsWithFts4() throws JSONException {
         trySearchAllFieldMultipleResults(SmartStore.FtsExtension.fts4);
     }
@@ -609,6 +624,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test search on all fields returning multiple results - testing ordering
      */
+    @Test
     public void testSearchAllFieldMultipleResultsWithFts5() throws JSONException {
         trySearchAllFieldMultipleResults(SmartStore.FtsExtension.fts5);
     }
@@ -634,6 +650,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test search with queries that have field:value predicates with fts4
      */
+    @Test
     public void testSearchWithFieldColonQueriesWithFts4() throws JSONException {
         trySearchWithFieldColonQueries(SmartStore.FtsExtension.fts4);
     }
@@ -641,6 +658,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test search with queries that have field:value predicates with fts5
      */
+    @Test
     public void testSearchWithFieldColonQueriesWithFts5() throws JSONException {
         trySearchWithFieldColonQueries(SmartStore.FtsExtension.fts5);
     }
@@ -670,31 +688,32 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     }
 
     private void trySearch(long[] expectedIds, String path, String matchKey, String orderPath) throws JSONException {
+
         // Returning soup elements
         JSONArray results = store.query(QuerySpec.buildMatchQuerySpec(EMPLOYEES_SOUP, path, matchKey, orderPath, QuerySpec.Order.ascending, 25), 0);
-        assertEquals("Wrong number of results", expectedIds.length, results.length());
-        for (int i=0; i<results.length(); i++) {
-            assertEquals("Wrong result", expectedIds[i], idOf(results.getJSONObject(i)));
+        Assert.assertEquals("Wrong number of results", expectedIds.length, results.length());
+        for (int i = 0; i < results.length(); i++) {
+            Assert.assertEquals("Wrong result", expectedIds[i], idOf(results.getJSONObject(i)));
         }
+
         // Returning just ids
         results = store.query(QuerySpec.buildMatchQuerySpec(EMPLOYEES_SOUP, new String[]{SmartStore.SOUP_ENTRY_ID}, path, matchKey, orderPath, QuerySpec.Order.ascending, 25), 0);
+
         //only check the field number for expecting to have matching results
         if (expectedIds.length > 0) {
-            assertEquals("Wrong number of field returned", 1, results.getJSONArray(0).length());
+            Assert.assertEquals("Wrong number of field returned", 1, results.getJSONArray(0).length());
         }
-        assertEquals("Wrong number of results", expectedIds.length, results.length());
-        for (int i=0; i<results.length(); i++) {
-            assertEquals("Wrong result", expectedIds[i], results.getJSONArray(i).getLong(0));
+        Assert.assertEquals("Wrong number of results", expectedIds.length, results.length());
+        for (int i = 0; i < results.length(); i++) {
+            Assert.assertEquals("Wrong result", expectedIds[i], results.getJSONArray(i).getLong(0));
         }
     }
 
     private void loadData(SmartStore.FtsExtension ftsExtension) throws JSONException {
         setupSoup(ftsExtension);
-
         christineHaasId = createEmployee("Christine", "Haas", "00010");
         michaelThompsonId = createEmployee("Michael", "Thompson", "00020");
         aliHaasId = createEmployee("Ali", "Haas", "00030");
-        johnGeyerId = createEmployee("John", "Geyer", "00040");
         irvingSternId = createEmployee("Irving", "Stern", "00050");
         evaPulaskiId = createEmployee("Eva", "Pulaski", "00060");
         eileenEvaId = createEmployee("Eileen", "Eva", "00070");

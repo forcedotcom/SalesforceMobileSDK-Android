@@ -31,7 +31,9 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.test.InstrumentationTestCase;
+import android.support.test.InstrumentationRegistry;
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
 
 import com.salesforce.androidsdk.MainActivity;
@@ -44,12 +46,19 @@ import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManagerTest;
 import com.salesforce.androidsdk.ui.LoginActivity;
 
+import junit.framework.Assert;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 /**
  * A class that contains tests for functionality exposed in SalesforceSDKManager.
  *
  * @author bhariharan
  */
-public class SalesforceSDKManagerTest extends InstrumentationTestCase {
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class SalesforceSDKManagerTest {
 
     private static final String TAG = "SFSDKManagerTest";
     private static final String TEST_APP_NAME = "OverridenAppName";
@@ -58,9 +67,10 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
      * Test for setting the analytics app name before 'SalesforceSDKManager.init()'
      * has been called.
      */
+    @Test
     public void testOverrideAiltnAppNameBeforeSDKManagerInit() {
         SalesforceSDKTestManager.setAiltnAppName(TEST_APP_NAME);
-        SalesforceSDKTestManager.init(getInstrumentation().getTargetContext(), null, MainActivity.class);
+        SalesforceSDKTestManager.init(InstrumentationRegistry.getTargetContext(), MainActivity.class);
         SalesforceSDKTestManager.getInstance().setIsTestRun(true);
         compareAiltnAppNames(TEST_APP_NAME);
     }
@@ -69,8 +79,9 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
      * Test for setting the analytics app name after 'SalesforceSDKManager.init()'
      * has been called.
      */
+    @Test
     public void testOverrideAiltnAppNameAfterSDKManagerInit() {
-        SalesforceSDKTestManager.init(getInstrumentation().getTargetContext(), null, MainActivity.class);
+        SalesforceSDKTestManager.init(InstrumentationRegistry.getTargetContext(), MainActivity.class);
         SalesforceSDKTestManager.setAiltnAppName(TEST_APP_NAME);
         SalesforceSDKTestManager.getInstance().setIsTestRun(true);
         compareAiltnAppNames(TEST_APP_NAME);
@@ -79,8 +90,9 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
     /**
      * Test for default analytics app name.
      */
+    @Test
     public void testDefaultAiltnAppName() {
-        SalesforceSDKTestManager.init(getInstrumentation().getTargetContext(), null, MainActivity.class);
+        SalesforceSDKTestManager.init(InstrumentationRegistry.getTargetContext(), MainActivity.class);
         SalesforceSDKTestManager.getInstance().setIsTestRun(true);
         compareAiltnAppNames(getDefaultAppName());
     }
@@ -88,8 +100,9 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
     /**
      * Test for setting an invalid analytics app name.
      */
+    @Test
     public void testOverrideInvalidAiltnAppName() {
-        SalesforceSDKTestManager.init(getInstrumentation().getTargetContext(), null, MainActivity.class);
+        SalesforceSDKTestManager.init(InstrumentationRegistry.getTargetContext(), MainActivity.class);
         SalesforceSDKTestManager.setAiltnAppName(null);
         SalesforceSDKTestManager.getInstance().setIsTestRun(true);
         compareAiltnAppNames(getDefaultAppName());
@@ -97,7 +110,7 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
 
     private void compareAiltnAppNames(String expectedAppName) {
         final UserAccountManager userAccMgr = SalesforceSDKTestManager.getInstance().getUserAccountManager();
-        final Context targetContext = getInstrumentation().getTargetContext();
+        final Context targetContext = InstrumentationRegistry.getTargetContext();
         final ClientManager clientManager = new ClientManager(targetContext,
                 ClientManagerTest.TEST_ACCOUNT_TYPE, null, true);
         clientManager.createNewAccount(ClientManagerTest.TEST_ACCOUNT_NAME, ClientManagerTest.TEST_USERNAME,
@@ -105,20 +118,20 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
                 ClientManagerTest.TEST_INSTANCE_URL, ClientManagerTest.TEST_LOGIN_URL,
                 ClientManagerTest.TEST_IDENTITY_URL, ClientManagerTest.TEST_CLIENT_ID,
                 ClientManagerTest.TEST_ORG_ID, ClientManagerTest.TEST_USER_ID,
-                null, null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null);
         final AccountManager accMgr = AccountManager.get(targetContext);
         final UserAccount curUser = userAccMgr.getCurrentUser();
-        assertNotNull("Current user should NOT be null", curUser);
+        Assert.assertNotNull("Current user should NOT be null", curUser);
         SalesforceAnalyticsManager.reset(curUser);
         final SalesforceAnalyticsManager analyticsManager = SalesforceAnalyticsManager.getInstance(userAccMgr.getCurrentUser());
-        assertNotNull("SalesforceAnalyticsManager instance should NOT be null", analyticsManager);
+        Assert.assertNotNull("SalesforceAnalyticsManager instance should NOT be null", analyticsManager);
         final AnalyticsManager manager = analyticsManager.getAnalyticsManager();
-        assertNotNull("AnalyticsManager instance should NOT be null", manager);
+        Assert.assertNotNull("AnalyticsManager instance should NOT be null", manager);
         final DeviceAppAttributes deviceAppAttributes = analyticsManager.getAnalyticsManager().getDeviceAppAttributes();
-        assertNotNull("Device attributes should NOT be null", deviceAppAttributes);
+        Assert.assertNotNull("Device attributes should NOT be null", deviceAppAttributes);
         final String ailtnAppName = deviceAppAttributes.getAppName();
-        assertEquals("DeviceAppAttributes - App names do NOT match", expectedAppName, ailtnAppName);
-        assertEquals("SalesforceSDKManager - App names do NOT match", expectedAppName, SalesforceSDKTestManager.getAiltnAppName());
+        Assert.assertEquals("DeviceAppAttributes - App names do NOT match", expectedAppName, ailtnAppName);
+        Assert.assertEquals("SalesforceSDKManager - App names do NOT match", expectedAppName, SalesforceSDKTestManager.getAiltnAppName());
         SalesforceAnalyticsManager.reset(curUser);
         clientManager.removeAccounts(accMgr.getAccountsByType(ClientManagerTest.TEST_ACCOUNT_TYPE));
         SalesforceSDKTestManager.resetAiltnAppName();
@@ -128,7 +141,7 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
     private String getDefaultAppName() {
         String ailtnAppName = null;
         try {
-            final Context targetContext = getInstrumentation().getTargetContext();
+            final Context targetContext = InstrumentationRegistry.getTargetContext();
             final PackageInfo packageInfo = targetContext.getPackageManager().getPackageInfo(targetContext.getPackageName(), 0);
             ailtnAppName = targetContext.getString(packageInfo.applicationInfo.labelRes);
         } catch (PackageManager.NameNotFoundException e) {
@@ -142,33 +155,48 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
      */
     private static class SalesforceSDKTestManager extends SalesforceSDKManager {
 
+        // We don't want to be using INSTANCE defined in SalesforceSDKManager
+        // Otherwise tests in other suites could fail after we call resetInstance(...)
+        private static SalesforceSDKTestManager TEST_INSTANCE = null;
+
         /**
          * Protected constructor.
          *
          * @param context Application context.
-         * @param keyImpl Implementation of KeyInterface.
          * @param mainActivity Activity to be launched after the login flow.
          * @param loginActivity Login activity.
          */
-        protected SalesforceSDKTestManager(Context context, KeyInterface keyImpl,
-                                       Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-            super(context, keyImpl, mainActivity, loginActivity);
+        protected SalesforceSDKTestManager(Context context, Class<? extends Activity> mainActivity,
+                                           Class<? extends Activity> loginActivity) {
+            super(context, mainActivity, loginActivity);
         }
 
         /**
          * Initializes this component.
          *
          * @param context Application context.
-         * @param keyImpl Implementation of KeyInterface.
          * @param mainActivity Activity to be launched after the login flow.
          */
-        public static void init(Context context, KeyInterface keyImpl,
-                                 Class<? extends Activity> mainActivity) {
-            if (INSTANCE == null) {
-                INSTANCE = new SalesforceSDKTestManager(context, keyImpl, mainActivity, LoginActivity.class);
+        public static void init(Context context, Class<? extends Activity> mainActivity) {
+            if (TEST_INSTANCE == null) {
+                TEST_INSTANCE = new SalesforceSDKTestManager(context, mainActivity, LoginActivity.class);
             }
             initInternal(context);
         }
+
+        /**
+         * Returns a singleton instance of this class.
+         *
+         * @return Singleton instance of SalesforceSDKManager.
+         */
+        public static SalesforceSDKManager getInstance() {
+            if (TEST_INSTANCE != null) {
+                return TEST_INSTANCE;
+            } else {
+                throw new RuntimeException("Applications need to call SalesforceSDKManager.init() first.");
+            }
+        }
+
 
         /**
          * Resets the app name to be used by the analytics framework.
@@ -183,7 +211,7 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
          * This is meant to be used ONLY by tests.
          */
         public static void resetInstance() {
-            INSTANCE = null;
+            TEST_INSTANCE = null;
         }
     }
 }

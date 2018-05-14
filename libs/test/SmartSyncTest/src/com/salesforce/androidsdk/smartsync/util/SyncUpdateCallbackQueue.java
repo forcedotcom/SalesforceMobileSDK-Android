@@ -26,13 +26,13 @@
  */
 package com.salesforce.androidsdk.smartsync.util;
 
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
 
 import org.json.JSONException;
 
-import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This tracks sync updates using a queue, allowing for tests to wait for certain sync updates to turn up.

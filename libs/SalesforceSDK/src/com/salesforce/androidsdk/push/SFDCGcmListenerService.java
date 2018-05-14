@@ -26,29 +26,28 @@
  */
 package com.salesforce.androidsdk.push;
 
+import android.os.Bundle;
+
 import com.google.android.gms.gcm.GcmListenerService;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
-import android.os.Bundle;
-
 public class SFDCGcmListenerService extends GcmListenerService {
+
     public static final String KEY_FROM = "from";
 
     /**
      * Called when message is received.
      *
-     * @param from
-     *         SenderID of the sender.
-     * @param data
-     *         Data bundle containing message data as key/value pairs.
-     *         For Set of keys use data.keySet().
+     * @param from SenderID of the sender.
+     * @param data Data bundle containing message data as key/value pairs.
      */
     @Override
     public void onMessageReceived(String from, Bundle data) {
         if (data != null && SalesforceSDKManager.hasInstance()) {
             final PushNotificationInterface pnInterface = SalesforceSDKManager.getInstance().getPushNotificationReceiver();
             if (pnInterface != null) {
-                // Add 'from' to the Bundle directly before passing it back
+
+                // Add 'from' to the Bundle directly before passing it back.
                 data.putString(KEY_FROM, from);
                 pnInterface.onPushMessageReceived(data);
             }

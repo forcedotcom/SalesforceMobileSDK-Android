@@ -27,7 +27,9 @@
 package com.salesforce.androidsdk.analytics.model;
 
 import android.content.Context;
-import android.test.InstrumentationTestCase;
+import android.support.test.InstrumentationRegistry;
+import android.support.test.filters.SmallTest;
+import android.support.test.runner.AndroidJUnit4;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -37,6 +39,10 @@ import com.salesforce.androidsdk.analytics.security.Encryptor;
 import junit.framework.Assert;
 
 import org.json.JSONObject;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.UUID;
 
@@ -45,7 +51,9 @@ import java.util.UUID;
  *
  * @author bhariharan
  */
-public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class InstrumentationEventBuilderTest {
 
     private static final String TAG = "EventBuilderTest";
     private static final String TEST_ENCRYPTION_KEY = Encryptor.hash("test_encryption_key", "key");
@@ -60,19 +68,17 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
     private Context targetContext;
     private AnalyticsManager analyticsManager;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
-        targetContext = getInstrumentation().getTargetContext();
+        targetContext = InstrumentationRegistry.getTargetContext();
         uniqueId = UUID.randomUUID().toString();
         analyticsManager = new AnalyticsManager(uniqueId,
                 targetContext, TEST_ENCRYPTION_KEY, TEST_DEVICE_APP_ATTRIBUTES);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
         analyticsManager.reset();
-        super.tearDown();
     }
 
     /**
@@ -80,6 +86,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testMissingSchemaType() throws Exception {
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
         long curTime = System.currentTimeMillis();
@@ -104,6 +111,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testMissingEventTypeInInteraction() throws Exception {
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
         long curTime = System.currentTimeMillis();
@@ -127,6 +135,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testMissingEventTypeInError() throws Exception {
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
         long curTime = System.currentTimeMillis();
@@ -143,7 +152,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         } catch (InstrumentationEventBuilder.EventBuilderException e) {
             Assert.fail("Exception should not have been thrown");
         }
-        assertNotNull("Event should not be null", event);
+        Assert.assertNotNull("Event should not be null", event);
     }
 
     /**
@@ -151,6 +160,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testMissingPage() throws Exception {
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
         long curTime = System.currentTimeMillis();
@@ -175,6 +185,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testMissingName() throws Exception {
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
         long curTime = System.currentTimeMillis();
@@ -198,6 +209,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testMissingDeviceAppAttributes() throws Exception {
         analyticsManager.reset();
         analyticsManager = new AnalyticsManager(uniqueId, targetContext, TEST_ENCRYPTION_KEY, null);
@@ -227,6 +239,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testAutoPopulateStartTime() throws Exception {
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
         long curTime = System.currentTimeMillis();
@@ -240,7 +253,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         eventBuilder.page(new JSONObject());
         final InstrumentationEvent event = eventBuilder.buildEvent();
         long startTime = event.getStartTime();
-        assertTrue("Start time should have been auto populated", startTime > 0);
+        Assert.assertTrue("Start time should have been auto populated", startTime > 0);
     }
 
     /**
@@ -248,6 +261,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testAutoPopulateEventId() throws Exception {
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
         long curTime = System.currentTimeMillis();
@@ -262,7 +276,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         eventBuilder.page(new JSONObject());
         final InstrumentationEvent event = eventBuilder.buildEvent();
         final String eventId = event.getEventId();
-        assertFalse("Event ID should have been auto populated", TextUtils.isEmpty(eventId));
+        Assert.assertFalse("Event ID should have been auto populated", TextUtils.isEmpty(eventId));
     }
 
     /**
@@ -270,6 +284,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testAutoPopulateSequenceId() throws Exception {
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
         long curTime = System.currentTimeMillis();
@@ -284,8 +299,8 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         eventBuilder.page(new JSONObject());
         final InstrumentationEvent event = eventBuilder.buildEvent();
         int sequenceId = event.getSequenceId();
-        assertTrue("Sequence ID should have been auto populated", sequenceId > 0);
+        Assert.assertTrue("Sequence ID should have been auto populated", sequenceId > 0);
         int globalSequenceId = analyticsManager.getGlobalSequenceId();
-        assertEquals("Global sequence ID should have been updated", 0, globalSequenceId - sequenceId);
+        Assert.assertEquals("Global sequence ID should have been updated", 0, globalSequenceId - sequenceId);
     }
 }

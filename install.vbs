@@ -70,9 +70,11 @@ End If
 ' Copy the hard files to where their symlinks would be.
 Call CopySymlinkFiles()
 
-' Getting npm dependencies (for react-native)
+' Getting npm dependencies for react-native
 WScript.Echo "Getting npm dependencies"
-intReturnVal = objShell.Run("npm install react-native@0.43.1 react@16.0.0-alpha.6 --silent", 1, True)
+objShell.CurrentDirectory = strWorkingDirectory & "libs\SalesforceReact"
+intReturnVal = objShell.Run("npm install --silent", 1, True)
+objShell.CurrentDirectory = strWorkingDirectory
 If intReturnVal <> 0 Then
     WScript.Echo "Error getting npm dependencies!"
     WScript.Quit 2

@@ -49,7 +49,6 @@ import java.util.Set;
 public class SoqlSyncDownTarget extends SyncDownTarget {
 
 	public static final String QUERY = "query";
-    private static final String TAG = "SoqlSyncDownTarget";
 	private String query;
     private String nextRecordsUrl;
 
@@ -165,7 +164,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
     }
 
     protected Set<String> getRemoteIdsWithSoql(SyncManager syncManager, String soqlForRemoteIds) throws IOException, JSONException {
-        final Set<String> remoteIds = new HashSet<String>();
+        final Set<String> remoteIds = new HashSet<>();
 
         // Makes network request and parses the response.
         JSONArray records = startFetch(syncManager, soqlForRemoteIds);

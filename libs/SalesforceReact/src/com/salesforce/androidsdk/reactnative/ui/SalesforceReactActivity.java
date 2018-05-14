@@ -28,54 +28,58 @@ package com.salesforce.androidsdk.reactnative.ui;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.view.KeyEvent;
 import android.widget.Toast;
 
 import com.facebook.react.ReactActivity;
 import com.facebook.react.ReactActivityDelegate;
 import com.facebook.react.bridge.Callback;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.reactnative.R;
+import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
 import com.salesforce.androidsdk.reactnative.bridge.ReactBridgeHelper;
 import com.salesforce.androidsdk.reactnative.util.SalesforceReactLogger;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.security.PasscodeManager;
-import com.salesforce.androidsdk.util.EventsObservable;
-import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import com.salesforce.androidsdk.util.LogoutCompleteReceiver;
+import com.salesforce.androidsdk.ui.SalesforceActivityDelegate;
+import com.salesforce.androidsdk.ui.SalesforceActivityInterface;
 
 /**
- * Super class for all Salesforce activities.
+ * Main activity for a Salesforce ReactNative app.
  */
-public abstract class SalesforceReactActivity extends ReactActivity {
+public abstract class SalesforceReactActivity extends ReactActivity implements SalesforceActivityInterface {
 
-    private static final String TAG = "SfReactActivity";
+    private static final String TAG = "SFReactActivity";
 
+    private final SalesforceActivityDelegate delegate;
     private RestClient client;
     private ClientManager clientManager;
-    private PasscodeManager passcodeManager;
-    private LogoutCompleteReceiver logoutCompleteReceiver;
     private SalesforceReactActivityDelegate reactActivityDelegate;
     AlertDialog overlayPermissionRequiredDialog;
 
+    protected SalesforceReactActivity() {
+        super();
+        delegate = new SalesforceActivityDelegate(this);
+    }
+
     /**
-     * @return true if you want login to happen as soon as activity is loaded
-     *         false if you want do login at a later point
+     * Returns if authentication should be performed automatically or not.
+     *
+     * @return True - if you want login to happen as soon as activity is loaded, False - otherwise.
      */
     public boolean shouldAuthenticate() {
         return true;
     }
 
     /**
-     * Called if shouldAuthenticate() returned true but device is offline
+     * Called if shouldAuthenticate() returned true but device is offline.
      */
     public void onErrorAuthenticateOffline() {
-        Toast t = Toast.makeText(this, R.string.sf__should_authenticate_but_is_offline, Toast.LENGTH_LONG);
+        final Toast t = Toast.makeText(this,
+                R.string.sf__should_authenticate_but_is_offline, Toast.LENGTH_LONG);
         t.show();
     }
 
@@ -83,100 +87,90 @@ public abstract class SalesforceReactActivity extends ReactActivity {
     protected void onCreate(Bundle savedInstanceState) {
         SalesforceReactLogger.i(TAG, "onCreate called");
         super.onCreate(savedInstanceState);
-
-        // Get clientManager
         clientManager = buildClientManager();
-
-        // Gets an instance of the passcode manager.
-        passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
-
-        // TODO
-        // Have a user switcher once we have an account manager bridge for react native
-        logoutCompleteReceiver = new ReactActivityLogoutCompleteReceiver();
-        registerReceiver(logoutCompleteReceiver, new IntentFilter(SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION));
-
-        // Let observers know
-        EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);
-
-    }
-
-    @Override
-    public void onDestroy() {
-        unregisterReceiver(logoutCompleteReceiver);
-        super.onDestroy();
+        delegate.onCreate();
     }
 
     @Override
     public void onResume() {
         super.onResume();
-
-        // Brings up the passcode screen if needed.
-        if (passcodeManager.onResume(this)) {
-
-            // Get client (if already logged in)
-            try {
-                setRestClient(clientManager.peekRestClient());
-            } catch (ClientManager.AccountInfoNotFoundException e) {
-                setRestClient(client);
-            }
-
-            // Not logged in
-            if (client == null) {
-                onResumeNotLoggedIn();
-            }
-            // Logged in
-            else {
-                SalesforceReactLogger.i(TAG, "onResume - already logged in");
-            }
-
-        }
-
+        delegate.onResume(false);
         loadReactAppOnceIfReady();
-
     }
 
-    /**
-     * Called when resuming activity and user is not authenticated
-     */
+    @Override
+    public void onResume(RestClient c) {
+        try {
+            setRestClient(clientManager.peekRestClient());
+        } catch (ClientManager.AccountInfoNotFoundException e) {
+            setRestClient(client);
+        }
+
+        // Not logged in.
+        if (client == null) {
+            onResumeNotLoggedIn();
+        }
+
+        // Logged in.
+        else {
+            SalesforceReactLogger.i(TAG, "onResume - already logged in");
+        }
+    }
+
     private void onResumeNotLoggedIn() {
 
-        // Need to be authenticated
+        // Need to be authenticated.
         if (shouldAuthenticate()) {
 
-            // Online
-            if (SalesforceSDKManager.getInstance().hasNetwork()) {
+            // Online.
+            if (SalesforceReactSDKManager.getInstance().hasNetwork()) {
                 SalesforceReactLogger.i(TAG, "onResumeNotLoggedIn - should authenticate/online - authenticating");
                 login();
             }
 
-            // Offline
+            // Offline.
             else {
                 SalesforceReactLogger.w(TAG, "onResumeNotLoggedIn - should authenticate/offline - can not proceed");
                 onErrorAuthenticateOffline();
             }
         }
 
-        // Does not need to be authenticated
+        // Does not need to be authenticated.
         else {
             SalesforceReactLogger.i(TAG, "onResumeNotLoggedIn - should not authenticate");
         }
     }
 
-
-    @Override
-    public void onUserInteraction() {
-        passcodeManager.recordUserInteraction();
-    }
-
     @Override
     public void onPause() {
         super.onPause();
-        passcodeManager.onPause(this);
+        delegate.onPause();
+    }
+
+    @Override
+    public void onDestroy() {
+        delegate.onDestroy();
+        super.onDestroy();
+    }
+
+    @Override
+    public void onUserInteraction() {
+        delegate.onUserInteraction();
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        return delegate.onKeyUp(keyCode, event) || super.onKeyUp(keyCode, event);
+    }
+
+    public void showReactDevOptionsDialog() {
+        getReactNativeHost().getReactInstanceManager().showDevOptionsDialog();
     }
 
     protected void login() {
         SalesforceReactLogger.i(TAG, "login called");
         clientManager.getRestClient(this, new RestClientCallback() {
+
             @Override
             public void authenticatedRestClient(RestClient client) {
                 if (client == null) {
@@ -191,22 +185,28 @@ public abstract class SalesforceReactActivity extends ReactActivity {
     }
 
     /**
-     * Method called from bridge to logout
-     * @param successCallback
+     * Method called from bridge to logout.
+     *
+     * @param successCallback Success callback.
      */
-    public void logout(Callback successCallback) {
+    public void logout(final Callback successCallback) {
         SalesforceReactLogger.i(TAG, "logout called");
-        SalesforceSDKManager.getInstance().logout(this);
+        SalesforceReactSDKManager.getInstance().logout(this);
+        if (successCallback != null) {
+            ReactBridgeHelper.invokeSuccess(successCallback, "Logout complete");
+        }
     }
 
     /**
-     * Method called from bridge to authenticate
-     * @param successCallback
-     * @param errorCallback
+     * Method called from bridge to authenticate.
+     *
+     * @param successCallback Success callback.
+     * @param errorCallback Error callback.
      */
     public void authenticate(final Callback successCallback, final Callback errorCallback) {
         SalesforceReactLogger.i(TAG, "authenticate called");
         clientManager.getRestClient(this, new RestClientCallback() {
+
             @Override
             public void authenticatedRestClient(RestClient client) {
                 SalesforceReactActivity.this.setRestClient(client);
@@ -216,9 +216,10 @@ public abstract class SalesforceReactActivity extends ReactActivity {
     }
 
     /**
-     * Method called from bridge to get auth credentials
-     * @param successCallback
-     * @param errorCallback
+     * Method called from bridge to get auth credentials.
+     *
+     * @param successCallback Success callback.
+     * @param errorCallback Error callback.
      */
     public void getAuthCredentials(Callback successCallback, Callback errorCallback) {
         SalesforceReactLogger.i(TAG, "getAuthCredentials called");
@@ -233,40 +234,34 @@ public abstract class SalesforceReactActivity extends ReactActivity {
         }
     }
 
+    /**
+     * Returns an instance of RestClient.
+     *
+     * @return An instance of RestClient.
+     */
     public RestClient getRestClient() {
         return client;
     }
 
     protected void setRestClient(RestClient restClient) {
         client = restClient;
-        if(client != null ){
+        if (client != null) {
             loadReactAppOnceIfReady();
         }
     }
 
     protected ClientManager buildClientManager() {
-        return new ClientManager(this, SalesforceSDKManager.getInstance().getAccountType(),
-                SalesforceSDKManager.getInstance().getLoginOptions(),
-                SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
+        return new ClientManager(this, SalesforceReactSDKManager.getInstance().getAccountType(),
+                SalesforceReactSDKManager.getInstance().getLoginOptions(),
+                SalesforceReactSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
     }
 
-    /**
-     * Performs actions on logout complete.
-     */
-    protected void logoutCompleteActions() {
+    @Override
+    public void onLogoutComplete() {
     }
 
-    /**
-     * Acts on the logout complete event.
-     *
-     * @author bhariharan
-     */
-    private class ReactActivityLogoutCompleteReceiver extends LogoutCompleteReceiver {
-
-        @Override
-        protected void onLogoutComplete() {
-            logoutCompleteActions();
-        }
+    @Override
+    public void onUserSwitched() {
     }
 
     @Override
@@ -275,31 +270,28 @@ public abstract class SalesforceReactActivity extends ReactActivity {
         return reactActivityDelegate;
     }
 
-    protected boolean shouldReactBeRunning(){
-        if(shouldAskOverlayPermission()){
-            return false;
-        }
-        if(shouldAuthenticate()){
-            return client != null;
-        }
-        return true;
+    protected boolean shouldReactBeRunning() {
+        return !shouldAskOverlayPermission() && (!shouldAuthenticate() || client != null);
     }
 
-    protected void restartReactNativeApp(){
+    protected void restartReactNativeApp() {
         SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().destroy();
-        if(shouldReactBeRunning()){
+        if (shouldReactBeRunning()) {
             SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().createReactContextInBackground();
         }
     }
 
-    private boolean shouldAskOverlayPermission(){
+    private boolean shouldAskOverlayPermission() {
+
+        /*
+         * TODO: Remove this check once minAPI > 23.
+         */
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if(SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().getDevSupportManager().getDevSupportEnabled()){
+            if (SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().getDevSupportManager().getDevSupportEnabled()) {
                 if (!Settings.canDrawOverlays(this)) {
                     showPermissionWarning();
                     return true;
-                }
-                else{
+                } else {
                     hidePermissionWarning();
                 }
             }
@@ -308,31 +300,33 @@ public abstract class SalesforceReactActivity extends ReactActivity {
     }
 
     private void loadReactAppOnceIfReady() {
-        if(reactActivityDelegate != null ){
+        if (reactActivityDelegate != null ) {
             reactActivityDelegate.loadReactAppOnceIfReady(getMainComponentName());
         }
     }
 
-    private void showPermissionWarning(){
-        if(overlayPermissionRequiredDialog == null){
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    private void showPermissionWarning() {
+        if (overlayPermissionRequiredDialog == null) {
+            final AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Developer mode: Overlay permissions need to be granted");
             builder.setCancelable(false);
-            builder.setPositiveButton("Continue",new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog,int id) {
+            builder.setPositiveButton("Continue", new DialogInterface.OnClickListener() {
+
+                @Override
+                public void onClick(DialogInterface dialog, int id) {
                     dialog.dismiss();
                     SalesforceReactActivity.this.recreate();
                 }
             });
             overlayPermissionRequiredDialog = builder.create();
         }
-        if(!overlayPermissionRequiredDialog.isShowing()){
+        if (!overlayPermissionRequiredDialog.isShowing()) {
             overlayPermissionRequiredDialog.show();
         }
     }
 
-    private void hidePermissionWarning(){
-        if(overlayPermissionRequiredDialog != null){
+    private void hidePermissionWarning() {
+        if (overlayPermissionRequiredDialog != null) {
             overlayPermissionRequiredDialog.dismiss();
         }
     }

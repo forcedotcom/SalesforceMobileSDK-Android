@@ -59,12 +59,12 @@ public class ParentChildrenSyncTargetHelper {
         LOOKUP;
     }
 
-    public static void saveRecordTreesToLocalStore(SyncManager syncManager, SyncTarget target, ParentInfo parentInfo, ChildrenInfo childrenInfo, JSONArray recordTrees) throws JSONException {
+    public static void saveRecordTreesToLocalStore(SyncManager syncManager, SyncTarget target, ParentInfo parentInfo, ChildrenInfo childrenInfo, JSONArray recordTrees, long syncId) throws JSONException {
         SmartStore smartStore = syncManager.getSmartStore();
         synchronized(smartStore.getDatabase()) {
             try {
                 smartStore.beginTransaction();
-                for (int i=0; i<recordTrees.length(); i++) {
+                for (int i = 0; i < recordTrees.length(); i++) {
                     JSONObject record = recordTrees.getJSONObject(i);
                     JSONObject parent = new JSONObject(record.toString());
 
@@ -72,6 +72,7 @@ public class ParentChildrenSyncTargetHelper {
                     JSONArray children = (JSONArray) parent.remove(childrenInfo.sobjectTypePlural);
 
                     // Saving parent
+                    target.addSyncId(parent, syncId);
                     target.cleanRecord(parent);
                     target.cleanAndSaveInSmartStore(smartStore, parentInfo.soupName, parent, parentInfo.idFieldName, false);
 
@@ -82,6 +83,7 @@ public class ParentChildrenSyncTargetHelper {
                             child.put(childrenInfo.parentIdFieldName, parent.get(parentInfo.idFieldName));
 
                             // Saving child
+                            target.addSyncId(child, syncId);
                             target.cleanRecord(child);
                             target.cleanAndSaveInSmartStore(smartStore, childrenInfo.soupName, child, childrenInfo.idFieldName, false);
                         }
@@ -101,13 +103,13 @@ public class ParentChildrenSyncTargetHelper {
                 childrenInfo.soupName, childrenInfo.idFieldName, childrenInfo.soupName, childrenInfo.soupName, childrenInfo.parentIdFieldName, parentInfo.soupName, parentInfo.idFieldName, childrenInfo.soupName, SyncTarget.LOCAL);
     }
 
-    public static String getNonDirtyRecordIdsSql(ParentInfo parentInfo, ChildrenInfo childrenInfo, String parentFieldToSelect) {
+    public static String getNonDirtyRecordIdsSql(ParentInfo parentInfo, ChildrenInfo childrenInfo, String parentFieldToSelect, String additionalPredicate) {
         return String.format(
-                "SELECT DISTINCT {%s:%s} FROM {%s} WHERE {%s:%s} = 'false' AND NOT EXISTS (SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = {%s:%s} AND {%s:%s} = 'true')",
+                "SELECT DISTINCT {%s:%s} FROM {%s} WHERE {%s:%s} = 'false' %s AND NOT EXISTS (SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = {%s:%s} AND {%s:%s} = 'true')",
                 parentInfo.soupName, parentFieldToSelect, parentInfo.soupName, parentInfo.soupName, SyncTarget.LOCAL,
+                additionalPredicate,
                 childrenInfo.soupName, childrenInfo.idFieldName, childrenInfo.soupName, childrenInfo.soupName, childrenInfo.parentIdFieldName, parentInfo.soupName, parentInfo.idFieldName, childrenInfo.soupName, SyncTarget.LOCAL);
     }
-
 
     public static void deleteChildrenFromLocalStore(SmartStore smartStore, ParentInfo parentInfo, ChildrenInfo childrenInfo, String... parentIds) {
         QuerySpec querySpec = getQueryForChildren(parentInfo, childrenInfo, SmartStore.SOUP_ENTRY_ID, parentIds);

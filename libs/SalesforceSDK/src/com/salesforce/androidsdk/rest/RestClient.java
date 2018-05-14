@@ -59,7 +59,6 @@ public class RestClient {
 	private static final String INSTANCE_URL = "instanceUrl";
 	private static final String LOGIN_URL = "loginUrl";
 	private static final String IDENTITY_URL = "identityUrl";
-	private static final String CLIENT_ID = "clientId";
 	private static final String ORG_ID = "orgId";
 	private static final String USER_ID = "userId";
 	private static final String REFRESH_TOKEN = "refreshToken";
@@ -95,6 +94,7 @@ public class RestClient {
 	 * Interface through which the result of an asynchronous request is handled.
 	 */
 	public interface AsyncRequestCallback {
+
 		/**
 		 * NB: onSuccess runs on a network thread
 		 *     If you are making your call from an activity and need to make UI changes
@@ -183,6 +183,7 @@ public class RestClient {
     private synchronized void setOAuthRefreshInterceptor(String authToken) {
 		final String cacheKey = getCacheKey();
 		OAuthRefreshInterceptor oAuthRefreshInterceptor = OAUTH_REFRESH_INTERCEPTORS.get(cacheKey);
+
 		// If none cached, create new one
 		if (oAuthRefreshInterceptor == null) {
 			oAuthRefreshInterceptor = new OAuthRefreshInterceptor(clientInfo, authToken, authTokenProvider);
@@ -199,6 +200,7 @@ public class RestClient {
 	private synchronized void setOkHttpClientBuilder() {
 		final String cacheKey = getCacheKey();
 		OkHttpClient.Builder okHttpClientBuilder = OK_CLIENT_BUILDERS.get(cacheKey);
+
 		// If none cached, create new one
 		if (okHttpClientBuilder == null) {
 			okHttpClientBuilder = httpAccessor.getOkHttpClientBuilder()
@@ -220,8 +222,8 @@ public class RestClient {
 		if (okHttpClient != null) {
 			OK_CLIENTS.put(cacheKey, okHttpClient);
 		}
-
 		okHttpClient = OK_CLIENTS.get(cacheKey);
+
 		// If none cached, create new one
 		if (okHttpClient == null) {
 			okHttpClient = getOkHttpClientBuilder().build();
@@ -248,7 +250,6 @@ public class RestClient {
 		data.put(REFRESH_TOKEN, getRefreshToken());
 		data.put(USER_ID, clientInfo.userId);
 		data.put(ORG_ID, clientInfo.orgId);
-		data.put(CLIENT_ID, clientInfo.clientId);
 		data.put(LOGIN_URL, clientInfo.loginUrl.toString());
 		data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
 		data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
@@ -263,9 +264,6 @@ public class RestClient {
 		StringBuilder sb = new StringBuilder();
 		sb.append("RestClient: {\n")
 		  .append(this.oAuthRefreshInterceptor.clientInfo.toString())
-		  // Un-comment if you must: tokens should not be printed to the log
-		  // .append("   authToken: ").append(getAuthToken()).append("\n")
-		  // .append("   refreshToken: ").append(getRefreshToken()).append("\n")
 		  .append("   timeSinceLastRefresh: ").append(oAuthRefreshInterceptor.getElapsedTimeSinceLastRefresh()).append("\n")
 		  .append("}\n");
 		return sb.toString();
@@ -319,18 +317,18 @@ public class RestClient {
      * @return
      */
     public Request buildRequest(RestRequest restRequest) {
-        Request.Builder builder =  new Request.Builder()
-                .url(HttpUrl.get(this.oAuthRefreshInterceptor.clientInfo.resolveUrl(restRequest.getPath())))
+        final Request.Builder builder =  new Request.Builder()
+                .url(HttpUrl.get(oAuthRefreshInterceptor.clientInfo.resolveUrl(restRequest)))
                 .method(restRequest.getMethod().toString(), restRequest.getRequestBody());
+        oAuthRefreshInterceptor.setShouldRefreshOn403(restRequest.getShouldRefreshOn403());
 
-        // Adding addition headers
+        // Adding additional headers
         final Map<String, String> additionalHttpHeaders = restRequest.getAdditionalHttpHeaders();
         if (additionalHttpHeaders != null) {
             for (Map.Entry<String, String> entry : additionalHttpHeaders.entrySet()) {
                 builder.addHeader(entry.getKey(), entry.getValue());
             }
         }
-
         return builder.build();
     }
 
@@ -340,23 +338,23 @@ public class RestClient {
 	 * @param restRequest
 	 * @param callback
 	 * @return okHttp Call object (through which you can cancel the request or get the request back)
-		 */
-		public Call sendAsync(final RestRequest restRequest, final AsyncRequestCallback callback) {
-			Request request = buildRequest(restRequest);
-			Call call = okHttpClient.newCall(request);
-			call.enqueue(new Callback() {
-								 @Override
-								 public void onFailure(Call call, IOException e) {
+	 */
+    public Call sendAsync(final RestRequest restRequest, final AsyncRequestCallback callback) {
+	    Request request = buildRequest(restRequest);
+		Call call = okHttpClient.newCall(request);
+		call.enqueue(new Callback() {
+
+            @Override
+			public void onFailure(Call call, IOException e) {
 									 callback.onError(e);
 								 }
 
-								 @Override
-								 public void onResponse(Call call, Response response) throws IOException {
-									 callback.onSuccess(restRequest, new RestResponse(response));
-								 }
-							 }
-					);
-			return call;
+			@Override
+			public void onResponse(Call call, Response response) throws IOException {
+			    callback.onSuccess(restRequest, new RestResponse(response));
+            }
+		});
+		return call;
 	}
 
 	/**
@@ -372,7 +370,6 @@ public class RestClient {
         return new RestResponse(response);
 	}
 
-
     /**
      * Send the given restRequest synchronously and return a RestResponse
      * Note: Cannot be used by code on the UI thread (use sendAsync instead).
@@ -383,6 +380,7 @@ public class RestClient {
      */
     public RestResponse sendSync(RestRequest restRequest, Interceptor... interceptors) throws IOException {
         Request request = buildRequest(restRequest);
+
         // builder that shares the same connection pool, dispatcher, and configuration with the original client
         OkHttpClient.Builder clientBuilder = getOkHttpClient().newBuilder();
         for (Interceptor interceptor : interceptors) {
@@ -397,7 +395,6 @@ public class RestClient {
 	 */
 	public static class ClientInfo {
 
-		public final String clientId;
 		public final URI instanceUrl;
 		public final URI loginUrl;
 		public final URI identityUrl;
@@ -418,7 +415,6 @@ public class RestClient {
 		/**
 		 * Parameterized constructor.
 		 *
-		 * @param clientId Client ID.
 		 * @param instanceUrl Instance URL.
 		 * @param loginUrl Login URL.
 		 * @param identityUrl Identity URL.
@@ -436,12 +432,11 @@ public class RestClient {
          * @param thumbnailUrl Thumbnail URL.
          * @param additionalOauthValues Additional OAuth values.
 		 */
-		public ClientInfo(String clientId, URI instanceUrl, URI loginUrl,
+		public ClientInfo(URI instanceUrl, URI loginUrl,
 				URI identityUrl, String accountName, String username,
 				String userId, String orgId, String communityId, String communityUrl,
 				String firstName, String lastName, String displayName, String email,
 				String photoUrl, String thumbnailUrl, Map<String, String> additionalOauthValues) {
-			this.clientId = clientId;
 			this.instanceUrl = instanceUrl;
 			this.loginUrl = loginUrl;
 			this.identityUrl = identityUrl;
@@ -526,6 +521,15 @@ public class RestClient {
 		}
 
 		/**
+		 * Resolves the given {@link RestRequest} to its URL.
+		 * @param request The Rest request to resolve.
+		 * @return The URI associated with the Rest request.
+		 */
+		public URI resolveUrl(RestRequest request) {
+			return resolveUrl(request.getPath(), request.getEndpoint());
+		}
+
+		/**
 		 * Resolves the given path against the community URL or the instance
 		 * URL, depending on whether the user is a community user or not.
 		 *
@@ -533,24 +537,39 @@ public class RestClient {
 		 * @return Resolved URL.
 		 */
 		public URI resolveUrl(String path) {
+			return resolveUrl(path, RestRequest.RestEndpoint.INSTANCE);
+		}
+
+		/**
+		 * Resolves the given path against the community URL, login URL, or instance
+		 * URL.  If the user is a community user, the community URL will be used.  Otherwise,
+		 * the URL will be built from the
+		 * {@link com.salesforce.androidsdk.rest.RestRequest.RestEndpoint} parameter.
+		 * @param path Path
+		 * @param endpoint The Rest endpoint of the URL.
+		 * @return Resolved URL.
+		 */
+		public URI resolveUrl(String path, RestRequest.RestEndpoint endpoint) {
 			String resolvedPathStr = path;
 
 			// Resolve URL only for a relative URL.
 			if (!path.matches("[hH][tT][tT][pP][sS]?://.*")) {
-				final StringBuilder commInstanceUrl = new StringBuilder();
+				final StringBuilder resolvedUrlBuilder = new StringBuilder();
 				if (communityUrl != null && !"".equals(communityUrl.trim())) {
-					commInstanceUrl.append(communityUrl);
-				} else {
-					commInstanceUrl.append(instanceUrl.toString());
+					resolvedUrlBuilder.append(communityUrl);
+				} else if (endpoint == RestRequest.RestEndpoint.INSTANCE) {
+					resolvedUrlBuilder.append(instanceUrl.toString());
+				} else if (endpoint == RestRequest.RestEndpoint.LOGIN) {
+					resolvedUrlBuilder.append(loginUrl.toString());
 				}
-				if (!commInstanceUrl.toString().endsWith("/")) {
-					commInstanceUrl.append("/");
+				if (!resolvedUrlBuilder.toString().endsWith("/")) {
+					resolvedUrlBuilder.append("/");
 				}
 				if (path.startsWith("/")) {
 					path = path.substring(1);
 				}
-				commInstanceUrl.append(path);
-				resolvedPathStr = commInstanceUrl.toString();
+				resolvedUrlBuilder.append(path);
+				resolvedPathStr = resolvedUrlBuilder.toString();
 			}
 			URI uri = null;
 			try {
@@ -572,7 +591,9 @@ public class RestClient {
         public static final String NOUSER = "nouser";
 
         public UnauthenticatedClientInfo() {
-            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null,
+                    null, null, null, null, null,
+                    null, null, null, null, null, null);
         }
 
         @Override
@@ -599,13 +620,14 @@ public class RestClient {
     }
 
     /**
-     * Network interceptor that does oauth refresh and request retry when access token has expired
+     * Network interceptor that does oauth refresh and request retry when access token has expired.
      */
     public static class OAuthRefreshInterceptor implements Interceptor {
 
         private final AuthTokenProvider authTokenProvider;
         private String authToken;
         private ClientInfo clientInfo;
+        private boolean shouldRefreshOn403 = true;
 
         /**
          * Constructs a SalesforceHttpInterceptor with the given clientInfo, authToken and authTokenProvider.
@@ -631,13 +653,14 @@ public class RestClient {
             request = buildAuthenticatedRequest(request);
             Response response = chain.proceed(request);
 			int responseCode = response.code();
+			boolean refreshRequired = shouldRefreshOn403 ? (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED
+                    || responseCode == HttpURLConnection.HTTP_FORBIDDEN) : (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED);
 
 			/*
 			 * Standard access token expiry returns 401 as the error code. However, some APIs
 			 * return 403 as the error code when an instance split or migration occurs.
 			 */
-            if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED
-					|| responseCode == HttpURLConnection.HTTP_FORBIDDEN) {
+            if (refreshRequired) {
                 refreshAccessToken();
                 if (getAuthToken() != null) {
                     request = buildAuthenticatedRequest(request);
@@ -654,6 +677,24 @@ public class RestClient {
                 }
             }
             return response;
+        }
+
+        /**
+         * Returns whether the SDK should attempt to refresh tokens if the service returns HTTP 403.
+         *
+         * @return True - if the SDK should refresh on HTTP 403, False - otherwise.
+         */
+        public boolean getShouldRefreshOn403() {
+            return shouldRefreshOn403;
+        }
+
+        /**
+         * Sets whether the SDK should attempt to refresh tokens if the service returns HTTP 403.
+         *
+         * @param shouldRefreshOn403 True - if the SDK should refresh on HTTP 403, False - otherwise.
+         */
+        public synchronized void setShouldRefreshOn403(boolean shouldRefreshOn403) {
+            this.shouldRefreshOn403 = shouldRefreshOn403;
         }
 
 		/**
@@ -734,6 +775,7 @@ public class RestClient {
          * Swaps the existing access token for a new one.
          */
         private void refreshAccessToken() throws IOException {
+
             // If we haven't retried already and we have an accessTokenProvider
             // Then let's try to get a new authToken
             if (authTokenProvider != null) {
@@ -750,8 +792,9 @@ public class RestClient {
                 String instanceUrl = authTokenProvider.getInstanceUrl();
                 if (!clientInfo.instanceUrl.toString().equalsIgnoreCase(instanceUrl)) {
                     try {
+
                         // Create a new ClientInfo
-                        clientInfo = new ClientInfo(clientInfo.clientId, new URI(instanceUrl),
+                        clientInfo = new ClientInfo(new URI(instanceUrl),
                                 clientInfo.loginUrl, clientInfo.identityUrl,
                                 clientInfo.accountName, clientInfo.username,
                                 clientInfo.userId, clientInfo.orgId, clientInfo.communityId,
@@ -785,5 +828,4 @@ public class RestClient {
 			super(msg, cause);
 		}
 	}
-
 }

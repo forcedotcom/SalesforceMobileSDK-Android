@@ -32,7 +32,6 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 import com.salesforce.androidsdk.reactnative.ui.SalesforceReactActivity;
-import com.salesforce.androidsdk.reactnative.util.SalesforceReactLogger;
 
 public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
 
@@ -50,24 +49,28 @@ public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
     @ReactMethod
     public void authenticate(ReadableMap args,
                              Callback successCallback, Callback errorCallback) {
-        SalesforceReactLogger.i(TAG, "authenticate failed");
         final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
-        if (currentActivity != null) currentActivity.authenticate(successCallback, errorCallback);
+        if (currentActivity != null) {
+            currentActivity.authenticate(successCallback, errorCallback);
+        }
     }
 
 
     @ReactMethod
     public void getAuthCredentials(ReadableMap args,
                                    Callback successCallback, Callback errorCallback) {
-        SalesforceReactLogger.i(TAG, "getAuthCredentials failed");
         final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
-        if (currentActivity != null) currentActivity.getAuthCredentials(successCallback, errorCallback);
+        if (currentActivity != null) {
+            currentActivity.getAuthCredentials(successCallback, errorCallback);
+        }
     }
 
     @ReactMethod
     public void logoutCurrentUser(ReadableMap args,
                                   Callback successCallback, Callback errorCallback) {
         final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
-        if (currentActivity != null) currentActivity.logout(successCallback);
+        if (currentActivity != null) {
+            currentActivity.logout(successCallback);
+        }
     }
 }

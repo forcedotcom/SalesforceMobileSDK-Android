@@ -33,32 +33,21 @@ import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.SmartSyncException;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
-import com.salesforce.androidsdk.smartsync.util.Constants;
-import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
-import com.salesforce.androidsdk.smartsync.target.SoqlSyncDownTarget;
-import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
-import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
-import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.smartsync.util.SyncState.Status;
-import com.salesforce.androidsdk.smartsync.target.SyncTarget;
-import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -71,20 +60,12 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	public static final String CONTACT_SOUP = "contacts";
 	public static final Integer LIMIT = 10000;
 	public static final String LOAD_COMPLETE_INTENT_ACTION = "com.salesforce.samples.smartsyncexplorer.loaders.LIST_LOAD_COMPLETE";
-    private static final String TAG = "ContactListLoader";
-    private static IndexSpec[] CONTACTS_INDEX_SPEC = {
-		new IndexSpec("Id", Type.string),
-		new IndexSpec("FirstName", Type.string),
-		new IndexSpec("LastName", Type.string),
-		new IndexSpec(SyncTarget.LOCALLY_CREATED, Type.string),
-		new IndexSpec(SyncTarget.LOCALLY_UPDATED, Type.string),
-		new IndexSpec(SyncTarget.LOCALLY_DELETED, Type.string),
-		new IndexSpec(SyncTarget.LOCAL, Type.string)
-	};
+	private static final String TAG = "ContactListLoader";
+	public static final String SYNC_DOWN_NAME = "syncDownContacts";
+	public static final String SYNC_UP_NAME = "syncUpContacts";
 
-    private SmartStore smartStore;
+	private SmartStore smartStore;
     private SyncManager syncMgr;
-    private long syncId = -1;
 
 	/**
 	 * Parameterized constructor.
@@ -94,8 +75,13 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	 */
 	public ContactListLoader(Context context, UserAccount account) {
 		super(context);
-		smartStore = SmartSyncSDKManager.getInstance().getSmartStore(account);
+		SmartSyncSDKManager sdkManager = SmartSyncSDKManager.getInstance();
+		smartStore = sdkManager.getSmartStore(account);
 		syncMgr = SyncManager.getInstance(account);
+		// Setup schema if needed
+		sdkManager.setupUserStoreFromDefaultConfig();
+		// Setup syncs if needed
+		sdkManager.setupUserSyncsFromDefaultConfig();
 	}
 
 	@Override
@@ -124,12 +110,8 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	 * Pushes local changes up to the server.
 	 */
 	public synchronized void syncUp() {
-        final SyncUpTarget target = new SyncUpTarget();
-        final SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(ContactObject.CONTACT_FIELDS_SYNC_UP),
-                MergeMode.LEAVE_IF_CHANGED);
-
 		try {
-			syncMgr.syncUp(target, options, ContactListLoader.CONTACT_SOUP, new SyncUpdateCallback() {
+			syncMgr.reSync(SYNC_UP_NAME /* see usersyncs.json */, new SyncUpdateCallback() {
 
 				@Override
 				public void onUpdate(SyncState sync) {
@@ -149,28 +131,16 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	 * Pulls the latest records from the server.
 	 */
 	public synchronized void syncDown() {
-		smartStore.registerSoup(ContactListLoader.CONTACT_SOUP, CONTACTS_INDEX_SPEC);
-        final SyncUpdateCallback callback = new SyncUpdateCallback() {
+		try {
+			syncMgr.reSync(SYNC_DOWN_NAME /* see usersyncs.json */, new SyncUpdateCallback() {
 
-            @Override
-            public void onUpdate(SyncState sync) {
-		        if (Status.DONE.equals(sync.getStatus())) {
-		        	fireLoadCompleteIntent();
-		        }
-            }
-        };
-        try {
-            if (syncId == -1) {
-                final SyncOptions options = SyncOptions.optionsForSyncDown(SyncState.MergeMode.LEAVE_IF_CHANGED);
-                final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS_SYNC_DOWN)
-                        .from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
-                final SyncDownTarget target = new SoqlSyncDownTarget(soqlQuery);
-                final SyncState sync = syncMgr.syncDown(target, options,
-                		ContactListLoader.CONTACT_SOUP, callback);
-                syncId = sync.getId();
-            } else {
-                syncMgr.reSync(syncId, callback);
-            }
+                @Override
+                public void onUpdate(SyncState sync) {
+                    if (Status.DONE.equals(sync.getStatus())) {
+                        fireLoadCompleteIntent();
+                    }
+                }
+            });
         } catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while parsing", e);
         } catch (SmartSyncException e) {

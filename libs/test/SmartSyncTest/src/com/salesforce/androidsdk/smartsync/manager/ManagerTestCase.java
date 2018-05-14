@@ -29,7 +29,7 @@ package com.salesforce.androidsdk.smartsync.manager;
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
-import android.test.InstrumentationTestCase;
+import android.support.test.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
 import com.salesforce.androidsdk.auth.HttpAccess;
@@ -51,6 +51,8 @@ import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
+import junit.framework.Assert;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -67,9 +69,9 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Abstract super class for manager test classes
+ * Abstract super class for manager test classes.
  */
-abstract public class ManagerTestCase extends InstrumentationTestCase {
+abstract public class ManagerTestCase {
 
 	private static final String[] TEST_SCOPES = new String[] {"web"};
 	private static final String TEST_CALLBACK_URL = "test://callback";
@@ -78,29 +80,30 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
 
     protected Context targetContext;
     protected EventsListenerQueue eq;
+    protected SmartSyncSDKManager sdkManager;
     protected MetadataManager metadataManager;
     protected CacheManager cacheManager;
     protected SyncManager syncManager;
+    protected SyncManager globalSyncManager;
     protected RestClient restClient;
     protected HttpAccess httpAccess;
     protected SmartStore smartStore;
+    protected SmartStore globalSmartStore;
     protected String apiVersion;
 
-    @Override
     public void setUp() throws Exception {
-        super.setUp();
-        targetContext = getInstrumentation().getTargetContext();
+        targetContext = InstrumentationRegistry.getTargetContext();
         apiVersion = ApiVersionStrings.getVersionNumber(targetContext);
         final Application app = Instrumentation.newApplication(TestForceApp.class,
         		targetContext);
-        getInstrumentation().callApplicationOnCreate(app);
-        TestCredentials.init(getInstrumentation().getContext());
+        InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
+        TestCredentials.init(InstrumentationRegistry.getContext());
         eq = new EventsListenerQueue();
         if (SmartSyncSDKManager.getInstance() == null) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
         final LoginOptions loginOptions = new LoginOptions(TestCredentials.LOGIN_URL,
-        		TEST_CALLBACK_URL, TestCredentials.CLIENT_ID, TEST_SCOPES, null);
+        		TEST_CALLBACK_URL, TestCredentials.CLIENT_ID, TEST_SCOPES);
         final ClientManager clientManager = new ClientManager(targetContext,
         		TestCredentials.ACCOUNT_TYPE, loginOptions, true);
         clientManager.createNewAccount(TestCredentials.ACCOUNT_NAME,
@@ -108,22 +111,24 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
         		TEST_AUTH_TOKEN, TestCredentials.INSTANCE_URL,
         		TestCredentials.LOGIN_URL, TestCredentials.IDENTITY_URL,
         		TestCredentials.CLIENT_ID, TestCredentials.ORG_ID,
-        		TestCredentials.USER_ID, null, null, null, null, null, null, null, null, null, null);
+        		TestCredentials.USER_ID, null, null, null,
+                null, null, null, null, null, null);
     	MetadataManager.reset(null);
     	CacheManager.hardReset(null);
     	SyncManager.reset();
+    	sdkManager = SmartSyncSDKManager.getInstance();
         metadataManager = MetadataManager.getInstance(null);
         cacheManager = CacheManager.getInstance(null);
+        smartStore = sdkManager.getSmartStore();
+        globalSmartStore = sdkManager.getGlobalSmartStore();
         syncManager = SyncManager.getInstance();
+        globalSyncManager = SyncManager.getInstance(null, null, globalSmartStore);
         restClient = initRestClient();
         metadataManager.setRestClient(restClient);
         syncManager.setRestClient(restClient);
-        smartStore = cacheManager.getSmartStore();
-        // Debug logs during tests
         SmartSyncLogger.setLogLevel(SalesforceLogger.Level.DEBUG);
     }
 
-    @Override
     public void tearDown() throws Exception {
         if (eq != null) {
             eq.tearDown();
@@ -131,22 +136,15 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
         }
     	MetadataManager.reset(null);
     	CacheManager.hardReset(null);
-        super.tearDown();
     }
-    
-    /**
-     * Initializes and returns a RestClient instance used for live calls by tests.
-     *
-     * @return RestClient instance.
-     */
+
     private RestClient initRestClient() throws Exception {
         httpAccess = new HttpAccess(null, "dummy-agent");
         final TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,
-        		new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID,
-        		TestCredentials.REFRESH_TOKEN);
+        		new URI(TestCredentials.LOGIN_URL), TestCredentials.CLIENT_ID,
+        		TestCredentials.REFRESH_TOKEN, null);
         final String authToken = refreshResponse.authToken;
-        final ClientInfo clientInfo = new ClientInfo(TestCredentials.CLIENT_ID,
-        		new URI(TestCredentials.INSTANCE_URL),
+        final ClientInfo clientInfo = new ClientInfo(new URI(TestCredentials.INSTANCE_URL),
         		new URI(TestCredentials.LOGIN_URL),
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
@@ -154,7 +152,6 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
                 null, null, null, null, null, null, null);
         return new RestClient(clientInfo, authToken, httpAccess, null);
     }
-
 
     /**
      * Helper methods to create "count" of test records
@@ -190,14 +187,12 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
 
         // Go to server
         RestResponse response = restClient.sendSync(batchRequest);
-
-        assertTrue("Creates failed", response.isSuccess() && !response.asJSONObject().getBoolean("hasErrors"));
-
+        Assert.assertTrue("Creates failed", response.isSuccess() && !response.asJSONObject().getBoolean("hasErrors"));
         Map<String, Map <String, Object>> idToFields = new HashMap<>();
         JSONArray results = response.asJSONObject().getJSONArray("results");
         for (int i = 0; i< results.length(); i++) {
             JSONObject result = results.getJSONObject(i);
-            assertEquals("Status should be HTTP_CREATED", HttpURLConnection.HTTP_CREATED, result.getInt("statusCode"));
+            Assert.assertEquals("Status should be HTTP_CREATED", HttpURLConnection.HTTP_CREATED, result.getInt("statusCode"));
             String id = result.getJSONObject("result").getString(LID);
             Map<String, Object> fields = listFields.get(i);
 
@@ -285,6 +280,6 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
             requests.add(RestRequest.getRequestForUpdate(apiVersion, sObjectType, id, idToFieldsUpdated.get(id)));
         }
         RestResponse response = restClient.sendSync(RestRequest.getBatchRequest(apiVersion, false, requests));
-        assertTrue("Updates failed", response.isSuccess() && !response.asJSONObject().getBoolean("hasErrors"));
+        Assert.assertTrue("Updates failed", response.isSuccess() && !response.asJSONObject().getBoolean("hasErrors"));
     }
 }

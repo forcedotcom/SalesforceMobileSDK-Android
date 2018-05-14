@@ -33,16 +33,20 @@ import android.os.Bundle;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextUtils;
+import android.util.Pair;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.GridLayoutAnimationController;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.MultiAutoCompleteTextView;
 import android.widget.MultiAutoCompleteTextView.Tokenizer;
+import android.widget.Spinner;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.smartstore.R;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
@@ -50,15 +54,17 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-public class SmartStoreInspectorActivity extends Activity {
+public class SmartStoreInspectorActivity extends Activity implements AdapterView.OnItemSelectedListener {
 
 	// Keys for extras bundle
 	private static final String IS_GLOBAL_STORE = "isGlobalStore";
@@ -68,13 +74,18 @@ public class SmartStoreInspectorActivity extends Activity {
 	// Default page size / index
 	private static final int DEFAULT_PAGE_SIZE = 10;
 	private static final int DEFAULT_PAGE_INDEX = 0;
+	public static final String USER_STORE = " (user store)";
+	public static final String GLOBAL_STORE = " (global store)";
+	public static final String DEFAULT_STORE = "default";
 
 	// Store
 	private String dbName;
 	private boolean isGlobal;
 	private SmartStore smartStore;
+	private List<String> allStores;
 
 	// View elements
+	private Spinner spinner;
 	private MultiAutoCompleteTextView queryText;
 	private EditText pageSizeText;
 	private EditText pageIndexText;
@@ -108,27 +119,96 @@ public class SmartStoreInspectorActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		readExtras();
 		setContentView(R.layout.sf__inspector);
-		queryText = (MultiAutoCompleteTextView) findViewById(R.id.sf__inspector_query_text);
-		pageSizeText = (EditText) findViewById(R.id.sf__inspector_pagesize_text);
-		pageIndexText = (EditText) findViewById(R.id.sf__inspector_pageindex_text);
-		resultGrid = (GridView) findViewById(R.id.sf__inspector_result_grid);
+		getActionBar().setTitle(R.string.sf__inspector_title);
+		spinner = findViewById(R.id.sf__inspector_stores_spinner);
+		queryText = findViewById(R.id.sf__inspector_query_text);
+		pageSizeText = findViewById(R.id.sf__inspector_pagesize_text);
+		pageIndexText = findViewById(R.id.sf__inspector_pageindex_text);
+		resultGrid = findViewById(R.id.sf__inspector_result_grid);
+		setupSpinner();
 	}
+
 
 	@Override
 	protected void onResume() {
 		super.onResume();
-		final SmartStoreSDKManager manager = SmartStoreSDKManager.getInstance();
-		smartStore = isGlobal
-				? manager.getGlobalSmartStore(dbName)
-				: manager.getSmartStore(dbName, manager.getUserAccountManager().getCurrentUser(), null);
-		setupAutocomplete(queryText);
+		setupStore(isGlobal, dbName);
 	}
 
 	private void readExtras() {
 		Bundle bundle = getIntent().getExtras();
-		isGlobal = bundle == null ? false : bundle.getBoolean(IS_GLOBAL_STORE, false);
-		dbName = bundle == null ? DBOpenHelper.DEFAULT_DB_NAME : bundle.getString(DB_NAME, DBOpenHelper.DEFAULT_DB_NAME);
+		boolean hasUser = SmartStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser() != null;
+		// isGlobal is set to true
+		//   if no bundle, or no value for isGlobalStore in bundle, or true specified for isGlobalStore in bundle, or there is no current user
+		isGlobal = bundle == null || !bundle.containsKey(IS_GLOBAL_STORE) || bundle.getBoolean(IS_GLOBAL_STORE) || !hasUser;
+		// dbName is set to DBOpenHelper.DEFAULT_DB_NAME
+		//   if no bundle, or no value for dbName in bundle
+		dbName = bundle == null || !bundle.containsKey(DB_NAME) ? DBOpenHelper.DEFAULT_DB_NAME : bundle.getString(DB_NAME);
 	}
+
+	private void setupSpinner() {
+		SmartStoreSDKManager mgr = SmartStoreSDKManager.getInstance();
+		allStores = new ArrayList<>();
+		for (String dbName : mgr.getUserStoresPrefixList()) allStores.add(getDisplayNameForStore(false, dbName));
+		for (String dbName : mgr.getGlobalStoresPrefixList()) allStores.add(getDisplayNameForStore(true, dbName));
+		int selectedStoreIndex = allStores.indexOf(getDisplayNameForStore(this.isGlobal, this.dbName));
+		spinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, allStores));
+		spinner.setSelection(selectedStoreIndex);
+		spinner.setOnItemSelectedListener(this);
+	}
+
+	private String getDisplayNameForStore(boolean isGlobal, String dbName) {
+		return (dbName.equals(DBOpenHelper.DEFAULT_DB_NAME) ? DEFAULT_STORE : dbName) + (isGlobal ? GLOBAL_STORE : USER_STORE);
+	}
+
+	private Pair<Boolean, String> getStoreFromDisplayName(String storeDisplayName) {
+		boolean isGlobal;
+		String dbName;
+		if (storeDisplayName.endsWith(GLOBAL_STORE)) {
+			isGlobal = true;
+			dbName = storeDisplayName.substring(0, storeDisplayName.length() - GLOBAL_STORE.length());
+		}
+		else {
+			isGlobal = false;
+			dbName = storeDisplayName.substring(0, storeDisplayName.length() - USER_STORE.length());
+		}
+		dbName =  dbName.equals(DEFAULT_STORE) ? DBOpenHelper.DEFAULT_DB_NAME : dbName;
+		return new Pair<>(isGlobal, dbName);
+	}
+
+	private void setupStore(boolean isGlobal, String dbName) {
+		SmartStoreSDKManager mgr = SmartStoreSDKManager.getInstance();
+		UserAccount currentUser = mgr.getUserAccountManager().getCurrentUser();
+		if (this.isGlobal != isGlobal || !this.dbName.equals(dbName) || smartStore == null) {
+			this.isGlobal = isGlobal;
+			this.dbName = dbName;
+			smartStore = isGlobal ? mgr.getGlobalSmartStore(dbName) : mgr.getSmartStore(dbName, currentUser, null);
+			setupAutocomplete(queryText);
+		}
+	}
+
+	/**
+	 * Called when item selected in stores drop down
+	 * @param adapterView
+	 * @param view
+	 * @param i
+	 * @param l
+	 */
+	@Override
+	public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+		Pair<Boolean, String> selectedStore = getStoreFromDisplayName(allStores.get(i));
+		setupStore(selectedStore.first, selectedStore.second);
+	}
+
+	/**
+	 * Called when no item is selected in stores drop down
+	 * @param adapterView
+	 */
+	@Override
+	public void onNothingSelected(AdapterView<?> adapterView) {
+
+	}
+
 
 	/**
 	 * Called when "Clear" button is clicked
@@ -189,6 +269,11 @@ public class SmartStoreInspectorActivity extends Activity {
 	 */
 	public void onSoupsClick(View v) {
 		List<String> names = smartStore.getAllSoupNames();
+
+		if (names.size() == 0) {
+			showAlert(null, getString(R.string.sf__inspector_no_soups_found));
+			return;
+		}
 
 		if (names.size() > 10) {
 			queryText.setText(getString(R.string.sf__inspector_soups_query));
@@ -285,9 +370,10 @@ public class SmartStoreInspectorActivity extends Activity {
 		for (int j = 0; j < result.length(); j++) {
 			JSONArray row = result.getJSONArray(j);
 			for (int i = 0; i < row.length(); i++) {
-				Object val = row.get(i);
-				adapter.add(val instanceof JSONObject ? ((JSONObject) val)
-						.toString(2) : val.toString());
+				Object val = JSONObjectHelper.opt(row, i);
+				adapter.add(val instanceof JSONObject
+						? ((JSONObject) val).toString(2)
+						: (val == null ? "null" : val.toString()));
 			}
 		}
 
