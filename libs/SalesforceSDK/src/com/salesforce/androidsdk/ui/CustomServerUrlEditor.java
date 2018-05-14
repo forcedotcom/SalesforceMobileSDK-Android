@@ -44,6 +44,8 @@ import android.widget.Toast;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.LoginServerManager;
 
+import okhttp3.HttpUrl;
+
 /**
  * Custom dialog fragment to allow the user to set a label and URL to use for the login.
  */
@@ -96,7 +98,7 @@ public class CustomServerUrlEditor extends DialogFragment {
 					return;
 				}
 				final String val = validateInput(salesforceR.idPickerCustomUrl());
-				if (val == null) {
+				if (val == null || HttpUrl.parse(val) == null) {
 					return;
 				}
 
