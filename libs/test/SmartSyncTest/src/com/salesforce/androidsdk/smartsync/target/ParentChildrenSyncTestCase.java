@@ -393,7 +393,7 @@ public class ParentChildrenSyncTestCase extends SyncManagerTestCase {
      * @throws JSONException
      * @throws IOException
      */
-    private String checkRecordRecreated(String recordId, Map<String, Object> fields, String nameField, String soupName, String objectType, String parentId, String parentIdField) throws JSONException, IOException {
+    protected String checkRecordRecreated(String recordId, Map<String, Object> fields, String nameField, String soupName, String objectType, String parentId, String parentIdField) throws JSONException, IOException {
         String updatedName = (String) fields.get(nameField);
         Map<String, Map<String, Object>> newIdToFields = getIdToFieldsByName(soupName, new String[]{nameField}, nameField, new String[]{updatedName});
         String newRecordId = newIdToFields.keySet().toArray(new String[0])[0];

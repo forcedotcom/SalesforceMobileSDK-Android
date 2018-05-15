@@ -780,7 +780,7 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
 
     /**
      * Create accounts on server, sync down
-     * Create contacts locally associated the accounts with them and run sync up
+     * Create contacts locally, associates them with the accounts and run sync up
      * Check smartstore and server afterwards
      */
     @Test
@@ -820,4 +820,64 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         deleteRecordsOnServer(contactIdToFieldsCreated.keySet(), Constants.CONTACT);
     }
 
+
+    /**
+     * Create account on server, sync down
+     * Remotely delete account
+     * Create contacts locally, associates them with the account and run sync up
+     * Check smartstore and server afterwards
+     * The account should be recreated and the contacts should be associated to the new account id
+     */
+    @Test
+    public void testSyncUpWithLocallyCreatedChildrenRemotelyDeletedParent() throws Exception {
+        // Create account on server
+        final Map<String, String> accountIdToName = createRecordsOnServer(1, Constants.ACCOUNT);
+        String accountId = accountIdToName.keySet().toArray(new String[0])[0];
+        String accountName = accountIdToName.values().toArray(new String[0])[0];
+
+        // Sync down remote accounts
+        final SyncDownTarget accountSyncDownTarget = new SoqlSyncDownTarget("SELECT Id, Name, LastModifiedDate FROM Account WHERE Id = '" + accountId + "'");
+        trySyncDown(SyncState.MergeMode.OVERWRITE, accountSyncDownTarget, ACCOUNTS_SOUP, accountIdToName.size(), 1);
+
+        // Create a few contacts locally associated with account
+        final Map<String, JSONObject[]> contactsForAccountsLocally = createContactsForAccountsLocally(3, new String[]{accountId});
+        List<String> contactNamesList = new ArrayList<>();
+        for (JSONObject[] contacts : contactsForAccountsLocally.values()) {
+            for (JSONObject contact : contacts) {
+                contactNamesList.add(contact.getString(Constants.LAST_NAME));
+            }
+        }
+        String[] contactNames = contactNamesList.toArray(new String[0]);
+
+        // Delete account remotely
+        deleteRecordsOnServer(new HashSet<>(Arrays.asList(accountId)), Constants.ACCOUNT);
+
+        // Sync up
+        ParentChildrenSyncUpTarget target = getAccountContactsSyncUpTarget();
+        trySyncUp(target, 1, SyncState.MergeMode.OVERWRITE);
+
+        // Make sure account got recreated
+        Map<String, Object> accountFields = new HashMap<>();
+        accountFields.put(Constants.NAME, accountName);
+        String newAccountId = checkRecordRecreated(accountId, accountFields, Constants.NAME, ACCOUNTS_SOUP, Constants.ACCOUNT, null, null);
+
+        // Check that db doesn't show contact entries as locally created anymore
+        Map<String, Map<String, Object>> contactIdToFieldsCreated = getIdToFieldsByName(CONTACTS_SOUP, new String[]{Constants.LAST_NAME, ACCOUNT_ID}, Constants.LAST_NAME, contactNames);
+        checkDbStateFlags(contactIdToFieldsCreated.keySet(), false, false, false, CONTACTS_SOUP);
+
+        // Check contacts on server
+        checkServer(contactIdToFieldsCreated, Constants.CONTACT);
+
+        // Check that contact use new account id in accountId field
+
+
+        // Check that contact use new account id in accountId field
+        for (String contactId : contactIdToFieldsCreated.keySet()) {
+            Assert.assertEquals("Wrong accountId", newAccountId, contactIdToFieldsCreated.get(contactId).get(ACCOUNT_ID));
+        }
+
+        // Cleanup
+        deleteRecordsOnServer(new HashSet<String>(Arrays.asList(newAccountId)), Constants.ACCOUNT);
+        deleteRecordsOnServer(contactIdToFieldsCreated.keySet(), Constants.CONTACT);
+    }
 }
