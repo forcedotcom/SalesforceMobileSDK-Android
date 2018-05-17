@@ -29,6 +29,10 @@ package com.salesforce.androidsdk.smartsync.manager;
 import android.support.test.filters.MediumTest;
 import android.support.test.runner.AndroidJUnit4;
 
+import com.salesforce.androidsdk.smartsync.model.Layout;
+
+import junit.framework.Assert;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,37 +45,60 @@ import org.junit.runner.RunWith;
  */
 @RunWith(AndroidJUnit4.class)
 @MediumTest
-public class LayoutSyncManagerTest {
+public class LayoutSyncManagerTest extends ManagerTestCase {
 
-    private static final String LAYOUT_TYPE_COMPACT = "Compact";
+    private static final String COMPACT = "Compact";
+    private static final String ACCOUNT = "Account";
 
     private LayoutSyncManager layoutSyncManager;
+    private LayoutSyncManager.LayoutSyncCallback layoutSyncCallback;
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
+        super.setUp();
         layoutSyncManager = LayoutSyncManager.getInstance();
+        layoutSyncCallback = new LayoutSyncManager.LayoutSyncCallback() {
+
+            @Override
+            public void onSyncComplete(String objectType, Layout layout) {
+                Assert.assertEquals("Object types should match", ACCOUNT, objectType);
+                Assert.assertNotNull("Layout data should not be null", layout);
+                Assert.assertEquals("Layout types should match", COMPACT, layout.getLayoutType());
+                Assert.assertNotNull("Layout ID should not be null", layout.getId());
+            }
+        };
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws Exception {
         SyncManager.reset();
         layoutSyncManager.getSmartStore().dropAllSoups();
         LayoutSyncManager.reset();
+        layoutSyncCallback = null;
+        super.tearDown();
     }
 
     @Test
     public void testFetchLayoutInCacheOnlyMode() {
+        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.CACHE_ONLY,
+                layoutSyncCallback);
     }
 
     @Test
     public void testFetchLayoutInCacheFirstModeWithCacheData() {
+        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.CACHE_FIRST,
+                layoutSyncCallback);
     }
 
     @Test
     public void testFetchLayoutInCacheFirstModeWithoutCacheData() {
+        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.CACHE_FIRST,
+                layoutSyncCallback);
     }
 
     @Test
     public void testFetchLayoutInServerFirstMode() {
+        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.SERVER_FIRST,
+                layoutSyncCallback);
     }
 }
