@@ -39,6 +39,7 @@ import java.util.Set;
 
 /**
  * Sync down target for object layouts. This uses the '/ui-api/layout' API to fetch object layouts.
+ * The easiest way to use this sync target is through {@link com.salesforce.androidsdk.smartsync.manager.LayoutSyncManager}.
  *
  * @author bhariharan
  */
@@ -93,6 +94,10 @@ public class LayoutSyncDownTarget extends SyncDownTarget {
         final RestRequest request = RestRequest.getRequestForObjectLayout(syncManager.apiVersion,
                 objectType, layoutType);
         final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+        final JSONObject responseJSON = response.asJSONObject();
+        if (responseJSON != null) {
+            responseJSON.put(SOBJECT_TYPE, objectType);
+        }
         final JSONArray records = new JSONArray();
         records.put(response.asJSONObject());
 

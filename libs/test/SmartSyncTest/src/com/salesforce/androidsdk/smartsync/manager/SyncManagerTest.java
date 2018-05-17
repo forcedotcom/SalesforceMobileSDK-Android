@@ -74,7 +74,7 @@ import java.util.Set;
 import static java.util.Collections.singletonList;
 
 /**
- * Test class for SyncState.
+ * Test class for SyncManager.
  */
 @RunWith(AndroidJUnit4.class)
 @LargeTest

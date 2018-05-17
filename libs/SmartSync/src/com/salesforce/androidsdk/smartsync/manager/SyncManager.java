@@ -34,7 +34,6 @@ import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
-import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
@@ -137,7 +136,7 @@ public class SyncManager {
      */
     public static synchronized SyncManager getInstance(UserAccount account, String communityId, SmartStore smartStore) {
         if (account == null) {
-            account = SmartStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+            account = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser();
         }
         if (smartStore == null) {
             smartStore = SmartSyncSDKManager.getInstance().getSmartStore(account, communityId);
