@@ -45,7 +45,7 @@ import java.util.Set;
  */
 public class LayoutSyncDownTarget extends SyncDownTarget {
 
-    public static final String SOBJECT_TYPE = "sobjectType";
+    public static final String OBJECT_TYPE = "objectType";
     public static final String LAYOUT_TYPE = "layoutType";
 
     private String objectType;
@@ -59,7 +59,7 @@ public class LayoutSyncDownTarget extends SyncDownTarget {
      */
     public LayoutSyncDownTarget(JSONObject target) throws JSONException {
         super(target);
-        this.objectType = target.getString(SOBJECT_TYPE);
+        this.objectType = target.getString(OBJECT_TYPE);
         this.layoutType = target.getString(LAYOUT_TYPE);
     }
 
@@ -84,7 +84,7 @@ public class LayoutSyncDownTarget extends SyncDownTarget {
      */
     public JSONObject asJSON() throws JSONException {
         final JSONObject target = super.asJSON();
-        target.put(SOBJECT_TYPE, objectType);
+        target.put(OBJECT_TYPE, objectType);
         target.put(LAYOUT_TYPE, layoutType);
         return target;
     }
@@ -94,6 +94,10 @@ public class LayoutSyncDownTarget extends SyncDownTarget {
         final RestRequest request = RestRequest.getRequestForObjectLayout(syncManager.apiVersion,
                 objectType, layoutType);
         final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+        final JSONObject responseJSON = response.asJSONObject();
+        if (responseJSON != null) {
+            responseJSON.put(OBJECT_TYPE, objectType);
+        }
         final JSONArray records = new JSONArray();
         records.put(response.asJSONObject());
 

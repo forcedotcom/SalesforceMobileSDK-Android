@@ -40,7 +40,6 @@ import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 
 import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -233,8 +232,12 @@ public class LayoutSyncManager {
                     onSyncComplete(objectType, syncCallback, null);
                 }
             } else {
-                final JSONObject result = results.optJSONObject(0);
-                onSyncComplete(objectType, syncCallback, Layout.fromJSON(result));
+                final JSONArray resultArr = results.optJSONArray(0);
+                if (resultArr == null || resultArr.length() == 0) {
+                    onSyncComplete(objectType, syncCallback, null);
+                } else {
+                    onSyncComplete(objectType, syncCallback, Layout.fromJSON(resultArr.optJSONObject(0)));
+                }
             }
         } catch (Exception e) {
             SmartSyncLogger.e(TAG, "Exception occurred while reading layout data from the cache", e);
