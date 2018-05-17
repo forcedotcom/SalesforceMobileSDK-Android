@@ -31,6 +31,11 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.model.Layout;
+import com.salesforce.androidsdk.smartsync.target.LayoutSyncDownTarget;
+import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
+import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
+import com.salesforce.androidsdk.smartsync.util.SyncOptions;
+import com.salesforce.androidsdk.smartsync.util.SyncState;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -46,7 +51,9 @@ import java.util.Set;
  */
 public class LayoutSyncManager {
 
+    private static final String SOUP_NAME = "layouts";
     private static final String FEATURE_LAYOUT_SYNC = "LY";
+    private static final String TAG = "LayoutSyncManager";
 
     private static Map<String, LayoutSyncManager> INSTANCES = new HashMap<>();
 
@@ -154,18 +161,64 @@ public class LayoutSyncManager {
     }
 
     /**
-     * Fetches layout data using the specified mode and triggers the supplied callback once complete.
+     * Fetches layout data for the specified object type and layout type using the specified
+     * mode and triggers the supplied callback once complete.
      *
+     * @param objectType Object type.
+     * @param layoutType Layout type. Defaults to "Full" if null is passed in.
      * @param mode Fetch mode. See {@link Mode} for available modes.
      * @param syncCallback Layout sync callback.
      */
-    public void fetchLayout(Mode mode, LayoutSyncCallback syncCallback) {
-
+    public void fetchLayout(String objectType, String layoutType, Mode mode,
+                            LayoutSyncCallback syncCallback) {
+        switch (mode) {
+            case CACHE_ONLY:
+                fetchFromCache(objectType, layoutType, syncCallback, false);
+                break;
+            case CACHE_FIRST:
+                fetchFromCache(objectType, layoutType, syncCallback, true);
+                break;
+            case SERVER_FIRST:
+                fetchFromServer(objectType, layoutType, syncCallback);
+                break;
+        }
     }
 
     private LayoutSyncManager(SmartStore smartStore, SyncManager syncManager) {
         this.smartStore = smartStore;
         this.syncManager = syncManager;
+        initializeSoup();
+    }
+
+    private void fetchFromServer(final String objectType, final String layoutType,
+                                 final LayoutSyncCallback syncCallback) {
+        final SyncDownTarget target = new LayoutSyncDownTarget(objectType, layoutType);
+        final SyncOptions options = SyncOptions.optionsForSyncDown(SyncState.MergeMode.OVERWRITE);
+        try {
+            syncManager.syncDown(target, options, SOUP_NAME, new SyncManager.SyncUpdateCallback() {
+
+                @Override
+                public void onUpdate(SyncState sync) {
+                    if (SyncState.Status.DONE.equals(sync.getStatus())) {
+                        fetchFromCache(objectType, layoutType, syncCallback, false);
+                    }
+                }
+            });
+        } catch (Exception e) {
+            SmartSyncLogger.e(TAG, "Exception occurred while syncing layout data", e);
+        }
+    }
+
+    private void fetchFromCache(String objectType, String layoutType,
+                                LayoutSyncCallback syncCallback, boolean fallbackOnServer) {
+        // TODO: SmartStore calls.
+        if (fallbackOnServer) {
+            fetchFromServer(objectType, layoutType, syncCallback);
+        }
+    }
+
+    private void initializeSoup() {
+        // TODO: Register soup if it doesn't exist.
     }
 
     /**
