@@ -64,7 +64,18 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
                 Assert.assertEquals("Object types should match", ACCOUNT, objectType);
                 Assert.assertNotNull("Layout data should not be null", layout);
                 Assert.assertEquals("Layout types should match", COMPACT, layout.getLayoutType());
-                Assert.assertNotNull("Layout ID should not be null", layout.getId());
+                Assert.assertNotNull("Layout raw data should not be null", layout.getRawData());
+                Assert.assertNotNull("Layout sections should not be null", layout.getSections());
+                Assert.assertTrue("Number of layout sections should be 1 or more",
+                        layout.getSections().size() > 0);
+                Assert.assertNotNull("Layout rows for a section should not be null",
+                        layout.getSections().get(0).getLayoutRows());
+                Assert.assertTrue("Number of layout rows for a section should be 1 or more",
+                        layout.getSections().get(0).getLayoutRows().size() > 0);
+                Assert.assertNotNull("Layout items for a row should not be null",
+                        layout.getSections().get(0).getLayoutRows().get(0).getLayoutItems());
+                Assert.assertTrue("Number of layout items for a row should be 1 or more",
+                        layout.getSections().get(0).getLayoutRows().get(0).getLayoutItems().size() > 0);
             }
         };
     }
