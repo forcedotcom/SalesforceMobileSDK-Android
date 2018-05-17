@@ -61,8 +61,8 @@ public class LayoutSyncManager {
             "} WHERE {" + SOUP_NAME + ":sobjectType} = '%s' and {" + SOUP_NAME + ":layoutType} = '%s'";
     private static final String TAG = "LayoutSyncManager";
     private static final IndexSpec[] INDEX_SPECS = new IndexSpec[] {
-        new IndexSpec("sobjectType", SmartStore.Type.string),
-        new IndexSpec("layoutType", SmartStore.Type.string)
+        new IndexSpec("sobjectType", SmartStore.Type.json1),
+        new IndexSpec("layoutType", SmartStore.Type.json1)
     };
 
     private static Map<String, LayoutSyncManager> INSTANCES = new HashMap<>();
