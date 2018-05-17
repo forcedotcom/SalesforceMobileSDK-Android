@@ -166,30 +166,12 @@ public class LayoutSyncManager {
     }
 
     /**
-     * Fetches layout data and triggers the supplied callback once complete. This call attempts
-     * to fetch data from the cache first. If the cache is empty, it hits the server for data.
+     * Fetches layout data using the specified mode and triggers the supplied callback once complete.
      *
+     * @param mode Fetch mode. See {@link Mode} for available modes.
      * @param syncCallback Layout sync callback.
      */
-    public void fetchLayout(LayoutSyncCallback syncCallback) {
-
-    }
-
-    /**
-     * Fetches layout data from the cache and triggers the supplied callback once complete.
-     *
-     * @param syncCallback Layout sync callback.
-     */
-    public void fetchLayoutFromCache(LayoutSyncCallback syncCallback) {
-
-    }
-
-    /**
-     * Fetches layout data from the server and triggers the supplied callback once complete.
-     *
-     * @param syncCallback Layout sync callback.
-     */
-    public void fetchLayoutFromServer(LayoutSyncCallback syncCallback) {
+    public void fetchLayout(Mode mode, LayoutSyncCallback syncCallback) {
 
     }
 
@@ -198,7 +180,6 @@ public class LayoutSyncManager {
         this.restClient = restClient;
     }
 
-    private
     /**
      * Callback interface for layout sync.
      *
@@ -213,5 +194,19 @@ public class LayoutSyncManager {
          * @param layout Layout.
          */
         void onSyncComplete(String objectType, Layout layout);
+    }
+
+    /**
+     * Enum for available data fetch modes.
+     *
+     * CACHE_ONLY - Fetches data from the cache and returns null if no data is available.
+     * CACHE_FIRST - Fetches data from the cache and falls back on the server if no data is available.
+     * SERVER_FIRST - Fetches data from the server and falls back on the cache if the server doesn't
+     * return data. The data fetched from the server is automatically cached.
+     */
+    public enum Mode {
+        CACHE_ONLY,
+        CACHE_FIRST,
+        SERVER_FIRST
     }
 }
