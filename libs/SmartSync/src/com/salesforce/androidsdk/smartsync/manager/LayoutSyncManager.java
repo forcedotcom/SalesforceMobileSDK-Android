@@ -28,6 +28,8 @@ package com.salesforce.androidsdk.smartsync.manager;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.smartstore.store.IndexSpec;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.model.Layout;
@@ -36,6 +38,9 @@ import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,7 +58,13 @@ public class LayoutSyncManager {
 
     private static final String SOUP_NAME = "layouts";
     private static final String FEATURE_LAYOUT_SYNC = "LY";
+    private static final String QUERY = "SELECT {" + SOUP_NAME + ":_soup} from {" + SOUP_NAME +
+            "} WHERE {" + SOUP_NAME + ":objectType} = '%s' and {" + SOUP_NAME + ":layoutType} = '%s'";
     private static final String TAG = "LayoutSyncManager";
+    private static final IndexSpec[] INDEX_SPECS = new IndexSpec[] {
+        new IndexSpec("objectType", SmartStore.Type.string),
+        new IndexSpec("layoutType", SmartStore.Type.string)
+    };
 
     private static Map<String, LayoutSyncManager> INSTANCES = new HashMap<>();
 
@@ -205,20 +216,41 @@ public class LayoutSyncManager {
                 }
             });
         } catch (Exception e) {
-            SmartSyncLogger.e(TAG, "Exception occurred while syncing layout data", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while reading layout data from the server", e);
         }
     }
 
     private void fetchFromCache(String objectType, String layoutType,
                                 LayoutSyncCallback syncCallback, boolean fallbackOnServer) {
-        // TODO: SmartStore calls.
-        if (fallbackOnServer) {
-            fetchFromServer(objectType, layoutType, syncCallback);
+        final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(String.format(QUERY,
+                objectType, layoutType), 1);
+        try {
+            final JSONArray results = smartStore.query(querySpec, 0);
+            if (results == null || results.length() == 0) {
+                if (fallbackOnServer) {
+                    fetchFromServer(objectType, layoutType, syncCallback);
+                } else {
+                    onSyncComplete(objectType, syncCallback, null);
+                }
+            } else {
+                final JSONObject result = results.optJSONObject(0);
+                onSyncComplete(objectType, syncCallback, Layout.fromJSON(result));
+            }
+        } catch (Exception e) {
+            SmartSyncLogger.e(TAG, "Exception occurred while reading layout data from the cache", e);
+        }
+    }
+
+    private void onSyncComplete(String objectType, LayoutSyncCallback syncCallback, Layout layout) {
+        if (syncCallback != null) {
+            syncCallback.onSyncComplete(objectType, layout);
         }
     }
 
     private void initializeSoup() {
-        // TODO: Register soup if it doesn't exist.
+        if (!smartStore.hasSoup(SOUP_NAME)) {
+            smartStore.registerSoup(SOUP_NAME, INDEX_SPECS);
+        }
     }
 
     /**
