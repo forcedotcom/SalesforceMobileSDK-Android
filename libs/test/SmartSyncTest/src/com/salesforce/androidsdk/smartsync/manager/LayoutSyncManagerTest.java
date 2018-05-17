@@ -122,6 +122,10 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
      */
     @Test
     public void testFetchLayoutInCacheOnlyMode() {
+        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.SERVER_FIRST,
+                layoutSyncCallbackQueue);
+        layoutSyncCallbackQueue.getResult();
+        layoutSyncCallbackQueue.clearQueue();
         layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.CACHE_ONLY,
                 layoutSyncCallbackQueue);
         validateResult(layoutSyncCallbackQueue.getResult());
