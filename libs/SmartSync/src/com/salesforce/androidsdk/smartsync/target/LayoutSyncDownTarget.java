@@ -39,6 +39,7 @@ import java.util.Set;
 
 /**
  * Sync down target for object layouts. This uses the '/ui-api/layout' API to fetch object layouts.
+ * The easiest way to use this sync target is through {@link com.salesforce.androidsdk.smartsync.manager.LayoutSyncManager}.
  *
  * @author bhariharan
  */
