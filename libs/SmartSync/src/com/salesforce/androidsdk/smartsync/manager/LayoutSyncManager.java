@@ -55,13 +55,13 @@ import java.util.Set;
  */
 public class LayoutSyncManager {
 
-    private static final String SOUP_NAME = "layouts";
+    private static final String SOUP_NAME = "sfdcLayouts";
     private static final String FEATURE_LAYOUT_SYNC = "LY";
     private static final String QUERY = "SELECT {" + SOUP_NAME + ":_soup} from {" + SOUP_NAME +
-            "} WHERE {" + SOUP_NAME + ":objectType} = '%s' and {" + SOUP_NAME + ":layoutType} = '%s'";
+            "} WHERE {" + SOUP_NAME + ":sobjectType} = '%s' and {" + SOUP_NAME + ":layoutType} = '%s'";
     private static final String TAG = "LayoutSyncManager";
     private static final IndexSpec[] INDEX_SPECS = new IndexSpec[] {
-        new IndexSpec("objectType", SmartStore.Type.string),
+        new IndexSpec("sobjectType", SmartStore.Type.string),
         new IndexSpec("layoutType", SmartStore.Type.string)
     };
 
