@@ -232,12 +232,8 @@ public class LayoutSyncManager {
                     onSyncComplete(objectType, syncCallback, null);
                 }
             } else {
-                final JSONArray resultArr = results.optJSONArray(0);
-                if (resultArr == null || resultArr.length() == 0) {
-                    onSyncComplete(objectType, syncCallback, null);
-                } else {
-                    onSyncComplete(objectType, syncCallback, Layout.fromJSON(resultArr.optJSONObject(0)));
-                }
+                onSyncComplete(objectType, syncCallback,
+                        Layout.fromJSON(results.optJSONArray(0).optJSONObject(0)));
             }
         } catch (Exception e) {
             SmartSyncLogger.e(TAG, "Exception occurred while reading layout data from the cache", e);
