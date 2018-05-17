@@ -38,6 +38,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+
 /**
  * Tests for {@link LayoutSyncManager}.
  *
@@ -51,33 +55,56 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
     private static final String ACCOUNT = "Account";
 
     private LayoutSyncManager layoutSyncManager;
-    private LayoutSyncManager.LayoutSyncCallback layoutSyncCallback;
+    private LayoutSyncCallbackQueue layoutSyncCallbackQueue;
+
+    private static class LayoutSyncCallbackQueue implements LayoutSyncManager.LayoutSyncCallback {
+
+        private static class Result {
+
+            public String objectType;
+            public Layout layout;
+
+            public Result(String objectType, Layout layout) {
+                this.objectType = objectType;
+                this.layout = layout;
+            }
+        }
+
+        private BlockingQueue<Result> results;
+
+        public LayoutSyncCallbackQueue() {
+            results = new ArrayBlockingQueue<>(1);
+        }
+
+        @Override
+        public void onSyncComplete(String objectType, Layout layout) {
+            if (objectType != null) {
+                results.offer(new Result(objectType, layout));
+            }
+        }
+
+        public void clearQueue() {
+            results.clear();
+        }
+
+        public Result getResult() {
+            try {
+                final Result result = results.poll(30, TimeUnit.SECONDS);
+                if (result == null) {
+                    throw new RuntimeException("Timed out waiting for callback");
+                }
+                return result;
+            } catch (InterruptedException ex) {
+                throw new RuntimeException("Interrupted waiting for callback");
+            }
+        }
+    }
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
         layoutSyncManager = LayoutSyncManager.getInstance();
-        layoutSyncCallback = new LayoutSyncManager.LayoutSyncCallback() {
-
-            @Override
-            public void onSyncComplete(String objectType, Layout layout) {
-                Assert.assertEquals("Object types should match", ACCOUNT, objectType);
-                Assert.assertNotNull("Layout data should not be null", layout);
-                Assert.assertEquals("Layout types should match", COMPACT, layout.getLayoutType());
-                Assert.assertNotNull("Layout raw data should not be null", layout.getRawData());
-                Assert.assertNotNull("Layout sections should not be null", layout.getSections());
-                Assert.assertTrue("Number of layout sections should be 1 or more",
-                        layout.getSections().size() > 0);
-                Assert.assertNotNull("Layout rows for a section should not be null",
-                        layout.getSections().get(0).getLayoutRows());
-                Assert.assertTrue("Number of layout rows for a section should be 1 or more",
-                        layout.getSections().get(0).getLayoutRows().size() > 0);
-                Assert.assertNotNull("Layout items for a row should not be null",
-                        layout.getSections().get(0).getLayoutRows().get(0).getLayoutItems());
-                Assert.assertTrue("Number of layout items for a row should be 1 or more",
-                        layout.getSections().get(0).getLayoutRows().get(0).getLayoutItems().size() > 0);
-            }
-        };
+        layoutSyncCallbackQueue = new LayoutSyncCallbackQueue();
     }
 
     @After
@@ -85,7 +112,8 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
         SyncManager.reset();
         layoutSyncManager.getSmartStore().dropAllSoups();
         LayoutSyncManager.reset();
-        layoutSyncCallback = null;
+        layoutSyncCallbackQueue.clearQueue();
+        layoutSyncCallbackQueue = null;
         super.tearDown();
     }
 
@@ -95,7 +123,8 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
     @Test
     public void testFetchLayoutInCacheOnlyMode() {
         layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.CACHE_ONLY,
-                layoutSyncCallback);
+                layoutSyncCallbackQueue);
+        validateResult(layoutSyncCallbackQueue.getResult());
     }
 
     /**
@@ -104,9 +133,12 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
     @Test
     public void testFetchLayoutInCacheFirstModeWithCacheData() {
         layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.SERVER_FIRST,
-                layoutSyncCallback);
+                layoutSyncCallbackQueue);
+        layoutSyncCallbackQueue.getResult();
+        layoutSyncCallbackQueue.clearQueue();
         layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.CACHE_FIRST,
-                layoutSyncCallback);
+                layoutSyncCallbackQueue);
+        validateResult(layoutSyncCallbackQueue.getResult());
     }
 
     /**
@@ -115,7 +147,8 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
     @Test
     public void testFetchLayoutInCacheFirstModeWithoutCacheData() {
         layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.CACHE_FIRST,
-                layoutSyncCallback);
+                layoutSyncCallbackQueue);
+        validateResult(layoutSyncCallbackQueue.getResult());
     }
 
     /**
@@ -124,6 +157,27 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
     @Test
     public void testFetchLayoutInServerFirstMode() {
         layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.SERVER_FIRST,
-                layoutSyncCallback);
+                layoutSyncCallbackQueue);
+        validateResult(layoutSyncCallbackQueue.getResult());
+    }
+
+    private void validateResult(LayoutSyncCallbackQueue.Result result) {
+        final String objectType = result.objectType;
+        final Layout layout = result.layout;
+        Assert.assertEquals("Object types should match", ACCOUNT, objectType);
+        Assert.assertNotNull("Layout data should not be null", layout);
+        Assert.assertEquals("Layout types should match", COMPACT, layout.getLayoutType());
+        Assert.assertNotNull("Layout raw data should not be null", layout.getRawData());
+        Assert.assertNotNull("Layout sections should not be null", layout.getSections());
+        Assert.assertTrue("Number of layout sections should be 1 or more",
+                layout.getSections().size() > 0);
+        Assert.assertNotNull("Layout rows for a section should not be null",
+                layout.getSections().get(0).getLayoutRows());
+        Assert.assertTrue("Number of layout rows for a section should be 1 or more",
+                layout.getSections().get(0).getLayoutRows().size() > 0);
+        Assert.assertNotNull("Layout items for a row should not be null",
+                layout.getSections().get(0).getLayoutRows().get(0).getLayoutItems());
+        Assert.assertTrue("Number of layout items for a row should be 1 or more",
+                layout.getSections().get(0).getLayoutRows().get(0).getLayoutItems().size() > 0);
     }
 }
