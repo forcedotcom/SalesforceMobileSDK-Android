@@ -78,24 +78,38 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
         super.tearDown();
     }
 
+    /**
+     * Test for fetching layout in CACHE_ONLY mode.
+     */
     @Test
     public void testFetchLayoutInCacheOnlyMode() {
         layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.CACHE_ONLY,
                 layoutSyncCallback);
     }
 
+    /**
+     * Test for fetching layout in CACHE_FIRST mode with a hydrated cache.
+     */
     @Test
     public void testFetchLayoutInCacheFirstModeWithCacheData() {
+        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.SERVER_FIRST,
+                layoutSyncCallback);
         layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.CACHE_FIRST,
                 layoutSyncCallback);
     }
 
+    /**
+     * Test for fetching layout in CACHE_FIRST mode with an empty cache.
+     */
     @Test
     public void testFetchLayoutInCacheFirstModeWithoutCacheData() {
         layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.CACHE_FIRST,
                 layoutSyncCallback);
     }
 
+    /**
+     * Test for fetching layout in SERVER_FIRST mode.
+     */
     @Test
     public void testFetchLayoutInServerFirstMode() {
         layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.SERVER_FIRST,
