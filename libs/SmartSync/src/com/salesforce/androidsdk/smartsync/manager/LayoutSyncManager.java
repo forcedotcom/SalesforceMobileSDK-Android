@@ -28,8 +28,6 @@ package com.salesforce.androidsdk.smartsync.manager;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.model.Layout;
@@ -53,7 +51,7 @@ public class LayoutSyncManager {
     private static Map<String, LayoutSyncManager> INSTANCES = new HashMap<>();
 
     private SmartStore smartStore;
-    private RestClient restClient;
+    private SyncManager syncManager;
 
     /**
      * Returns the instance of this class associated with current user.
@@ -96,27 +94,17 @@ public class LayoutSyncManager {
     public static synchronized LayoutSyncManager getInstance(UserAccount account, String communityId,
                                                              SmartStore smartStore) {
         if (account == null) {
-            account = SmartStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+            account = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser();
         }
         if (smartStore == null) {
             smartStore = SmartSyncSDKManager.getInstance().getSmartStore(account, communityId);
         }
+        final SyncManager syncManager = SyncManager.getInstance(account, communityId, smartStore);
         final String uniqueId = (account != null ? account.getUserId() : "") + ":"
                 + smartStore.getDatabase().getPath();
         LayoutSyncManager instance = INSTANCES.get(uniqueId);
         if (instance == null) {
-            RestClient restClient;
-
-            /*
-             * If account is still null, there is no user logged in, which means the default
-             * RestClient should be set to the unauthenticated RestClient instance.
-             */
-            if (account == null) {
-                restClient = SalesforceSDKManager.getInstance().getClientManager().peekUnauthenticatedRestClient();
-            } else {
-                restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient(account);
-            }
-            instance = new LayoutSyncManager(smartStore, restClient);
+            instance = new LayoutSyncManager(smartStore, syncManager);
             INSTANCES.put(uniqueId, instance);
         }
         SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_LAYOUT_SYNC);
@@ -157,12 +145,12 @@ public class LayoutSyncManager {
     }
 
     /**
-     * Returns the RestClient instance used by this instance of LayoutSyncManager.
+     * Returns the SyncManager instance used by this instance of LayoutSyncManager.
      *
-     * @return RestClient instance.
+     * @return SyncManager instance.
      */
-    public RestClient getRestClient() {
-        return restClient;
+    public SyncManager getSyncManager() {
+        return syncManager;
     }
 
     /**
@@ -175,9 +163,9 @@ public class LayoutSyncManager {
 
     }
 
-    private LayoutSyncManager(SmartStore smartStore, RestClient restClient) {
+    private LayoutSyncManager(SmartStore smartStore, SyncManager syncManager) {
         this.smartStore = smartStore;
-        this.restClient = restClient;
+        this.syncManager = syncManager;
     }
 
     /**
