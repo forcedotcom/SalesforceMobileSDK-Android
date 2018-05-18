@@ -469,11 +469,16 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
             JSONArray row = accountsFromDb.getJSONArray(i);
             JSONObject soupElt = row.getJSONObject(0);
             String id = soupElt.getString(Constants.ID);
-            Assert.assertEquals("Wrong local flag", expectLocallyCreated || expectLocallyUpdated || expectLocallyDeleted, soupElt.getBoolean(SyncTarget.LOCAL));
+            boolean expectDirty = expectLocallyCreated || expectLocallyUpdated || expectLocallyDeleted;
+            Assert.assertEquals("Wrong local flag", expectDirty, soupElt.getBoolean(SyncTarget.LOCAL));
             Assert.assertEquals("Wrong local flag", expectLocallyCreated, soupElt.getBoolean(SyncTarget.LOCALLY_CREATED));
             Assert.assertEquals("Id was not updated", expectLocallyCreated, id.startsWith(LOCAL_ID_PREFIX));
             Assert.assertEquals("Wrong local flag", expectLocallyUpdated, soupElt.getBoolean(SyncTarget.LOCALLY_UPDATED));
             Assert.assertEquals("Wrong local flag", expectLocallyDeleted, soupElt.getBoolean(SyncTarget.LOCALLY_DELETED));
+            // Last error field should be empty for a clean record
+            if (!expectDirty) {
+                Assert.assertTrue("Last error should be empty", TextUtils.isEmpty(JSONObjectHelper.optString(soupElt, SyncTarget.LAST_ERROR)));
+            }
         }
     }
 
