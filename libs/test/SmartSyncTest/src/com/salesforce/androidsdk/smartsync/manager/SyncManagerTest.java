@@ -282,7 +282,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
      */
     @Test
     public void testSyncUpWithErrors() throws Exception {
-        //
+        // Build name too long
         StringBuffer buffer = new StringBuffer(256);
         for (int i = 0; i < 256; i++) buffer.append("x");
         String nameTooLong = buffer.toString();

@@ -495,10 +495,27 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         for (int i=0; i<accountsFromDb.length(); i++) {
             JSONArray row = accountsFromDb.getJSONArray(i);
             JSONObject soupElt = row.getJSONObject(0);
-            String id = soupElt.getString(Constants.ID);
             Assert.assertEquals("Wrong sync id", syncId, soupElt.getInt(SyncTarget.SYNC_ID));
         }
     }
+
+    /**
+     * Check records last error field in db
+     * @param ids
+     * @param lastErrorSubString value expected within __last_error__ field
+     * @param soupName
+     * @throws JSONException
+     */
+    protected void checkDbLastErrorField(String[] ids, String lastErrorSubString, String soupName) throws JSONException {
+        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec(String.format("SELECT {%s:_soup} FROM {%s} WHERE {%s:Id} IN %s", soupName, soupName, soupName, makeInClause(ids)), ids.length);
+        JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
+        for (int i=0; i<accountsFromDb.length(); i++) {
+            JSONArray row = accountsFromDb.getJSONArray(i);
+            JSONObject soupElt = row.getJSONObject(0);
+            Assert.assertTrue("Wrong last error", soupElt.getString(SyncTarget.LAST_ERROR).contains(lastErrorSubString));
+        }
+    }
+
 
     /**
      * Check records on server
@@ -661,8 +678,22 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
      * @throws JSONException
      */
     protected Map<String, Map<String, Object>> updateRecordLocally(String soupName, String id, Map<String, Object> fields) throws JSONException {
+        return updateRecordLocally(soupName, id, fields, LOCALLY_UPDATED);
+    }
+
+    /**
+     * Helper method to update a single record locally by appending the given prefix to the fields
+     *
+     * @param soupName
+     * @param id
+     * @param fields
+     * @param suffix
+     * @return
+     * @throws JSONException
+     */
+    protected Map<String, Map<String, Object>> updateRecordLocally(String soupName, String id, Map<String, Object> fields, String suffix) throws JSONException {
         Map<String, Map<String, Object>> idToFieldsLocallyUpdated = new HashMap<>();
-        Map<String, Object> updatedFields = updatedFields(fields, LOCALLY_UPDATED);
+        Map<String, Object> updatedFields = updatedFields(fields, suffix);
         idToFieldsLocallyUpdated.put(id, updatedFields);
         updateRecordsLocally(idToFieldsLocallyUpdated, soupName);
         return idToFieldsLocallyUpdated;
