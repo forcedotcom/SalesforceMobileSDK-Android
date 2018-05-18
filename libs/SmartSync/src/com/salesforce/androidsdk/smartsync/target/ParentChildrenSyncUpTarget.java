@@ -232,6 +232,10 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
 
                 deleteFromLocalStore(syncManager, soupName, record);
             }
+            // Failure
+            else {
+                saveRecordToLocalStoreWithError(syncManager, soupName, record, response != null ? response.toString() : null);
+            }
         }
 
         // Create / update case
@@ -261,6 +265,10 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                     needReRun = true;
                 }
             }
+            // Failure
+            else {
+                saveRecordToLocalStoreWithError(syncManager, soupName, record, response != null ? response.toString() : null);
+            }
         }
         return needReRun;
     }
@@ -277,6 +285,10 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                     || statusCode == HttpURLConnection.HTTP_NOT_FOUND) // or the record was already deleted on the server
             {
                 deleteFromLocalStore(syncManager, soupName, record);
+            }
+            // Failure
+            else {
+                saveRecordToLocalStoreWithError(syncManager, soupName, record, response != null ? response.toString() : null);
             }
         }
 
@@ -316,6 +328,10 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                     // We need a re-run
                     needReRun = true;
                 }
+            }
+            // Failure
+            else {
+                saveRecordToLocalStoreWithError(syncManager, soupName, record, response != null ? response.toString() : null);
             }
         }
         return needReRun;

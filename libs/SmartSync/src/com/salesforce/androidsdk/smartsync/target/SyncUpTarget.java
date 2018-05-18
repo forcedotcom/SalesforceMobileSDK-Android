@@ -84,6 +84,9 @@ public class SyncUpTarget extends SyncTarget {
     protected List<String> createFieldlist;
     protected List<String> updateFieldlist;
 
+    // Last sync error
+    protected String lastError;
+
     /**
      * Build SyncUpTarget from json
      *
@@ -147,6 +150,26 @@ public class SyncUpTarget extends SyncTarget {
     }
 
     /**
+     * Save record with last error if any
+     * @param syncManager
+     * @param soupName
+     * @param record
+     * @throws JSONException
+     */
+    public void saveRecordToLocalStoreWithLastError(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
+        saveRecordToLocalStoreWithError(syncManager, soupName, record, lastError);
+        lastError = null;
+    }
+
+    protected void saveRecordToLocalStoreWithError(SyncManager syncManager, String soupName, JSONObject record, String error) throws JSONException {
+        if (error != null) {
+            record.put(SyncTarget.LAST_ERROR, error);
+            saveInLocalStore(syncManager, soupName, record);
+        }
+    }
+
+
+    /**
      * Save locally created record back to server
      * @param syncManager
      * @param record
@@ -176,6 +199,11 @@ public class SyncUpTarget extends SyncTarget {
     protected String createOnServer(SyncManager syncManager, String objectType, Map<String, Object> fields) throws IOException, JSONException {
         RestRequest request = RestRequest.getRequestForCreate(syncManager.apiVersion, objectType, fields);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+
+        if (!response.isSuccess()) {
+            lastError = response.asString();
+        }
+
         return response.isSuccess()
                 ? response.asJSONObject().getString(Constants.LID)
                 : null;
@@ -207,6 +235,11 @@ public class SyncUpTarget extends SyncTarget {
     protected int deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws IOException {
         RestRequest request = RestRequest.getRequestForDelete(syncManager.apiVersion, objectType, objectId);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+
+        if (!response.isSuccess()) {
+            lastError = response.asString();
+        }
+
         return response.getStatusCode();
     }
 
@@ -240,6 +273,11 @@ public class SyncUpTarget extends SyncTarget {
     protected int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws IOException {
         RestRequest request = RestRequest.getRequestForUpdate(syncManager.apiVersion, objectType, objectId, fields);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+
+        if (!response.isSuccess()) {
+            lastError = response.asString();
+        }
+
         return response.getStatusCode();
     }
 
