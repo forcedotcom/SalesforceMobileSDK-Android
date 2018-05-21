@@ -175,7 +175,7 @@ public abstract class SyncTarget {
      * @param soupName
      * @param record
      */
-    public void saveInLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
+    protected void saveInLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
         saveInSmartStore(syncManager.getSmartStore(), soupName, record, getIdFieldName(), true);
         SmartSyncLogger.d(TAG, "saveInLocalStore", record);
     }
