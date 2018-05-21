@@ -57,8 +57,8 @@ public class LayoutSyncManager {
 
     private static final String SOUP_NAME = "sfdcLayouts";
     private static final String FEATURE_LAYOUT_SYNC = "LY";
-    private static final String QUERY = "SELECT {" + SOUP_NAME + ":_soup} from {" + SOUP_NAME +
-            "} WHERE {" + SOUP_NAME + ":sobjectType} = '%s' and {" + SOUP_NAME + ":layoutType} = '%s'";
+    private static final String QUERY = "SELECT {" + SOUP_NAME + ":_soup} FROM {" + SOUP_NAME +
+            "} WHERE {" + SOUP_NAME + ":sobjectType} = '%s' AND {" + SOUP_NAME + ":layoutType} = '%s'";
     private static final String TAG = "LayoutSyncManager";
     private static final IndexSpec[] INDEX_SPECS = new IndexSpec[] {
         new IndexSpec("sobjectType", SmartStore.Type.json1),
