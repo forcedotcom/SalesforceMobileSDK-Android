@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.smartsync.target;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.util.Constants;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -47,6 +48,7 @@ public class LayoutSyncDownTarget extends SyncDownTarget {
 
     public static final String SOBJECT_TYPE = "sobjectType";
     public static final String LAYOUT_TYPE = "layoutType";
+    public static final String ID_FIELD_VALUE = "%s-%s";
 
     private String objectType;
     private String layoutType;
@@ -97,6 +99,7 @@ public class LayoutSyncDownTarget extends SyncDownTarget {
         final JSONObject responseJSON = response.asJSONObject();
         if (responseJSON != null) {
             responseJSON.put(SOBJECT_TYPE, objectType);
+            responseJSON.put(Constants.ID, String.format(ID_FIELD_VALUE, objectType, layoutType));
         }
         final JSONArray records = new JSONArray();
         records.put(response.asJSONObject());
