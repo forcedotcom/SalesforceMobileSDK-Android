@@ -178,7 +178,7 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
                 layoutSyncCallbackQueue);
         validateResult(layoutSyncCallbackQueue.getResult());
         final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(String.format(LayoutSyncManager.QUERY,
-                ACCOUNT, COMPACT), 1);
+                ACCOUNT, COMPACT), 2);
         int numRows = layoutSyncManager.getSmartStore().countQuery(querySpec);
         Assert.assertEquals("Number of rows should be 1", 1, numRows);
     }
