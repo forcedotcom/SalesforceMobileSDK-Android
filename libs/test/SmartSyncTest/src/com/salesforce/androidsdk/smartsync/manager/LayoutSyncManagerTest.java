@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.smartsync.manager;
 import android.support.test.filters.MediumTest;
 import android.support.test.runner.AndroidJUnit4;
 
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartsync.model.Layout;
 
 import junit.framework.Assert;
@@ -163,6 +164,23 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
         layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.SERVER_FIRST,
                 layoutSyncCallbackQueue);
         validateResult(layoutSyncCallbackQueue.getResult());
+    }
+
+    /**
+     * Test for fetching layout multiple times and ensuring only 1 row is created.
+     */
+    @Test
+    public void testFetchLayoutMultipleTimes() {
+        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.SERVER_FIRST,
+                layoutSyncCallbackQueue);
+        validateResult(layoutSyncCallbackQueue.getResult());
+        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.SERVER_FIRST,
+                layoutSyncCallbackQueue);
+        validateResult(layoutSyncCallbackQueue.getResult());
+        final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(String.format(LayoutSyncManager.QUERY,
+                ACCOUNT, COMPACT), 1);
+        int numRows = layoutSyncManager.getSmartStore().countQuery(querySpec);
+        Assert.assertEquals("Number of rows should be 1", 1, numRows);
     }
 
     private void validateResult(LayoutSyncCallbackQueue.Result result) {

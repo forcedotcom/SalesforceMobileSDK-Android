@@ -35,6 +35,7 @@ import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.model.Layout;
 import com.salesforce.androidsdk.smartsync.target.LayoutSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
+import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
@@ -55,14 +56,13 @@ import java.util.Set;
  */
 public class LayoutSyncManager {
 
-    private static final String SOUP_NAME = "sfdcLayouts";
     private static final String FEATURE_LAYOUT_SYNC = "LY";
-    private static final String QUERY = "SELECT {" + SOUP_NAME + ":_soup} FROM {" + SOUP_NAME +
-            "} WHERE {" + SOUP_NAME + ":sobjectType} = '%s' AND {" + SOUP_NAME + ":layoutType} = '%s'";
+    static final String SOUP_NAME = "sfdcLayouts";
+    static final String QUERY = "SELECT {" + SOUP_NAME + ":_soup} FROM {" + SOUP_NAME +
+            "} WHERE {" + SOUP_NAME + ":" + Constants.ID + "} = '%s-%s'";
     private static final String TAG = "LayoutSyncManager";
     private static final IndexSpec[] INDEX_SPECS = new IndexSpec[] {
-        new IndexSpec("sobjectType", SmartStore.Type.json1),
-        new IndexSpec("layoutType", SmartStore.Type.json1)
+        new IndexSpec(Constants.ID, SmartStore.Type.json1)
     };
 
     private static Map<String, LayoutSyncManager> INSTANCES = new HashMap<>();

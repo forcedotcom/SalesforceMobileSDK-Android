@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.smartsync.target;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.util.Constants;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -86,6 +87,10 @@ public class MetadataSyncDownTarget extends SyncDownTarget {
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
         final RestRequest request = RestRequest.getRequestForDescribe(syncManager.apiVersion, objectType);
         final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+        final JSONObject responseJSON = response.asJSONObject();
+        if (responseJSON != null) {
+            responseJSON.put(Constants.ID, objectType);
+        }
         final JSONArray records = new JSONArray();
         records.put(response.asJSONObject());
 
