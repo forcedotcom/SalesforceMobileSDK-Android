@@ -56,9 +56,9 @@ import java.util.Set;
  */
 public class LayoutSyncManager {
 
-    private static final String SOUP_NAME = "sfdcLayouts";
     private static final String FEATURE_LAYOUT_SYNC = "LY";
-    private static final String QUERY = "SELECT {" + SOUP_NAME + ":_soup} FROM {" + SOUP_NAME +
+    static final String SOUP_NAME = "sfdcLayouts";
+    static final String QUERY = "SELECT {" + SOUP_NAME + ":_soup} FROM {" + SOUP_NAME +
             "} WHERE {" + SOUP_NAME + ":" + Constants.ID + "} = '%s-%s'";
     private static final String TAG = "LayoutSyncManager";
     private static final IndexSpec[] INDEX_SPECS = new IndexSpec[] {
