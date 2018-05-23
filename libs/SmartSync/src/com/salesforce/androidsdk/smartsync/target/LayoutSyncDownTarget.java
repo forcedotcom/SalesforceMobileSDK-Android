@@ -98,7 +98,6 @@ public class LayoutSyncDownTarget extends SyncDownTarget {
         final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
         final JSONObject responseJSON = response.asJSONObject();
         if (responseJSON != null) {
-            responseJSON.put(SOBJECT_TYPE, objectType);
             responseJSON.put(Constants.ID, String.format(ID_FIELD_VALUE, objectType, layoutType));
         }
         final JSONArray records = new JSONArray();
