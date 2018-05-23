@@ -313,14 +313,16 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkDbStateFlags(idToFieldsBadNames.keySet(), true, false, false, ACCOUNTS_SOUP);
 
         for (Map<String, Object> fields : idToFieldsBadNames.values()) {
-            if (fields.get(Constants.NAME).equals(nameTooLong)) {
-                Assert.assertTrue("Name too large error expected", ((String) fields.get(SyncTarget.LAST_ERROR)).contains("Account Name: data value too large"));
+            String name = (String) fields.get(Constants.NAME);
+            String lastError = (String) fields.get(SyncTarget.LAST_ERROR);
+            if (name.equals(nameTooLong)) {
+                Assert.assertTrue("Name too large error expected", lastError.contains("Account Name: data value too large"));
             }
-            else if (fields.get(Constants.NAME).equals("")) {
-                Assert.assertTrue("Missing name error expected", ((String) fields.get(SyncTarget.LAST_ERROR)).contains("Required fields are missing: [Name]"));
+            else if (name.equals("")) {
+                Assert.assertTrue("Missing name error expected", lastError.contains("Required fields are missing: [Name]"));
             }
             else {
-                Assert.fail("Unexpected record found: " + fields.get(Constants.NAME));
+                Assert.fail("Unexpected record found: " + name);
             }
         }
 
