@@ -54,6 +54,7 @@ import java.util.concurrent.TimeUnit;
 public class MetadataSyncManagerTest extends ManagerTestCase {
 
     private static final String ACCOUNT = "Account";
+    private static final String ACCOUNT_KEY_PREFIX = "001";
 
     private MetadataSyncManager metadataSyncManager;
     private MetadataSyncCallbackQueue metadataSyncCallbackQueue;
@@ -171,20 +172,16 @@ public class MetadataSyncManagerTest extends ManagerTestCase {
     }
 
     private void validateResult(Metadata metadata) {
-        Assert.assertEquals("Object types should match", ACCOUNT, objectType);
-        Assert.assertNotNull("Layout data should not be null", layout);
-        Assert.assertEquals("Layout types should match", COMPACT, layout.getLayoutType());
-        Assert.assertNotNull("Layout raw data should not be null", layout.getRawData());
-        Assert.assertNotNull("Layout sections should not be null", layout.getSections());
-        Assert.assertTrue("Number of layout sections should be 1 or more",
-                layout.getSections().size() > 0);
-        Assert.assertNotNull("Layout rows for a section should not be null",
-                layout.getSections().get(0).getLayoutRows());
-        Assert.assertTrue("Number of layout rows for a section should be 1 or more",
-                layout.getSections().get(0).getLayoutRows().size() > 0);
-        Assert.assertNotNull("Layout items for a row should not be null",
-                layout.getSections().get(0).getLayoutRows().get(0).getLayoutItems());
-        Assert.assertTrue("Number of layout items for a row should be 1 or more",
-                layout.getSections().get(0).getLayoutRows().get(0).getLayoutItems().size() > 0);
+        Assert.assertNotNull("Metadata should not be null", metadata);
+        Assert.assertEquals("Object types should match", ACCOUNT, metadata.getName());
+        Assert.assertNotNull("Metadata raw data should not be null", metadata.getRawData());
+        Assert.assertTrue("Object should be compact layoutable", metadata.isCompactLayoutable());
+        Assert.assertTrue("Object should be createable", metadata.isCreateable());
+        Assert.assertNotNull("Child relationships should not be null", metadata.getChildRelationships());
+        Assert.assertNotNull("Fields should not be null", metadata.getFields());
+        Assert.assertNotNull("URLs should not be null", metadata.getUrls());
+        Assert.assertTrue("Object should be searchable", metadata.isSearchable());
+        Assert.assertEquals("Object key prefixes should match", ACCOUNT_KEY_PREFIX, metadata.getKeyPrefix());
+        Assert.assertEquals("Object labels should match", ACCOUNT, metadata.getLabel());
     }
 }
