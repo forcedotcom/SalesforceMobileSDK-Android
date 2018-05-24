@@ -32,8 +32,8 @@ import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
-import com.salesforce.androidsdk.smartsync.model.Layout;
-import com.salesforce.androidsdk.smartsync.target.LayoutSyncDownTarget;
+import com.salesforce.androidsdk.smartsync.model.Metadata;
+import com.salesforce.androidsdk.smartsync.target.MetadataSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
@@ -48,24 +48,24 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Provides an easy way to fetch layout data using {@link com.salesforce.androidsdk.smartsync.target.LayoutSyncDownTarget}.
+ * Provides an easy way to fetch metadata using {@link com.salesforce.androidsdk.smartsync.target.MetadataSyncDownTarget}.
  * This class handles creating a soup, storing synched data and reading it into
- * a meaningful data structure, i.e. {@link com.salesforce.androidsdk.smartsync.model.Layout}.
+ * a meaningful data structure, i.e. {@link com.salesforce.androidsdk.smartsync.model.Metadata}.
  *
  * @author bhariharan
  */
-public class LayoutSyncManager {
+public class MetadataSyncManager {
 
-    private static final String FEATURE_LAYOUT_SYNC = "LY";
-    static final String SOUP_NAME = "sfdcLayouts";
+    private static final String FEATURE_METADATA_SYNC = "MD";
+    static final String SOUP_NAME = "sfdcMetadata";
     static final String QUERY = "SELECT {" + SOUP_NAME + ":_soup} FROM {" + SOUP_NAME +
-            "} WHERE {" + SOUP_NAME + ":" + Constants.ID + "} = '%s-%s'";
-    private static final String TAG = "LayoutSyncManager";
+            "} WHERE {" + SOUP_NAME + ":" + Constants.ID + "} = '%s'";
+    private static final String TAG = "MetadataSyncManager";
     private static final IndexSpec[] INDEX_SPECS = new IndexSpec[] {
-        new IndexSpec(Constants.ID, SmartStore.Type.json1)
+            new IndexSpec(Constants.ID, SmartStore.Type.json1)
     };
 
-    private static Map<String, LayoutSyncManager> INSTANCES = new HashMap<>();
+    private static Map<String, MetadataSyncManager> INSTANCES = new HashMap<>();
 
     private SmartStore smartStore;
     private SyncManager syncManager;
@@ -75,7 +75,7 @@ public class LayoutSyncManager {
      *
      * @return Instance of this class.
      */
-    public static synchronized LayoutSyncManager getInstance() {
+    public static synchronized MetadataSyncManager getInstance() {
         return getInstance(null, null);
     }
 
@@ -85,7 +85,7 @@ public class LayoutSyncManager {
      * @param account User account.
      * @return Instance of this class.
      */
-    public static synchronized LayoutSyncManager getInstance(UserAccount account) {
+    public static synchronized MetadataSyncManager getInstance(UserAccount account) {
         return getInstance(account, null);
     }
 
@@ -96,7 +96,7 @@ public class LayoutSyncManager {
      * @param communityId Community ID.
      * @return Instance of this class.
      */
-    public static synchronized LayoutSyncManager getInstance(UserAccount account, String communityId) {
+    public static synchronized MetadataSyncManager getInstance(UserAccount account, String communityId) {
         return getInstance(account, communityId, null);
     }
 
@@ -108,7 +108,7 @@ public class LayoutSyncManager {
      * @param smartStore SmartStore instance. Pass null to use current user default SmartStore.
      * @return Instance of this class.
      */
-    public static synchronized LayoutSyncManager getInstance(UserAccount account, String communityId,
+    public static synchronized MetadataSyncManager getInstance(UserAccount account, String communityId,
                                                              SmartStore smartStore) {
         if (account == null) {
             account = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser();
@@ -119,24 +119,24 @@ public class LayoutSyncManager {
         final SyncManager syncManager = SyncManager.getInstance(account, communityId, smartStore);
         final String uniqueId = (account != null ? account.getUserId() : "") + ":"
                 + smartStore.getDatabase().getPath();
-        LayoutSyncManager instance = INSTANCES.get(uniqueId);
+        MetadataSyncManager instance = INSTANCES.get(uniqueId);
         if (instance == null) {
-            instance = new LayoutSyncManager(smartStore, syncManager);
+            instance = new MetadataSyncManager(smartStore, syncManager);
             INSTANCES.put(uniqueId, instance);
         }
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_LAYOUT_SYNC);
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_METADATA_SYNC);
         return instance;
     }
 
     /**
-     * Resets all the layout sync managers.
+     * Resets all the metadata sync managers.
      */
     public static synchronized void reset() {
         INSTANCES.clear();
     }
 
     /**
-     * Resets the layout sync manager for this user account.
+     * Resets the metadata sync manager for this user account.
      *
      * @param account User account.
      */
@@ -153,7 +153,7 @@ public class LayoutSyncManager {
     }
 
     /**
-     * Returns the SmartStore instance used by this instance of LayoutSyncManager.
+     * Returns the SmartStore instance used by this instance of MetadataSyncManager.
      *
      * @return SmartStore instance.
      */
@@ -162,7 +162,7 @@ public class LayoutSyncManager {
     }
 
     /**
-     * Returns the SyncManager instance used by this instance of LayoutSyncManager.
+     * Returns the SyncManager instance used by this instance of MetadataSyncManager.
      *
      * @return SyncManager instance.
      */
@@ -171,38 +171,36 @@ public class LayoutSyncManager {
     }
 
     /**
-     * Fetches layout data for the specified object type and layout type using the specified
+     * Fetches metadata for the specified object type using the specified
      * mode and triggers the supplied callback once complete.
      *
      * @param objectType Object type.
-     * @param layoutType Layout type. Defaults to "Full" if null is passed in.
      * @param mode Fetch mode. See {@link com.salesforce.androidsdk.smartsync.util.Constants.Mode} for available modes.
-     * @param syncCallback Layout sync callback.
+     * @param syncCallback Metadata sync callback.
      */
-    public void fetchLayout(String objectType, String layoutType, Constants.Mode mode,
-                            LayoutSyncCallback syncCallback) {
+    public void fetchMetadata(String objectType, Constants.Mode mode,
+                            MetadataSyncCallback syncCallback) {
         switch (mode) {
             case CACHE_ONLY:
-                fetchFromCache(objectType, layoutType, syncCallback, false);
+                fetchFromCache(objectType, syncCallback, false);
                 break;
             case CACHE_FIRST:
-                fetchFromCache(objectType, layoutType, syncCallback, true);
+                fetchFromCache(objectType, syncCallback, true);
                 break;
             case SERVER_FIRST:
-                fetchFromServer(objectType, layoutType, syncCallback);
+                fetchFromServer(objectType, syncCallback);
                 break;
         }
     }
 
-    private LayoutSyncManager(SmartStore smartStore, SyncManager syncManager) {
+    private MetadataSyncManager(SmartStore smartStore, SyncManager syncManager) {
         this.smartStore = smartStore;
         this.syncManager = syncManager;
         initializeSoup();
     }
 
-    private void fetchFromServer(final String objectType, final String layoutType,
-                                 final LayoutSyncCallback syncCallback) {
-        final SyncDownTarget target = new LayoutSyncDownTarget(objectType, layoutType);
+    private void fetchFromServer(final String objectType, final MetadataSyncCallback syncCallback) {
+        final SyncDownTarget target = new MetadataSyncDownTarget(objectType);
         final SyncOptions options = SyncOptions.optionsForSyncDown(SyncState.MergeMode.OVERWRITE);
         try {
             syncManager.syncDown(target, options, SOUP_NAME, new SyncManager.SyncUpdateCallback() {
@@ -210,39 +208,38 @@ public class LayoutSyncManager {
                 @Override
                 public void onUpdate(SyncState sync) {
                     if (SyncState.Status.DONE.equals(sync.getStatus())) {
-                        fetchFromCache(objectType, layoutType, syncCallback, false);
+                        fetchFromCache(objectType, syncCallback, false);
                     }
                 }
             });
         } catch (Exception e) {
-            SmartSyncLogger.e(TAG, "Exception occurred while reading layout data from the server", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while reading metadata from the server", e);
         }
     }
 
-    private void fetchFromCache(String objectType, String layoutType,
-                                LayoutSyncCallback syncCallback, boolean fallbackOnServer) {
+    private void fetchFromCache(String objectType, MetadataSyncCallback syncCallback,
+                                boolean fallbackOnServer) {
         final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(String.format(QUERY,
-                objectType, layoutType), 1);
+                objectType), 1);
         try {
             final JSONArray results = smartStore.query(querySpec, 0);
             if (results == null || results.length() == 0) {
                 if (fallbackOnServer) {
-                    fetchFromServer(objectType, layoutType, syncCallback);
+                    fetchFromServer(objectType, syncCallback);
                 } else {
-                    onSyncComplete(objectType, syncCallback, null);
+                    onSyncComplete(syncCallback, null);
                 }
             } else {
-                onSyncComplete(objectType, syncCallback,
-                        Layout.fromJSON(results.optJSONArray(0).optJSONObject(0)));
+                onSyncComplete(syncCallback, Metadata.fromJSON(results.optJSONArray(0).optJSONObject(0)));
             }
         } catch (Exception e) {
-            SmartSyncLogger.e(TAG, "Exception occurred while reading layout data from the cache", e);
+            SmartSyncLogger.e(TAG, "Exception occurred while reading metadata from the cache", e);
         }
     }
 
-    private void onSyncComplete(String objectType, LayoutSyncCallback syncCallback, Layout layout) {
+    private void onSyncComplete(MetadataSyncCallback syncCallback, Metadata metadata) {
         if (syncCallback != null) {
-            syncCallback.onSyncComplete(objectType, layout);
+            syncCallback.onSyncComplete(metadata);
         }
     }
 
@@ -253,18 +250,17 @@ public class LayoutSyncManager {
     }
 
     /**
-     * Callback interface for layout sync.
+     * Callback interface for metadata sync.
      *
      * @author bhariharan
      */
-    public interface LayoutSyncCallback {
+    public interface MetadataSyncCallback {
 
         /**
-         * Callback triggered when layout sync completes.
+         * Callback triggered when metadata sync completes.
          *
-         * @param objectType Object type.
-         * @param layout Layout.
+         * @param metadata Metadata.
          */
-        void onSyncComplete(String objectType, Layout layout);
+        void onSyncComplete(Metadata metadata);
     }
 }

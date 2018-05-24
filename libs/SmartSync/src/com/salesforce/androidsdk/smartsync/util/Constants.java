@@ -103,4 +103,17 @@ public class Constants {
      */
     public static final DateFormat TIMESTAMP_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.US);
 
+    /**
+     * Enum for available data fetch modes.
+     *
+     * CACHE_ONLY - Fetches data from the cache and returns null if no data is available.
+     * CACHE_FIRST - Fetches data from the cache and falls back on the server if no data is available.
+     * SERVER_FIRST - Fetches data from the server and falls back on the cache if the server doesn't
+     * return data. The data fetched from the server is automatically cached.
+     */
+    public enum Mode {
+        CACHE_ONLY,
+        CACHE_FIRST,
+        SERVER_FIRST
+    }
 }

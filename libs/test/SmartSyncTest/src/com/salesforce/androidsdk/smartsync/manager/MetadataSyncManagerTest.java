@@ -30,7 +30,7 @@ import android.support.test.filters.MediumTest;
 import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
-import com.salesforce.androidsdk.smartsync.model.Layout;
+import com.salesforce.androidsdk.smartsync.model.Metadata;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 
 import junit.framework.Assert;
@@ -45,53 +45,39 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Tests for {@link LayoutSyncManager}.
+ * Tests for {@link MetadataSyncManager}.
  *
  * @author bhariharan
  */
 @RunWith(AndroidJUnit4.class)
 @MediumTest
-public class LayoutSyncManagerTest extends ManagerTestCase {
+public class MetadataSyncManagerTest extends ManagerTestCase {
 
-    private static final String COMPACT = "Compact";
     private static final String ACCOUNT = "Account";
 
-    private LayoutSyncManager layoutSyncManager;
-    private LayoutSyncCallbackQueue layoutSyncCallbackQueue;
+    private MetadataSyncManager metadataSyncManager;
+    private MetadataSyncCallbackQueue metadataSyncCallbackQueue;
 
-    private static class LayoutSyncCallbackQueue implements LayoutSyncManager.LayoutSyncCallback {
+    private static class MetadataSyncCallbackQueue implements MetadataSyncManager.MetadataSyncCallback {
 
-        private static class Result {
+        private BlockingQueue<Metadata> results;
 
-            public String objectType;
-            public Layout layout;
-
-            public Result(String objectType, Layout layout) {
-                this.objectType = objectType;
-                this.layout = layout;
-            }
-        }
-
-        private BlockingQueue<Result> results;
-
-        public LayoutSyncCallbackQueue() {
+        public MetadataSyncCallbackQueue() {
             results = new ArrayBlockingQueue<>(1);
         }
 
         @Override
-        public void onSyncComplete(String objectType, Layout layout) {
-            if (objectType != null) {
-                results.offer(new Result(objectType, layout));
-            }
+        public void onSyncComplete(Metadata metadata) {
+            results.offer(metadata);
         }
 
         public void clearQueue() {
             results.clear();
         }
 
-        public Result getResult() {
+        public Metadata getResult() {
             try {
-                final Result result = results.poll(30, TimeUnit.SECONDS);
+                final Metadata result = results.poll(30, TimeUnit.SECONDS);
                 if (result == null) {
                     throw new RuntimeException("Timed out waiting for callback");
                 }
@@ -105,88 +91,86 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        layoutSyncManager = LayoutSyncManager.getInstance();
-        layoutSyncCallbackQueue = new LayoutSyncCallbackQueue();
+        metadataSyncManager = MetadataSyncManager.getInstance();
+        metadataSyncCallbackQueue = new MetadataSyncCallbackQueue();
     }
 
     @After
     public void tearDown() throws Exception {
         SyncManager.reset();
-        layoutSyncManager.getSmartStore().dropAllSoups();
-        LayoutSyncManager.reset();
-        layoutSyncCallbackQueue.clearQueue();
-        layoutSyncCallbackQueue = null;
+        metadataSyncManager.getSmartStore().dropAllSoups();
+        MetadataSyncManager.reset();
+        metadataSyncCallbackQueue.clearQueue();
+        metadataSyncCallbackQueue = null;
         super.tearDown();
     }
 
     /**
-     * Test for fetching layout in CACHE_ONLY mode.
+     * Test for fetching metadata in CACHE_ONLY mode.
      */
     @Test
-    public void testFetchLayoutInCacheOnlyMode() {
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.SERVER_FIRST,
-                layoutSyncCallbackQueue);
-        layoutSyncCallbackQueue.getResult();
-        layoutSyncCallbackQueue.clearQueue();
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.CACHE_ONLY,
-                layoutSyncCallbackQueue);
-        validateResult(layoutSyncCallbackQueue.getResult());
+    public void testFetchMetadataInCacheOnlyMode() {
+        metadataSyncManager.fetchMetadata(ACCOUNT, Constants.Mode.SERVER_FIRST,
+                metadataSyncCallbackQueue);
+        metadataSyncCallbackQueue.getResult();
+        metadataSyncCallbackQueue.clearQueue();
+        metadataSyncManager.fetchMetadata(ACCOUNT, Constants.Mode.CACHE_ONLY,
+                metadataSyncCallbackQueue);
+        validateResult(metadataSyncCallbackQueue.getResult());
     }
 
     /**
-     * Test for fetching layout in CACHE_FIRST mode with a hydrated cache.
+     * Test for fetching metadata in CACHE_FIRST mode with a hydrated cache.
      */
     @Test
-    public void testFetchLayoutInCacheFirstModeWithCacheData() {
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.SERVER_FIRST,
-                layoutSyncCallbackQueue);
-        layoutSyncCallbackQueue.getResult();
-        layoutSyncCallbackQueue.clearQueue();
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.CACHE_FIRST,
-                layoutSyncCallbackQueue);
-        validateResult(layoutSyncCallbackQueue.getResult());
+    public void testFetchMetadataInCacheFirstModeWithCacheData() {
+        metadataSyncManager.fetchMetadata(ACCOUNT, Constants.Mode.SERVER_FIRST,
+                metadataSyncCallbackQueue);
+        metadataSyncCallbackQueue.getResult();
+        metadataSyncCallbackQueue.clearQueue();
+        metadataSyncManager.fetchMetadata(ACCOUNT, Constants.Mode.CACHE_FIRST,
+                metadataSyncCallbackQueue);
+        validateResult(metadataSyncCallbackQueue.getResult());
     }
 
     /**
-     * Test for fetching layout in CACHE_FIRST mode with an empty cache.
+     * Test for fetching metadata in CACHE_FIRST mode with an empty cache.
      */
     @Test
-    public void testFetchLayoutInCacheFirstModeWithoutCacheData() {
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.CACHE_FIRST,
-                layoutSyncCallbackQueue);
-        validateResult(layoutSyncCallbackQueue.getResult());
+    public void testFetchMetadataInCacheFirstModeWithoutCacheData() {
+        metadataSyncManager.fetchMetadata(ACCOUNT, Constants.Mode.CACHE_FIRST,
+                metadataSyncCallbackQueue);
+        validateResult(metadataSyncCallbackQueue.getResult());
     }
 
     /**
-     * Test for fetching layout in SERVER_FIRST mode.
+     * Test for fetching metadata in SERVER_FIRST mode.
      */
     @Test
-    public void testFetchLayoutInServerFirstMode() {
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.SERVER_FIRST,
-                layoutSyncCallbackQueue);
-        validateResult(layoutSyncCallbackQueue.getResult());
+    public void testFetchMetadataInServerFirstMode() {
+        metadataSyncManager.fetchMetadata(ACCOUNT, Constants.Mode.SERVER_FIRST,
+                metadataSyncCallbackQueue);
+        validateResult(metadataSyncCallbackQueue.getResult());
     }
 
     /**
-     * Test for fetching layout multiple times and ensuring only 1 row is created.
+     * Test for fetching metadata multiple times and ensuring only 1 row is created.
      */
     @Test
-    public void testFetchLayoutMultipleTimes() {
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.SERVER_FIRST,
-                layoutSyncCallbackQueue);
-        validateResult(layoutSyncCallbackQueue.getResult());
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.SERVER_FIRST,
-                layoutSyncCallbackQueue);
-        validateResult(layoutSyncCallbackQueue.getResult());
-        final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(String.format(LayoutSyncManager.QUERY,
-                ACCOUNT, COMPACT), 2);
-        int numRows = layoutSyncManager.getSmartStore().countQuery(querySpec);
+    public void testFetchMetadataMultipleTimes() {
+        metadataSyncManager.fetchMetadata(ACCOUNT, Constants.Mode.SERVER_FIRST,
+                metadataSyncCallbackQueue);
+        validateResult(metadataSyncCallbackQueue.getResult());
+        metadataSyncManager.fetchMetadata(ACCOUNT, Constants.Mode.SERVER_FIRST,
+                metadataSyncCallbackQueue);
+        validateResult(metadataSyncCallbackQueue.getResult());
+        final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(String.format(MetadataSyncManager.QUERY,
+                ACCOUNT), 2);
+        int numRows = metadataSyncManager.getSmartStore().countQuery(querySpec);
         Assert.assertEquals("Number of rows should be 1", 1, numRows);
     }
 
-    private void validateResult(LayoutSyncCallbackQueue.Result result) {
-        final String objectType = result.objectType;
-        final Layout layout = result.layout;
+    private void validateResult(Metadata metadata) {
         Assert.assertEquals("Object types should match", ACCOUNT, objectType);
         Assert.assertNotNull("Layout data should not be null", layout);
         Assert.assertEquals("Layout types should match", COMPACT, layout.getLayoutType());
