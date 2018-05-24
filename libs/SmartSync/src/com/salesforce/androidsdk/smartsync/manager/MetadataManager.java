@@ -62,8 +62,8 @@ import java.util.Map;
  * objects, and other object related data.
  *
  * @author bhariharan
- * @deprecated Will be removed in Mobile SDK 7.0. Use {@link com.salesforce.androidsdk.smartsync.target.MetadataSyncDownTarget} instead
- * to fetch object metadata, {@link com.salesforce.androidsdk.smartsync.target.LayoutSyncDownTarget} instead to fetch object layout
+ * @deprecated Will be removed in Mobile SDK 7.0. Use {@link MetadataSyncManager} instead
+ * to fetch object metadata, {@link LayoutSyncManager} instead to fetch object layout
  * data, and {@link com.salesforce.androidsdk.smartsync.target.MruSyncDownTarget} instead to fetch object MRU data.
  */
 @Deprecated
