@@ -929,14 +929,12 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
 
         // Check valid records in db: should no longer be marked as dirty
         checkDbStateFlags(Arrays.asList(account1Id), false, false, false, ACCOUNTS_SOUP);
-        checkDbStateFlags(Arrays.asList(contact11Id), false, false, false, CONTACTS_SOUP);
-        checkDbStateFlags(Arrays.asList(contact21Id), false, false, false, CONTACTS_SOUP);
+        checkDbStateFlags(Arrays.asList(contact11Id, contact21Id), false, false, false, CONTACTS_SOUP);
 
         // Check invalid records in db
         // Should still be marked as dirty
         checkDbStateFlags(Arrays.asList(account2Id), false, true, false, ACCOUNTS_SOUP);
-        checkDbStateFlags(Arrays.asList(contact12Id), false, true, false, CONTACTS_SOUP);
-        checkDbStateFlags(Arrays.asList(contact22Id), false, true, false, CONTACTS_SOUP);
+        checkDbStateFlags(Arrays.asList(contact12Id, contact22Id), false, true, false, CONTACTS_SOUP);
         // Should have populated last error fields
         checkDbLastErrorField(new String[] { account2Id }, "Account Name: data value too large", ACCOUNTS_SOUP);
         checkDbLastErrorField(new String[] { contact12Id, contact22Id }, "Last Name: data value too large", CONTACTS_SOUP);
