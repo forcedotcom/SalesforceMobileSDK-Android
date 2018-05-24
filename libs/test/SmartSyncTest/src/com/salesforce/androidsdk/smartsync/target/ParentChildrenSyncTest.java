@@ -880,4 +880,93 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         deleteRecordsOnServer(new HashSet<String>(Arrays.asList(newAccountId)), Constants.ACCOUNT);
         deleteRecordsOnServer(contactIdToFieldsCreated.keySet(), Constants.CONTACT);
     }
+
+    /**
+     * Create accounts and contacts on server, sync down
+     * Update some of the accounts and contacts - using bad names (too long) for some
+     * Sync up
+     * Check smartstore and server afterwards
+     */
+    @Test
+    public void testSyncUpWithErrors() throws Exception {
+        // Creating test accounts and contacts on server
+        createAccountsAndContactsOnServer(3, 3);
+
+        // Sync down
+        ParentChildrenSyncDownTarget syncDownTarget = getAccountContactsSyncDownTarget(
+                String.format("%s IN %s", Constants.ID, makeInClause(accountIdToFields.keySet())));
+        trySyncDown(SyncState.MergeMode.OVERWRITE, syncDownTarget, ACCOUNTS_SOUP, 3, 1);
+
+        // Picking accounts / contacts
+        String[] accountIds = accountIdToFields.keySet().toArray(new String[0]);
+        String account1Id = accountIds[0];
+        String[] contactIdsOfAccount1 = accountIdContactIdToFields.get(account1Id).keySet().toArray(new String[0]);
+        String contact11Id = contactIdsOfAccount1[0];
+        String contact12Id = contactIdsOfAccount1[1];
+
+        String account2Id = accountIds[1];
+        String[] contactIdsOfAccount2 = accountIdContactIdToFields.get(account2Id).keySet().toArray(new String[0]);
+        String contact21Id = contactIdsOfAccount2[0];
+        String contact22Id = contactIdsOfAccount2[1];
+
+        // Build long suffix
+        StringBuffer buffer = new StringBuffer(255);
+        for (int i = 0; i < 255; i++) buffer.append("x");
+        String suffixTooLong = buffer.toString();
+
+        // Updating with valid values
+        Map<String, Object> updatedAccount1Fields = updateRecordLocally(ACCOUNTS_SOUP, account1Id, accountIdToFields.get(account1Id)).get(account1Id);
+        Map<String, Object> updatedContact11Fields = updateRecordLocally(CONTACTS_SOUP, contact11Id, accountIdContactIdToFields.get(account1Id).get(contact11Id)).get(contact11Id);
+        Map<String, Object> updatedContact21Fields = updateRecordLocally(CONTACTS_SOUP, contact21Id, accountIdContactIdToFields.get(account2Id).get(contact21Id)).get(contact21Id);
+
+        // Updating with invalid values
+        updateRecordLocally(ACCOUNTS_SOUP, account2Id, accountIdToFields.get(account2Id), suffixTooLong);
+        updateRecordLocally(CONTACTS_SOUP, contact12Id, accountIdContactIdToFields.get(account1Id).get(contact12Id), suffixTooLong);
+        updateRecordLocally(CONTACTS_SOUP, contact22Id, accountIdContactIdToFields.get(account2Id).get(contact22Id), suffixTooLong);
+
+        // Sync up
+        trySyncUp(getAccountContactsSyncUpTarget(), 2, SyncState.MergeMode.OVERWRITE);
+
+        // Check valid records in db: should no longer be marked as dirty
+        checkDbStateFlags(Arrays.asList(account1Id), false, false, false, ACCOUNTS_SOUP);
+        checkDbStateFlags(Arrays.asList(contact11Id, contact21Id), false, false, false, CONTACTS_SOUP);
+
+        // Check invalid records in db
+        // Should still be marked as dirty
+        checkDbStateFlags(Arrays.asList(account2Id), false, true, false, ACCOUNTS_SOUP);
+        checkDbStateFlags(Arrays.asList(contact12Id, contact22Id), false, true, false, CONTACTS_SOUP);
+        // Should have populated last error fields
+        checkDbLastErrorField(new String[] { account2Id }, "Account Name: data value too large", ACCOUNTS_SOUP);
+        checkDbLastErrorField(new String[] { contact12Id, contact22Id }, "Last Name: data value too large", CONTACTS_SOUP);
+
+        // Check server
+        Map<String, Map<String, Object>> accountIdToFieldsExpectedOnServer = new HashMap<>();
+        for (String id : accountIds) {
+            // Only update to account1 should have gone through
+            if (id.equals(account1Id)) {
+                accountIdToFieldsExpectedOnServer.put(id, updatedAccount1Fields);
+            }
+            else {
+                accountIdToFieldsExpectedOnServer.put(id, accountIdToFields.get(id));
+            }
+        }
+        checkServer(accountIdToFieldsExpectedOnServer, Constants.ACCOUNT);
+
+        Map<String, Map<String, Object>> contactIdToFieldsExpectedOnServer = new HashMap<>();
+        for (String id : accountIds) {
+            Map<String, Map<String, Object>> contactIdToFields = accountIdContactIdToFields.get(id);
+            for (String cid : contactIdToFields.keySet()) {
+                // Only update to contact11 and contact21 should have gone through
+                if (cid.equals(contact11Id)) {
+                    contactIdToFieldsExpectedOnServer.put(cid, updatedContact11Fields);
+                } else if (cid.equals(contact21Id)) {
+                    contactIdToFieldsExpectedOnServer.put(cid, updatedContact21Fields);
+                } else {
+                    contactIdToFieldsExpectedOnServer.put(cid, contactIdToFields.get(cid));
+                }
+            }
+        }
+        checkServer(contactIdToFieldsExpectedOnServer, Constants.CONTACT);
+    }
+
 }

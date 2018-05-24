@@ -212,7 +212,7 @@ public class ParentChildrenSyncTestCase extends SyncManagerTestCase {
             // Check db and server - local changes should have made it over
             checkDbAndServerAfterCompletedSyncUp(accountId, contactId, otherContactId, remoteChangeForAccount, localChangeForContact, remoteChangeForContact, localUpdatesAccount, localUpdatesContact, localChangeForAccount);
 
-            // Sync up with overwrite - there should be dirty records found
+            // Sync up with overwrite - there should be no dirty records found
             trySyncUp(syncUpTarget, 0, SyncState.MergeMode.OVERWRITE);
         }
         // In all other cases, leave-if-changed will fail

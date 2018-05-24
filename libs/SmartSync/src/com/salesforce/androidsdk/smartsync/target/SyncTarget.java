@@ -62,6 +62,9 @@ public abstract class SyncTarget {
     public static final String LOCALLY_DELETED = "__locally_deleted__";
     public static final String LOCAL = "__local__";
 
+    // Field added to record to capture last sync error if any
+    public static final String LAST_ERROR = "__last_error__";
+
     // Field added to record to remember sync it came through
     public static final String SYNC_ID = "__sync_id__";
 
@@ -119,7 +122,6 @@ public abstract class SyncTarget {
         return modificationDateFieldName;
     }
 
-
     /**
      * Return ids of "dirty" records (records locally created/upated or deleted)
      * @param syncManager
@@ -152,11 +154,12 @@ public abstract class SyncTarget {
             hasMore = (results.length() == PAGE_SIZE);
             ids.addAll(toSortedSet(results));
         }
+
         return ids;
     }
 
     /**
-     * Save record in local store
+     * Save cleaned record in local store
      * @param syncManager
      * @param soupName
      * @param record
@@ -166,8 +169,23 @@ public abstract class SyncTarget {
         SmartSyncLogger.d(TAG, "cleanAndSaveInLocalStore", record);
     }
 
+    /**
+     * Save record in local store
+     * @param syncManager
+     * @param soupName
+     * @param record
+     */
+    protected void saveInLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
+        saveInSmartStore(syncManager.getSmartStore(), soupName, record, getIdFieldName(), true);
+        SmartSyncLogger.d(TAG, "saveInLocalStore", record);
+    }
+
     protected void cleanAndSaveInSmartStore(SmartStore smartStore, String soupName, JSONObject record, String idFieldName, boolean handleTx) throws JSONException {
         cleanRecord(record);
+        saveInSmartStore(smartStore, soupName, record, idFieldName, handleTx);
+    }
+
+    protected void saveInSmartStore(SmartStore smartStore, String soupName, JSONObject record, String idFieldName, boolean handleTx) throws JSONException {
         if (record.has(SmartStore.SOUP_ENTRY_ID)) {
             // Record came from smartstore
             smartStore.update(soupName, record, record.getLong(SmartStore.SOUP_ENTRY_ID), handleTx);
@@ -183,6 +201,7 @@ public abstract class SyncTarget {
         record.put(LOCALLY_CREATED, false);
         record.put(LOCALLY_UPDATED, false);
         record.put(LOCALLY_DELETED, false);
+        record.put(LAST_ERROR, null);
     }
 
     /**

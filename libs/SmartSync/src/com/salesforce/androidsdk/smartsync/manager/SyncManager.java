@@ -607,21 +607,32 @@ public class SyncManager {
         switch (action) {
             case create:
                 recordServerId = target.createOnServer(this, record, options.getFieldlist());
+                // Success
                 if (recordServerId != null) {
                     record.put(target.getIdFieldName(), recordServerId);
                     target.cleanAndSaveInLocalStore(this, soupName, record);
+                }
+                // Failure
+                else {
+                    target.saveRecordToLocalStoreWithLastError(this, soupName, record);
                 }
                 break;
             case delete:
                 statusCode = (locallyCreated
                         ? HttpURLConnection.HTTP_NOT_FOUND // if locally created it can't exist on the server - we don't need to actually do the deleteOnServer call
                         : target.deleteOnServer(this, record));
+                // Success
                 if (RestResponse.isSuccess(statusCode) || statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
                     target.deleteFromLocalStore(this, soupName, record);
+                }
+                // Failure
+                else {
+                    target.saveRecordToLocalStoreWithLastError(this, soupName, record);
                 }
                 break;
             case update:
                 statusCode = target.updateOnServer(this, record, options.getFieldlist());
+                // Success
                 if (RestResponse.isSuccess(statusCode)) {
                     target.cleanAndSaveInLocalStore(this, soupName, record);
                 }
@@ -637,6 +648,10 @@ public class SyncManager {
                     else {
                         // Leave local record alone
                     }
+                }
+                // Failure
+                else {
+                    target.saveRecordToLocalStoreWithLastError(this, soupName, record);
                 }
                 break;
         }
