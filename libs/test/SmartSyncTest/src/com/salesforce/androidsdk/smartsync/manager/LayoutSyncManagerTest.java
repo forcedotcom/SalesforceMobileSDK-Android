@@ -31,6 +31,7 @@ import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartsync.model.Layout;
+import com.salesforce.androidsdk.smartsync.util.Constants;
 
 import junit.framework.Assert;
 
@@ -123,11 +124,11 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
      */
     @Test
     public void testFetchLayoutInCacheOnlyMode() {
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.SERVER_FIRST,
+        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.SERVER_FIRST,
                 layoutSyncCallbackQueue);
         layoutSyncCallbackQueue.getResult();
         layoutSyncCallbackQueue.clearQueue();
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.CACHE_ONLY,
+        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.CACHE_ONLY,
                 layoutSyncCallbackQueue);
         validateResult(layoutSyncCallbackQueue.getResult());
     }
@@ -137,11 +138,11 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
      */
     @Test
     public void testFetchLayoutInCacheFirstModeWithCacheData() {
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.SERVER_FIRST,
+        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.SERVER_FIRST,
                 layoutSyncCallbackQueue);
         layoutSyncCallbackQueue.getResult();
         layoutSyncCallbackQueue.clearQueue();
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.CACHE_FIRST,
+        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.CACHE_FIRST,
                 layoutSyncCallbackQueue);
         validateResult(layoutSyncCallbackQueue.getResult());
     }
@@ -151,7 +152,7 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
      */
     @Test
     public void testFetchLayoutInCacheFirstModeWithoutCacheData() {
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.CACHE_FIRST,
+        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.CACHE_FIRST,
                 layoutSyncCallbackQueue);
         validateResult(layoutSyncCallbackQueue.getResult());
     }
@@ -161,7 +162,7 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
      */
     @Test
     public void testFetchLayoutInServerFirstMode() {
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.SERVER_FIRST,
+        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.SERVER_FIRST,
                 layoutSyncCallbackQueue);
         validateResult(layoutSyncCallbackQueue.getResult());
     }
@@ -171,10 +172,10 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
      */
     @Test
     public void testFetchLayoutMultipleTimes() {
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.SERVER_FIRST,
+        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.SERVER_FIRST,
                 layoutSyncCallbackQueue);
         validateResult(layoutSyncCallbackQueue.getResult());
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, LayoutSyncManager.Mode.SERVER_FIRST,
+        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.SERVER_FIRST,
                 layoutSyncCallbackQueue);
         validateResult(layoutSyncCallbackQueue.getResult());
         final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(String.format(LayoutSyncManager.QUERY,
