@@ -228,7 +228,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	}
 
 	protected void loadLibs(Context context) {
-		SqliteLibraryLoader.loadSqlCipher(context);
+		SQLiteDatabase.loadLibs(context);
 	}
 
 	@Override
