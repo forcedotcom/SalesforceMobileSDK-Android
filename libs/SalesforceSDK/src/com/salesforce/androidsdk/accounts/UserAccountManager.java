@@ -60,6 +60,9 @@ public class UserAccountManager {
 
 	public static final String USER_SWITCH_INTENT_ACTION = "com.salesforce.USERSWITCHED";
 
+	// User agent feature flag for multi users
+	private static final String FEATURE_MULTI_USERS = "MU";
+
 	/**
 	 * Represents how the current user has been switched to, as found in an intent sent to a {@link android.content.BroadcastReceiver}
 	 * filtering {@link #USER_SWITCH_INTENT_ACTION}. User switching including logging in, logging out and switching between authenticated
@@ -180,7 +183,14 @@ public class UserAccountManager {
         	return null;
         }
 
-        // Reads the stored user ID and org ID.
+		// Register feature MU if more than one user
+		if (accounts.length > 1) {
+			SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_MULTI_USERS);
+		} else {
+			SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_MULTI_USERS);
+		}
+
+		// Reads the stored user ID and org ID.
         final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
 				Context.MODE_PRIVATE);
         final String storedUserId = sp.getString(USER_ID_KEY, "");
