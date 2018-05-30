@@ -721,18 +721,13 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
      * @param account
      */
     private void logAddAccount(UserAccount account) {
-        final JSONObject userAttr = new JSONObject();
-        final JSONObject serverAttr = new JSONObject();
+        final JSONObject attributes = new JSONObject();
         try {
-            // Logs analytics event for new user.
             final List<UserAccount> users = UserAccountManager.getInstance().getAuthenticatedUsers();
-            final int numUsers = (users == null) ? 0 : users.size();
-            userAttr.put("numUsers", numUsers);
-            EventBuilderHelper.createAndStoreEventSync("addUser", account, TAG, userAttr);
+            attributes.put("numUsers", (users == null) ? 0 : users.size());
 
-            // Logging events for add user and number of servers.
             final List<LoginServerManager.LoginServer> servers = SalesforceSDKManager.getInstance().getLoginServerManager().getLoginServers();
-            serverAttr.put("numLoginServers", (servers == null) ? 0 : servers.size());
+            attributes.put("numLoginServers", (servers == null) ? 0 : servers.size());
             if (servers != null) {
                 final JSONArray serversJson = new JSONArray();
                 for (final LoginServerManager.LoginServer server : servers) {
@@ -740,9 +735,9 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                         serversJson.put(server.url);
                     }
                 }
-                serverAttr.put("loginServers", serversJson);
+                attributes.put("loginServers", serversJson);
             }
-            EventBuilderHelper.createAndStoreEventSync("addUser", account, TAG, serverAttr);
+            EventBuilderHelper.createAndStoreEventSync("addUser", account, TAG, attributes);
         } catch (JSONException e) {
             SalesforceSDKLogger.e(TAG, "Exception thrown while creating JSON", e);
         }
