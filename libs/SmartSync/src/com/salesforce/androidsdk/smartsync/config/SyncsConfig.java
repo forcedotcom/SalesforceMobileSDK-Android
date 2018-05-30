@@ -103,6 +103,13 @@ public class SyncsConfig {
         }
     }
 
+    /**
+     * Return true if syncs are defined in config
+     * @return
+     */
+    public boolean hasSyncs() {
+        return syncConfigs != null && syncConfigs.length() > 0;
+    }
 
     /**
      * Create the syncs from the config in the given store

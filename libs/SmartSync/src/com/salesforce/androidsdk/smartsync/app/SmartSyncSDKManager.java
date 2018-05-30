@@ -32,7 +32,7 @@ import android.content.Context;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartsync.R;
 import com.salesforce.androidsdk.smartsync.accounts.SmartSyncUserAccountManager;
 import com.salesforce.androidsdk.smartsync.config.SyncsConfig;
 import com.salesforce.androidsdk.smartsync.manager.CacheManager;
@@ -194,7 +194,10 @@ public class SmartSyncSDKManager extends SmartStoreSDKManager {
 	 */
 	public void setupGlobalSyncsFromDefaultConfig() {
 		SmartSyncLogger.d(TAG, "Setting up global syncs using config found in res/raw/globalsyncs.json");
-		setupSyncsFromConfig(getGlobalSmartStore(), com.salesforce.androidsdk.smartsync.R.raw.globalsyncs);
+		SyncsConfig config = new SyncsConfig(context, R.raw.globalsyncs);
+		if (config.hasSyncs()) {
+			config.createSyncs(getGlobalSmartStore());
+		}
 	}
 
 	/**
@@ -202,17 +205,10 @@ public class SmartSyncSDKManager extends SmartStoreSDKManager {
 	 */
 	public void setupUserSyncsFromDefaultConfig() {
 		SmartSyncLogger.d(TAG, "Setting up user syncs using config found in res/raw/usersyncs.json");
-		setupSyncsFromConfig(getSmartStore(), com.salesforce.androidsdk.smartsync.R.raw.usersyncs);
+		SyncsConfig config = new SyncsConfig(context, R.raw.usersyncs);
+		if (config.hasSyncs()) {
+			config.createSyncs(getSmartStore());
+		}
 	}
 
-	/**
-	 * Setup syncs in given store using config found in given json resource file
-	 *
-	 * @param store
-	 * @param resourceId
-	 */
-	private void setupSyncsFromConfig(SmartStore store, int resourceId) {
-		SyncsConfig config = new SyncsConfig(context, resourceId);
-		config.createSyncs(store);
-	}
 }

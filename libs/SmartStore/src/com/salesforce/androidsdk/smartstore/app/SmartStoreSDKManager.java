@@ -441,7 +441,10 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      */
     public void setupGlobalStoreFromDefaultConfig() {
         SmartStoreLogger.d(TAG, "Setting up global store using config found in res/raw/globalstore.json");
-        setupStoreFromConfig(getGlobalSmartStore(), R.raw.globalstore);
+        StoreConfig config = new StoreConfig(context, R.raw.globalstore);
+        if (config.hasSoups()) {
+            config.registerSoups(getGlobalSmartStore());
+        }
     }
 
     /**
@@ -449,18 +452,10 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      */
     public void setupUserStoreFromDefaultConfig() {
         SmartStoreLogger.d(TAG, "Setting up user store using config found in res/raw/userstore.json");
-        setupStoreFromConfig(getSmartStore(), R.raw.userstore);
-    }
-
-    /**
-     * Setup given store using config found in given json resource file
-     *
-     * @param store
-     * @param resourceId
-     */
-    private void setupStoreFromConfig(SmartStore store, int resourceId) {
-        StoreConfig config = new StoreConfig(context, resourceId);
-        config.registerSoups(store);
+        StoreConfig config = new StoreConfig(context, R.raw.userstore);
+        if (config.hasSoups()) {
+            config.registerSoups(getSmartStore());
+        }
     }
 
     @Override
