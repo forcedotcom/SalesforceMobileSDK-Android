@@ -702,14 +702,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             PushMessaging.register(appContext, account);
         }
 
-        // Logs analytics event for new user.
-        final JSONObject userAttr = new JSONObject();
-        try {
-            final List<UserAccount> users = UserAccountManager.getInstance().getAuthenticatedUsers();
-            userAttr.put("numUsers", (users == null) ? 0 : users.size());
-        } catch (JSONException e) {
-            SalesforceSDKLogger.e(TAG, "Exception thrown while creating JSON", e);
-        }
         callback.onAccountAuthenticatorResult(extras);
         if (SalesforceSDKManager.getInstance().getIsTestRun()) {
             logAddAccount(account);
@@ -729,8 +721,16 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
      * @param account
      */
     private void logAddAccount(UserAccount account) {
+        final JSONObject userAttr = new JSONObject();
         final JSONObject serverAttr = new JSONObject();
         try {
+            // Logs analytics event for new user.
+            final List<UserAccount> users = UserAccountManager.getInstance().getAuthenticatedUsers();
+            final int numUsers = (users == null) ? 0 : users.size();
+            userAttr.put("numUsers", numUsers);
+            EventBuilderHelper.createAndStoreEventSync("addUser", account, TAG, userAttr);
+
+            // Logging events for add user and number of servers.
             final List<LoginServerManager.LoginServer> servers = SalesforceSDKManager.getInstance().getLoginServerManager().getLoginServers();
             serverAttr.put("numLoginServers", (servers == null) ? 0 : servers.size());
             if (servers != null) {
