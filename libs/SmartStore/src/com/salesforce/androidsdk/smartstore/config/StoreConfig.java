@@ -98,6 +98,14 @@ public class StoreConfig {
     }
 
     /**
+     * Return true if soups are defined in config
+     * @return
+     */
+    public boolean hasSoups() {
+        return soupConfigs != null && soupConfigs.length() > 0;
+    }
+
+    /**
      * Register the soup from the config in the given store
      * NB: only feedback is through the logs - the config is static so getting it right is something the developer should do while writing the app
      * @param store
