@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.accounts;
 import android.os.Bundle;
 import android.text.TextUtils;
 
+import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.util.MapUtil;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
@@ -70,7 +71,6 @@ public class UserAccount {
 	private static final String TAG = "UserAccount";
 	private static final String FORWARD_SLASH = "/";
 	private static final String UNDERSCORE = "_";
-	private static final String FEATURE_USER_AUTH = "UA";
 
 	private String authToken;
 	private String refreshToken;
@@ -137,7 +137,7 @@ public class UserAccount {
 		this.photoUrl = photoUrl;
 		this.thumbnailUrl = thumbnailUrl;
 		this.additionalOauthValues = additionalOauthValues;
-		SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_USER_AUTH);
+		SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_USER_AUTH);
 	}
 
 	/**

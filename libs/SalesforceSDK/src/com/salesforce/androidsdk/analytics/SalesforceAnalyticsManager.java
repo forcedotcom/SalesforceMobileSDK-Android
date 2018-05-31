@@ -39,6 +39,7 @@ import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
 import com.salesforce.androidsdk.analytics.store.EventStoreManager;
 import com.salesforce.androidsdk.analytics.transform.AILTNTransform;
 import com.salesforce.androidsdk.analytics.transform.Transform;
+import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.AdminSettingsManager;
 import com.salesforce.androidsdk.config.BootConfig;
@@ -69,7 +70,6 @@ public class SalesforceAnalyticsManager {
     private static final String AILTN_POLICY_PREF = "ailtn_policy";
     private static final int DEFAULT_PUBLISH_FREQUENCY_IN_HOURS = 8;
     private static final String TAG = "AnalyticsManager";
-    private static final String FEATURE_AILTN_ENABLED = "AI";
     private static final String UNAUTH_INSTANCE_KEY = "_no_user";
 
     private static Map<String, SalesforceAnalyticsManager> INSTANCES;
@@ -232,9 +232,9 @@ public class SalesforceAnalyticsManager {
      */
     public void enableLogging(boolean enabled) {
         if (enabled) {
-            SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_AILTN_ENABLED);
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_AILTN_ENABLED);
         } else {
-            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_AILTN_ENABLED);
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(Features.FEATURE_AILTN_ENABLED);
         }
         storeAnalyticsPolicy(enabled);
         eventStoreManager.enableLogging(enabled);

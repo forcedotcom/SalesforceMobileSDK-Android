@@ -38,6 +38,7 @@ import android.os.PowerManager;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
@@ -71,7 +72,6 @@ import java.util.Map;
 public class PushService extends IntentService {
 
 	private static final String TAG = "PushService";
-	private static final String FEATURE_PUSH_NOTIFICATIONS = "PN";
 
     // Intent actions.
     public static final String SFDC_REGISTRATION_RETRY_INTENT = "com.salesforce.mobilesdk.c2dm.intent.RETRY";
@@ -277,7 +277,7 @@ public class PushService extends IntentService {
             		id = NOT_ENABLED;
             	}
             	res.consume();
-                SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_PUSH_NOTIFICATIONS);
+                SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_PUSH_NOTIFICATIONS);
             	return id;
         	}
     	} catch (Exception e) {

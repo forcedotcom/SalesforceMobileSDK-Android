@@ -49,7 +49,6 @@ public class ParentChildrenSyncTargetHelper {
     public static final String PARENT = "parent";
     public static final String CHILDREN = "children";
     public static final String RELATIONSHIP_TYPE = "relationshipType";
-    static final String FEATURE_RELATED_RECORDS = "RR";
 
     /**
      * Enum for relationship types

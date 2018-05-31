@@ -32,6 +32,7 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 
+import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 
@@ -48,7 +49,6 @@ import java.io.IOException;
 public class SalesforceWebViewClient extends SystemWebViewClient {
 
 	static final String WWW_DIR = "/android_asset/www";
-    private static final String FEATURE_LOCALHOST = "LH";
     private static final String TAG = "SalesforceWebViewClient";
 
     // The first non-reserved URL that's loaded will be considered the app's "home page", for caching purposes.
@@ -122,7 +122,7 @@ public class SalesforceWebViewClient extends SystemWebViewClient {
 		}
 
 		// Localhost request.
-		SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_LOCALHOST);
+		SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_LOCALHOST);
 		try {
 			String localPath = WWW_DIR + origUri.getPath();
 

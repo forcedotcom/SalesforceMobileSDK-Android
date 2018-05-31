@@ -59,9 +59,6 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
 
     private static final String TAG = "SmartStoreSDKManager";
 
-    private static final String FEATURE_SMART_STORE_USER = "US";
-    private static final String FEATURE_SMART_STORE_GLOBAL = "GS";
-
     /**
      * Protected constructor.
      *
@@ -212,7 +209,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      */
 
     public SmartStore getGlobalSmartStore(String dbName) {
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SMART_STORE_GLOBAL);
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_SMART_STORE_GLOBAL);
         if (TextUtils.isEmpty(dbName)) {
             dbName = DBOpenHelper.DEFAULT_DB_NAME;
         }
@@ -266,7 +263,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         if (TextUtils.isEmpty(dbNamePrefix)) {
             dbNamePrefix = DBOpenHelper.DEFAULT_DB_NAME;
         }
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SMART_STORE_USER);
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_SMART_STORE_USER);
         final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(context,
                 dbNamePrefix, account, communityId);
         SmartStore store = new SmartStore(dbOpenHelper, getEncryptionKey());
