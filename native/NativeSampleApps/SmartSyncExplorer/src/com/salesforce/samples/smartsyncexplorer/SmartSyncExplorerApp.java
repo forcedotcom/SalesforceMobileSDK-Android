@@ -48,13 +48,6 @@ public class SmartSyncExplorerApp extends Application {
          */
         // SmartSyncSDKManager.getInstance().setIDPAppURIScheme(idpAppURIScheme);
 
-        /*
-         * Uncomment the following line to enable browser based login. This will use a
-         * Chrome custom tab to login instead of the default WebView. You will also need
-         * to uncomment a few lines of code in SalesforceSDK library project's AndroidManifest.xml.
-         */
-        // SmartSyncSDKManager.getInstance().setBrowserLoginEnabled(true);
-
 		/*
 		 * Un-comment the line below to enable push notifications in this app.
 		 * Replace 'pnInterface' with your implementation of 'PushNotificationInterface'.

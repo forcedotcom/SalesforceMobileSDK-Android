@@ -666,7 +666,8 @@ public class SalesforceSDKManager {
     }
 
     /**
-     * Sets whether browser based login should be used instead of WebView.
+     * Sets whether browser based login should be used instead of WebView. This should NOT be used
+     * directly by apps, this is meant for internal use, based on the value configured on the server.
      *
      * @param browserLoginEnabled True - if Chrome should be used for login, False - otherwise.
      */
