@@ -36,6 +36,7 @@ import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
+import com.salesforce.androidsdk.smartsync.app.Features;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.target.AdvancedSyncUpTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
@@ -70,8 +71,6 @@ public class SyncManager {
 
     // For user agent
     private static final String SMART_SYNC = "SmartSync";
-
-    private static final String FEATURE_SMART_SYNC = "SY";
 
     // Static member
     private static Map<String, SyncManager> INSTANCES = new HashMap<String, SyncManager>();
@@ -159,7 +158,7 @@ public class SyncManager {
             instance = new SyncManager(smartStore, restClient);
             INSTANCES.put(uniqueId, instance);
         }
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SMART_SYNC);
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_SMART_SYNC);
         return instance;
     }
 

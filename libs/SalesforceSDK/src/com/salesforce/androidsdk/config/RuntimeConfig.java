@@ -31,6 +31,7 @@ import android.content.RestrictionsManager;
 import android.os.Bundle;
 
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
+import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
@@ -49,10 +50,6 @@ import java.util.concurrent.Executors;
 public class RuntimeConfig {
 
 	private static final String TAG = "RuntimeConfig";
-
-	private static final String FEATURE_MDM = "MM";
-
-	private static final String FEATURE_CERT_AUTH = "CT";
 
 	// background executor
 	private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
@@ -81,9 +78,9 @@ public class RuntimeConfig {
 
 		// Register MDM App Feature for User-Agent reporting
 		if (isManaged && configurations != null && !configurations.isEmpty()) {
-			SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_MDM);
+			SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_MDM);
 			if (getBoolean(RuntimeConfig.ConfigKey.RequireCertAuth)) {
-				SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_CERT_AUTH);
+				SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_CERT_AUTH);
 			}
 		}
 

@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.smartsync.target;
 
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.smartsync.app.Features;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.target.ParentChildrenSyncTargetHelper.RelationshipType;
@@ -95,7 +96,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
         this.childrenCreateFieldlist = childrenCreateFieldlist;
         this.childrenUpdateFieldlist = childrenUpdateFieldlist;
         this.relationshipType = relationshipType;
-        SmartSyncSDKManager.getInstance().registerUsedAppFeature(ParentChildrenSyncTargetHelper.FEATURE_RELATED_RECORDS);
+        SmartSyncSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_RELATED_RECORDS);
     }
 
     @Override

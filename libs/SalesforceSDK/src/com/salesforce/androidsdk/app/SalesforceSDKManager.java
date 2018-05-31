@@ -145,8 +145,6 @@ public class SalesforceSDKManager {
      */
     protected static SalesforceSDKManager INSTANCE;
     private static final int PUSH_UNREGISTER_TIMEOUT_MILLIS = 30000;
-    private static final String FEATURE_BROWSER_LOGIN = "BW";
-    private static final String FEATURE_APP_IS_SP = "SP";
 
     protected Context context;
     protected KeyInterface keyImpl;
@@ -675,9 +673,9 @@ public class SalesforceSDKManager {
     public synchronized void setBrowserLoginEnabled(boolean browserLoginEnabled) {
         this.browserLoginEnabled = browserLoginEnabled;
         if (browserLoginEnabled) {
-            SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BROWSER_LOGIN);
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_BROWSER_LOGIN);
         } else {
-            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_BROWSER_LOGIN);
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(Features.FEATURE_BROWSER_LOGIN);
         }
     }
 
@@ -689,9 +687,9 @@ public class SalesforceSDKManager {
     public boolean isIDPLoginFlowEnabled() {
         boolean isIDPFlowEnabled = !TextUtils.isEmpty(idpAppURIScheme);
         if (isIDPFlowEnabled) {
-            SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_APP_IS_SP);
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_APP_IS_SP);
         } else {
-            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_APP_IS_SP);
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(Features.FEATURE_APP_IS_SP);
         }
         return isIDPFlowEnabled;
     }
