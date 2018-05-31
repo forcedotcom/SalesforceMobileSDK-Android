@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.smartsync.target;
 
 import android.text.TextUtils;
 
+import com.salesforce.androidsdk.smartsync.app.Features;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.target.ParentChildrenSyncTargetHelper.RelationshipType;
@@ -92,7 +93,7 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
         this.childrenInfo = childrenInfo;
         this.childrenFieldlist = childrenFieldlist;
         this.relationshipType = relationshipType;
-        SmartSyncSDKManager.getInstance().registerUsedAppFeature(ParentChildrenSyncTargetHelper.FEATURE_RELATED_RECORDS);
+        SmartSyncSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_RELATED_RECORDS);
     }
 
     /**

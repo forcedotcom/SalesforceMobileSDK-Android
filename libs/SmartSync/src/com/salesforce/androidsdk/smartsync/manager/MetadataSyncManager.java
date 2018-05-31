@@ -31,6 +31,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartsync.app.Features;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.model.Metadata;
 import com.salesforce.androidsdk.smartsync.target.MetadataSyncDownTarget;
@@ -56,7 +57,6 @@ import java.util.Set;
  */
 public class MetadataSyncManager {
 
-    private static final String FEATURE_METADATA_SYNC = "MD";
     static final String SOUP_NAME = "sfdcMetadata";
     static final String QUERY = "SELECT {" + SOUP_NAME + ":_soup} FROM {" + SOUP_NAME +
             "} WHERE {" + SOUP_NAME + ":" + Constants.ID + "} = '%s'";
@@ -124,7 +124,7 @@ public class MetadataSyncManager {
             instance = new MetadataSyncManager(smartStore, syncManager);
             INSTANCES.put(uniqueId, instance);
         }
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_METADATA_SYNC);
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_METADATA_SYNC);
         return instance;
     }
 

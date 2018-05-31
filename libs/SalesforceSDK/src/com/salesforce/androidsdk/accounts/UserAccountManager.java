@@ -36,6 +36,7 @@ import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
 import android.text.TextUtils;
 
+import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.rest.ClientManager;
@@ -59,9 +60,6 @@ public class UserAccountManager {
 	private static final String ORG_ID_KEY = "org_id";
 
 	public static final String USER_SWITCH_INTENT_ACTION = "com.salesforce.USERSWITCHED";
-
-	// User agent feature flag for multi users
-	private static final String FEATURE_MULTI_USERS = "MU";
 
 	/**
 	 * Represents how the current user has been switched to, as found in an intent sent to a {@link android.content.BroadcastReceiver}
@@ -185,9 +183,9 @@ public class UserAccountManager {
 
 		// Register feature MU if more than one user
 		if (accounts.length > 1) {
-			SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_MULTI_USERS);
+			SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_MULTI_USERS);
 		} else {
-			SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_MULTI_USERS);
+			SalesforceSDKManager.getInstance().unregisterUsedAppFeature(Features.FEATURE_MULTI_USERS);
 		}
 
 		// Reads the stored user ID and org ID.

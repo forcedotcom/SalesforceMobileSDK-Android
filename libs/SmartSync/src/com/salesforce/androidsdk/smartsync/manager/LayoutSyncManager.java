@@ -31,6 +31,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartsync.app.Features;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.model.Layout;
 import com.salesforce.androidsdk.smartsync.target.LayoutSyncDownTarget;
@@ -56,7 +57,6 @@ import java.util.Set;
  */
 public class LayoutSyncManager {
 
-    private static final String FEATURE_LAYOUT_SYNC = "LY";
     static final String SOUP_NAME = "sfdcLayouts";
     static final String QUERY = "SELECT {" + SOUP_NAME + ":_soup} FROM {" + SOUP_NAME +
             "} WHERE {" + SOUP_NAME + ":" + Constants.ID + "} = '%s-%s'";
@@ -124,7 +124,7 @@ public class LayoutSyncManager {
             instance = new LayoutSyncManager(smartStore, syncManager);
             INSTANCES.put(uniqueId, instance);
         }
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_LAYOUT_SYNC);
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_LAYOUT_SYNC);
         return instance;
     }
 
