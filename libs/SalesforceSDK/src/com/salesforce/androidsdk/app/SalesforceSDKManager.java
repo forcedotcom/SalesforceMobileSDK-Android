@@ -455,7 +455,7 @@ public class SalesforceSDKManager {
         SalesforceSDKUpgradeManager.getInstance().upgrade();
 
         // Initializes the HTTP client.
-        HttpAccess.init(context, INSTANCE.getUserAgent());
+        HttpAccess.init(context);
 
         // Enables IDP login flow if it's set through MDM.
         final RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(context);
