@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<servers>
+    <server name="SDK Sandbox" url="https://sdk.cs1.my.salesforce.com/" />
+</servers>
