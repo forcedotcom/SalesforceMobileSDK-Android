@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.push;
 
 import android.app.AlarmManager;
-import android.app.DownloadManager.Request;
 import android.app.IntentService;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -36,7 +35,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.PowerManager;
-import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -62,11 +60,6 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static com.salesforce.androidsdk.push.PushService.RegistrationStatus.REGISTRATION_FAILED;
-import static com.salesforce.androidsdk.push.PushService.RegistrationStatus.REGISTRATION_SUCCEEDED;
-import static com.salesforce.androidsdk.push.PushService.RegistrationStatus.UNREGISTRATION_FAILED;
-import static com.salesforce.androidsdk.push.PushService.RegistrationStatus.UNREGISTRATION_SUCCEEDED;
 
 /**
  * This class houses functionality related to push notifications.
@@ -103,23 +96,10 @@ public class PushService extends IntentService {
 
     private Context context;
 
-    /**
-     * Indicate the current registration status of push notifications.
-     *
-     * @author cliban
-     */
-    @IntDef({
-            REGISTRATION_SUCCEEDED,
-            REGISTRATION_FAILED,
-            UNREGISTRATION_SUCCEEDED,
-            UNREGISTRATION_FAILED
-    })
-    public @interface RegistrationStatus {
-        int REGISTRATION_SUCCEEDED = 0;
-        int REGISTRATION_FAILED = 1;
-        int UNREGISTRATION_SUCCEEDED = 2;
-        int UNREGISTRATION_FAILED = 3;
-    }
+	protected static final int REGISTRATION_STATUS_SUCCEEDED = 0;
+	protected static final int REGISTRATION_STATUS_FAILED = 1;
+	protected static final int UNREGISTRATION_STATUS_SUCCEEDED = 2;
+	protected static final int UNREGISTRATION_STATUS_FAILED = 3;
 
     /**
      * This method is called from the broadcast receiver, when a push notification
@@ -302,10 +282,10 @@ public class PushService extends IntentService {
      * Subclasses can override this method without calling the super method.
      * </p>
      *
-     * @param status the registration status
+     * @param status the registration status. One of the {@code REGISTRATION_STATUS_XXX} constants
      * @param userAccount the user account that's performing registration
      */
-	protected void onPushNotificationRegistrationStatus(@RegistrationStatus int status, @NonNull UserAccount userAccount) {
+	protected void onPushNotificationRegistrationStatus(int status, @NonNull UserAccount userAccount) {
 		// Do nothing
 	}
 
@@ -317,7 +297,7 @@ public class PushService extends IntentService {
             fields.put(SERVICE_TYPE, ANDROID_GCM);
             final RestClient client = getRestClient(account);
         	if (client != null) {
-                @RegistrationStatus int status = REGISTRATION_FAILED;
+                int status = REGISTRATION_STATUS_FAILED;
                 final RestResponse res = onSendRegisterPushNotificationRequest(fields, client);
             	String id = null;
 
@@ -332,11 +312,11 @@ public class PushService extends IntentService {
             		final JSONObject obj = res.asJSONObject();
             		if (obj != null) {
             			id = obj.getString(FIELD_ID);
-                        status = REGISTRATION_SUCCEEDED;
+                        status = REGISTRATION_STATUS_SUCCEEDED;
             		}
             	} else if (res.getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
                     id = NOT_ENABLED;
-                    status = REGISTRATION_FAILED;
+                    status = REGISTRATION_STATUS_FAILED;
             	}
             	res.consume();
                 SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_PUSH_NOTIFICATIONS);
@@ -346,7 +326,7 @@ public class PushService extends IntentService {
     	} catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Push notification registration failed", e);
     	}
-        onPushNotificationRegistrationStatus(REGISTRATION_FAILED, account);
+        onPushNotificationRegistrationStatus(REGISTRATION_STATUS_FAILED, account);
     	return null;
     }
 
@@ -377,10 +357,10 @@ public class PushService extends IntentService {
     		final RestClient client = getRestClient(account);
     		if (client != null) {
                 onSendUnregisterPushNotificationRequest(registeredId, client).consume();
-                onPushNotificationRegistrationStatus(UNREGISTRATION_SUCCEEDED, account);
+                onPushNotificationRegistrationStatus(UNREGISTRATION_STATUS_SUCCEEDED, account);
     		}
     	} catch (IOException e) {
-            onPushNotificationRegistrationStatus(UNREGISTRATION_FAILED, account);
+            onPushNotificationRegistrationStatus(UNREGISTRATION_STATUS_FAILED, account);
 			SalesforceSDKLogger.e(TAG, "Push notification un-registration failed", e);
     	}
     }
