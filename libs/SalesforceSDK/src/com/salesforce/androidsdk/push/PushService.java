@@ -35,7 +35,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.PowerManager;
-import android.support.annotation.NonNull;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
@@ -267,10 +266,9 @@ public class PushService extends IntentService {
 	 * @return the response from registration
 	 * @throws IOException if the request could not be made
 	 */
-	@NonNull
 	protected RestResponse onSendRegisterPushNotificationRequest(
-			@NonNull Map<String, Object> requestBodyJsonFields,
-			@NonNull RestClient restClient) throws IOException {
+			Map<String, Object> requestBodyJsonFields,
+			RestClient restClient) throws IOException {
 		return restClient.sendSync(RestRequest.getRequestForCreate(
 				ApiVersionStrings.getVersionNumber(context), MOBILE_PUSH_SERVICE_DEVICE, requestBodyJsonFields));
 	}
@@ -285,7 +283,7 @@ public class PushService extends IntentService {
      * @param status the registration status. One of the {@code REGISTRATION_STATUS_XXX} constants
      * @param userAccount the user account that's performing registration
      */
-	protected void onPushNotificationRegistrationStatus(int status, @NonNull UserAccount userAccount) {
+	protected void onPushNotificationRegistrationStatus(int status, UserAccount userAccount) {
 		// Do nothing
 	}
 
@@ -343,10 +341,9 @@ public class PushService extends IntentService {
 	 * @return the response from unregistration
 	 * @throws IOException if the request could not be made
 	 */
-    @NonNull
 	protected RestResponse onSendUnregisterPushNotificationRequest(
-			@NonNull String registeredId,
-			@NonNull RestClient restClient) throws IOException {
+			String registeredId,
+			RestClient restClient) throws IOException {
 		return restClient.sendSync(RestRequest.getRequestForDelete(
 				ApiVersionStrings.getVersionNumber(context), MOBILE_PUSH_SERVICE_DEVICE, registeredId));
 	}
