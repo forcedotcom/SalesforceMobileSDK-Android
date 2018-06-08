@@ -349,6 +349,15 @@ jobs:
       - run: *test-salesforce-sdk
       - run: *test-smart-store
       - run: *test-smart-sync
+      - run:
+          name:  Restart Emulator
+          command: source .circleci/avd_helper.sh && restartAVD
+          background: true
+          when: always
+      - run:
+          name: Wait for Emulator
+          command: source .circleci/avd_helper.sh && waitForAVD
+          when: always
       - run: *test-salesforce-hybrid
       - run: *test-rest-explorer
       - run: *test-salesforce-react
