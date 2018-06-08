@@ -41,7 +41,7 @@ import com.salesforce.androidsdk.accounts.UserAccountManager;
 public class AnalyticsPublisherService extends JobIntentService {
 
     private static final String ACTION_PUBLISH = "com.salesforce.androidsdk.analytics.action.ANALYTICS_PUBLISH";
-    private static final int JOB_ID = 1000;
+    private static final int JOB_ID = 81;
 
     /**
      * Starts this service to publish stored events. If the service is already

@@ -31,6 +31,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
+import android.support.v4.app.JobIntentService;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -54,6 +55,7 @@ import java.util.concurrent.Executors;
 public class PushMessaging {
 
     private static final String TAG = "PushMessaging";
+    private static final int JOB_ID = 8;
 
 	// Public constants.
     public static final String UNREGISTERED_ATTEMPT_COMPLETE_EVENT = "com.salesfore.mobilesdk.c2dm.UNREGISTERED";
@@ -93,7 +95,8 @@ public class PushMessaging {
             setInProgress(context, true, account);
             if (checkPlayServices(context)) {
                 final Intent intent = new Intent(context, SFDCRegistrationIntentService.class);
-                context.startService(intent);
+                JobIntentService.enqueueWork(context, SFDCRegistrationIntentService.class,
+                        JOB_ID, intent);
             }
         } else {
             registerSFDCPush(context, account);

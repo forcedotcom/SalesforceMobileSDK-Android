@@ -26,8 +26,8 @@
  */
 package com.salesforce.androidsdk.push;
 
-import android.app.IntentService;
 import android.content.Intent;
+import android.support.v4.app.JobIntentService;
 
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 import com.google.android.gms.iid.InstanceID;
@@ -36,16 +36,12 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
-public class SFDCRegistrationIntentService extends IntentService {
+public class SFDCRegistrationIntentService extends JobIntentService {
 
     private static final String TAG = "RegIntentService";
 
-    public SFDCRegistrationIntentService() {
-        super(TAG);
-    }
-
     @Override
-    protected void onHandleIntent(Intent intent) {
+    protected void onHandleWork(Intent intent) {
         try {
             final InstanceID instanceID = InstanceID.getInstance(this);
             final String token = instanceID.getToken(BootConfig.getBootConfig(this).getPushNotificationClientId(),
