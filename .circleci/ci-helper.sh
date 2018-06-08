@@ -45,6 +45,11 @@ function startAVD {
     fi
 }
 
+function restartAVD {
+    adb emu kill
+    emulator -avd test22 -noaudio -no-window -accel on -wipe-data
+}
+
 function waitForAVD {
     set +e
 
