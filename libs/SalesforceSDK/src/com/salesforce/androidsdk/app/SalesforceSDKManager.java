@@ -163,7 +163,7 @@ public class SalesforceSDKManager {
     private AdminSettingsManager adminSettingsManager;
     private AdminPermsManager adminPermsManager;
     private PushNotificationInterface pushNotificationInterface;
-    private Class<? extends PushService> pushServiceType;
+    private Class<? extends PushService> pushServiceType = PushService.class;
     private String uid; // device id
     private volatile boolean loggedOut = false;
     private SortedSet<String> features;
