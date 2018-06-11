@@ -53,6 +53,11 @@ public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
         if (currentActivity != null) {
             currentActivity.authenticate(successCallback, errorCallback);
         }
+        else {
+            if (errorCallback != null) {
+                errorCallback.invoke("SalesforceReactActivity not found");
+            }
+        }
     }
 
 
@@ -63,6 +68,11 @@ public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
         if (currentActivity != null) {
             currentActivity.getAuthCredentials(successCallback, errorCallback);
         }
+        else {
+            if (errorCallback != null) {
+                errorCallback.invoke("SalesforceReactActivity not found");
+            }
+        }
     }
 
     @ReactMethod
@@ -71,6 +81,11 @@ public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
         final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
         if (currentActivity != null) {
             currentActivity.logout(successCallback);
+        }
+        else {
+            if (errorCallback != null) {
+                errorCallback.invoke("SalesforceReactActivity not found");
+            }
         }
     }
 }
