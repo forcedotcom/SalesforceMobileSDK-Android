@@ -51,7 +51,7 @@ public class ReactNetTest extends ReactTestCase {
 
     @Parameterized.Parameters(name = "{0}")
     public static List<String> data() {
-        return Arrays.asList(new String[]{
+        return Arrays.asList(
                 "testGetApiVersion",
                 "testVersions",
                 "testResources",
@@ -63,8 +63,7 @@ public class ReactNetTest extends ReactTestCase {
                 "testUpsertUpdateRetrieve",
                 "testCreateDelRetrieve",
                 "testQuery",
-                "testSearch"
-        });
+                "testSearch");
     }
 
     @Test
