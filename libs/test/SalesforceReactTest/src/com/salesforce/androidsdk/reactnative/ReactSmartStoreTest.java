@@ -53,7 +53,7 @@ public class ReactSmartStoreTest extends ReactTestCase {
 
     @Parameterized.Parameters(name = "{0}")
     public static List<String> data() {
-        return Arrays.asList(new String[]{
+        return Arrays.asList(
                 "testGetDatabaseSize",
                 "testRegisterExistsRemoveExists",
                 "testGetSoupSpec",
@@ -64,8 +64,7 @@ public class ReactSmartStoreTest extends ReactTestCase {
                 "testRemoveFromSoup",
                 "testClearSoup",
                 "testGetRemoveStores",
-                "testGetRemoveGlobalStores"
-        });
+                "testGetRemoveGlobalStores");
     }
 
     @After

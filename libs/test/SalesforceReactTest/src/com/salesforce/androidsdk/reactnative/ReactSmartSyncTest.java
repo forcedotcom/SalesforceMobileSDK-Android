@@ -55,13 +55,12 @@ public class ReactSmartSyncTest extends ReactTestCase {
 
     @Parameterized.Parameters(name = "{0}")
     public static List<String> data() {
-        return Arrays.asList(new String[]{
+        return Arrays.asList(
                 "testSyncUp",
                 "testSyncDown",
                 "testReSync",
                 "testCleanResyncGhosts",
-                "testGetSyncStatusDeleteSync"
-        });
+                "testGetSyncStatusDeleteSync");
     }
 
     @After
