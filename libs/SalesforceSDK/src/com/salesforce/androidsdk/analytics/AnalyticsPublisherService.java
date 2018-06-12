@@ -26,9 +26,9 @@
  */
 package com.salesforce.androidsdk.analytics;
 
-import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
+import android.support.v4.app.JobIntentService;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
@@ -38,17 +38,10 @@ import com.salesforce.androidsdk.accounts.UserAccountManager;
  *
  * @author bhariharan
  */
-public class AnalyticsPublisherService extends IntentService {
+public class AnalyticsPublisherService extends JobIntentService {
 
     private static final String ACTION_PUBLISH = "com.salesforce.androidsdk.analytics.action.ANALYTICS_PUBLISH";
-    private static final String TAG = "AnalyticsPublisherService";
-
-    /**
-     * Default constructor.
-     */
-    public AnalyticsPublisherService() {
-        super(TAG);
-    }
+    private static final int JOB_ID = 81;
 
     /**
      * Starts this service to publish stored events. If the service is already
@@ -59,11 +52,11 @@ public class AnalyticsPublisherService extends IntentService {
     public static void startActionPublish(Context context) {
         final Intent intent = new Intent(context, AnalyticsPublisherService.class);
         intent.setAction(ACTION_PUBLISH);
-        context.startService(intent);
+        enqueueWork(context, AnalyticsPublisherService.class, JOB_ID, intent);
     }
 
     @Override
-    protected void onHandleIntent(Intent intent) {
+    protected void onHandleWork(Intent intent) {
         if (intent != null) {
             final String action = intent.getAction();
             if (ACTION_PUBLISH.equals(action)) {

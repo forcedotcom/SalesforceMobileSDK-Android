@@ -103,14 +103,19 @@
         </service>
 
         <service android:name="com.salesforce.androidsdk.push.SFDCRegistrationIntentService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false">
         </service>
 
         <receiver android:name="com.salesforce.androidsdk.push.PushService$SFDCRegistrationRetryAlarmReceiver"
             android:exported="false" />
+
         <service android:name="com.salesforce.androidsdk.push.PushService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false" />
+
         <service android:name="com.salesforce.androidsdk.analytics.AnalyticsPublisherService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false" />
     </application>
 
@@ -121,6 +126,6 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
 
-    <!--TODO: Remove the -sdk-23 tag when the minsdk version is 23-->
+    <!-- TODO: Remove the -sdk-23 tag when the minsdk version is 23 -->
     <uses-permission-sdk-23 android:name="android.permission.USE_FINGERPRINT" />
 </manifest>
