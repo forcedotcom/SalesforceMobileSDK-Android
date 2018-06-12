@@ -46,7 +46,6 @@ public class SFDCInstanceIDListenerService extends InstanceIDListenerService {
 
         // Fetch updated Instance ID token and notify our app's server of any changes (if applicable).
         final Intent intent = new Intent(this, SFDCRegistrationIntentService.class);
-        startService(intent);
         JobIntentService.enqueueWork(SalesforceSDKManager.getInstance().getAppContext(),
                 SFDCRegistrationIntentService.class, JOB_ID, intent);
     }
