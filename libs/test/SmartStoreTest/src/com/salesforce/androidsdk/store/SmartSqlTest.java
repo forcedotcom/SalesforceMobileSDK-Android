@@ -64,6 +64,7 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	private static final String EMPLOYEES_SOUP = "employees";
 	private static final String DEPARTMENTS_SOUP = "departments";
 	private static final String EDUCATION = "education";
+	private static final String IS_MANAGER = "isManager";
 	private static final String BUILDING = "building";
 
 	@Override
@@ -81,12 +82,13 @@ public class SmartSqlTest extends SmartStoreTestCase {
 				new IndexSpec(EMPLOYEE_ID, Type.string),       // should be TABLE_1_3
 				new IndexSpec(MANAGER_ID, Type.string),        // should be TABLE_1_4
 				new IndexSpec(SALARY, Type.integer),           // should be TABLE_1_5
-				new IndexSpec(EDUCATION, Type.json1)});
+				new IndexSpec(EDUCATION, Type.json1),          // should be json_extract(soup, '$.education')
+				new IndexSpec(IS_MANAGER, Type.json1)});       // should be json_extract(soup, '$.isManager')
 		store.registerSoup(DEPARTMENTS_SOUP, new IndexSpec[] { // should be TABLE_2
 				new IndexSpec(DEPT_CODE, Type.string),         // should be TABLE_2_0
 				new IndexSpec(NAME, Type.string),              // should be TABLE_2_1
 				new IndexSpec(BUDGET, Type.integer),           // should be TABLE_2_2
-				new IndexSpec(BUILDING, Type.json1)});
+				new IndexSpec(BUILDING, Type.json1)});         // should be json_extract(soup, '$.building')
 	}
 
 	@After
@@ -301,6 +303,34 @@ public class SmartSqlTest extends SmartStoreTestCase {
 		JSONTestHelper.assertSameJSON("Wrong soupLastModifiedDate", christineJson.getString(SmartStore.SOUP_LAST_MODIFIED_DATE), result.getJSONArray(0).getLong(2));
 	}
 
+
+	/**
+	 * Test running smart queries that matching true and false in json1 field
+     * NB: SQLite does not have a separate Boolean storage class. Instead, Boolean values are stored as integers 0 (false) and 1 (true).
+	 */
+	@Test
+	public void testSmartQueryMachingBooleanInJSON1Field() throws JSONException {
+        JSONObject createdEmployee;
+
+	    loadData();
+
+        // Creating another employee from a json string with isManager true
+        createdEmployee = createEmployeeWithJsonString("{\"employeeId\":\"101\",\"isManager\":true}");
+        Assert.assertEquals(true, createdEmployee.get(IS_MANAGER));
+
+        // Creating another employee from a json string with isManager false
+        createdEmployee = createEmployeeWithJsonString("{\"employeeId\":\"102\",\"isManager\":false}");
+        Assert.assertEquals(false, createdEmployee.get(IS_MANAGER));
+
+        // Smart sql looking for isManager true
+        JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:employeeId} from {employees} where {employees:isManager} = 1 order by {employees:employeeId}", 10), 0);
+        JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[\"00010\"],[\"00040\"],[\"00050\"],[\"101\"]]"), result);
+        // Smart sql looking for isManager false
+        result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:employeeId} from {employees} where {employees:isManager} = 0 order by {employees:employeeId}", 10), 0);
+        JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[\"00020\"],[\"00060\"],[\"00070\"],[\"00310\"],[\"102\"]]"), result);
+	}
+
+
 	/**
 	 * Load some datq in the smart store
 	 * @throws JSONException 
@@ -308,20 +338,20 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	private void loadData() throws JSONException {
 
 		// Employees
-		createEmployee("Christine", "Haas", "A00", "00010", null, 200000);
-		createEmployee("Michael", "Thompson", "A00", "00020", "00010", 120000);
-		createEmployee("Sally", "Kwan", "A00", "00310", "00010", 100000);
-		createEmployee("John", "Geyer", "B00", "00040", null, 102000);
-		createEmployee("Irving", "Stern", "B00", "00050", "00040", 100000);
-		createEmployee("Eva", "Pulaski", "B00", "00060", "00050", 80000);
-		createEmployee("Eileen", "Henderson", "B00", "00070", "00050", 70000);
+		createEmployee("Christine", "Haas", "A00", "00010", null, 200000, true);
+		createEmployee("Michael", "Thompson", "A00", "00020", "00010", 120000, false);
+		createEmployee("Sally", "Kwan", "A00", "00310", "00010", 100000, false);
+		createEmployee("John", "Geyer", "B00", "00040", null, 102000, true);
+		createEmployee("Irving", "Stern", "B00", "00050", "00040", 100000, true);
+		createEmployee("Eva", "Pulaski", "B00", "00060", "00050", 80000, false);
+		createEmployee("Eileen", "Henderson", "B00", "00070", "00050", 70000, false);
 		
 		// Departments
 		createDepartment("A00", "Sales", 1000000);
 		createDepartment("B00", "R&D", 2000000);
 	}
 
-	private void createEmployee(String firstName, String lastName, String deptCode, String employeeId, String managerId, int salary) throws JSONException {
+	private void createEmployee(String firstName, String lastName, String deptCode, String employeeId, String managerId, int salary, boolean isManager) throws JSONException {
 		JSONObject employee = new JSONObject();
 		employee.put(FIRST_NAME, firstName);
 		employee.put(LAST_NAME, lastName);
@@ -329,9 +359,15 @@ public class SmartSqlTest extends SmartStoreTestCase {
 		employee.put(EMPLOYEE_ID, employeeId);
 		employee.put(MANAGER_ID, managerId);
 		employee.put(SALARY, salary);
+		employee.put(IS_MANAGER, isManager);
         store.create(EMPLOYEES_SOUP, employee);
 		
 	}
+
+	private JSONObject createEmployeeWithJsonString(String json) throws JSONException {
+	    JSONObject employee = new JSONObject(json);
+	    return store.create(EMPLOYEES_SOUP, employee);
+    }
 	
 	private void createDepartment(String deptCode, String name, int budget) throws JSONException {
 		JSONObject department = new JSONObject();
