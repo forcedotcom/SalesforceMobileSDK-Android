@@ -519,13 +519,13 @@ public class ClientManager {
                 }
                 gettingAuthToken = true;
             }
-
-            // Invalidate current auth token.
-            final String cachedAuthToken = clientManager.peekRestClient(acc).getAuthToken();
-            clientManager.invalidateToken(cachedAuthToken);
             String newAuthToken = null;
             String newInstanceUrl = null;
             try {
+
+                // Invalidate current auth token.
+                final String cachedAuthToken = clientManager.peekRestClient(acc).getAuthToken();
+                clientManager.invalidateToken(cachedAuthToken);
                 final Bundle bundle = refreshStaleToken(acc);
                 if (bundle == null) {
                     SalesforceSDKLogger.w(TAG, "Bundle was null while getting auth token");
