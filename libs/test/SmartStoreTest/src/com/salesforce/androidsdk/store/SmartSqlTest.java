@@ -303,6 +303,42 @@ public class SmartSqlTest extends SmartStoreTestCase {
 		JSONTestHelper.assertSameJSON("Wrong soupLastModifiedDate", christineJson.getString(SmartStore.SOUP_LAST_MODIFIED_DATE), result.getJSONArray(0).getLong(2));
 	}
 
+	/**
+	 * Test running smart queries matching null or empty fields
+	 * @throws JSONException
+	 */
+	@Test
+	public void testSmartQueryMatchingNullField() throws JSONException {
+        JSONObject createdEmployee;
+
+		// Employee with dept code
+		createdEmployee = createEmployeeWithJsonString("{\"employeeId\":\"001\",\"deptCode\":\"xyz\"}");
+		Assert.assertEquals("xyz", createdEmployee.get(DEPT_CODE));
+
+		// Employee with JSONObject.NULL dept code
+		createdEmployee = createEmployeeWithJsonString("{\"employeeId\":\"002\",\"deptCode\":null}");
+        Assert.assertTrue(createdEmployee.isNull(DEPT_CODE));
+
+		// Employee with "" dept code
+        createdEmployee = createEmployeeWithJsonString("{\"employeeId\":\"003\",\"deptCode\":\"\"}");
+        Assert.assertEquals("", createdEmployee.get(DEPT_CODE));
+
+		// Employee with no dept code
+        createdEmployee = createEmployeeWithJsonString("{\"employeeId\":\"004\"}");
+        Assert.assertFalse(createdEmployee.has(DEPT_CODE));
+
+		// Smart sql with is not null
+        JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:employeeId} from {employees} where {employees:deptCode} is not null order by {employees:employeeId}", 4), 0);
+        JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[\"001\"],[\"003\"]]"), result);
+
+		// Smart sql with is null
+        result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:employeeId} from {employees} where {employees:deptCode} is null order by {employees:employeeId}", 4), 0);
+        JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[\"002\"],[\"004\"]]"), result);
+
+		// Smart sql looking for empty string
+        result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:employeeId} from {employees} where {employees:deptCode} = \"\" order by {employees:employeeId}", 4), 0);
+        JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[\"003\"]]"), result);
+	}
 
 	/**
 	 * Test running smart queries that matching true and false in json1 field
