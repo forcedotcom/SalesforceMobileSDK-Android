@@ -18,7 +18,7 @@
             android:layout_marginStart="@dimen/sf__title_bar_padding_left"
             android:layout_marginTop="@dimen/sf__title_bar_padding_top"
             android:layout_marginBottom="@dimen/sf__title_bar_padding_bottom"
-            android:text="Login" />
+            android:text="@string/sf__login_title" />
     </LinearLayout>
 
     <RadioGroup android:id="@+id/sf__accounts_group"
