@@ -1221,6 +1221,10 @@ public class SmartStore  {
 	            if (externalIdObj != null) {
 	                entryId = lookupSoupEntryId(soupName, externalIdPath, externalIdObj + "");
 	            }
+	            else {
+					// Cannot have empty values for user-defined external ID upsert.
+					throw new SmartStoreException(String.format("For upsert with external ID path '%s', value cannot be empty for any entries.", externalIdPath));
+				}
 	        }
 
 	        // If we have an entryId, let's do an update, otherwise let's do a create
