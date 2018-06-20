@@ -1223,7 +1223,7 @@ public class SmartStore  {
 	            }
 	            else {
 					// Cannot have empty values for user-defined external ID upsert.
-					throw new SmartStoreException("For upsert with external ID path '" + externalIdPath + "', value cannot be empty for any entries.");
+					throw new SmartStoreException(String.format("For upsert with external ID path '%s', value cannot be empty for any entries.", externalIdPath));
 				}
 	        }
 
