@@ -3,12 +3,12 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/sf__color_background_alt_2"
+    android:background="@color/sf__color_background_alt"
     android:orientation="vertical">
 
     <LinearLayout android:layout_width="match_parent"
         android:layout_height="@dimen/sf__title_bar_height"
-        android:background="@color/sf__color_background_alt"
+        android:background="@color/sf__color_background_alt_2"
         android:orientation="vertical">
 
         <TextView android:layout_width="match_parent"
@@ -18,7 +18,8 @@
             android:layout_marginStart="@dimen/sf__title_bar_padding_left"
             android:layout_marginTop="@dimen/sf__title_bar_padding_top"
             android:layout_marginBottom="@dimen/sf__title_bar_padding_bottom"
-            android:text="@string/sf__login_title" />
+            android:text="@string/sf__login_title"
+            android:textStyle="bold"/>
     </LinearLayout>
 
     <RadioGroup android:id="@+id/sf__accounts_group"
