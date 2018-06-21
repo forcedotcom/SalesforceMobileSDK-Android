@@ -19,8 +19,25 @@
             android:layout_marginTop="@dimen/sf__title_bar_padding_top"
             android:layout_marginBottom="@dimen/sf__title_bar_padding_bottom"
             android:text="@string/sf__login_title"
-            android:textStyle="bold"/>
+            android:textStyle="bold" />
     </LinearLayout>
+
+    <ImageView android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/sf__account_selector_text"
+        android:src="@drawable/sf__salesforce_logo"
+        android:paddingTop="@dimen/sf__sf_logo_padding_vertical"
+        android:paddingBottom="@dimen/sf__sf_logo_padding_vertical"
+        android:layout_gravity="center_horizontal" />
+
+    <TextView android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="@dimen/sf__title_text_size"
+        android:fontFamily="sans-serif"
+        android:textStyle="normal"
+        android:layout_gravity="center_horizontal"
+        android:text="@string/sf__account_selector_text"
+        android:layout_marginBottom="@dimen/sf__sf_logo_padding_vertical" />
 
     <RadioGroup android:id="@+id/sf__accounts_group"
         style="@style/SalesforceSDK.AccountSwitcher.List" />

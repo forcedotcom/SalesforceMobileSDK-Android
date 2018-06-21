@@ -10,13 +10,13 @@
     <string name="sf__managed_app_error">Authentication only allowed from managed device.</string>
 	<string name="sf__jwt_authentication_error">JWT authentication error. Please try again.</string>
 
-    <!-- SSL Errors -->
-    <string name="sf__ssl_error">SSL Error: %s.</string>
-    <string name="sf__ssl_expired">Expired Certificate</string>
-    <string name="sf__ssl_id_mismatch">Hostname Mismatch</string>
-    <string name="sf__ssl_not_yet_valid">Certificate Not Yet Valid</string>
-    <string name="sf__ssl_untrusted">Untrusted Certificate Authority</string>
-    <string name="sf__ssl_unknown_error">Unknown Error</string>
+    <!-- SSL errors -->
+    <string name="sf__ssl_error">SSL error: %s.</string>
+    <string name="sf__ssl_expired">Expired certificate</string>
+    <string name="sf__ssl_id_mismatch">Hostname mismatch</string>
+    <string name="sf__ssl_not_yet_valid">Certificate not yet valid</string>
+    <string name="sf__ssl_untrusted">Untrusted certificate authority</string>
+    <string name="sf__ssl_unknown_error">Unknown error</string>
 
 	<!-- Login -->
 	<string name="sf__login_title">Login</string>
@@ -62,6 +62,7 @@
 	<string name="sf__add_new_account">Add New Account</string>
 	<string name="sf__switch_account">Switch Account</string>
 	<string name="sf__idp_account_selector">Select Account</string>
+    <string name="sf__account_selector_text">Select your account to log into</string>
 
     <!-- Managed app restrictions -->
     <string name="sf__app_service_hosts_description">Used to specify login hosts for the application.</string>
@@ -73,7 +74,7 @@
 	<string name="sf__only_show_authorized_hosts_description">Used to specify that only authorized hosts can be shown.</string>
     <string name="sf__idp_app_url_scheme_description">Used to specify IDP app\'s URL scheme to be used.</string>
 
-	<!-- Fingerprint Auth Resources-->
+	<!-- Fingerprint auth resources-->
 	<string name="sf__fingerprint_description">Confirm fingerprint to continue</string>
 	<string name="sf__fingerprint_hint">Touch sensor</string>
 	<string name="sf__fingerprint_cancel">Use Passcode</string>
@@ -82,5 +83,4 @@
 
 	<!-- Dev support -->
 	<string name="sf__dev_support_title">Mobile SDK Dev Support</string>
-
 </resources>
