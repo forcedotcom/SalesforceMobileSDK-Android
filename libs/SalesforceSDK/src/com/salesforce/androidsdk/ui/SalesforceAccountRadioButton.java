@@ -33,6 +33,7 @@ import android.text.SpannableStringBuilder;
 import android.text.style.TextAppearanceSpan;
 import android.widget.RadioButton;
 
+import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 
 /**
@@ -57,6 +58,7 @@ public class SalesforceAccountRadioButton extends RadioButton {
 		super(context);
 		this.context = context;
 		this.account = account;
+		setBackgroundColor(context.getResources().getColor(R.color.sf__list_item_background));
 		setText();
 	}
 
@@ -66,7 +68,7 @@ public class SalesforceAccountRadioButton extends RadioButton {
 	public void setText() {
 		final SpannableStringBuilder result = new SpannableStringBuilder();
 		if (account != null && account.getUsername() != null && account.getLoginServer() != null) {
-			final String username = account.getUsername();
+			final String username = account.getDisplayName();
 			final String loginServer = account.getLoginServer();
 	        final SpannableString titleSpan = new SpannableString(username);
 	        titleSpan.setSpan(new TextAppearanceSpan(context,

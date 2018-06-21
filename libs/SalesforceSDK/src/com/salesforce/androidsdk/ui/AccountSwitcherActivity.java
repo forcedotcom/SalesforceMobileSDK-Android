@@ -158,7 +158,7 @@ public class AccountSwitcherActivity extends Activity {
      * @param account UserAccount instance.
      */
     private void setRadioState(RadioGroup radioGroup, UserAccount account) {
-    	final SalesforceAccountRadioButton rb = new SalesforceAccountRadioButton(this, account);
-    	radioGroup.addView(rb);
+        final SalesforceAccountRadioButton rb = new SalesforceAccountRadioButton(this, account);
+        radioGroup.addView(rb);
     }
 }
