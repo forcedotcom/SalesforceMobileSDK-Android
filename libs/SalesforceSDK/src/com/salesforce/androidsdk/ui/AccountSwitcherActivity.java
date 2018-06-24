@@ -29,7 +29,7 @@ package com.salesforce.androidsdk.ui;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.RadioGroup;
+import android.widget.ListView;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -70,14 +70,15 @@ public class AccountSwitcherActivity extends Activity {
 	 * @param v View that was clicked.
 	 */
 	public void switchToExistingAccount(View v) {
-        final RadioGroup radioGroup = findViewById(R.id.sf__accounts_group);
-        int checkedId = radioGroup.getCheckedRadioButtonId();
+        // TODO: Implement onListItemClick() here or trigger this from that call.
+
+        /*int checkedId = radioGroup.getCheckedRadioButtonId();
 		final SalesforceAccountRadioButton rb = radioGroup.findViewById(checkedId);
 		if (rb != null) {
 			final UserAccount account = rb.getAccount();
 			accountSelected(account);
 		}
-		finishActivity();
+		finishActivity();*/
 	}
 
 	/**
@@ -121,44 +122,15 @@ public class AccountSwitcherActivity extends Activity {
     }
 
 	private void buildAccountList() {
-        final RadioGroup radioGroup = findViewById(R.id.sf__accounts_group);
-        radioGroup.removeAllViews();
-        UserAccount curAccount = userAccMgr.getCurrentUser();
-        final List<UserAccount> accounts = getAccounts();
+	    final ListView listView = findViewById(R.id.sf__accounts_group);
+	    final List<UserAccount> accounts = getAccounts();
 		if (accounts == null || accounts.size() == 0) {
 			return;
 		}
-		if (curAccount == null) {
-			curAccount = accounts.get(0);
-		}
-		int curSelectedIndex = 0;
-		for (int i = 0; i < accounts.size(); i++) {
-			final UserAccount account = accounts.get(i);
-			if (account != null) {
-				setRadioState(radioGroup, account);
-				if (account.equals(curAccount)) {
-					curSelectedIndex = i;
-				}
-			}
-		}
-
-		/*
-		 * Sets the current active account to a checked state.
-		 */
-		final SalesforceAccountRadioButton rb = (SalesforceAccountRadioButton) radioGroup.getChildAt(curSelectedIndex);
-    	if (rb != null) {
-    		rb.setChecked(true);
-    	}
+        final UserAccount[] accountsArr = new UserAccount[accounts.size()];
+		accounts.toArray(accountsArr);
+        final UserAccountAdapter adapter = new UserAccountAdapter(this,
+                R.layout.sf__account_switcher_list_item, accountsArr);
+        listView.setAdapter(adapter);
 	}
-
-    /**
-     * Sets the radio state.
-     *
-     * @param radioGroup RadioGroup instance.
-     * @param account UserAccount instance.
-     */
-    private void setRadioState(RadioGroup radioGroup, UserAccount account) {
-        final SalesforceAccountRadioButton rb = new SalesforceAccountRadioButton(this, account);
-        radioGroup.addView(rb);
-    }
 }

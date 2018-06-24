@@ -3,9 +3,10 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="horizontal"
     android:layout_width="match_parent"
+    android:background="@color/sf__color_background_alt_2"
     android:layout_height="@dimen/sf__list_item_height">
 
-    <ImageView android:id="@+id/user_icon"
+    <ImageView android:id="@+id/sf__user_icon"
         android:src="@drawable/sf__android_astro_circle"
         android:contentDescription="@string/sf__idp_account_selector"
         android:layout_width="@dimen/sf__list_item_user_icon_length"
@@ -19,7 +20,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <TextView android:id="@+id/user_name"
+        <TextView android:id="@+id/sf__user_name"
             android:layout_width="match_parent"
             android:layout_height="@dimen/sf__list_item_user_name_height"
             android:textSize="@dimen/sf__list_item_user_name_text_size"
@@ -30,7 +31,7 @@
             android:layout_marginTop="@dimen/sf__list_item_user_name_margin_top"
             android:layout_marginBottom="@dimen/sf__list_item_user_name_margin_bottom" />
 
-        <TextView android:id="@+id/server_name"
+        <TextView android:id="@+id/sf__server_name"
             android:layout_width="match_parent"
             android:layout_height="@dimen/sf__list_item_server_name_height"
             android:textSize="@dimen/sf__list_item_server_name_text_size"

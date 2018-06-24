@@ -109,7 +109,7 @@
     <style name="SalesforceSDK.AccountSwitcher.List">
         <item name="android:orientation">vertical</item>
         <item name="android:showDividers">middle</item>
-        <item name="android:divider">@color/sf__color_background_alt_2</item>
+        <item name="android:divider">@color/sf__color_background_alt</item>
         <item name="android:dividerHeight">@dimen/sf__list_divider_height</item>
     </style>
 

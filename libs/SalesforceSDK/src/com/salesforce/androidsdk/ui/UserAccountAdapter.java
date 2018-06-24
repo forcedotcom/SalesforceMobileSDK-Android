@@ -50,6 +50,13 @@ public class UserAccountAdapter extends ArrayAdapter<UserAccount> {
     private int resource;
     private UserAccount[] accounts;
 
+    /**
+     * Parameterized constructor.
+     *
+     * @param context Context.
+     * @param resource Row layout resource.
+     * @param accounts List of user accounts.
+     */
     public UserAccountAdapter(Context context, int resource, UserAccount[] accounts) {
         super(context, resource, accounts);
         this.context = context;
@@ -67,13 +74,13 @@ public class UserAccountAdapter extends ArrayAdapter<UserAccount> {
             final LayoutInflater inflater = ((Activity) context).getLayoutInflater();
             row = inflater.inflate(resource, parent, false);
             if (account != null) {
-                final ImageView userIcon = row.findViewById(R.id.user_icon);
+                final ImageView userIcon = row.findViewById(R.id.sf__user_icon);
                 // TODO: Assign downloaded user icon.
-                final TextView userName = row.findViewById(R.id.user_name);
+                final TextView userName = row.findViewById(R.id.sf__user_name);
                 if (userName != null) {
                     userName.setText(account.getDisplayName());
                 }
-                final TextView serverName = row.findViewById(R.id.server_name);
+                final TextView serverName = row.findViewById(R.id.sf__server_name);
                 if (serverName != null) {
                     serverName.setText(account.getLoginServer());
                 }

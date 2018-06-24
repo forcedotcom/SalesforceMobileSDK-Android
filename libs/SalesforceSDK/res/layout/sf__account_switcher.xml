@@ -15,6 +15,7 @@
             android:layout_height="match_parent"
             android:textSize="@dimen/sf__title_text_size"
             android:textColor="@color/sf__color_text_default"
+            android:fontFamily="sans-serif"
             android:layout_marginStart="@dimen/sf__title_bar_padding_left"
             android:layout_marginTop="@dimen/sf__title_bar_padding_top"
             android:layout_marginBottom="@dimen/sf__title_bar_padding_bottom"
@@ -39,7 +40,9 @@
         android:text="@string/sf__account_selector_text"
         android:layout_marginBottom="@dimen/sf__sf_logo_padding_vertical" />
 
-    <RadioGroup android:id="@+id/sf__accounts_group"
+    <ListView android:id="@+id/sf__accounts_group"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         style="@style/SalesforceSDK.AccountSwitcher.List" />
 
     <Button android:id="@+id/sf__switcher_apply_button"
