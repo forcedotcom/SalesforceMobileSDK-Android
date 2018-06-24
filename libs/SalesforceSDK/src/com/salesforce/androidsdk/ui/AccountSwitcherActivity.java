@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.ui;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
 
 import com.salesforce.androidsdk.R;
@@ -63,31 +64,22 @@ public class AccountSwitcherActivity extends Activity {
 	}
 
 	/**
-	 * This method is triggered when the 'Apply' button is clicked. It
+	 * This method is triggered when a user is selected from the list. It
 	 * switches the context to the selected account, if it is different
 	 * from the current account.
 	 *
-	 * @param v View that was clicked.
+	 * @param account User account that was selected.
 	 */
-	public void switchToExistingAccount(View v) {
-        // TODO: Implement onListItemClick() here or trigger this from that call.
-
-        /*int checkedId = radioGroup.getCheckedRadioButtonId();
-		final SalesforceAccountRadioButton rb = radioGroup.findViewById(checkedId);
-		if (rb != null) {
-			final UserAccount account = rb.getAccount();
-			accountSelected(account);
-		}
-		finishActivity();*/
+	public void switchToExistingAccount(UserAccount account) {
+        accountSelected(account);
+		finishActivity();
 	}
 
 	/**
-	 * This method is triggered when the 'Add New Account' button is clicked.
+	 * This method is triggered when the 'Add new account' button is clicked.
 	 * It launches the login flow to sign into a new account.
-	 *
-	 * @param v View that was clicked.
 	 */
-	public void switchToNewAccount(View v) {
+	public void switchToNewAccount() {
 		accountSelected(null);
 		finishActivity();
 	}
@@ -135,5 +127,22 @@ public class AccountSwitcherActivity extends Activity {
         final View footer = getLayoutInflater().inflate(R.layout.sf__account_switcher_list_footer,
                 null);
         listView.addFooterView(footer);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                final UserAccount account = (UserAccount) parent.getItemAtPosition(position);
+
+                /*
+                 * Fetches the account that was clicked on. If account is null, this means
+                 * the footer view was clicked, which will trigger the new user login flow.
+                 */
+                if (account != null) {
+                    switchToExistingAccount(account);
+                } else {
+                    switchToNewAccount();
+                }
+            }
+        });
 	}
 }
