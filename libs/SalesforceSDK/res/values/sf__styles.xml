@@ -112,18 +112,4 @@
         <item name="android:divider">@color/sf__color_background_alt</item>
         <item name="android:dividerHeight">@dimen/sf__list_divider_height</item>
     </style>
-
-    <style name="SalesforceSDK.AccountSwitcher.Button">
-        <item name="android:layout_marginTop">@dimen/sf__custom_url_margin_top</item>
-    </style>
-
-    <style name="SalesforceSDK.AccountSwitcher.Button.AddAccount">
-        <item name="android:textSize">@dimen/sf__button_font_size</item>
-        <item name="android:layout_margin">@dimen/sf__button_margin</item>
-    </style>
-
-    <style name="SalesforceSDK.AccountSwitcher.Button.Apply">
-        <item name="android:textSize">@dimen/sf__button_font_size</item>
-        <item name="android:layout_margin">@dimen/sf__button_margin</item>
-    </style>
 </resources>

@@ -49,4 +49,7 @@
     <dimen name="sf__list_item_server_name_height">17dp</dimen>
     <dimen name="sf__list_item_server_name_text_size">14sp</dimen>
     <dimen name="sf__list_item_server_name_line_spacing">1sp</dimen>
+    <dimen name="sf__list_item_add_icon_length">16dp</dimen>
+    <dimen name="sf__list_item_add_icon_padding_horizontal">22dp</dimen>
+    <dimen name="sf__list_item_add_icon_padding_top">17dp</dimen>
 </resources>

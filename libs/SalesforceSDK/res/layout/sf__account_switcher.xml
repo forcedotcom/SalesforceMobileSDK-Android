@@ -44,14 +44,4 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         style="@style/SalesforceSDK.AccountSwitcher.List" />
-
-    <Button android:id="@+id/sf__switcher_apply_button"
-        android:text="@string/sf__switch_account"
-        style="@style/SalesforceSDK.AccountSwitcher.Button.Apply"
-        android:onClick="switchToExistingAccount" />
-
-    <Button android:id="@+id/sf__add_account_button"
-        android:text="@string/sf__add_new_account"
-        style="@style/SalesforceSDK.AccountSwitcher.Button.AddAccount"
-        android:onClick="switchToNewAccount" />
 </LinearLayout>

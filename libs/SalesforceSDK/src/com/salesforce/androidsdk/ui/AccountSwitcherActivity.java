@@ -132,5 +132,8 @@ public class AccountSwitcherActivity extends Activity {
         final UserAccountAdapter adapter = new UserAccountAdapter(this,
                 R.layout.sf__account_switcher_list_item, accountsArr);
         listView.setAdapter(adapter);
+        final View footer = getLayoutInflater().inflate(R.layout.sf__account_switcher_list_footer,
+                null);
+        listView.addFooterView(footer);
 	}
 }

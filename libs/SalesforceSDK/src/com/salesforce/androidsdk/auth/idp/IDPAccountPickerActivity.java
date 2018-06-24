@@ -34,9 +34,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.widget.Button;
 
-import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -68,8 +66,6 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
     public void onCreate(Bundle savedInstance) {
         super.onCreate(savedInstance);
         SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_APP_IS_IDP);
-        final Button button = findViewById(R.id.sf__switcher_apply_button);
-        button.setText(R.string.sf__idp_account_selector);
 
         // Fetches the required extras.
         final Intent intent = getIntent();
