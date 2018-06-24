@@ -16,4 +16,6 @@
     <color name="sf__color_background_alt_2">#ffffff</color>
     <color name="sf__color_text_default">#16325c</color>
     <color name="sf__list_item_background">#f5f6fa</color>
+    <color name="sf__list_item_user_name_color">#18345f</color>
+    <color name="sf__list_item_server_name_color">#54698d</color>
 </resources>
