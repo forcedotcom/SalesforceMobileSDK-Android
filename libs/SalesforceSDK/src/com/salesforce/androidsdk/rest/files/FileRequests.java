@@ -202,7 +202,6 @@ public class FileRequests extends ApiRequests {
         if (title != null) builder.addFormDataPart("title", title);
         if (description != null) builder.addFormDataPart("desc", description);
         builder.addFormDataPart("fileData", name, RequestBody.create(mediaType, theFile));
-
         return new RestRequest(RestMethod.POST, base("connect/files/users").appendPath("me").toString(), builder.build(), HTTP_HEADERS);
     }
 
