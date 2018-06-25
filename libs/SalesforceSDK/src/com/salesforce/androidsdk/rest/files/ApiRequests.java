@@ -26,9 +26,6 @@
  */
 package com.salesforce.androidsdk.rest.files;
 
-import android.net.Uri;
-
-import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 
@@ -52,11 +49,6 @@ class ApiRequests {
         return new ConnectUriBuilder().appendPath(firstPathSegment);
     }
 
-    protected static ConnectUriBuilder connectBase(String firstPathSegment) {
-        return new ConnectUriBuilder(Uri.parse(ApiVersionStrings.getBaseConnectPath()).buildUpon())
-                .appendPath(firstPathSegment);
-    }
-
     protected static void validateSfdcId(String sfdcId) {
         if (sfdcId == null || ConnectUriBuilder.EMPTY.equals(sfdcId)) {
             throw new IllegalArgumentException("invalid sfdcId");
@@ -76,7 +68,7 @@ class ApiRequests {
     protected static final Map<String, String> HTTP_HEADERS;
 
     static {
-        Map<String, String> h = new HashMap<String, String>();
+        Map<String, String> h = new HashMap<>();
         h.put("X-Chatter-Entity-Encoding", "false");
         HTTP_HEADERS = Collections.unmodifiableMap(h);
     }

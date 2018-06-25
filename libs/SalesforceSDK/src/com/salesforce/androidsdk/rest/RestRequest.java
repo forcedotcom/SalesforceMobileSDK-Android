@@ -400,7 +400,7 @@ public class RestRequest {
 	}
 
 	/**
-	 * Request to completely describe the individual metadata at all levels for the specified object. 
+	 * Request to completely describe the individual metadata at all levels for the specified object.
 	 *
      * @param apiVersion Salesforce API version.
      * @param objectType Type of object for which the caller is requesting the metadata description.
