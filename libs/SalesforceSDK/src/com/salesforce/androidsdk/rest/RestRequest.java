@@ -34,7 +34,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -223,7 +222,6 @@ public class RestRequest {
         this(method, path, requestBodyAsJson, null);
     }
 
-
     /**
      * Generic constructor for arbitrary requests.
      *
@@ -395,8 +393,7 @@ public class RestRequest {
      * @param apiVersion    Salesforce API version.
      * @param objectType    Type of object for which the caller is requesting object metadata.
      * @return              RestRequest object that requests an object's metadata for the given API version.
-	 * @throws IOException
-     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_basic_info.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_basic_info.htm</a>
+	 * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_basic_info.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_basic_info.htm</a>
 	 */
 	public static RestRequest getRequestForMetadata(String apiVersion, String objectType) {
         return new RestRequest(RestMethod.GET, RestAction.METADATA.getPath(apiVersion, objectType));
