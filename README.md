@@ -33,7 +33,7 @@ Introduction
 - Android Studio 3.1 and Gradle 4.4 are now supported.
 
 **SmartSync Data Framework Enhancements**
-- Starting with Mobile SDK 6.2, the `SmartSync` data framework now returns detailed information about the error, if an error occurs during a sync operation.
+- Starting with Mobile SDK 6.2, the SmartSync data framework saves the error returned by the server on records that fail to sync up.
 - We have added a new utility called `MetadataSyncManager` that allows apps to sync metadata using the power of the existing `SmartSync` data framework.
 - We have added a new utility called `LayoutSyncManager` that allows apps to sync layout data using the power of the existing `SmartSync` data framework.
 
