@@ -80,6 +80,7 @@ public class UserAccount {
 	private static final String PROFILE_PHOTO_PATH_PREFIX = "profile_photo_";
     private static final String AUTHORIZATION = "Authorization";
     private static final String BEARER = "Bearer ";
+    private static final String JPG = ".jpg";
 
 	private String authToken;
 	private String refreshToken;
@@ -396,6 +397,7 @@ public class UserAccount {
         downloadReq.setDestinationUri(destUri);
         downloadReq.addRequestHeader(AUTHORIZATION, BEARER + authToken);
         downloadReq.setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN);
+        downloadReq.setVisibleInDownloadsUi(false);
         final DownloadManager downloadManager = (DownloadManager) SalesforceSDKManager.getInstance().getAppContext().getSystemService(Context.DOWNLOAD_SERVICE);
         if (downloadManager != null) {
             downloadManager.enqueue(downloadReq);
@@ -641,7 +643,7 @@ public class UserAccount {
     }
 
     private File getProfilePhotoFile() {
-        final String filename = PROFILE_PHOTO_PATH_PREFIX + getUserLevelFilenameSuffix();
+        final String filename = PROFILE_PHOTO_PATH_PREFIX + getUserLevelFilenameSuffix() + JPG;
         return (new File(SalesforceSDKManager.getInstance().getAppContext().getFilesDir(),
                 filename));
     }
