@@ -34,7 +34,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -57,6 +56,7 @@ import okhttp3.RequestBody;
  * 
  * The class offers factory methods to build RestRequest objects for all REST API actions:
  * <ul>
+ * <li> userinfo</li>
  * <li> versions</li>
  * <li> resources</li>
  * <li> describeGlobal</li>
@@ -64,11 +64,16 @@ import okhttp3.RequestBody;
  * <li> describe</li>
  * <li> create</li>
  * <li> retrieve</li>
- * <li> update</li>
  * <li> upsert</li>
+ * <li> update</li>
  * <li> delete</li>
+ * <li> query</li>
+ * <li> search</li>
  * <li> searchScopeAndOrder</li>
  * <li> searchResultLayout</li>
+ * <li> objectLayout</li>
+ * <li> composite</li>
+ * <li> batch</li>
  * <li> tree</li>
  * </ul>
  * 
@@ -217,7 +222,6 @@ public class RestRequest {
         this(method, path, requestBodyAsJson, null);
     }
 
-
     /**
      * Generic constructor for arbitrary requests.
      *
@@ -275,7 +279,7 @@ public class RestRequest {
      * @param requestBodyAsJson		Request body as JSON, if one exists. Can be null.
      * @param additionalHttpHeaders	Additional headers.
      */
-    public RestRequest(RestMethod method, RestEndpoint endpoint, String path, JSONObject requestBodyAsJson,  Map<String, String> additionalHttpHeaders) {
+    public RestRequest(RestMethod method, RestEndpoint endpoint, String path, JSONObject requestBodyAsJson, Map<String, String> additionalHttpHeaders) {
         this.method = method;
         this.endpoint = endpoint;
         this.path = path;
@@ -389,22 +393,21 @@ public class RestRequest {
      * @param apiVersion    Salesforce API version.
      * @param objectType    Type of object for which the caller is requesting object metadata.
      * @return              RestRequest object that requests an object's metadata for the given API version.
-	 * @throws IOException
-     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_basic_info.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_basic_info.htm</a>
+	 * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_basic_info.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_basic_info.htm</a>
 	 */
 	public static RestRequest getRequestForMetadata(String apiVersion, String objectType) {
         return new RestRequest(RestMethod.GET, RestAction.METADATA.getPath(apiVersion, objectType));
 	}
 
 	/**
-	 * Request to completely describe the individual metadata at all levels for the specified object. 
+	 * Request to completely describe the individual metadata at all levels for the specified object.
 	 *
      * @param apiVersion Salesforce API version.
      * @param objectType Type of object for which the caller is requesting the metadata description.
      * @return RestRequest object that requests an object's metadata description for the given API version.
      * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_describe.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_describe.htm</a>
 	 */
-	public static RestRequest getRequestForDescribe(String apiVersion, String objectType)  {
+	public static RestRequest getRequestForDescribe(String apiVersion, String objectType) {
         return new RestRequest(RestMethod.GET, RestAction.DESCRIBE.getPath(apiVersion, objectType));
 	}
 	
@@ -415,11 +418,9 @@ public class RestRequest {
      * @param objectType    Type of record to be created.
      * @param fields        Map of the new record's fields and their values. Can be null.
      * @return              RestRequest object that requests creation of a record.
-	 * @throws IOException
-	 * @throws UnsupportedEncodingException 
-     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm</a>
+	 * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm</a>
 	 */
-	public static RestRequest getRequestForCreate(String apiVersion, String objectType, Map<String, Object> fields) throws IOException  {
+	public static RestRequest getRequestForCreate(String apiVersion, String objectType, Map<String, Object> fields) {
 		return new RestRequest(RestMethod.POST, RestAction.CREATE.getPath(apiVersion, objectType), fields == null ? null : new JSONObject(fields));
 	}
 
@@ -462,10 +463,9 @@ public class RestRequest {
      * @param objectId      Salesforce ID of the record.
      * @param fields        Map of the fields to be updated and their new values.
      * @return              RestRequest object that requests a record update.
-	 * @throws IOException
-     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm</a>
+	 * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm</a>
 	 */
-	public static RestRequest getRequestForUpdate(String apiVersion, String objectType, String objectId, Map<String, Object> fields) throws IOException  {
+	public static RestRequest getRequestForUpdate(String apiVersion, String objectType, String objectId, Map<String, Object> fields) {
         return getRequestForUpdate(apiVersion, objectType, objectId, fields, null);
 	}
 
@@ -478,10 +478,9 @@ public class RestRequest {
      * @param fields                Map of the fields to be updated and their new values. Can be null.
      * @param ifUnmodifiedSinceDate Fulfill the request only if the record has not been modified since the given date.
      * @return                      RestRequest object that requests a record update.
-     * @throws IOException
      * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm</a>
      */
-    public static RestRequest getRequestForUpdate(String apiVersion, String objectType, String objectId, Map<String, Object> fields, Date ifUnmodifiedSinceDate) throws IOException  {
+    public static RestRequest getRequestForUpdate(String apiVersion, String objectType, String objectId, Map<String, Object> fields, Date ifUnmodifiedSinceDate) {
         Map<String, String> additionalHttpHeaders = prepareConditionalHeader(IF_UNMODIFIED_SINCE, ifUnmodifiedSinceDate);
         return new RestRequest(RestMethod.PATCH, RestAction.UPDATE.getPath(apiVersion, objectType, objectId), fields == null ? null : new JSONObject(fields), additionalHttpHeaders);
     }
@@ -495,10 +494,9 @@ public class RestRequest {
      * @param externalId        ID of source data record. Can be an empty string.
      * @param fields            Map of the fields to be upserted and their new values. Can be null.
      * @return                  RestRequest object that requests a record upsert.
-	 * @throws IOException
-     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_upsert.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_upsert.htm</a>
+	 * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_upsert.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_upsert.htm</a>
 	 */
-	public static RestRequest getRequestForUpsert(String apiVersion, String objectType, String externalIdField, String externalId, Map<String, Object> fields) throws IOException  {
+	public static RestRequest getRequestForUpsert(String apiVersion, String objectType, String externalIdField, String externalId, Map<String, Object> fields) {
         return new RestRequest(
                 externalId == null ? RestMethod.POST : RestMethod.PATCH,
                 RestAction.UPSERT.getPath(
@@ -559,10 +557,9 @@ public class RestRequest {
 	 *
 	 * @param apiVersion    Salesforce API version.
      * @return              RestRequest object that requests the search scope and order for the given API version.
-	 * @throws UnsupportedEncodingException
-     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_scope_order.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_scope_order.htm</a>
+	 * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_scope_order.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_scope_order.htm</a>
 	 */
-	public static RestRequest getRequestForSearchScopeAndOrder(String apiVersion) throws UnsupportedEncodingException  {
+	public static RestRequest getRequestForSearchScopeAndOrder(String apiVersion)  {
         return new RestRequest(RestMethod.GET, new StringBuilder(RestAction.SEARCH_SCOPE_AND_ORDER.getPath(apiVersion)).toString());
 	}	
 	

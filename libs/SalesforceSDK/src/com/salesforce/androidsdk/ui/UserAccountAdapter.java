@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.ui;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -75,7 +76,10 @@ public class UserAccountAdapter extends ArrayAdapter<UserAccount> {
             row = inflater.inflate(resource, parent, false);
             if (account != null) {
                 final ImageView userIcon = row.findViewById(R.id.sf__user_icon);
-                // TODO: Assign downloaded user icon.
+                final Bitmap icon = account.getProfilePhoto();
+                if (userIcon != null && icon != null) {
+                    userIcon.setImageBitmap(icon);
+                }
                 final TextView userName = row.findViewById(R.id.sf__user_name);
                 if (userName != null) {
                     userName.setText(account.getDisplayName());

@@ -177,7 +177,7 @@ public class UserAccountManager {
 	 */
 	public Account getCurrentAccount() {
         final Account[] accounts = accountManager.getAccountsByType(accountType);
-        if (accounts == null || accounts.length == 0) {
+        if (accounts.length == 0) {
         	return null;
         }
 
@@ -217,7 +217,7 @@ public class UserAccountManager {
 	 */
 	public List<UserAccount> getAuthenticatedUsers() {
         final Account[] accounts = accountManager.getAccountsByType(accountType);
-        if (accounts == null || accounts.length == 0) {
+        if (accounts.length == 0) {
         	return null;
         }
         final List<UserAccount> userAccounts = new ArrayList<UserAccount>();
@@ -265,7 +265,6 @@ public class UserAccountManager {
 	 * @param user User account to switch to.
 	 */
 	public void switchToUser(UserAccount user) {
-		// All that's known is that the user is being switched
 		switchToUser(user, USER_SWITCH_TYPE_DEFAULT, null);
 	}
 
@@ -467,7 +466,7 @@ public class UserAccountManager {
 		if (userAccount == null) {
 			return null;
 		}
-        if (accounts == null || accounts.length == 0) {
+        if (accounts.length == 0) {
         	return null;
         }
 
@@ -493,19 +492,9 @@ public class UserAccountManager {
 
 	/**
 	 * Broadcasts an intent that a user switch has occurred.
-	 */
-	public void sendUserSwitchIntent() {
-		// By default, the type of switch is not known
-		sendUserSwitchIntent(USER_SWITCH_TYPE_DEFAULT, null);
-	}
-
-	/**
-	 * Broadcasts an intent that a user switch has occurred.
 	 *
-	 * @param userSwitchType
-	 *         a {@code USER_SWITCH_TYPE} constant
-	 * @param extras
-	 *         an optional Bundle of extras to add to the broadcast intent
+	 * @param userSwitchType A {@code USER_SWITCH_TYPE} constant.
+	 * @param extras An optional Bundle of extras to add to the broadcast intent.
 	 */
 	public final void sendUserSwitchIntent(int userSwitchType, Bundle extras) {
 		final Intent intent = new Intent(USER_SWITCH_INTENT_ACTION);

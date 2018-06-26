@@ -26,6 +26,11 @@
  */
 package com.salesforce.androidsdk.accounts;
 
+import android.app.DownloadManager;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 
@@ -37,6 +42,7 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.util.Map;
 
 /**
@@ -71,6 +77,10 @@ public class UserAccount {
 	private static final String TAG = "UserAccount";
 	private static final String FORWARD_SLASH = "/";
 	private static final String UNDERSCORE = "_";
+	private static final String PROFILE_PHOTO_PATH_PREFIX = "profile_photo_";
+    private static final String AUTHORIZATION = "Authorization";
+    private static final String BEARER = "Bearer ";
+    private static final String JPG = ".jpg";
 
 	private String authToken;
 	private String refreshToken;
@@ -363,6 +373,37 @@ public class UserAccount {
         return additionalOauthValues;
     }
 
+    /**
+     * Fetches this user's profile photo from the cache.
+     *
+     * @return User's profile photo.
+     */
+    public Bitmap getProfilePhoto() {
+        final File file = getProfilePhotoFile();
+        final BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
+        bitmapOptions.inPreferredConfig = Bitmap.Config.ARGB_8888;
+        final Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), bitmapOptions);
+        return bitmap;
+    }
+
+    /**
+     * Fetches this user's profile photo from the server and stores it in the cache.
+     */
+    public void downloadProfilePhoto() {
+        final File file = getProfilePhotoFile();
+        final Uri srcUri = Uri.parse(photoUrl);
+        final Uri destUri = Uri.fromFile(file);
+        final DownloadManager.Request downloadReq = new DownloadManager.Request(srcUri);
+        downloadReq.setDestinationUri(destUri);
+        downloadReq.addRequestHeader(AUTHORIZATION, BEARER + authToken);
+        downloadReq.setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN);
+        downloadReq.setVisibleInDownloadsUi(false);
+        final DownloadManager downloadManager = (DownloadManager) SalesforceSDKManager.getInstance().getAppContext().getSystemService(Context.DOWNLOAD_SERVICE);
+        if (downloadManager != null) {
+            downloadManager.enqueue(downloadReq);
+        }
+    }
+
 	/**
 	 * Returns the org level storage path for this user account, relative to
 	 * the higher level directory of app data. The higher level directory
@@ -599,5 +640,11 @@ public class UserAccount {
         object = MapUtil.addMapToBundle(additionalOauthValues,
                 SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), object);
     	return object;
+    }
+
+    private File getProfilePhotoFile() {
+        final String filename = PROFILE_PHOTO_PATH_PREFIX + getUserLevelFilenameSuffix() + JPG;
+        return (new File(SalesforceSDKManager.getInstance().getAppContext().getExternalCacheDir(),
+                filename));
     }
 }

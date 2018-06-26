@@ -7,7 +7,7 @@
     android:layout_height="@dimen/sf__list_item_height">
 
     <ImageView android:id="@+id/sf__user_icon"
-        android:src="@drawable/sf__android_astro_circle"
+        android:src="@drawable/sf__android_astro"
         android:contentDescription="@string/sf__account_selector_text"
         android:layout_width="@dimen/sf__list_item_user_icon_length"
         android:layout_height="@dimen/sf__list_item_user_icon_length"

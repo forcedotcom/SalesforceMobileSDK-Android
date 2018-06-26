@@ -404,14 +404,7 @@ public class ExplorerActivity extends SalesforceActivity {
      * @param v View that was clicked.
      */
     public void onSearchScopeAndOrderClick(View v) {
-        RestRequest request = null;
-        try {
-            request = RestRequest.getRequestForSearchScopeAndOrder(ApiVersionStrings.getVersionNumber(this));
-        } catch (UnsupportedEncodingException e) {
-            printHeader("Could not build search scope and order request");
-            printException(e);
-            return;
-        }
+        final RestRequest request = RestRequest.getRequestForSearchScopeAndOrder(ApiVersionStrings.getVersionNumber(this));
         sendRequest(request);
     }
 
