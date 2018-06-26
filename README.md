@@ -23,23 +23,23 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 6.1
+### What's New in 6.2
 
 **Library Upgrades**
-- We've updated React Native to version 0.53.3.
+- We've updated React Native to version 0.55.4.
 
-**Login Enhancements**
-- Mobile SDK 6.1 introduces the ability to configure your app remotely through MDM or MyDomain. With these options, your customers can now use Chrome custom tabs for authentication instead of the system WebView.
-- Starting with Mobile SDK 6.1, fingerprint authentication can be used instead of the app passcode on devices that support this feature.
+**Tool Version Upgrades**
+- Cordova CLI 8.0.0 is now supported.
+- Android Studio 3.1 and Gradle 4.4 are now supported.
 
 **SmartSync Data Framework Enhancements**
-- We have addressed an issue in Mobile SDK 6.1 where `cleanResyncGhosts` was operating incorrectly.
-
-**Test Framework Enhancements**
-- We have added an entire suite of tests for `SalesforceReact` in Mobile SDK 6.1.
-- Our unit tests now use `Android Test Library` and `Espresso`, based on Google's recommendations.
+- Starting with Mobile SDK 6.2, the `SmartSync` data framework now returns detailed information about the error, if an error occurs during a sync operation.
+- We have added a new utility called `MetadataSyncManager` that allows apps to sync metadata using the power of the existing `SmartSync` data framework.
+- We have added a new utility called `LayoutSyncManager` that allows apps to sync layout data using the power of the existing `SmartSync` data framework.
 
 **Other Technical Improvements**
+- Replaced `IntentService` with `JobService` for more optimal background execution of tasks, especially on newer Android versions.
+- The user account switcher screen has been updated to comply with the latest UX standards.
 - Improvements to sample apps.
 - Various bug fixes.
 
