@@ -382,7 +382,7 @@ public class UserAccount {
         final File file = getProfilePhotoFile();
         final BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
         bitmapOptions.inPreferredConfig = Bitmap.Config.ARGB_8888;
-        final Bitmap bitmap = BitmapFactory.decodeFile(file.getPath(), bitmapOptions);
+        final Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), bitmapOptions);
         return bitmap;
     }
 
@@ -644,7 +644,7 @@ public class UserAccount {
 
     private File getProfilePhotoFile() {
         final String filename = PROFILE_PHOTO_PATH_PREFIX + getUserLevelFilenameSuffix() + JPG;
-        return (new File(SalesforceSDKManager.getInstance().getAppContext().getFilesDir(),
+        return (new File(SalesforceSDKManager.getInstance().getAppContext().getExternalCacheDir(),
                 filename));
     }
 }
