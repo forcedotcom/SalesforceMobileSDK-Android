@@ -582,6 +582,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     displayName(accountOptions.displayName).email(accountOptions.email).
                     photoUrl(accountOptions.photoUrl).thumbnailUrl(accountOptions.thumbnailUrl).
                     additionalOauthValues(accountOptions.additionalOauthValues).build();
+            account.downloadProfilePhoto();
             if (id.customAttributes != null) {
                 mgr.getAdminSettingsManager().setPrefs(id.customAttributes, account);
             }
