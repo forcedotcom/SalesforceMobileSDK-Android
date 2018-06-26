@@ -29,17 +29,18 @@ Introduction
 - We've updated React Native to version 0.55.4.
 
 **Tool Version Upgrades**
-- The minimum required version of Cordova CLI has been bumped up to 8.0.0.
-- Android Studio 3.1 and Gradle 4.4 are now supported.
+- We now require Cordova CLI 8.0.0.
+- We now support Android Studio 3.1 and Gradle 4.4.
 
 **SmartSync Data Framework Enhancements**
-- Starting with Mobile SDK 6.2, the SmartSync data framework saves the error returned by the server on records that fail to sync up.
-- We have added a new utility called `MetadataSyncManager` that allows apps to sync metadata using the power of the existing `SmartSync` data framework.
-- We have added a new utility called `LayoutSyncManager` that allows apps to sync layout data using the power of the existing `SmartSync` data framework.
+- The SmartSync Data Framework now saves the error returned when records fail to sync up.
+- A new utility, `SFMetadataSyncManager`, harnesses the power of SmartSync Data Framework to query Salesforce object metadata.
+- Another new utility, `SFLayoutSyncManager`, harnesses the power of SmartSync Data Framework to query Salesforce object layouts.
 
 **Other Technical Improvements**
-- Replaced `IntentService` with `JobService` for more optimal background execution of tasks, especially on newer Android versions.
-- The user account switcher screen has been updated to comply with the latest UX standards.
+- We've replaced `IntentService` with `JobService`. This change helps optimize the execution of background tasks, especially on newer Android versions.
+- We’ve given the Switch User screen a face lift.
+- We've consolidated our templates under a [single repository](https://github.com/forcedotcom/SalesforceMobileSDK-Templates).
 - Improvements to sample apps.
 - Various bug fixes.
 
