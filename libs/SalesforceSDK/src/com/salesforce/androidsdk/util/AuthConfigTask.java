@@ -27,9 +27,12 @@
 package com.salesforce.androidsdk.util;
 
 import android.os.AsyncTask;
+import android.webkit.URLUtil;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.LoginServerManager;
+
+import okhttp3.HttpUrl;
 
 /**
  * A simple AsyncTask that fetches auth config if it exists and calls the supplied
@@ -64,8 +67,10 @@ public class AuthConfigTask extends AsyncTask<Void, Void, Void> {
 
     @Override
     protected Void doInBackground(Void... nothings) {
-        final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url;
-        if (loginServer.equals(LoginServerManager.PRODUCTION_LOGIN_URL) || loginServer.equals(LoginServerManager.SANDBOX_LOGIN_URL)) {
+        final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url.trim();
+        if (loginServer.equals(LoginServerManager.PRODUCTION_LOGIN_URL) ||
+                loginServer.equals(LoginServerManager.SANDBOX_LOGIN_URL) ||
+                !URLUtil.isHttpsUrl(loginServer) || HttpUrl.parse(loginServer) == null) {
             SalesforceSDKManager.getInstance().setBrowserLoginEnabled(false);
             return null;
         }

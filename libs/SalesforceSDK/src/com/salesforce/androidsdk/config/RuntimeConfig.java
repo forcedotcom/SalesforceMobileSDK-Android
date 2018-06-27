@@ -51,9 +51,6 @@ public class RuntimeConfig {
 
 	private static final String TAG = "RuntimeConfig";
 
-	// background executor
-	private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
-
 	public enum ConfigKey {
 
         // The keys here should match the key entries in 'app_restrictions.xml'.
@@ -67,8 +64,8 @@ public class RuntimeConfig {
 		IDPAppURLScheme
 	}
 
-    private boolean isManaged = false;
-	private Bundle configurations = null;
+    private boolean isManaged;
+	private Bundle configurations;
 
 	private static RuntimeConfig INSTANCE = null;
 
@@ -76,7 +73,7 @@ public class RuntimeConfig {
 		configurations = getRestrictions(ctx);
 		isManaged = hasRestrictionsProvider(ctx);
 
-		// Register MDM App Feature for User-Agent reporting
+		// Register MDM App Feature for user agent reporting.
 		if (isManaged && configurations != null && !configurations.isEmpty()) {
 			SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_MDM);
 			if (getBoolean(RuntimeConfig.ConfigKey.RequireCertAuth)) {
@@ -85,7 +82,9 @@ public class RuntimeConfig {
 		}
 
 		// Logs analytics event for MDM.
+        final ExecutorService threadPool = Executors.newFixedThreadPool(1);
 		threadPool.execute(new Runnable() {
+
 			@Override
 			public void run() {
 				final JSONObject attributes = new JSONObject();
@@ -102,7 +101,8 @@ public class RuntimeConfig {
 				} catch (JSONException e) {
 					SalesforceSDKLogger.e(TAG, "Exception thrown while creating JSON", e);
 				}
-				EventBuilderHelper.createAndStoreEventSync("mdmConfiguration", null, TAG, attributes);
+				EventBuilderHelper.createAndStoreEventSync("mdmConfiguration",
+                        null, TAG, attributes);
 			}
 		});
 	}
@@ -152,14 +152,13 @@ public class RuntimeConfig {
      * @return boolean value
      */
 	public Boolean getBoolean(ConfigKey configKey) {
-		return (configurations == null ? false : configurations.getBoolean(configKey.name()));
+        return (configurations != null && configurations.getBoolean(configKey.name()));
 	}
 
 	private JSONArray getJSONArray(ConfigKey configKey) throws JSONException {
 		String[] array = getStringArray(configKey);
 		return array == null ? null : new JSONArray(array);
 	}
-
 
 	/**
 	 * Get run time config as a JSONObject
@@ -176,7 +175,6 @@ public class RuntimeConfig {
 			jsonObject.put(ConfigKey.ManagedAppCertAlias.name(), getString(ConfigKey.ManagedAppCertAlias));
 			jsonObject.put(ConfigKey.OnlyShowAuthorizedHosts.name(), getJSONArray(ConfigKey.OnlyShowAuthorizedHosts));
 			jsonObject.put(ConfigKey.IDPAppURLScheme.name(), getString(ConfigKey.IDPAppURLScheme));
-
 			return jsonObject;
 		}
 		catch (JSONException e) {
