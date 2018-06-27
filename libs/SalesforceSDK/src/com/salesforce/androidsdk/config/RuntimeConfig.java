@@ -152,7 +152,7 @@ public class RuntimeConfig {
      * @return boolean value
      */
 	public Boolean getBoolean(ConfigKey configKey) {
-        return (configurations != null && configurations.getBoolean(configKey.name());
+        return (configurations != null && configurations.getBoolean(configKey.name()));
 	}
 
 	private JSONArray getJSONArray(ConfigKey configKey) throws JSONException {

@@ -397,7 +397,7 @@ public class LoginServerManager {
 			final String url = prefs.getString(String.format(Locale.US, SERVER_URL, i), null);
 			boolean isCustom = prefs.getBoolean(String.format(Locale.US, IS_CUSTOM, i), false);
 			if (name != null && url != null) {
-				final LoginServer server = new LoginServer(name, url, isCustom);
+				final LoginServer server = new LoginServer(name, url.trim(), isCustom);
 				allServers.add(server);
 			}
 		}
