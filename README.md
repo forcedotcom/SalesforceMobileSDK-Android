@@ -44,6 +44,12 @@ Introduction
 - Improvements to sample apps.
 - Various bug fixes.
 
+**Deprecations**
+- `MetadataManager` is now deprecated and will be removed in Mobile SDK 7.0. Instead, use `MetadataSyncManager` and `LayoutSyncManager`.
+- `CacheManager` is now deprecated and will be removed in Mobile SDK 7.0. Offline caching is now automatically handled by the SmartSync Data Framework.
+- `SalesforceObjectType` is now deprecated and will be removed in Mobile SDK 7.0. Instead, use `Metadata`.
+- `SalesforceObjectTypeLayout` and `SalesforceObjectLayoutColumn` are now deprecated and will be removed in Mobile SDK 7.0. Instead, use `Layout`.
+
 Check http://developer.force.com/mobilesdk for additional articles and tutorials.
 
 ### Native Applications
