@@ -46,6 +46,7 @@ import org.xmlpull.v1.XmlPullParserException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * PhoneGap plugin for SDK info.
@@ -161,6 +162,10 @@ public class SDKInfoPlugin extends ForcePlugin {
            final PackageInfo packageInfo = ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0);
            appName = ctx.getString(packageInfo.applicationInfo.labelRes);
            appVersion = packageInfo.versionName;
+           if (packageInfo.versionCode > 0) {
+               appVersion = String.format(Locale.US, "%s(%s)",
+                       packageInfo.versionName, packageInfo.versionCode);
+           }
        } catch (Resources.NotFoundException nfe) {
 
     	   // A test harness such as Gradle does NOT have an application name.

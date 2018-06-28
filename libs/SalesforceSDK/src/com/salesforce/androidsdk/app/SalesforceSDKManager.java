@@ -92,6 +92,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.SortedSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -1149,12 +1150,12 @@ public class SalesforceSDKManager {
             PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
             appName = context.getString(packageInfo.applicationInfo.labelRes);
             appVersion = packageInfo.versionName;
-        } catch (NameNotFoundException e) {
+            if (packageInfo.versionCode > 0) {
+                appVersion = String.format(Locale.US, "%s(%s)",
+                        packageInfo.versionName, packageInfo.versionCode);
+            }
+        } catch (NameNotFoundException | Resources.NotFoundException e) {
             SalesforceSDKLogger.w(TAG, "Package info could not be retrieved", e);
-        } catch (Resources.NotFoundException nfe) {
-
-    	   	// A test harness such as Gradle does NOT have an application name.
-            SalesforceSDKLogger.w(TAG, "Package info could not be retrieved", nfe);
         }
         String appTypeWithQualifier = getAppType() + qualifier;
         return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s",

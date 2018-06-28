@@ -51,6 +51,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -397,6 +398,10 @@ public class SalesforceAnalyticsManager {
         try {
             final PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
             appVersion = packageInfo.versionName;
+            if (packageInfo.versionCode > 0) {
+                appVersion = String.format(Locale.US, "%s(%s)",
+                        packageInfo.versionName, packageInfo.versionCode);
+            }
             appName = SalesforceSDKManager.getAiltnAppName();
         } catch (Exception e) {
             SalesforceSDKLogger.w(TAG, "Could not read package info", e);
