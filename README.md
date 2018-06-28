@@ -34,8 +34,8 @@ Introduction
 
 **SmartSync Data Framework Enhancements**
 - The SmartSync Data Framework now saves the error returned when records fail to sync up.
-- A new utility, `SFMetadataSyncManager`, harnesses the power of SmartSync Data Framework to query Salesforce object metadata.
-- Another new utility, `SFLayoutSyncManager`, harnesses the power of SmartSync Data Framework to query Salesforce object layouts.
+- A new utility, `MetadataSyncManager`, harnesses the power of SmartSync Data Framework to query Salesforce object metadata.
+- Another new utility, `LayoutSyncManager`, harnesses the power of SmartSync Data Framework to query Salesforce object layouts.
 
 **Other Technical Improvements**
 - We've replaced `IntentService` with `JobService`. This change helps optimize the execution of background tasks, especially on newer Android versions.
