@@ -29,7 +29,8 @@ package com.salesforce.androidsdk.ui;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.RadioGroup;
+import android.widget.AdapterView;
+import android.widget.ListView;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -63,30 +64,22 @@ public class AccountSwitcherActivity extends Activity {
 	}
 
 	/**
-	 * This method is triggered when the 'Apply' button is clicked. It
+	 * This method is triggered when a user is selected from the list. It
 	 * switches the context to the selected account, if it is different
 	 * from the current account.
 	 *
-	 * @param v View that was clicked.
+	 * @param account User account that was selected.
 	 */
-	public void switchToExistingAccount(View v) {
-        final RadioGroup radioGroup = findViewById(R.id.sf__accounts_group);
-        int checkedId = radioGroup.getCheckedRadioButtonId();
-		final SalesforceAccountRadioButton rb = radioGroup.findViewById(checkedId);
-		if (rb != null) {
-			final UserAccount account = rb.getAccount();
-			accountSelected(account);
-		}
+	public void switchToExistingAccount(UserAccount account) {
+        accountSelected(account);
 		finishActivity();
 	}
 
 	/**
-	 * This method is triggered when the 'Add New Account' button is clicked.
+	 * This method is triggered when the 'Add new account' button is clicked.
 	 * It launches the login flow to sign into a new account.
-	 *
-	 * @param v View that was clicked.
 	 */
-	public void switchToNewAccount(View v) {
+	public void switchToNewAccount() {
 		accountSelected(null);
 		finishActivity();
 	}
@@ -121,44 +114,35 @@ public class AccountSwitcherActivity extends Activity {
     }
 
 	private void buildAccountList() {
-        final RadioGroup radioGroup = findViewById(R.id.sf__accounts_group);
-        radioGroup.removeAllViews();
-        UserAccount curAccount = userAccMgr.getCurrentUser();
-        final List<UserAccount> accounts = getAccounts();
+	    final ListView listView = findViewById(R.id.sf__accounts_group);
+	    final List<UserAccount> accounts = getAccounts();
 		if (accounts == null || accounts.size() == 0) {
 			return;
 		}
-		if (curAccount == null) {
-			curAccount = accounts.get(0);
-		}
-		int curSelectedIndex = 0;
-		for (int i = 0; i < accounts.size(); i++) {
-			final UserAccount account = accounts.get(i);
-			if (account != null) {
-				setRadioState(radioGroup, account);
-				if (account.equals(curAccount)) {
-					curSelectedIndex = i;
-				}
-			}
-		}
+        final UserAccount[] accountsArr = new UserAccount[accounts.size()];
+		accounts.toArray(accountsArr);
+        final UserAccountAdapter adapter = new UserAccountAdapter(this,
+                R.layout.sf__account_switcher_list_item, accountsArr);
+        listView.setAdapter(adapter);
+        final View footer = getLayoutInflater().inflate(R.layout.sf__account_switcher_list_footer,
+                null);
+        listView.addFooterView(footer);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
-		/*
-		 * Sets the current active account to a checked state.
-		 */
-		final SalesforceAccountRadioButton rb = (SalesforceAccountRadioButton) radioGroup.getChildAt(curSelectedIndex);
-    	if (rb != null) {
-    		rb.setChecked(true);
-    	}
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                final UserAccount account = (UserAccount) parent.getItemAtPosition(position);
+
+                /*
+                 * Fetches the account that was clicked on. If account is null, this means
+                 * the footer view was clicked, which will trigger the new user login flow.
+                 */
+                if (account != null) {
+                    switchToExistingAccount(account);
+                } else {
+                    switchToNewAccount();
+                }
+            }
+        });
 	}
-
-    /**
-     * Sets the radio state.
-     *
-     * @param radioGroup RadioGroup instance.
-     * @param account UserAccount instance.
-     */
-    private void setRadioState(RadioGroup radioGroup, UserAccount account) {
-    	final SalesforceAccountRadioButton rb = new SalesforceAccountRadioButton(this, account);
-    	radioGroup.addView(rb);
-    }
 }

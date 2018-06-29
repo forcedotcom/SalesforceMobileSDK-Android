@@ -50,9 +50,7 @@ public class ReactOAuthTest extends ReactTestCase {
 
     @Parameterized.Parameters(name = "{0}")
     public static List<String> data() {
-        return Arrays.asList(new String[]{
-                "testGetAuthCredentials"
-        });
+        return Arrays.asList("testGetAuthCredentials");
     }
 
     @Test

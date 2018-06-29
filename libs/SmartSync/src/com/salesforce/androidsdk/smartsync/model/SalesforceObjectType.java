@@ -26,17 +26,19 @@
  */
 package com.salesforce.androidsdk.smartsync.model;
 
+import com.salesforce.androidsdk.smartsync.util.Constants;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
-
-import com.salesforce.androidsdk.smartsync.util.Constants;
 
 /**
  * This class contains metadata that can be used to
  * ascertain the object type of a Salesforce object.
  *
  * @author bhariharan
+ * @deprecated Will be removed in Mobile SDK 7.0.
  */
+@Deprecated
 public class SalesforceObjectType {
 
     private String keyPrefix;
@@ -51,7 +53,9 @@ public class SalesforceObjectType {
      * Parameterized constructor.
      *
      * @param name Object name.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public SalesforceObjectType(String name) {
         this.name = name;
     }
@@ -61,7 +65,9 @@ public class SalesforceObjectType {
      *
      * @param name Object name.
      * @param keyPrefix Key prefix.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public SalesforceObjectType(String name, String keyPrefix) {
         this.name = name;
         this.keyPrefix = keyPrefix;
@@ -71,7 +77,9 @@ public class SalesforceObjectType {
      * Parameterized constructor.
      *
      * @param object Raw data for object.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public SalesforceObjectType(JSONObject object) {
         keyPrefix = object.optString(Constants.KEYPREFIX_FIELD);
         name = object.optString(Constants.NAME_FIELD);
@@ -119,7 +127,9 @@ public class SalesforceObjectType {
      * Returns the key prefix.
      *
      * @return Key prefix.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public String getKeyPrefix() {
         return keyPrefix;
     }
@@ -128,7 +138,9 @@ public class SalesforceObjectType {
      * Returns the name.
      *
      * @return Name.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public String getName() {
         return name;
     }
@@ -137,7 +149,9 @@ public class SalesforceObjectType {
      * Returns the label.
      *
      * @return Label.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public String getLabel() {
         return label;
     }
@@ -146,7 +160,9 @@ public class SalesforceObjectType {
      * Returns the plural label.
      *
      * @return Plural label.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public String getLabelPlural() {
         return labelPlural;
     }
@@ -155,7 +171,9 @@ public class SalesforceObjectType {
      * Returns the name field.
      *
      * @return Name field.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public String getNameField() {
         if (nameField == null || Constants.EMPTY_STRING.equals(nameField)) {
             final JSONArray dataFields = rawData.optJSONArray(Constants.FIELDS_FIELD);
@@ -178,7 +196,9 @@ public class SalesforceObjectType {
      * Returns if this object type is searchable or not.
      *
      * @return True - if searchable, False - otherwise.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public boolean isSearchable() {
         return (rawData != null && !rawData.optBoolean(Constants.HIDDEN_FIELD)
                 && rawData.optBoolean(Constants.SEARCHABLE_FIELD));
@@ -188,7 +208,9 @@ public class SalesforceObjectType {
      * Returns if this object type is layoutable or not.
      *
      * @return True - if layoutable, False - otherwise.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public boolean isLayoutable() {
         return (rawData != null && !rawData.optBoolean(Constants.HIDDEN_FIELD)
                 && rawData.optBoolean(Constants.LAYOUTABLE_FIELD));
@@ -198,7 +220,9 @@ public class SalesforceObjectType {
      * Returns the fields.
      *
      * @return Fields.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public JSONArray getFields() {
         if (fields == null || fields.length() == 0) {
             fields = rawData.optJSONArray(Constants.FIELDS_FIELD);
@@ -210,7 +234,9 @@ public class SalesforceObjectType {
      * Returns the complete metadata.
      *
      * @return Complete metadata.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public JSONObject getRawData() {
         return rawData;
     }

@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.smartsync.target;
 
 import android.text.TextUtils;
 
+import com.salesforce.androidsdk.smartsync.app.Features;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.target.ParentChildrenSyncTargetHelper.RelationshipType;
@@ -92,7 +93,7 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
         this.childrenInfo = childrenInfo;
         this.childrenFieldlist = childrenFieldlist;
         this.relationshipType = relationshipType;
-        SmartSyncSDKManager.getInstance().registerUsedAppFeature(ParentChildrenSyncTargetHelper.FEATURE_RELATED_RECORDS);
+        SmartSyncSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_RELATED_RECORDS);
     }
 
     /**
@@ -183,11 +184,10 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
     }
 
     protected Set<String> getChildrenRemoteIdsWithSoql(SyncManager syncManager, String soqlForChildrenRemoteIds) throws IOException, JSONException {
-        final Set<String> remoteChildrenIds = new HashSet<String>();
 
         // Makes network request and parses the response.
         JSONArray records = startFetch(syncManager, soqlForChildrenRemoteIds);
-        remoteChildrenIds.addAll(parseChildrenIdsFromResponse(records));
+        final Set<String> remoteChildrenIds = new HashSet<>(parseChildrenIdsFromResponse(records));
         while (records != null) {
 
             // Fetch next records, if any.
@@ -198,7 +198,7 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
     }
 
     protected Set<String> parseChildrenIdsFromResponse(JSONArray records) {
-        final Set<String> remoteChildrenIds = new HashSet<String>();
+        final Set<String> remoteChildrenIds = new HashSet<>();
         if (records != null) {
             for (int i = 0; i < records.length(); i++) {
                 final JSONObject record = records.optJSONObject(i);
@@ -236,9 +236,7 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
             //
             // So we target parent-children 'goups' where the parent changed
             // And we only download the changed children
-
             childrenWhere.append(buildModificationDateFilter(childrenInfo.modificationDateFieldName, maxTimeStamp));
-
             parentWhere.append(buildModificationDateFilter(getModificationDateFieldName(), maxTimeStamp))
                     .append(TextUtils.isEmpty(parentSoqlFilter) ? "" : " and ");
         }
@@ -260,7 +258,6 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
         SOQLBuilder builder = SOQLBuilder.getInstanceWithFields(fields);
         builder.from(parentInfo.sobjectType);
         builder.where(parentWhere.toString());
-
         return builder.build();
     }
 
@@ -320,5 +317,4 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
         // NB: method is called during sync down so for this target records contain parent and children
         ParentChildrenSyncTargetHelper.saveRecordTreesToLocalStore(syncManager, this, parentInfo, childrenInfo, records, syncId);
     }
-
 }

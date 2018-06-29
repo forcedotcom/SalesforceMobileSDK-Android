@@ -38,6 +38,7 @@ import android.os.Bundle;
 import android.os.Looper;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
@@ -262,11 +263,9 @@ public class ClientManager {
      */
     public Account getAccountByName(String name) {
         final Account[] accounts = accountManager.getAccountsByType(getAccountType());
-        if (accounts != null) {
-            for (final Account account : accounts) {
-                if (account.name.equals(name)) {
-                    return account;
-                }
+        for (final Account account : accounts) {
+            if (account.name.equals(name)) {
+                return account;
             }
         }
         return null;
@@ -519,13 +518,13 @@ public class ClientManager {
                 }
                 gettingAuthToken = true;
             }
-
-            // Invalidate current auth token.
-            final String cachedAuthToken = clientManager.peekRestClient(acc).getAuthToken();
-            clientManager.invalidateToken(cachedAuthToken);
             String newAuthToken = null;
             String newInstanceUrl = null;
             try {
+
+                // Invalidate current auth token.
+                final String cachedAuthToken = clientManager.peekRestClient(acc).getAuthToken();
+                clientManager.invalidateToken(cachedAuthToken);
                 final Bundle bundle = refreshStaleToken(acc);
                 if (bundle == null) {
                     SalesforceSDKLogger.w(TAG, "Bundle was null while getting auth token");
@@ -643,6 +642,8 @@ public class ClientManager {
                         }
                     }
                 }
+                final UserAccount userAccount = UserAccountManager.getInstance().buildUserAccount(account);
+                userAccount.downloadProfilePhoto();
             } catch (OAuth2.OAuthFailedException ofe) {
                 if (ofe.isRefreshTokenInvalid()) {
                     SalesforceSDKLogger.i(TAG, "Invalid Refresh Token: (Error: " +

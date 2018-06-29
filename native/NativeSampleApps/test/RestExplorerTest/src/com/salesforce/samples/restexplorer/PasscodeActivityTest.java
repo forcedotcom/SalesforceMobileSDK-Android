@@ -455,14 +455,24 @@ public class PasscodeActivityTest {
 
         // Clicking on 'Cancel' should take us back to the passcode screen.
         final AlertDialog logoutDialog = passcodeActivityTestRule.getActivity().getLogoutAlertDialog();
-        logoutDialog.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+        passcodeActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                logoutDialog.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+            }
+        });
         waitSome();
         Assert.assertFalse("Logout dialog should not be showing", passcodeActivityTestRule.getActivity().getIsLogoutDialogShowing());
 
         // Clicking on 'Ok' should log the user out.
         clickView(com.salesforce.androidsdk.R.id.sf__passcode_forgot);
         waitSome();
-        logoutDialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        passcodeActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                logoutDialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+            }
+        });
         waitSome();
         Assert.assertFalse("Application should not have a passcode", passcodeManager.hasStoredPasscode(targetContext));
     }

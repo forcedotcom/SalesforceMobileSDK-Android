@@ -49,7 +49,6 @@ public class ParentChildrenSyncTargetHelper {
     public static final String PARENT = "parent";
     public static final String CHILDREN = "children";
     public static final String RELATIONSHIP_TYPE = "relationshipType";
-    static final String FEATURE_RELATED_RECORDS = "RR";
 
     /**
      * Enum for relationship types
@@ -64,7 +63,7 @@ public class ParentChildrenSyncTargetHelper {
         synchronized(smartStore.getDatabase()) {
             try {
                 smartStore.beginTransaction();
-                for (int i=0; i<recordTrees.length(); i++) {
+                for (int i = 0; i < recordTrees.length(); i++) {
                     JSONObject record = recordTrees.getJSONObject(i);
                     JSONObject parent = new JSONObject(record.toString());
 
@@ -110,7 +109,6 @@ public class ParentChildrenSyncTargetHelper {
                 additionalPredicate,
                 childrenInfo.soupName, childrenInfo.idFieldName, childrenInfo.soupName, childrenInfo.soupName, childrenInfo.parentIdFieldName, parentInfo.soupName, parentInfo.idFieldName, childrenInfo.soupName, SyncTarget.LOCAL);
     }
-
 
     public static void deleteChildrenFromLocalStore(SmartStore smartStore, ParentInfo parentInfo, ChildrenInfo childrenInfo, String... parentIds) {
         QuerySpec querySpec = getQueryForChildren(parentInfo, childrenInfo, SmartStore.SOUP_ENTRY_ID, parentIds);

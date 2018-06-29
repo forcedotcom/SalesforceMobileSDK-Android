@@ -112,8 +112,7 @@ public class IDPRequestHandler {
         Exception exception = null;
         String accessToken = null;
         try {
-            restResponse = restClient.sendSync(RestRequest.getRequestForResources(
-                    ApiVersionStrings.getVersionNumber(context)));
+            restResponse = restClient.sendSync(RestRequest.getRequestForUserInfo());
         } catch (IOException e) {
             exception = e;
         } finally {

@@ -26,19 +26,21 @@
  */
 package com.salesforce.androidsdk.smartsync.model;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.salesforce.androidsdk.smartsync.util.Constants;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.salesforce.androidsdk.smartsync.util.Constants;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This class represents the search layout associated with an object type.
  *
  * @author bhariharan
+ * @deprecated Will be removed in Mobile SDK 7.0.
  */
+@Deprecated
 public class SalesforceObjectTypeLayout {
 
     private final String objectType;
@@ -51,7 +53,9 @@ public class SalesforceObjectTypeLayout {
      *
      * @param objType Object type.
      * @param object Raw data.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public SalesforceObjectTypeLayout(String objType, JSONObject object) {
         objectType = objType;
         rawData = object;
@@ -62,7 +66,9 @@ public class SalesforceObjectTypeLayout {
      * Returns the object type.
      *
      * @return Object type.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public String getObjectType() {
         return objectType;
     }
@@ -71,7 +77,9 @@ public class SalesforceObjectTypeLayout {
      * Returns the limit on number of columns.
      *
      * @return Limit on number of columns.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public int getLimit() {
         return limit;
     }
@@ -80,7 +88,9 @@ public class SalesforceObjectTypeLayout {
      * Returns the list of search layout columns.
      *
      * @return List of search layout columns.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public List<SalesforceObjectLayoutColumn> getColumns() {
         return columns;
     }
@@ -89,14 +99,13 @@ public class SalesforceObjectTypeLayout {
      * Returns the raw data.
      *
      * @return Raw data.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public JSONObject getRawData() {
         return rawData;
     }
 
-    /**
-     * Parses the fields from the raw data and sets them.
-     */
     private void parseFields() {
         if (rawData != null) {
             limit = rawData.optInt(Constants.LAYOUT_LIMITS_FIELD);
@@ -136,12 +145,6 @@ public class SalesforceObjectTypeLayout {
         return objectType.hashCode();
     }
 
-    /**
-     * Returns whether the two objects have the same columns.
-     *
-     * @param object SalesforceObjectTypeLayout instance.
-     * @return True - if the columns are the same, False - otherwise.
-     */
     private boolean compareColumns(SalesforceObjectTypeLayout object) {
     	if (object == null) {
     		return false;

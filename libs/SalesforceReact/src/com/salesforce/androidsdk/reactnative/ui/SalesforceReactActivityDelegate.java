@@ -25,21 +25,19 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 package com.salesforce.androidsdk.reactnative.ui;
+
 import com.facebook.react.ReactActivityDelegate;
 
-import javax.annotation.Nullable;
-
-
+/**
+ * Delegate that loads the app context when ready.
+ */
 public class SalesforceReactActivityDelegate extends ReactActivityDelegate {
 
-    private String appComponentName;
     private SalesforceReactActivity salesforceReactActivity;
     private boolean loaded = false;
 
-
-    public SalesforceReactActivityDelegate(SalesforceReactActivity activity, @Nullable String mainComponentName) {
+    SalesforceReactActivityDelegate(SalesforceReactActivity activity, String mainComponentName) {
         super(activity, mainComponentName);
-        appComponentName = mainComponentName;
         salesforceReactActivity = activity;
     }
 
@@ -48,12 +46,16 @@ public class SalesforceReactActivityDelegate extends ReactActivityDelegate {
         loadReactAppOnceIfReady(appKey);
     }
 
+    /**
+     * Loads the app once it's ready.
+     *
+     * @param appKey App key.
+     */
     public void loadReactAppOnceIfReady(String appKey) {
-        if(!loaded && salesforceReactActivity != null && salesforceReactActivity.shouldReactBeRunning()){
+        if (!loaded && salesforceReactActivity != null && salesforceReactActivity.shouldReactBeRunning()) {
             super.loadApp(appKey);
             loaded = true;
             super.onResume();
         }
     }
-
 }

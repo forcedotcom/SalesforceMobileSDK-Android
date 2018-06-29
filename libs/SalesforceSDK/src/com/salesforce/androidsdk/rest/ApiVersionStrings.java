@@ -48,10 +48,6 @@ public class ApiVersionStrings {
         return getBasePath() + "/chatter/";
     }
 
-    public static String getBaseConnectPath() {
-        return getBasePath() + "/connect/";
-    }
-
     public static String getBaseSObjectPath() {
         return getBasePath() + "/sobjects/";
     }

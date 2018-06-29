@@ -23,25 +23,32 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 6.1
+### What's New in 6.2
 
 **Library Upgrades**
-- We've updated React Native to version 0.53.3.
+- We've updated React Native to version 0.55.4.
 
-**Login Enhancements**
-- Mobile SDK 6.1 introduces the ability to configure your app remotely through MDM or MyDomain. With these options, your customers can now use Chrome custom tabs for authentication instead of the system WebView.
-- Starting with Mobile SDK 6.1, fingerprint authentication can be used instead of the app passcode on devices that support this feature.
+**Tool Version Upgrades**
+- We now require Cordova CLI 8.0.0.
+- We now support Android Studio 3.1 and Gradle 4.4.
 
 **SmartSync Data Framework Enhancements**
-- We have addressed an issue in Mobile SDK 6.1 where `cleanResyncGhosts` was operating incorrectly.
-
-**Test Framework Enhancements**
-- We have added an entire suite of tests for `SalesforceReact` in Mobile SDK 6.1.
-- Our unit tests now use `Android Test Library` and `Espresso`, based on Google's recommendations.
+- The SmartSync Data Framework now saves the error returned when records fail to sync up.
+- A new utility, `MetadataSyncManager`, harnesses the power of SmartSync Data Framework to query Salesforce object metadata.
+- Another new utility, `LayoutSyncManager`, harnesses the power of SmartSync Data Framework to query Salesforce object layouts.
 
 **Other Technical Improvements**
+- We've replaced `IntentService` with `JobService`. This change helps optimize the execution of background tasks, especially on newer Android versions.
+- We’ve given the Switch User screen a face lift.
+- We've consolidated our templates under a [single repository](https://github.com/forcedotcom/SalesforceMobileSDK-Templates).
 - Improvements to sample apps.
 - Various bug fixes.
+
+**Deprecations**
+- `MetadataManager` is now deprecated and will be removed in Mobile SDK 7.0. Instead, use `MetadataSyncManager` and `LayoutSyncManager`.
+- `CacheManager` is now deprecated and will be removed in Mobile SDK 7.0. Offline caching is now automatically handled by the SmartSync Data Framework.
+- `SalesforceObjectType` is now deprecated and will be removed in Mobile SDK 7.0. Instead, use `Metadata`.
+- `SalesforceObjectTypeLayout` and `SalesforceObjectLayoutColumn` are now deprecated and will be removed in Mobile SDK 7.0. Instead, use `Layout`.
 
 Check http://developer.force.com/mobilesdk for additional articles and tutorials.
 

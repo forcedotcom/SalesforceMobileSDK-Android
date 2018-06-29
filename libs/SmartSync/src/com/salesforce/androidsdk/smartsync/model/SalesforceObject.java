@@ -26,11 +26,11 @@
  */
 package com.salesforce.androidsdk.smartsync.model;
 
-import java.util.Locale;
+import com.salesforce.androidsdk.smartsync.util.Constants;
 
 import org.json.JSONObject;
 
-import com.salesforce.androidsdk.smartsync.util.Constants;
+import java.util.Locale;
 
 /**
  * This class represents a typical Salesforce object.

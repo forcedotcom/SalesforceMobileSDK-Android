@@ -26,8 +26,8 @@
  */
 package com.salesforce.androidsdk.push;
 
-import android.app.IntentService;
 import android.content.Intent;
+import android.support.v4.app.JobIntentService;
 
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 import com.google.android.gms.iid.InstanceID;
@@ -36,25 +36,22 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
-public class SFDCRegistrationIntentService extends IntentService {
+public class SFDCRegistrationIntentService extends JobIntentService {
 
     private static final String TAG = "RegIntentService";
 
-    public SFDCRegistrationIntentService() {
-        super(TAG);
-    }
-
     @Override
-    protected void onHandleIntent(Intent intent) {
+    protected void onHandleWork(Intent intent) {
         try {
-            InstanceID instanceID = InstanceID.getInstance(this);
-            String token = instanceID.getToken(BootConfig.getBootConfig(this).getPushNotificationClientId(),
-                                               GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
+            final InstanceID instanceID = InstanceID.getInstance(this);
+            final String token = instanceID.getToken(BootConfig.getBootConfig(this).getPushNotificationClientId(),
+                    GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
+            final UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
 
-            UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
-            // Store the new token
+            // Store the new token.
             PushMessaging.setRegistrationId(this, token, account);
-            // Send it to SFDC
+
+            // Send it to SFDC.
             PushMessaging.registerSFDCPush(this, account);
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Error during GCM registration", e);

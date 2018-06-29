@@ -107,7 +107,7 @@ public class RestClientTest {
         TestCredentials.init(InstrumentationRegistry.getContext());
         httpAccess = new HttpAccess(null, "dummy-agent");
         TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,
-                new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID,
+                new URI(TestCredentials.LOGIN_URL), TestCredentials.CLIENT_ID,
                 TestCredentials.REFRESH_TOKEN, null);
         authToken = refreshResponse.authToken;
         instanceUrl = refreshResponse.instanceUrl;
@@ -179,6 +179,31 @@ public class RestClientTest {
         		TestCredentials.COMMUNITY_URL, null, null, null, null, null, null, testOauthValues);
         Assert.assertEquals("Wrong url", TestCredentials.COMMUNITY_URL + "/a/b/", info.resolveUrl("a/b/").toString());
         Assert.assertEquals("Wrong url", TestCredentials.COMMUNITY_URL + "/a/b/", info.resolveUrl("/a/b/").toString());
+    }
+
+    @Test
+    public void testClientInfoResolveRequestWithLoginEndpoint() {
+        RestRequest r = new RestRequest(RestMethod.GET, RestRequest.RestEndpoint.LOGIN, "/a", (JSONObject) null, null);
+        Assert.assertEquals("URL should have login host endpoint", TestCredentials.LOGIN_URL + "/a", clientInfo.resolveUrl(r).toString());
+    }
+
+    @Test
+    public void testClientInfoResolveRequestWithInstanceEndpoint() {
+        RestRequest r = new RestRequest(RestMethod.GET, RestRequest.RestEndpoint.INSTANCE, "/a", (JSONObject) null, null);
+        Assert.assertEquals("URL should have instance host endpoint", TestCredentials.INSTANCE_URL + "/a", clientInfo.resolveUrl(r).toString());
+    }
+
+    @Test
+    public void testClientInfoResolveRequestWithCommunity() throws Exception {
+        final ClientInfo info = new ClientInfo(new URI(TestCredentials.INSTANCE_URL),
+                new URI(TestCredentials.LOGIN_URL),
+                new URI(TestCredentials.IDENTITY_URL),
+                TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
+                TestCredentials.USER_ID, TestCredentials.ORG_ID, null,
+                TestCredentials.COMMUNITY_URL, null, null, null, null, null, null, testOauthValues);
+        RestRequest r = new RestRequest(RestMethod.GET, RestRequest.RestEndpoint.LOGIN, "/a", (JSONObject) null, null);
+        Assert.assertEquals("Community URL should take precedence over login or instance endpoint",
+                TestCredentials.COMMUNITY_URL + "/a", info.resolveUrl(r).toString());
     }
 
     @Test

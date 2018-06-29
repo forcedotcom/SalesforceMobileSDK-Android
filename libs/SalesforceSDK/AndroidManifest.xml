@@ -2,8 +2,8 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.salesforce.androidsdk" 
-	android:versionCode="60"
-	android:versionName="6.1.0">
+	android:versionCode="61"
+	android:versionName="6.2.0">
 
     <uses-sdk android:minSdkVersion="21"
         android:targetSdkVersion="27" />
@@ -103,14 +103,19 @@
         </service>
 
         <service android:name="com.salesforce.androidsdk.push.SFDCRegistrationIntentService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false">
         </service>
 
         <receiver android:name="com.salesforce.androidsdk.push.PushService$SFDCRegistrationRetryAlarmReceiver"
             android:exported="false" />
+
         <service android:name="com.salesforce.androidsdk.push.PushService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false" />
+
         <service android:name="com.salesforce.androidsdk.analytics.AnalyticsPublisherService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false" />
     </application>
 
@@ -120,7 +125,9 @@
     <uses-permission android:name="android.permission.USE_CREDENTIALS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
 
-    <!--TODO: Remove the -sdk-23 tag when the minsdk version is 23-->
+    <!-- TODO: Remove the -sdk-23 tag when the minsdk version is 23 -->
     <uses-permission-sdk-23 android:name="android.permission.USE_FINGERPRINT" />
 </manifest>

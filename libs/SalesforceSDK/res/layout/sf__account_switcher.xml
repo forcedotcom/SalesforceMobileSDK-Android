@@ -3,19 +3,45 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/darker_gray"
+    android:background="@color/sf__color_background_alt"
     android:orientation="vertical">
 
-    <RadioGroup android:id="@+id/sf__accounts_group"
+    <LinearLayout android:layout_width="match_parent"
+        android:layout_height="@dimen/sf__title_bar_height"
+        android:background="@color/sf__color_background_alt_2"
+        android:orientation="vertical">
+
+        <TextView android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:textSize="@dimen/sf__title_text_size"
+            android:textColor="@color/sf__color_text_default"
+            android:fontFamily="sans-serif"
+            android:layout_marginStart="@dimen/sf__title_bar_padding_left"
+            android:layout_marginTop="@dimen/sf__title_bar_padding_top"
+            android:layout_marginBottom="@dimen/sf__title_bar_padding_bottom"
+            android:text="@string/sf__login_title"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <ImageView android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/sf__account_selector_text"
+        android:src="@drawable/sf__salesforce_logo"
+        android:paddingTop="@dimen/sf__sf_logo_padding_vertical"
+        android:paddingBottom="@dimen/sf__sf_logo_padding_vertical"
+        android:layout_gravity="center_horizontal" />
+
+    <TextView android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="@dimen/sf__title_text_size"
+        android:fontFamily="sans-serif"
+        android:textStyle="normal"
+        android:layout_gravity="center_horizontal"
+        android:text="@string/sf__account_selector_text"
+        android:layout_marginBottom="@dimen/sf__sf_logo_padding_vertical" />
+
+    <ListView android:id="@+id/sf__accounts_group"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         style="@style/SalesforceSDK.AccountSwitcher.List" />
-
-    <Button android:id="@+id/sf__switcher_apply_button"
-        android:text="@string/sf__switch_account"
-        style="@style/SalesforceSDK.AccountSwitcher.Button.Apply"
-        android:onClick="switchToExistingAccount" />
-
-    <Button android:id="@+id/sf__add_account_button"
-        android:text="@string/sf__add_new_account"
-        style="@style/SalesforceSDK.AccountSwitcher.Button.AddAccount"
-        android:onClick="switchToNewAccount" />
 </LinearLayout>

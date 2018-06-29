@@ -58,6 +58,7 @@ public class RestRequestTest {
 	
 	private static final String TEST_API_VERSION = "v99.0";
 	private static final String TEST_OBJECT_TYPE = "testObjectType";
+	private static final String LAYOUT_TYPE_COMPACT = "Compact";
     private static final String TEST_OTHER_OBJECT_TYPE = "testOtherObjectType";
 	private static final String TEST_OBJECT_ID = "testObjectId";
 	private static final String TEST_EXTERNAL_ID_FIELD = "testExternalIdField";
@@ -88,6 +89,19 @@ public class RestRequestTest {
         fields.put("fieldY", "value with spaces");
         TEST_OTHER_FIELDS = Collections.unmodifiableMap(fields);
     }
+
+	/**
+	 * Test for getRequestForUserInfo
+	 */
+	@Test
+	public void testGetRequestForUserInfo() {
+		RestRequest request = RestRequest.getRequestForUserInfo();
+		Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+		Assert.assertEquals("Wrong path", "/services/oauth2/userinfo", request.getPath());
+		Assert.assertEquals("Wrong endpoint", RestRequest.RestEndpoint.LOGIN, request.getEndpoint());
+		Assert.assertNull("Wrong request entity", request.getRequestBody());
+		Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+	}
 
 	/**
 	 * Test for getRequestForVersions
@@ -149,6 +163,33 @@ public class RestRequestTest {
         Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 
+	/**
+	 * Test for getRequestForObjectLayout without layoutType.
+	 */
+	@Test
+	public void testGetRequestForObjectLayoutWithoutLayoutType() {
+		RestRequest request = RestRequest.getRequestForObjectLayout(TEST_API_VERSION,
+                TEST_OBJECT_TYPE, null);
+		Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+		Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION +
+                "/ui-api/layout/" + TEST_OBJECT_TYPE, request.getPath());
+		Assert.assertNull("Wrong request entity", request.getRequestBody());
+		Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+	}
+
+    /**
+     * Test for getRequestForObjectLayout with layoutType.
+     */
+    @Test
+    public void testGetRequestForObjectLayoutWithLayoutType() {
+        RestRequest request = RestRequest.getRequestForObjectLayout(TEST_API_VERSION,
+                TEST_OBJECT_TYPE, LAYOUT_TYPE_COMPACT);
+        Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION +
+                "/ui-api/layout/" + TEST_OBJECT_TYPE + "?layoutType=" + LAYOUT_TYPE_COMPACT, request.getPath());
+        Assert.assertNull("Wrong request entity", request.getRequestBody());
+        Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+    }
 	
 	/**
 	 * Test for getRequestForCreate

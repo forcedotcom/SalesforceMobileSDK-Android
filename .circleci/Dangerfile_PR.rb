@@ -3,9 +3,6 @@
 # Warn when there is a big PR
 warn("Big PR, try to keep changes smaller if you can.", sticky: true) if git.lines_of_code > 500
 
-# Stop skipping some manual testing
-warn("📱 Needs testing on a real device if change is non-trivial.") if git.lines_of_code > 50
-
 # Mainly to encourage writing up some reasoning about the PR, rather than
 # just leaving a title
 if github.pr_body.length < 3

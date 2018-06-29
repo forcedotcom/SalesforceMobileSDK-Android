@@ -16,8 +16,8 @@ apply plugin: 'com.jfrog.bintray'
 dependencies {
   api project(':libs:SmartSync')
   api 'org.apache.cordova:framework:7.0.0'
-  androidTestApi 'com.android.support.test:runner:1.0.1'
-  androidTestApi 'com.android.support.test:rules:1.0.1'
+  androidTestImplementation 'com.android.support.test:runner:1.0.1'
+  androidTestImplementation 'com.android.support.test:rules:1.0.1'
 }
 
 android {
@@ -128,9 +128,9 @@ bintray {
         licenses = ['Apache-2.0']
         labels = ['android', 'salesforce', 'mobilesdk']
         version {
-            name = '6.1.0'
+            name = '6.2.0'
             released  = new Date()
-            vcsTag = 'v6.1.0'
+            vcsTag = 'v6.2.0'
         }
     }
 }

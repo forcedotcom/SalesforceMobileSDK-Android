@@ -27,17 +27,17 @@
 package com.salesforce.androidsdk.push;
 
 import android.app.AlarmManager;
-import android.app.IntentService;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.PowerManager;
+import android.support.v4.app.JobIntentService;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
@@ -68,10 +68,9 @@ import java.util.Map;
  * @author bhariharan
  * @author ktanna
  */
-public class PushService extends IntentService {
+public class PushService extends JobIntentService {
 
 	private static final String TAG = "PushService";
-	private static final String FEATURE_PUSH_NOTIFICATIONS = "PN";
 
     // Intent actions.
     public static final String SFDC_REGISTRATION_RETRY_INTENT = "com.salesforce.mobilesdk.c2dm.intent.RETRY";
@@ -80,6 +79,10 @@ public class PushService extends IntentService {
 	// Retry time constants.
     private static final long MILLISECONDS_IN_SIX_DAYS = 518400000L;
     private static final long SFDC_REGISTRATION_RETRY = 30000;
+    private static final long WAKE_LOCK_TIMEOUT_IN_MILLIS = 30000;
+
+    // Unique identifier for this job.
+	private static final int JOB_ID = 24;
 
     // Salesforce push notification constants.
     private static final String MOBILE_PUSH_SERVICE_DEVICE = "MobilePushServiceDevice";
@@ -92,7 +95,10 @@ public class PushService extends IntentService {
     // Wake lock instance.
     private static PowerManager.WakeLock WAKE_LOCK;
 
-    private Context context;
+    protected static final int REGISTRATION_STATUS_SUCCEEDED = 0;
+	protected static final int REGISTRATION_STATUS_FAILED = 1;
+	protected static final int UNREGISTRATION_STATUS_SUCCEEDED = 2;
+	protected static final int UNREGISTRATION_STATUS_FAILED = 3;
 
     /**
      * This method is called from the broadcast receiver, when a push notification
@@ -105,26 +111,20 @@ public class PushService extends IntentService {
         final Context context = SalesforceSDKManager.getInstance().getAppContext();
         if (WAKE_LOCK == null) {
             final PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-            WAKE_LOCK = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+            if (pm != null) {
+                WAKE_LOCK = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+            }
         }
-        WAKE_LOCK.acquire();
-        intent.setClassName(context, PushService.class.getName());
-        final ComponentName name = context.startService(intent);
-        if (name == null) {
-            SalesforceSDKLogger.w(TAG, "Could not start GCM service");
+        if (WAKE_LOCK != null) {
+            WAKE_LOCK.acquire(WAKE_LOCK_TIMEOUT_IN_MILLIS);
         }
+        intent.setClassName(context, SalesforceSDKManager.getInstance().getPushServiceType().getName());
+        enqueueWork(context, SalesforceSDKManager.getInstance().getPushServiceType(), JOB_ID, intent);
     }
 
-	/**
-	 * Default constructor.
-	 */
-	public PushService() {
-		super(TAG);
-		context = SalesforceSDKManager.getInstance().getAppContext();
-	}
-
 	@Override
-	protected void onHandleIntent(Intent intent) {
+	protected void onHandleWork(Intent intent) {
+
 		/*
 		 * Grabs the extras from the intent, and determines based on the
 		 * bundle whether to perform the operation for all accounts or
@@ -150,7 +150,11 @@ public class PushService extends IntentService {
                 if (allAccounts) {
                     if (accounts != null) {
                         for (final UserAccount userAcc : accounts) {
-                            // If 'register' is true, we are registering, if it's false, we must be unregistering, because of the if gate above
+
+                            /*
+                             * If 'register' is true, we are registering, if it's false, we must be
+                             * un-registering, because of the if gate above.
+                             */
                             performRegistrationChange(register, userAcc);
                         }
                     }
@@ -158,7 +162,11 @@ public class PushService extends IntentService {
                     if (account == null) {
                         account = userAccMgr.getCurrentUser();
                     }
-                    // If 'register' is true, we are registering, if it's false, we must be unregistering, because of the if gate above
+
+                    /*
+                     * If 'register' is true, we are registering, if it's false, we must be
+                     * un-registering, because of the if gate above.
+                     */
                     performRegistrationChange(register, account);
                 }
             }
@@ -173,7 +181,8 @@ public class PushService extends IntentService {
 
 	private void performRegistrationChange(boolean register, UserAccount userAccount) {
 		if (register) {
-			final String regId = PushMessaging.getRegistrationId(context, userAccount);
+			final String regId = PushMessaging.getRegistrationId(SalesforceSDKManager.getInstance().getAppContext(),
+                    userAccount);
 			if (regId != null) {
 				onRegistered(regId, userAccount);
 			}
@@ -182,16 +191,11 @@ public class PushService extends IntentService {
 		}
 	}
 
-    /**
-     * Schedules retry of SFDC registration.
-     *
-     * @param when When to retry.
-     * @param account User account.
-     */
     private void scheduleSFDCRegistrationRetry(long when, UserAccount account) {
         final Calendar cal = Calendar.getInstance();
         cal.add(Calendar.MILLISECOND, (int) when);
-        final Intent retryIntent = new Intent(context, SFDCRegistrationRetryAlarmReceiver.class);
+        final Intent retryIntent = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+                SFDCRegistrationRetryAlarmReceiver.class);
         if (account == null) {
 			final Bundle bundle = new Bundle();
 			bundle.putString(PushMessaging.ACCOUNT_BUNDLE_KEY, PushMessaging.ALL_ACCOUNTS_BUNDLE_VALUE);
@@ -199,18 +203,12 @@ public class PushService extends IntentService {
         } else {
             retryIntent.putExtra(PushMessaging.ACCOUNT_BUNDLE_KEY, account.toBundle());
         }
-        final PendingIntent retryPIntent = PendingIntent.getBroadcast(context,
+        final PendingIntent retryPIntent = PendingIntent.getBroadcast(SalesforceSDKManager.getInstance().getAppContext(),
         		1, retryIntent, PendingIntent.FLAG_ONE_SHOT);
-        final AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        final AlarmManager am = (AlarmManager) SalesforceSDKManager.getInstance().getAppContext().getSystemService(Context.ALARM_SERVICE);
         am.set(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), retryPIntent);
     }
 
-    /**
-     * This method is called when registration with GCM is successful.
-     *
-     * @param registrationId Registration ID received from GCM service.
-     * @param account User account.
-     */
     private void onRegistered(String registrationId, UserAccount account) {
         if (account == null) {
             SalesforceSDKLogger.e(TAG, "Account is null, will retry registration later");
@@ -221,10 +219,11 @@ public class PushService extends IntentService {
         	final String id = registerSFDCPushNotification(registrationId, account);
         	if (id != null) {
         		retryInterval = MILLISECONDS_IN_SIX_DAYS;
-        		PushMessaging.setRegistrationInfo(context, registrationId, id,
-        				account);
+        		PushMessaging.setRegistrationInfo(SalesforceSDKManager.getInstance().getAppContext(),
+                        registrationId, id, account);
         	} else {
-            	PushMessaging.setRegistrationId(context, registrationId, account);
+            	PushMessaging.setRegistrationId(SalesforceSDKManager.getInstance().getAppContext(),
+                        registrationId, account);
         	}
     	} catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Error occurred during SFDC registration", e);
@@ -233,17 +232,13 @@ public class PushService extends IntentService {
     	}
     }
 
-    /**
-     * This method is called when the device has been un-registered.
-     *
-     * @param account User account.
-     */
     private void onUnregistered(UserAccount account) {
+        final Context context = SalesforceSDKManager.getInstance().getAppContext();
     	try {
         	final String id = PushMessaging.getDeviceId(context, account);
         	unregisterSFDCPushNotification(id, account);
     	} catch (Exception e) {
-            SalesforceSDKLogger.e(TAG, "Error occurred during SFDC unregistration", e);
+            SalesforceSDKLogger.e(TAG, "Error occurred during SFDC un-registration", e);
     	} finally {
         	PushMessaging.clearRegistrationInfo(context, account);
             context.sendBroadcast((new Intent(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT)).setPackage(context.getPackageName()));
@@ -251,24 +246,52 @@ public class PushService extends IntentService {
         }
     }
 
+	/**
+	 * Send a request to register for push notifications and return the response for further processing.
+	 *
+	 * <p>
+	 * Subclasses can override this method and return a custom response. Calling to the super method
+	 * is not required when overriding.
+	 * </p>
+	 *
+	 * @param requestBodyJsonFields the request body represented by a map of root-level JSON fields
+	 * @param restClient a {@link RestClient} that can be used to make a new request
+	 * @return the response from registration
+	 * @throws IOException if the request could not be made
+	 */
+	protected RestResponse onSendRegisterPushNotificationRequest(
+			Map<String, Object> requestBodyJsonFields,
+			RestClient restClient) throws IOException {
+		return restClient.sendSync(RestRequest.getRequestForCreate(
+				ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()),
+                MOBILE_PUSH_SERVICE_DEVICE, requestBodyJsonFields));
+	}
+
     /**
-     * Hits the Salesforce endpoint to register for push notifications.
+     * Listen for changing in registration status.
      *
-     * @param registrationId Registration ID.
-     * @param account User account.
-     * @return Salesforce ID that uniquely identifies the registered device.
+     * <p>
+     * Subclasses can override this method without calling the super method.
+     * </p>
+     *
+     * @param status the registration status. One of the {@code REGISTRATION_STATUS_XXX} constants
+     * @param userAccount the user account that's performing registration
      */
+	protected void onPushNotificationRegistrationStatus(int status, UserAccount userAccount) {
+
+		// Do nothing.
+	}
+
     private String registerSFDCPushNotification(String registrationId,
     		UserAccount account) {
-    	final Map<String, Object> fields = new HashMap<String, Object>();
-    	fields.put(CONNECTION_TOKEN, registrationId);
-    	fields.put(SERVICE_TYPE, ANDROID_GCM);
     	try {
-    		final RestClient client = getRestClient(account);
-        	final RestRequest req = RestRequest.getRequestForCreate(ApiVersionStrings.getVersionNumber(context),
-        			MOBILE_PUSH_SERVICE_DEVICE, fields);
+            final Map<String, Object> fields = new HashMap<>();
+            fields.put(CONNECTION_TOKEN, registrationId);
+            fields.put(SERVICE_TYPE, ANDROID_GCM);
+            final RestClient client = getRestClient(account);
         	if (client != null) {
-            	final RestResponse res = client.sendSync(req);
+                int status = REGISTRATION_STATUS_FAILED;
+                final RestResponse res = onSendRegisterPushNotificationRequest(fields, client);
             	String id = null;
 
             	/*
@@ -282,52 +305,59 @@ public class PushService extends IntentService {
             		final JSONObject obj = res.asJSONObject();
             		if (obj != null) {
             			id = obj.getString(FIELD_ID);
+                        status = REGISTRATION_STATUS_SUCCEEDED;
             		}
             	} else if (res.getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
-            		id = NOT_ENABLED;
+                    id = NOT_ENABLED;
+                    status = REGISTRATION_STATUS_FAILED;
             	}
             	res.consume();
-                SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_PUSH_NOTIFICATIONS);
+                SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_PUSH_NOTIFICATIONS);
+                onPushNotificationRegistrationStatus(status, account);
             	return id;
         	}
     	} catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Push notification registration failed", e);
     	}
+        onPushNotificationRegistrationStatus(REGISTRATION_STATUS_FAILED, account);
     	return null;
     }
 
-    /**
-     * Hits the Salesforce endpoint to un-register from push notifications.
-     *
-     * @param registeredId Salesforce ID that uniquely identifies the registered device.
-     * @param account User account.
-     * @return True - if un-registration was successful, False - otherwise.
-     */
-    private boolean unregisterSFDCPushNotification(String registeredId,
+	/**
+	 * Send a request to unregister for push notifications and return the response for further processing.
+	 *
+	 * <p>
+	 * Subclasses can override this method and return a custom response. Calling to the super method
+	 * is not required when overriding.
+	 * </p>
+	 *
+	 * @param registeredId the id that identifies this device with the push notification provider
+	 * @param restClient a {@link RestClient} that can be used to make a new request
+	 * @return the response from unregistration
+	 * @throws IOException if the request could not be made
+	 */
+	protected RestResponse onSendUnregisterPushNotificationRequest(
+			String registeredId,
+			RestClient restClient) throws IOException {
+		return restClient.sendSync(RestRequest.getRequestForDelete(
+				ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()),
+                MOBILE_PUSH_SERVICE_DEVICE, registeredId));
+	}
+
+    private void unregisterSFDCPushNotification(String registeredId,
     		UserAccount account) {
-    	final RestRequest req = RestRequest.getRequestForDelete(ApiVersionStrings.getVersionNumber(context),
-    			MOBILE_PUSH_SERVICE_DEVICE, registeredId);
     	try {
     		final RestClient client = getRestClient(account);
     		if (client != null) {
-            	final RestResponse res = client.sendSync(req);
-            	if (res.getStatusCode() == HttpURLConnection.HTTP_NO_CONTENT) {
-            		return true;
-            	}
-            	res.consume();
+                onSendUnregisterPushNotificationRequest(registeredId, client).consume();
+                onPushNotificationRegistrationStatus(UNREGISTRATION_STATUS_SUCCEEDED, account);
     		}
     	} catch (IOException e) {
-			SalesforceSDKLogger.e(TAG, "Push notification unregistration failed", e);
+            onPushNotificationRegistrationStatus(UNREGISTRATION_STATUS_FAILED, account);
+			SalesforceSDKLogger.e(TAG, "Push notification un-registration failed", e);
     	}
-    	return false;
     }
 
-    /**
-     * Gets an instance of RestClient.
-     *
-     * @param account User account.
-     * @return Instance of RestClient.
-     */
     private RestClient getRestClient(UserAccount account) {
     	final ClientManager cm = SalesforceSDKManager.getInstance().getClientManager();
     	RestClient client = null;

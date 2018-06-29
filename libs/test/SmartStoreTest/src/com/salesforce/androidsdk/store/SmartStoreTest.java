@@ -487,6 +487,23 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	}
 
 	/**
+	 * Testing upsert by user-defined external id without value (should fail)
+	 * @throws JSONException
+	 */
+	@Test
+	public void testUpsertByUserDefinedExternalIdWithoutValue() throws JSONException {
+		JSONObject soupElt = new JSONObject("{'value':'va1'}");
+		try {
+			store.upsert(TEST_SOUP, soupElt, "key");
+			Assert.fail("Exception was expected: value cannot be empty for upsert by user-defined external id");
+		} catch (RuntimeException e) {
+			Assert.assertTrue("Wrong exception",
+					e.getMessage().contains("For upsert with external ID path")
+							&& e.getMessage().contains("value cannot be empty for any entries"));
+		}
+	}
+
+	/**
 	 * Testing upsert with an external id that is not unique in the soup
 	 * @throws JSONException
 	 */

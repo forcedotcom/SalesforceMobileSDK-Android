@@ -34,9 +34,9 @@ import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
-import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
+import com.salesforce.androidsdk.smartsync.app.Features;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.target.AdvancedSyncUpTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
@@ -71,8 +71,6 @@ public class SyncManager {
 
     // For user agent
     private static final String SMART_SYNC = "SmartSync";
-
-    private static final String FEATURE_SMART_SYNC = "SY";
 
     // Static member
     private static Map<String, SyncManager> INSTANCES = new HashMap<String, SyncManager>();
@@ -137,7 +135,7 @@ public class SyncManager {
      */
     public static synchronized SyncManager getInstance(UserAccount account, String communityId, SmartStore smartStore) {
         if (account == null) {
-            account = SmartStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+            account = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser();
         }
         if (smartStore == null) {
             smartStore = SmartSyncSDKManager.getInstance().getSmartStore(account, communityId);
@@ -160,7 +158,7 @@ public class SyncManager {
             instance = new SyncManager(smartStore, restClient);
             INSTANCES.put(uniqueId, instance);
         }
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SMART_SYNC);
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_SMART_SYNC);
         return instance;
     }
 
@@ -608,21 +606,32 @@ public class SyncManager {
         switch (action) {
             case create:
                 recordServerId = target.createOnServer(this, record, options.getFieldlist());
+                // Success
                 if (recordServerId != null) {
                     record.put(target.getIdFieldName(), recordServerId);
                     target.cleanAndSaveInLocalStore(this, soupName, record);
+                }
+                // Failure
+                else {
+                    target.saveRecordToLocalStoreWithLastError(this, soupName, record);
                 }
                 break;
             case delete:
                 statusCode = (locallyCreated
                         ? HttpURLConnection.HTTP_NOT_FOUND // if locally created it can't exist on the server - we don't need to actually do the deleteOnServer call
                         : target.deleteOnServer(this, record));
+                // Success
                 if (RestResponse.isSuccess(statusCode) || statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
                     target.deleteFromLocalStore(this, soupName, record);
+                }
+                // Failure
+                else {
+                    target.saveRecordToLocalStoreWithLastError(this, soupName, record);
                 }
                 break;
             case update:
                 statusCode = target.updateOnServer(this, record, options.getFieldlist());
+                // Success
                 if (RestResponse.isSuccess(statusCode)) {
                     target.cleanAndSaveInLocalStore(this, soupName, record);
                 }
@@ -638,6 +647,10 @@ public class SyncManager {
                     else {
                         // Leave local record alone
                     }
+                }
+                // Failure
+                else {
+                    target.saveRecordToLocalStoreWithLastError(this, soupName, record);
                 }
                 break;
         }

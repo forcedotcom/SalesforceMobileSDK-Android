@@ -52,7 +52,9 @@ import java.util.Set;
  * Test class for MetadataManager.
  *
  * @author bhariharan
+ * @deprecated Will be removed in Mobile SDK 7.0.
  */
+@Deprecated
 @RunWith(AndroidJUnit4.class)
 @LargeTest
 public class MetadataManagerTest extends ManagerTestCase {
@@ -95,7 +97,7 @@ public class MetadataManagerTest extends ManagerTestCase {
                     MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
             Assert.assertNotNull("MRU list should not be null", mruObjects);
             Assert.assertEquals("MRU list size should not be changed",
-                    mruObjectsBefore.size(), mruObjects.size());
+                    mruObjectsBefore.size() + 1, mruObjects.size());
 		} finally {
 			deleteRecordsOnServer(ids, Constants.CASE);
 		}

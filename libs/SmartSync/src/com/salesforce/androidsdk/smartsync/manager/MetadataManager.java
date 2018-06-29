@@ -62,7 +62,11 @@ import java.util.Map;
  * objects, and other object related data.
  *
  * @author bhariharan
+ * @deprecated Will be removed in Mobile SDK 7.0. Use {@link MetadataSyncManager} instead
+ * to fetch object metadata, {@link LayoutSyncManager} instead to fetch object layout
+ * data, and {@link com.salesforce.androidsdk.smartsync.target.MruSyncDownTarget} instead to fetch object MRU data.
  */
+@Deprecated
 public class MetadataManager {
 
     private static final String TAG = "SmartSync: MetadataManager";
@@ -95,7 +99,9 @@ public class MetadataManager {
      *
      * @param account User account.
      * @return Instance of this class.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public static synchronized MetadataManager getInstance(UserAccount account) {
         return getInstance(account, null);
     }
@@ -106,7 +112,9 @@ public class MetadataManager {
      * @param account User account.
      * @param communityId Community ID.
      * @return Instance of this class.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public static synchronized MetadataManager getInstance(UserAccount account, String communityId) {
         if (account == null) {
             account = SmartStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser();
@@ -140,7 +148,9 @@ public class MetadataManager {
      * Resets the metadata manager associated with this user account.
      *
      * @param account User account.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public static synchronized void reset(UserAccount account) {
         reset(account, null);
     }
@@ -150,7 +160,9 @@ public class MetadataManager {
      *
      * @param account User account.
      * @param communityId Community ID.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public static synchronized void reset(UserAccount account, String communityId) {
         if (account == null) {
             account = SmartStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser();
@@ -169,12 +181,6 @@ public class MetadataManager {
         }
     }
 
-    /**
-     * Private parameterized constructor.
-     *
-     * @param account User account.
-     * @param communityId Community ID.
-     */
     private MetadataManager(UserAccount account, String communityId) {
         apiVersion = ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext());
         this.communityId = communityId;
@@ -187,7 +193,9 @@ public class MetadataManager {
      * This is primarily used only by tests.
      * 
      * @param restClient
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public void setRestClient(RestClient restClient) {
         this.restClient = restClient;
     }
@@ -196,7 +204,9 @@ public class MetadataManager {
      * Sets the cache manager to be used.
      *
      * @param cacheMgr CacheManager instance.
-     */   
+     * @deprecated Will be removed in Mobile SDK 7.0.
+     */
+    @Deprecated
     public void setCacheManager(CacheManager cacheMgr) {
     	cacheManager = cacheMgr;
     }
@@ -205,7 +215,9 @@ public class MetadataManager {
      * Sets the API version to be used.
      *
      * @param apiVer API version to be used.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public void setApiVersion(String apiVer) {
         apiVersion = apiVer;
     }
@@ -214,7 +226,9 @@ public class MetadataManager {
      * Returns the API version being used.
      *
      * @return API version being used.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public String getApiVersion() {
         return apiVersion;
     }
@@ -225,7 +239,9 @@ public class MetadataManager {
      * @param cachePolicy Cache policy.
      * @param refreshCacheIfOlderThan Time interval to refresh cache.
      * @return List of smart scope object types.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public List<SalesforceObjectType> loadSmartScopeObjectTypes(CachePolicy cachePolicy,
             long refreshCacheIfOlderThan) {
         if (cachePolicy == CachePolicy.INVALIDATE_CACHE_DONT_RELOAD) {
@@ -266,7 +282,9 @@ public class MetadataManager {
      * @param refreshCacheIfOlderThan Time interval to refresh cache.
      * @param networkFieldName Network field name for this object type.
      * @return List of recently accessed objects.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public List<SalesforceObject> loadMRUObjects(String objectTypeName,
             int limit, CachePolicy cachePolicy, long refreshCacheIfOlderThan,
             String networkFieldName) {
@@ -320,7 +338,9 @@ public class MetadataManager {
      * @param cachePolicy Cache policy.
      * @param refreshCacheIfOlderThan Time interval to refresh cache.
      * @return List of all object types.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public List<SalesforceObjectType> loadAllObjectTypes(CachePolicy cachePolicy,
             long refreshCacheIfOlderThan) {
         if (cachePolicy == CachePolicy.INVALIDATE_CACHE_DONT_RELOAD) {
@@ -400,7 +420,9 @@ public class MetadataManager {
      * @param cachePolicy Cache policy.
      * @param refreshCacheIfOlderThan Time interval to refresh cache.
      * @return Metadata for a specific object type.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public SalesforceObjectType loadObjectType(String objectTypeName,
             CachePolicy cachePolicy, long refreshCacheIfOlderThan) {
         if (objectTypeName == null || Constants.EMPTY_STRING.equals(objectTypeName)) {
@@ -471,7 +493,9 @@ public class MetadataManager {
      * @param cachePolicy Cache policy.
      * @param refreshCacheIfOlderThan Time interval to refresh cache.
      * @return Metadata for the list of object types.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public List<SalesforceObjectType> loadObjectTypes(List<String> objectTypeNames,
             CachePolicy cachePolicy, long refreshCacheIfOlderThan) {
         if (objectTypeNames == null || objectTypeNames.size() == 0) {
@@ -498,7 +522,9 @@ public class MetadataManager {
      *
      * @param objectType Object type.
      * @return True - if searchable, False - otherwise.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public boolean isObjectTypeSearchable(SalesforceObjectType objectType) {
         if (objectType == null) {
             return false;
@@ -524,7 +550,9 @@ public class MetadataManager {
      * @param cachePolicy Cache policy.
      * @param refreshCacheIfOlderThan Time interval to refresh cache.
      * @return Object type layouts for the list of object types.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public List<SalesforceObjectTypeLayout> loadObjectTypesLayout(List<SalesforceObjectType> objectTypes,
             CachePolicy cachePolicy, long refreshCacheIfOlderThan) {
         if (objectTypes == null || objectTypes.size() == 0) {
@@ -553,7 +581,9 @@ public class MetadataManager {
      * @param cachePolicy Cache policy.
      * @param refreshCacheIfOlderThan Time interval to refresh cache.
      * @return Object layout.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public SalesforceObjectTypeLayout loadObjectTypeLayout(SalesforceObjectType objectType,
             CachePolicy cachePolicy, long refreshCacheIfOlderThan) {
         if (objectType == null) {
@@ -647,7 +677,9 @@ public class MetadataManager {
      *
      * @param objTypeName Object type name.
      * @return Color resource associated with the object type.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public int getColorResourceForObjectType(String objTypeName) {
         int color = R.color.record_other;
         if (objTypeName == null) {
@@ -675,7 +707,9 @@ public class MetadataManager {
      * Returns the community ID if set, returns null otherwise.
      *
      * @return Community ID, or null if not set.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public String getCommunityId() {
         return communityId;
     }
@@ -685,7 +719,9 @@ public class MetadataManager {
      * only within the given network.
      *
      * @param communityId ID to use for network aware calls.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public void setCommunityId(String communityId) {
         this.communityId = communityId;
     }
@@ -696,7 +732,9 @@ public class MetadataManager {
      * @param objectId Object ID.
      * @param objectType Object type.
      * @param networkFieldName Network field name for this object type.
+     * @deprecated Will be removed in Mobile SDK 7.0.
      */
+    @Deprecated
     public void markObjectAsViewed(String objectId, String objectType,
     		String networkFieldName) {
         if (objectId == null || objectType == null
@@ -747,12 +785,6 @@ public class MetadataManager {
         }
     }
 
-    /**
-     * Returns whether a layout can be loaded for the specified object type.
-     *
-     * @param objType Object type.
-     * @return True - if layout can be loaded, False - otherwise.
-     */
     private boolean canLoadLayoutForObjectType(SalesforceObjectType objType) {
         if (objType == null) {
             return false;
@@ -760,12 +792,6 @@ public class MetadataManager {
         return (objType.isLayoutable() && objType.isSearchable());
     }
 
-    /**
-     * Returns a list of layout fields for the specified object type.
-     *
-     * @param type Object type.
-     * @return List of return fields.
-     */
     private List<String> getLayoutFieldsForObjectType(SalesforceObjectType type) {
         if (type == null) {
             return null;
@@ -793,25 +819,12 @@ public class MetadataManager {
         return results;
     }
 
-    /**
-     * Returns whether the data should be cached.
-     *
-     * @param cachePolicy Cache policy.
-     * @return True - if the data should be cached, False - otherwise.
-     */
     private boolean shouldCacheData(CachePolicy cachePolicy) {
         return ((cachePolicy != CachePolicy.IGNORE_CACHE_DATA)
                 && (cachePolicy != CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD)
                 && (cachePolicy != CachePolicy.INVALIDATE_CACHE_DONT_RELOAD));
     }
 
-    /**
-     * Caches a list of objects.
-     *
-     * @param objects List of objects.
-     * @param cacheType Cache type.
-     * @param cacheKey Cache key.
-     */
     private void cacheObjects(List<SalesforceObject> objects,
     		String cacheType, String cacheKey) {
         if (objects != null && objects.size() > 0 &&
@@ -820,13 +833,6 @@ public class MetadataManager {
         }
     }
 
-    /**
-     * Caches a list of object types.
-     *
-     * @param objectTypes List of object types.
-     * @param cacheType Cache type.
-     * @param cacheKey Cache key.
-     */
     private void cacheObjectTypes(List<SalesforceObjectType> objectTypes,
     		String cacheType, String cacheKey) {
         if (objectTypes != null && objectTypes.size() > 0 &&
@@ -835,13 +841,6 @@ public class MetadataManager {
         }
     }
 
-    /**
-     * Caches a list of object layouts.
-     *
-     * @param objects List of object layouts.
-     * @param cacheType Cache type.
-     * @param cacheKey Cache key.
-     */
     private void cacheObjectLayouts(List<SalesforceObjectTypeLayout> objects,
     		String cacheType, String cacheKey) {
         if (objects != null && objects.size() > 0 &&
@@ -850,14 +849,6 @@ public class MetadataManager {
         }
     }
 
-    /**
-     * Returns a list of cached objects.
-     *
-     * @param cachePolicy Cache policy.
-     * @param cacheType Cache type.
-     * @param cacheKey Cache key.
-     * @return List of cached objects.
-     */
     private List<SalesforceObject> getCachedObjects(CachePolicy cachePolicy,
             String cacheType, String cacheKey) {
         if (cachePolicy == CachePolicy.IGNORE_CACHE_DATA ||
@@ -868,12 +859,6 @@ public class MetadataManager {
         return cacheManager.readObjects(cacheType, cacheKey);
     }
 
-    /**
-     * Returns cached metadata for a specific object type.
-     *
-     * @param objectTypeName Object type name.
-     * @return Cached metadata for object type.
-     */
     private SalesforceObjectType getCachedObjectType(String objectTypeName) {
         if (objectTypeName == null || Constants.EMPTY_STRING.equals(objectTypeName)) {
             return null;
@@ -886,15 +871,7 @@ public class MetadataManager {
         }
         return result;
     }
-    
-    /**
-     * Returns a list of cached object types.
-     *
-     * @param cachePolicy Cache policy.
-     * @param cacheType Cache type.
-     * @param cacheKey Cache key.
-     * @return List of cached object types.
-     */
+
     private List<SalesforceObjectType> getCachedObjectTypes(CachePolicy cachePolicy,
             String cacheType, String cacheKey) {
     	if (cachePolicy == CachePolicy.IGNORE_CACHE_DATA ||
@@ -905,12 +882,6 @@ public class MetadataManager {
         return cacheManager.readObjectTypes(cacheType, cacheKey);
     }
 
-    /**
-     * Returns cached object layout for a specific object type.
-     *
-     * @param objectType Object type.
-     * @return Cached object layout.
-     */
     private SalesforceObjectTypeLayout getCachedObjectLayout(SalesforceObjectType objectType) {
         if (objectType == null) {
             return null;
@@ -928,14 +899,6 @@ public class MetadataManager {
         return result;
     }
 
-    /**
-     * Returns a list of cached object layouts.
-     *
-     * @param cachePolicy Cache policy.
-     * @param cacheType Cache type.
-     * @param cacheKey Cache key.
-     * @return List of cached object layouts.
-     */
     private List<SalesforceObjectTypeLayout> getCachedObjectLayouts(CachePolicy cachePolicy,
             String cacheType, String cacheKey) {
     	if (cachePolicy == CachePolicy.IGNORE_CACHE_DATA ||
@@ -946,12 +909,6 @@ public class MetadataManager {
         return cacheManager.readObjectLayouts(cacheType, cacheKey);
     }
 
-    /**
-     * Returns fields for the specified object type.
-     *
-     * @param objectTypeName Object type name.
-     * @return Fields for the object type.
-     */
     private String getReturnFieldsForObjectType(String objectTypeName) {
         if (objectTypeName == null) {
             return null;
@@ -990,12 +947,6 @@ public class MetadataManager {
         return result.toString();
     }
 
-    /**
-     * Loads smart scopes using a REST call.
-     *
-     * @param cachePolicy Cache policy.
-     * @return List of object types.
-     */
     private List<SalesforceObjectType> loadSmartScopes(CachePolicy cachePolicy) {
         RestResponse response = null;
         try {
@@ -1039,17 +990,6 @@ public class MetadataManager {
         return recentItems;
     }
 
-    /**
-     * Returns recently viewed objects.
-     *
-     * @param objectTypeName Object type name.
-     * @param globalMRU True - if global MRU, False - otherwise.
-     * @param limit Limit on number of items.
-     * @param cachePolicy Cache policy.
-     * @param cacheKey Cache key.
-     * @param networkFieldName Network field name for this object type.
-     * @return List of recently viewed objects.
-     */
     private List<SalesforceObject> loadRecentObjects(String objectTypeName,
             boolean globalMRU, int limit, CachePolicy cachePolicy, String cacheKey,
             String networkFieldName) {
@@ -1174,13 +1114,6 @@ public class MetadataManager {
         return null;
     }
 
-    /**
-     * Returns the return fields for the object type specified
-     * in the object layout, if a layout exists for this object type.
-     *
-     * @param objTypeName Object type name.
-     * @return Layout return fields for the object type.
-     */
     private List<String> getLayoutReturnFieldsForObjectType(String objTypeName) {
         if (objTypeName == null || Constants.EMPTY_STRING.equals(objTypeName)) {
             return null;
@@ -1198,15 +1131,6 @@ public class MetadataManager {
         return results;
     }
 
-    /**
-     * Returns whether a method should fall back on cached data or return the
-     * empty data set from the server, in the event that a server error occurs
-     * or we do not receive a response from the server, for reasons such as loss
-     * of connectivity, for instance.
-     *
-     * @param cachePolicy Cache policy.
-     * @return True - if we should fall back on cached data, False - otherwise.
-     */
     private boolean shouldFallBackOnCache(CachePolicy cachePolicy) {
         return (cachePolicy == CachePolicy.RELOAD_AND_RETURN_CACHE_DATA
                 || cachePolicy == CachePolicy.RELOAD_AND_RETURN_CACHE_ON_FAILURE

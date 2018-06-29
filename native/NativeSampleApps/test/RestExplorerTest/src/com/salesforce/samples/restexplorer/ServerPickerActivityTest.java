@@ -163,7 +163,6 @@ public class ServerPickerActivityTest {
             openCustomEditDialog();
         }
         setText(com.salesforce.androidsdk.R.id.sf__picker_custom_label, label);
-        clickView(com.salesforce.androidsdk.R.id.sf__picker_custom_url);
         setText(com.salesforce.androidsdk.R.id.sf__picker_custom_url, url);
     }
 

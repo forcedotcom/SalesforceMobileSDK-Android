@@ -8,7 +8,6 @@
     <dimen name="sf__server_picker_margin_left">3dp</dimen>
     <dimen name="sf__server_picker_margin_right">3dp</dimen>
     <dimen name="sf__server_picker_margin_bottom">3dp</dimen>
-    <dimen name="sf__server_button_margin">2dp</dimen>
 
     <!-- Dimensions used in sf__passcode.xml -->
     <dimen name="sf__passcode_layout_padding">20dp</dimen>
@@ -29,5 +28,27 @@
     <dimen name="sf__button_margin">2dp</dimen>
 
     <!-- Dimensions used in sf__account_switcher.xml -->
-    <dimen name="sf__button_font_size">24dp</dimen>
+    <dimen name="sf__title_bar_height">48dp</dimen>
+    <dimen name="sf__title_bar_padding_left">12dp</dimen>
+    <dimen name="sf__title_bar_padding_top">14dp</dimen>
+    <dimen name="sf__title_bar_padding_bottom">13dp</dimen>
+    <dimen name="sf__sf_logo_padding_vertical">16dp</dimen>
+    <dimen name="sf__title_text_size">16sp</dimen>
+    <dimen name="sf__list_divider_height">12dp</dimen>
+    <dimen name="sf__list_item_height">73dp</dimen>
+    <dimen name="sf__list_item_user_icon_length">48.3dp</dimen>
+    <dimen name="sf__list_item_user_icon_padding_start">12dp</dimen>
+    <dimen name="sf__list_item_user_icon_padding_end">12.7dp</dimen>
+    <dimen name="sf__list_item_user_name_height">20dp</dimen>
+    <dimen name="sf__list_item_user_name_text_size">16sp</dimen>
+    <dimen name="sf__list_item_user_name_line_spacing">4sp</dimen>
+    <dimen name="sf__list_item_user_name_margin_top">16dp</dimen>
+    <dimen name="sf__list_item_user_name_margin_bottom">3dp</dimen>
+    <dimen name="sf__list_item_server_name_height">17dp</dimen>
+    <dimen name="sf__list_item_server_name_text_size">14sp</dimen>
+    <dimen name="sf__list_item_server_name_line_spacing">1sp</dimen>
+    <dimen name="sf__list_item_add_icon_length">16dp</dimen>
+    <dimen name="sf__list_item_add_icon_padding_horizontal">22dp</dimen>
+    <dimen name="sf__list_item_add_icon_padding_top">17dp</dimen>
+    <dimen name="sf__list_item_new_user_margin_vertical">12dp</dimen>
 </resources>

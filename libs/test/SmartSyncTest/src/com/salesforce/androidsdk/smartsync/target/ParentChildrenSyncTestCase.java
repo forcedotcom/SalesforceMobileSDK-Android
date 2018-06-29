@@ -212,7 +212,7 @@ public class ParentChildrenSyncTestCase extends SyncManagerTestCase {
             // Check db and server - local changes should have made it over
             checkDbAndServerAfterCompletedSyncUp(accountId, contactId, otherContactId, remoteChangeForAccount, localChangeForContact, remoteChangeForContact, localUpdatesAccount, localUpdatesContact, localChangeForAccount);
 
-            // Sync up with overwrite - there should be dirty records found
+            // Sync up with overwrite - there should be no dirty records found
             trySyncUp(syncUpTarget, 0, SyncState.MergeMode.OVERWRITE);
         }
         // In all other cases, leave-if-changed will fail
@@ -393,7 +393,7 @@ public class ParentChildrenSyncTestCase extends SyncManagerTestCase {
      * @throws JSONException
      * @throws IOException
      */
-    private String checkRecordRecreated(String recordId, Map<String, Object> fields, String nameField, String soupName, String objectType, String parentId, String parentIdField) throws JSONException, IOException {
+    protected String checkRecordRecreated(String recordId, Map<String, Object> fields, String nameField, String soupName, String objectType, String parentId, String parentIdField) throws JSONException, IOException {
         String updatedName = (String) fields.get(nameField);
         Map<String, Map<String, Object>> newIdToFields = getIdToFieldsByName(soupName, new String[]{nameField}, nameField, new String[]{updatedName});
         String newRecordId = newIdToFields.keySet().toArray(new String[0])[0];

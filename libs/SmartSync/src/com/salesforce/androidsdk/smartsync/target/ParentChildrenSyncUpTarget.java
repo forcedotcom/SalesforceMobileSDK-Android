@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.smartsync.target;
 
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.smartsync.app.Features;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.target.ParentChildrenSyncTargetHelper.RelationshipType;
@@ -72,13 +73,13 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
 
     public ParentChildrenSyncUpTarget(JSONObject target) throws JSONException {
         this(
-                new ParentInfo(target.getJSONObject(ParentChildrenSyncTargetHelper.PARENT)),
-                JSONObjectHelper.<String>toList(target.optJSONArray(CREATE_FIELDLIST)),
-                JSONObjectHelper.<String>toList(target.optJSONArray(UPDATE_FIELDLIST)),
-                new ChildrenInfo(target.getJSONObject(ParentChildrenSyncTargetHelper.CHILDREN)),
-                JSONObjectHelper.<String>toList(target.optJSONArray(CHILDREN_CREATE_FIELDLIST)),
-                JSONObjectHelper.<String>toList(target.optJSONArray(CHILDREN_UPDATE_FIELDLIST)),
-                RelationshipType.valueOf(target.getString(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE))
+            new ParentInfo(target.getJSONObject(ParentChildrenSyncTargetHelper.PARENT)),
+            JSONObjectHelper.<String>toList(target.optJSONArray(CREATE_FIELDLIST)),
+            JSONObjectHelper.<String>toList(target.optJSONArray(UPDATE_FIELDLIST)),
+            new ChildrenInfo(target.getJSONObject(ParentChildrenSyncTargetHelper.CHILDREN)),
+            JSONObjectHelper.<String>toList(target.optJSONArray(CHILDREN_CREATE_FIELDLIST)),
+            JSONObjectHelper.<String>toList(target.optJSONArray(CHILDREN_UPDATE_FIELDLIST)),
+            RelationshipType.valueOf(target.getString(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE))
         );
     }
 
@@ -95,7 +96,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
         this.childrenCreateFieldlist = childrenCreateFieldlist;
         this.childrenUpdateFieldlist = childrenUpdateFieldlist;
         this.relationshipType = relationshipType;
-        SmartSyncSDKManager.getInstance().registerUsedAppFeature(ParentChildrenSyncTargetHelper.FEATURE_RELATED_RECORDS);
+        SmartSyncSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_RELATED_RECORDS);
     }
 
     @Override
@@ -115,17 +116,17 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
     }
 
     @Override
-    public String createOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist) throws JSONException, IOException {
+    public String createOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist) {
         throw new UnsupportedOperationException("For advanced sync up target, call syncUpOneRecord");
     }
 
     @Override
-    public int deleteOnServer(SyncManager syncManager, JSONObject record) throws JSONException, IOException {
+    public int deleteOnServer(SyncManager syncManager, JSONObject record) {
         throw new UnsupportedOperationException("For advanced sync up target, call syncUpOneRecord");
     }
 
     @Override
-    public int updateOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist) throws JSONException, IOException {
+    public int updateOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist) {
         throw new UnsupportedOperationException("For advanced sync up target, call syncUpOneRecord");
     }
 
@@ -150,7 +151,6 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
     }
 
     private void syncUpRecord(SyncManager syncManager, JSONObject record, JSONArray children, List<String> fieldlist, SyncState.MergeMode mergeMode) throws JSONException, IOException {
-
         boolean isCreate = isLocallyCreated(record);
         boolean isDelete = isLocallyDeleted(record);
 
@@ -174,11 +174,9 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                 childRecord.put(LOCAL, true);
                 childRecord.put(LOCALLY_UPDATED, true);
             }
-
             RestRequest childRequest = buildRequestForChildRecord(syncManager.apiVersion, childRecord,
                     isCreate,
                     isDelete ? null : parentId);
-
             if (childRequest != null) refIdToRequests.put(childId, childRequest);
         }
 
@@ -191,21 +189,23 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
 
         // Build refId to server id / status code / time stamp maps
         Map<String, String> refIdToServerId = parseIdsFromResponse(refIdToResponses);
-        Map<String, Integer> refIdToHttpStatusCode = parseStatusCodesFromResponse(refIdToResponses);
 
         // Will a re-run be required?
         boolean needReRun = false;
 
         // Update parent in local store
         if (isDirty(record)) {
-            needReRun = updateParentRecordInLocalStore(syncManager, record, children, mergeMode, refIdToServerId, refIdToHttpStatusCode);
+            needReRun = updateParentRecordInLocalStore(syncManager, record, children, mergeMode, refIdToServerId,
+                    refIdToResponses.get(record.getString(getIdFieldName())));
         }
 
         // Update children local store
         for (int i = 0; i < children.length(); i++) {
             JSONObject childRecord = children.getJSONObject(i);
+
             if (isDirty(childRecord) || isCreate) {
-                needReRun = needReRun || updateChildRecordInLocalStore(syncManager, childRecord, mergeMode, refIdToServerId, refIdToHttpStatusCode);
+                needReRun = needReRun || updateChildRecordInLocalStore(syncManager, childRecord, record, mergeMode, refIdToServerId,
+                        refIdToResponses.get(childRecord.getString(childrenInfo.idFieldName)));
             }
         }
 
@@ -216,14 +216,10 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
         }
     }
 
-    protected boolean updateParentRecordInLocalStore(SyncManager syncManager, JSONObject record, JSONArray children, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, Map<String, Integer> refIdToHttpStatusCode) throws JSONException, IOException {
+    protected boolean updateParentRecordInLocalStore(SyncManager syncManager, JSONObject record, JSONArray children, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, JSONObject response) throws JSONException, IOException {
         boolean needReRun = false;
-
         final String soupName = parentInfo.soupName;
-        final String idFieldName = getIdFieldName();
-        final String refId = record.getString(idFieldName);
-
-        final Integer statusCode = refIdToHttpStatusCode.containsKey(refId) ? refIdToHttpStatusCode.get(refId) : -1;
+        final Integer statusCode = response != null ? response.getInt(HTTP_STATUS_CODE) : -1;
 
         // Delete case
         if (isLocallyDeleted(record)) {
@@ -232,10 +228,14 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                 || statusCode == HttpURLConnection.HTTP_NOT_FOUND) // or the record was already deleted on the server
             {
                 if (relationshipType == RelationshipType.MASTER_DETAIL) {
-                    ParentChildrenSyncTargetHelper.deleteChildrenFromLocalStore(syncManager.getSmartStore(), parentInfo, childrenInfo, record.getString(idFieldName));
+                    ParentChildrenSyncTargetHelper.deleteChildrenFromLocalStore(syncManager.getSmartStore(), parentInfo, childrenInfo, record.getString(getIdFieldName()));
                 }
 
                 deleteFromLocalStore(syncManager, soupName, record);
+            }
+            // Failure
+            else {
+                saveRecordToLocalStoreWithError(syncManager, soupName, record, response != null ? response.toString() : null);
             }
         }
 
@@ -245,7 +245,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
             if (RestResponse.isSuccess(statusCode))
             {
                 // Plugging server id in id field
-                updateReferences(record, idFieldName, refIdToServerId);
+                updateReferences(record, getIdFieldName(), refIdToServerId);
 
                 // Clean and save
                 cleanAndSaveInLocalStore(syncManager, soupName, record);
@@ -254,7 +254,6 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
             else if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
                 // Record needs to be recreated
                 if (mergeMode == SyncState.MergeMode.OVERWRITE) {
-
                     record.put(LOCAL, true);
                     record.put(LOCALLY_CREATED, true);
 
@@ -264,23 +263,21 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                         childRecord.put(LOCAL, true);
                         childRecord.put(relationshipType == RelationshipType.MASTER_DETAIL ? LOCALLY_CREATED : LOCALLY_UPDATED, true);
                     }
-
                     needReRun = true;
                 }
             }
+            // Failure
+            else {
+                saveRecordToLocalStoreWithError(syncManager, soupName, record, response != null ? response.toString() : null);
+            }
         }
-
         return needReRun;
     }
 
-    protected boolean updateChildRecordInLocalStore(SyncManager syncManager, JSONObject record, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, Map<String, Integer> refIdToHttpStatusCode) throws JSONException, IOException {
+    protected boolean updateChildRecordInLocalStore(SyncManager syncManager, JSONObject record, JSONObject parentRecord, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, JSONObject response) throws JSONException {
         boolean needReRun = false;
-
         final String soupName = childrenInfo.soupName;
-        final String idFieldName = childrenInfo.idFieldName;
-        final String refId = record.getString(idFieldName);
-
-        final Integer statusCode = refIdToHttpStatusCode.containsKey(refId) ? refIdToHttpStatusCode.get(refId) : -1;
+        final Integer statusCode = response != null ? response.getInt(HTTP_STATUS_CODE) : -1;
 
         // Delete case
         if (isLocallyDeleted(record)) {
@@ -290,6 +287,10 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
             {
                 deleteFromLocalStore(syncManager, soupName, record);
             }
+            // Failure
+            else {
+                saveRecordToLocalStoreWithError(syncManager, soupName, record, response != null ? response.toString() : null);
+            }
         }
 
         // Create / update case
@@ -298,7 +299,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
             if (RestResponse.isSuccess(statusCode))
             {
                 // Plugging server id in id field
-                updateReferences(record, idFieldName, refIdToServerId);
+                updateReferences(record, childrenInfo.idFieldName, refIdToServerId);
 
                 // Plugging server id in parent id field
                 updateReferences(record, childrenInfo.parentIdFieldName, refIdToServerId);
@@ -318,8 +319,22 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                     needReRun = true;
                 }
             }
-        }
+            // Handling remotely deleted parent
+            else if(isEntityDeleted(response)) {
+                // Parent record needs to be recreated
+                if (mergeMode == SyncState.MergeMode.OVERWRITE) {
+                    parentRecord.put(LOCAL, true);
+                    parentRecord.put(LOCALLY_CREATED, true);
 
+                    // We need a re-run
+                    needReRun = true;
+                }
+            }
+            // Failure
+            else {
+                saveRecordToLocalStoreWithError(syncManager, soupName, record, response != null ? response.toString() : null);
+            }
+        }
         return needReRun;
     }
 
@@ -342,18 +357,15 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                                                 boolean isParent,
                                                 boolean useParentIdReference,
                                                 String parentId) throws IOException, JSONException {
-
         if (!isDirty(record)) {
             return null; // nothing to do
         }
-
         ParentInfo info = isParent ? parentInfo : childrenInfo;
         String id = record.getString(info.idFieldName);
 
         // Delete case
         boolean isDelete = isLocallyDeleted(record);
         boolean isCreate = isLocallyCreated(record);
-
         if (isDelete) {
             if (isCreate) {
                 return null; // no need to go to server
@@ -374,7 +386,6 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                         ? childrenCreateFieldlist
                         : childrenUpdateFieldlist
                     ;
-
             Map<String, Object> fields = buildFieldsMap(record, fieldlist, info.idFieldName, info.modificationDateFieldName);
             if (parentId != null) {
                 fields.put(
@@ -384,7 +395,6 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                                 : parentId
                 );
             }
-
             if (isCreate) {
                 return RestRequest.getRequestForCreate(apiVersion,
                         info.sobjectType,
@@ -411,24 +421,19 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
         if (isLocallyCreated(record)) {
             return true;
         }
-
         Map<String, RecordModDate> idToLocalTimestamps = getLocalLastModifiedDates(syncManager, record);
         Map<String, String> idToRemoteTimestamps = fetchLastModifiedDates(syncManager, record);
-
         for (String id : idToLocalTimestamps.keySet()) {
-
             final RecordModDate localModDate = idToLocalTimestamps.get(id);
             final String remoteTimestamp = idToRemoteTimestamps.get(id);
             final RecordModDate remoteModDate = new RecordModDate(
                 remoteTimestamp,
                 remoteTimestamp == null // if it wasn't returned by fetchLastModifiedDates, then the record must have been deleted
             );
-
             if (!super.isNewerThanServer(localModDate, remoteModDate)) {
                 return false; // no need to go further
             }
         }
-
         return true;
     }
 
@@ -438,25 +443,20 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
      * @param record
      * @return
      */
-    protected Map<String, RecordModDate> getLocalLastModifiedDates(SyncManager syncManager, JSONObject record) throws JSONException, IOException {
+    protected Map<String, RecordModDate> getLocalLastModifiedDates(SyncManager syncManager, JSONObject record) throws JSONException {
         Map<String, RecordModDate> idToLocalTimestamps = new HashMap<>();
-
         final boolean isParentDeleted = isLocallyDeleted(record);
-
         final RecordModDate parentModDate = new RecordModDate(
                 JSONObjectHelper.optString(record, getModificationDateFieldName()),
                 isParentDeleted
         );
-
         idToLocalTimestamps.put(record.getString(getIdFieldName()), parentModDate);
-
         JSONArray children = ParentChildrenSyncTargetHelper.getChildrenFromLocalStore(
                 syncManager.getSmartStore(),
                 parentInfo,
                 childrenInfo,
                 record
         );
-
         for (int i=0; i<children.length(); i++) {
             JSONObject childRecord = children.getJSONObject(i);
             final RecordModDate childModDate = new RecordModDate(
@@ -465,7 +465,6 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
             );
             idToLocalTimestamps.put(childRecord.getString(childrenInfo.idFieldName), childModDate);
         }
-
         return idToLocalTimestamps;
     }
 
@@ -477,13 +476,11 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
      */
     protected Map<String, String> fetchLastModifiedDates(SyncManager syncManager, JSONObject record) throws JSONException, IOException {
         Map<String, String> idToRemoteTimestamps = new HashMap<>();
-
         if (!isLocallyCreated(record)) {
             String parentId = record.getString(getIdFieldName());
             RestRequest lastModRequest = getRequestForTimestamps(syncManager.apiVersion, parentId);
             RestResponse lastModResponse = syncManager.sendSyncWithSmartSyncUserAgent(lastModRequest);
             JSONArray rows = lastModResponse.isSuccess() ? lastModResponse.asJSONObject().getJSONArray(Constants.RECORDS) : null;
-
             if (rows != null && rows.length() > 0) {
                 JSONObject row = rows.getJSONObject(0);
                 idToRemoteTimestamps.put(row.getString(getIdFieldName()), row.getString(getModificationDateFieldName()));
@@ -496,11 +493,8 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                 }
             }
         }
-
         return idToRemoteTimestamps;
     }
-
-
 
     /**
      * Build SOQL request to get current time stamps
@@ -513,24 +507,18 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
     protected RestRequest getRequestForTimestamps(String apiVersion, String parentId) throws UnsupportedEncodingException {
         SOQLBuilder builderNested = SOQLBuilder.getInstanceWithFields(childrenInfo.idFieldName, childrenInfo.modificationDateFieldName);
         builderNested.from(childrenInfo.sobjectTypePlural);
-
         SOQLBuilder builder = SOQLBuilder.getInstanceWithFields(getIdFieldName(), getModificationDateFieldName(), String.format("(%s)", builderNested.build()));
         builder.from(parentInfo.sobjectType);
         builder.where(String.format("%s = '%s'", getIdFieldName(), parentId));
-
-        RestRequest request = RestRequest.getRequestForQuery(apiVersion, builder.build());
-
-        return request;
+        return RestRequest.getRequestForQuery(apiVersion, builder.build());
     }
 
     protected Map<String, JSONObject> sendCompositeRequest(SyncManager syncManager, boolean allOrNone, LinkedHashMap<String, RestRequest> refIdToRequests) throws JSONException, IOException {
         RestRequest compositeRequest = RestRequest.getCompositeRequest(syncManager.apiVersion, allOrNone, refIdToRequests);
         RestResponse compositeResponse = syncManager.sendSyncWithSmartSyncUserAgent(compositeRequest);
-
         if (!compositeResponse.isSuccess()) {
             throw new SyncManager.SmartSyncException("sendCompositeRequest:" + compositeResponse.toString());
         }
-
         JSONArray responses = compositeResponse.asJSONObject().getJSONArray(COMPOSITE_RESPONSE);
         Map<String, JSONObject> refIdToResponses = new HashMap<>();
         for (int i = 0; i < responses.length(); i++) {
@@ -543,7 +531,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
     /**
      * Return ref id to server id map if successful
      */
-    protected Map<String, String> parseIdsFromResponse(Map<String, JSONObject> refIdToResponses) throws JSONException, IOException {
+    protected Map<String, String> parseIdsFromResponse(Map<String, JSONObject> refIdToResponses) throws JSONException {
         Map<String, String> refIdtoId = new HashMap<>();
         for (String refId : refIdToResponses.keySet()) {
             JSONObject response = refIdToResponses.get(refId);
@@ -555,18 +543,11 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
         return refIdtoId;
     }
 
-    /**
-     * Return ref id to http status code map if successful
-     */
-    protected Map<String, Integer> parseStatusCodesFromResponse(Map<String, JSONObject> refIdToResponses) throws JSONException, IOException {
-        Map<String, Integer> refIdToStatusCode = new HashMap<>();
-        for (String refId : refIdToResponses.keySet()) {
-            JSONObject response = refIdToResponses.get(refId);
-            int httpStatusCode = response.getInt(HTTP_STATUS_CODE);
-            refIdToStatusCode.put(refId, httpStatusCode);
+    protected boolean isEntityDeleted(JSONObject response) {
+        try {
+            return response != null && "ENTITY_IS_DELETED".equals(response.getJSONArray("body").getJSONObject(0).getString("errorCode"));
+        } catch (JSONException e) {
+            return false;
         }
-        return refIdToStatusCode;
     }
-
-
 }

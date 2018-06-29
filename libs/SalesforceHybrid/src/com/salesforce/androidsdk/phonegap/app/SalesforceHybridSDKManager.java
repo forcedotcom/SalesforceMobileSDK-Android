@@ -205,11 +205,11 @@ public class SalesforceHybridSDKManager extends SmartSyncSDKManager {
     /**
      * Returns a singleton instance of this class.
      *
-     * @return Singleton instance of SmartSyncSDKManager.
+     * @return Singleton instance of SalesforceHybridSDKManager.
      */
-    public static SmartSyncSDKManager getInstance() {
+    public static SalesforceHybridSDKManager getInstance() {
     	if (INSTANCE != null) {
-    		return (SmartSyncSDKManager) INSTANCE;
+    		return (SalesforceHybridSDKManager) INSTANCE;
     	} else {
             throw new RuntimeException("Applications need to call SalesforceHybridSDKManager.init() first.");
     	}

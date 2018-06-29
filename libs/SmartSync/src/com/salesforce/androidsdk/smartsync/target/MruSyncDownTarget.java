@@ -51,7 +51,6 @@ public class MruSyncDownTarget extends SyncDownTarget {
 	
 	public static final String FIELDLIST = "fieldlist";
 	public static final String SOBJECT_TYPE = "sobjectType";
-    private static final String TAG = "MruSyncDownTarget";
 	private List<String> fieldlist;
 	private String objectType;
 
@@ -71,7 +70,7 @@ public class MruSyncDownTarget extends SyncDownTarget {
 	 * @param fieldlist
 	 * @param objectType
 	 */
-	public MruSyncDownTarget(List<String> fieldlist, String objectType) throws JSONException {
+	public MruSyncDownTarget(List<String> fieldlist, String objectType) {
         super();
         this.queryType = QueryType.mru;
         this.fieldlist = fieldlist;
@@ -113,7 +112,7 @@ public class MruSyncDownTarget extends SyncDownTarget {
     }
 
     @Override
-    public JSONArray continueFetch(SyncManager syncManager) throws IOException, JSONException {
+    public JSONArray continueFetch(SyncManager syncManager) {
         return null;
     }
 
@@ -123,7 +122,6 @@ public class MruSyncDownTarget extends SyncDownTarget {
             return null;
         }
         final String idFieldName = getIdFieldName();
-        final Set<String> remoteIds = new HashSet<String>();
 
         // Alters the SOQL query to get only IDs.
         final String soql = SOQLBuilder.getInstanceWithFields(idFieldName).from(objectType).where(idFieldName
@@ -131,9 +129,7 @@ public class MruSyncDownTarget extends SyncDownTarget {
 
         // Makes network request and parses the response.
         final JSONArray records = startFetch(syncManager, 0, soql);
-        remoteIds.addAll(parseIdsFromResponse(records));
-
-        return remoteIds;
+        return new HashSet<>(parseIdsFromResponse(records));
     }
 
     /**
@@ -149,5 +145,4 @@ public class MruSyncDownTarget extends SyncDownTarget {
 	public String getObjectType() {
 		return objectType;
 	}
-
 }

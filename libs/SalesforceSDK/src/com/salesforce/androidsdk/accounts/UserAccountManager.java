@@ -36,6 +36,7 @@ import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
 import android.text.TextUtils;
 
+import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.rest.ClientManager;
@@ -176,11 +177,18 @@ public class UserAccountManager {
 	 */
 	public Account getCurrentAccount() {
         final Account[] accounts = accountManager.getAccountsByType(accountType);
-        if (accounts == null || accounts.length == 0) {
+        if (accounts.length == 0) {
         	return null;
         }
 
-        // Reads the stored user ID and org ID.
+		// Register feature MU if more than one user
+		if (accounts.length > 1) {
+			SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_MULTI_USERS);
+		} else {
+			SalesforceSDKManager.getInstance().unregisterUsedAppFeature(Features.FEATURE_MULTI_USERS);
+		}
+
+		// Reads the stored user ID and org ID.
         final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
 				Context.MODE_PRIVATE);
         final String storedUserId = sp.getString(USER_ID_KEY, "");
@@ -209,7 +217,7 @@ public class UserAccountManager {
 	 */
 	public List<UserAccount> getAuthenticatedUsers() {
         final Account[] accounts = accountManager.getAccountsByType(accountType);
-        if (accounts == null || accounts.length == 0) {
+        if (accounts.length == 0) {
         	return null;
         }
         final List<UserAccount> userAccounts = new ArrayList<UserAccount>();
@@ -257,7 +265,6 @@ public class UserAccountManager {
 	 * @param user User account to switch to.
 	 */
 	public void switchToUser(UserAccount user) {
-		// All that's known is that the user is being switched
 		switchToUser(user, USER_SWITCH_TYPE_DEFAULT, null);
 	}
 
@@ -390,7 +397,6 @@ public class UserAccountManager {
 		final String userId = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_USER_ID));
 		final String username = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_USERNAME));
 		final String accountName = accountManager.getUserData(account, AccountManager.KEY_ACCOUNT_NAME);
-		final String clientId = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID));
 		final String lastName = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LAST_NAME));
 		final String email = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_EMAIL));
 		final String encFirstName =  accountManager.getUserData(account, AuthenticatorService.KEY_FIRST_NAME);
@@ -460,7 +466,7 @@ public class UserAccountManager {
 		if (userAccount == null) {
 			return null;
 		}
-        if (accounts == null || accounts.length == 0) {
+        if (accounts.length == 0) {
         	return null;
         }
 
@@ -486,19 +492,9 @@ public class UserAccountManager {
 
 	/**
 	 * Broadcasts an intent that a user switch has occurred.
-	 */
-	public void sendUserSwitchIntent() {
-		// By default, the type of switch is not known
-		sendUserSwitchIntent(USER_SWITCH_TYPE_DEFAULT, null);
-	}
-
-	/**
-	 * Broadcasts an intent that a user switch has occurred.
 	 *
-	 * @param userSwitchType
-	 *         a {@code USER_SWITCH_TYPE} constant
-	 * @param extras
-	 *         an optional Bundle of extras to add to the broadcast intent
+	 * @param userSwitchType A {@code USER_SWITCH_TYPE} constant.
+	 * @param extras An optional Bundle of extras to add to the broadcast intent.
 	 */
 	public final void sendUserSwitchIntent(int userSwitchType, Bundle extras) {
 		final Intent intent = new Intent(USER_SWITCH_INTENT_ACTION);

@@ -26,11 +26,16 @@
  */
 package com.salesforce.androidsdk.push;
 
-import com.google.android.gms.iid.InstanceIDListenerService;
-
 import android.content.Intent;
+import android.support.v4.app.JobIntentService;
+
+import com.google.android.gms.iid.InstanceIDListenerService;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 public class SFDCInstanceIDListenerService extends InstanceIDListenerService {
+
+    private static final int JOB_ID = 21;
+
     /**
      * Called if InstanceID token is updated. This may occur if the security of
      * the previous token had been compromised. This call is initiated by the
@@ -38,8 +43,10 @@ public class SFDCInstanceIDListenerService extends InstanceIDListenerService {
      */
     @Override
     public void onTokenRefresh() {
+
         // Fetch updated Instance ID token and notify our app's server of any changes (if applicable).
-        Intent intent = new Intent(this, SFDCRegistrationIntentService.class);
-        startService(intent);
+        final Intent intent = new Intent(this, SFDCRegistrationIntentService.class);
+        JobIntentService.enqueueWork(SalesforceSDKManager.getInstance().getAppContext(),
+                SFDCRegistrationIntentService.class, JOB_ID, intent);
     }
 }

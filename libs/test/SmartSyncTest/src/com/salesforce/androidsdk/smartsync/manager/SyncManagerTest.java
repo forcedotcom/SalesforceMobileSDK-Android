@@ -30,11 +30,15 @@ package com.salesforce.androidsdk.smartsync.manager;
 import android.support.test.filters.LargeTest;
 import android.support.test.runner.AndroidJUnit4;
 
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartsync.target.LayoutSyncDownTarget;
+import com.salesforce.androidsdk.smartsync.target.MetadataSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.MruSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.RefreshSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SoqlSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SoslSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
+import com.salesforce.androidsdk.smartsync.target.SyncTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 import com.salesforce.androidsdk.smartsync.target.TestSyncUpTarget;
 import com.salesforce.androidsdk.smartsync.util.Constants;
@@ -70,7 +74,7 @@ import java.util.Set;
 import static java.util.Collections.singletonList;
 
 /**
- * Test class for SyncState.
+ * Test class for SyncManager.
  */
 @RunWith(AndroidJUnit4.class)
 @LargeTest
@@ -111,6 +115,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 	 */
     @Test
 	public void testSyncDown() throws Exception {
+
 		// first sync down
 		trySyncDown(MergeMode.OVERWRITE);
 
@@ -123,6 +128,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
      */
     @Test
     public void testSyncDownWithoutOverwrite() throws Exception {
+
         // first sync down
         trySyncDown(MergeMode.OVERWRITE);
 
@@ -142,6 +148,46 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Check db
         checkDb(idToFields, ACCOUNTS_SOUP);
+    }
+
+    /**
+     * Test for sync down with metadata target.
+     */
+    @Test
+    public void testSyncDownForMetadataTarget() throws Exception {
+
+        // Builds metadata sync down target and performs sync.
+        trySyncDown(MergeMode.LEAVE_IF_CHANGED, new MetadataSyncDownTarget(Constants.ACCOUNT), ACCOUNTS_SOUP);
+        final QuerySpec smartStoreQuery = QuerySpec.buildAllQuerySpec(ACCOUNTS_SOUP,
+                SyncTarget.SYNC_ID, QuerySpec.Order.ascending, 1);
+        final JSONArray rows = smartStore.query(smartStoreQuery, 0);
+        Assert.assertEquals("Number of rows should be 1", 1, rows.length());
+        final JSONObject metadata = rows.optJSONObject(0);
+        Assert.assertNotNull("Metadata should not be null", metadata);
+        final String keyPrefix = metadata.optString(Constants.KEYPREFIX_FIELD);
+        final String label = metadata.optString(Constants.LABEL_FIELD);
+        Assert.assertEquals("Key prefix should be 001", Constants.ACCOUNT_KEY_PREFIX, keyPrefix);
+        Assert.assertEquals("Label should be " + Constants.ACCOUNT, Constants.ACCOUNT, label);
+    }
+
+    /**
+     * Test for sync down with layout target.
+     */
+    @Test
+    public void testSyncDownForLayoutTarget() throws Exception {
+
+        // Builds layout sync down target and performs sync.
+        trySyncDown(MergeMode.LEAVE_IF_CHANGED, new LayoutSyncDownTarget(Constants.ACCOUNT,
+                Constants.LAYOUT_TYPE_COMPACT), ACCOUNTS_SOUP);
+        final QuerySpec smartStoreQuery = QuerySpec.buildAllQuerySpec(ACCOUNTS_SOUP,
+                SyncTarget.SYNC_ID, QuerySpec.Order.ascending, 1);
+        final JSONArray rows = smartStore.query(smartStoreQuery, 0);
+        Assert.assertEquals("Number of rows should be 1", 1, rows.length());
+        final JSONObject layout = rows.optJSONObject(0);
+        Assert.assertNotNull("Layout should not be null", layout);
+        final String layoutType = layout.optString(LayoutSyncDownTarget.LAYOUT_TYPE);
+        Assert.assertEquals("Layout type should be " + Constants.LAYOUT_TYPE_COMPACT,
+                Constants.LAYOUT_TYPE_COMPACT, layoutType);
     }
 
     /**
@@ -226,6 +272,65 @@ public class SyncManagerTest extends SyncManagerTestCase {
         } catch (SyncManager.SmartSyncException e) {
             Assert.assertTrue(e.getMessage().contains("no sync found"));
         }
+    }
+
+    /**
+     * Create a few records - some with bad names (too long or empty)
+     * Sync up
+     * Make sure the records with bad names are still marked as locally created and have the last error field populated
+     * @throws Exception
+     */
+    @Test
+    public void testSyncUpWithErrors() throws Exception {
+        // Build name too long
+        StringBuffer buffer = new StringBuffer(256);
+        for (int i = 0; i < 256; i++) buffer.append("x");
+        String nameTooLong = buffer.toString();
+
+        // Create a few entries locally
+        String[] goodNames = new String[]{
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT)
+        };
+
+        String[] badNames = new String[] {
+                nameTooLong,
+                "" // empty
+        };
+        createAccountsLocally(goodNames);
+        createAccountsLocally(badNames);
+
+        // Sync up
+        trySyncUp(5, MergeMode.OVERWRITE);
+
+        // Check db for records with good names
+        Map<String, Map<String, Object>> idToFieldsGoodNames = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{Constants.NAME, Constants.DESCRIPTION}, Constants.NAME, goodNames);
+        checkDbStateFlags(idToFieldsGoodNames.keySet(), false, false, false, ACCOUNTS_SOUP);
+
+        // Check db for records with bad names
+        Map<String, Map<String, Object>> idToFieldsBadNames = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{Constants.NAME, Constants.DESCRIPTION, SyncTarget.LAST_ERROR}, Constants.NAME, badNames);
+        checkDbStateFlags(idToFieldsBadNames.keySet(), true, false, false, ACCOUNTS_SOUP);
+
+        for (Map<String, Object> fields : idToFieldsBadNames.values()) {
+            String name = (String) fields.get(Constants.NAME);
+            String lastError = (String) fields.get(SyncTarget.LAST_ERROR);
+            if (name.equals(nameTooLong)) {
+                Assert.assertTrue("Name too large error expected", lastError.contains("Account Name: data value too large"));
+            }
+            else if (name.equals("")) {
+                Assert.assertTrue("Missing name error expected", lastError.contains("Required fields are missing: [Name]"));
+            }
+            else {
+                Assert.fail("Unexpected record found: " + name);
+            }
+        }
+
+        // Check server for records with good names
+        checkServer(idToFieldsGoodNames, Constants.ACCOUNT);
+
+        // Adding to idToFields so that they get deleted in tearDown
+        idToFields.putAll(idToFieldsGoodNames);
     }
 
     /**
@@ -559,7 +664,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         TestSyncUpTarget.setActionCollector(collector);
         trySyncUp(target, 3, MergeMode.OVERWRITE, true /* expect failure */);
 
-        // Check that db still shows entries as locally modified anymore
+        // Check that db still shows entries as locally modified
         Set<String> ids = idToFieldsLocallyUpdated.keySet();
         checkDbStateFlags(ids, false, true, false, ACCOUNTS_SOUP);
 
@@ -585,7 +690,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         TestSyncUpTarget.setActionCollector(collector);
         trySyncUp(target, 3, MergeMode.OVERWRITE);
 
-        // Check that db still show show entries as locally created anymore and that they use sfdc id
+        // Check that db still show show entries as locally created
         Map<String, Map<String, Object>> idToFieldsCreated = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{Constants.NAME, Constants.DESCRIPTION}, Constants.NAME, names);
         checkDbStateFlags(idToFieldsCreated.keySet(), true, false, false, ACCOUNTS_SOUP);
 
@@ -611,7 +716,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         TestSyncUpTarget.setActionCollector(collector);
         trySyncUp(target, 3, MergeMode.OVERWRITE, true /* expect failure */);
 
-        // Check that db still show show entries as locally created anymore and that they use sfdc id
+        // Check that db still show show entries as locally created
         Map<String, Map<String, Object>> idToFieldsCreated = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{Constants.NAME, Constants.DESCRIPTION}, Constants.NAME, names);
         checkDbStateFlags(idToFieldsCreated.keySet(), true, false, false, ACCOUNTS_SOUP);
 

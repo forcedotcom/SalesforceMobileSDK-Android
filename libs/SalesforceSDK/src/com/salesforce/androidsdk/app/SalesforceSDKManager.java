@@ -33,6 +33,7 @@ import android.accounts.AccountManagerFuture;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -67,6 +68,7 @@ import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.push.PushNotificationInterface;
+import com.salesforce.androidsdk.push.PushService;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient;
@@ -107,7 +109,7 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "6.1.0";
+    public static final String SDK_VERSION = "6.2.0";
 
     /**
      * Intent action meant for instances of SalesforceSDKManager residing in other processes
@@ -145,8 +147,6 @@ public class SalesforceSDKManager {
      */
     protected static SalesforceSDKManager INSTANCE;
     private static final int PUSH_UNREGISTER_TIMEOUT_MILLIS = 30000;
-    private static final String FEATURE_BROWSER_LOGIN = "BW";
-    private static final String FEATURE_APP_IS_SP = "SP";
 
     protected Context context;
     protected KeyInterface keyImpl;
@@ -163,6 +163,7 @@ public class SalesforceSDKManager {
     private AdminSettingsManager adminSettingsManager;
     private AdminPermsManager adminPermsManager;
     private PushNotificationInterface pushNotificationInterface;
+    private Class<? extends PushService> pushServiceType = PushService.class;
     private String uid; // device id
     private volatile boolean loggedOut = false;
     private SortedSet<String> features;
@@ -454,11 +455,8 @@ public class SalesforceSDKManager {
         // Upgrades to the latest version.
         SalesforceSDKUpgradeManager.getInstance().upgrade();
 
-        // Initializes the encryption module.
-        Encryptor.init(context);
-
         // Initializes the HTTP client.
-        HttpAccess.init(context, INSTANCE.getUserAgent());
+        HttpAccess.init(context);
 
         // Enables IDP login flow if it's set through MDM.
         final RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(context);
@@ -595,6 +593,50 @@ public class SalesforceSDKManager {
     }
 
     /**
+     * Sets the class that will be used as a push service.
+     *
+     * <p>
+     * If a class other than {@link PushService} is used, it must also be declared in the manifest and the
+     * {@link PushService} element must be disabled.
+     * </p>
+     *
+     * <pre>
+     * <code>
+     * &lt;service
+     *    android:enabled="false"
+     *    android:name="com.salesforce.androidsdk.push.PushService"
+     *    tools:node="merge"/&gt;
+     *
+     * &lt;service
+     *    android:enabled="true"
+     *    android:exported="false"
+     *    android:name="your.push.service"/&gt;
+     * </code>
+     * </pre>
+     *
+     * @param type the service class
+     */
+    public synchronized void setPushServiceType(Class<? extends PushService> type) {
+        pushServiceType = type;
+        if (!PushService.class.equals(type)) {
+            try {
+                context.getPackageManager().getServiceInfo(new ComponentName(context, type), 0);
+            } catch (NameNotFoundException e) {
+                throw new IllegalStateException(String.format("%s must be declared and enabled in the manifest", type));
+            }
+        }
+    }
+
+    /**
+     *  Returns the class that will be used as a push service.
+     *
+     *  @return the service class
+     */
+    public synchronized Class<? extends PushService> getPushServiceType() {
+        return pushServiceType;
+    }
+
+    /**
      * Returns the passcode manager that's associated with SalesforceSDKManager.
      *
      * @return PasscodeManager instance.
@@ -671,16 +713,17 @@ public class SalesforceSDKManager {
     }
 
     /**
-     * Sets whether browser based login should be used instead of WebView.
+     * Sets whether browser based login should be used instead of WebView. This should NOT be used
+     * directly by apps, this is meant for internal use, based on the value configured on the server.
      *
      * @param browserLoginEnabled True - if Chrome should be used for login, False - otherwise.
      */
     public synchronized void setBrowserLoginEnabled(boolean browserLoginEnabled) {
         this.browserLoginEnabled = browserLoginEnabled;
         if (browserLoginEnabled) {
-            SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BROWSER_LOGIN);
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_BROWSER_LOGIN);
         } else {
-            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_BROWSER_LOGIN);
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(Features.FEATURE_BROWSER_LOGIN);
         }
     }
 
@@ -692,9 +735,9 @@ public class SalesforceSDKManager {
     public boolean isIDPLoginFlowEnabled() {
         boolean isIDPFlowEnabled = !TextUtils.isEmpty(idpAppURIScheme);
         if (isIDPFlowEnabled) {
-            SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_APP_IS_SP);
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_APP_IS_SP);
         } else {
-            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_APP_IS_SP);
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(Features.FEATURE_APP_IS_SP);
         }
         return isIDPFlowEnabled;
     }
@@ -893,30 +936,15 @@ public class SalesforceSDKManager {
         }
 	}
 
-    /**
-     * Unregisters from push notifications for both GCM (Android) and SFDC, and waits either for
-     * unregistration to complete or for the operation to time out. The timeout period is defined
-     * in PUSH_UNREGISTER_TIMEOUT_MILLIS. 
-     *
-     * If timeout occurs while the user is logged in, this method attempts to unregister the push
-     * unregistration receiver, and then removes the user's account.
-     *
-     * @param clientMgr ClientManager instance.
-     * @param showLoginPage True - if the login page should be shown, False - otherwise.
-     * @param refreshToken Refresh token.
-     * @param loginServer Login server.
-     * @param account Account instance.
-     * @param frontActivity Front activity.
-     */
     private void unregisterPush(final ClientManager clientMgr, final boolean showLoginPage,
     		final String refreshToken, final String loginServer,
-            final Account account, final Activity frontActivity) {
+            final Account account, final Activity frontActivity, boolean isLastAccount) {
         final IntentFilter intentFilter = new IntentFilter(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT);
         final BroadcastReceiver pushUnregisterReceiver = new BroadcastReceiver() {
 
             @Override
             public void onReceive(Context context, Intent intent) {
-                if (intent.getAction().equals(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT)) {
+                if (PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT.equals(intent.getAction())) {
                     postPushUnregister(this, clientMgr, showLoginPage,
                     		refreshToken, loginServer, account, frontActivity);
                 }
@@ -926,7 +954,7 @@ public class SalesforceSDKManager {
 
         // Unregisters from notifications on logout.
 		final UserAccount userAcc = getUserAccountManager().buildUserAccount(account);
-        PushMessaging.unregister(context, userAcc);
+        PushMessaging.unregister(context, userAcc, isLastAccount);
 
         /*
          * Starts a background thread to wait up to the timeout period. If
@@ -935,7 +963,8 @@ public class SalesforceSDKManager {
         (new Thread() {
             public void run() {
                 long startTime = System.currentTimeMillis();
-                while ((System.currentTimeMillis() - startTime) < PUSH_UNREGISTER_TIMEOUT_MILLIS && !loggedOut) {
+                while ((System.currentTimeMillis() - startTime) < PUSH_UNREGISTER_TIMEOUT_MILLIS
+                        && !loggedOut) {
 
                     // Waits for half a second at a time.
                     SystemClock.sleep(500);
@@ -946,20 +975,6 @@ public class SalesforceSDKManager {
         }).start();
     }
 
-    /**
-     * This method is called either when unregistration for push notifications 
-     * is complete and the user has logged out, or when a timeout occurs while waiting. 
-     * If the user has not logged out, this method attempts to unregister the push 
-     * notification unregistration receiver, and then removes the user's account.
-     *
-     * @param pushReceiver Broadcast receiver.
-     * @param clientMgr ClientManager instance.
-     * @param showLoginPage True - if the login page should be shown, False - otherwise.
-     * @param refreshToken Refresh token.
-     * @param loginServer Login server.
-     * @param account Account instance.
-     * @param frontActivity Front activity.
-     */
     private synchronized void postPushUnregister(BroadcastReceiver pushReceiver,
     		final ClientManager clientMgr, final boolean showLoginPage,
     		final String refreshToken, final String loginServer,
@@ -968,7 +983,7 @@ public class SalesforceSDKManager {
             try {
                 context.unregisterReceiver(pushReceiver);
             } catch (Exception e) {
-                SalesforceSDKLogger.e(TAG, "Exception occurred while unregistering", e);
+                SalesforceSDKLogger.e(TAG, "Exception occurred while un-registering", e);
             }
     		removeAccount(clientMgr, showLoginPage, refreshToken, loginServer, account, frontActivity);
         }
@@ -1034,10 +1049,11 @@ public class SalesforceSDKManager {
 		 * if the refresh token is available.
 		 */
 		final UserAccount userAcc = getUserAccountManager().buildUserAccount(account);
+		int numAccounts = mgr.getAccountsByType(getAccountType()).length;
     	if (PushMessaging.isRegistered(context, userAcc) && refreshToken != null) {
     		loggedOut = false;
     		unregisterPush(clientMgr, showLoginPage, refreshToken,
-    				loginServer, account, frontActivity);
+    				loginServer, account, frontActivity, (numAccounts == 1));
     	} else {
     		removeAccount(clientMgr, showLoginPage, refreshToken,
                     loginServer, account, frontActivity);
@@ -1192,7 +1208,7 @@ public class SalesforceSDKManager {
           .append("   accountType: ").append(getAccountType()).append("\n")
           .append("   userAgent: ").append(getUserAgent()).append("\n")
           .append("   mainActivityClass: ").append(getMainActivityClass()).append("\n")
-          .append("   isFileSystemEncrypted: ").append(Encryptor.isFileSystemEncrypted()).append("\n");
+          .append("\n");
         if (passcodeManager != null) {
 
             // passcodeManager may be null at startup if the app is running in debug mode.

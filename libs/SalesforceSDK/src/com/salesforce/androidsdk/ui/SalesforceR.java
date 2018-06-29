@@ -112,6 +112,4 @@ public class SalesforceR {
 	/* Account switcher activity */
 	public int layoutAccountSwitcher() {return R.layout.sf__account_switcher;}
 	public int idAccountListGroup() {return R.id.sf__accounts_group;}
-	public int idSwitchAccountButton() {return R.id.sf__switcher_apply_button;}
-	public int idAddAccountButton() {return R.id.sf__add_account_button;}
 }

@@ -307,11 +307,12 @@ public class OAuth2 {
                                                          String clientId, String code, String codeVerifier,
                                                          String callbackUrl)
             throws OAuthFailedException, IOException {
-        final FormBody.Builder builder = new FormBody.Builder().
-                add(GRANT_TYPE, AUTHORIZATION_CODE).add(CLIENT_ID, clientId);
+        final FormBody.Builder builder = new FormBody.Builder();
+        builder.add(GRANT_TYPE, AUTHORIZATION_CODE);
+        builder.add(CLIENT_ID, clientId);
+        builder.add(FORMAT, JSON);
         builder.add(CODE, code);
         builder.add(CODE_VERIFIER, codeVerifier);
-        builder.add(FORMAT, JSON);
         builder.add(REDIRECT_URI, callbackUrl);
         return makeTokenEndpointRequest(httpAccessor, loginServer, builder);
     }
@@ -333,11 +334,17 @@ public class OAuth2 {
                                                          String clientId, String refreshToken,
                                                          Map<String,String> addlParams)
             throws OAuthFailedException, IOException {
-        final FormBody.Builder formBodyBuilder = makeTokenEndpointParams(REFRESH_TOKEN,
-                clientId, addlParams);
-        formBodyBuilder.add(REFRESH_TOKEN, refreshToken);
-        formBodyBuilder.add(FORMAT, JSON);
-        return makeTokenEndpointRequest(httpAccessor, loginServer, formBodyBuilder);
+        final FormBody.Builder builder = new FormBody.Builder();
+        builder.add(GRANT_TYPE, REFRESH_TOKEN);
+        builder.add(CLIENT_ID, clientId);
+        builder.add(REFRESH_TOKEN, refreshToken);
+        builder.add(FORMAT, JSON);
+        if (addlParams != null ) {
+            for (final Map.Entry<String,String> entry : addlParams.entrySet()) {
+                builder.add(entry.getKey(),entry.getValue());
+            }
+        }
+        return makeTokenEndpointRequest(httpAccessor, loginServer, builder);
     }
 
     /**
@@ -373,12 +380,10 @@ public class OAuth2 {
      * @param jwt JWT issued by the OAuth authorization flow.
      *
      * @throws IOException
-     * @throws URISyntaxException
      * @throws OAuthFailedException
      */
     public static TokenEndpointResponse swapJWTForTokens(HttpAccess httpAccessor, URI loginServerUrl,
-                                                              String jwt) throws IOException,
-            URISyntaxException, OAuthFailedException {
+                                                         String jwt) throws IOException, OAuthFailedException {
         final FormBody.Builder formBodyBuilder = new FormBody.Builder().add(GRANT_TYPE, JWT_BEARER)
                 .add(ASSERTION, jwt);
         return makeTokenEndpointRequest(httpAccessor, loginServerUrl, formBodyBuilder);
@@ -394,12 +399,11 @@ public class OAuth2 {
      * @return IdServiceResponse instance.
      *
      * @throws IOException
-     * @throws URISyntaxException
      */
     public static final IdServiceResponse callIdentityService(HttpAccess httpAccessor,
                                                               String identityServiceIdUrl,
                                                               String authToken)
-            throws IOException, URISyntaxException {
+            throws IOException {
         final Request.Builder builder = new Request.Builder().url(identityServiceIdUrl).get();
         addAuthorizationHeader(builder, authToken);
         final Request request = builder.build();
@@ -433,17 +437,6 @@ public class OAuth2 {
         } else {
             throw new OAuthFailedException(new TokenErrorResponse(response), response.code());
         }
-    }
-
-    private static FormBody.Builder makeTokenEndpointParams(String grantType, String clientId,
-                                                            Map<String,String> addlParams) {
-        final FormBody.Builder builder = new FormBody.Builder().add(GRANT_TYPE, grantType).add(CLIENT_ID, clientId);
-        if (addlParams != null ) {
-            for (final Map.Entry<String,String> entry : addlParams.entrySet()) {
-                builder.add(entry.getKey(),entry.getValue());
-            }
-        }
-        return builder;
     }
 
     /**

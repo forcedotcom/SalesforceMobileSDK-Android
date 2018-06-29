@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.smartsync.util;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Locale;
 
 /**
  * This class contains commonly used constants, such as field names,
@@ -39,7 +40,6 @@ public class Constants {
 
 	public static final String EMPTY_STRING = "";
 	public static final String NULL_STRING = "null";
-
     public static final String ID = "Id";
     public static final String NAME = "Name";
     public static final String LAST_NAME = "LastName";
@@ -55,6 +55,7 @@ public class Constants {
 	public static final String RECENT_ITEMS = "recentItems";
     public static final String LAST_MODIFIED_DATE = "LastModifiedDate";
     public static final String CONTACTS = "Contacts";
+    public static final String ACCOUNT_KEY_PREFIX = "001";
 
     /**
      * Salesforce object types.
@@ -85,6 +86,7 @@ public class Constants {
     /**
      * Salesforce object layout column field constants.
      */
+    public static final String LAYOUT_TYPE_COMPACT = "Compact";
     public static final String LAYOUT_NAME_FIELD = "name";
     public static final String LAYOUT_FIELD_FIELD = "field";
     public static final String LAYOUT_FORMAT_FIELD = "format";
@@ -97,8 +99,21 @@ public class Constants {
     public static final String LAYOUT_COLUMNS_FIELD = "searchColumns";
 
     /**
-     * Salesforce timestamp format
+     * Salesforce timestamp format.
      */
-    public static final DateFormat TIMESTAMP_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+    public static final DateFormat TIMESTAMP_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.US);
 
+    /**
+     * Enum for available data fetch modes.
+     *
+     * CACHE_ONLY - Fetches data from the cache and returns null if no data is available.
+     * CACHE_FIRST - Fetches data from the cache and falls back on the server if no data is available.
+     * SERVER_FIRST - Fetches data from the server and falls back on the cache if the server doesn't
+     * return data. The data fetched from the server is automatically cached.
+     */
+    public enum Mode {
+        CACHE_ONLY,
+        CACHE_FIRST,
+        SERVER_FIRST
+    }
 }

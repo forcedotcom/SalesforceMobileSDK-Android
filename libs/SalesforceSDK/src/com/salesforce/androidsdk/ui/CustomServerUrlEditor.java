@@ -45,6 +45,8 @@ import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.LoginServerManager;
 
+import okhttp3.HttpUrl;
+
 /**
  * Custom dialog fragment to allow the user to set a label and URL to use for the login.
  */
@@ -98,7 +100,7 @@ public class CustomServerUrlEditor extends DialogFragment {
 				}
 
 				// Saves state and dismisses the dialog.
-				loginServerManager.addCustomLoginServer(lbl, val);
+				loginServerManager.addCustomLoginServer(lbl.trim(), val.trim());
 				dismiss();
 			}
 		});
@@ -171,7 +173,8 @@ public class CustomServerUrlEditor extends DialogFragment {
 		 * Ensures that the URL is a 'https://' URL, since OAuth requires 'https://'.
 		 */
 		if (editId == R.id.sf__picker_custom_url) {
-			isInvalidValue = !URLUtil.isHttpsUrl(etVal.toString());
+			String url = etVal.toString();
+			isInvalidValue = !URLUtil.isHttpsUrl(url) || HttpUrl.parse(url) == null;
 			if (isInvalidValue) {
 				Toast.makeText(context, getString(R.string.sf__invalid_server_url),
 						Toast.LENGTH_SHORT).show();

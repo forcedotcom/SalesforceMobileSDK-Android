@@ -50,7 +50,14 @@ public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
     public void authenticate(ReadableMap args,
                              Callback successCallback, Callback errorCallback) {
         final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
-        if (currentActivity != null) currentActivity.authenticate(successCallback, errorCallback);
+        if (currentActivity != null) {
+            currentActivity.authenticate(successCallback, errorCallback);
+        }
+        else {
+            if (errorCallback != null) {
+                errorCallback.invoke("SalesforceReactActivity not found");
+            }
+        }
     }
 
 
@@ -58,13 +65,27 @@ public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
     public void getAuthCredentials(ReadableMap args,
                                    Callback successCallback, Callback errorCallback) {
         final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
-        if (currentActivity != null) currentActivity.getAuthCredentials(successCallback, errorCallback);
+        if (currentActivity != null) {
+            currentActivity.getAuthCredentials(successCallback, errorCallback);
+        }
+        else {
+            if (errorCallback != null) {
+                errorCallback.invoke("SalesforceReactActivity not found");
+            }
+        }
     }
 
     @ReactMethod
     public void logoutCurrentUser(ReadableMap args,
                                   Callback successCallback, Callback errorCallback) {
         final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
-        if (currentActivity != null) currentActivity.logout(successCallback);
+        if (currentActivity != null) {
+            currentActivity.logout(successCallback);
+        }
+        else {
+            if (errorCallback != null) {
+                errorCallback.invoke("SalesforceReactActivity not found");
+            }
+        }
     }
 }

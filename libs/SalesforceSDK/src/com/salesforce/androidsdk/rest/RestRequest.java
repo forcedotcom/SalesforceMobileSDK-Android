@@ -26,13 +26,14 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import android.text.TextUtils;
+
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -43,6 +44,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
@@ -54,6 +56,7 @@ import okhttp3.RequestBody;
  * 
  * The class offers factory methods to build RestRequest objects for all REST API actions:
  * <ul>
+ * <li> userinfo</li>
  * <li> versions</li>
  * <li> resources</li>
  * <li> describeGlobal</li>
@@ -61,11 +64,16 @@ import okhttp3.RequestBody;
  * <li> describe</li>
  * <li> create</li>
  * <li> retrieve</li>
- * <li> update</li>
  * <li> upsert</li>
+ * <li> update</li>
  * <li> delete</li>
+ * <li> query</li>
+ * <li> search</li>
  * <li> searchScopeAndOrder</li>
  * <li> searchResultLayout</li>
+ * <li> objectLayout</li>
+ * <li> composite</li>
+ * <li> batch</li>
  * <li> tree</li>
  * </ul>
  * 
@@ -106,7 +114,7 @@ public class RestRequest {
     /**
      * HTTP date format
      */
-    public static final DateFormat HTTP_DATE_FORMAT = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z");
+    public static final DateFormat HTTP_DATE_FORMAT = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
     static {
         HTTP_DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
     }
@@ -117,11 +125,17 @@ public class RestRequest {
 	public enum RestMethod {
 		GET, POST, PUT, DELETE, HEAD, PATCH
 	}
-	
-	/**
-	 * Enumeration for all REST API actions.
-	 */
+
+    /**
+     * Enumeration for all REST API endpoints.
+     */
+	public enum RestEndpoint {
+		LOGIN, INSTANCE
+	}
+
 	private enum RestAction {
+
+		USERINFO("/services/oauth2/userinfo"),
 		VERSIONS(SERVICES_DATA),
 		RESOURCES(SERVICES_DATA + "%s/"),
 		DESCRIBE_GLOBAL(SERVICES_DATA + "%s/sobjects/"),
@@ -136,6 +150,7 @@ public class RestRequest {
 		SEARCH(SERVICES_DATA + "%s/search"),
 		SEARCH_SCOPE_AND_ORDER(SERVICES_DATA + "%s/search/scopeOrder"),
 		SEARCH_RESULT_LAYOUT(SERVICES_DATA + "%s/search/layout"),
+        OBJECT_LAYOUT(SERVICES_DATA + "%s/ui-api/layout/%s"),
 		COMPOSITE(SERVICES_DATA + "%s/composite"),
         BATCH(SERVICES_DATA + "%s/composite/batch"),
         SOBJECT_TREE(SERVICES_DATA + "%s/composite/tree/%s");
@@ -152,11 +167,12 @@ public class RestRequest {
 	}
 
 	private final RestMethod method;
+	private final RestEndpoint endpoint;
 	private final String path;
 	private final RequestBody requestBody;
 	private final Map<String, String> additionalHttpHeaders;
 	private final JSONObject requestBodyAsJson; // needed for composite and batch requests
-
+    private boolean shouldRefreshOn403 = true;
 
     /**
      * Generic constructor for arbitrary requests without a body.
@@ -206,7 +222,6 @@ public class RestRequest {
         this(method, path, requestBodyAsJson, null);
     }
 
-
     /**
      * Generic constructor for arbitrary requests.
      *
@@ -218,13 +233,8 @@ public class RestRequest {
      * Note: Do not use this constructor if requestBody is not null and you want to build a batch or composite request.
      */
     public RestRequest(RestMethod method, String path, RequestBody requestBody, Map<String, String> additionalHttpHeaders) {
-        this.method = method;
-        this.path = path;
-        this.requestBody = requestBody;
-        this.additionalHttpHeaders = additionalHttpHeaders;
-        this.requestBodyAsJson = null;
+    	this(method, RestEndpoint.INSTANCE, path, requestBody, additionalHttpHeaders);
     }
-
 
     /**
      * Generic constructor for arbitrary requests.
@@ -236,8 +246,42 @@ public class RestRequest {
      *
      * Note: Use this constructor if requestBody is not null and you want to build a batch or composite request.
      */
-	public RestRequest(RestMethod method, String path, JSONObject requestBodyAsJson,  Map<String, String> additionalHttpHeaders) {
+    public RestRequest(RestMethod method, String path, JSONObject requestBodyAsJson,  Map<String, String> additionalHttpHeaders) {
+        this(method, RestEndpoint.INSTANCE, path, requestBodyAsJson, additionalHttpHeaders);
+    }
+
+    /**
+     * Generic constructor for arbitrary requests.
+     *
+     * @param method				HTTP method used for the request (GET/POST/DELETE etc).
+     * @param endpoint				The endpoint associated with the request.
+     * @param path					URI path. This will be resolved against the user's current
+     * 								Rest endpoint, as specified by the endpoint parameter.
+     * @param requestBody			Request body, if one exists. Can be null.
+     * @param additionalHttpHeaders	Additional headers.
+     */
+    public RestRequest(RestMethod method, RestEndpoint endpoint, String path, RequestBody requestBody, Map<String, String> additionalHttpHeaders) {
         this.method = method;
+        this.endpoint = endpoint;
+        this.path = path;
+        this.requestBody = requestBody;
+        this.additionalHttpHeaders = additionalHttpHeaders;
+        this.requestBodyAsJson = null;
+    }
+
+    /**
+     * Generic constructor for arbitrary requests.
+     *
+     * @param method				HTTP method used for the request (GET/POST/DELETE etc).
+     * @param endpoint				The endpoint associated with the request.
+     * @param path					URI path. This will be resolved against the user's current
+     * 								Rest endpoint, as specified by the endpoint parameter.
+     * @param requestBodyAsJson		Request body as JSON, if one exists. Can be null.
+     * @param additionalHttpHeaders	Additional headers.
+     */
+    public RestRequest(RestMethod method, RestEndpoint endpoint, String path, JSONObject requestBodyAsJson, Map<String, String> additionalHttpHeaders) {
+        this.method = method;
+        this.endpoint = endpoint;
         this.path = path;
         this.requestBody = requestBodyAsJson == null ? null : RequestBody.create(MEDIA_TYPE_JSON, requestBodyAsJson.toString());
         this.additionalHttpHeaders = additionalHttpHeaders;
@@ -250,6 +294,11 @@ public class RestRequest {
 	public RestMethod getMethod() {
 		return method;
 	}
+
+	/**
+	 * @return The endpoint of the request.
+	 */
+	public RestEndpoint getEndpoint() { return endpoint; }
 
 	/**
 	 * @return  Path of the request.
@@ -277,6 +326,33 @@ public class RestRequest {
 	 */
 	public Map<String, String> getAdditionalHttpHeaders() {
 		return additionalHttpHeaders;
+	}
+
+    /**
+     * Returns whether the SDK should attempt to refresh tokens if the service returns HTTP 403.
+     *
+     * @return True - if the SDK should refresh on HTTP 403, False - otherwise.
+     */
+	public boolean getShouldRefreshOn403() {
+	    return shouldRefreshOn403;
+    }
+
+    /**
+     * Sets whether the SDK should attempt to refresh tokens if the service returns HTTP 403.
+     *
+     * @param shouldRefreshOn403 True - if the SDK should refresh on HTTP 403, False - otherwise.
+     */
+	public synchronized void setShouldRefreshOn403(boolean shouldRefreshOn403) {
+        this.shouldRefreshOn403 = shouldRefreshOn403;
+    }
+
+	/**
+	 * Request to get information about the user making the request.
+	 * @return RestRequest object that requests user info.
+	 * @see <a href="https://help.salesforce.com/articleView?id=remoteaccess_using_userinfo_endpoint.htm">https://help.salesforce.com/articleView?id=remoteaccess_using_userinfo_endpoint.htm</a></a>
+	 */
+	public static RestRequest getRequestForUserInfo() {
+		return new RestRequest(RestMethod.GET, RestEndpoint.LOGIN, RestAction.USERINFO.getPath(), (RequestBody) null, null);
 	}
 
 	/**
@@ -317,22 +393,21 @@ public class RestRequest {
      * @param apiVersion    Salesforce API version.
      * @param objectType    Type of object for which the caller is requesting object metadata.
      * @return              RestRequest object that requests an object's metadata for the given API version.
-	 * @throws IOException
-     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_basic_info.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_basic_info.htm</a>
+	 * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_basic_info.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_basic_info.htm</a>
 	 */
 	public static RestRequest getRequestForMetadata(String apiVersion, String objectType) {
         return new RestRequest(RestMethod.GET, RestAction.METADATA.getPath(apiVersion, objectType));
 	}
 
 	/**
-	 * Request to completely describe the individual metadata at all levels for the specified object. 
+	 * Request to completely describe the individual metadata at all levels for the specified object.
 	 *
      * @param apiVersion Salesforce API version.
      * @param objectType Type of object for which the caller is requesting the metadata description.
      * @return RestRequest object that requests an object's metadata description for the given API version.
      * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_describe.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_describe.htm</a>
 	 */
-	public static RestRequest getRequestForDescribe(String apiVersion, String objectType)  {
+	public static RestRequest getRequestForDescribe(String apiVersion, String objectType) {
         return new RestRequest(RestMethod.GET, RestAction.DESCRIBE.getPath(apiVersion, objectType));
 	}
 	
@@ -343,11 +418,9 @@ public class RestRequest {
      * @param objectType    Type of record to be created.
      * @param fields        Map of the new record's fields and their values. Can be null.
      * @return              RestRequest object that requests creation of a record.
-	 * @throws IOException
-	 * @throws UnsupportedEncodingException 
-     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm</a>
+	 * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm</a>
 	 */
-	public static RestRequest getRequestForCreate(String apiVersion, String objectType, Map<String, Object> fields) throws IOException  {
+	public static RestRequest getRequestForCreate(String apiVersion, String objectType, Map<String, Object> fields) {
 		return new RestRequest(RestMethod.POST, RestAction.CREATE.getPath(apiVersion, objectType), fields == null ? null : new JSONObject(fields));
 	}
 
@@ -357,7 +430,7 @@ public class RestRequest {
      * @param apiVersion    Salesforce API version.
      * @param objectType    Type of the requested record.
      * @param objectId      Salesforce ID of the requested record.
-     * @param fields        List of requested field names.
+     * @param fieldList     List of requested field names.
      * @return              RestRequest object that requests a record.
 	 * @throws UnsupportedEncodingException
      * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm</a>
@@ -368,7 +441,6 @@ public class RestRequest {
 			path.append("?fields=");
 			path.append(URLEncoder.encode(toCsv(fieldList).toString(), UTF_8));
 		}
-
 		return new RestRequest(RestMethod.GET, path.toString());
 	}
 
@@ -391,10 +463,9 @@ public class RestRequest {
      * @param objectId      Salesforce ID of the record.
      * @param fields        Map of the fields to be updated and their new values.
      * @return              RestRequest object that requests a record update.
-	 * @throws IOException
-     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm</a>
+	 * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm</a>
 	 */
-	public static RestRequest getRequestForUpdate(String apiVersion, String objectType, String objectId, Map<String, Object> fields) throws IOException  {
+	public static RestRequest getRequestForUpdate(String apiVersion, String objectType, String objectId, Map<String, Object> fields) {
         return getRequestForUpdate(apiVersion, objectType, objectId, fields, null);
 	}
 
@@ -407,10 +478,9 @@ public class RestRequest {
      * @param fields                Map of the fields to be updated and their new values. Can be null.
      * @param ifUnmodifiedSinceDate Fulfill the request only if the record has not been modified since the given date.
      * @return                      RestRequest object that requests a record update.
-     * @throws IOException
      * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm</a>
      */
-    public static RestRequest getRequestForUpdate(String apiVersion, String objectType, String objectId, Map<String, Object> fields, Date ifUnmodifiedSinceDate) throws IOException  {
+    public static RestRequest getRequestForUpdate(String apiVersion, String objectType, String objectId, Map<String, Object> fields, Date ifUnmodifiedSinceDate) {
         Map<String, String> additionalHttpHeaders = prepareConditionalHeader(IF_UNMODIFIED_SINCE, ifUnmodifiedSinceDate);
         return new RestRequest(RestMethod.PATCH, RestAction.UPDATE.getPath(apiVersion, objectType, objectId), fields == null ? null : new JSONObject(fields), additionalHttpHeaders);
     }
@@ -424,10 +494,9 @@ public class RestRequest {
      * @param externalId        ID of source data record. Can be an empty string.
      * @param fields            Map of the fields to be upserted and their new values. Can be null.
      * @return                  RestRequest object that requests a record upsert.
-	 * @throws IOException
-     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_upsert.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_upsert.htm</a>
+	 * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_upsert.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_upsert.htm</a>
 	 */
-	public static RestRequest getRequestForUpsert(String apiVersion, String objectType, String externalIdField, String externalId, Map<String, Object> fields) throws IOException  {
+	public static RestRequest getRequestForUpsert(String apiVersion, String objectType, String externalIdField, String externalId, Map<String, Object> fields) {
         return new RestRequest(
                 externalId == null ? RestMethod.POST : RestMethod.PATCH,
                 RestAction.UPSERT.getPath(
@@ -488,10 +557,9 @@ public class RestRequest {
 	 *
 	 * @param apiVersion    Salesforce API version.
      * @return              RestRequest object that requests the search scope and order for the given API version.
-	 * @throws UnsupportedEncodingException
-     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_scope_order.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_scope_order.htm</a>
+	 * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_scope_order.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_scope_order.htm</a>
 	 */
-	public static RestRequest getRequestForSearchScopeAndOrder(String apiVersion) throws UnsupportedEncodingException  {
+	public static RestRequest getRequestForSearchScopeAndOrder(String apiVersion)  {
         return new RestRequest(RestMethod.GET, new StringBuilder(RestAction.SEARCH_SCOPE_AND_ORDER.getPath(apiVersion)).toString());
 	}	
 	
@@ -511,6 +579,24 @@ public class RestRequest {
 		return new RestRequest(RestMethod.GET, path.toString());
 	}
 
+	/**
+	 * Request to get object layout data.
+	 *
+	 * @param apiVersion Salesforce API version.
+	 * @param objectType Object type.
+     * @param layoutType Layout type. Could be "Compact" or "Full".
+	 * @return RestRequest object that requests the object layout for the given object and layout types.
+	 * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_resources_record_layout.htm">https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_resources_record_layout.htm</a>
+	 */
+	public static RestRequest getRequestForObjectLayout(String apiVersion, String objectType, String layoutType)  {
+		final StringBuilder path = new StringBuilder(RestAction.OBJECT_LAYOUT.getPath(apiVersion, objectType));
+		if (!TextUtils.isEmpty(layoutType)) {
+            path.append("?layoutType=");
+            path.append(layoutType);
+        }
+		return new RestRequest(RestMethod.GET, path.toString());
+	}
+
     /**
 	 * Composite request
 	 *
@@ -522,7 +608,7 @@ public class RestRequest {
 	 */
 	public static RestRequest getCompositeRequest(String apiVersion, boolean allOrNone, LinkedHashMap<String, RestRequest> refIdToRequests) throws JSONException {
 		JSONArray requestsArrayJson = new JSONArray();
-        for(Map.Entry<String,RestRequest> entry : refIdToRequests.entrySet()) {
+        for (Map.Entry<String,RestRequest> entry : refIdToRequests.entrySet()) {
             String referenceId = entry.getKey();
             RestRequest request = entry.getValue();
             JSONObject requestJson = request.asJSON();
@@ -532,7 +618,6 @@ public class RestRequest {
 		JSONObject compositeRequestJson =  new JSONObject();
 		compositeRequestJson.put(COMPOSITE_REQUEST, requestsArrayJson);
         compositeRequestJson.put(ALL_OR_NONE, allOrNone);
-
 		return new RestRequest(RestMethod.POST, RestAction.COMPOSITE.getPath(apiVersion), compositeRequestJson);
 	}
 
@@ -578,7 +663,6 @@ public class RestRequest {
         JSONObject batchRequestJson =  new JSONObject();
         batchRequestJson.put(BATCH_REQUESTS, requestsArrayJson);
         batchRequestJson.put(HALT_ON_ERROR, haltOnError);
-
         return new RestRequest(RestMethod.POST, RestAction.BATCH.getPath(apiVersion), batchRequestJson);
     }
 
@@ -597,7 +681,6 @@ public class RestRequest {
         for (SObjectTree objectTree : objectTrees) {
             jsonTrees.put(objectTree.asJSON());
         }
-
         RequestBody body = RequestBody.create(MEDIA_TYPE_JSON, JSONObjectHelper.makeJSONObject(RECORDS, jsonTrees).toString());
         return new RestRequest(RestMethod.POST, RestAction.SOBJECT_TREE.getPath(apiVersion, objectType), body);
     }
@@ -619,11 +702,11 @@ public class RestRequest {
         }
     }
 
-
     /**
      * Helper class for getRequestForSObjectTree.
      */
     public static class SObjectTree {
+
         final String objectType;
         final String objectTypePlural;
         final String referenceId;
@@ -640,22 +723,19 @@ public class RestRequest {
 
         public JSONObject asJSON() throws JSONException {
             JSONObject parentJson = buildJsonForRecord(objectType, referenceId, fields);
-
             if (childrenTrees != null) {
+
                 // Grouping children trees by type and figuring out object type to object type plural mapping
                 Map<String, String> objectTypeToObjectTypePlural = new HashMap<>();
                 Map<String, List<SObjectTree>> objectTypeToChildrenTrees = new HashMap<>();
                 for (SObjectTree childTree : childrenTrees) {
                     String childObjectType = childTree.objectType;
-
                     if (!objectTypeToObjectTypePlural.containsKey(childObjectType)) {
                         objectTypeToObjectTypePlural.put(childObjectType, childTree.objectTypePlural);
                     }
-
                     if (!objectTypeToChildrenTrees.containsKey(childObjectType)) {
                         objectTypeToChildrenTrees.put(childObjectType, new ArrayList<SObjectTree>());
                     }
-
                     objectTypeToChildrenTrees.get(childObjectType).add(childTree);
                 }
 
@@ -668,7 +748,6 @@ public class RestRequest {
                         JSONObject childJson = buildJsonForRecord(childrenObjectType, childTree.referenceId, childTree.fields);
                         childrenJsonArray.put(childJson);
                     }
-
                     parentJson.put(objectTypeToObjectTypePlural.get(childrenObjectType), JSONObjectHelper.makeJSONObject(RECORDS, childrenJsonArray));
                 }
             }
@@ -681,12 +760,9 @@ public class RestRequest {
             JSONObject jsonForAttributes = new JSONObject();
             jsonForAttributes.put(REFERENCE_ID, referenceId);
             jsonForAttributes.put(TYPE, objectType);
-
             JSONObject jsonForRecord = new JSONObject(fields);
             jsonForRecord.put(ATTRIBUTES, jsonForAttributes);
-
             return jsonForRecord;
         }
     }
-
 }

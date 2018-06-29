@@ -1020,32 +1020,27 @@ public class SmartStore  {
      */
     private void projectIndexedPath(JSONObject soupElt, ContentValues contentValues, IndexSpec indexSpec) {
         Object value = project(soupElt, indexSpec.path);
-        switch (indexSpec.type) {
-        case integer:
-            Long longValToUse = null;
-            try {
-                longValToUse = ((Number) value).longValue();
-            }
-            catch (Exception e) {
-                // Ignore and use the null value
-                SmartStoreLogger.e(TAG, "Unexpected error", e);
-            }
-            contentValues.put(indexSpec.columnName, longValToUse);
-            break;
-        case string:
-        case full_text:
-            contentValues.put(indexSpec.columnName, value != null ? value.toString() : null); break;
-        case floating:
-            Double doubleValToUse = null;
-            try {
-                doubleValToUse = ((Number) value).doubleValue();
-            }
-            catch (Exception e) {
-                // Ignore and use the null value
-                SmartStoreLogger.e(TAG, "Unexpected error", e);
-            }
-            contentValues.put(indexSpec.columnName, doubleValToUse); break;
-        }
+
+		contentValues.put(indexSpec.columnName, (String) null); // fall back
+		if (value != null) {
+			try {
+				switch (indexSpec.type) {
+					case integer:
+						contentValues.put(indexSpec.columnName, ((Number) value).longValue());
+						break;
+					case string:
+					case full_text:
+						contentValues.put(indexSpec.columnName, value.toString());
+						break;
+					case floating:
+						contentValues.put(indexSpec.columnName, ((Number) value).doubleValue());
+						break;
+				}
+			} catch (Exception e) {
+				// Ignore (will use the null value)
+				SmartStoreLogger.e(TAG, "Unexpected error", e);
+			}
+		}
     }
 
     /**
@@ -1226,6 +1221,10 @@ public class SmartStore  {
 	            if (externalIdObj != null) {
 	                entryId = lookupSoupEntryId(soupName, externalIdPath, externalIdObj + "");
 	            }
+	            else {
+					// Cannot have empty values for user-defined external ID upsert.
+					throw new SmartStoreException(String.format("For upsert with external ID path '%s', value cannot be empty for any entries.", externalIdPath));
+				}
 	        }
 
 	        // If we have an entryId, let's do an update, otherwise let's do a create
