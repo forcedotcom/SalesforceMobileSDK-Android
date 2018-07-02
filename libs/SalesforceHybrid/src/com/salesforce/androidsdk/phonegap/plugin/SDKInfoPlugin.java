@@ -46,7 +46,6 @@ import org.xmlpull.v1.XmlPullParserException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * PhoneGap plugin for SDK info.
@@ -75,8 +74,7 @@ public class SDKInfoPlugin extends ForcePlugin {
 
     @Override
     public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args, CallbackContext callbackContext) throws JSONException {
-        // Figure out action
-        Action action = null;
+        Action action;
         try {
             action = Action.valueOf(actionStr);
             switch(action) {
@@ -100,8 +98,7 @@ public class SDKInfoPlugin extends ForcePlugin {
         SalesforceHybridLogger.i(TAG, "getInfo called");
         try {
             callbackContext.success(getSDKInfo(cordova.getActivity()));
-        }
-        catch (NameNotFoundException e) {
+        } catch (NameNotFoundException e) {
             callbackContext.error(e.getMessage());
         }
     }
@@ -116,9 +113,9 @@ public class SDKInfoPlugin extends ForcePlugin {
 
         // Parse args.
         JSONObject arg0 = args.getJSONObject(0);
-        if(arg0 != null){
+        if (arg0 != null){
             String appFeatureCode = arg0.getString("feature");
-            if(!TextUtils.isEmpty(appFeatureCode)){
+            if (!TextUtils.isEmpty(appFeatureCode)) {
                 SalesforceSDKManager.getInstance().registerUsedAppFeature(appFeatureCode);
             }
         }
@@ -135,9 +132,9 @@ public class SDKInfoPlugin extends ForcePlugin {
 
         // Parse args.
         JSONObject arg0 = args.getJSONObject(0);
-        if(arg0 != null){
+        if (arg0 != null){
             String appFeatureCode = arg0.getString("feature");
-            if(!TextUtils.isEmpty(appFeatureCode)){
+            if (!TextUtils.isEmpty(appFeatureCode)) {
                 SalesforceSDKManager.getInstance().unregisterUsedAppFeature(appFeatureCode);
             }
         }
@@ -157,15 +154,9 @@ public class SDKInfoPlugin extends ForcePlugin {
     */
    public static JSONObject getSDKInfo(Context ctx) throws NameNotFoundException, JSONException {
 	   String appName = "";
-       String appVersion = "";
        try {
            final PackageInfo packageInfo = ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0);
            appName = ctx.getString(packageInfo.applicationInfo.labelRes);
-           appVersion = packageInfo.versionName;
-           if (packageInfo.versionCode > 0) {
-               appVersion = String.format(Locale.US, "%s(%s)",
-                       packageInfo.versionName, packageInfo.versionCode);
-           }
        } catch (Resources.NotFoundException nfe) {
 
     	   // A test harness such as Gradle does NOT have an application name.
@@ -174,7 +165,7 @@ public class SDKInfoPlugin extends ForcePlugin {
        JSONObject data = new JSONObject();
        data.put(SDK_VERSION, SalesforceSDKManager.SDK_VERSION);
        data.put(APP_NAME, appName);
-       data.put(APP_VERSION, appVersion);
+       data.put(APP_VERSION, SalesforceSDKManager.getInstance().getAppVersion());
        data.put(FORCE_PLUGINS_AVAILABLE, new JSONArray(getForcePlugins(ctx)));
        data.put(BOOT_CONFIG, BootConfig.getBootConfig(ctx).asJSON());
        return data;
@@ -197,8 +188,7 @@ public class SDKInfoPlugin extends ForcePlugin {
 	 * @return list of force plugins (read from XML)
 	 */
 	public static List<String> getForcePluginsFromXML(Context ctx) {
-		List<String> services = new ArrayList<String>();
-		
+		List<String> services = new ArrayList<>();
         int id = ctx.getResources().getIdentifier("config", "xml", ctx.getPackageName());
         if (id == 0) {
             id = ctx.getResources().getIdentifier("plugins", "xml", ctx.getPackageName());
@@ -213,17 +203,13 @@ public class SDKInfoPlugin extends ForcePlugin {
 						services.add(service);
 					}
 				}
-		
 				try {
 					eventType = xml.next();
-				} catch (XmlPullParserException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
+				} catch (XmlPullParserException | IOException e) {
+                    SalesforceHybridLogger.w(TAG, "getForcePluginsFromXML failed", e);
 				}
 			}
 		}
 		return services;
 	}
-
 }

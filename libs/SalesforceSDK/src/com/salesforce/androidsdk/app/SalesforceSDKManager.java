@@ -1135,20 +1135,44 @@ public class SalesforceSDKManager {
 
     /**
      * Returns a user agent string based on the Mobile SDK version. The user agent takes the following form:
-     *   SalesforceMobileSDK/{salesforceSDK version} android/{android OS version} appName/appVersion {Native|Hybrid} uid_{device id}
+     * SalesforceMobileSDK/{salesforceSDK version} android/{android OS version} appName/appVersion {Native|Hybrid} uid_{device id}
      *
      * @return The user agent string to use for all requests.
      */
     public final String getUserAgent() {
     	return getUserAgent("");
     }
-    
+
+    /**
+     * Returns a user agent string based on the Mobile SDK version. The user agent takes the following form:
+     * SalesforceMobileSDK/{salesforceSDK version} android/{android OS version} appName/appVersion {Native|Hybrid} uid_{device id}
+     *
+     * @param qualifier Qualifier.
+     * @return The user agent string to use for all requests.
+     */
     public String getUserAgent(String qualifier) {
         String appName = "";
-        String appVersion = "";
         try {
             PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
             appName = context.getString(packageInfo.applicationInfo.labelRes);
+        } catch (NameNotFoundException | Resources.NotFoundException e) {
+            SalesforceSDKLogger.w(TAG, "Package info could not be retrieved", e);
+        }
+        String appTypeWithQualifier = getAppType() + qualifier;
+        return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s",
+                SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, getAppVersion(),
+                appTypeWithQualifier, uid, TextUtils.join(".", features));
+    }
+
+    /**
+     * Returns the app version of the app.
+     *
+     * @return App version.
+     */
+    public String getAppVersion() {
+        String appVersion = "";
+        try {
+            final PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
             appVersion = packageInfo.versionName;
             if (packageInfo.versionCode > 0) {
                 appVersion = String.format(Locale.US, "%s(%s)",
@@ -1157,10 +1181,7 @@ public class SalesforceSDKManager {
         } catch (NameNotFoundException | Resources.NotFoundException e) {
             SalesforceSDKLogger.w(TAG, "Package info could not be retrieved", e);
         }
-        String appTypeWithQualifier = getAppType() + qualifier;
-        return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s",
-                SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion,
-                appTypeWithQualifier, uid, TextUtils.join(".", features));
+        return appVersion;
     }
 
     /**
