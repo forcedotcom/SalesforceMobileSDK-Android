@@ -26,9 +26,6 @@
  */
 package com.salesforce.androidsdk.push;
 
-import android.content.Intent;
-import android.support.v4.app.JobIntentService;
-
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -55,15 +52,5 @@ public class SFDCFcmListenerService extends FirebaseMessagingService {
                 pnInterface.onPushMessageReceived(message);
             }
         }
-    }
-
-    @Override
-    public void onNewToken(String s) {
-
-        // Fetch updated Instance ID token and notify our app's server of any changes (if applicable).
-        final Intent intent = new Intent(this, SFDCRegistrationIntentService.class);
-        JobIntentService.enqueueWork(SalesforceSDKManager.getInstance().getAppContext(),
-                SFDCRegistrationIntentService.class, JOB_ID, intent);
-        super.onNewToken(s);
     }
 }
