@@ -37,8 +37,6 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
  */
 public class SFDCFcmListenerService extends FirebaseMessagingService {
 
-    private static final int JOB_ID = 21;
-
     /**
      * Called when message is received.
      *
