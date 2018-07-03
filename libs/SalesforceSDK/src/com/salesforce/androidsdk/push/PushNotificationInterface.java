@@ -26,7 +26,7 @@
  */
 package com.salesforce.androidsdk.push;
 
-import android.os.Bundle;
+import com.google.firebase.messaging.RemoteMessage;
 
 /**
  * This interface represents a simple push notification received. The
@@ -37,5 +37,5 @@ import android.os.Bundle;
  */
 public interface PushNotificationInterface {
 
-	void onPushMessageReceived(Bundle message);
+	void onPushMessageReceived(RemoteMessage message);
 }

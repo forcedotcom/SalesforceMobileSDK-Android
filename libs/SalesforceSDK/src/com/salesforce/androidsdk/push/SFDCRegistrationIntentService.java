@@ -29,8 +29,7 @@ package com.salesforce.androidsdk.push;
 import android.content.Intent;
 import android.support.v4.app.JobIntentService;
 
-import com.google.android.gms.gcm.GoogleCloudMessaging;
-import com.google.android.gms.iid.InstanceID;
+import com.google.firebase.iid.FirebaseInstanceId;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.BootConfig;
@@ -39,13 +38,13 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 public class SFDCRegistrationIntentService extends JobIntentService {
 
     private static final String TAG = "RegIntentService";
+    private static final String FCM = "FCM";
 
     @Override
     protected void onHandleWork(Intent intent) {
         try {
-            final InstanceID instanceID = InstanceID.getInstance(this);
-            final String token = instanceID.getToken(BootConfig.getBootConfig(this).getPushNotificationClientId(),
-                    GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
+            final FirebaseInstanceId instanceID = FirebaseInstanceId.getInstance();
+            final String token = instanceID.getToken(BootConfig.getBootConfig(this).getPushNotificationClientId(), FCM);
             final UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
 
             // Store the new token.
@@ -54,7 +53,7 @@ public class SFDCRegistrationIntentService extends JobIntentService {
             // Send it to SFDC.
             PushMessaging.registerSFDCPush(this, account);
         } catch (Exception e) {
-            SalesforceSDKLogger.e(TAG, "Error during GCM registration", e);
+            SalesforceSDKLogger.e(TAG, "Error during FCM registration", e);
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-present, salesforce.com, inc.
+ * Copyright (c) 2018-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,31 +26,44 @@
  */
 package com.salesforce.androidsdk.push;
 
-import android.os.Bundle;
+import android.content.Intent;
+import android.support.v4.app.JobIntentService;
 
-import com.google.android.gms.gcm.GcmListenerService;
+import com.google.firebase.messaging.FirebaseMessagingService;
+import com.google.firebase.messaging.RemoteMessage;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
-public class SFDCGcmListenerService extends GcmListenerService {
+/**
+ * This class is called when a message is received or the token changes.
+ *
+ * @author bhariharan
+ */
+public class SFDCFcmListenerService extends FirebaseMessagingService {
 
-    public static final String KEY_FROM = "from";
+    private static final int JOB_ID = 21;
 
     /**
      * Called when message is received.
      *
-     * @param from SenderID of the sender.
-     * @param data Data bundle containing message data as key/value pairs.
+     * @param message Remote message received.
      */
     @Override
-    public void onMessageReceived(String from, Bundle data) {
-        if (data != null && SalesforceSDKManager.hasInstance()) {
+    public void onMessageReceived(RemoteMessage message) {
+        if (message != null && SalesforceSDKManager.hasInstance()) {
             final PushNotificationInterface pnInterface = SalesforceSDKManager.getInstance().getPushNotificationReceiver();
             if (pnInterface != null) {
-
-                // Add 'from' to the Bundle directly before passing it back.
-                data.putString(KEY_FROM, from);
-                pnInterface.onPushMessageReceived(data);
+                pnInterface.onPushMessageReceived(message);
             }
         }
+    }
+
+    @Override
+    public void onNewToken(String s) {
+
+        // Fetch updated Instance ID token and notify our app's server of any changes (if applicable).
+        final Intent intent = new Intent(this, SFDCRegistrationIntentService.class);
+        JobIntentService.enqueueWork(SalesforceSDKManager.getInstance().getAppContext(),
+                SFDCRegistrationIntentService.class, JOB_ID, intent);
+        super.onNewToken(s);
     }
 }

@@ -35,7 +35,7 @@ import android.support.v4.app.JobIntentService;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.iid.InstanceID;
+import com.google.firebase.iid.FirebaseInstanceId;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
@@ -58,8 +58,8 @@ public class PushMessaging {
     private static final int JOB_ID = 8;
 
 	// Public constants.
-    public static final String UNREGISTERED_ATTEMPT_COMPLETE_EVENT = "com.salesfore.mobilesdk.c2dm.UNREGISTERED";
-    public static final String UNREGISTERED_EVENT = "com.salesfore.mobilesdk.c2dm.ACTUAL_UNREGISTERED";
+    public static final String UNREGISTERED_ATTEMPT_COMPLETE_EVENT = "com.salesforce.mobilesdk.c2dm.UNREGISTERED";
+    public static final String UNREGISTERED_EVENT = "com.salesforce.mobilesdk.c2dm.ACTUAL_UNREGISTERED";
     public static final String ACCOUNT_BUNDLE_KEY = "account_bundle";
     public static final String ALL_ACCOUNTS_BUNDLE_VALUE = "all_accounts";
     public static final String GCM_PREFS = "gcm_prefs";
@@ -117,13 +117,13 @@ public class PushMessaging {
 
             // Deletes InstanceID only if there are no other logged in accounts.
             if (isLastAccount) {
-                final InstanceID instanceID = InstanceID.getInstance(context);
+                final FirebaseInstanceId instanceID = FirebaseInstanceId.getInstance();
                 threadPool.execute(new Runnable() {
 
                     @Override
                     public void run() {
                         try {
-                            instanceID.deleteInstanceID();
+                            instanceID.deleteInstanceId();
                         } catch (IOException e) {
                             SalesforceSDKLogger.e(TAG, "Error deleting InstanceID", e);
                         }
