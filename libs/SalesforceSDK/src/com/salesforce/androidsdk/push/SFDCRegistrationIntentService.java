@@ -26,9 +26,12 @@
  */
 package com.salesforce.androidsdk.push;
 
+import android.content.Context;
 import android.content.Intent;
 import android.support.v4.app.JobIntentService;
 
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -43,6 +46,22 @@ public class SFDCRegistrationIntentService extends JobIntentService {
     @Override
     protected void onHandleWork(Intent intent) {
         try {
+
+            /*
+             * Initializes the push configuration for this application and kicks off
+             * Firebase initialization flow. This is required before attempting to
+             * register for FCM. The other alternative is to supply a 'google-services.json'
+             * file and use the Google Services plugin to initialize, but this approach
+             * only works for apps. Since we're a library project, the programmatic
+             * approach works better for us.
+             */
+            final Context context = SalesforceSDKManager.getInstance().getAppContext();
+            final String pushClientId = BootConfig.getBootConfig(context).getPushNotificationClientId();
+            final FirebaseOptions firebaseOptions = new FirebaseOptions.Builder().
+                    setGcmSenderId(pushClientId).setApplicationId(context.getPackageName()).build();
+            FirebaseApp.initializeApp(context, firebaseOptions);
+
+            // Fetches an instance ID from Firebase once the initialization is complete.
             final FirebaseInstanceId instanceID = FirebaseInstanceId.getInstance();
             final String token = instanceID.getToken(BootConfig.getBootConfig(this).getPushNotificationClientId(), FCM);
             final UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
