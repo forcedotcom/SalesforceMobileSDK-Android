@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.analytics;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.pm.PackageInfo;
 import android.os.Build;
 import android.text.TextUtils;
 
@@ -369,8 +368,8 @@ public class SalesforceAnalyticsManager {
 
     private SalesforceAnalyticsManager(UserAccount account) {
         this.account = account;
-        final DeviceAppAttributes deviceAppAttributes = getDeviceAppAttributes();
         final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
+        final DeviceAppAttributes deviceAppAttributes = getDeviceAppAttributes();
         final String filenameSuffix = (account != null) ? account.getCommunityLevelFilenameSuffix()
                 : UNAUTH_INSTANCE_KEY;
         analyticsManager = new AnalyticsManager(filenameSuffix, sdkManager.getAppContext(),
@@ -392,15 +391,6 @@ public class SalesforceAnalyticsManager {
     public static DeviceAppAttributes getDeviceAppAttributes() {
         final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
         final Context context = sdkManager.getAppContext();
-        String appVersion = "";
-        String appName = "";
-        try {
-            final PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
-            appVersion = packageInfo.versionName;
-            appName = SalesforceSDKManager.getAiltnAppName();
-        } catch (Exception e) {
-            SalesforceSDKLogger.w(TAG, "Could not read package info", e);
-        }
         final String osVersion = Build.VERSION.RELEASE;
         final String osName = "android";
         final String appType = sdkManager.getAppType();
@@ -408,7 +398,8 @@ public class SalesforceAnalyticsManager {
         final String deviceModel = Build.MODEL;
         final String deviceId = sdkManager.getDeviceId();
         final String clientId = BootConfig.getBootConfig(context).getRemoteAccessConsumerKey();
-        return new DeviceAppAttributes(appVersion, appName, osVersion, osName, appType,
+        return new DeviceAppAttributes(sdkManager.getAppVersion(),
+                SalesforceSDKManager.getAiltnAppName(), osVersion, osName, appType,
                 mobileSdkVersion, deviceModel, deviceId, clientId);
     }
 
