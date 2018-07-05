@@ -87,6 +87,7 @@ public class PushService extends JobIntentService {
     private static final String ANDROID_GCM = "androidGcm";
     private static final String SERVICE_TYPE = "ServiceType";
     private static final String CONNECTION_TOKEN = "ConnectionToken";
+    private static final String APPLICATION_BUNDLE = "ApplicationBundle";
     private static final String FIELD_ID = "id";
     private static final String NOT_ENABLED = "not_enabled";
 
@@ -265,6 +266,7 @@ public class PushService extends JobIntentService {
             final Map<String, Object> fields = new HashMap<>();
             fields.put(CONNECTION_TOKEN, registrationId);
             fields.put(SERVICE_TYPE, ANDROID_GCM);
+            fields.put(APPLICATION_BUNDLE, SalesforceSDKManager.getInstance().getAppContext().getPackageName());
             final RestClient client = getRestClient(account);
         	if (client != null) {
                 int status = REGISTRATION_STATUS_FAILED;
