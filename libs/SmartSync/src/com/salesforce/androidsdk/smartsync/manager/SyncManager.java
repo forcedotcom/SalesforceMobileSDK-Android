@@ -793,6 +793,4 @@ public class SyncManager {
          */
         void onError(Exception e);
     }
-
-
 }

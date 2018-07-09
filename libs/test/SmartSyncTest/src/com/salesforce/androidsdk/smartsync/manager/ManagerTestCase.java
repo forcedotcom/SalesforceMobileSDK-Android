@@ -81,8 +81,6 @@ abstract public class ManagerTestCase {
     protected Context targetContext;
     protected EventsListenerQueue eq;
     protected SmartSyncSDKManager sdkManager;
-    protected MetadataManager metadataManager;
-    protected CacheManager cacheManager;
     protected SyncManager syncManager;
     protected SyncManager globalSyncManager;
     protected RestClient restClient;
@@ -113,18 +111,13 @@ abstract public class ManagerTestCase {
         		TestCredentials.CLIENT_ID, TestCredentials.ORG_ID,
         		TestCredentials.USER_ID, null, null, null,
                 null, null, null, null, null, null);
-    	MetadataManager.reset(null);
-    	CacheManager.hardReset(null);
     	SyncManager.reset();
     	sdkManager = SmartSyncSDKManager.getInstance();
-        metadataManager = MetadataManager.getInstance(null);
-        cacheManager = CacheManager.getInstance(null);
         smartStore = sdkManager.getSmartStore();
         globalSmartStore = sdkManager.getGlobalSmartStore();
         syncManager = SyncManager.getInstance();
         globalSyncManager = SyncManager.getInstance(null, null, globalSmartStore);
         restClient = initRestClient();
-        metadataManager.setRestClient(restClient);
         syncManager.setRestClient(restClient);
         SmartSyncLogger.setLogLevel(SalesforceLogger.Level.DEBUG);
     }
@@ -134,8 +127,6 @@ abstract public class ManagerTestCase {
             eq.tearDown();
             eq = null;
         }
-    	MetadataManager.reset(null);
-    	CacheManager.hardReset(null);
     }
 
     private RestClient initRestClient() throws Exception {

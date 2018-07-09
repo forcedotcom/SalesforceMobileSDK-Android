@@ -951,7 +951,6 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
             }
         }
         checkServer(accountIdToFieldsExpectedOnServer, Constants.ACCOUNT);
-
         Map<String, Map<String, Object>> contactIdToFieldsExpectedOnServer = new HashMap<>();
         for (String id : accountIds) {
             Map<String, Map<String, Object>> contactIdToFields = accountIdContactIdToFields.get(id);
@@ -968,5 +967,4 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         }
         checkServer(contactIdToFieldsExpectedOnServer, Constants.CONTACT);
     }
-
 }

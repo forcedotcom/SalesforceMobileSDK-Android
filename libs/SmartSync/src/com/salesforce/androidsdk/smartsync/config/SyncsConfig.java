@@ -121,13 +121,10 @@ public class SyncsConfig {
             SmartSyncLogger.d(TAG, "No syncs config available");
             return;
         }
-
         SyncManager syncManager = SyncManager.getInstance(null, null, store);
-
         for (int i = 0; i< syncConfigs.length(); i++) {
             try {
                 JSONObject syncConfig = syncConfigs.getJSONObject(i);
-
                 String syncName = syncConfig.getString(SYNC_NAME);
 
                 // Leaving sync alone if it already exists
@@ -135,15 +132,11 @@ public class SyncsConfig {
                     SmartSyncLogger.d(TAG, "Sync already exists:" + syncName + " - skipping");
                     continue;
                 }
-
                 SyncState.Type syncType = SyncState.Type.valueOf(syncConfig.getString(SYNC_TYPE));
                 SyncOptions options = SyncOptions.fromJSON(syncConfig.getJSONObject(OPTIONS));
                 String soupName = syncConfig.getString(SOUP_NAME);
-
                 SmartSyncLogger.d(TAG, "Creating sync:" + syncName);
-
                 switch (syncType) {
-
                     case syncDown:
                         syncManager.createSyncDown(SyncDownTarget.fromJSON(syncConfig.getJSONObject(TARGET)), options, soupName, syncName);
                         break;
@@ -151,13 +144,9 @@ public class SyncsConfig {
                         syncManager.createSyncUp(SyncUpTarget.fromJSON(syncConfig.getJSONObject(TARGET)), options, soupName, syncName);
                         break;
                 }
-
-
             } catch (JSONException e) {
                 SmartSyncLogger.e(TAG, "Unhandled exception parsing json", e);
             }
         }
-
-
     }
 }

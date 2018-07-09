@@ -424,7 +424,6 @@ public class SyncState {
     	FAILED
     }
 
-
     /**
      * Enum for merge modes
      */
