@@ -52,7 +52,7 @@ public class TestSyncUpTarget extends SyncUpTarget {
     public enum SyncBehavior {
         SOFT_FAIL_ON_SYNC, // doesn't update server but doesn't throw exception, so sync should not end up in failed state
         HARD_FAIL_ON_SYNC, // doesn't update server and throw exception, so sync should end up in failed state
-        NO_FAIL;
+        NO_FAIL
     }
 
     public TestSyncUpTarget(JSONObject target) throws JSONException {
@@ -119,17 +119,13 @@ public class TestSyncUpTarget extends SyncUpTarget {
         }
     }
 
-    //
-    // Test support
-    //
-
     public static void setActionCollector(ActionCollector collector) {
         actionCollector = collector;
     }
 
     public static class ActionCollector {
-        public List<String> createdRecordIds = new ArrayList<String>();
-        public List<String> updatedRecordIds = new ArrayList<String>();
-        public List<String> deletedRecordIds = new ArrayList<String>();
+        public List<String> createdRecordIds = new ArrayList<>();
+        public List<String> updatedRecordIds = new ArrayList<>();
+        public List<String> deletedRecordIds = new ArrayList<>();
     }
 }

@@ -393,6 +393,9 @@ public class UserAccount {
         final File file = getProfilePhotoFile();
         final Uri srcUri = Uri.parse(photoUrl);
         final Uri destUri = Uri.fromFile(file);
+        if (srcUri == null || destUri == null) {
+        	return;
+		}
         final DownloadManager.Request downloadReq = new DownloadManager.Request(srcUri);
         downloadReq.setDestinationUri(destUri);
         downloadReq.addRequestHeader(AUTHORIZATION, BEARER + authToken);

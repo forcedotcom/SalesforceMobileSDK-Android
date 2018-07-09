@@ -60,7 +60,6 @@ public class SmartSyncUpgradeManager extends SmartStoreUpgradeManager {
         upgradeSObject();
     }
 
-
     /**
      * Upgrades smart sync data from existing client version to the current version.
      */

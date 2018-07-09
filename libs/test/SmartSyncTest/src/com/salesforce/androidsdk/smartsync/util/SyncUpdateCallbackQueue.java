@@ -42,7 +42,7 @@ public class SyncUpdateCallbackQueue implements SyncUpdateCallback {
 	private BlockingQueue<SyncState> syncs; 
 	
 	public SyncUpdateCallbackQueue() {
-		syncs = new ArrayBlockingQueue<SyncState>(10);
+		syncs = new ArrayBlockingQueue<>(10);
 	}
 	
 	public void onUpdate(SyncState sync) {
