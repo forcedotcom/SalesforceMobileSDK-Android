@@ -390,6 +390,9 @@ public class UserAccount {
      * Fetches this user's profile photo from the server and stores it in the cache.
      */
     public void downloadProfilePhoto() {
+        if (photoUrl == null) {
+            return;
+        }
         final File file = getProfilePhotoFile();
         final Uri srcUri = Uri.parse(photoUrl);
         final Uri destUri = Uri.fromFile(file);
