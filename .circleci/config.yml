@@ -132,6 +132,10 @@ aliases:
     name: Codecov
     command: bash <(curl -s https://codecov.io/bash)
     when: always
+    
+  - &attach_workspace
+    attach_workspace:
+      at: ~/SalesforceMobileSDK-Android
 
 defaults: &defaults
   working_directory: ~/SalesforceMobileSDK-Android
@@ -145,9 +149,6 @@ defaults: &defaults
     - ANDROID_NDK: '/opt/ndk/android-ndk-r10e'
     - BUILD_THREADS: 2
 
-  attach_workspace: &attach_workspace
-    attach_workspace:
-      at: ~/SalesforceMobileSDK-Android
 
 #########################
 #                       #
@@ -172,12 +173,10 @@ jobs:
       - save_cache: *save-ruby-cache
       - run: *run-danger
       - persist_to_workspace:
-          # Must be an absolute path, or relative path from working_directory
           root: .
-          # Must be relative path from root
           paths:
             - ./**
-
+  
   test-SalesforceAnalytics:
     <<: *defaults
     environment:
@@ -325,95 +324,12 @@ jobs:
       - run: *run-danger
       - run: *codecov
 
+
 ##########################
 #                        #
 #      Nightly Jobs      #
 #                        #
 ##########################
-
-  nightly-test:
-    <<: *defaults
-    steps:
-      - checkout
-      - restore_cache: *restore-gradle-cache
-      - restore_cache: *restore-node-cache
-      - run: *setup-env
-      - save_cache: *save-node-cache
-      - save_cache: *save-ruby-cache
-      - run: *launch-emulator
-      - run: *android-lint
-      - run: *wait-for-emulator
-      - run: *test-salesforce-analytics
-      - run: *test-salesforce-sdk
-      - run: *test-smart-store
-      - run: *test-rest-explorer
-      - run:
-          name:  Restart Emulator
-          command: source .circleci/avd_helper.sh && restartAVD
-          background: true
-          when: always
-      - run:
-          name: Wait for Emulator
-          command: source .circleci/avd_helper.sh && waitForAVD
-          when: always
-      - run: *test-smart-sync
-      - run:
-          name:  Restart Emulator
-          command: source .circleci/avd_helper.sh && restartAVD
-          background: true
-          when: always
-      - run:
-          name: Wait for Emulator
-          command: source .circleci/avd_helper.sh && waitForAVD
-          when: always
-      - run: *test-salesforce-hybrid
-      - run:
-          name:  Restart Emulator
-          command: source .circleci/avd_helper.sh && restartAVD
-          background: true
-          when: always
-      - run:
-          name: Wait for Emulator
-          command: source .circleci/avd_helper.sh && waitForAVD
-          when: always
-      - run: *test-salesforce-react
-      - save_cache: *save-gradle-cache
-      - store_artifacts:
-          path: libs/SalesforceAnalytics/build/reports/
-          destination: SalesforceAnalytics
-      - store_test_results:
-          path: libs/SalesforceAnalytics/build/outputs/androidTest-results/
-      - store_artifacts:
-          path: libs/SalesforceSDK/build/reports/
-          destination: SalesforceSDK
-      - store_test_results:
-          path: libs/SalesforceSDK/build/outputs/androidTest-results/
-      - store_artifacts:
-          path: libs/SmartStore/build/reports/
-          destination: SmartStore
-      - store_test_results:
-          path: libs/SmartStore/build/outputs/androidTest-results/
-      - store_artifacts:
-          path: libs/SmartSync/build/reports/
-          destination: SmartSync
-      - store_test_results:
-          path: libs/SmartSync/build/outputs/androidTest-results/
-      - store_artifacts:
-          path: libs/SalesforceHybrid/build/reports/
-          destination: SalesforceHybrid
-      - store_test_results:
-          path: libs/SalesforceHybrid/build/outputs/androidTest-results/
-      - store_artifacts:
-          path: native/NativeSampleApps/RestExplorer/build/reports/
-          destination: RestExplorer
-      - store_test_results:
-          path: native/NativeSampleApps/RestExplorer/build/outputs/androidTest-results/
-      - store_artifacts:
-          path: libs/SalesforceReact/build/reports/
-          destination: SalesforceReact
-      - store_test_results:
-          path: libs/SalesforceReact/build/outputs/androidTest-results/
-      - run: *codecov
 
   generate-artifacts:
     <<: *defaults
@@ -480,6 +396,7 @@ jobs:
           destination: hybrid-apps
       - save_cache: *save-gradle-cache
 
+
 #####################
 #                   #
 #     Workflows     #
@@ -515,15 +432,43 @@ workflows:
             - setup
 
  # Cron are on a timezone 8 hours ahead of PST
- # Nightly run is set for midnight Monday - Friday
+ # Nightly run is set for ~10PM Monday - Friday
   nightly-test:
      triggers:
        - schedule:
-           cron: "00 8 * * 2,3,4,5,6"
+           cron: "00 6 * * 2,3,4,5,6"
            filters:
              branches:
                only:
                  - dev
      jobs:
-        - nightly-test
         - generate-artifacts
+        - setup
+        - test-SalesforceAnalytics:
+            context: nightly-test
+            requires:
+                - setup
+        - test-SalesforceSDK:
+            context: nightly-test
+            requires:
+                - setup
+        - test-SmartStore:
+            context: nightly-test
+            requires:
+                - setup
+        - test-SmartSync:
+            context: nightly-test
+            requires:
+                - setup
+        - test-SalesforceHybrid:
+            context: nightly-test
+            requires:
+                - setup
+        - test-RestExplorer:
+            context: nightly-test
+            requires:
+                - setup
+        - test-SalesforceReact:
+            context: nightly-test
+            requires:
+                - setup

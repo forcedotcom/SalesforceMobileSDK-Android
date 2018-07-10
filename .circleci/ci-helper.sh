@@ -19,7 +19,7 @@ function envSetup {
 }
 
 function printTestsToRun {
-    if [[ ${CIRCLE_JOB} == *"nightly-test"* ]]; then
+    if [ -n "$NIGHTLY_TEST" ]; then
         echo -e "\n\nNightly -> Run everything."
     elif [ -n "$CIRCLE_PULL_REQUEST" ]; then
         LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
@@ -35,7 +35,7 @@ function printTestsToRun {
 }
 
 function startAVD {
-    if [[ ${CIRCLE_JOB} == *"nightly-test"* ]] || [ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
+    if ([ -n "$NIGHTLY_TEST" ] || ([ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]])); then
         export LD_LIBRARY_PATH=${ANDROID_HOME}/emulator/lib64:${ANDROID_HOME}/emulator/lib64/qt/lib
         echo "y" | sdkmanager "system-images;android-22;default;armeabi-v7a"
         echo "no" | avdmanager create avd -n test22 -k "system-images;android-22;default;armeabi-v7a"
@@ -53,7 +53,7 @@ function restartAVD {
 function waitForAVD {
     set +e
 
-    if [[ ${CIRCLE_JOB} == *"nightly-test"* ]] || [ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
+    if ([ -n "$NIGHTLY_TEST" ] || ([ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]])); then
         local bootanim=""
         export PATH=$(dirname $(dirname $(which android)))/platform-tools:$PATH
         until [[ "$bootanim" =~ "stopped" ]]; do
@@ -71,7 +71,7 @@ function waitForAVD {
 }
 
 function runTests {
-    if [ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
+    if ([ -n "$NIGHTLY_TEST" ] || ([ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]])); then
         if [[ "${CURRENT_LIB}" == "RestExplorer" ]]; then
             ./gradlew :native:NativeSampleApps:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --profile --max-workers 2 --stacktrace
         else
