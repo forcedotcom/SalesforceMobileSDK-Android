@@ -279,7 +279,7 @@ public class SmartStoreInspectorActivity extends Activity implements AdapterView
 			return;
 		}
 
-		if (names.size() > 10) {
+		if (names.size() > 100) {
 			queryText.setText(SOUPS_QUERY);
 		} else {
 			StringBuilder sb = new StringBuilder();
