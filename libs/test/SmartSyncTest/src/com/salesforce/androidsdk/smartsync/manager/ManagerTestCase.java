@@ -206,7 +206,7 @@ abstract public class ManagerTestCase {
 
             // Request.
             String name = createRecordName(objectType);
-            Map<String, Object> fields = new HashMap<String, Object>();
+            Map<String, Object> fields = new HashMap<>();
 
             // Add additional fields if any
             if (additionalFields != null) {
@@ -232,7 +232,6 @@ abstract public class ManagerTestCase {
                 default:
                     break;
             }
-
             listFields.add(fields);
         }
         return listFields;
@@ -254,7 +253,6 @@ abstract public class ManagerTestCase {
     /**
      * @return record name of the form SyncManagerTest<random number left-padded to be 8 digits long>
      */
-    @SuppressWarnings("resource")
     protected String createRecordName(String objectType) {
         return String.format(Locale.US, "ManagerTest_%s_%d", objectType, System.nanoTime());
     }
