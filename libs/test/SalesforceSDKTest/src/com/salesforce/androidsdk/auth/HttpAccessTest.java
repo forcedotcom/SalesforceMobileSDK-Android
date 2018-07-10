@@ -87,7 +87,7 @@ public class HttpAccessTest {
 	 * @throws URISyntaxException 
 	 */
     @Test
-	public void testDoGet() throws IOException, URISyntaxException {
+	public void testDoGet() throws IOException {
 		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUrl).headers(headers).get().build()).execute();
 		checkResponse(response, HttpURLConnection.HTTP_OK, "sobjects", "identity", "recent", "search");
 	}
@@ -98,7 +98,7 @@ public class HttpAccessTest {
 	 * @throws URISyntaxException 
 	 */
     @Test
-	public void testDoHead() throws IOException, URISyntaxException {
+	public void testDoHead() throws IOException {
 		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUrl).headers(headers).head().build()).execute();
         Assert.assertEquals("200 response expected", HttpURLConnection.HTTP_OK, response.code());
 	}

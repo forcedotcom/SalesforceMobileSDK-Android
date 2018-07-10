@@ -48,22 +48,20 @@ public class ReactTestActivity extends SalesforceReactActivity {
     static String loginUrl = "https://test.salesforce.com";
     static String orgId = "00DS0000000HDptMAG";
     static String userId = "005S0000003yaERIAY";
+    static String photoUrl = "https://sdk--c.cs1.content.force.com/profilephoto/005/F";
 
     @Override
     protected ClientManager buildClientManager() {
         final ClientManager clientManager = super.buildClientManager();
         final ClientManager.LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
-        clientManager.createNewAccount(accountName,
-                username, refreshToken,
-                authToken, instanceUrl,
-                loginUrl, identityUrl,
-                loginOptions.getOauthClientId(), orgId,
-                userId, null, null, null, null, null, null, null, null, null);
+        clientManager.createNewAccount(accountName, username, refreshToken, authToken, instanceUrl,
+                loginUrl, identityUrl, loginOptions.getOauthClientId(), orgId, userId,
+                null, null, null, null, null,
+                null, photoUrl, null, null);
         return clientManager;
     }
 
     protected ReactActivityDelegate createReactActivityDelegate() {
         return new ReactActivityTestDelegate(this, null);
     }
-
 }

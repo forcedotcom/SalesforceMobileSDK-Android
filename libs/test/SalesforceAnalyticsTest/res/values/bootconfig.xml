@@ -18,4 +18,5 @@
     <string name="org_id">00DS0000000HDptMAG</string>
     <string name="user_id">005S0000003yaERIAY</string>
     <string name="username">sdktest@cs1.com</string>
+    <string name="photo_url">https://sdk--c.cs1.content.force.com/profilephoto/005/F</string>
 </resources>
