@@ -21,7 +21,4 @@
     <string name="sf__inspector_no_rows_returned">No rows returned</string>
     <string name="sf__inspector_no_soups_found">No soups found</string>
 
-    <string name="sf__inspector_soups_query">select soupName from soup_names</string>
-    <string name="sf__inspector_indices_query">select soupName, path, columnType from soup_index_map</string>
-
 </resources>

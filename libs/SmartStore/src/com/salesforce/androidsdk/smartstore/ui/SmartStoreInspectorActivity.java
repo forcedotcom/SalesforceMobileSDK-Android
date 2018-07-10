@@ -96,6 +96,10 @@ public class SmartStoreInspectorActivity extends Activity implements AdapterView
 	private String lastAlertMessage;
 	private JSONArray lastResults;
 
+	// Default queries
+	private String SOUPS_QUERY = String.format("select %s from %s", SmartStore.SOUP_NAME_COL, SmartStore.SOUP_ATTRS_TABLE);
+	private String INDICES_QUERY = String.format("select %s, %s, %s from %s", SmartStore.SOUP_NAME_COL, SmartStore.PATH_COL, SmartStore.COLUMN_TYPE_COL, SmartStore.SOUP_INDEX_MAP_TABLE);
+
 	/**
 	 * Create intent to bring up inspector
 	 * @param parentActivity
@@ -276,7 +280,7 @@ public class SmartStoreInspectorActivity extends Activity implements AdapterView
 		}
 
 		if (names.size() > 10) {
-			queryText.setText(getString(R.string.sf__inspector_soups_query));
+			queryText.setText(SOUPS_QUERY);
 		} else {
 			StringBuilder sb = new StringBuilder();
 			boolean first = true;
@@ -301,8 +305,7 @@ public class SmartStoreInspectorActivity extends Activity implements AdapterView
 	 * @param v
 	 */
 	public void onIndicesClick(View v) {
-		queryText
-				.setText(getString(R.string.sf__inspector_indices_query));
+		queryText.setText(INDICES_QUERY);
 		runQuery();
 	}
 

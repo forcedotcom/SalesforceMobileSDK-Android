@@ -74,22 +74,22 @@ public class SmartStore  {
     protected static final String SOUP_NAMES_TABLE = "soup_names";
 
 	// Table to keep track of soup names and attributes.
-	protected static final String SOUP_ATTRS_TABLE = "soup_attrs";
+	public static final String SOUP_ATTRS_TABLE = "soup_attrs";
 
 	// Fts table suffix
 	public static final String FTS_SUFFIX = "_fts";
 
 	// Table to keep track of soup's index specs
-    protected static final String SOUP_INDEX_MAP_TABLE = "soup_index_map";
+    public static final String SOUP_INDEX_MAP_TABLE = "soup_index_map";
 
     // Table to keep track of status of long operations in flight
     protected static final String LONG_OPERATIONS_STATUS_TABLE = "long_operations_status";
 
     // Columns of the soup index map table
-    protected static final String SOUP_NAME_COL = "soupName";
-    protected static final String PATH_COL = "path";
+    public static final String SOUP_NAME_COL = "soupName";
+    public static final String PATH_COL = "path";
     protected static final String COLUMN_NAME_COL = "columnName";
-    protected static final String COLUMN_TYPE_COL = "columnType";
+    public static final String COLUMN_TYPE_COL = "columnType";
 
     // Columns of a soup table
     protected static final String ID_COL = "id";
