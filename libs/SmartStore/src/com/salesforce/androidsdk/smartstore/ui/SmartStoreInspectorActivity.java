@@ -63,6 +63,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 
 public class SmartStoreInspectorActivity extends Activity implements AdapterView.OnItemSelectedListener {
 
@@ -97,8 +98,8 @@ public class SmartStoreInspectorActivity extends Activity implements AdapterView
 	private JSONArray lastResults;
 
 	// Default queries
-	private String SOUPS_QUERY = String.format("select %s from %s", SmartStore.SOUP_NAME_COL, SmartStore.SOUP_ATTRS_TABLE);
-	private String INDICES_QUERY = String.format("select %s, %s, %s from %s", SmartStore.SOUP_NAME_COL, SmartStore.PATH_COL, SmartStore.COLUMN_TYPE_COL, SmartStore.SOUP_INDEX_MAP_TABLE);
+	private String SOUPS_QUERY = String.format(Locale.US, "select %s from %s", SmartStore.SOUP_NAME_COL, SmartStore.SOUP_ATTRS_TABLE);
+	private String INDICES_QUERY = String.format(Locale.US, "select %s, %s, %s from %s", SmartStore.SOUP_NAME_COL, SmartStore.PATH_COL, SmartStore.COLUMN_TYPE_COL, SmartStore.SOUP_INDEX_MAP_TABLE);
 
 	/**
 	 * Create intent to bring up inspector
