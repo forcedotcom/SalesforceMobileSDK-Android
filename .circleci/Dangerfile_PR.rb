@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 # Warn when there is a big PR
-warn("Big PR, try to keep changes smaller if you can.", sticky: true) if git.lines_of_code > 500
+warn("Big PR, try to keep changes smaller if you can.", sticky: true) if git.lines_of_code > 1000
 
 # Mainly to encourage writing up some reasoning about the PR, rather than
 # just leaving a title

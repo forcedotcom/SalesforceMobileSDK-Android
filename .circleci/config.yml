@@ -149,7 +149,6 @@ defaults: &defaults
     attach_workspace:
       at: ~/SalesforceMobileSDK-Android
 
-
 #########################
 #                       #
 #        PR Jobs        #
@@ -326,7 +325,6 @@ jobs:
       - run: *run-danger
       - run: *codecov
 
-
 ##########################
 #                        #
 #      Nightly Jobs      #
@@ -348,6 +346,16 @@ jobs:
       - run: *test-salesforce-analytics
       - run: *test-salesforce-sdk
       - run: *test-smart-store
+      - run: *test-rest-explorer
+      - run:
+          name:  Restart Emulator
+          command: source .circleci/avd_helper.sh && restartAVD
+          background: true
+          when: always
+      - run:
+          name: Wait for Emulator
+          command: source .circleci/avd_helper.sh && waitForAVD
+          when: always
       - run: *test-smart-sync
       - run:
           name:  Restart Emulator
@@ -359,7 +367,15 @@ jobs:
           command: source .circleci/avd_helper.sh && waitForAVD
           when: always
       - run: *test-salesforce-hybrid
-      - run: *test-rest-explorer
+      - run:
+          name:  Restart Emulator
+          command: source .circleci/avd_helper.sh && restartAVD
+          background: true
+          when: always
+      - run:
+          name: Wait for Emulator
+          command: source .circleci/avd_helper.sh && waitForAVD
+          when: always
       - run: *test-salesforce-react
       - save_cache: *save-gradle-cache
       - store_artifacts:
@@ -463,7 +479,6 @@ jobs:
           path: hybrid/HybridSampleApps/SmartSyncExplorerHybrid/build/outputs/apk/
           destination: hybrid-apps
       - save_cache: *save-gradle-cache
-
 
 #####################
 #                   #
