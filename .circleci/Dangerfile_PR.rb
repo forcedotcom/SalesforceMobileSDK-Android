@@ -3,12 +3,6 @@
 # Warn when there is a big PR
 warn("Big PR, try to keep changes smaller if you can.", sticky: true) if git.lines_of_code > 1000
 
-# Mainly to encourage writing up some reasoning about the PR, rather than
-# just leaving a title
-if github.pr_body.length < 3
-  warn("Please provide a summary in the Pull Request description", sticky: true)
-end
-
 # Make it more obvious that a PR is a work in progress and shouldn't be merged yet.
 has_wip_label = github.pr_labels.any? { |label| label.include? "WIP" }
 has_wip_title = github.pr_title.include? "[WIP]"

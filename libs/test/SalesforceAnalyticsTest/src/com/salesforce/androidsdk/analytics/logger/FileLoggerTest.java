@@ -78,11 +78,9 @@ public class FileLoggerTest {
 
     /**
      * Test for setting maximum number of log lines.
-     *
-     * @throws Exception
      */
     @Test
-    public void testSetMaxSize() throws Exception {
+    public void testSetMaxSize() {
         int maxSize = fileLogger.getMaxSize();
         Assert.assertEquals("Max size didn't match expected max size", DEFAULT_MAX_SIZE, maxSize);
         int newMaxSize = 2000;
@@ -108,11 +106,9 @@ public class FileLoggerTest {
 
     /**
      * Test for adding a log line.
-     *
-     * @throws Exception
      */
     @Test
-    public void testAddLogLine() throws Exception {
+    public void testAddLogLine() {
         fileLogger.addLogLine(TEST_LOG_LINE_1);
         int size = fileLogger.getSize();
         Assert.assertEquals("Log file should have 1 entry", 1, size);
@@ -120,11 +116,9 @@ public class FileLoggerTest {
 
     /**
      * Test for adding a list of log lines.
-     *
-     * @throws Exception
      */
     @Test
-    public void testAddListOfLogLines() throws Exception {
+    public void testAddListOfLogLines() {
         final List<String> logLines = new ArrayList<>();
         logLines.add(TEST_LOG_LINE_1);
         logLines.add(TEST_LOG_LINE_2);
@@ -136,11 +130,9 @@ public class FileLoggerTest {
 
     /**
      * Test for adding an array of log lines.
-     *
-     * @throws Exception
      */
     @Test
-    public void testAddArrayOfLogLines() throws Exception {
+    public void testAddArrayOfLogLines() {
         final String[] logLines = new String[] {TEST_LOG_LINE_1, TEST_LOG_LINE_2, TEST_LOG_LINE_3};
         fileLogger.addLogLines(logLines);
         int size = fileLogger.getSize();
@@ -149,11 +141,9 @@ public class FileLoggerTest {
 
     /**
      * Test for removing a log line in FIFO.
-     *
-     * @throws Exception
      */
     @Test
-    public void testRemoveLogLine() throws Exception {
+    public void testRemoveLogLine() {
         fileLogger.addLogLine(TEST_LOG_LINE_1);
         int size = fileLogger.getSize();
         Assert.assertEquals("Log file should have 1 entry", 1, size);
@@ -164,11 +154,9 @@ public class FileLoggerTest {
 
     /**
      * Test for removing a specified number of log lines in FIFO.
-     *
-     * @throws Exception
      */
     @Test
-    public void testRemoveNumLogLines() throws Exception {
+    public void testRemoveNumLogLines() {
         final String[] logLines = new String[] {TEST_LOG_LINE_1, TEST_LOG_LINE_2, TEST_LOG_LINE_3};
         fileLogger.addLogLines(logLines);
         int size = fileLogger.getSize();
@@ -180,11 +168,9 @@ public class FileLoggerTest {
 
     /**
      * Test for the order of removal of log lines.
-     *
-     * @throws Exception
      */
     @Test
-    public void testOrderOfRemoval() throws Exception {
+    public void testOrderOfRemoval() {
         final String[] logLines = new String[] {TEST_LOG_LINE_1, TEST_LOG_LINE_2, TEST_LOG_LINE_3};
         fileLogger.addLogLines(logLines);
         int size = fileLogger.getSize();
@@ -198,11 +184,9 @@ public class FileLoggerTest {
 
     /**
      * Test for reading a log line in FIFO.
-     *
-     * @throws Exception
      */
     @Test
-    public void testReadLogLine() throws Exception {
+    public void testReadLogLine() {
         fileLogger.addLogLine(TEST_LOG_LINE_1);
         int size = fileLogger.getSize();
         Assert.assertEquals("Log file should have 1 entry", 1, size);
@@ -212,11 +196,9 @@ public class FileLoggerTest {
 
     /**
      * Test for reading and removing a specified number of log lines as a list in FIFO.
-     *
-     * @throws Exception
      */
     @Test
-    public void testReadAndRemoveLogLinesAsList() throws Exception {
+    public void testReadAndRemoveLogLinesAsList() {
         final List<String> logLines = new ArrayList<>();
         logLines.add(TEST_LOG_LINE_1);
         logLines.add(TEST_LOG_LINE_2);
@@ -231,11 +213,9 @@ public class FileLoggerTest {
 
     /**
      * Test for reading and removing a specified number of log lines as an array in FIFO.
-     *
-     * @throws Exception
      */
     @Test
-    public void testReadAndRemoveLogLinesAsArray() throws Exception {
+    public void testReadAndRemoveLogLinesAsArray() {
         final String[] logLines = new String[] {TEST_LOG_LINE_1, TEST_LOG_LINE_2, TEST_LOG_LINE_3};
         fileLogger.addLogLines(logLines);
         int size = fileLogger.getSize();
@@ -249,11 +229,9 @@ public class FileLoggerTest {
 
     /**
      * Test for reading and removing all log lines as a list in FIFO.
-     *
-     * @throws Exception
      */
     @Test
-    public void testReadAndRemoveFileAsList() throws Exception {
+    public void testReadAndRemoveFileAsList() {
         final List<String> logLines = new ArrayList<>();
         logLines.add(TEST_LOG_LINE_1);
         logLines.add(TEST_LOG_LINE_2);
@@ -270,11 +248,9 @@ public class FileLoggerTest {
 
     /**
      * Test for reading and removing all log lines as an array in FIFO.
-     *
-     * @throws Exception
      */
     @Test
-    public void testReadAndRemoveFileAsArray() throws Exception {
+    public void testReadAndRemoveFileAsArray() {
         final String[] logLines = new String[] {TEST_LOG_LINE_1, TEST_LOG_LINE_2, TEST_LOG_LINE_3};
         fileLogger.addLogLines(logLines);
         int size = fileLogger.getSize();
@@ -290,11 +266,9 @@ public class FileLoggerTest {
 
     /**
      * Test for the order of reading of log lines.
-     *
-     * @throws Exception
      */
     @Test
-    public void testOrderOfReading() throws Exception {
+    public void testOrderOfReading() {
         final String[] logLines = new String[] {TEST_LOG_LINE_1, TEST_LOG_LINE_2, TEST_LOG_LINE_3};
         fileLogger.addLogLines(logLines);
         int size = fileLogger.getSize();
@@ -305,11 +279,9 @@ public class FileLoggerTest {
 
     /**
      * Test for writing a log line after max size has been reached.
-     *
-     * @throws Exception
      */
     @Test
-    public void testWriteAfterMaxSizeReached() throws Exception {
+    public void testWriteAfterMaxSizeReached() {
         final String[] logLines = new String[] {TEST_LOG_LINE_1, TEST_LOG_LINE_2, TEST_LOG_LINE_3};
         fileLogger.addLogLines(logLines);
         int size = fileLogger.getSize();
@@ -326,11 +298,9 @@ public class FileLoggerTest {
 
     /**
      * Test for writing a log line if max size has been set to 0.
-     *
-     * @throws Exception
      */
     @Test
-    public void testWriteForMaxSizeZero() throws Exception {
+    public void testWriteForMaxSizeZero() {
         final String[] logLines = new String[] {TEST_LOG_LINE_1, TEST_LOG_LINE_2, TEST_LOG_LINE_3};
         fileLogger.addLogLines(logLines);
         int size = fileLogger.getSize();

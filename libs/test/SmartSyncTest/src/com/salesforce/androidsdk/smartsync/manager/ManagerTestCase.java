@@ -110,7 +110,7 @@ abstract public class ManagerTestCase {
         		TestCredentials.LOGIN_URL, TestCredentials.IDENTITY_URL,
         		TestCredentials.CLIENT_ID, TestCredentials.ORG_ID,
         		TestCredentials.USER_ID, null, null, null,
-                null, null, null, null, null, null);
+                null, null, null, TestCredentials.PHOTO_URL, null, null);
     	SyncManager.reset();
     	sdkManager = SmartSyncSDKManager.getInstance();
         smartStore = sdkManager.getSmartStore();
@@ -140,7 +140,7 @@ abstract public class ManagerTestCase {
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null, null,
-                null, null, null, null, null, null, null);
+                null, null, null, null, TestCredentials.PHOTO_URL, null, null);
         return new RestClient(clientInfo, authToken, httpAccess, null);
     }
 
