@@ -292,7 +292,7 @@ public class SmartSyncPlugin extends ForcePlugin {
         syncManager.cleanResyncGhosts(syncId, new SyncManager.CleanResyncGhostsCallback() {
             @Override
             public void onSuccess(int numRecords) {
-                callbackContext.success();
+                callbackContext.success(numRecords);
             }
 
             @Override
