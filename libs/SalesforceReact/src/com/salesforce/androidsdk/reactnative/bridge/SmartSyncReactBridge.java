@@ -220,7 +220,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
             syncManager.cleanResyncGhosts(syncId, new SyncManager.CleanResyncGhostsCallback() {
                 @Override
                 public void onSuccess(int numRecords) {
-                    successCallback.invoke();
+                    successCallback.invoke(numRecords);
                 }
 
                 @Override
