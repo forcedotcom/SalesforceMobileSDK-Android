@@ -589,6 +589,9 @@ public class SyncManagerTest extends SyncManagerTestCase {
         for (String idCreatedByTarget : idsCreatedByTarget) {
             Assert.assertTrue("Unexpected id:" + idCreatedByTarget, idToFieldsCreated.containsKey(idCreatedByTarget));
         }
+
+        // Adding to idToFields so that they get deleted in tearDown.
+        idToFields.putAll(idToFieldsCreated);
     }
 
     /**
@@ -697,6 +700,9 @@ public class SyncManagerTest extends SyncManagerTestCase {
         // Check what got synched up
         List<String> idsCreatedByTarget = collector.createdRecordIds;
         Assert.assertEquals("Wrong number of records created by target", 0, idsCreatedByTarget.size());
+
+        // Adding to idToFields so that they get deleted in tearDown.
+        idToFields.putAll(idToFieldsCreated);
     }
 
     /**
@@ -723,6 +729,9 @@ public class SyncManagerTest extends SyncManagerTestCase {
         // Check what got synched up
         List<String> idsCreatedByTarget = collector.createdRecordIds;
         Assert.assertEquals("Wrong number of records created by target", 0, idsCreatedByTarget.size());
+
+        // Adding to idToFields so that they get deleted in tearDown.
+        idToFields.putAll(idToFieldsCreated);
     }
 
     /**
@@ -1271,6 +1280,9 @@ public class SyncManagerTest extends SyncManagerTestCase {
             idToFieldsExpectedOnServer.put(id, expectedFields);
         }
         checkServer(idToFieldsExpectedOnServer, Constants.ACCOUNT);
+
+        // Adding to idToFields so that they get deleted in tearDown.
+        idToFields.putAll(idToFieldsCreated);
     }
 
     /**
@@ -1319,6 +1331,9 @@ public class SyncManagerTest extends SyncManagerTestCase {
             idToFieldsExpectedOnServer.put(id, expectedFields);
         }
         checkServer(idToFieldsExpectedOnServer, Constants.ACCOUNT);
+
+        // Adding to idToFields so that they get deleted in tearDown.
+        idToFields.putAll(idToFieldsCreated);
     }
 
     /**
