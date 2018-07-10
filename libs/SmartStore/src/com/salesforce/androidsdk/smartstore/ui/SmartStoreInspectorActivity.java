@@ -72,7 +72,7 @@ public class SmartStoreInspectorActivity extends Activity implements AdapterView
     private static final String TAG = "SmartStoreInspectorActivity";
 
 	// Default page size / index
-	private static final int DEFAULT_PAGE_SIZE = 10;
+	private static final int DEFAULT_PAGE_SIZE = 100;
 	private static final int DEFAULT_PAGE_INDEX = 0;
 	public static final String USER_STORE = " (user store)";
 	public static final String GLOBAL_STORE = " (global store)";
