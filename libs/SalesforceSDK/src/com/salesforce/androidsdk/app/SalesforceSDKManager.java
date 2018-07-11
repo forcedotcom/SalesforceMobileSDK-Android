@@ -78,7 +78,6 @@ import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 import com.salesforce.androidsdk.ui.DevInfoActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
-import com.salesforce.androidsdk.ui.SalesforceR;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
@@ -156,7 +155,6 @@ public class SalesforceSDKManager {
     protected Class<? extends Activity> loginActivityClass = LoginActivity.class;
     protected Class<? extends PasscodeActivity> passcodeActivityClass = PasscodeActivity.class;
     protected Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
-    private SalesforceR salesforceR = new SalesforceR();
     private PasscodeManager passcodeManager;
     private LoginServerManager loginServerManager;
     private boolean isTestRun = false;
@@ -377,19 +375,6 @@ public class SalesforceSDKManager {
     		key = keyImpl.getKey(name);
     	}
     	return key;
-    }
-
-    /**
-     * Before Mobile SDK 1.3, SalesforceSDK was packaged as a jar, and each project had to provide
-     * a subclass of SalesforceR.
-     *
-     * Since 1.3, SalesforceSDK is packaged as a library project, so the SalesforceR subclass is no longer needed.
-     * @return SalesforceR object which allows reference to resources living outside the SDK.
-     * @deprecated Will be removed in Mobile SDK 7.0. Resources can be referenced directly in a library project.
-     */
-    @Deprecated
-    public SalesforceR getSalesforceR() {
-        return salesforceR;
     }
 
     /**
@@ -1426,7 +1411,7 @@ public class SalesforceSDKManager {
      * @return true if dev support is enabled
      */
     public boolean isDevSupportEnabled() {
-        return isDevSupportEnabled == null ? isDebugBuild() : isDevSupportEnabled.booleanValue();
+        return isDevSupportEnabled == null ? isDebugBuild() : isDevSupportEnabled;
     }
 
     /**
@@ -1534,7 +1519,7 @@ public class SalesforceSDKManager {
      * @return true if app's BuildConfig.DEBUG is true
      */
     private boolean isDebugBuild() {
-        return ((Boolean) getBuildConfigValue(getAppContext(), "DEBUG")).booleanValue();
+        return ((Boolean) getBuildConfigValue(getAppContext(), "DEBUG"));
     }
 
     /**
@@ -1548,11 +1533,7 @@ public class SalesforceSDKManager {
             Class<?> clazz = Class.forName(context.getPackageName() + ".BuildConfig");
             Field field = clazz.getField(fieldName);
             return field.get(null);
-        } catch (ClassNotFoundException e) {
-            SalesforceSDKLogger.e(TAG, "getBuildConfigValue failed", e);
-        } catch (NoSuchFieldException e) {
-            SalesforceSDKLogger.e(TAG, "getBuildConfigValue failed", e);
-        } catch (IllegalAccessException e) {
+        } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "getBuildConfigValue failed", e);
         }
         return BuildConfig.DEBUG; // we don't want to return a null value; return this value at minimum
