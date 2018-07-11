@@ -63,6 +63,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 
 public class SmartStoreInspectorActivity extends Activity implements AdapterView.OnItemSelectedListener {
 
@@ -72,7 +73,7 @@ public class SmartStoreInspectorActivity extends Activity implements AdapterView
     private static final String TAG = "SmartStoreInspectorActivity";
 
 	// Default page size / index
-	private static final int DEFAULT_PAGE_SIZE = 10;
+	private static final int DEFAULT_PAGE_SIZE = 100;
 	private static final int DEFAULT_PAGE_INDEX = 0;
 	public static final String USER_STORE = " (user store)";
 	public static final String GLOBAL_STORE = " (global store)";
@@ -95,6 +96,10 @@ public class SmartStoreInspectorActivity extends Activity implements AdapterView
 	private String lastAlertTitle;
 	private String lastAlertMessage;
 	private JSONArray lastResults;
+
+	// Default queries
+	private String SOUPS_QUERY = String.format(Locale.US, "select %s from %s", SmartStore.SOUP_NAME_COL, SmartStore.SOUP_ATTRS_TABLE);
+	private String INDICES_QUERY = String.format(Locale.US, "select %s, %s, %s from %s", SmartStore.SOUP_NAME_COL, SmartStore.PATH_COL, SmartStore.COLUMN_TYPE_COL, SmartStore.SOUP_INDEX_MAP_TABLE);
 
 	/**
 	 * Create intent to bring up inspector
@@ -275,8 +280,8 @@ public class SmartStoreInspectorActivity extends Activity implements AdapterView
 			return;
 		}
 
-		if (names.size() > 10) {
-			queryText.setText(getString(R.string.sf__inspector_soups_query));
+		if (names.size() > 100) {
+			queryText.setText(SOUPS_QUERY);
 		} else {
 			StringBuilder sb = new StringBuilder();
 			boolean first = true;
@@ -301,8 +306,7 @@ public class SmartStoreInspectorActivity extends Activity implements AdapterView
 	 * @param v
 	 */
 	public void onIndicesClick(View v) {
-		queryText
-				.setText(getString(R.string.sf__inspector_indices_query));
+		queryText.setText(INDICES_QUERY);
 		runQuery();
 	}
 
