@@ -56,7 +56,6 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.app.SalesforceSDKUpgradeManager;
 import com.salesforce.androidsdk.security.PasscodeManager;
 
-import java.lang.reflect.Method;
 import java.util.List;
 
 /**
@@ -206,8 +205,8 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         // Processing the editor action only on key up to avoid sending events like pass code manager unlock twice.
         if ( actionId ==  EditorInfo.IME_ACTION_GO ||
                 (event != null && event.getAction() == KeyEvent.ACTION_UP)) {
-            String pc = entry.getText().toString();
-            if (pc.length() >= 0 && pc.length() < getMinPasscodeLength()) {
+            final String pc = entry.getText().toString();
+            if (pc.length() < getMinPasscodeLength()) {
                 error.setText(getMinLengthInstructions(getMinPasscodeLength()));
                 return true; // return true indicating we consumed the action.
             }
@@ -236,7 +235,6 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 
         case Check:
             if (passcodeManager.check(this, enteredPasscode)) {
-                performUpgradeStep(enteredPasscode);
                 passcodeManager.unlock();
                 done();
             } else {
@@ -262,42 +260,6 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             return true;
         }
         return false;
-    }
-
-    /*
-     * TODO: Remove this method, along with the one in UpgradeManager, in Mobile SDK 7.0.
-     */
-    private void performUpgradeStep(String passcode) {
-        final String oldKey = passcodeManager.getLegacyEncryptionKey(passcode);
-        final String newKey = SalesforceSDKManager.getEncryptionKey();
-        final SalesforceSDKUpgradeManager upgradeManager = SalesforceSDKUpgradeManager.getInstance();
-        if (upgradeManager.isPasscodeUpgradeRequired()) {
-
-            /*
-             * We need to store the new passcode to ensure the old verification
-             * hash is overwritten with the new verification hash.
-             */
-            passcodeManager.store(this, passcode);
-
-            /*
-             * Checks if SmartStoreUpgradeManager is available and if it is, invokes it using
-             * reflection since it is in a different library. This ensures that the database
-             * upgrade happens if required. If it does not exist, falls back on regular upgrade.
-             */
-            try {
-                final String smartStoreUpgradeClassName = "com.salesforce.androidsdk.smartstore.app.SmartStoreUpgradeManager";
-                final String upgradeMethodName = "upgradeTo6Dot0";
-                final Class<?>[] upgradeMethodArguments = { String.class, String.class };
-                final Object[] upgradeArgumentValues = new Object[] { oldKey, newKey };
-                final Class<?> clazz = Class.forName(smartStoreUpgradeClassName);
-                final Method method = clazz.getMethod(upgradeMethodName, upgradeMethodArguments);
-                final Object newInstance = clazz.newInstance();
-                method.invoke(newInstance, upgradeArgumentValues);
-            } catch (Exception e) {
-                upgradeManager.upgradeTo6Dot0(oldKey, newKey);
-            }
-            upgradeManager.wipeUpgradeSharedPref();
-        }
     }
 
     protected void done() {

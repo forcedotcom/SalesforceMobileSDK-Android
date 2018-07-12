@@ -37,8 +37,6 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.app.SalesforceSDKUpgradeManager;
-import com.salesforce.androidsdk.app.UUIDManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
@@ -57,10 +55,7 @@ public class PasscodeManager  {
 	private static final String VKEY = "vkey";
 	private static final String VSUFFIX = "vsuffix";
 	private static final String VPREFIX = "vprefix";
-	private static final String EKEY = "ekey";
-	private static final String ESUFFIX = "esuffix";
-	private static final String EPREFIX = "eprefix";
-    private static final String TAG = "PasscodeManager";
+	private static final String TAG = "PasscodeManager";
 	
     // Default min passcode length
     public static final int MIN_PASSCODE_LENGTH = 4;
@@ -299,16 +294,7 @@ public class PasscodeManager  {
         String hashedPasscode = sp.getString(KEY_PASSCODE, null);
         hashedPasscode = removeNewLine(hashedPasscode);
         if (hashedPasscode != null) {
-            String verificationHash = hashForVerification(passcode);
-
-            /*
-             * Performs migration from pre-6.0 to 6.0. This uses the old verification
-             * hash to ensure the right passcode was entered by the user.
-             */
-            if (SalesforceSDKUpgradeManager.getInstance().isPasscodeUpgradeRequired()) {
-                verificationHash = legacyHashForVerification(passcode);
-            }
-            return hashedPasscode.equals(verificationHash);
+            return hashedPasscode.equals(hashForVerification(passcode));
         }
 
         /*
@@ -547,35 +533,6 @@ public class PasscodeManager  {
     	return hash(passcode, verificationHashConfig);
     }
 
-    /**
-     * Returns the legacy hash for verification before Mobile SDK 6.0.
-     *
-     * @param passcode Passcode.
-     * @return Legacy hash for verification.
-     * @deprecated Do not use this starting with Mobile SDK 6.0. This will be removed
-     * in Mobile SDK 7.0. This is used to perform upgrade steps from a pre-6.0 SDK app.
-     */
-    @Deprecated
-    public String legacyHashForVerification(String passcode) {
-        return hash(passcode, new HashConfig(UUIDManager.getUuId(VPREFIX),
-                UUIDManager.getUuId(VSUFFIX),
-                UUIDManager.getUuId(VKEY)));
-    }
-
-    /**
-     * Returns the legacy encryption key used before Mobile SDK 6.0.
-     *
-     * @param passcode Passcode.
-     * @return Legacy encryption key.
-     * @deprecated Do not use this starting with Mobile SDK 6.0. This will be removed
-     * in Mobile SDK 7.0. This is used to perform upgrade steps from a pre-6.0 SDK app.
-     */
-    @Deprecated
-    public String getLegacyEncryptionKey(String passcode) {
-        return Encryptor.hash(UUIDManager.getUuId(EPREFIX) + passcode
-                + UUIDManager.getUuId(ESUFFIX), UUIDManager.getUuId(EKEY));
-    }
-
     private String hash(String passcode, HashConfig hashConfig) {
         return Encryptor.hash(hashConfig.prefix + passcode + hashConfig.suffix, hashConfig.key);
     }
@@ -625,10 +582,7 @@ public class PasscodeManager  {
 
 		@Override
 		public boolean accept(File dir, String filename) {
-			if (filename != null && filename.startsWith(PASSCODE_FILE_PREFIX)) {
-				return true;
-			}
-			return false;
+		    return (filename != null && filename.startsWith(PASSCODE_FILE_PREFIX));
 		}
     }
 }

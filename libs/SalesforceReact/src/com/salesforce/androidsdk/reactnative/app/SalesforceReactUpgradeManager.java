@@ -53,5 +53,4 @@ public class SalesforceReactUpgradeManager extends SmartSyncUpgradeManager {
     public void upgrade() {
         super.upgrade();
     }
-
 }
