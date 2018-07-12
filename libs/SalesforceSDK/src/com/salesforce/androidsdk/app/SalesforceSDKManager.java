@@ -149,7 +149,6 @@ public class SalesforceSDKManager {
     private static final int PUSH_UNREGISTER_TIMEOUT_MILLIS = 30000;
 
     protected Context context;
-    protected KeyInterface keyImpl;
     protected LoginOptions loginOptions;
     protected Class<? extends Activity> mainActivityClass;
     protected Class<? extends Activity> loginActivityClass = LoginActivity.class;
@@ -233,29 +232,13 @@ public class SalesforceSDKManager {
      */
     protected SalesforceSDKManager(Context context, Class<? extends Activity> mainActivity,
                                    Class<? extends Activity> loginActivity) {
-        this(context, null, mainActivity, loginActivity);
-    }
-
-    /**
-     * Protected constructor.
-     *
-     * @param context Application context.
-     * @param keyImpl Implementation for KeyInterface.
-     * @param mainActivity Activity that should be launched after the login flow.
-     * @param loginActivity Login activity.
-     * @deprecated Will be removed in Mobile SDK 7.0. Use {@link #SalesforceSDKManager(Context, Class, Class)} instead.
-     */
-    @Deprecated
-    protected SalesforceSDKManager(Context context, KeyInterface keyImpl,
-                                   Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
         this.uid = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
         this.context = context;
-    	this.keyImpl = keyImpl;
-    	this.mainActivityClass = mainActivity;
-    	if (loginActivity != null) {
+        this.mainActivityClass = mainActivity;
+        if (loginActivity != null) {
             this.loginActivityClass = loginActivity;
-    	}
-    	this.features = new ConcurrentSkipListSet<>(String.CASE_INSENSITIVE_ORDER);
+        }
+        this.features = new ConcurrentSkipListSet<>(String.CASE_INSENSITIVE_ORDER);
 
         /*
          * Checks if an analytics app name has already been set by the app.
@@ -310,74 +293,6 @@ public class SalesforceSDKManager {
     }
 
     /**
-     * @deprecated This interface has been deprecated in Mobile SDK 6.1 and will be removed
-     * in Mobile SDK 7.0. This is required to upgrade an app built on an older version of
-     * Mobile SDK to Mobile SDK 6.x.
-     */
-    @Deprecated
-    public interface KeyInterface {
-
-        /**
-         * Defines a single function for retrieving the key
-         * associated with a given name.
-         *
-         * For the given name, this function must return the same key
-         * even when the application is restarted. The value this
-         * function returns must be Base64 encoded.
-         *
-         * {@link Encryptor#isBase64Encoded(String)} can be used to
-         * determine whether the generated key is Base64 encoded.
-         *
-         * {@link Encryptor#hash(String, String)} can be used to
-         * generate a Base64 encoded string.
-         *
-         * For example:
-         * <code>
-         * Encryptor.hash(name + "12s9adfgret=6235inkasd=012", name + "12kl0dsakj4-cuygsdf625wkjasdol8");
-         * </code>
-         *
-         * @param name The name associated with the key.
-         * @return The key used for encrypting salts and keys.
-         * @deprecated This interface has been deprecated in Mobile SDK 6.1 and will be removed
-         * in Mobile SDK 7.0. This is required to upgrade an app built on an older version of
-         * Mobile SDK to Mobile SDK 6.x.
-         */
-        @Deprecated
-        public String getKey(String name);
-    }
-
-    /**
-     * For the given name, this function must return the same key
-     * even when the application is restarted. The value this
-     * function returns must be Base64 encoded.
-     *
-     * {@link Encryptor#isBase64Encoded(String)} can be used to
-     * determine whether the generated key is Base64 encoded.
-     *
-     * {@link Encryptor#hash(String, String)} can be used to
-     * generate a Base64 encoded string.
-     *
-     * For example:
-     * <code>
-     * Encryptor.hash(name + "12s9adfgret=6235inkasd=012", name + "12kl0dsakj4-cuygsdf625wkjasdol8");
-     * </code>
-     *
-     * @param name The name associated with the key.
-     * @return The key used for encrypting salts and keys.
-     * @deprecated This interface has been deprecated in Mobile SDK 6.1 and will be removed
-     * in Mobile SDK 7.0. This is required to upgrade an app built on an older version of
-     * Mobile SDK to Mobile SDK 6.x.
-     */
-    @Deprecated
-    public String getKey(String name) {
-    	String key = null;
-    	if (keyImpl != null) {
-    		key = keyImpl.getKey(name);
-    	}
-    	return key;
-    }
-
-    /**
      * Returns the class of the activity used to perform the login process and create the account.
      *
      * @return the class of the activity used to perform the login process and create the account.
@@ -421,10 +336,10 @@ public class SalesforceSDKManager {
         return loginOptions;
     }
 
-    private static void init(Context context, KeyInterface keyImpl,
-                             Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    private static void init(Context context, Class<? extends Activity> mainActivity,
+                             Class<? extends Activity> loginActivity) {
     	if (INSTANCE == null) {
-    		INSTANCE = new SalesforceSDKManager(context, keyImpl, mainActivity, loginActivity);
+    		INSTANCE = new SalesforceSDKManager(context, mainActivity, loginActivity);
     	}
     	initInternal(context);
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
@@ -460,21 +375,7 @@ public class SalesforceSDKManager {
      * @param mainActivity Activity that should be launched after the login flow.
      */
     public static void initNative(Context context, Class<? extends Activity> mainActivity) {
-        SalesforceSDKManager.init(context, null, mainActivity, LoginActivity.class);
-    }
-
-    /**
-     * Initializes required components. Native apps must call one overload of
-     * this method before using the Salesforce Mobile SDK.
-     *
-     * @param context Application context.
-     * @param keyImpl Implementation of KeyInterface.
-     * @param mainActivity Activity that should be launched after the login flow.
-     * @deprecated Will be removed in Mobile SDK 7.0. Use {@link #initNative(Context, Class)} instead.
-     */
-    @Deprecated
-    public static void initNative(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity) {
-        SalesforceSDKManager.init(context, keyImpl, mainActivity, LoginActivity.class);
+        SalesforceSDKManager.init(context, mainActivity, LoginActivity.class);
     }
 
     /**
@@ -487,23 +388,7 @@ public class SalesforceSDKManager {
      */
     public static void initNative(Context context, Class<? extends Activity> mainActivity,
                                   Class<? extends Activity> loginActivity) {
-        SalesforceSDKManager.init(context, null, mainActivity, loginActivity);
-    }
-
-    /**
-     * Initializes required components. Native apps must call one overload of
-     * this method before using the Salesforce Mobile SDK.
-     *
-     * @param context Application context.
-     * @param keyImpl Implementation of KeyInterface.
-     * @param mainActivity Activity that should be launched after the login flow.
-     * @param loginActivity Login activity.
-     * @deprecated Will be removed in Mobile SDK 7.0. Use {@link #initNative(Context, Class, Class)} instead.
-     */
-    @Deprecated
-    public static void initNative(Context context, KeyInterface keyImpl,
-                                  Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-        SalesforceSDKManager.init(context, keyImpl, mainActivity, loginActivity);
+        SalesforceSDKManager.init(context, mainActivity, loginActivity);
     }
 
     /**
@@ -865,7 +750,6 @@ public class SalesforceSDKManager {
             adminPermsManager = null;
             getPasscodeManager().reset(context);
             passcodeManager = null;
-            UUIDManager.resetUuids();
         }
     }
 
@@ -1492,9 +1376,8 @@ public class SalesforceSDKManager {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent != null
-                    && intent.getAction().equals(SalesforceSDKManager.CLEANUP_INTENT_ACTION)
+                    && SalesforceSDKManager.CLEANUP_INTENT_ACTION.equals(intent.getAction())
                     && !intent.getStringExtra(PROCESS_ID_KEY).equals(PROCESS_ID)) {
-
                 UserAccount userAccount = null;
                 if (intent.hasExtra(USER_ACCOUNT)) {
                     userAccount = new UserAccount(intent.getBundleExtra(USER_ACCOUNT));
@@ -1505,11 +1388,12 @@ public class SalesforceSDKManager {
     }
 
     /**
-     * Action handler in dev support dialog
+     * Action handler in dev support dialog.
      */
     public interface DevActionHandler {
+
         /**
-         * Triggered in case when user select the action
+         * Triggered in case when user select the action.
          */
         void onSelected();
     }
