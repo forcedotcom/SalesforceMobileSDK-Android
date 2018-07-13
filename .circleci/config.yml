@@ -195,6 +195,9 @@ jobs:
           destination: SalesforceAnalytics
       - store_test_results:
           path: libs/SalesforceAnalytics/build/outputs/androidTest-results/
+      - store_artifacts:
+          path: test_logcat.txt
+          destination: Logcat
       - run: *run-danger
       - run: *codecov
 
@@ -209,6 +212,10 @@ jobs:
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
+      - run: 
+          name: Capture Logcat
+          command: adb logcat *:v > test_logcat.txt
+          background: true
       - run: *run-unit-tests
       - save_cache: *save-gradle-cache
       - store_artifacts:
@@ -216,6 +223,9 @@ jobs:
           destination: SalesforceSDK
       - store_test_results:
           path: libs/SalesforceSDK/build/outputs/androidTest-results/
+      - store_artifacts:
+          path: test_logcat.txt
+          destination: Logcat
       - run: *run-danger
       - run: *codecov
 
@@ -230,6 +240,10 @@ jobs:
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
+      - run: 
+          name: Capture Logcat
+          command: adb logcat *:v > test_logcat.txt
+          background: true
       - run: *run-unit-tests
       - save_cache: *save-gradle-cache
       - store_artifacts:
@@ -237,6 +251,9 @@ jobs:
           destination: SmartStore
       - store_test_results:
           path: libs/SmartStore/build/outputs/androidTest-results/
+      - store_artifacts:
+          path: test_logcat.txt
+          destination: Logcat
       - run: *run-danger
       - run: *codecov
 
@@ -251,6 +268,10 @@ jobs:
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
+      - run: 
+          name: Capture Logcat
+          command: adb logcat *:v > test_logcat.txt
+          background: true
       - run: *run-unit-tests
       - save_cache: *save-gradle-cache
       - store_artifacts:
@@ -258,6 +279,9 @@ jobs:
           destination: SmartSync
       - store_test_results:
           path: libs/SmartSync/build/outputs/androidTest-results/
+      - store_artifacts:
+          path: test_logcat.txt
+          destination: Logcat
       - run: *run-danger
       - run: *codecov
 
@@ -272,6 +296,10 @@ jobs:
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
+      - run: 
+          name: Capture Logcat
+          command: adb logcat *:v > test_logcat.txt
+          background: true
       - run: *run-unit-tests
       - save_cache: *save-gradle-cache
       - store_artifacts:
@@ -279,6 +307,9 @@ jobs:
           destination: SalesforceHybrid
       - store_test_results:
           path: libs/SalesforceHybrid/build/outputs/androidTest-results/
+      - store_artifacts:
+          path: test_logcat.txt
+          destination: Logcat
       - run: *run-danger
       - run: *codecov
 
@@ -293,6 +324,10 @@ jobs:
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
+      - run: 
+          name: Capture Logcat
+          command: adb logcat *:v > test_logcat.txt
+          background: true
       - run: *run-unit-tests
       - save_cache: *save-gradle-cache
       - store_artifacts:
@@ -300,6 +335,9 @@ jobs:
           destination: RestExplorer
       - store_test_results:
           path: native/NativeSampleApps/RestExplorer/build/outputs/androidTest-results/
+      - store_artifacts:
+          path: test_logcat.txt
+          destination: Logcat
       - run: *run-danger
       - run: *codecov
 
@@ -314,6 +352,10 @@ jobs:
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
+      - run: 
+          name: Capture Logcat
+          command: adb logcat *:v > test_logcat.txt
+          background: true
       - run: *run-unit-tests
       - save_cache: *save-gradle-cache
       - store_artifacts:
@@ -321,6 +363,9 @@ jobs:
           destination: SalesforceReact
       - store_test_results:
           path: libs/SalesforceReact/build/outputs/androidTest-results/
+      - store_artifacts:
+          path: test_logcat.txt
+          destination: Logcat
       - run: *run-danger
       - run: *codecov
 

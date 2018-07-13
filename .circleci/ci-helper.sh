@@ -71,15 +71,15 @@ function waitForAVD {
 }
 
 function runTests {
-    if ([ -n "$NIGHTLY_TEST" ] || ([ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]])); then
+    #if ([ -n "$NIGHTLY_TEST" ] || ([ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]])); then]
         if [[ "${CURRENT_LIB}" == "RestExplorer" ]]; then
             ./gradlew :native:NativeSampleApps:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --profile --max-workers 2 --stacktrace
         else
             ./gradlew :libs:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --profile --max-workers 2 --stacktrace
         fi
-    else
-        echo "No need to run ${CURRENT_LIB} tests for this PR."
-    fi
+    #else
+    #    echo "No need to run ${CURRENT_LIB} tests for this PR."
+    #fi
 }
 
 function runDanger {
