@@ -16,8 +16,8 @@ apply plugin: 'com.jfrog.bintray'
 dependencies {
   api project(':libs:SmartSync')
   api 'org.apache.cordova:framework:7.0.0'
-  androidTestImplementation 'com.android.support.test:runner:1.0.1'
-  androidTestImplementation 'com.android.support.test:rules:1.0.1'
+  androidTestImplementation 'com.android.support.test:runner:1.0.2'
+  androidTestImplementation 'com.android.support.test:rules:1.0.2'
 }
 
 android {
@@ -62,12 +62,6 @@ android {
     xmlReport true
     abortOnError false
   }
-}
-
-afterEvaluate {
-  // Find all connected Android tests and ensure they log all passed tests. This keeps the Travis
-  // from timing out since executing tests are printed to the console.
-  tasks.matching { it.name ==~ /^connected.*AndroidTest$/ }*.logging*.setLevel(LogLevel.INFO)
 }
 
 install {

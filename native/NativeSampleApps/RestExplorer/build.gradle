@@ -2,13 +2,13 @@ apply plugin: 'com.android.application'
 
 dependencies {
   api project(':libs:SalesforceSDK')
-  androidTestImplementation ('com.android.support.test:runner:1.0.1') {
+  androidTestImplementation ('com.android.support.test:runner:1.0.2') {
     exclude module: 'support-annotations'
   }
-  androidTestImplementation ('com.android.support.test:rules:1.0.1') {
+  androidTestImplementation ('com.android.support.test:rules:1.0.2') {
     exclude module: 'support-annotations'
   }
-  androidTestImplementation ('com.android.support.test.espresso:espresso-core:3.0.1') {
+  androidTestImplementation ('com.android.support.test.espresso:espresso-core:3.0.2') {
     exclude module: 'support-annotations'
   }
 }
@@ -58,10 +58,4 @@ android {
     xmlReport true
     abortOnError false
   }
-}
-
-afterEvaluate {
-  // Find all connected Android tests and ensure they log all passed tests. This keeps the Travis
-  // from timing out since executing tests are printed to the console.
-  tasks.matching { it.name ==~ /^connected.*AndroidTest$/ }*.logging*.setLevel(LogLevel.INFO)
 }
