@@ -8,7 +8,7 @@ dependencies {
   androidTestImplementation ('com.android.support.test:rules:1.0.2') {
     exclude module: 'support-annotations'
   }
-  androidTestImplementation ('com.android.support.test.espresso:espresso-core:3.0.1') {
+  androidTestImplementation ('com.android.support.test.espresso:espresso-core:3.0.2') {
     exclude module: 'support-annotations'
   }
 }
