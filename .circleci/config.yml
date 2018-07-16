@@ -35,7 +35,7 @@ aliases:
 
   - &capture-logcat
     name: Capture Logcat
-    command: adb logcat *:v > test_logcat.txt
+    command: adb logcat *:v > logcat.txt
     background: true
 
   - &gradle-cache-key
@@ -146,7 +146,7 @@ jobs:
       - store_test_results:
           path: libs/SalesforceAnalytics/build/outputs/androidTest-results/
       - store_artifacts:
-          path: test_logcat.txt
+          path: logcat.txt
           destination: SalesforceAnalytics
       - run: *run-danger
       - run: *codecov
@@ -171,7 +171,7 @@ jobs:
       - store_test_results:
           path: libs/SalesforceSDK/build/outputs/androidTest-results/
       - store_artifacts:
-          path: test_logcat.txt
+          path: logcat.txt
           destination: SalesforceSDK
       - run: *run-danger
       - run: *codecov
@@ -196,7 +196,7 @@ jobs:
       - store_test_results:
           path: libs/SmartStore/build/outputs/androidTest-results/
       - store_artifacts:
-          path: test_logcat.txt
+          path: logcat.txt
           destination: SmartStore
       - run: *run-danger
       - run: *codecov
@@ -221,7 +221,7 @@ jobs:
       - store_test_results:
           path: libs/SmartSync/build/outputs/androidTest-results/
       - store_artifacts:
-          path: test_logcat.txt
+          path: logcat.txt
           destination: SmartSync
       - run: *run-danger
       - run: *codecov
@@ -246,7 +246,7 @@ jobs:
       - store_test_results:
           path: libs/SalesforceHybrid/build/outputs/androidTest-results/
       - store_artifacts:
-          path: test_logcat.txt
+          path: logcat.txt
           destination: SalesforceHybrid
       - run: *run-danger
       - run: *codecov
@@ -271,7 +271,7 @@ jobs:
       - store_test_results:
           path: native/NativeSampleApps/RestExplorer/build/outputs/androidTest-results/
       - store_artifacts:
-          path: test_logcat.txt
+          path: logcat.txt
           destination: RestExplorer
       - run: *run-danger
       - run: *codecov
@@ -296,7 +296,7 @@ jobs:
       - store_test_results:
           path: libs/SalesforceReact/build/outputs/androidTest-results/
       - store_artifacts:
-          path: test_logcat.txt
+          path: logcat.txt
           destination: SalesforceReact
       - run: *run-danger
       - run: *codecov
