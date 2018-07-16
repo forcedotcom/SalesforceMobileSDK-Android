@@ -38,7 +38,7 @@ function startAVD {
     if ([ -n "$NIGHTLY_TEST" ] || ([ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]])); then
         export LD_LIBRARY_PATH=${ANDROID_HOME}/emulator/lib64:${ANDROID_HOME}/emulator/lib64/qt/lib
         echo "y" | sdkmanager "system-images;android-22;default;armeabi-v7a"
-        echo "no" | avdmanager create avd -n test22 -k "system-images;android-22;default;armeabi-v7a"
+        echo "no" | avdmanager create avd -n test22 -k "system-images;android-22;default;armeabi-v7a" -c 100M
         emulator64-arm -avd test22 -noaudio -no-window -accel on
     else
         echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."

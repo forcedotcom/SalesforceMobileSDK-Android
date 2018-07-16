@@ -23,71 +23,20 @@ aliases:
     name:  Wait for Emulator to boot
     command: source .circleci/ci-helper.sh && waitForAVD
 
-  - &lib-run-base
+  - &run-unit-tests
     halt_build_on_fail: false
     no_output_timeout: 900
-
-  - &run-unit-tests
-    <<: *lib-run-base
     command: source .circleci/ci-helper.sh && runTests
-
-  - &test-salesforce-analytics
-    <<: *lib-run-base
-    name: Test SalesforceAnalytics
-    command: ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
-    when: always
-
-  - &test-salesforce-sdk
-    <<: *lib-run-base
-    name: Test SalesforceSDK
-    command: ./gradlew :libs:SalesforceSDK:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
-    when: always
-
-  - &test-smart-store
-    <<: *lib-run-base
-    name: Test SmartStore
-    command: ./gradlew :libs:SmartStore:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
-    when: always
-
-  - &test-smart-sync
-    <<: *lib-run-base
-    name: Test SmartSync
-    command: ./gradlew :libs:SmartSync:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
-    when: always
-
-  - &test-salesforce-hybrid
-    <<: *lib-run-base
-    name: Test SalesforceHybrid
-    command: ./gradlew :libs:SalesforceHybrid:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
-    when: always
-
-  - &test-rest-explorer
-    <<: *lib-run-base
-    name: Test RestExplorer
-    command: ./gradlew :native:NativeSampleApps:RestExplorer:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
-    when: always
-
-  - &test-salesforce-react
-    <<: *lib-run-base
-    name: Test SalesforceReact
-    command: ./gradlew :libs:SalesforceReact:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
-    when: always
-
-  - &compile-libraries
-    name: Build Libraries
-    command:  |
-      ./gradlew :libs:SalesforceAnalytics:assemble
-      ./gradlew :libs:SalesforceSDK:assemble
-      ./gradlew :libs:SmartStore:assemble
-      ./gradlew :libs:SmartSync:assemble
-      ./gradlew :libs:SalesforceHybrid:assemble
-      ./gradlew :libs:SalesforceReact:assemble
-    when: always
 
   - &android-lint
     name: Run Android Lint
     command:  ./gradlew lint
     when: always
+
+  - &capture-logcat
+    name: Capture Logcat
+    command: adb logcat *:v > logcat.txt
+    background: true
 
   - &gradle-cache-key
     gradle-cache-v2-{{ checksum "build.gradle" }}-{{
@@ -188,6 +137,7 @@ jobs:
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
+      - run: *capture-logcat
       - run: *run-unit-tests
       - save_cache: *save-gradle-cache
       - store_artifacts:
@@ -195,6 +145,9 @@ jobs:
           destination: SalesforceAnalytics
       - store_test_results:
           path: libs/SalesforceAnalytics/build/outputs/androidTest-results/
+      - store_artifacts:
+          path: logcat.txt
+          destination: SalesforceAnalytics
       - run: *run-danger
       - run: *codecov
 
@@ -209,6 +162,7 @@ jobs:
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
+      - run: *capture-logcat
       - run: *run-unit-tests
       - save_cache: *save-gradle-cache
       - store_artifacts:
@@ -216,6 +170,9 @@ jobs:
           destination: SalesforceSDK
       - store_test_results:
           path: libs/SalesforceSDK/build/outputs/androidTest-results/
+      - store_artifacts:
+          path: logcat.txt
+          destination: SalesforceSDK
       - run: *run-danger
       - run: *codecov
 
@@ -230,6 +187,7 @@ jobs:
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
+      - run: *capture-logcat
       - run: *run-unit-tests
       - save_cache: *save-gradle-cache
       - store_artifacts:
@@ -237,6 +195,9 @@ jobs:
           destination: SmartStore
       - store_test_results:
           path: libs/SmartStore/build/outputs/androidTest-results/
+      - store_artifacts:
+          path: logcat.txt
+          destination: SmartStore
       - run: *run-danger
       - run: *codecov
 
@@ -251,6 +212,7 @@ jobs:
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
+      - run: *capture-logcat
       - run: *run-unit-tests
       - save_cache: *save-gradle-cache
       - store_artifacts:
@@ -258,6 +220,9 @@ jobs:
           destination: SmartSync
       - store_test_results:
           path: libs/SmartSync/build/outputs/androidTest-results/
+      - store_artifacts:
+          path: logcat.txt
+          destination: SmartSync
       - run: *run-danger
       - run: *codecov
 
@@ -272,6 +237,7 @@ jobs:
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
+      - run: *capture-logcat
       - run: *run-unit-tests
       - save_cache: *save-gradle-cache
       - store_artifacts:
@@ -279,6 +245,9 @@ jobs:
           destination: SalesforceHybrid
       - store_test_results:
           path: libs/SalesforceHybrid/build/outputs/androidTest-results/
+      - store_artifacts:
+          path: logcat.txt
+          destination: SalesforceHybrid
       - run: *run-danger
       - run: *codecov
 
@@ -293,6 +262,7 @@ jobs:
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
+      - run: *capture-logcat
       - run: *run-unit-tests
       - save_cache: *save-gradle-cache
       - store_artifacts:
@@ -300,6 +270,9 @@ jobs:
           destination: RestExplorer
       - store_test_results:
           path: native/NativeSampleApps/RestExplorer/build/outputs/androidTest-results/
+      - store_artifacts:
+          path: logcat.txt
+          destination: RestExplorer
       - run: *run-danger
       - run: *codecov
 
@@ -314,6 +287,7 @@ jobs:
       - run: *determine-tests-to-run
       - run: *launch-emulator
       - run: *wait-for-emulator
+      - run: *capture-logcat
       - run: *run-unit-tests
       - save_cache: *save-gradle-cache
       - store_artifacts:
@@ -321,6 +295,9 @@ jobs:
           destination: SalesforceReact
       - store_test_results:
           path: libs/SalesforceReact/build/outputs/androidTest-results/
+      - store_artifacts:
+          path: logcat.txt
+          destination: SalesforceReact
       - run: *run-danger
       - run: *codecov
 
@@ -339,7 +316,16 @@ jobs:
       - restore_cache: *restore-node-cache
       - run: *setup-env
       - save_cache: *save-node-cache
-      - run: *compile-libraries
+      - run: 
+          name: Build Libraries
+          command:  |
+            ./gradlew :libs:SalesforceAnalytics:assemble
+            ./gradlew :libs:SalesforceSDK:assemble
+            ./gradlew :libs:SmartStore:assemble
+            ./gradlew :libs:SmartSync:assemble
+            ./gradlew :libs:SalesforceHybrid:assemble
+            ./gradlew :libs:SalesforceReact:assemble
+          when: always
       - store_artifacts:
           path: libs/SalesforceAnalytics/build/outputs/aar/
           destination: libraries
