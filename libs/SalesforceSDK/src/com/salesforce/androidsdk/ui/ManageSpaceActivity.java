@@ -49,6 +49,7 @@ public class ManageSpaceActivity extends Activity {
 		super.onCreate(savedState);
 		setContentView(R.layout.sf__manage_space);
 		manageSpaceDialog = buildManageSpaceDialog();
+		manageSpaceDialog.setCanceledOnTouchOutside(false);
 		manageSpaceDialog.show();
 	}
 
