@@ -382,8 +382,7 @@ public class UserAccount {
         final File file = getProfilePhotoFile();
         final BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
         bitmapOptions.inPreferredConfig = Bitmap.Config.ARGB_8888;
-        final Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), bitmapOptions);
-        return bitmap;
+        return BitmapFactory.decodeFile(file.getAbsolutePath(), bitmapOptions);
     }
 
     /**

@@ -170,7 +170,6 @@ public class ClientManager {
         final String userId = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_USER_ID));
         final String username = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_USERNAME));
         final String accountName = accountManager.getUserData(acc, AccountManager.KEY_ACCOUNT_NAME);
-        final String clientId = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_CLIENT_ID));
         final String lastName = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_LAST_NAME));
         final String email = SalesforceSDKManager.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_EMAIL));
         final String encFirstName =  accountManager.getUserData(acc, AuthenticatorService.KEY_FIRST_NAME);

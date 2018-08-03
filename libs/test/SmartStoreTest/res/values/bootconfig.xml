@@ -14,7 +14,7 @@
     <string name="instance_url">https://sdk.cs1.my.salesforce.com</string>
     <string name="identity_url">https://test.salesforce.com/id/00DS0000000HDptMAG/005S0000003yaERIAY</string>
     <string name="login_url">https://test.salesforce.com</string>
-    <string name="oauth_refresh_token">5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBS.SiQYYAy5L_9Bw1k.tnR800s_HeMmux.3EaZfITvIBLxou_</string>
+    <string name="oauth_refresh_token">5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBS.SiQYYAy5Kp0EBshb25UvPxRNWFjWejzmlt6Ou9uqXDTjs4</string>
     <string name="org_id">00DS0000000HDptMAG</string>
     <string name="user_id">005S0000003yaERIAY</string>
     <string name="username">sdktest@cs1.com</string>
