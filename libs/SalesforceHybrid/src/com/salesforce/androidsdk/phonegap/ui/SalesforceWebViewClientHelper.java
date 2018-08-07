@@ -30,8 +30,10 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.net.Uri;
+import android.text.TextUtils;
 import android.webkit.WebView;
 
+import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -46,7 +48,6 @@ import java.util.Map;
 
 /**
  * Helper class for SalesforceWebViewClient.
- *
  */
 public class SalesforceWebViewClientHelper {
 
@@ -68,7 +69,7 @@ public class SalesforceWebViewClientHelper {
      */
     public static boolean shouldOverrideUrlLoading(Context ctx,
     		WebView view, String url) {
-    	final String startURL = SalesforceWebViewClientHelper.isLoginRedirect(url);
+    	final String startURL = SalesforceWebViewClientHelper.isLoginRedirect(ctx, url);
         if (startURL != null && ctx instanceof SalesforceDroidGapActivity) {
             ((SalesforceDroidGapActivity) ctx).refresh(startURL);
         	return true;
@@ -119,38 +120,32 @@ public class SalesforceWebViewClientHelper {
     	return cachedAppHomeUrl != null && (new File(cachedAppHomeUrl)).exists();
     }
 
-    /**
-     * Whether the given URL is one of the expected URLs used in the bootstrapping process
-     * of the app.  Used for determining the app's "home page" URL.
-     * @param url The URL to compare against the reserved list.
-     * @return True if this URL is used in the bootstrapping process, false otherwise.
-     */
     private static boolean isReservedUrl(String url) {
-        if (url == null || url.trim().equals(""))
+        if (url == null || url.trim().equals("")) {
             return false;
+        }
         for (String reservedUrlPattern : RESERVED_URL_PATTERNS) {
-            if (url.toLowerCase(Locale.US).contains(reservedUrlPattern.toLowerCase(Locale.US)))
+            if (url.toLowerCase(Locale.US).contains(reservedUrlPattern.toLowerCase(Locale.US))) {
                 return true;
+            }
         }
         return false;
     }
 
-    /**
-     * Login redirect are of the form https://host/?ec=30x&startURL=xyz
-     * @param url
-     * @return null if this is not a login redirect and return the the value for startURL if this is a login redirect
-     */
-    private static String isLoginRedirect(String url) {
-    	final Uri uri = Uri.parse(url);
+    private static String isLoginRedirect(Context ctx, String url) {
+        final Uri uri = Uri.parse(url);
         final Map<String, String> params = UriFragmentParser.parse(uri);
     	final String ec = params.get("ec");
     	int ecInt = (ec != null ? Integer.parseInt(ec) : -1);
     	final String startURL = params.get("startURL");
-        if ((ecInt == HttpURLConnection.HTTP_MOVED_PERM
-    			|| ecInt == HttpURLConnection.HTTP_MOVED_TEMP)
-    			&& startURL != null) {
-    		return startURL;
-    	} else {
+        if (ecInt == HttpURLConnection.HTTP_MOVED_PERM
+    			|| ecInt == HttpURLConnection.HTTP_MOVED_TEMP) {
+            if (!TextUtils.isEmpty(startURL)) {
+                return startURL;
+            } else {
+                return BootConfig.getBootConfig(ctx).getStartPage();
+            }
+        } else {
     		return null;
     	}
     }

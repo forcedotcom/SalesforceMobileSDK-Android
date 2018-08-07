@@ -39,7 +39,6 @@ import com.salesforce.androidsdk.auth.HttpAccess.NoNetworkException;
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.phonegap.app.SalesforceHybridSDKManager;
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
-import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
@@ -385,6 +384,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
             public void onSuccess(RestRequest request, RestResponse response) {
                 SalesforceHybridLogger.i(TAG, "refresh callback - refresh succeeded");
                 runOnUiThread(new Runnable() {
+
                     @Override
                     public void run() {
                         /*
@@ -394,7 +394,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
                         SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
                         setSidCookies();
                         loadVFPingPage();
-                        final String frontDoorUrl = getFrontDoorUrl(url, true);
+                        final String frontDoorUrl = getFrontDoorUrl(url, BootConfig.isAbsoluteUrl(url));
                         loadUrl(frontDoorUrl);
                     }
                 });
@@ -491,6 +491,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
      * @return Front-doored URL.
      */
     public String getFrontDoorUrl(String url, boolean isAbsUrl) {
+
         /*
          * We need to use the absolute URL in some cases and relative URL in some
          * other cases, because of differences between instance URL and community
@@ -498,13 +499,12 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
          * URL to use is in the 'resolveUrl' method in 'ClientInfo'.
          */
         url = (isAbsUrl ? url : client.getClientInfo().resolveUrl(url).toString());
-
-        HttpUrl frontDoorUrl = HttpUrl.parse(client.getClientInfo().getInstanceUrlAsString() + "/secur/frontdoor.jsp?").newBuilder()
+        final HttpUrl frontDoorUrl = HttpUrl.parse(client.getClientInfo().getInstanceUrlAsString()
+                + "/secur/frontdoor.jsp?").newBuilder()
                 .addQueryParameter("sid", client.getAuthToken())
                 .addQueryParameter("retURL", url)
                 .addQueryParameter("display", "touch")
                 .build();
-
         return frontDoorUrl.toString();
     }
 
