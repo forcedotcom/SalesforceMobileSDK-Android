@@ -49,6 +49,7 @@ import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.ui.SalesforceActivityDelegate;
 import com.salesforce.androidsdk.ui.SalesforceActivityInterface;
+import com.salesforce.androidsdk.util.AuthConfigUtil;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
@@ -79,6 +80,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
 
     // Config
     private BootConfig bootconfig;
+    private AuthConfigUtil.MyDomainAuthConfig authConfig;
 
     // Web app loaded?
     private boolean webAppLoaded = false;
@@ -86,6 +88,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
     public SalesforceDroidGapActivity() {
         super();
         delegate = new SalesforceActivityDelegate(this);
+        authConfig = AuthConfigUtil.getMyDomainAuthConfig(SalesforceHybridSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url);
     }
 
     /**
@@ -165,6 +168,15 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
                 SalesforceHybridLogger.i(TAG, "onResume - already logged in/web app already loaded");
             }
         }
+    }
+
+    /**
+     * Returns the auth config associated with the current login server, if it exists.
+     *
+     * @return Auth config.
+     */
+    public AuthConfigUtil.MyDomainAuthConfig getAuthConfig() {
+        return authConfig;
     }
 
     /**

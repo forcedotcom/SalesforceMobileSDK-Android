@@ -35,6 +35,7 @@ import android.webkit.WebView;
 
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
+import com.salesforce.androidsdk.util.AuthConfigUtil;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.UriFragmentParser;
@@ -145,8 +146,31 @@ public class SalesforceWebViewClientHelper {
             } else {
                 return BootConfig.getBootConfig(ctx).getStartPage();
             }
+        } else if (isSamlLoginRedirect(ctx, url)) {
+            return BootConfig.getBootConfig(ctx).getStartPage();
         } else {
     		return null;
     	}
+    }
+
+    private static boolean isSamlLoginRedirect(Context ctx, String url) {
+        if (ctx instanceof SalesforceDroidGapActivity) {
+            final AuthConfigUtil.MyDomainAuthConfig authConfig = ((SalesforceDroidGapActivity) ctx).getAuthConfig();
+            if (authConfig != null) {
+                final List<String> ssoUrls = authConfig.getSsoUrls();
+                if (ssoUrls != null && ssoUrls.size() > 0) {
+                   for (String ssoUrl : ssoUrls) {
+                       int paramsIndex = ssoUrl.indexOf("?");
+                       if (paramsIndex != -1) {
+                           ssoUrl = ssoUrl.substring(0, paramsIndex);
+                       }
+                       if (url.contains(ssoUrl)) {
+                           return true;
+                       }
+                   }
+                }
+            }
+        }
+        return false;
     }
 }
