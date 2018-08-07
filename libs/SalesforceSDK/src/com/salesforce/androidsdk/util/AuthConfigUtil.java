@@ -108,7 +108,7 @@ public class AuthConfigUtil {
                     browserLoginEnabled = mobileSDK.optBoolean(USE_NATIVE_BROWSER_KEY);
                 }
                 final JSONArray samlProviders = authConfig.optJSONArray(SAML_PROVIDERS_KEY);
-                if (samlProviders != null) {
+                if (samlProviders != null && samlProviders.length() > 0) {
                     ssoUrls = new ArrayList<>();
                     for (int i = 0; i < samlProviders.length(); i++) {
                         final JSONObject provider = samlProviders.optJSONObject(i);
