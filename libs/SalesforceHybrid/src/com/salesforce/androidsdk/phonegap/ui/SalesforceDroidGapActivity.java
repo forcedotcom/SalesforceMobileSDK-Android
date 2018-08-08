@@ -26,17 +26,20 @@
  */
 package com.salesforce.androidsdk.phonegap.ui;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.view.KeyEvent;
 import android.view.View;
 import android.webkit.CookieManager;
+import android.webkit.URLUtil;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess.NoNetworkException;
 import com.salesforce.androidsdk.config.BootConfig;
+import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.phonegap.app.SalesforceHybridSDKManager;
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 import com.salesforce.androidsdk.rest.ClientManager;
@@ -88,7 +91,6 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
     public SalesforceDroidGapActivity() {
         super();
         delegate = new SalesforceActivityDelegate(this);
-        authConfig = AuthConfigUtil.getMyDomainAuthConfig(SalesforceHybridSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url);
     }
 
     /**
@@ -135,6 +137,13 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
     @Override
     public void onResume() {
         super.onResume();
+
+        // Fetches auth config if required.
+        try {
+            (new FetchAuthConfigTask()).execute().get();
+        } catch (Exception e) {
+            SalesforceHybridLogger.e(TAG, "Exception occurred while fetching auth config", e);
+        }
         delegate.onResume(false);
         // will call this.onResume(RestClient client) with a null client
     }
@@ -596,6 +605,22 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
             } catch (AccountInfoNotFoundException e) {
                 SalesforceHybridLogger.i(TAG, "restartIfUserSwitched - no user account found");
             }
+        }
+    }
+
+    private class FetchAuthConfigTask extends AsyncTask<Void, Void, Void> {
+
+        @Override
+        protected Void doInBackground(Void... nothings) {
+            final String loginServer = SalesforceHybridSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url.trim();
+            if (loginServer.equals(LoginServerManager.PRODUCTION_LOGIN_URL) ||
+                    loginServer.equals(LoginServerManager.SANDBOX_LOGIN_URL) ||
+                    !URLUtil.isHttpsUrl(loginServer) || HttpUrl.parse(loginServer) == null) {
+                SalesforceSDKManager.getInstance().setBrowserLoginEnabled(false);
+                return null;
+            }
+            authConfig = AuthConfigUtil.getMyDomainAuthConfig(loginServer);
+            return null;
         }
     }
 }
