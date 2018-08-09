@@ -616,7 +616,6 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
             if (loginServer.equals(LoginServerManager.PRODUCTION_LOGIN_URL) ||
                     loginServer.equals(LoginServerManager.SANDBOX_LOGIN_URL) ||
                     !URLUtil.isHttpsUrl(loginServer) || HttpUrl.parse(loginServer) == null) {
-                SalesforceSDKManager.getInstance().setBrowserLoginEnabled(false);
                 return null;
             }
             authConfig = AuthConfigUtil.getMyDomainAuthConfig(loginServer);
