@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# inspired by https://github.com/Originate/guide/blob/master/android/guide/Continuous%20Integration.md
 
 function envSetup {
     sudo apt-get update
@@ -21,69 +20,52 @@ function envSetup {
 function printTestsToRun {
     if [ -n "$NIGHTLY_TEST" ]; then
         echo -e "\n\nNightly -> Run everything."
-    elif [ -n "$CIRCLE_PULL_REQUEST" ]; then
+
+    # Check branch name since PR env vars are not present on manual re-runs.
+    elif [[ $CIRCLE_BRANCH == *"pull"* ]]; then
         LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
         echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
         if [[ ! -z ${LIBS_TO_TEST} ]]; then
             echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
+
+            # Check if this is a test job that should continue
+            if [[ -z ${CURRENT_LIB} ]] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
+                circleci step halt
+            fi
         else
             echo -e "\n\nNothing to Test."
+            circleci step halt
         fi
     else
         echo -e "\n\nNot a PR -> skip tests."
-    fi
-}
-
-function startAVD {
-    if ([ -n "$NIGHTLY_TEST" ] || ([ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]])); then
-        export LD_LIBRARY_PATH=${ANDROID_HOME}/emulator/lib64:${ANDROID_HOME}/emulator/lib64/qt/lib
-        echo "y" | sdkmanager "system-images;android-22;default;armeabi-v7a"
-        echo "no" | avdmanager create avd -n test22 -k "system-images;android-22;default;armeabi-v7a" -c 100M
-        emulator64-arm -avd test22 -noaudio -no-window -accel on
-    else
-        echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."
-    fi
-}
-
-function restartAVD {
-    adb emu kill
-    emulator -avd test22 -noaudio -no-window -accel on -wipe-data
-}
-
-function waitForAVD {
-    set +e
-
-    if ([ -n "$NIGHTLY_TEST" ] || ([ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]])); then
-        local bootanim=""
-        export PATH=$(dirname $(dirname $(which android)))/platform-tools:$PATH
-        until [[ "$bootanim" =~ "stopped" ]]; do
-            sleep 5
-            bootanim=$(adb -e shell getprop init.svc.bootanim 2>&1)
-            echo "emulator status=$bootanim"
-        done
-        sleep 30
-        # unlock the emulator screen
-        adb shell input keyevent 82
-        echo "Device Booted"
-    else
-        echo "No need to start an emulator to test ${CURRENT_LIB} for this PR."
+        circleci step halt
     fi
 }
 
 function runTests {
-    if ([ -n "$NIGHTLY_TEST" ] || ([ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]])); then
-        if [[ "${CURRENT_LIB}" == "RestExplorer" ]]; then
-            ./gradlew :native:NativeSampleApps:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --profile --max-workers 2 --stacktrace
-        else
-            ./gradlew :libs:${CURRENT_LIB}:connectedAndroidTest --continue --no-daemon --profile --max-workers 2 --stacktrace
-        fi
+    if ([ -n "$CIRCLE_PULL_REQUEST" ]); then
+        android_api=27
     else
-        echo "No need to run ${CURRENT_LIB} tests for this PR."
+        # Run API 21 on Mon, 23 on Wed, 25 on Fri
+        android_api=$((19 + $(date +"%u")))
     fi
+
+    [[ $android_api < 23 ]] && device="Nexus6" || device="NexusLowRes"
+    gcloud firebase test android run \
+        --project mobile-apps-firebase-test \
+        --type instrumentation \
+        --app "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk" \
+        --test ${TEST_APK}  \
+        --device model=$device,version=$android_api,locale=en,orientation=portrait  \
+        --environment-variables coverage=true,coverageFile="/sdcard/coverage.ec"  \
+        --directories-to-pull=/sdcard  \
+        --results-dir=${CURRENT_LIB}-${CIRCLE_BUILD_NUM}  \
+        --results-history-name=${CURRENT_LIB}  \
+        --timeout 10m
 }
 
 function runDanger {
-    if [ -n "$CIRCLE_PULL_REQUEST" ] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
+    if [[ $CIRCLE_BRANCH == *"pull"* ]]; then
         if [ -z "${CURRENT_LIB}" ]; then
             DANGER_GITHUB_API_TOKEN="5d42eadf98c58c9c4f60""7fcfc72cee4c7ef1486b" danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
         else
