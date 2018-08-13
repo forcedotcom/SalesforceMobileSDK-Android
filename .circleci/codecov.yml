@@ -6,18 +6,6 @@ coverage:
   round: down
   range: "35...85"
 
-ignore:
-  - "hybrid"
-  - "native"
-  - "test"
-  - "libs/**/src/com/salesforce/androidsdk/**/util/test"
-
-comment:
-  layout: "reach, diff"
-  behavior: default
-  require_changes: true
-
-coverage:
   status:
     project:
       default: false  # disable the default status that measures entire project
@@ -49,3 +37,14 @@ coverage:
         target: auto
         paths: "native/NativeSampleApps/RestExplorer/src/"
         flags: RestExplorer
+
+ignore:
+  - "hybrid"
+  - "native"
+  - "test"
+  - "libs/**/src/com/salesforce/androidsdk/**/util/test"
+
+comment:
+  layout: "reach, diff"
+  behavior: default
+  require_changes: true
