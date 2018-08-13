@@ -130,8 +130,8 @@ jobs:
             ./gradlew native:NativeSampleApps:RestExplorer:assembleAndroidTest
             ./gradlew :native:NativeSampleApps:RestExplorer:assembleDebug
       - run: *run-danger
-      - run: *save-node-cache
-      - run: *save-ruby-cache
+      - save_cache: *save-node-cache
+      - save_cache: *save-ruby-cache
       - persist_to_workspace:
           root: .
           paths:
