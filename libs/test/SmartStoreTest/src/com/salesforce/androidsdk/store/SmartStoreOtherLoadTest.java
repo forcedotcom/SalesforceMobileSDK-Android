@@ -71,5 +71,4 @@ public class SmartStoreOtherLoadTest extends SmartStoreLoadTestCase {
         alterSoup("Adding one index / dropping one index / with re-indexing", true, new IndexSpec[] {new IndexSpec("k_0", indexType), new IndexSpec("k_2", indexType)});
         alterSoup("Dropping one index / with re-indexing", true, new IndexSpec[] {new IndexSpec("k_0", indexType)});
     }
-
 }

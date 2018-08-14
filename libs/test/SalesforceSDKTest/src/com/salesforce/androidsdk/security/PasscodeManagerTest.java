@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.security;
 
-
 import android.content.Context;
 import android.os.Looper;
 import android.support.test.InstrumentationRegistry;
@@ -35,8 +34,7 @@ import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.security.PasscodeManager.HashConfig;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

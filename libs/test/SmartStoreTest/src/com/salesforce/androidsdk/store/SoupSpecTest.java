@@ -31,10 +31,9 @@ import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 
-import junit.framework.Assert;
-
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 

@@ -43,8 +43,7 @@ import com.salesforce.androidsdk.auth.idp.IDPRequestHandler;
 import com.salesforce.androidsdk.auth.idp.SPConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

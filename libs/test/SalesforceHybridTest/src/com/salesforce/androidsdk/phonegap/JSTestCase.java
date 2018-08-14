@@ -38,9 +38,8 @@ import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
-import junit.framework.Assert;
-
 import org.apache.cordova.CordovaWebView;
+import org.junit.Assert;
 
 import java.util.HashMap;
 import java.util.Map;

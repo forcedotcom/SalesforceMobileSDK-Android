@@ -51,10 +51,9 @@ import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
-import junit.framework.Assert;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.junit.Assert;
 
 import java.net.HttpURLConnection;
 import java.net.URI;

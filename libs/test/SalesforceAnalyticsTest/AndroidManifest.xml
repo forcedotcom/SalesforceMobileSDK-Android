@@ -4,7 +4,7 @@
 	package="com.salesforce.androidsdk.analytics.tests">
 
     <uses-sdk android:minSdkVersion="21"
-        android:targetSdkVersion="27" />
+        android:targetSdkVersion="28" />
 
 	<application />
 </manifest>

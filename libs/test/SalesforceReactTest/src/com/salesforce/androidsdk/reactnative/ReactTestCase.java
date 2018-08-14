@@ -34,9 +34,8 @@ import android.support.test.runner.AndroidJUnit4;
 import com.salesforce.androidsdk.reactnative.util.ReactTestActivity;
 import com.salesforce.androidsdk.reactnative.util.TestResult;
 
-import junit.framework.Assert;
-
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
