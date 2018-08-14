@@ -24,14 +24,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
 package com.salesforce.androidsdk.util.test;
-
-import junit.framework.Assert;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.Assert;
 
 public class JSONTestHelper {
 
@@ -49,6 +47,7 @@ public class JSONTestHelper {
 	}
 
 	private static boolean checkSameJSON(Object expected, Object actual) throws JSONException {
+
 		// Only one null
 		if (actual != expected && (expected == null || actual == null)) {
 			return false;
@@ -63,12 +62,15 @@ public class JSONTestHelper {
 		else if (expected instanceof JSONArray && actual instanceof JSONArray) {
 			return checkSameJSONArray((JSONArray) expected, (JSONArray) actual);
 		}
+
 		// Both maps
 		else if (expected instanceof JSONObject && actual instanceof JSONObject) {
 			return checkSameJSONObject((JSONObject) expected, (JSONObject) actual);
 		}
+
 		// Atomic types
 		else {
+
 			// Comparing string representations, to avoid things like new Long(n) != new Integer(n) 
 			return expected.toString().equals(actual.toString());
 		}
@@ -88,6 +90,7 @@ public class JSONTestHelper {
 	}
 
 	private static boolean checkSameJSONArray(JSONArray expected, JSONArray actual) throws JSONException {
+
 		// First compare length
 		if (expected.length() != actual.length()) {
 			return false;
@@ -95,11 +98,14 @@ public class JSONTestHelper {
 		
 		// If string value match we are done
 		if (expected.toString().equals(actual.toString())) {
+
 			// Done
 			return true;
 		}
+
 		// If string values don't match, it might still be the same object (toString does not sort fields of maps)
 		else {
+
 			// Compare values
 			for (int i=0; i<expected.length(); i++) {
 				if (!checkSameJSON(expected.get(i), actual.get(i))) {
@@ -124,6 +130,7 @@ public class JSONTestHelper {
 	}
 
 	private static boolean checkSameJSONObject(JSONObject expected, JSONObject actual) throws JSONException {
+
 		// First compare length
 		if (expected.length() != actual.length()) {
 			return false;
@@ -131,11 +138,14 @@ public class JSONTestHelper {
 
 		// If string value match we are done
 		if (expected.toString().equals(actual.toString())) {
+
 			// Done
 			return true;
 		}
+
 		// If string values don't match, it might still be the same object (toString does not sort fields of maps)
 		else {
+
 			// Compare keys / values
 			JSONArray expectedNames = expected.names();
 			JSONArray actualNames = actual.names();
@@ -144,9 +154,7 @@ public class JSONTestHelper {
 			}
 			JSONArray expectedValues = expected.toJSONArray(expectedNames);
 			JSONArray actualValues = actual.toJSONArray(expectedNames);
-
 			return checkSameJSONArray(expectedValues, actualValues);
 		}
 	}
-
 }
