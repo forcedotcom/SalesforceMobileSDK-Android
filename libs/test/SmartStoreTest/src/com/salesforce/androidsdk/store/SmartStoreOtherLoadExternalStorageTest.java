@@ -36,14 +36,12 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 
-import junit.framework.Assert;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * More load tests for smartstore - using external storage

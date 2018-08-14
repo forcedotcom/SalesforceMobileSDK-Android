@@ -66,6 +66,4 @@ public class SmartStoreLoadExternalStorageTest extends SmartStoreLoadTest {
                 {"UpsertQuery10StringIndexes10fields20characters", Type.string, NUMBER_ENTRIES, 10, 20, 10}
         });
     }
-
-
 }

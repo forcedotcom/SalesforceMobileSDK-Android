@@ -37,10 +37,9 @@ import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 
-import junit.framework.Assert;
-
 import org.json.JSONException;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

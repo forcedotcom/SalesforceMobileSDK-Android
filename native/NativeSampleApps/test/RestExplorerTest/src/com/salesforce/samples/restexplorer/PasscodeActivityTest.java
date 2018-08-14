@@ -41,9 +41,8 @@ import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.ui.PasscodeActivity.PasscodeMode;
 
-import junit.framework.Assert;
-
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

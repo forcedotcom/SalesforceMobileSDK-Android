@@ -39,12 +39,11 @@ import com.salesforce.androidsdk.rest.RestClient.AuthTokenProvider;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 
-import junit.framework.Assert;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

@@ -37,10 +37,9 @@ import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
 import com.salesforce.androidsdk.analytics.model.InstrumentationEventBuilder;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 
-import junit.framework.Assert;
-
 import org.json.JSONObject;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

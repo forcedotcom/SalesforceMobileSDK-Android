@@ -36,10 +36,9 @@ import android.util.Log;
 import com.salesforce.androidsdk.analytics.manager.AnalyticsManager;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 
-import junit.framework.Assert;
-
 import org.json.JSONObject;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
