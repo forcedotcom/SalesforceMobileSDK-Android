@@ -7,7 +7,7 @@ if File.file?(test_results)
   junit.show_skipped_tests = true
   junit.report
 else
-  warn("Tests did not run to completion or were not available from Firebase.")
+  warn("Test results not available from Firebase.")
 end
 
 if File.file?("libs/#{ENV['CURRENT_LIB']}/build/reports/lint-results.xml")
