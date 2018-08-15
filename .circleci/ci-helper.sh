@@ -19,23 +19,17 @@ function printTestsToRun {
         echo -e "\n\nNightly -> Run everything."
 
     # Check branch name since PR env vars are not present on manual re-runs.
-    elif [[ $CIRCLE_BRANCH == *"pull"* ]]; then
+    else
         LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
         echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
-        if [[ ! -z ${LIBS_TO_TEST} ]]; then
-            echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
 
-            # Check if tests should run
-            if [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
-                circleci step halt
-            fi
+        # Check if tests should run
+        if [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
+            echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
         else
-            echo -e "\n\nNothing to Test."
+            echo -e "\n\nNo need to test ${CURRENT_LIB} for this PR, stopping execution."
             circleci step halt
         fi
-    else
-        echo -e "\n\nNot a PR -> skip tests."
-        circleci step halt
     fi
 }
 
