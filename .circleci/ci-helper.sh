@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
 
 function envSetup {
-    sudo apt-get update
-    sudo apt-get install libqt5widgets5
     sudo npm install -g shelljs@0.7.0
     sudo npm install -g cordova@8.0.0
     cordova telemetry off
 
     ./install.sh
-    ./gradlew androidDependencies
 
     gem install bundler
     gem install danger
@@ -28,8 +25,8 @@ function printTestsToRun {
         if [[ ! -z ${LIBS_TO_TEST} ]]; then
             echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
 
-            # Check if this is a test job that should continue
-            if [[ -z ${CURRENT_LIB} ]] && [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
+            # Check if tests should run
+            if [[ ${LIBS_TO_TEST} == *"${CURRENT_LIB}"* ]]; then
                 circleci step halt
             fi
         else
