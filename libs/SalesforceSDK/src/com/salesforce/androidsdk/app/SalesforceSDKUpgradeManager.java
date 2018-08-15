@@ -38,8 +38,6 @@ public class SalesforceSDKUpgradeManager {
 
     private static final String VERSION_SHARED_PREF = "version_info";
     private static final String ACC_MGR_KEY = "acc_mgr_version";
-    private static final String SHARED_PREF_6_0 = "upgrade_6_0";
-    private static final String UPGRADE_REQUIRED_KEY = "passcode_upgrade_required";
 
     private static SalesforceSDKUpgradeManager INSTANCE = null;
 
@@ -105,16 +103,5 @@ public class SalesforceSDKUpgradeManager {
         final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(VERSION_SHARED_PREF,
                 Context.MODE_PRIVATE);
         return sp.getString(key, "");
-    }
-
-    /**
-     * Returns if re-encryption is required in an app with passcode enabled.
-     *
-     * @return True - if re-encryption is required, False - otherwise.
-     */
-    public boolean isPasscodeUpgradeRequired() {
-        final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_6_0,
-                Context.MODE_PRIVATE);
-        return sp.getBoolean(UPGRADE_REQUIRED_KEY, false);
     }
 }
