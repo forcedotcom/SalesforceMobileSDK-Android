@@ -53,7 +53,6 @@ import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.app.SalesforceSDKUpgradeManager;
 import com.salesforce.androidsdk.security.PasscodeManager;
 
 import java.util.List;
@@ -447,7 +446,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
      * a custom fingerprint auth layout if the app chooses to do so.
      */
     protected void showFingerprintDialog() {
-        if (passcodeManager != null && isFingerprintEnabled() && !SalesforceSDKUpgradeManager.getInstance().isPasscodeUpgradeRequired()) {
+        if (passcodeManager != null && isFingerprintEnabled()) {
             final FingerprintAuthDialogFragment fingerprintAuthDialog = new FingerprintAuthDialogFragment();
             fingerprintAuthDialog.setContext(this);
             fingerprintAuthDialog.show(getFragmentManager(), "fingerprintDialog");
@@ -467,7 +466,8 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             if (checkSelfPermission(Manifest.permission.USE_FINGERPRINT) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{ permission.USE_FINGERPRINT}, REQUEST_CODE_ASK_PERMISSIONS);
             } else {
-                return fingerprintManager != null && fingerprintManager.isHardwareDetected() && fingerprintManager.hasEnrolledFingerprints();
+                return fingerprintManager != null && fingerprintManager.isHardwareDetected()
+                        && fingerprintManager.hasEnrolledFingerprints();
             }
         }
         return false;
