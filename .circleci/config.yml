@@ -387,7 +387,7 @@ workflows:
           filters:
             branches:
               only:
-                - /pull*/
+                - /pull.*/
       - test-SalesforceAnalytics:
           requires:
             - setup
