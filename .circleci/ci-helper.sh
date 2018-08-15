@@ -64,12 +64,12 @@ function runTests {
 function runDanger {
     if [[ $CIRCLE_BRANCH == *"pull"* ]]; then
         if [ -z "${CURRENT_LIB}" ]; then
-            DANGER_GITHUB_API_TOKEN="d2d9579980154e199b14""ba8173aa935088d30d2a" danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
+            DANGER_GITHUB_API_TOKEN="b676bc92bde5202b94d0""ec8dfecb2716044bf523" danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
         else
             if ls libs/"${CURRENT_LIB}"/build/outputs/androidTest-results/connected/*.xml 1> /dev/null 2>&1; then
                 mv libs/"${CURRENT_LIB}"/build/outputs/androidTest-results/connected/*.xml libs/"${CURRENT_LIB}"/build/outputs/androidTest-results/connected/test-results.xml
             fi
-            DANGER_GITHUB_API_TOKEN="d2d9579980154e199b14""ba8173aa935088d30d2a" danger --dangerfile=.circleci/Dangerfile_Lib.rb --danger_id="${CURRENT_LIB}" --verbose
+            DANGER_GITHUB_API_TOKEN="b676bc92bde5202b94d0""ec8dfecb2716044bf523" danger --dangerfile=.circleci/Dangerfile_Lib.rb --danger_id="${CURRENT_LIB}" --verbose
         fi
     else
         echo "No need to run Danger."
