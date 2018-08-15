@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 function envSetup {
+    sudo npm i npm@latest -g
     sudo npm install -g shelljs@0.7.0
     sudo npm install -g cordova@8.0.0
     cordova telemetry off
@@ -17,8 +18,6 @@ function envSetup {
 function printTestsToRun {
     if [ -n "$NIGHTLY_TEST" ]; then
         echo -e "\n\nNightly -> Run everything."
-
-    # Check branch name since PR env vars are not present on manual re-runs.
     else
         LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
         echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
@@ -34,11 +33,11 @@ function printTestsToRun {
 }
 
 function runTests {
-    if ([ -n "$CIRCLE_PULL_REQUEST" ]); then
-        android_api=27
-    else
+    if [[ $CIRCLE_BRANCH == *"pull"* ]]; then
         # Run API 21 on Mon, 23 on Wed, 25 on Fri
         android_api=$((19 + $(date +"%u")))
+    else
+        android_api=27
     fi
 
     [[ $android_api < 23 ]] && device="Nexus6" || device="NexusLowRes"
@@ -57,6 +56,12 @@ function runTests {
 
 function runDanger {
     if [[ $CIRCLE_BRANCH == *"pull"* ]]; then
+        # These env vars are not set properly on rebuilds
+        export CIRCLE_PULL_REQUEST="https://github.com/forcedotcom/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
+        export CIRCLE_PULL_REQUESTS="https://github.com/forcedotcom/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
+        export CI_PULL_REQUEST="https://github.com/forcedotcom/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
+        export CI_PULL_REQUESTS="https://github.com/forcedotcom/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
+
         if [ -z "${CURRENT_LIB}" ]; then
             DANGER_GITHUB_API_TOKEN="b676bc92bde5202b94d0""ec8dfecb2716044bf523" danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
         else
