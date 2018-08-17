@@ -104,6 +104,9 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
 
-    <!-- TODO: Remove the -sdk-23 tag when the minsdk version is 23 -->
-    <uses-permission-sdk-23 android:name="android.permission.USE_FINGERPRINT" />
+    <!-- USE_FINGERPRINT is available from API 23 to API 27 and should be removed once minAPI > 27 -->
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+
+    <!-- USE_BIOMETRIC is available on API 28 and higher -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 </manifest>
