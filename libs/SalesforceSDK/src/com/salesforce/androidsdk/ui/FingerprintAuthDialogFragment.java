@@ -136,7 +136,7 @@ public class FingerprintAuthDialogFragment extends DialogFragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
         final View v = inflater.inflate(R.layout.sf__fingerprint_dialog, container, false);
-        private Button cancelButton = v.findViewById(R.id.sf__use_password_button);
+        final Button cancelButton = v.findViewById(R.id.sf__use_password_button);
         cancelButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
