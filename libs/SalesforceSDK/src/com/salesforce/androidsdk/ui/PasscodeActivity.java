@@ -35,10 +35,12 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.fingerprint.FingerprintManager;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
+import android.os.CancellationSignal;
 import android.text.Html;
 import android.view.KeyEvent;
 import android.view.View;
@@ -115,7 +117,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             final PasscodeMode mode = passcodeManager.hasStoredPasscode(this) ? PasscodeMode.Check : PasscodeMode.Create;
             setMode(mode);
             if (mode == PasscodeMode.Check) {
-                showFingerprintDialog();
+                launchBiometricAuth();
             }
         }
         logoutEnabled = true;
@@ -403,8 +405,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
                 new DialogInterface.OnClickListener() {
 
             @Override
-            public void onClick(DialogInterface dialog,
-                    int which) {
+            public void onClick(DialogInterface dialog, int which) {
             	final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
             	final List<UserAccount> userAccounts = userAccMgr.getAuthenticatedUsers();
 
@@ -429,8 +430,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             		userAccMgr.signoutCurrentUser(PasscodeActivity.this);
             	}
             }
-        }).setNegativeButton(getLogoutNoString(),
-        		new DialogInterface.OnClickListener() {
+        }).setNegativeButton(getLogoutNoString(), new DialogInterface.OnClickListener() {
 
             @Override
             public void onClick(DialogInterface dialog,
@@ -446,10 +446,56 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
      * a custom fingerprint auth layout if the app chooses to do so.
      */
     protected void showFingerprintDialog() {
-        if (passcodeManager != null && isFingerprintEnabled()) {
-            final FingerprintAuthDialogFragment fingerprintAuthDialog = new FingerprintAuthDialogFragment();
-            fingerprintAuthDialog.setContext(this);
-            fingerprintAuthDialog.show(getFragmentManager(), "fingerprintDialog");
+        final FingerprintAuthDialogFragment fingerprintAuthDialog = new FingerprintAuthDialogFragment();
+        fingerprintAuthDialog.setContext(this);
+        fingerprintAuthDialog.show(getFragmentManager(), "fingerprintDialog");
+    }
+
+    /**
+     * Displays the dialog provided by the OS for biometric authentication
+     * using {@link android.hardware.biometrics.BiometricPrompt}.
+     */
+    @TargetApi(VERSION_CODES.P)
+    protected void showBiometricDialog() {
+
+        /*
+         * TODO: Remove this check once minAPI >= 28.
+         */
+        if (VERSION.SDK_INT >= VERSION_CODES.P) {
+            final BiometricPrompt.Builder bioBuilder = new BiometricPrompt.Builder(this);
+            bioBuilder.setDescription(getString(R.string.sf__fingerprint_description));
+            bioBuilder.setTitle(getString(R.string.sf__fingerprint_title));
+            bioBuilder.setNegativeButton(getString(R.string.sf__fingerprint_cancel), getMainExecutor(),
+                    new DialogInterface.OnClickListener() {
+
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                }
+            });
+            final BiometricPrompt bioPrompt = bioBuilder.build();
+            bioPrompt.authenticate(new CancellationSignal(), getMainExecutor(),
+                    new BiometricPrompt.AuthenticationCallback() {
+
+                @Override
+                public void onAuthenticationError(int errorCode, CharSequence errString) {
+                    super.onAuthenticationError(errorCode, errString);
+                }
+
+                @Override
+                public void onAuthenticationHelp(int helpCode, CharSequence helpString) {
+                    super.onAuthenticationHelp(helpCode, helpString);
+                }
+
+                @Override
+                public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+                    unlockViaFingerprintScan();
+                }
+
+                @Override
+                public void onAuthenticationFailed() {
+                    super.onAuthenticationFailed();
+                }
+            });
         }
     }
 
@@ -457,7 +503,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     private boolean isFingerprintEnabled() {
 
 	    /*
-         * TODO: Remove this check once minAPI > 23.
+         * TODO: Remove this check once minAPI >= 23.
          */
         if (VERSION.SDK_INT >= VERSION_CODES.M) {
             final FingerprintManager fingerprintManager = (FingerprintManager) this.getSystemService(Context.FINGERPRINT_SERVICE);
@@ -476,7 +522,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == REQUEST_CODE_ASK_PERMISSIONS && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            showFingerprintDialog();
+            launchBiometricAuth();
             return;
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -485,5 +531,15 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     public void unlockViaFingerprintScan() {
         passcodeManager.unlock();
         done();
+    }
+
+    private void launchBiometricAuth() {
+        if (passcodeManager != null && isFingerprintEnabled()) {
+            if (VERSION.SDK_INT >= VERSION_CODES.P) {
+                showBiometricDialog();
+            } else if (VERSION.SDK_INT >= VERSION_CODES.M) {
+                showFingerprintDialog();
+            }
+        }
     }
 }

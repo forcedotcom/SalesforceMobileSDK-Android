@@ -58,7 +58,6 @@ import javax.crypto.Cipher;
 @TargetApi(VERSION_CODES.M)
 public class FingerprintAuthDialogFragment extends DialogFragment {
 
-    private Button mCancelButton;
     private TextView mStatusText;
     private PasscodeActivity mContext;
 
@@ -76,7 +75,7 @@ public class FingerprintAuthDialogFragment extends DialogFragment {
         super.onResume();
 
         /*
-         * TODO: Remove this check once minAPI > 23.
+         * TODO: Remove this check once minAPI >= 23.
          */
         if (VERSION.SDK_INT >= VERSION_CODES.M) {
             FingerprintManager fingerprintManager = (FingerprintManager) mContext.getSystemService(Context.FINGERPRINT_SERVICE);
@@ -137,14 +136,15 @@ public class FingerprintAuthDialogFragment extends DialogFragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
         final View v = inflater.inflate(R.layout.sf__fingerprint_dialog, container, false);
-        mCancelButton = v.findViewById(R.id.sf__use_password_button);
-        mCancelButton.setOnClickListener(new View.OnClickListener() {
+        final Button cancelButton = v.findViewById(R.id.sf__use_password_button);
+        cancelButton.setOnClickListener(new View.OnClickListener() {
+
             @Override
             public void onClick(View view) {
                 dismiss();
             }
         });
-        mStatusText = (TextView) v.findViewById(R.id.sf__fingerprint_status);
+        mStatusText = v.findViewById(R.id.sf__fingerprint_status);
         return v;
     }
 
