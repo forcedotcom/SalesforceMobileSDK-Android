@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.analytics.security;
 
+import android.os.Build;
 import android.text.TextUtils;
 import android.util.Base64;
 
@@ -240,7 +241,16 @@ public class Encryptor {
             // Signs with SHA-256.
             byte [] keyBytes = key.getBytes(UTF8);
             byte [] dataBytes = data.getBytes(UTF8);
-            final Mac sha = Mac.getInstance(MAC_TRANSFORMATION, getEncryptionProvider());
+            Mac sha;
+
+            /*
+             * TODO: Remove this check once minAPI >= 28.
+             */
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                sha = Mac.getInstance(MAC_TRANSFORMATION);
+            } else {
+                sha = Mac.getInstance(MAC_TRANSFORMATION, getLegacyEncryptionProvider());
+            }
             final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, sha.getAlgorithm());
             sha.init(keySpec);
             byte [] sig = sha.doFinal(dataBytes);
@@ -395,7 +405,7 @@ public class Encryptor {
     private static Cipher getBestCipher() {
         Cipher cipher = null;
         try {
-            cipher = Cipher.getInstance(PREFER_CIPHER_TRANSFORMATION, getEncryptionProvider());
+            cipher = Cipher.getInstance(PREFER_CIPHER_TRANSFORMATION, getLegacyEncryptionProvider());
         } catch (Exception e) {
             SalesforceAnalyticsLogger.e(null, TAG,
                     "No cipher transformation available", e);
@@ -403,7 +413,10 @@ public class Encryptor {
         return cipher;
     }
 
-    private static String getEncryptionProvider() {
+    /*
+     * TODO: Remove this method and its usages once minAPI >= 28.
+     */
+    private static String getLegacyEncryptionProvider() {
         return BOUNCY_CASTLE;
     }
 }
