@@ -880,9 +880,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 	loadLoginPage();
                 }
             });
-		} catch (KeyChainException e) {
-            SalesforceSDKLogger.e(TAG, "Exception thrown while retrieving X.509 certificate", e);
-		} catch (InterruptedException e) {
+		} catch (KeyChainException | InterruptedException e) {
             SalesforceSDKLogger.e(TAG, "Exception thrown while retrieving X.509 certificate", e);
 		}
 	}
