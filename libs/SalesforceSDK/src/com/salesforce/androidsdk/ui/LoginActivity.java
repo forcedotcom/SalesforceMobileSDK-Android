@@ -188,7 +188,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
         if (shouldUseCertBasedAuth()) {
             final String alias = RuntimeConfig.getRuntimeConfig(this).getString(ConfigKey.ManagedAppCertAlias);
             SalesforceSDKLogger.d(TAG, "Cert based login flow being triggered with alias: " + alias);
-            KeyChain.choosePrivateKeyAlias(this, webviewHelper, null, null, null, 0, alias);
+            KeyChain.choosePrivateKeyAlias(this, webviewHelper, null, null, null, -1, alias);
         } else {
             SalesforceSDKLogger.d(TAG, "User agent login flow being triggered");
             webviewHelper.loadLoginPage();
