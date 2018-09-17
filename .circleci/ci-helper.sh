@@ -34,10 +34,10 @@ function printTestsToRun {
 
 function runTests {
     if [[ $CIRCLE_BRANCH == *"pull"* ]]; then
+        android_api=27
+    else
         # Run API 21 on Mon, 23 on Wed, 25 on Fri
         android_api=$((19 + $(date +"%u")))
-    else
-        android_api=27
     fi
 
     [[ $android_api < 23 ]] && device="Nexus6" || device="NexusLowRes"
