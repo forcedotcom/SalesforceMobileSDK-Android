@@ -15,7 +15,7 @@
     <string name="community_url">https://mobilesdk.cs1.salesforce.com/androidcomm</string>
     <string name="identity_url">https://test.salesforce.com/id/00DS0000000HDptMAG/005S0000003yaERIAY</string>
     <string name="login_url">https://test.salesforce.com</string>
-    <string name="oauth_refresh_token">5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBS.SiQYYAy5JRktzmVa6bzkRl9Lu8Ro.gDAC0EabmS4kpcU6Y</string>
+    <string name="oauth_refresh_token">5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBS.SiQYYAy5J81oMi5Vioy5gd6g14abWK33hqmrN2jg3f3wHW</string>
     <string name="org_id">00DS0000000HDptMAG</string>
     <string name="user_id">005S0000003yaERIAY</string>
     <string name="username">sdktest@cs1.com</string>
