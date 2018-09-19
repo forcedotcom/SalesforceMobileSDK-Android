@@ -361,6 +361,9 @@ public class SyncManager {
                     // Do not do anything - let the logout go through!
                 } catch (Exception e) {
                     SmartSyncLogger.e(TAG, "Exception thrown in runSync", e);
+
+                    //Set error message to sync state
+                    sync.setError(e.getMessage());
                     // Update status to failed
                     updateSync(sync, SyncState.Status.FAILED, UNCHANGED, callback);
                 }
