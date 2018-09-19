@@ -41,14 +41,17 @@ function runTests {
     fi
 
     [[ $android_api < 23 ]] && device="Nexus6" || device="NexusLowRes"
+
+    #
+    #  Code coverage has been removed until a client crash issue is fixed by Google
+    #  Issue: https://issuetracker.google.com/issues/116075439
+    #
     gcloud firebase test android run \
         --project mobile-apps-firebase-test \
         --type instrumentation \
         --app "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk" \
         --test ${TEST_APK}  \
         --device model=$device,version=$android_api,locale=en,orientation=portrait  \
-        --environment-variables coverage=true,coverageFile="/sdcard/coverage.ec"  \
-        --directories-to-pull=/sdcard  \
         --results-dir=${CURRENT_LIB}-${CIRCLE_BUILD_NUM}  \
         --results-history-name=${CURRENT_LIB}  \
         --timeout 10m
