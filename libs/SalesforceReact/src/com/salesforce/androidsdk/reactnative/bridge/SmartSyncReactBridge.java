@@ -250,8 +250,6 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                     ReactBridgeHelper.invokeSuccess(successCallback, sync.asJSON());
                     break;
                 case FAILED:
-                    //errorCallback.invoke("Sync failed");
-
                     //Return sync to React Native with the error message in the JSON
                     ReactBridgeHelper.invokeSuccess(errorCallback, sync.asJSON());
                     break;
