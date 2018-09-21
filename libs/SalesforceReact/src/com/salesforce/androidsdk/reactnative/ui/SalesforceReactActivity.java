@@ -193,7 +193,7 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
         SalesforceReactLogger.i(TAG, "logout called");
         SalesforceReactSDKManager.getInstance().logout(this);
         if (successCallback != null) {
-            ReactBridgeHelper.invokeSuccess(successCallback, "Logout complete");
+            ReactBridgeHelper.invoke(successCallback, "Logout complete");
         }
     }
 
@@ -225,7 +225,7 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
         SalesforceReactLogger.i(TAG, "getAuthCredentials called");
         if (client != null) {
             if (successCallback != null) {
-                ReactBridgeHelper.invokeSuccess(successCallback, client.getJSONCredentials());
+                ReactBridgeHelper.invoke(successCallback, client.getJSONCredentials());
             }
         } else {
             if (errorCallback != null) {
