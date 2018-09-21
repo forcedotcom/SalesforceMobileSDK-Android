@@ -41,31 +41,31 @@ import java.util.Map;
 
 public class ReactBridgeHelper  {
 
-    public static void invokeSuccess(Callback successCallback, JSONObject json) {
+    public static void invoke(Callback callback, JSONObject json) {
         // XXX it would be better to user a NativeMap
         //     for now we serialize the object and do a JSON.parse(result) on the javascript side
-        successCallback.invoke(json == null ? null : json.toString());
+        callback.invoke(json == null ? null : json.toString());
     }
 
-    public static void invokeSuccess(Callback successCallback, JSONArray json) {
+    public static void invoke(Callback callback, JSONArray json) {
         // XXX it would be better to user a NativeArray
         //     for now we serialize the object and do a JSON.parse(result) on the javascript side
-        successCallback.invoke(json == null ? null : json.toString());
+        callback.invoke(json == null ? null : json.toString());
     }
 
-    public static void invokeSuccess(Callback successCallback, String value) {
+    public static void invoke(Callback callback, String value) {
         // XXX we need to turn "xyz" into "\"xyz\"" so that JSON.parse() returns "xyz"
-        successCallback.invoke("\"" + value + "\"");
+        callback.invoke("\"" + value + "\"");
     }
 
-    public static void invokeSuccess(Callback successCallback, boolean value) {
+    public static void invoke(Callback callback, boolean value) {
         // XXX we need to turn true|false into "true"|"false" so that JSON.parse() returns true|false
-        successCallback.invoke("" + value);
+        callback.invoke("" + value);
     }
 
-    public static void invokeSuccess(Callback successCallback, int value) {
+    public static void invoke(Callback callback, int value) {
         // XXX we need to turn 123 into "123" so that JSON.parse() returns 123
-        successCallback.invoke("" + value);
+        callback.invoke("" + value);
     }
 
 
