@@ -205,7 +205,7 @@ public class SyncState {
         state.maxTimeStamp = sync.optLong(SYNC_MAX_TIME_STAMP, -1);
 		state.startTime = sync.optLong(SYNC_START_TIME, 0);
 		state.endTime = sync.optLong(SYNC_START_TIME, 0);
-		state.errorJSON = sync.getString(SYNC_ERROR);
+		state.errorJSON = JSONObjectHelper.optString(sync, SYNC_ERROR, "");
 		return state;
 	}
 	
