@@ -59,7 +59,11 @@ public class SFDCRegistrationIntentService extends JobIntentService {
             final String pushClientId = BootConfig.getBootConfig(context).getPushNotificationClientId();
             final FirebaseOptions firebaseOptions = new FirebaseOptions.Builder().
                     setGcmSenderId(pushClientId).setApplicationId(context.getPackageName()).build();
-            FirebaseApp.initializeApp(context, firebaseOptions);
+            if (FirebaseApp.getApps(context).isEmpty()) {
+                //Ensure initializeApp is only called once
+                FirebaseApp.initializeApp(context, firebaseOptions);
+            }
+
 
             // Fetches an instance ID from Firebase once the initialization is complete.
             final FirebaseInstanceId instanceID = FirebaseInstanceId.getInstance();
