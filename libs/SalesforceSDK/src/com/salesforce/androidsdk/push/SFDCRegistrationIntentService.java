@@ -28,6 +28,9 @@ package com.salesforce.androidsdk.push;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.support.v4.app.JobIntentService;
 
 import com.google.firebase.FirebaseApp;
@@ -59,11 +62,26 @@ public class SFDCRegistrationIntentService extends JobIntentService {
             final String pushClientId = BootConfig.getBootConfig(context).getPushNotificationClientId();
             final FirebaseOptions firebaseOptions = new FirebaseOptions.Builder().
                     setGcmSenderId(pushClientId).setApplicationId(context.getPackageName()).build();
-            if (FirebaseApp.getApps(context).isEmpty()) {
-                //Ensure initializeApp is only called once
-                FirebaseApp.initializeApp(context, firebaseOptions);
+
+            // Fetches the app's unique name to supply to Firebase.
+            String appName = FirebaseApp.DEFAULT_APP_NAME;
+            try {
+                final PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+                appName = context.getString(packageInfo.applicationInfo.labelRes);
+            } catch (PackageManager.NameNotFoundException | Resources.NotFoundException e) {
+                SalesforceSDKLogger.w(TAG, "Package info could not be retrieved", e);
             }
 
+            /*
+             * Ensures that Firebase initialization occurs only once for this app. If an exception
+             * isn't thrown, this means that the initialization has already been completed.
+             */
+            try {
+                FirebaseApp.getInstance(appName);
+            } catch (IllegalStateException e) {
+                SalesforceSDKLogger.w(TAG, "Firebase hasn't been initialized yet", e);
+                FirebaseApp.initializeApp(context, firebaseOptions, appName);
+            }
 
             // Fetches an instance ID from Firebase once the initialization is complete.
             final FirebaseInstanceId instanceID = FirebaseInstanceId.getInstance();
