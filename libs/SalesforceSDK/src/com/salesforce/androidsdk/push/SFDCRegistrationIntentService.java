@@ -84,7 +84,7 @@ public class SFDCRegistrationIntentService extends JobIntentService {
             }
 
             // Fetches an instance ID from Firebase once the initialization is complete.
-            final FirebaseInstanceId instanceID = FirebaseInstanceId.getInstance();
+            final FirebaseInstanceId instanceID = FirebaseInstanceId.getInstance(FirebaseApp.getInstance(appName));
             final String token = instanceID.getToken(BootConfig.getBootConfig(this).getPushNotificationClientId(), FCM);
             final UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
 
