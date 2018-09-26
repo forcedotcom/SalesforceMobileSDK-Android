@@ -5,11 +5,15 @@ dependencies {
 }
 
 android {
-  compileSdkVersion 28
-  buildToolsVersion '28.0.3'
+    compileSdkVersion 28
+    buildToolsVersion '28.0.3'
+
+    defaultConfig {
+        targetSdkVersion 28
+        minSdkVersion 21
+    }
 
     sourceSets {
-
         main {
             manifest.srcFile 'AndroidManifest.xml'
             java.srcDirs = ['src']
@@ -19,7 +23,6 @@ android {
             res.srcDirs = ['res']
             assets.srcDirs = ['assets']
         }
-
     }
     packagingOptions {
         exclude 'META-INF/LICENSE'
@@ -32,7 +35,4 @@ android {
     xmlReport true
     abortOnError false
   }
-    defaultConfig {
-        minSdkVersion = 21
-    }
 }

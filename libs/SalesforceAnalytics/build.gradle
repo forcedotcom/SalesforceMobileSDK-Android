@@ -20,8 +20,13 @@ dependencies {
 }
 
 android {
-  compileSdkVersion 28
-  buildToolsVersion '28.0.3'
+    compileSdkVersion 28
+    buildToolsVersion '28.0.3'
+
+    defaultConfig {
+        targetSdkVersion 28
+        minSdkVersion 21
+    }
 
   buildTypes {
     debug {
@@ -49,7 +54,6 @@ android {
   defaultConfig {
     testApplicationId "com.salesforce.androidsdk.analytics.tests"
     testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-      minSdkVersion = 21
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'

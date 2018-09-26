@@ -8,6 +8,11 @@ android {
   compileSdkVersion 28
   buildToolsVersion '28.0.3'
 
+  defaultConfig {
+    targetSdkVersion 28
+    minSdkVersion 21
+  }
+
   sourceSets {
 
     main {
@@ -32,7 +37,4 @@ android {
     xmlReport true
     abortOnError false
   }
-    defaultConfig {
-        minSdkVersion = 21
-    }
 }
