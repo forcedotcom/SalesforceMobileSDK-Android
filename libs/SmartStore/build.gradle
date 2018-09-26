@@ -15,15 +15,20 @@ apply plugin: 'com.jfrog.bintray'
 
 dependencies {
     api project(':libs:SalesforceSDK')
-    api 'net.zetetic:android-database-sqlcipher:3.5.7'
+    api 'net.zetetic:android-database-sqlcipher:3.5.9'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test:rules:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 }
 
 android {
-  compileSdkVersion 28
-  buildToolsVersion '27.0.3'
+    compileSdkVersion 28
+    buildToolsVersion '28.0.3'
+
+    defaultConfig {
+        targetSdkVersion 28
+        minSdkVersion 21
+    }
   
   buildTypes {
       debug {
