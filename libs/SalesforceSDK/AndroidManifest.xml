@@ -5,9 +5,6 @@
 	android:versionCode="62"
 	android:versionName="7.0.0.dev">
 
-    <uses-sdk android:minSdkVersion="21"
-        android:targetSdkVersion="28" />
-
     <application>
 
         <!-- Metadata for supported app restrictions -->

@@ -6,7 +6,7 @@ dependencies {
 
 android {
   compileSdkVersion 28
-  buildToolsVersion '27.0.3'
+  buildToolsVersion '28.0.3'
 
   sourceSets {
 
@@ -32,4 +32,7 @@ android {
     xmlReport true
     abortOnError false
   }
+    defaultConfig {
+        minSdkVersion = 21
+    }
 }
