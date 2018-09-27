@@ -102,6 +102,7 @@ public class UserAccountManager {
 	private Context context;
 	private AccountManager accountManager;
 	private String accountType;
+	private UserAccount cachedCurrentUserAccount;
 
 	/**
 	 * Returns a singleton instance of this class.
@@ -167,7 +168,31 @@ public class UserAccountManager {
 	 * @return Current user that's logged in.
 	 */
 	public UserAccount getCurrentUser() {
-		return buildUserAccount(getCurrentAccount());
+		cachedCurrentUserAccount = buildUserAccount(getCurrentAccount());
+		return cachedCurrentUserAccount;
+	}
+
+	/**
+	 * Returns a cached value of the current user.
+	 *
+	 * NB: The oauth tokens might be outdated
+	 *     Should be used by methods that only care about the current user's identity (org id, user id etc)
+	 *     Is faster than getCurrentUser()
+	 *
+	 * @return Current user that's logged in (with potentially outdated oauth tokens)
+	 */
+	public UserAccount getCachedCurrentUser() {
+		return cachedCurrentUserAccount != null ? cachedCurrentUserAccount : getCurrentUser() /* will populate cachedCurrentUserAccount */ ;
+	}
+
+	/**
+	 * Get rid of cached current user account if it matches the passed userAccount.
+	 * @param userAccount
+	 */
+	public void clearCachedCurrentUser(UserAccount userAccount) {
+		if (cachedCurrentUserAccount != null && cachedCurrentUserAccount.equals(userAccount)) {
+			cachedCurrentUserAccount = null;
+		}
 	}
 
 	/**

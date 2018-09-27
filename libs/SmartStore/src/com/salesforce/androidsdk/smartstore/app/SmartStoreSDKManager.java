@@ -166,7 +166,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @return SmartStore instance.
      */
     public SmartStore getSmartStore() {
-        return getSmartStore(getUserAccountManager().getCurrentUser());
+        return getSmartStore(getUserAccountManager().getCachedCurrentUser());
     }
 
     /**
@@ -233,7 +233,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @return True - if the user has a smart store database, False - otherwise.
      */
     public boolean hasSmartStore() {
-        return hasSmartStore(getUserAccountManager().getCurrentUser(), null);
+        return hasSmartStore(getUserAccountManager().getCachedCurrentUser(), null);
     }
 
     /**
@@ -290,7 +290,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * Removes the default smart store for the current user.
      */
     public void removeSmartStore() {
-        removeSmartStore(getUserAccountManager().getCurrentUser());
+        removeSmartStore(getUserAccountManager().getCachedCurrentUser());
     }
 
     /**
@@ -333,9 +333,9 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @throws JSONException
      */
     public List<String> getGlobalStoresPrefixList(){
-        UserAccount userAccount = getUserAccountManager().getCurrentUser();
+        UserAccount userAccount = getUserAccountManager().getCachedCurrentUser();
         String communityId = userAccount!=null?userAccount.getCommunityId():null;
-        List<String> globalDBNames = DBOpenHelper.getGlobalDatabasePrefixList(context,getUserAccountManager().getCurrentUser(),communityId);
+        List<String> globalDBNames = DBOpenHelper.getGlobalDatabasePrefixList(context,getUserAccountManager().getCachedCurrentUser(),communityId);
         return globalDBNames;
     }
 
@@ -345,9 +345,9 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @throws JSONException
      */
     public List<String> getUserStoresPrefixList() {
-        UserAccount userAccount = getUserAccountManager().getCurrentUser();
+        UserAccount userAccount = getUserAccountManager().getCachedCurrentUser();
         String communityId = userAccount!=null?userAccount.getCommunityId():null;
-        List<String> userDBName = DBOpenHelper.getUserDatabasePrefixList(context,getUserAccountManager().getCurrentUser(),communityId);
+        List<String> userDBName = DBOpenHelper.getUserDatabasePrefixList(context,getUserAccountManager().getCachedCurrentUser(),communityId);
         return userDBName;
     }
 
@@ -370,8 +370,8 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         List<String> globalDBNames = this.getUserStoresPrefixList();
         for(String storeName : globalDBNames) {
             removeSmartStore(storeName,
-                    UserAccountManager.getInstance().getCurrentUser(),
-                    UserAccountManager.getInstance().getCurrentUser().getCommunityId());
+                    UserAccountManager.getInstance().getCachedCurrentUser(),
+                    UserAccountManager.getInstance().getCachedCurrentUser().getCommunityId());
         }
     }
 

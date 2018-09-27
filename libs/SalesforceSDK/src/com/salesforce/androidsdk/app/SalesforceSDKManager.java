@@ -761,6 +761,7 @@ public class SalesforceSDKManager {
     protected void cleanUp(UserAccount userAccount) {
         SalesforceAnalyticsManager.reset(userAccount);
         RestClient.clearCaches(userAccount);
+        UserAccountManager.getInstance().clearCachedCurrentUser(userAccount);
     }
 
     /**

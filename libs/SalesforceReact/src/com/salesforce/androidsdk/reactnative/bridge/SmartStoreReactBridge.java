@@ -666,7 +666,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
             SmartStoreSDKManager.getInstance().removeGlobalSmartStore(storeName);
             ReactBridgeHelper.invoke(successCallback, true);
         } else {
-            final UserAccount account = UserAccountManager.getInstance().getCurrentUser();
+            final UserAccount account = UserAccountManager.getInstance().getCachedCurrentUser();
             if (account == null) {
                 errorCallback.invoke("No user account found");
             }  else {
@@ -724,7 +724,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
         if (isGlobal) {
             return SmartStoreSDKManager.getInstance().getGlobalSmartStore(storeName);
         } else {
-            final UserAccount account = UserAccountManager.getInstance().getCurrentUser();
+            final UserAccount account = UserAccountManager.getInstance().getCachedCurrentUser();
             if (account == null) {
                 throw new Exception("No user account found");
             }  else {
