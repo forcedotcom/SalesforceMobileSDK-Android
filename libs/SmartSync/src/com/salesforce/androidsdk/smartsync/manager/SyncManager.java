@@ -362,8 +362,20 @@ public class SyncManager {
                 } catch (Exception e) {
                     SmartSyncLogger.e(TAG, "Exception thrown in runSync", e);
 
-                    //Set error message to sync state
-                    sync.setError(e.getMessage());
+                    //Get error from API respond
+                    String errorMessage = e.getMessage();
+                    if(errorMessage != null){
+                        try {
+                            //Parse respond string to JSONArray
+                            JSONArray errorInJSON = new JSONArray(errorMessage);
+
+                            //Set error message from first object in JSONArray to sync state
+                            sync.setError(errorInJSON.getJSONObject(0));
+                        } catch (JSONException jsonException) {
+                            jsonException.printStackTrace();
+                        }
+                    }
+
                     // Update status to failed
                     updateSync(sync, SyncState.Status.FAILED, UNCHANGED, callback);
                 }

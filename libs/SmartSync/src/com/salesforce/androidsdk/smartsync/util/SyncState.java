@@ -75,7 +75,7 @@ public class SyncState {
 	private long endTime;
 
 	//Error return from SFDC API
-	private String errorJSON;
+	private JSONObject errorJSON;
 	
 	/**
 	 * Create syncs soup if needed
@@ -131,7 +131,7 @@ public class SyncState {
         sync.put(SYNC_MAX_TIME_STAMP, -1);
 		sync.put(SYNC_START_TIME, 0);
 		sync.put(SYNC_END_TIME, 0);
-		sync.put(SYNC_ERROR, "");
+		sync.put(SYNC_ERROR, null);
 
 		if (name != null && hasSyncWithName(store, name)) {
 			throw new SyncManager.SmartSyncException("Failed to create sync down: there is already a sync with name:" + name);
@@ -171,7 +171,7 @@ public class SyncState {
         sync.put(SYNC_MAX_TIME_STAMP, -1);
 		sync.put(SYNC_START_TIME, 0);
 		sync.put(SYNC_END_TIME, 0);
-		sync.put(SYNC_ERROR, "");
+		sync.put(SYNC_ERROR, null);
 
 		if (name != null && hasSyncWithName(store, name)) {
 			throw new SyncManager.SmartSyncException("Failed to create sync up: there is already a sync with name:" + name);
@@ -205,7 +205,7 @@ public class SyncState {
         state.maxTimeStamp = sync.optLong(SYNC_MAX_TIME_STAMP, -1);
 		state.startTime = sync.optLong(SYNC_START_TIME, 0);
 		state.endTime = sync.optLong(SYNC_START_TIME, 0);
-		state.errorJSON = JSONObjectHelper.optString(sync, SYNC_ERROR, "");
+		state.errorJSON = (JSONObject) JSONObjectHelper.opt(sync, SYNC_ERROR);
 		return state;
 	}
 	
@@ -373,7 +373,7 @@ public class SyncState {
 		return endTime;
 	}
 
-	public String getError() {
+	public JSONObject getError() {
 		return errorJSON;
 	}
 
@@ -400,7 +400,7 @@ public class SyncState {
 		this.status = status;
 	}
 
-	public void setError(String error) {
+	public void setError(JSONObject error) {
 		this.errorJSON = error;
 	}
 	
