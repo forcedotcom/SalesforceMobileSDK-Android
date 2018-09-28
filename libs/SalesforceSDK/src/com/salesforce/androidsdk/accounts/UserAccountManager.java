@@ -317,6 +317,7 @@ public class UserAccountManager {
 		if (user.equals(curUser)) {
 			return;
 		}
+		clearCachedCurrentUser(curUser);
 		final ClientManager cm = new ClientManager(context, accountType,
 				SalesforceSDKManager.getInstance().getLoginOptions(), true);
 		final Account account = cm.getAccountByName(user.getAccountName());
