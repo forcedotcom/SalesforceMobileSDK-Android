@@ -362,17 +362,17 @@ public class SyncManager {
                 } catch (Exception e) {
                     SmartSyncLogger.e(TAG, "Exception thrown in runSync", e);
 
-                    //Get error from API respond
+                    //Get error from API response
                     String errorMessage = e.getMessage();
                     if(errorMessage != null){
                         try {
-                            //Parse respond string to JSONArray
+                            //Parse response string to JSONArray
                             JSONArray errorInJSON = new JSONArray(errorMessage);
 
                             //Set error message from first object in JSONArray to sync state
                             sync.setError(errorInJSON.getJSONObject(0));
                         } catch (JSONException jsonException) {
-                            jsonException.printStackTrace();
+                            SmartSyncLogger.e(TAG, "Exception thrown while parsing JSON", jsonException);
                         }
                     }
 
