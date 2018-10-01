@@ -132,6 +132,7 @@ public class UserAccountManager {
 	 * @param orgId Org ID.
 	 */
 	public void storeCurrentUserInfo(String userId, String orgId) {
+		clearCachedCurrentUser();
 		final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
 				Context.MODE_PRIVATE);
         final Editor e = sp.edit();
@@ -186,13 +187,10 @@ public class UserAccountManager {
 	}
 
 	/**
-	 * Get rid of cached current user account if it matches the passed userAccount.
-	 * @param userAccount
+	 * Get rid of cached current user account
 	 */
-	public void clearCachedCurrentUser(UserAccount userAccount) {
-		if (cachedCurrentUserAccount != null && cachedCurrentUserAccount.equals(userAccount)) {
-			cachedCurrentUserAccount = null;
-		}
+	public void clearCachedCurrentUser() {
+		cachedCurrentUserAccount = null;
 	}
 
 	/**
@@ -317,7 +315,6 @@ public class UserAccountManager {
 		if (user.equals(curUser)) {
 			return;
 		}
-		clearCachedCurrentUser(curUser);
 		final ClientManager cm = new ClientManager(context, accountType,
 				SalesforceSDKManager.getInstance().getLoginOptions(), true);
 		final Account account = cm.getAccountByName(user.getAccountName());
