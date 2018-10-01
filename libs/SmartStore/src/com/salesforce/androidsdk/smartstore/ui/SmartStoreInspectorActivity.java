@@ -142,7 +142,7 @@ public class SmartStoreInspectorActivity extends Activity implements AdapterView
 
 	private void readExtras() {
 		Bundle bundle = getIntent().getExtras();
-		boolean hasUser = SmartStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser() != null;
+		boolean hasUser = SmartStoreSDKManager.getInstance().getUserAccountManager().getCachedCurrentUser() != null;
 		// isGlobal is set to true
 		//   if no bundle, or no value for isGlobalStore in bundle, or true specified for isGlobalStore in bundle, or there is no current user
 		isGlobal = bundle == null || !bundle.containsKey(IS_GLOBAL_STORE) || bundle.getBoolean(IS_GLOBAL_STORE) || !hasUser;
@@ -183,7 +183,7 @@ public class SmartStoreInspectorActivity extends Activity implements AdapterView
 
 	private void setupStore(boolean isGlobal, String dbName) {
 		SmartStoreSDKManager mgr = SmartStoreSDKManager.getInstance();
-		UserAccount currentUser = mgr.getUserAccountManager().getCurrentUser();
+		UserAccount currentUser = mgr.getUserAccountManager().getCachedCurrentUser();
 		if (this.isGlobal != isGlobal || !this.dbName.equals(dbName) || smartStore == null) {
 			this.isGlobal = isGlobal;
 			this.dbName = dbName;

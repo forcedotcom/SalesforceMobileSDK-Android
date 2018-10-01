@@ -69,7 +69,7 @@ public class AnalyticsPublisherService extends JobIntentService {
      * Handles the publish action in the provided background thread.
      */
     private void handleActionPublish() {
-        final UserAccount userAccount = UserAccountManager.getInstance().getCurrentUser();
+        final UserAccount userAccount = UserAccountManager.getInstance().getCachedCurrentUser();
         if (userAccount != null) {
             final SalesforceAnalyticsManager analyticsManager = SalesforceAnalyticsManager.getInstance(userAccount);
             analyticsManager.publishAllEvents();
