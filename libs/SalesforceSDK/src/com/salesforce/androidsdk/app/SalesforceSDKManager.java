@@ -761,6 +761,7 @@ public class SalesforceSDKManager {
     protected void cleanUp(UserAccount userAccount) {
         SalesforceAnalyticsManager.reset(userAccount);
         RestClient.clearCaches(userAccount);
+        UserAccountManager.getInstance().clearCachedCurrentUser();
     }
 
     /**
@@ -1318,7 +1319,7 @@ public class SalesforceSDKManager {
                 "Browser Login Enabled", isBrowserLoginEnabled() + "",
                 "IDP Enabled", isIDPLoginFlowEnabled() + "",
                 "Identity Provider", isIdentityProvider() + "",
-                "Current User", usersToString(getUserAccountManager().getCurrentUser()),
+                "Current User", usersToString(getUserAccountManager().getCachedCurrentUser()),
                 "Authenticated Users", usersToString(getUserAccountManager().getAuthenticatedUsers().toArray(new UserAccount[0]))
         ));
 

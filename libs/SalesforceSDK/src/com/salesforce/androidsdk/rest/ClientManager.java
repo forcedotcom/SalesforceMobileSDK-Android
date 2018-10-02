@@ -643,6 +643,7 @@ public class ClientManager {
                 }
                 final UserAccount userAccount = UserAccountManager.getInstance().buildUserAccount(account);
                 userAccount.downloadProfilePhoto();
+                UserAccountManager.getInstance().clearCachedCurrentUser();
             } catch (OAuth2.OAuthFailedException ofe) {
                 if (ofe.isRefreshTokenInvalid()) {
                     SalesforceSDKLogger.i(TAG, "Invalid Refresh Token: (Error: " +

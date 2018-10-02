@@ -111,7 +111,7 @@ public class LayoutSyncManager {
     public static synchronized LayoutSyncManager getInstance(UserAccount account, String communityId,
                                                              SmartStore smartStore) {
         if (account == null) {
-            account = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+            account = SmartSyncSDKManager.getInstance().getUserAccountManager().getCachedCurrentUser();
         }
         if (smartStore == null) {
             smartStore = SmartSyncSDKManager.getInstance().getSmartStore(account, communityId);
