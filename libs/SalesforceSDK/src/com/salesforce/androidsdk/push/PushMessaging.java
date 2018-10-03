@@ -117,7 +117,16 @@ public class PushMessaging {
 
             // Deletes InstanceID only if there are no other logged in accounts.
             if (isLastAccount) {
-                final FirebaseInstanceId instanceID = FirebaseInstanceId.getInstance();
+		//get app name used to register app with Firebase
+                String appName = FirebaseApp.DEFAULT_APP_NAME;
+                try {
+                    final PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+                    appName = context.getString(packageInfo.applicationInfo.labelRes);
+                } catch (PackageManager.NameNotFoundException | Resources.NotFoundException e) {
+                    SalesforceSDKLogger.w(TAG, "Package info could not be retrieved", e);
+                }
+
+                final FirebaseInstanceId instanceID = FirebaseInstanceId.getInstance(FirebaseApp.getInstance(appName));
                 threadPool.execute(new Runnable() {
 
                     @Override
