@@ -30,11 +30,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.support.v4.app.JobIntentService;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
@@ -117,7 +121,16 @@ public class PushMessaging {
 
             // Deletes InstanceID only if there are no other logged in accounts.
             if (isLastAccount) {
-                final FirebaseInstanceId instanceID = FirebaseInstanceId.getInstance();
+		//get app name used to register app with Firebase
+                String appName = FirebaseApp.DEFAULT_APP_NAME;
+                try {
+                    final PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+                    appName = context.getString(packageInfo.applicationInfo.labelRes);
+                } catch (PackageManager.NameNotFoundException | Resources.NotFoundException e) {
+                    SalesforceSDKLogger.w(TAG, "Package info could not be retrieved", e);
+                }
+
+                final FirebaseInstanceId instanceID = FirebaseInstanceId.getInstance(FirebaseApp.getInstance(appName));
                 threadPool.execute(new Runnable() {
 
                     @Override
