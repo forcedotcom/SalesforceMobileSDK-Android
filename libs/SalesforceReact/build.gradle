@@ -18,7 +18,7 @@ apply plugin: 'com.jfrog.bintray'
 
 dependencies {
   api project(':libs:SmartSync')
-  api 'com.facebook.react:react-native:0.55.4'
+  api 'com.facebook.react:react-native:0.56.1'
   androidTestImplementation 'com.android.support.test:runner:1.0.2'
   androidTestImplementation 'com.android.support.test:rules:1.0.2'
 }
