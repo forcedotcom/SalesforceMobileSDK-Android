@@ -39,8 +39,10 @@ import android.support.v4.app.JobIntentService;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.io.IOException;
@@ -95,6 +97,7 @@ public class PushMessaging {
     	 * account hasn't been registered yet. Otherwise, performs
     	 * re-registration at the SFDC endpoint, to keep it alive.
     	 */
+    	initializeFirebaseIfNeeded(context);
         if (account != null && !isRegistered(context, account)) {
             setInProgress(context, true, account);
             if (checkPlayServices(context)) {
@@ -121,15 +124,8 @@ public class PushMessaging {
 
             // Deletes InstanceID only if there are no other logged in accounts.
             if (isLastAccount) {
-		//get app name used to register app with Firebase
-                String appName = FirebaseApp.DEFAULT_APP_NAME;
-                try {
-                    final PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
-                    appName = context.getString(packageInfo.applicationInfo.labelRes);
-                } catch (PackageManager.NameNotFoundException | Resources.NotFoundException e) {
-                    SalesforceSDKLogger.w(TAG, "Package info could not be retrieved", e);
-                }
-
+                initializeFirebaseIfNeeded(context);
+                String appName = getAppNameForFirebase(context);
                 final FirebaseInstanceId instanceID = FirebaseInstanceId.getInstance(FirebaseApp.getInstance(appName));
                 threadPool.execute(new Runnable() {
 
@@ -145,6 +141,46 @@ public class PushMessaging {
             }
             unregisterSFDCPush(context, account);
         }
+    }
+
+    /**
+     * Will make call to Firebase.initializeApp if it hasn't already taken place.
+     *
+     * @param context Context
+     */
+    public static void initializeFirebaseIfNeeded(Context context) {
+        String appName = getAppNameForFirebase(context);
+        final String pushClientId = BootConfig.getBootConfig(context).getPushNotificationClientId();
+        final FirebaseOptions firebaseOptions = new FirebaseOptions.Builder().
+                setGcmSenderId(pushClientId).setApplicationId(context.getPackageName()).build();
+        /*
+         * Ensures that Firebase initialization occurs only once for this app. If an exception
+         * isn't thrown, this means that the initialization has already been completed.
+         */
+        try {
+            FirebaseApp.getInstance(appName);
+        } catch (IllegalStateException e) {
+            SalesforceSDKLogger.w(TAG, "Firebase hasn't been initialized yet", e);
+            FirebaseApp.initializeApp(context, firebaseOptions, appName);
+        }
+    }
+
+    /**
+     * Get the app unique name for firebase
+     *
+     * @param context Context
+     * @return appName String
+     */
+    public static String getAppNameForFirebase(Context context) {
+        String appName = FirebaseApp.DEFAULT_APP_NAME;
+        try {
+            final PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+            appName = context.getString(packageInfo.applicationInfo.labelRes);
+        } catch (PackageManager.NameNotFoundException | Resources.NotFoundException e) {
+            SalesforceSDKLogger.w(TAG, "Package info could not be retrieved", e);
+        }
+
+        return appName;
     }
 
     /**
