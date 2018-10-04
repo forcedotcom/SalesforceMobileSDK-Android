@@ -124,8 +124,8 @@ public class PushMessaging {
 
             // Deletes InstanceID only if there are no other logged in accounts.
             if (isLastAccount) {
-		        initializeFirebaseIfNeeded(context);
-		        String appName = getAppNameForFirebase(context);
+                initializeFirebaseIfNeeded(context);
+                String appName = getAppNameForFirebase(context);
                 final FirebaseInstanceId instanceID = FirebaseInstanceId.getInstance(FirebaseApp.getInstance(appName));
                 threadPool.execute(new Runnable() {
 
