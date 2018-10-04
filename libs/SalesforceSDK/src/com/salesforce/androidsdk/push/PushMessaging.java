@@ -144,7 +144,7 @@ public class PushMessaging {
     }
 
     /**
-     * Will make call to Firebase.initializeApp if it hasn't already taken place. 
+     * Will make call to Firebase.initializeApp if it hasn't already taken place.
      *
      * @param context Context
      */
@@ -166,13 +166,12 @@ public class PushMessaging {
     }
 
     /**
-     * Get's the app unique name for firebase
+     * Get the app unique name for firebase
      *
      * @param context Context
      * @return appName String
      */
     public static String getAppNameForFirebase(Context context) {
-        // Fetches the app's unique name to supply to Firebase.
         String appName = FirebaseApp.DEFAULT_APP_NAME;
         try {
             final PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
