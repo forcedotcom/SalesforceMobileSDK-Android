@@ -223,13 +223,8 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 		storeCursor.moveToPageIndex(index);
 
 		// Build json result
-		try {
-			JSONObject result = storeCursor.getData(smartStore);
-			ReactBridgeHelper.invoke(successCallback, result);
-		} catch (JSONException e) {
-            SalesforceReactLogger.e(TAG, "moveCursorToPageIndex call failed", e);
-			errorCallback.invoke(e.toString());
-		}
+		JSONObject result = storeCursor.getData(smartStore);
+		ReactBridgeHelper.invoke(successCallback, result);
 	}
 
 	/**

@@ -77,21 +77,39 @@ public class StoreCursor {
 		// Always between 0 and totalPages-1
 		this.currentPageIndex = (newPageIndex < 0 ? 0 : newPageIndex >= totalPages ? totalPages - 1 : newPageIndex);
 	}
-	
+
 	/**
+	 * Returns cursor meta data (page index, size etc) and data (entries in page) as a FakeJSONObject
+	 * NB: json data is never deserialized
 	 * @param smartStore
-	 * @return json containing cursor meta data (page index, size etc) and data (entries in page)
-	 * Note: query is run to build json
-	 * @throws JSONException 
 	 */
-	public JSONObject getData(SmartStore smartStore) throws JSONException {
-		JSONObject json = new JSONObject();
-		json.put(CURSOR_ID, cursorId);
-		json.put(CURRENT_PAGE_INDEX, currentPageIndex);
-		json.put(PAGE_SIZE, querySpec.pageSize);
-		json.put(TOTAL_ENTRIES, totalEntries);
-		json.put(TOTAL_PAGES, totalPages);
-		json.put(CURRENT_PAGE_ORDERED_ENTRIES, smartStore.query(querySpec, currentPageIndex));
+	public FakeJSONObject getData(SmartStore smartStore)  {
+		StringBuilder resultBuilder = new StringBuilder();
+		resultBuilder.append("{")
+			.append("\"").append(CURSOR_ID).append("\":").append(cursorId).append(", ")
+			.append("\"").append(CURRENT_PAGE_INDEX).append("\":").append(currentPageIndex).append(", ")
+			.append("\"").append(PAGE_SIZE).append("\":").append(querySpec.pageSize).append(", ")
+			.append("\"").append(TOTAL_ENTRIES).append("\":").append(totalEntries).append(", ")
+			.append("\"").append(TOTAL_PAGES).append("\":").append(totalPages).append(", ")
+			.append("\"").append(CURRENT_PAGE_ORDERED_ENTRIES).append("\":");
+		smartStore.queryAsString(resultBuilder, querySpec, currentPageIndex);
+		resultBuilder.append("}");
+		return new FakeJSONObject(resultBuilder.toString());
+	}
+}
+
+/**
+ * A subclass of JSONObject that doesn't actually parse the stringified json passed to its constructor
+ * Use this class to avoid deserialization if you are calling a method that only wants to serialize the JSONObject
+ */
+class FakeJSONObject extends JSONObject {
+	private String json;
+
+	public FakeJSONObject(String json) {
+		this.json = json;
+	}
+
+	public String toString() {
 		return json;
 	}
 }
