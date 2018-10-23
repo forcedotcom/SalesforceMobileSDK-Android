@@ -1,7 +1,7 @@
 buildscript {
   repositories {
-    jcenter()
     google()
+    jcenter()
   }
 
   dependencies {
@@ -17,7 +17,7 @@ allprojects {
       // All of React Native (JS, Android binaries) is installed from npm
       url "$rootProject.projectDir/libs/SalesforceReact/node_modules/react-native/android"
     }
-    jcenter()
     google()
+    jcenter()
   }
 }
