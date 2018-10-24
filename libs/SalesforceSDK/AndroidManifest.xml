@@ -29,12 +29,14 @@
         -->
         <activity android:name="com.salesforce.androidsdk.ui.LoginActivity"
             android:theme="@style/SalesforceSDK.ActionBarTheme"
-            android:launchMode="singleInstance" />
+            android:launchMode="singleInstance"
+            android:screenOrientation="portrait" />
 
         <!-- Passcode activity -->
         <activity android:name="com.salesforce.androidsdk.ui.PasscodeActivity"
             android:theme="@style/SalesforceSDK.ActionBarTheme"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="portrait" />
 
         <!-- Manage space activity -->
         <activity android:name="com.salesforce.androidsdk.ui.ManageSpaceActivity"
@@ -44,18 +46,21 @@
         <!-- Choose server activity -->
         <activity android:name="com.salesforce.androidsdk.ui.ServerPickerActivity"
             android:excludeFromRecents="true"
-            android:theme="@style/SalesforceSDK.ActionBarTheme" />
+            android:theme="@style/SalesforceSDK.ActionBarTheme"
+            android:screenOrientation="portrait" />
 
         <!-- Account switcher activity -->
         <activity android:name="com.salesforce.androidsdk.ui.AccountSwitcherActivity"
             android:excludeFromRecents="true"
-            android:theme="@style/SalesforceSDK.ActionBarTheme" />
+            android:theme="@style/SalesforceSDK.ActionBarTheme"
+            android:screenOrientation="portrait" />
 
         <!-- IDP webview activity -->
         <activity android:name="com.salesforce.androidsdk.auth.idp.IDPCodeGeneratorActivity"
             android:excludeFromRecents="true"
             android:theme="@style/SalesforceSDK.ActionBarTheme"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="portrait" />
 
         <!--  Dev info activity -->
         <activity android:name="com.salesforce.androidsdk.ui.DevInfoActivity"
