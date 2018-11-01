@@ -28,8 +28,8 @@ package com.salesforce.androidsdk.store;
 
 import android.database.Cursor;
 import android.os.SystemClock;
-import android.support.test.filters.MediumTest;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.filters.MediumTest;
+import androidx.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;

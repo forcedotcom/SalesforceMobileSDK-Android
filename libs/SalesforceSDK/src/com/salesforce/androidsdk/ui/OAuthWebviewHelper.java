@@ -41,7 +41,7 @@ import android.os.Bundle;
 import android.security.KeyChain;
 import android.security.KeyChainAliasCallback;
 import android.security.KeyChainException;
-import android.support.customtabs.CustomTabsIntent;
+import androidx.browser.customtabs.CustomTabsIntent;
 import android.text.TextUtils;
 import android.webkit.ClientCertRequest;
 import android.webkit.SslErrorHandler;

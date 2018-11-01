@@ -28,7 +28,7 @@ package com.salesforce.androidsdk.smartstore.store;
 
 import android.content.ContentValues;
 import android.database.Cursor;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;

@@ -26,8 +26,8 @@
  */
 package com.salesforce.androidsdk.store;
 
-import android.support.test.filters.MediumTest;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.filters.MediumTest;
+import androidx.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;

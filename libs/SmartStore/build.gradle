@@ -16,9 +16,9 @@ apply plugin: 'com.jfrog.bintray'
 dependencies {
     api project(':libs:SalesforceSDK')
     api 'net.zetetic:android-database-sqlcipher:3.5.9'
-    androidTestImplementation 'com.android.support.test:runner:1.0.2'
-    androidTestImplementation 'com.android.support.test:rules:1.0.2'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+    androidTestImplementation 'androidx.test:runner:1.1.0'
+    androidTestImplementation 'androidx.test:rules:1.1.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.0'
 }
 
 android {
@@ -56,7 +56,7 @@ android {
   }
   defaultConfig {
     testApplicationId "com.salesforce.androidsdk.smartstore.tests"
-    testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'

@@ -28,8 +28,8 @@
 package com.salesforce.androidsdk.reactnative;
 
 import android.content.Intent;
-import android.support.test.rule.ActivityTestRule;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.rule.ActivityTestRule;
+import androidx.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.reactnative.util.ReactTestActivity;
 import com.salesforce.androidsdk.reactnative.util.TestResult;

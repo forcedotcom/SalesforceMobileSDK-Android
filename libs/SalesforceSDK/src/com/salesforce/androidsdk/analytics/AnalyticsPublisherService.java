@@ -28,7 +28,7 @@ package com.salesforce.androidsdk.analytics;
 
 import android.content.Context;
 import android.content.Intent;
-import android.support.v4.app.JobIntentService;
+import androidx.core.app.JobIntentService;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;

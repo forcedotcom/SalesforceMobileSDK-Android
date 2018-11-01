@@ -26,8 +26,8 @@
  */
 package com.salesforce.androidsdk.store;
 
-import android.support.test.filters.LargeTest;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.filters.LargeTest;
+import androidx.test.runner.AndroidJUnit4;
 import android.util.Log;
 
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;

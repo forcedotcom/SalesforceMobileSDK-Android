@@ -28,7 +28,7 @@ package com.salesforce.androidsdk.store;
 
 import android.content.Context;
 import android.database.Cursor;
-import android.support.test.InstrumentationRegistry;
+import androidx.test.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
