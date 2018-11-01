@@ -34,7 +34,6 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.os.Bundle;
-import androidx.core.app.JobIntentService;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -48,6 +47,8 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import androidx.core.app.JobIntentService;
 
 /**
  * This class provides utility functions related to push notifications,
@@ -172,14 +173,13 @@ public class PushMessaging {
      * @return appName String
      */
     public static String getAppNameForFirebase(Context context) {
-        String appName = FirebaseApp.DEFAULT_APP_NAME;
+        String appName = "[DEFAULT]";
         try {
             final PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
             appName = context.getString(packageInfo.applicationInfo.labelRes);
         } catch (PackageManager.NameNotFoundException | Resources.NotFoundException e) {
             SalesforceSDKLogger.w(TAG, "Package info could not be retrieved", e);
         }
-
         return appName;
     }
 
