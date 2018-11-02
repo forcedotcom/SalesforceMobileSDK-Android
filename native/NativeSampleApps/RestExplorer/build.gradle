@@ -2,13 +2,13 @@ apply plugin: 'com.android.application'
 
 dependencies {
   api project(':libs:SalesforceSDK')
-  androidTestImplementation ('com.android.support.test:runner:1.0.2') {
+  androidTestImplementation ('androidx.test:runner:1.1.0') {
     exclude module: 'support-annotations'
   }
-  androidTestImplementation ('com.android.support.test:rules:1.0.2') {
+  androidTestImplementation ('androidx.test:rules:1.1.0') {
     exclude module: 'support-annotations'
   }
-  androidTestImplementation ('com.android.support.test.espresso:espresso-core:3.0.2') {
+  androidTestImplementation ('androidx.test.espresso:espresso-core:3.1.0') {
     exclude module: 'support-annotations'
   }
 }
@@ -49,7 +49,7 @@ android {
   }
   defaultConfig {
     testApplicationId "com.salesforce.samples.restexplorer.tests"
-    testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'

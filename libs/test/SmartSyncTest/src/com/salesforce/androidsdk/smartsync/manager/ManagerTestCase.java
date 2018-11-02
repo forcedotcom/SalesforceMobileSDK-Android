@@ -29,7 +29,7 @@ package com.salesforce.androidsdk.smartsync.manager;
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
-import android.support.test.InstrumentationRegistry;
+import androidx.test.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
 import com.salesforce.androidsdk.auth.HttpAccess;

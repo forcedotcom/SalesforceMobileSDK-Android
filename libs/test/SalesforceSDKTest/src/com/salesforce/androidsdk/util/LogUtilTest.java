@@ -26,8 +26,8 @@
  */
 package com.salesforce.androidsdk.util;
 
-import android.support.test.filters.SmallTest;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+import androidx.test.runner.AndroidJUnit4;
 import android.util.Pair;
 
 import org.junit.Assert;

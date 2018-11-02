@@ -28,9 +28,9 @@ package com.salesforce.androidsdk.security;
 
 import android.app.Application;
 import android.app.Instrumentation;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.filters.SmallTest;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.InstrumentationRegistry;
+import androidx.test.filters.SmallTest;
+import androidx.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.analytics.security.Encryptor;

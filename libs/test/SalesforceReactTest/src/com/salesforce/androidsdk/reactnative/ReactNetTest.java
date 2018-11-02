@@ -28,7 +28,7 @@
 package com.salesforce.androidsdk.reactnative;
 
 
-import android.support.test.filters.SmallTest;
+import androidx.test.filters.SmallTest;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;

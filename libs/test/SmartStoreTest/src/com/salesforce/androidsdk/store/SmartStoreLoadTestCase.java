@@ -26,7 +26,7 @@
  */
 package com.salesforce.androidsdk.store;
 
-import android.support.test.InstrumentationRegistry;
+import androidx.test.InstrumentationRegistry;
 import android.util.Log;
 
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;

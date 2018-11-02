@@ -27,7 +27,7 @@
 
 package com.salesforce.androidsdk.smartsync.target;
 
-import android.support.test.filters.LargeTest;
+import androidx.test.filters.LargeTest;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
