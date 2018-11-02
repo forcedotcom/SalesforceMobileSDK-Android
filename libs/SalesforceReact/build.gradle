@@ -5,7 +5,6 @@ buildscript {
         jcenter()
     }
 
-
     dependencies {
         classpath 'com.github.dcendents:android-maven-gradle-plugin:2.0'
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
@@ -21,6 +20,7 @@ dependencies {
   api 'com.facebook.react:react-native:0.56.1'
   androidTestImplementation 'androidx.test:runner:1.1.0'
   androidTestImplementation 'androidx.test:rules:1.1.0'
+  androidTestImplementation 'androidx.test.ext:junit:1.0.0'
 }
 
 android {

@@ -27,9 +27,9 @@
 package com.salesforce.androidsdk.analytics.logger;
 
 import android.content.Context;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -55,7 +55,7 @@ public class SalesforceLoggerTest {
 
     @Before
     public void setUp() throws Exception {
-        targetContext = InstrumentationRegistry.getTargetContext();
+        targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         SalesforceLogger.flushComponents();
         SalesforceLogger.resetLoggerPrefs(targetContext);
         final Set<String> components = SalesforceLogger.getComponents();

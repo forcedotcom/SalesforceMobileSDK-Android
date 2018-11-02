@@ -26,9 +26,9 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.filters.LargeTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -102,7 +102,7 @@ public class RestClientTest {
 
     @Before
     public void setUp() throws Exception {
-        TestCredentials.init(InstrumentationRegistry.getContext());
+        TestCredentials.init(InstrumentationRegistry.getInstrumentation().getContext());
         httpAccess = new HttpAccess(null, "dummy-agent");
         TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,
                 new URI(TestCredentials.LOGIN_URL), TestCredentials.CLIENT_ID,

@@ -27,9 +27,9 @@
 package com.salesforce.androidsdk.config;
 
 import android.content.Context;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -51,7 +51,7 @@ public class BootConfigTest {
 
     @Before
     public void setUp() throws Exception {
-        testContext = InstrumentationRegistry.getContext();
+        testContext = InstrumentationRegistry.getInstrumentation().getContext();
     }
 
     @After

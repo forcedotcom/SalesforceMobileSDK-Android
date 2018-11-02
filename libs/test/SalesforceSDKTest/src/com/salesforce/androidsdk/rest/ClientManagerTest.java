@@ -34,9 +34,9 @@ import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.os.Bundle;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.filters.MediumTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.TestForceApp;
@@ -106,10 +106,10 @@ public class ClientManagerTest {
 
     @Before
     public void setUp() throws Exception {
-        targetContext = InstrumentationRegistry.getTargetContext();
+        targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         final Application app = Instrumentation.newApplication(TestForceApp.class, targetContext);
         InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
-        TestCredentials.init(InstrumentationRegistry.getContext());
+        TestCredentials.init(InstrumentationRegistry.getInstrumentation().getContext());
         loginOptions = new LoginOptions(TEST_LOGIN_URL, TEST_CALLBACK_URL,
                 TEST_CLIENT_ID, TEST_SCOPES);
         clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE,

@@ -28,9 +28,9 @@ package com.salesforce.androidsdk.auth;
 
 import android.app.Application;
 import android.app.Instrumentation;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import android.util.Log;
 
 import com.salesforce.androidsdk.TestCredentials;
@@ -68,9 +68,9 @@ public class IDPRequestHandlerTest {
     @Before
     public void setUp() throws Exception {
         final Application app = Instrumentation.newApplication(TestForceApp.class,
-                InstrumentationRegistry.getContext());
+                InstrumentationRegistry.getInstrumentation().getContext());
         InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
-        TestCredentials.init(InstrumentationRegistry.getContext());
+        TestCredentials.init(InstrumentationRegistry.getInstrumentation().getContext());
     }
 
     /**

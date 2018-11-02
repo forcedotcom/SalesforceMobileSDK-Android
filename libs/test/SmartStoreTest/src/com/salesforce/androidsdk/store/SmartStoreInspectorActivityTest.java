@@ -27,10 +27,10 @@
 package com.salesforce.androidsdk.store;
 
 import android.content.Context;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import android.widget.ListAdapter;
 import android.widget.MultiAutoCompleteTextView;
 import android.widget.TextView;
@@ -84,7 +84,7 @@ public class SmartStoreInspectorActivityTest {
 	@Before
 	public void setUp() throws Exception {
 		EventBuilderHelper.enableDisable(false);
-		targetContext = InstrumentationRegistry.getTargetContext();
+		targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
 		createStore();
 		createSoups();
 		populateSoup(TEST_SOUP, NUMBER_ROWS_TEST_SOUP);

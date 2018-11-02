@@ -28,9 +28,9 @@
 package com.salesforce.androidsdk.store;
 
 import android.content.Context;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.salesforce.androidsdk.MainActivity;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
@@ -58,7 +58,7 @@ public class StoreConfigTest extends SmartStoreTestCase {
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        SmartStoreSDKTestManager.init(InstrumentationRegistry.getTargetContext(), store);
+        SmartStoreSDKTestManager.init(InstrumentationRegistry.getInstrumentation().getTargetContext(), store);
         sdkManager = SmartStoreSDKTestManager.getInstance();
         globalStore = sdkManager.getGlobalSmartStore();
         userStore = sdkManager.getSmartStore();

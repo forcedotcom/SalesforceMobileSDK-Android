@@ -29,10 +29,10 @@ package com.salesforce.samples.restexplorer;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import android.text.TextUtils;
 import android.widget.TextView;
 
@@ -79,7 +79,7 @@ public class PasscodeActivityTest {
 
         @Override
         protected void beforeActivityLaunched() {
-            targetContext = InstrumentationRegistry.getTargetContext();
+            targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
             passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
         }
     }

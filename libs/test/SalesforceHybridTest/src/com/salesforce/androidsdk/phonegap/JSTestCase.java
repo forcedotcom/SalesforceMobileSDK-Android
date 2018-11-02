@@ -28,7 +28,7 @@ package com.salesforce.androidsdk.phonegap;
 
 import android.app.Instrumentation;
 import android.content.Intent;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.phonegap.plugin.TestRunnerPlugin;
