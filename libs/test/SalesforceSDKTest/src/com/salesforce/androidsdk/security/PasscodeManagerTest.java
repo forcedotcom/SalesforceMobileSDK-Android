@@ -28,9 +28,9 @@ package com.salesforce.androidsdk.security;
 
 import android.content.Context;
 import android.os.Looper;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.salesforce.androidsdk.security.PasscodeManager.HashConfig;
 
@@ -66,7 +66,7 @@ public class PasscodeManagerTest {
     private class TestPasscodeManager extends PasscodeManager {
 
         TestPasscodeManager() {
-            super(InstrumentationRegistry.getTargetContext(), TEST_HASH_CONFIG);
+            super(InstrumentationRegistry.getInstrumentation().getTargetContext(), TEST_HASH_CONFIG);
             setTimeoutMs(TEST_TIMEOUT_MS);
             setEnabled(true);
             // start in a known state.

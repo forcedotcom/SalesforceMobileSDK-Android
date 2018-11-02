@@ -27,7 +27,7 @@
 package com.salesforce.androidsdk.store;
 
 import androidx.test.filters.LargeTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import android.util.Log;
 
 import com.salesforce.androidsdk.analytics.security.Encryptor;

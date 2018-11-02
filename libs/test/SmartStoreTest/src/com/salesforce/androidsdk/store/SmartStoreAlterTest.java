@@ -28,7 +28,7 @@ package com.salesforce.androidsdk.store;
 
 import android.database.Cursor;
 import androidx.test.filters.MediumTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.salesforce.androidsdk.smartstore.store.AlterSoupLongOperation;
 import com.salesforce.androidsdk.smartstore.store.DBHelper;

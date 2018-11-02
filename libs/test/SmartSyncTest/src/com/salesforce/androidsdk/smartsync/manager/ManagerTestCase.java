@@ -29,7 +29,7 @@ package com.salesforce.androidsdk.smartsync.manager;
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
 import com.salesforce.androidsdk.auth.HttpAccess;
@@ -89,12 +89,12 @@ abstract public class ManagerTestCase {
     protected String apiVersion;
 
     public void setUp() throws Exception {
-        targetContext = InstrumentationRegistry.getTargetContext();
+        targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         apiVersion = ApiVersionStrings.getVersionNumber(targetContext);
         final Application app = Instrumentation.newApplication(TestForceApp.class,
         		targetContext);
         InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
-        TestCredentials.init(InstrumentationRegistry.getContext());
+        TestCredentials.init(InstrumentationRegistry.getInstrumentation().getContext());
         eq = new EventsListenerQueue();
         if (SmartSyncSDKManager.getInstance() == null) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);

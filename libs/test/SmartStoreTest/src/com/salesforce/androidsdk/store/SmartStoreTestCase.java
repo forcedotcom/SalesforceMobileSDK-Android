@@ -28,7 +28,7 @@ package com.salesforce.androidsdk.store;
 
 import android.content.Context;
 import android.database.Cursor;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
@@ -64,7 +64,7 @@ public abstract class SmartStoreTestCase {
 	@Before
 	public void setUp() throws Exception {
 		EventBuilderHelper.enableDisable(false);
-		targetContext = InstrumentationRegistry.getTargetContext();
+		targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
 		dbOpenHelper = DBOpenHelper.getOpenHelper(targetContext, null);
 		dbHelper = DBHelper.getInstance(dbOpenHelper.getWritableDatabase(getEncryptionKey()));
 		store = new SmartStore(dbOpenHelper, getEncryptionKey());

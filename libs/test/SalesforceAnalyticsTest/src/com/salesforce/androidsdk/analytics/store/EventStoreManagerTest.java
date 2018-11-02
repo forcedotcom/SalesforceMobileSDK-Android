@@ -27,9 +27,9 @@
 package com.salesforce.androidsdk.analytics.store;
 
 import android.content.Context;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.salesforce.androidsdk.analytics.manager.AnalyticsManager;
 import com.salesforce.androidsdk.analytics.model.DeviceAppAttributes;
@@ -72,7 +72,7 @@ public class EventStoreManagerTest {
 
     @Before
     public void setUp() throws Exception {
-        targetContext = InstrumentationRegistry.getTargetContext();
+        targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         final String uniqueId = UUID.randomUUID().toString();
         analyticsManager = new AnalyticsManager(uniqueId,
                 targetContext, TEST_ENCRYPTION_KEY, TEST_DEVICE_APP_ATTRIBUTES);

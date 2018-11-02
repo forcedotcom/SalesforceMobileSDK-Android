@@ -26,9 +26,9 @@
  */
 package com.salesforce.androidsdk.auth;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -67,7 +67,7 @@ public class HttpAccessTest {
 
 	@Before
 	public void setUp() throws Exception {
-		TestCredentials.init(InstrumentationRegistry.getContext());
+		TestCredentials.init(InstrumentationRegistry.getInstrumentation().getContext());
 		final HttpAccess httpAccess = new HttpAccess(null, "dummy-agent");
 		okHttpClient = httpAccess.getOkHttpClient();
 		resourcesUrl = HttpUrl.parse(TestCredentials.INSTANCE_URL + "/services/data/" + TestCredentials.API_VERSION + "/");

@@ -27,7 +27,7 @@
 package com.salesforce.androidsdk.smartsync.manager;
 
 import androidx.test.filters.MediumTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartsync.model.Layout;

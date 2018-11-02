@@ -27,9 +27,9 @@
 package com.salesforce.androidsdk.analytics.model;
 
 import android.content.Context;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -69,7 +69,7 @@ public class InstrumentationEventBuilderTest {
 
     @Before
     public void setUp() throws Exception {
-        targetContext = InstrumentationRegistry.getTargetContext();
+        targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         uniqueId = UUID.randomUUID().toString();
         analyticsManager = new AnalyticsManager(uniqueId,
                 targetContext, TEST_ENCRYPTION_KEY, TEST_DEVICE_APP_ATTRIBUTES);

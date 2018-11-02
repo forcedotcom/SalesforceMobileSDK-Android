@@ -26,7 +26,7 @@
  */
 package com.salesforce.androidsdk.store;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import android.util.Log;
 
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
@@ -55,10 +55,10 @@ public class SmartStoreLoadTestCase extends SmartStoreTestCase {
 
     @Before
     public void setUp() throws Exception {
-        final String dbPath = InstrumentationRegistry.getTargetContext().getApplicationInfo().dataDir + "/databases";
+        final String dbPath = InstrumentationRegistry.getInstrumentation().getTargetContext().getApplicationInfo().dataDir + "/databases";
         final File fileDir = new File(dbPath);
-        DBOpenHelper.deleteAllUserDatabases(InstrumentationRegistry.getTargetContext());
-        DBOpenHelper.deleteDatabase(InstrumentationRegistry.getTargetContext(), null);
+        DBOpenHelper.deleteAllUserDatabases(InstrumentationRegistry.getInstrumentation().getTargetContext());
+        DBOpenHelper.deleteDatabase(InstrumentationRegistry.getInstrumentation().getTargetContext(), null);
         DBOpenHelper.removeAllFiles(fileDir);
         super.setUp();
     }
