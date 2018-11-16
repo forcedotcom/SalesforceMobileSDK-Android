@@ -1311,7 +1311,10 @@ public class SalesforceSDKManager {
      * @return Dev info (list of name1, value1, name2, value2 etc) to show in DevInfoActivity
      */
     public List<String> getDevSupportInfos() {
-
+        final UserAccount cachedCurrentUser = getUserAccountManager().getCachedCurrentUser();
+        final String currentUserString = (cachedCurrentUser == null) ? "" : usersToString(cachedCurrentUser);
+        final List<UserAccount> users = getUserAccountManager().getAuthenticatedUsers();
+        final String usersString = (users == null || users.isEmpty()) ? "" : usersToString(users.toArray(new UserAccount[0]));
         List<String> devInfos =  new ArrayList<>(Arrays.asList(
                 "SDK Version", SDK_VERSION,
                 "App Type", getAppType(),
@@ -1319,17 +1322,15 @@ public class SalesforceSDKManager {
                 "Browser Login Enabled", isBrowserLoginEnabled() + "",
                 "IDP Enabled", isIDPLoginFlowEnabled() + "",
                 "Identity Provider", isIdentityProvider() + "",
-                "Current User", usersToString(getUserAccountManager().getCachedCurrentUser()),
-                "Authenticated Users", usersToString(getUserAccountManager().getAuthenticatedUsers().toArray(new UserAccount[0]))
+                "Current User", currentUserString,
+                "Authenticated Users", usersString
         ));
-
         devInfos.addAll(getDevInfosFor(BootConfig.getBootConfig(context).asJSON(), "BootConfig"));
         RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(context);
         devInfos.addAll(Arrays.asList("Managed?", runtimeConfig.isManagedApp() + ""));
         if (runtimeConfig.isManagedApp()) {
             devInfos.addAll(getDevInfosFor(runtimeConfig.asJSON(), "Managed Pref"));
         }
-
         return devInfos;
     }
 
