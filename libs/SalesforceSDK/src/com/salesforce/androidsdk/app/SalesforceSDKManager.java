@@ -1354,7 +1354,7 @@ public class SalesforceSDKManager {
     }
 
     private String usersToString(List<UserAccount> userAccounts) {
-        return (userAccounts == null) ? "" : usersToString(userAccounts.toArray(new UserAccount[0]));
+        return usersToString(userAccounts == null ? null : userAccounts.toArray(new UserAccount[0]));
     }
 
     private void sendLogoutCompleteIntent() {
