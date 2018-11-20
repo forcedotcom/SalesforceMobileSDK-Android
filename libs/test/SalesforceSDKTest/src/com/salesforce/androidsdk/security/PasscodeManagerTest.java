@@ -28,16 +28,18 @@ package com.salesforce.androidsdk.security;
 
 import android.content.Context;
 import android.os.Looper;
-import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.filters.SmallTest;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.salesforce.androidsdk.security.PasscodeManager.HashConfig;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 /**
  * Tests for PasscodeManager
@@ -48,14 +50,22 @@ public class PasscodeManagerTest {
 
     private static final HashConfig TEST_HASH_CONFIG = new HashConfig("", "", "dummy-key");
     private static final int TEST_TIMEOUT_MS = 1000;
+    private Context ctx;
 
     @Before
     public void setUp() throws Exception {
+        this.ctx = InstrumentationRegistry.getInstrumentation().getTargetContext();
+
         if (Looper.myLooper() == null) {
             Looper.prepare();	
     	}
         this.now = System.currentTimeMillis();
         this.pm = new TestPasscodeManager();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        this.pm.reset(ctx);
     }
 
     private PasscodeManager pm;
@@ -66,7 +76,7 @@ public class PasscodeManagerTest {
     private class TestPasscodeManager extends PasscodeManager {
 
         TestPasscodeManager() {
-            super(InstrumentationRegistry.getInstrumentation().getTargetContext(), TEST_HASH_CONFIG);
+            super(ctx, TEST_HASH_CONFIG);
             setTimeoutMs(TEST_TIMEOUT_MS);
             setEnabled(true);
             // start in a known state.
@@ -78,8 +88,7 @@ public class PasscodeManagerTest {
             return now;
         }
 
-        @Override
-        public void showLockActivity(Context ctx) {
+        public void lock(Context ctx) {
             locked = true;
             startedLockActivity = true;
         }
@@ -140,5 +149,41 @@ public class PasscodeManagerTest {
         Assert.assertEquals(1, pm.getFailedPasscodeAttempts());
         pm.unlock();
         Assert.assertEquals(0, pm.getFailedPasscodeAttempts());
+    }
+
+    /**
+     * Check that increasing passcode length makes passcode change required if there is a passcode stored.
+     */
+    @Test
+    public void testIncreasePasscodeLengthMakesPasscodeChangeRequired() {
+        Assert.assertFalse(pm.isPasscodeChangeRequired());
+
+        // Increase passcode length without a passcode stored
+        pm.setMinPasscodeLength(ctx, 5);
+        Assert.assertFalse(pm.isPasscodeChangeRequired());
+
+        // Increase passcode length with a passcode stored
+        pm.store(ctx, "12345");
+        pm.setMinPasscodeLength(ctx, 6);
+        Assert.assertTrue(pm.isPasscodeChangeRequired());
+    }
+
+    /**
+     * Check that passcode change is no longer required after a new passcode is stored
+     */
+    @Test
+    public void testStorePasscodeResetPasscodeChangeRequired() {
+        // Increase passcode length with a passcode stored
+        Assert.assertFalse(pm.isPasscodeChangeRequired());
+        pm.store(ctx, "1234");
+        pm.setMinPasscodeLength(ctx, 5);
+        Assert.assertTrue(pm.isPasscodeChangeRequired());
+
+
+        // Store a new passcode
+        pm.store(ctx, "123456");
+
+        // Make sure passcodeChangeRequired is back to false
+        Assert.assertFalse(pm.isPasscodeChangeRequired());
     }
 }

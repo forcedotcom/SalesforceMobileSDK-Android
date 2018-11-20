@@ -490,6 +490,10 @@ public class PasscodeManager  {
         storeMobilePolicy(ctx);
     }
 
+    /**
+     * @return true if time elapsed since the last user activity in the app exceeds the timeoutMs
+     */
+
     public boolean shouldLock() {
         return timeoutMs > 0 && now() >= (lastActivity + timeoutMs);
     }
