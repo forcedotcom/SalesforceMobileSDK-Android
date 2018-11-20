@@ -79,7 +79,7 @@ public class PasscodeManagerTest {
         }
 
         @Override
-        public void showLockActivity(Context ctx, boolean changePasscodeFlow) {
+        public void showLockActivity(Context ctx) {
             locked = true;
             startedLockActivity = true;
         }

@@ -75,14 +75,14 @@ public class PasscodeManager  {
     // Key in preference for the passcode length.
     private static final String KEY_PASSCODE_LENGTH = "passcode_length";
 
-    // Request code used to start passcode activity
-    public static final int PASSCODE_REQUEST_CODE = 777;
-
-    // Key used to specify that a longer passcode needs to be created.
-    public static final String CHANGE_PASSCODE_KEY = "change_passcode";
+    // Key in preference to indicate passcode change is required.
+    private static final String KEY_PASSCODE_CHANGE_REQUIRED= "passcode_change_required";
 
     // Key in preference for failed attempts
-    private static final String FAILED_ATTEMPTS = "failed_attempts";
+    private static final String KEY_FAILED_ATTEMPTS = "failed_attempts";
+
+    // Request code used to start passcode activity
+    public static final int PASSCODE_REQUEST_CODE = 777;
 
     // Misc
     private HashConfig verificationHashConfig;
@@ -92,6 +92,7 @@ public class PasscodeManager  {
     boolean locked;
     private int timeoutMs;
     private int minPasscodeLength;
+    private boolean passcodeChangeRequired;
     private LockChecker lockChecker;
 
     /**
@@ -115,6 +116,15 @@ public class PasscodeManager  {
        this.locked = true;
        lockChecker = new LockChecker(); 
    }
+
+    /**
+     * Returns true if a passcode change is required.
+     *
+     * @return true if passcode change required.
+     */
+    public boolean isPasscodeChangeRequired() {
+        return passcodeChangeRequired;
+    }
 
    /**
     * Returns the timeout value for the specified account.
@@ -182,6 +192,7 @@ public class PasscodeManager  {
             Editor e = sp.edit();
             e.putInt(KEY_TIMEOUT, timeoutMs);
             e.putInt(KEY_PASSCODE_LENGTH, minPasscodeLength);
+            e.putBoolean(KEY_PASSCODE_CHANGE_REQUIRED, passcodeChangeRequired);
             e.commit();
         }
     }
@@ -200,11 +211,13 @@ public class PasscodeManager  {
             if (!sp.contains(KEY_TIMEOUT) || !sp.contains(KEY_PASSCODE_LENGTH)) {
                 timeoutMs = 0;
                 minPasscodeLength = MIN_PASSCODE_LENGTH;
+                passcodeChangeRequired = false;
                 storeMobilePolicy(context);
                 return;
             }
             timeoutMs = sp.getInt(KEY_TIMEOUT, 0);
             minPasscodeLength = sp.getInt(KEY_PASSCODE_LENGTH, MIN_PASSCODE_LENGTH);
+            passcodeChangeRequired = sp.getBoolean(KEY_PASSCODE_CHANGE_REQUIRED, false);
         }
     }
 
@@ -228,10 +241,11 @@ public class PasscodeManager  {
         		Context.MODE_PRIVATE);
         Editor e = sp.edit();
         e.remove(KEY_PASSCODE);
-        e.remove(FAILED_ATTEMPTS);
+        e.remove(KEY_FAILED_ATTEMPTS);
         e.commit();
         timeoutMs = 0;
         minPasscodeLength = MIN_PASSCODE_LENGTH;
+        passcodeChangeRequired = false;
         storeMobilePolicy(ctx);
         handler = null;
     }
@@ -326,6 +340,9 @@ public class PasscodeManager  {
         SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
         Editor e = sp.edit();
         e.putString(KEY_PASSCODE, hashForVerification(passcode));
+        // Reset passcodeChangeRequired
+        passcodeChangeRequired = false;
+        e.putBoolean(KEY_PASSCODE_CHANGE_REQUIRED, false);
         e.commit();
     }
 
@@ -343,13 +360,13 @@ public class PasscodeManager  {
      */
     public int getFailedPasscodeAttempts() {
         SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
-        return sp.getInt(FAILED_ATTEMPTS, 0);
+        return sp.getInt(KEY_FAILED_ATTEMPTS, 0);
     }
 
     private void setFailedPasscodeAttempts(int failedPasscodeAttempts) {
         SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
         Editor e = sp.edit();
-        e.putInt(FAILED_ATTEMPTS, failedPasscodeAttempts);
+        e.putInt(KEY_FAILED_ATTEMPTS, failedPasscodeAttempts);
         e.commit();
     }
 
@@ -364,7 +381,7 @@ public class PasscodeManager  {
      * @param ctx
      */
     public void lock(Context ctx) {
-        showLockActivity(ctx, false);
+        showLockActivity(ctx);
     }
 
     /**
@@ -375,7 +392,7 @@ public class PasscodeManager  {
     public boolean lockIfNeeded(Activity newFrontActivity, boolean registerActivity) {
         if (newFrontActivity != null)
             frontActivity = newFrontActivity;
-        if (isEnabled() && (isLocked() || shouldLock())) {
+        if (isEnabled() && (isLocked() || shouldLock() || passcodeChangeRequired)) {
             lock(frontActivity);
             return true;
         } else {
@@ -462,34 +479,22 @@ public class PasscodeManager  {
     /**
      * @param ctx
      * @param minPasscodeLength
-     * @return true if a passcode change is required and the app is entering a locked state.
      */
-    public boolean setMinPasscodeLength(Context ctx, int minPasscodeLength) {
-        boolean passcodeChangeRequired = false;
+    public void setMinPasscodeLength(Context ctx, int minPasscodeLength) {
     	if (minPasscodeLength > this.minPasscodeLength) {
-            this.minPasscodeLength = minPasscodeLength;
-
-            /*
-             * This needs to happen only if a passcode exists, in order to trigger
-             * the 'Change Passcode' flow. Otherwise, we simply need to update
-             * the minimum length in memory. The 'Create Passcode' flow is
-             * triggered later from OAuthWebviewHelper.
-             */
             if (hasStoredPasscode(ctx)) {
-                showLockActivity(ctx, true);
-                passcodeChangeRequired = true;
+                this.passcodeChangeRequired = true;
             }
     	}
         this.minPasscodeLength = minPasscodeLength;
         storeMobilePolicy(ctx);
-        return passcodeChangeRequired;
     }
 
     public boolean shouldLock() {
         return timeoutMs > 0 && now() >= (lastActivity + timeoutMs);
     }
 
-    public void showLockActivity(Context ctx, boolean changePasscodeFlow) {
+    public void showLockActivity(Context ctx) {
         locked = true;
         if (ctx != null) {
             final Intent i = new Intent(ctx, SalesforceSDKManager.getInstance().getPasscodeActivity());
@@ -499,7 +504,6 @@ public class PasscodeManager  {
             if (ctx == SalesforceSDKManager.getInstance().getAppContext()) {
                 i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             }
-            i.putExtra(CHANGE_PASSCODE_KEY, changePasscodeFlow);
             if (ctx instanceof Activity) {
                 ((Activity) ctx).startActivityForResult(i, PASSCODE_REQUEST_CODE);
             } else {
