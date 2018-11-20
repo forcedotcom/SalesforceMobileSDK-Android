@@ -61,25 +61,25 @@ public class PasscodeManager  {
     public static final int MIN_PASSCODE_LENGTH = 4;
 
     // Key in preference for the passcode
-    private static final String KEY_PASSCODE ="passcode";
+    protected static final String KEY_PASSCODE ="passcode";
 
     // Private preference where we stored the passcode (hashed)
-    private static final String PASSCODE_PREF_NAME = "user";
+    protected static final String PASSCODE_PREF_NAME = "user";
 
     // Private preference where we stored the org settings.
-    private static final String MOBILE_POLICY_PREF = "mobile_policy";
+    protected static final String MOBILE_POLICY_PREF = "mobile_policy";
 
     // Key in preference for the access timeout.
-    private static final String KEY_TIMEOUT = "access_timeout";
+    protected static final String KEY_TIMEOUT = "access_timeout";
 
     // Key in preference for the passcode length.
-    private static final String KEY_PASSCODE_LENGTH = "passcode_length";
+    protected static final String KEY_PASSCODE_LENGTH = "passcode_length";
 
     // Key in preference to indicate passcode change is required.
-    private static final String KEY_PASSCODE_CHANGE_REQUIRED= "passcode_change_required";
+    protected static final String KEY_PASSCODE_CHANGE_REQUIRED= "passcode_change_required";
 
     // Key in preference for failed attempts
-    private static final String KEY_FAILED_ATTEMPTS = "failed_attempts";
+    protected static final String KEY_FAILED_ATTEMPTS = "failed_attempts";
 
     // Request code used to start passcode activity
     public static final int PASSCODE_REQUEST_CODE = 777;
@@ -124,6 +124,17 @@ public class PasscodeManager  {
      */
     public boolean isPasscodeChangeRequired() {
         return passcodeChangeRequired;
+    }
+
+
+    /**
+     * Set passcode change required flag to the passed value
+     * @param ctx
+     * @param passcodeChangeRequired value to set passcode change required flag to
+     */
+    public void setPasscodeChangeRequired(Context ctx, boolean passcodeChangeRequired) {
+        this.passcodeChangeRequired = passcodeChangeRequired;
+        storeMobilePolicy(ctx);
     }
 
    /**
@@ -340,10 +351,8 @@ public class PasscodeManager  {
         SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
         Editor e = sp.edit();
         e.putString(KEY_PASSCODE, hashForVerification(passcode));
-        // Reset passcodeChangeRequired
-        passcodeChangeRequired = false;
-        e.putBoolean(KEY_PASSCODE_CHANGE_REQUIRED, false);
         e.commit();
+        setPasscodeChangeRequired(ctx,false);
     }
 
     /**
