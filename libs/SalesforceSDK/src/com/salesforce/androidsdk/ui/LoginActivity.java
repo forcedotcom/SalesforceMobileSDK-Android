@@ -385,9 +385,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		if (requestCode == PasscodeManager.PASSCODE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-			webviewHelper.onNewPasscode();
-		} else if (requestCode == SPRequestHandler.IDP_REQUEST_CODE) {
+		if (requestCode == SPRequestHandler.IDP_REQUEST_CODE) {
             spRequestHandler.handleIDPResponse(resultCode, data);
         } else {
 	        super.onActivityResult(requestCode, resultCode, data);
