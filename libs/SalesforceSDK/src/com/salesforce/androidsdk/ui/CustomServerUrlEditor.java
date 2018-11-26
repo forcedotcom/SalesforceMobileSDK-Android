@@ -30,6 +30,8 @@ import android.app.DialogFragment;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.SpannableString;
 import android.view.LayoutInflater;
@@ -148,14 +150,21 @@ public class CustomServerUrlEditor extends DialogFragment {
 						final EditText et = (EditText) v;
 						boolean isDefaultValue = et.getText().toString().equals(
 								getEditDefaultValue(et.getId()));
+						Handler handler = new Handler(Looper.getMainLooper());
 						if (hasFocus && isDefaultValue) {
-							et.getText().clear();
+							handler.post(new Runnable() {
+								@Override
+								public void run() {
+									et.getText().clear();
+								}
+							});
 						} else if (!hasFocus && et.getText().toString().equals("")) {
-							if (et.getId() == R.id.sf__picker_custom_label) {
-								setEditText(R.id.sf__picker_custom_label, getEditDefaultValue(et.getId()));
-							} else {
-								setEditText(R.id.sf__picker_custom_url, getEditDefaultValue(et.getId()));
-							}
+							handler.post(new Runnable() {
+								@Override
+								public void run() {
+									et.setText(getEditDefaultValue(et.getId()));
+								}
+							});
 						}
 					}
 				});
