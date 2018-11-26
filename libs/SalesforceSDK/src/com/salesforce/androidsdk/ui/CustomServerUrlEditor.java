@@ -31,10 +31,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.text.Editable;
-import android.text.SpannableString;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.View.OnFocusChangeListener;
 import android.view.ViewGroup;
 import android.webkit.URLUtil;
 import android.widget.Button;
@@ -79,8 +77,6 @@ public class CustomServerUrlEditor extends DialogFragment {
 		} else {
 			getDialog().setTitle(R.string.sf__server_url_edit_title);
 		}
-		setEditText(R.id.sf__picker_custom_label, label);
-		setEditText(R.id.sf__picker_custom_url, urlValue);
 
 		/*
 		 * Sets handlers in the code for the dialog. 
@@ -130,37 +126,6 @@ public class CustomServerUrlEditor extends DialogFragment {
 	 */
 	public View getRootView() {
 		return rootView;
-	}
-
-	private void setEditText(int editId, String value) {
-		if (value == null) {
-			throw new RuntimeException("Value cannot be null");
-		}
-		final EditText et = rootView.findViewById(editId);
-		final SpannableString labelSpan = new SpannableString(value);
-		if (et != null) {
-			et.setText(labelSpan);
-			if (et.getOnFocusChangeListener() == null) {
-				et.setOnFocusChangeListener(new OnFocusChangeListener() {
-
-					@Override
-					public void onFocusChange(View v, boolean hasFocus) {
-						final EditText et = (EditText) v;
-						boolean isDefaultValue = et.getText().toString().equals(
-								getEditDefaultValue(et.getId()));
-						if (hasFocus && isDefaultValue) {
-							et.getText().clear();
-						} else if (!hasFocus && et.getText().toString().equals("")) {
-							if (et.getId() == R.id.sf__picker_custom_label) {
-								setEditText(R.id.sf__picker_custom_label, getEditDefaultValue(et.getId()));
-							} else {
-								setEditText(R.id.sf__picker_custom_url, getEditDefaultValue(et.getId()));
-							}
-						}
-					}
-				});
-			}
-		}
 	}
 
 	private String validateInput(int editId) {
