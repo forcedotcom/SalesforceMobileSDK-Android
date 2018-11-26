@@ -119,6 +119,15 @@ public class CustomServerUrlEditor extends DialogFragment {
 		}
 	}
 
+	/**
+	 * Returns the root view of this fragment (used mainly by tests).
+	 *
+	 * @return Root view.
+	 */
+	public View getRootView() {
+		return rootView;
+	}
+
 	private String validateInput(int editId) {
 		final EditText et = rootView.findViewById(editId);
 		final Editable etVal = et.getText();
