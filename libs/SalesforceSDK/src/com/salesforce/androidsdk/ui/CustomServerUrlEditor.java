@@ -30,13 +30,9 @@ import android.app.DialogFragment;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.text.Editable;
-import android.text.SpannableString;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.View.OnFocusChangeListener;
 import android.view.ViewGroup;
 import android.webkit.URLUtil;
 import android.widget.Button;
@@ -123,15 +119,6 @@ public class CustomServerUrlEditor extends DialogFragment {
 		}
 	}
 
-	/**
-	 * Returns the root view of this fragment (used mainly by tests).
-	 *
-	 * @return Root view.
-	 */
-	public View getRootView() {
-		return rootView;
-	}
-	
 	private String validateInput(int editId) {
 		final EditText et = rootView.findViewById(editId);
 		final Editable etVal = et.getText();
