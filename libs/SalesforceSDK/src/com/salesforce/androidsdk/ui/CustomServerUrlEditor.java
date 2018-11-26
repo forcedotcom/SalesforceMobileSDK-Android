@@ -81,8 +81,6 @@ public class CustomServerUrlEditor extends DialogFragment {
 		} else {
 			getDialog().setTitle(R.string.sf__server_url_edit_title);
 		}
-		setEditText(R.id.sf__picker_custom_label, label);
-		setEditText(R.id.sf__picker_custom_url, urlValue);
 
 		/*
 		 * Sets handlers in the code for the dialog. 
@@ -133,45 +131,7 @@ public class CustomServerUrlEditor extends DialogFragment {
 	public View getRootView() {
 		return rootView;
 	}
-
-	private void setEditText(int editId, String value) {
-		if (value == null) {
-			throw new RuntimeException("Value cannot be null");
-		}
-		final EditText et = rootView.findViewById(editId);
-		final SpannableString labelSpan = new SpannableString(value);
-		if (et != null) {
-			et.setText(labelSpan);
-			if (et.getOnFocusChangeListener() == null) {
-				et.setOnFocusChangeListener(new OnFocusChangeListener() {
-
-					@Override
-					public void onFocusChange(View v, boolean hasFocus) {
-						final EditText et = (EditText) v;
-						boolean isDefaultValue = et.getText().toString().equals(
-								getEditDefaultValue(et.getId()));
-						Handler handler = new Handler(Looper.getMainLooper());
-						if (hasFocus && isDefaultValue) {
-							handler.post(new Runnable() {
-								@Override
-								public void run() {
-									et.getText().clear();
-								}
-							});
-						} else if (!hasFocus && et.getText().toString().equals("")) {
-							handler.post(new Runnable() {
-								@Override
-								public void run() {
-									et.setText(getEditDefaultValue(et.getId()));
-								}
-							});
-						}
-					}
-				});
-			}
-		}
-	}
-
+	
 	private String validateInput(int editId) {
 		final EditText et = rootView.findViewById(editId);
 		final Editable etVal = et.getText();
