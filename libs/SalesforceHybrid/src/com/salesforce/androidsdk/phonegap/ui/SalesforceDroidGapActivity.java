@@ -161,7 +161,11 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
 
         // Not logged in
         if (client == null) {
-            onResumeNotLoggedIn();
+            if (!webAppLoaded) {
+                onResumeNotLoggedIn();
+            } else {
+                SalesforceHybridLogger.i(TAG, "onResume - unauthenticated web app already loaded");
+            }
         }
 
         // Logged in
