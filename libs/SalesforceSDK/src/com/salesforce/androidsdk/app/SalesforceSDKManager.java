@@ -1039,12 +1039,9 @@ public class SalesforceSDKManager {
     public String getUserAgent(String qualifier) {
         String appName = provideAppName();
         String appTypeWithQualifier = getAppType() + qualifier;
-        String unencoded = String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s",
+        return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s",
                 SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, getAppVersion(),
                 appTypeWithQualifier, uid, TextUtils.join(".", features));
-
-        // Strip out all non-printing non-ASCII characters
-        return unencoded.replaceAll("\\P{ASCII}|\\P{Print}", "");
     }
 
     /**
