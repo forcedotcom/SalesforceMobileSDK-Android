@@ -26,19 +26,29 @@
  */
 package com.salesforce.androidsdk.app;
 
-import java.lang.reflect.Field;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.SortedSet;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentSkipListSet;
-
-import org.json.JSONObject;
+import android.accounts.Account;
+import android.accounts.AccountManager;
+import android.accounts.AccountManagerCallback;
+import android.accounts.AccountManagerFuture;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.ActivityInfo;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.res.Resources;
+import android.os.AsyncTask;
+import android.os.Build;
+import android.os.SystemClock;
+import android.provider.Settings;
+import android.text.TextUtils;
+import android.webkit.CookieManager;
 
 import com.salesforce.androidsdk.BuildConfig;
 import com.salesforce.androidsdk.R;
@@ -72,29 +82,19 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
-import android.accounts.Account;
-import android.accounts.AccountManager;
-import android.accounts.AccountManagerCallback;
-import android.accounts.AccountManagerFuture;
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.pm.ActivityInfo;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
-import android.content.pm.PackageManager.NameNotFoundException;
-import android.content.res.Resources;
-import android.os.AsyncTask;
-import android.os.Build;
-import android.os.SystemClock;
-import android.provider.Settings;
-import android.text.TextUtils;
-import android.webkit.CookieManager;
+import org.json.JSONObject;
+
+import java.lang.reflect.Field;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.SortedSet;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
  * This class serves as an interface to the various
