@@ -132,10 +132,15 @@ public class PasscodeActivityTest {
     @Test
     public void testChangeWithNoMistakes() {
 
+        // Make passcode change required
+        Assert.assertFalse(passcodeManager.isPasscodeChangeRequired());
+        passcodeManager.setPasscodeChangeRequired(SalesforceSDKManager.getInstance().getAppContext(), true);
+        Assert.assertTrue(passcodeManager.isPasscodeChangeRequired());
+
+
         // Get activity
         final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
                 SalesforceSDKManager.getInstance().getPasscodeActivity());
-        i.putExtra(PasscodeManager.CHANGE_PASSCODE_KEY, true);
         passcodeActivityTestRule.launchActivity(i);
         passcodeActivity = passcodeActivityTestRule.getActivity();
         Assert.assertEquals("Activity expected in change mode", PasscodeMode.Change, passcodeActivity.getMode());
@@ -153,6 +158,9 @@ public class PasscodeActivityTest {
         doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertFalse("Application should be unlocked", passcodeManager.isLocked());
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
+
+        // Make sure passcode change is no longer required
+        Assert.assertFalse(passcodeManager.isPasscodeChangeRequired());
     }
 
     /**

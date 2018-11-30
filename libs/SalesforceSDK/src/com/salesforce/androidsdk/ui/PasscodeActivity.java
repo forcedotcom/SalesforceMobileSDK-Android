@@ -106,12 +106,8 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         entry = getEntryView();
         entry.setOnEditorActionListener(this);
         passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
-        final Intent i = getIntent();
-        boolean shouldChangePasscode = false;
-        if (i != null) {
-            shouldChangePasscode = i.getBooleanExtra(PasscodeManager.CHANGE_PASSCODE_KEY, false);
-        }
-        if (shouldChangePasscode) {
+        // Asking passcode manager is a change passcode flow is required
+        if (passcodeManager.isPasscodeChangeRequired()) {
             setMode(PasscodeMode.Change);
         } else {
             final PasscodeMode mode = passcodeManager.hasStoredPasscode(this) ? PasscodeMode.Check : PasscodeMode.Create;

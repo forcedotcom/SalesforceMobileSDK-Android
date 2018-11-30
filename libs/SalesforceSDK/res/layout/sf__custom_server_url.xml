@@ -17,10 +17,12 @@
 
 	<EditText android:id="@+id/sf__picker_custom_label"
 	    style="@style/SalesforceSDK.ServerPicker.EditText"
+		android:hint="@string/sf__server_url_default_custom_label"
 		android:imeOptions="actionNext" />
 
 	<EditText android:id="@+id/sf__picker_custom_url"
 	    style="@style/SalesforceSDK.ServerPicker.EditText"
+		android:hint="@string/sf__server_url_default_custom_url"
 		android:imeOptions="actionDone" />
 
 	<LinearLayout style="@style/SalesforceSDK.ServerPicker.ButtonContainer">
