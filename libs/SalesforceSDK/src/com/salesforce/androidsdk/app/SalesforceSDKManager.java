@@ -26,29 +26,19 @@
  */
 package com.salesforce.androidsdk.app;
 
-import android.accounts.Account;
-import android.accounts.AccountManager;
-import android.accounts.AccountManagerCallback;
-import android.accounts.AccountManagerFuture;
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.pm.ActivityInfo;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
-import android.content.pm.PackageManager.NameNotFoundException;
-import android.content.res.Resources;
-import android.os.AsyncTask;
-import android.os.Build;
-import android.os.SystemClock;
-import android.provider.Settings;
-import android.text.TextUtils;
-import android.webkit.CookieManager;
+import java.lang.reflect.Field;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.SortedSet;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentSkipListSet;
+
+import org.json.JSONObject;
 
 import com.salesforce.androidsdk.BuildConfig;
 import com.salesforce.androidsdk.R;
@@ -82,19 +72,29 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
-import org.json.JSONObject;
-
-import java.lang.reflect.Field;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.SortedSet;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentSkipListSet;
+import android.accounts.Account;
+import android.accounts.AccountManager;
+import android.accounts.AccountManagerCallback;
+import android.accounts.AccountManagerFuture;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.ActivityInfo;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.res.Resources;
+import android.os.AsyncTask;
+import android.os.Build;
+import android.os.SystemClock;
+import android.provider.Settings;
+import android.text.TextUtils;
+import android.webkit.CookieManager;
 
 /**
  * This class serves as an interface to the various
@@ -444,7 +444,7 @@ public class SalesforceSDKManager {
         }
         return loginServerManager;
     }
-    
+
     /**
      * Sets a receiver that handles received push notifications.
      *
@@ -1029,9 +1029,12 @@ public class SalesforceSDKManager {
             SalesforceSDKLogger.w(TAG, "Package info could not be retrieved", e);
         }
         String appTypeWithQualifier = getAppType() + qualifier;
-        return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s",
+        String unencoded = String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s",
                 SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, getAppVersion(),
                 appTypeWithQualifier, uid, TextUtils.join(".", features));
+
+        // Strip out all non-printing non-ASCII characters
+        return unencoded.replaceAll("\\P{ASCII}|\\P{Print}", "");
     }
 
     /**
@@ -1191,7 +1194,7 @@ public class SalesforceSDKManager {
     public boolean isLoggingOut() {
     	return isLoggingOut;
     }
-    
+
     /**
      * @return ClientManager
      */
