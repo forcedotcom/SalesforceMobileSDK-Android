@@ -444,7 +444,7 @@ public class SalesforceSDKManager {
         }
         return loginServerManager;
     }
-    
+
     /**
      * Sets a receiver that handles received push notifications.
      *
@@ -1014,20 +1014,30 @@ public class SalesforceSDKManager {
     }
 
     /**
+     * Provides the app name to use in {@link #getUserAgent(String)}. This string must only contain printable ASCII characters.
+     * By default, the display name under {@link android.content.pm.ApplicationInfo#labelRes} will be used.
+     *
+     * @return The app name to use when constructing the user agent string
+     */
+    protected String provideAppName() {
+        try {
+            PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+            return context.getString(packageInfo.applicationInfo.labelRes);
+        } catch (NameNotFoundException | Resources.NotFoundException e) {
+            SalesforceSDKLogger.w(TAG, "Package info could not be retrieved", e);
+            return "";
+        }
+    }
+
+    /**
      * Returns a user agent string based on the Mobile SDK version. The user agent takes the following form:
-     * SalesforceMobileSDK/{salesforceSDK version} android/{android OS version} appName/appVersion {Native|Hybrid} uid_{device id}
+     * SalesforceMobileSDK/{salesforceSDK version} android/{android OS version} {provideAppName()}/appVersion {Native|Hybrid} uid_{device id}
      *
      * @param qualifier Qualifier.
      * @return The user agent string to use for all requests.
      */
     public String getUserAgent(String qualifier) {
-        String appName = "";
-        try {
-            PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
-            appName = context.getString(packageInfo.applicationInfo.labelRes);
-        } catch (NameNotFoundException | Resources.NotFoundException e) {
-            SalesforceSDKLogger.w(TAG, "Package info could not be retrieved", e);
-        }
+        String appName = provideAppName();
         String appTypeWithQualifier = getAppType() + qualifier;
         return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s",
                 SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, getAppVersion(),
@@ -1191,7 +1201,7 @@ public class SalesforceSDKManager {
     public boolean isLoggingOut() {
     	return isLoggingOut;
     }
-    
+
     /**
      * @return ClientManager
      */
