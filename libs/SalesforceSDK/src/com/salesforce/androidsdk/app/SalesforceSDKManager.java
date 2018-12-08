@@ -1356,8 +1356,10 @@ public class SalesforceSDKManager {
     private String usersToString(UserAccount... userAccounts) {
         List<String> accountNames = new ArrayList<>();
         if (userAccounts != null) {
-            for (UserAccount userAccount : userAccounts) {
-                accountNames.add(userAccount.getAccountName());
+            for (final UserAccount userAccount : userAccounts) {
+                if (userAccount != null) {
+                    accountNames.add(userAccount.getAccountName());
+                }
             }
         }
         return TextUtils.join(", ", accountNames);
