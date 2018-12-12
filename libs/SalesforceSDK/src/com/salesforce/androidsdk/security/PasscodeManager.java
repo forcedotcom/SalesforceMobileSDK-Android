@@ -86,7 +86,6 @@ public class PasscodeManager  {
 
     // Misc
     private HashConfig verificationHashConfig;
-    private Activity frontActivity;
     private Handler handler;
     private long lastActivity;
     boolean locked;
@@ -394,13 +393,11 @@ public class PasscodeManager  {
     }
 
     /**
-     * @param newFrontActivity
+     * @param frontActivity
      * @param registerActivity
      * @return
      */
-    public boolean lockIfNeeded(Activity newFrontActivity, boolean registerActivity) {
-        if (newFrontActivity != null)
-            frontActivity = newFrontActivity;
+    public boolean lockIfNeeded(Activity frontActivity, boolean registerActivity) {
         if (isEnabled() && (isLocked() || shouldLock() || passcodeChangeRequired)) {
             lock(frontActivity);
             return true;
