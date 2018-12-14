@@ -3,10 +3,6 @@
     package="com.salesforce.samples.appconfigurator"
     android:versionCode="1"
     android:versionName="1.0">
-
-    <uses-sdk
-        android:minSdkVersion="21"
-        android:targetSdkVersion="27" />
     
     <application
         android:allowBackup="true"

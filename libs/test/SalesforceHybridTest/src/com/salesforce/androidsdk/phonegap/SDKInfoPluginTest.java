@@ -28,19 +28,18 @@ package com.salesforce.androidsdk.phonegap;
 
 import android.content.Context;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.filters.SmallTest;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.filters.SmallTest;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.phonegap.plugin.SDKInfoPlugin;
 
-import junit.framework.Assert;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -59,7 +58,7 @@ public class SDKInfoPluginTest {
 	 */
     @Test
 	public void testGetSDKInfo() throws NameNotFoundException, JSONException {
-		Context ctx = InstrumentationRegistry.getTargetContext();
+		Context ctx = InstrumentationRegistry.getInstrumentation().getTargetContext();
 		JSONObject sdkInfo = SDKInfoPlugin.getSDKInfo(ctx);
 		BootConfig bootconfig = BootConfig.getBootConfig(ctx);
 		Assert.assertEquals("Wrong app name", "SalesforceHybridTest", sdkInfo.getString("appName"));
@@ -100,7 +99,7 @@ public class SDKInfoPluginTest {
 	 */
 	@Test
 	public void testGetForcePluginsFromXML() {
-		List<String> plugins = SDKInfoPlugin.getForcePluginsFromXML(InstrumentationRegistry.getTargetContext());
+		List<String> plugins = SDKInfoPlugin.getForcePluginsFromXML(InstrumentationRegistry.getInstrumentation().getTargetContext());
         Assert.assertEquals("Wrong number of force plugins", 7, plugins.size());
         Assert.assertTrue("network plugin should have been returned", plugins.contains("com.salesforce.network"));
         Assert.assertTrue("oauth plugin should have been returned", plugins.contains("com.salesforce.oauth"));

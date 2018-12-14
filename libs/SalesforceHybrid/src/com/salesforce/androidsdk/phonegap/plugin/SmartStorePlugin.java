@@ -363,7 +363,7 @@ public class SmartStorePlugin extends ForcePlugin {
         if (isGlobal) {
             SmartStoreSDKManager.getInstance().removeGlobalSmartStore(storeName);
         } else {
-            final UserAccount account = UserAccountManager.getInstance().getCurrentUser();
+            final UserAccount account = UserAccountManager.getInstance().getCachedCurrentUser();
             if (account == null) {
                 throw new Exception("No user account found");
             }  else {
@@ -684,7 +684,7 @@ public class SmartStorePlugin extends ForcePlugin {
         if (isGlobal) {
             return SmartStoreSDKManager.getInstance().getGlobalSmartStore(storeName);
         } else {
-            final UserAccount account = UserAccountManager.getInstance().getCurrentUser();
+            final UserAccount account = UserAccountManager.getInstance().getCachedCurrentUser();
             if (account == null) {
                 throw new Exception("No user account found");
             }  else {

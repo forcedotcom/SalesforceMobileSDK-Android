@@ -29,10 +29,10 @@ package com.salesforce.samples.restexplorer;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.filters.LargeTest;
-import android.support.test.rule.ActivityTestRule;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.filters.LargeTest;
+import androidx.test.rule.ActivityTestRule;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import android.text.TextUtils;
 import android.widget.TextView;
 
@@ -41,20 +41,19 @@ import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.ui.PasscodeActivity.PasscodeMode;
 
-import junit.framework.Assert;
-
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import static android.support.test.espresso.Espresso.onView;
-import static android.support.test.espresso.action.ViewActions.click;
-import static android.support.test.espresso.action.ViewActions.closeSoftKeyboard;
-import static android.support.test.espresso.action.ViewActions.pressImeActionButton;
-import static android.support.test.espresso.action.ViewActions.replaceText;
-import static android.support.test.espresso.matcher.ViewMatchers.withId;
+import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.action.ViewActions.click;
+import static androidx.test.espresso.action.ViewActions.closeSoftKeyboard;
+import static androidx.test.espresso.action.ViewActions.pressImeActionButton;
+import static androidx.test.espresso.action.ViewActions.replaceText;
+import static androidx.test.espresso.matcher.ViewMatchers.withId;
 
 /**
  * Tests for PasscodeActivity.
@@ -80,7 +79,7 @@ public class PasscodeActivityTest {
 
         @Override
         protected void beforeActivityLaunched() {
-            targetContext = InstrumentationRegistry.getTargetContext();
+            targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
             passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
         }
     }
@@ -133,10 +132,15 @@ public class PasscodeActivityTest {
     @Test
     public void testChangeWithNoMistakes() {
 
+        // Make passcode change required
+        Assert.assertFalse(passcodeManager.isPasscodeChangeRequired());
+        passcodeManager.setPasscodeChangeRequired(SalesforceSDKManager.getInstance().getAppContext(), true);
+        Assert.assertTrue(passcodeManager.isPasscodeChangeRequired());
+
+
         // Get activity
         final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
                 SalesforceSDKManager.getInstance().getPasscodeActivity());
-        i.putExtra(PasscodeManager.CHANGE_PASSCODE_KEY, true);
         passcodeActivityTestRule.launchActivity(i);
         passcodeActivity = passcodeActivityTestRule.getActivity();
         Assert.assertEquals("Activity expected in change mode", PasscodeMode.Change, passcodeActivity.getMode());
@@ -154,6 +158,9 @@ public class PasscodeActivityTest {
         doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertFalse("Application should be unlocked", passcodeManager.isLocked());
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
+
+        // Make sure passcode change is no longer required
+        Assert.assertFalse(passcodeManager.isPasscodeChangeRequired());
     }
 
     /**

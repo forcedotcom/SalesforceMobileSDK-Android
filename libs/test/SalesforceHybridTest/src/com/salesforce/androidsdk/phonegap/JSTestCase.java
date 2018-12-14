@@ -28,7 +28,7 @@ package com.salesforce.androidsdk.phonegap;
 
 import android.app.Instrumentation;
 import android.content.Intent;
-import android.support.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.phonegap.plugin.TestRunnerPlugin;
@@ -38,9 +38,8 @@ import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
-import junit.framework.Assert;
-
 import org.apache.cordova.CordovaWebView;
+import org.junit.Assert;
 
 import java.util.HashMap;
 import java.util.Map;

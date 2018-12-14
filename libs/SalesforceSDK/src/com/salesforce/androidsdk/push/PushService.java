@@ -32,8 +32,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.PowerManager;
-import android.support.v4.app.JobIntentService;
+import androidx.core.app.JobIntentService;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
@@ -79,7 +78,6 @@ public class PushService extends JobIntentService {
 	// Retry time constants.
     private static final long MILLISECONDS_IN_SIX_DAYS = 518400000L;
     private static final long SFDC_REGISTRATION_RETRY = 30000;
-    private static final long WAKE_LOCK_TIMEOUT_IN_MILLIS = 30000;
 
     // Unique identifier for this job.
 	private static final int JOB_ID = 24;
@@ -89,11 +87,9 @@ public class PushService extends JobIntentService {
     private static final String ANDROID_GCM = "androidGcm";
     private static final String SERVICE_TYPE = "ServiceType";
     private static final String CONNECTION_TOKEN = "ConnectionToken";
+    private static final String APPLICATION_BUNDLE = "ApplicationBundle";
     private static final String FIELD_ID = "id";
     private static final String NOT_ENABLED = "not_enabled";
-
-    // Wake lock instance.
-    private static PowerManager.WakeLock WAKE_LOCK;
 
     protected static final int REGISTRATION_STATUS_SUCCEEDED = 0;
 	protected static final int REGISTRATION_STATUS_FAILED = 1;
@@ -109,15 +105,6 @@ public class PushService extends JobIntentService {
      */
     static void runIntentInService(Intent intent) {
         final Context context = SalesforceSDKManager.getInstance().getAppContext();
-        if (WAKE_LOCK == null) {
-            final PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-            if (pm != null) {
-                WAKE_LOCK = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
-            }
-        }
-        if (WAKE_LOCK != null) {
-            WAKE_LOCK.acquire(WAKE_LOCK_TIMEOUT_IN_MILLIS);
-        }
         intent.setClassName(context, SalesforceSDKManager.getInstance().getPushServiceType().getName());
         enqueueWork(context, SalesforceSDKManager.getInstance().getPushServiceType(), JOB_ID, intent);
     }
@@ -143,40 +130,32 @@ public class PushService extends JobIntentService {
 		}
 		final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
 		final List<UserAccount> accounts = userAccMgr.getAuthenticatedUsers();
-		try {
-            boolean register = SFDC_REGISTRATION_RETRY_INTENT.equals(intent.getAction());
-            boolean unregister = SFDC_UNREGISTRATION_INTENT.equals(intent.getAction());
-            if (register || unregister) {
-                if (allAccounts) {
-                    if (accounts != null) {
-                        for (final UserAccount userAcc : accounts) {
+		boolean register = SFDC_REGISTRATION_RETRY_INTENT.equals(intent.getAction());
+		boolean unregister = SFDC_UNREGISTRATION_INTENT.equals(intent.getAction());
+		if (register || unregister) {
+			if (allAccounts) {
+				if (accounts != null) {
+					for (final UserAccount userAcc : accounts) {
 
-                            /*
-                             * If 'register' is true, we are registering, if it's false, we must be
-                             * un-registering, because of the if gate above.
-                             */
-                            performRegistrationChange(register, userAcc);
-                        }
-                    }
-                } else {
-                    if (account == null) {
-                        account = userAccMgr.getCurrentUser();
-                    }
+						/*
+						 * If 'register' is true, we are registering, if it's false, we must be
+						 * un-registering, because of the if gate above.
+						 */
+						performRegistrationChange(register, userAcc);
+					}
+				}
+			} else {
+				if (account == null) {
+					account = userAccMgr.getCurrentUser();
+				}
 
-                    /*
-                     * If 'register' is true, we are registering, if it's false, we must be
-                     * un-registering, because of the if gate above.
-                     */
-                    performRegistrationChange(register, account);
-                }
-            }
-        } finally {
-
-        	// Releases the wake lock, since processing is complete.
-            if (WAKE_LOCK != null && WAKE_LOCK.isHeld()) {
-                WAKE_LOCK.release();
-            }
-        }
+				/*
+				 * If 'register' is true, we are registering, if it's false, we must be
+				 * un-registering, because of the if gate above.
+				 */
+				performRegistrationChange(register, account);
+			}
+		}
 	}
 
 	private void performRegistrationChange(boolean register, UserAccount userAccount) {
@@ -282,12 +261,12 @@ public class PushService extends JobIntentService {
 		// Do nothing.
 	}
 
-    private String registerSFDCPushNotification(String registrationId,
-    		UserAccount account) {
+    private String registerSFDCPushNotification(String registrationId, UserAccount account) {
     	try {
             final Map<String, Object> fields = new HashMap<>();
             fields.put(CONNECTION_TOKEN, registrationId);
             fields.put(SERVICE_TYPE, ANDROID_GCM);
+            fields.put(APPLICATION_BUNDLE, SalesforceSDKManager.getInstance().getAppContext().getPackageName());
             final RestClient client = getRestClient(account);
         	if (client != null) {
                 int status = REGISTRATION_STATUS_FAILED;
@@ -336,16 +315,14 @@ public class PushService extends JobIntentService {
 	 * @return the response from unregistration
 	 * @throws IOException if the request could not be made
 	 */
-	protected RestResponse onSendUnregisterPushNotificationRequest(
-			String registeredId,
+	protected RestResponse onSendUnregisterPushNotificationRequest(String registeredId,
 			RestClient restClient) throws IOException {
 		return restClient.sendSync(RestRequest.getRequestForDelete(
 				ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()),
                 MOBILE_PUSH_SERVICE_DEVICE, registeredId));
 	}
 
-    private void unregisterSFDCPushNotification(String registeredId,
-    		UserAccount account) {
+    private void unregisterSFDCPushNotification(String registeredId, UserAccount account) {
     	try {
     		final RestClient client = getRestClient(account);
     		if (client != null) {

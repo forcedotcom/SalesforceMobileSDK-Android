@@ -26,9 +26,8 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
-
-import android.support.test.filters.LargeTest;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.filters.LargeTest;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartsync.target.LayoutSyncDownTarget;
@@ -51,12 +50,11 @@ import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.smartsync.util.SyncUpdateCallbackQueue;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
-import junit.framework.Assert;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -589,6 +587,9 @@ public class SyncManagerTest extends SyncManagerTestCase {
         for (String idCreatedByTarget : idsCreatedByTarget) {
             Assert.assertTrue("Unexpected id:" + idCreatedByTarget, idToFieldsCreated.containsKey(idCreatedByTarget));
         }
+
+        // Adding to idToFields so that they get deleted in tearDown.
+        idToFields.putAll(idToFieldsCreated);
     }
 
     /**
@@ -697,6 +698,9 @@ public class SyncManagerTest extends SyncManagerTestCase {
         // Check what got synched up
         List<String> idsCreatedByTarget = collector.createdRecordIds;
         Assert.assertEquals("Wrong number of records created by target", 0, idsCreatedByTarget.size());
+
+        // Adding to idToFields so that they get deleted in tearDown.
+        idToFields.putAll(idToFieldsCreated);
     }
 
     /**
@@ -723,6 +727,9 @@ public class SyncManagerTest extends SyncManagerTestCase {
         // Check what got synched up
         List<String> idsCreatedByTarget = collector.createdRecordIds;
         Assert.assertEquals("Wrong number of records created by target", 0, idsCreatedByTarget.size());
+
+        // Adding to idToFields so that they get deleted in tearDown.
+        idToFields.putAll(idToFieldsCreated);
     }
 
     /**
@@ -1271,6 +1278,9 @@ public class SyncManagerTest extends SyncManagerTestCase {
             idToFieldsExpectedOnServer.put(id, expectedFields);
         }
         checkServer(idToFieldsExpectedOnServer, Constants.ACCOUNT);
+
+        // Adding to idToFields so that they get deleted in tearDown.
+        idToFields.putAll(idToFieldsCreated);
     }
 
     /**
@@ -1319,6 +1329,9 @@ public class SyncManagerTest extends SyncManagerTestCase {
             idToFieldsExpectedOnServer.put(id, expectedFields);
         }
         checkServer(idToFieldsExpectedOnServer, Constants.ACCOUNT);
+
+        // Adding to idToFields so that they get deleted in tearDown.
+        idToFields.putAll(idToFieldsCreated);
     }
 
     /**

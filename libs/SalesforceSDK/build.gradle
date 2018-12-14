@@ -15,17 +15,24 @@ apply plugin: 'com.jfrog.bintray'
 
 dependencies {
     api project(':libs:SalesforceAnalytics')
-    api 'com.squareup.okhttp3:okhttp:3.9.0'
-    api 'com.google.android.gms:play-services-gcm:12.0.1'
-    api 'com.android.support:support-compat:26.1.0'
-    api 'com.android.support:customtabs:26.1.0'
-    androidTestImplementation 'com.android.support.test:runner:1.0.1'
-    androidTestImplementation 'com.android.support.test:rules:1.0.1'
+    api 'com.squareup.okhttp3:okhttp:3.10.0'
+    api 'com.google.firebase:firebase-messaging:17.3.4'
+    api 'androidx.core:core:1.0.0'
+    api 'androidx.browser:browser:1.0.0'
+    api 'junit:junit:4.12'
+    androidTestImplementation 'androidx.test:runner:1.1.0'
+    androidTestImplementation 'androidx.test:rules:1.1.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.0.0'
 }
 
 android {
-  compileSdkVersion 27
-  buildToolsVersion '27.0.3'
+    compileSdkVersion 28
+    buildToolsVersion '28.0.3'
+
+    defaultConfig {
+        targetSdkVersion 28
+        minSdkVersion 21
+    }
 
   buildTypes {
       debug {
@@ -52,7 +59,7 @@ android {
   }
   defaultConfig {
     testApplicationId "com.salesforce.androidsdk.tests"
-    testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'
@@ -65,12 +72,6 @@ android {
     xmlReport true
     abortOnError false
   }
-}
-
-afterEvaluate {
-  // Find all connected Android tests and ensure they log all passed tests. This keeps the Travis
-  // from timing out since executing tests are printed to the console.
-  tasks.matching { it.name ==~ /^connected.*AndroidTest$/ }*.logging*.setLevel(LogLevel.INFO)
 }
 
 install {
@@ -131,9 +132,9 @@ bintray {
         licenses = ['Apache-2.0']
         labels = ['android', 'salesforce', 'mobilesdk']
         version {
-            name = '6.2.0'
+            name = '7.0.0'
             released  = new Date()
-            vcsTag = 'v6.2.0'
+            vcsTag = 'v7.0.0'
         }
     }
 }

@@ -28,16 +28,14 @@ package com.salesforce.androidsdk.security;
 
 import android.app.Application;
 import android.app.Instrumentation;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.filters.SmallTest;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.filters.SmallTest;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
-import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,7 +59,7 @@ public class SalesforceKeyGeneratorTest {
     @Before
 	public void setUp() throws Exception {
 		final Application app = Instrumentation.newApplication(TestForceApp.class,
-				InstrumentationRegistry.getTargetContext());
+				InstrumentationRegistry.getInstrumentation().getTargetContext());
 		InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
 	}
 

@@ -28,22 +28,18 @@ package com.salesforce.androidsdk.store;
 
 import android.content.Context;
 import android.os.Bundle;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.filters.SmallTest;
-import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 
-import junit.framework.Assert;
-
 import net.sqlcipher.database.SQLiteDatabase;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -51,6 +47,10 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.util.Map;
 import java.util.Set;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 /**
  * Tests for obtaining and deleting databases via the DBOpenHelper.
@@ -71,8 +71,8 @@ public class DBOpenHelperTest {
 	private static final String PASSCODE = Encryptor.hash("test_key", "hashing-key");
 
 	@Before
-	public void setUp() throws Exception {
-		this.targetContext = InstrumentationRegistry.getTargetContext();
+	public void setUp() {
+		this.targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
 		EventBuilderHelper.enableDisable(false);
 
 		// Delete external blobs folder for test db and test soup
@@ -81,11 +81,11 @@ public class DBOpenHelperTest {
 	}
 
 	@After
-	public void tearDown() throws Exception {
-        final String dbPath = InstrumentationRegistry.getTargetContext().getApplicationInfo().dataDir + "/databases";
+	public void tearDown() {
+        final String dbPath = InstrumentationRegistry.getInstrumentation().getTargetContext().getApplicationInfo().dataDir + "/databases";
         final File fileDir = new File(dbPath);
-        DBOpenHelper.deleteAllUserDatabases(InstrumentationRegistry.getTargetContext());
-        DBOpenHelper.deleteDatabase(InstrumentationRegistry.getTargetContext(), null);
+        DBOpenHelper.deleteAllUserDatabases(InstrumentationRegistry.getInstrumentation().getTargetContext());
+        DBOpenHelper.deleteDatabase(InstrumentationRegistry.getInstrumentation().getTargetContext(), null);
         DBOpenHelper.removeAllFiles(fileDir);
     }
 

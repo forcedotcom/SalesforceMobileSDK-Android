@@ -26,7 +26,7 @@
  */
 package com.salesforce.androidsdk.reactnative.bridge;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.util.Base64;
 
 import com.facebook.react.bridge.Callback;

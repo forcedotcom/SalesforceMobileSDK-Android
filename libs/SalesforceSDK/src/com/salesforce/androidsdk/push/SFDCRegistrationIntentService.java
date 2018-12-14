@@ -26,11 +26,12 @@
  */
 package com.salesforce.androidsdk.push;
 
+import android.content.Context;
 import android.content.Intent;
-import android.support.v4.app.JobIntentService;
+import androidx.core.app.JobIntentService;
 
-import com.google.android.gms.gcm.GoogleCloudMessaging;
-import com.google.android.gms.iid.InstanceID;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.iid.FirebaseInstanceId;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.BootConfig;
@@ -39,13 +40,27 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 public class SFDCRegistrationIntentService extends JobIntentService {
 
     private static final String TAG = "RegIntentService";
+    private static final String FCM = "FCM";
 
     @Override
     protected void onHandleWork(Intent intent) {
         try {
-            final InstanceID instanceID = InstanceID.getInstance(this);
-            final String token = instanceID.getToken(BootConfig.getBootConfig(this).getPushNotificationClientId(),
-                    GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
+
+            /*
+             * Initializes the push configuration for this application and kicks off
+             * Firebase initialization flow. This is required before attempting to
+             * register for FCM. The other alternative is to supply a 'google-services.json'
+             * file and use the Google Services plugin to initialize, but this approach
+             * only works for apps. Since we're a library project, the programmatic
+             * approach works better for us.
+             */
+            final Context context = SalesforceSDKManager.getInstance().getAppContext();
+            String appName = PushMessaging.getAppNameForFirebase(context);
+            PushMessaging.initializeFirebaseIfNeeded(context);
+
+            // Fetches an instance ID from Firebase once the initialization is complete.
+            final FirebaseInstanceId instanceID = FirebaseInstanceId.getInstance(FirebaseApp.getInstance(appName));
+            final String token = instanceID.getToken(BootConfig.getBootConfig(this).getPushNotificationClientId(), FCM);
             final UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
 
             // Store the new token.
@@ -54,7 +69,7 @@ public class SFDCRegistrationIntentService extends JobIntentService {
             // Send it to SFDC.
             PushMessaging.registerSFDCPush(this, account);
         } catch (Exception e) {
-            SalesforceSDKLogger.e(TAG, "Error during GCM registration", e);
+            SalesforceSDKLogger.e(TAG, "Error during FCM registration", e);
         }
     }
 }

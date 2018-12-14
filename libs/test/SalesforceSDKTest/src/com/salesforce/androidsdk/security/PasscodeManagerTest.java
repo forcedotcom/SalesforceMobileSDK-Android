@@ -26,20 +26,21 @@
  */
 package com.salesforce.androidsdk.security;
 
-
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Looper;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.filters.SmallTest;
-import android.support.test.runner.AndroidJUnit4;
 
 import com.salesforce.androidsdk.security.PasscodeManager.HashConfig;
 
-import junit.framework.Assert;
-
+import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 /**
  * Tests for PasscodeManager
@@ -50,14 +51,22 @@ public class PasscodeManagerTest {
 
     private static final HashConfig TEST_HASH_CONFIG = new HashConfig("", "", "dummy-key");
     private static final int TEST_TIMEOUT_MS = 1000;
+    private Context ctx;
 
     @Before
     public void setUp() throws Exception {
+        this.ctx = InstrumentationRegistry.getInstrumentation().getTargetContext();
+
         if (Looper.myLooper() == null) {
             Looper.prepare();	
     	}
         this.now = System.currentTimeMillis();
         this.pm = new TestPasscodeManager();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        this.pm.reset(ctx);
     }
 
     private PasscodeManager pm;
@@ -68,7 +77,7 @@ public class PasscodeManagerTest {
     private class TestPasscodeManager extends PasscodeManager {
 
         TestPasscodeManager() {
-            super(InstrumentationRegistry.getTargetContext(), TEST_HASH_CONFIG);
+            super(ctx, TEST_HASH_CONFIG);
             setTimeoutMs(TEST_TIMEOUT_MS);
             setEnabled(true);
             // start in a known state.
@@ -80,8 +89,7 @@ public class PasscodeManagerTest {
             return now;
         }
 
-        @Override
-        public void showLockActivity(Context ctx, boolean changePasscodeFlow) {
+        public void lock(Context ctx) {
             locked = true;
             startedLockActivity = true;
         }
@@ -142,5 +150,120 @@ public class PasscodeManagerTest {
         Assert.assertEquals(1, pm.getFailedPasscodeAttempts());
         pm.unlock();
         Assert.assertEquals(0, pm.getFailedPasscodeAttempts());
+    }
+
+    /**
+     * Check that increasing passcode length makes passcode change required if there is a passcode stored.
+     */
+    @Test
+    public void testIncreasePasscodeLengthMakesPasscodeChangeRequired() {
+        Assert.assertFalse(pm.isPasscodeChangeRequired());
+
+        // Increase passcode length without a passcode stored
+        pm.setMinPasscodeLength(ctx, 5);
+        Assert.assertFalse(pm.isPasscodeChangeRequired());
+
+        // Increase passcode length with a passcode stored
+        pm.store(ctx, "12345");
+        pm.setMinPasscodeLength(ctx, 6);
+        Assert.assertTrue(pm.isPasscodeChangeRequired());
+    }
+
+    /**
+     * Check that passcode change is no longer required after a new passcode is stored
+     */
+    @Test
+    public void testStorePasscodeResetPasscodeChangeRequired() {
+        // Increase passcode length with a passcode stored
+        Assert.assertFalse(pm.isPasscodeChangeRequired());
+        pm.store(ctx, "1234");
+        pm.setMinPasscodeLength(ctx, 5);
+        Assert.assertTrue(pm.isPasscodeChangeRequired());
+
+
+        // Store a new passcode
+        pm.store(ctx, "123456");
+
+        // Make sure passcodeChangeRequired is back to false
+        Assert.assertFalse(pm.isPasscodeChangeRequired());
+    }
+
+    /**
+     * Make sure passcode is stored hashed in prefs
+     */
+    @Test
+    public void testPasscodePrefAfterStore() {
+        checkPasscodePrefs(null);
+        pm.store(ctx, "1234");
+        checkPasscodePrefs("1234");
+    }
+
+    /**
+     * Make sure mobile prefs are stored in prefs and updated when min length is changed
+     */
+    @Test
+    public void testMobilePrefsWhenLengthChanged() {
+        // Initial values
+        checkMobilePrefs(TEST_TIMEOUT_MS, PasscodeManager.MIN_PASSCODE_LENGTH, false);
+        // Decreasing length
+        pm.setMinPasscodeLength(ctx, 3);
+        checkMobilePrefs(TEST_TIMEOUT_MS, 3, false);
+        // Increasing length
+        pm.setMinPasscodeLength(ctx, 5);
+        checkMobilePrefs(TEST_TIMEOUT_MS, 5, false);
+    }
+
+    /**
+     * Make sure mobile prefs are stored in prefs and updated when time out is changed
+     */
+    @Test
+    public void testMobilePrefsWhenTimeoutChanged() {
+        // Initial values
+        checkMobilePrefs(TEST_TIMEOUT_MS, PasscodeManager.MIN_PASSCODE_LENGTH, false);
+        // Increasing timeout -> change should not be applied
+        pm.setTimeoutMs(TEST_TIMEOUT_MS*2);
+        checkMobilePrefs(TEST_TIMEOUT_MS, 4, false);
+        // Decreasing timeout -> change should be applied
+        pm.setTimeoutMs(TEST_TIMEOUT_MS/2);
+        checkMobilePrefs(TEST_TIMEOUT_MS/2, 4, false);
+        // Changing timeout to 0 => does a reset
+        pm.setTimeoutMs(0);
+        checkMobilePrefs(0, 4, false);
+    }
+
+
+    /**
+     * Make sure mobile prefs are stored in prefs and updated when passcode change required / stored
+     */
+    @Test
+    public void testMobilePrefsWhenPasscodeChangeRequiredOrStored() {
+        // Initial values
+        checkMobilePrefs(TEST_TIMEOUT_MS, PasscodeManager.MIN_PASSCODE_LENGTH, false);
+        // Setting passcode
+        pm.store(ctx, "1234");
+        // Increasing length
+        pm.setMinPasscodeLength(ctx, 5);
+        checkMobilePrefs(TEST_TIMEOUT_MS, 5, true);
+        // Changing passcode
+        pm.store(ctx, "12345");
+        checkMobilePrefs(TEST_TIMEOUT_MS, 5, false);
+    }
+
+
+    private void checkMobilePrefs(int timeoutMs, int minPasscodeLength, boolean passcodeChangeRequired) {
+        final SharedPreferences sp = ctx.getSharedPreferences(PasscodeManager.MOBILE_POLICY_PREF,
+                Context.MODE_PRIVATE);
+        Assert.assertEquals(timeoutMs, sp.getInt(PasscodeManager.KEY_TIMEOUT, 0));
+        Assert.assertEquals(minPasscodeLength, sp.getInt(PasscodeManager.KEY_PASSCODE_LENGTH, PasscodeManager.MIN_PASSCODE_LENGTH));
+        Assert.assertEquals(passcodeChangeRequired, sp.getBoolean(PasscodeManager.KEY_PASSCODE_CHANGE_REQUIRED, false));
+
+    }
+
+    private void checkPasscodePrefs(String passcode) {
+        final SharedPreferences sp = ctx.getSharedPreferences(PasscodeManager.PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
+            Assert.assertEquals(passcode != null, sp.contains(PasscodeManager.KEY_PASSCODE));
+        if (passcode != null) {
+            Assert.assertEquals(pm.hashForVerification(passcode), sp.getString(PasscodeManager.KEY_PASSCODE, ""));
+        }
     }
 }

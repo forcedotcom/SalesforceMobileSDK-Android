@@ -26,7 +26,7 @@
  */
 package com.salesforce.androidsdk.store;
 
-import android.support.test.filters.LargeTest;
+import androidx.test.filters.LargeTest;
 
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
@@ -66,6 +66,4 @@ public class SmartStoreLoadExternalStorageTest extends SmartStoreLoadTest {
                 {"UpsertQuery10StringIndexes10fields20characters", Type.string, NUMBER_ENTRIES, 10, 20, 10}
         });
     }
-
-
 }

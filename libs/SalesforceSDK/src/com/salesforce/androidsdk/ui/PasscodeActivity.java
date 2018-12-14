@@ -35,10 +35,12 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.fingerprint.FingerprintManager;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
+import android.os.CancellationSignal;
 import android.text.Html;
 import android.view.KeyEvent;
 import android.view.View;
@@ -53,10 +55,8 @@ import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.app.SalesforceSDKUpgradeManager;
 import com.salesforce.androidsdk.security.PasscodeManager;
 
-import java.lang.reflect.Method;
 import java.util.List;
 
 /**
@@ -106,18 +106,14 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         entry = getEntryView();
         entry.setOnEditorActionListener(this);
         passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
-        final Intent i = getIntent();
-        boolean shouldChangePasscode = false;
-        if (i != null) {
-            shouldChangePasscode = i.getBooleanExtra(PasscodeManager.CHANGE_PASSCODE_KEY, false);
-        }
-        if (shouldChangePasscode) {
+        // Asking passcode manager is a change passcode flow is required
+        if (passcodeManager.isPasscodeChangeRequired()) {
             setMode(PasscodeMode.Change);
         } else {
             final PasscodeMode mode = passcodeManager.hasStoredPasscode(this) ? PasscodeMode.Check : PasscodeMode.Create;
             setMode(mode);
             if (mode == PasscodeMode.Check) {
-                showFingerprintDialog();
+                launchBiometricAuth();
             }
         }
         logoutEnabled = true;
@@ -206,8 +202,8 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         // Processing the editor action only on key up to avoid sending events like pass code manager unlock twice.
         if ( actionId ==  EditorInfo.IME_ACTION_GO ||
                 (event != null && event.getAction() == KeyEvent.ACTION_UP)) {
-            String pc = entry.getText().toString();
-            if (pc.length() >= 0 && pc.length() < getMinPasscodeLength()) {
+            final String pc = entry.getText().toString();
+            if (pc.length() < getMinPasscodeLength()) {
                 error.setText(getMinLengthInstructions(getMinPasscodeLength()));
                 return true; // return true indicating we consumed the action.
             }
@@ -236,7 +232,6 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 
         case Check:
             if (passcodeManager.check(this, enteredPasscode)) {
-                performUpgradeStep(enteredPasscode);
                 passcodeManager.unlock();
                 done();
             } else {
@@ -262,42 +257,6 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             return true;
         }
         return false;
-    }
-
-    /*
-     * TODO: Remove this method, along with the one in UpgradeManager, in Mobile SDK 7.0.
-     */
-    private void performUpgradeStep(String passcode) {
-        final String oldKey = passcodeManager.getLegacyEncryptionKey(passcode);
-        final String newKey = SalesforceSDKManager.getEncryptionKey();
-        final SalesforceSDKUpgradeManager upgradeManager = SalesforceSDKUpgradeManager.getInstance();
-        if (upgradeManager.isPasscodeUpgradeRequired()) {
-
-            /*
-             * We need to store the new passcode to ensure the old verification
-             * hash is overwritten with the new verification hash.
-             */
-            passcodeManager.store(this, passcode);
-
-            /*
-             * Checks if SmartStoreUpgradeManager is available and if it is, invokes it using
-             * reflection since it is in a different library. This ensures that the database
-             * upgrade happens if required. If it does not exist, falls back on regular upgrade.
-             */
-            try {
-                final String smartStoreUpgradeClassName = "com.salesforce.androidsdk.smartstore.app.SmartStoreUpgradeManager";
-                final String upgradeMethodName = "upgradeTo6Dot0";
-                final Class<?>[] upgradeMethodArguments = { String.class, String.class };
-                final Object[] upgradeArgumentValues = new Object[] { oldKey, newKey };
-                final Class<?> clazz = Class.forName(smartStoreUpgradeClassName);
-                final Method method = clazz.getMethod(upgradeMethodName, upgradeMethodArguments);
-                final Object newInstance = clazz.newInstance();
-                method.invoke(newInstance, upgradeArgumentValues);
-            } catch (Exception e) {
-                upgradeManager.upgradeTo6Dot0(oldKey, newKey);
-            }
-            upgradeManager.wipeUpgradeSharedPref();
-        }
     }
 
     protected void done() {
@@ -442,8 +401,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
                 new DialogInterface.OnClickListener() {
 
             @Override
-            public void onClick(DialogInterface dialog,
-                    int which) {
+            public void onClick(DialogInterface dialog, int which) {
             	final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
             	final List<UserAccount> userAccounts = userAccMgr.getAuthenticatedUsers();
 
@@ -468,8 +426,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             		userAccMgr.signoutCurrentUser(PasscodeActivity.this);
             	}
             }
-        }).setNegativeButton(getLogoutNoString(),
-        		new DialogInterface.OnClickListener() {
+        }).setNegativeButton(getLogoutNoString(), new DialogInterface.OnClickListener() {
 
             @Override
             public void onClick(DialogInterface dialog,
@@ -485,10 +442,56 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
      * a custom fingerprint auth layout if the app chooses to do so.
      */
     protected void showFingerprintDialog() {
-        if (passcodeManager != null && isFingerprintEnabled() && !SalesforceSDKUpgradeManager.getInstance().isPasscodeUpgradeRequired()) {
-            final FingerprintAuthDialogFragment fingerprintAuthDialog = new FingerprintAuthDialogFragment();
-            fingerprintAuthDialog.setContext(this);
-            fingerprintAuthDialog.show(getFragmentManager(), "fingerprintDialog");
+        final FingerprintAuthDialogFragment fingerprintAuthDialog = new FingerprintAuthDialogFragment();
+        fingerprintAuthDialog.setContext(this);
+        fingerprintAuthDialog.show(getFragmentManager(), "fingerprintDialog");
+    }
+
+    /**
+     * Displays the dialog provided by the OS for biometric authentication
+     * using {@link android.hardware.biometrics.BiometricPrompt}.
+     */
+    @TargetApi(VERSION_CODES.P)
+    protected void showBiometricDialog() {
+
+        /*
+         * TODO: Remove this check once minAPI >= 28.
+         */
+        if (VERSION.SDK_INT >= VERSION_CODES.P) {
+            final BiometricPrompt.Builder bioBuilder = new BiometricPrompt.Builder(this);
+            bioBuilder.setDescription(getString(R.string.sf__fingerprint_description));
+            bioBuilder.setTitle(getString(R.string.sf__fingerprint_title));
+            bioBuilder.setNegativeButton(getString(R.string.sf__fingerprint_cancel), getMainExecutor(),
+                    new DialogInterface.OnClickListener() {
+
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                }
+            });
+            final BiometricPrompt bioPrompt = bioBuilder.build();
+            bioPrompt.authenticate(new CancellationSignal(), getMainExecutor(),
+                    new BiometricPrompt.AuthenticationCallback() {
+
+                @Override
+                public void onAuthenticationError(int errorCode, CharSequence errString) {
+                    super.onAuthenticationError(errorCode, errString);
+                }
+
+                @Override
+                public void onAuthenticationHelp(int helpCode, CharSequence helpString) {
+                    super.onAuthenticationHelp(helpCode, helpString);
+                }
+
+                @Override
+                public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+                    unlockViaFingerprintScan();
+                }
+
+                @Override
+                public void onAuthenticationFailed() {
+                    super.onAuthenticationFailed();
+                }
+            });
         }
     }
 
@@ -496,7 +499,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     private boolean isFingerprintEnabled() {
 
 	    /*
-         * TODO: Remove this check once minAPI > 23.
+         * TODO: Remove this check once minAPI >= 23.
          */
         if (VERSION.SDK_INT >= VERSION_CODES.M) {
             final FingerprintManager fingerprintManager = (FingerprintManager) this.getSystemService(Context.FINGERPRINT_SERVICE);
@@ -505,7 +508,8 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             if (checkSelfPermission(Manifest.permission.USE_FINGERPRINT) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{ permission.USE_FINGERPRINT}, REQUEST_CODE_ASK_PERMISSIONS);
             } else {
-                return fingerprintManager != null && fingerprintManager.isHardwareDetected() && fingerprintManager.hasEnrolledFingerprints();
+                return fingerprintManager != null && fingerprintManager.isHardwareDetected()
+                        && fingerprintManager.hasEnrolledFingerprints();
             }
         }
         return false;
@@ -514,7 +518,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == REQUEST_CODE_ASK_PERMISSIONS && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            showFingerprintDialog();
+            launchBiometricAuth();
             return;
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -523,5 +527,15 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     public void unlockViaFingerprintScan() {
         passcodeManager.unlock();
         done();
+    }
+
+    private void launchBiometricAuth() {
+        if (passcodeManager != null && isFingerprintEnabled()) {
+            if (VERSION.SDK_INT >= VERSION_CODES.P) {
+                showBiometricDialog();
+            } else if (VERSION.SDK_INT >= VERSION_CODES.M) {
+                showFingerprintDialog();
+            }
+        }
     }
 }

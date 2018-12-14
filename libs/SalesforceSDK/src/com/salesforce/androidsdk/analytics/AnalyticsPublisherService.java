@@ -28,7 +28,7 @@ package com.salesforce.androidsdk.analytics;
 
 import android.content.Context;
 import android.content.Intent;
-import android.support.v4.app.JobIntentService;
+import androidx.core.app.JobIntentService;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
@@ -69,7 +69,7 @@ public class AnalyticsPublisherService extends JobIntentService {
      * Handles the publish action in the provided background thread.
      */
     private void handleActionPublish() {
-        final UserAccount userAccount = UserAccountManager.getInstance().getCurrentUser();
+        final UserAccount userAccount = UserAccountManager.getInstance().getCachedCurrentUser();
         if (userAccount != null) {
             final SalesforceAnalyticsManager analyticsManager = SalesforceAnalyticsManager.getInstance(userAccount);
             analyticsManager.publishAllEvents();

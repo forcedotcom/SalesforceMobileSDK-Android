@@ -57,6 +57,7 @@ public class SyncState {
     public static final String SYNC_MAX_TIME_STAMP = "maxTimeStamp";
 	public static final String SYNC_START_TIME = "startTime";
 	public static final String SYNC_END_TIME = "endTime";
+	public static final String SYNC_ERROR = "error";
 
 	private long id;
 	private Type type;
@@ -72,7 +73,9 @@ public class SyncState {
 	// Start and end time in milliseconds since 1970
 	private long startTime;
 	private long endTime;
-	
+
+	//Error return from SFDC API
+	private String errorJSON;
 	
 	/**
 	 * Create syncs soup if needed
@@ -128,6 +131,7 @@ public class SyncState {
         sync.put(SYNC_MAX_TIME_STAMP, -1);
 		sync.put(SYNC_START_TIME, 0);
 		sync.put(SYNC_END_TIME, 0);
+		sync.put(SYNC_ERROR, "");
 
 		if (name != null && hasSyncWithName(store, name)) {
 			throw new SyncManager.SmartSyncException("Failed to create sync down: there is already a sync with name:" + name);
@@ -167,6 +171,7 @@ public class SyncState {
         sync.put(SYNC_MAX_TIME_STAMP, -1);
 		sync.put(SYNC_START_TIME, 0);
 		sync.put(SYNC_END_TIME, 0);
+		sync.put(SYNC_ERROR, "");
 
 		if (name != null && hasSyncWithName(store, name)) {
 			throw new SyncManager.SmartSyncException("Failed to create sync up: there is already a sync with name:" + name);
@@ -200,6 +205,7 @@ public class SyncState {
         state.maxTimeStamp = sync.optLong(SYNC_MAX_TIME_STAMP, -1);
 		state.startTime = sync.optLong(SYNC_START_TIME, 0);
 		state.endTime = sync.optLong(SYNC_START_TIME, 0);
+		state.errorJSON = JSONObjectHelper.optString(sync, SYNC_ERROR, "");
 		return state;
 	}
 	
@@ -303,6 +309,7 @@ public class SyncState {
         sync.put(SYNC_MAX_TIME_STAMP, maxTimeStamp);
 		sync.put(SYNC_START_TIME, startTime);
 		sync.put(SYNC_END_TIME, endTime);
+		sync.put(SYNC_ERROR, errorJSON);
 		return sync;
 	}
 	
@@ -366,6 +373,10 @@ public class SyncState {
 		return endTime;
 	}
 
+	public String getError() {
+		return errorJSON;
+	}
+
 	public void setMaxTimeStamp(long maxTimeStamp) {
         this.maxTimeStamp = maxTimeStamp;
     }
@@ -387,6 +398,10 @@ public class SyncState {
 		}
 
 		this.status = status;
+	}
+
+	public void setError(String error) {
+		this.errorJSON = error;
 	}
 	
 	public boolean isDone() {
@@ -423,7 +438,6 @@ public class SyncState {
     	DONE,
     	FAILED
     }
-
 
     /**
      * Enum for merge modes

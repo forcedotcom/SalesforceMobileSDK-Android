@@ -28,8 +28,8 @@ package com.salesforce.androidsdk.store;
 
 import android.database.Cursor;
 import android.os.SystemClock;
-import android.support.test.filters.MediumTest;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.filters.MediumTest;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
@@ -40,14 +40,13 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
-import junit.framework.Assert;
-
 import net.sqlcipher.database.SQLiteDatabase;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -1067,7 +1066,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		final JSONArray result = store.query(querySpec, 0);
         Assert.assertNotNull("Result should not be null", result);
         Assert.assertEquals("One result expected", 1, result.length());
-        Assert.assertEquals("Incorrect result received", 20.1, result.getJSONArray(0).getDouble(0));
+        Assert.assertEquals("Incorrect result received", 20.1, result.getJSONArray(0).getDouble(0), 0);
 		store.dropSoup(FOURTH_TEST_SOUP);
         Assert.assertFalse("Soup " + FOURTH_TEST_SOUP + " should have been deleted", store.hasSoup(FOURTH_TEST_SOUP));
 	}
@@ -1172,7 +1171,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 			if (fieldType == Type.integer)
                 Assert.assertEquals("Not the value expected", valueOut.longValue(), c.getLong(0));
 			else if (fieldType == Type.floating)
-                Assert.assertEquals("Not the value expected", valueOut.doubleValue(), c.getDouble(0));
+                Assert.assertEquals("Not the value expected", valueOut.doubleValue(), c.getDouble(0), 0);
 		} finally {
 			safeClose(c);
 		}
@@ -1237,7 +1236,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		if (fieldType == Type.integer)
             Assert.assertEquals("Not the value expected", valueOut.longValue(), actualValueOut.longValue());
 		else if (fieldType == Type.floating)
-            Assert.assertEquals("Not the value expected", valueOut.doubleValue(), actualValueOut.doubleValue());
+            Assert.assertEquals("Not the value expected", valueOut.doubleValue(), actualValueOut.doubleValue(), 0);
 	}
 
 	/**

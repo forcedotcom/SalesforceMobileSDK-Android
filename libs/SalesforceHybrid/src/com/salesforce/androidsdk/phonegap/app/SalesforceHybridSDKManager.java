@@ -49,7 +49,7 @@ public class SalesforceHybridSDKManager extends SmartSyncSDKManager {
     private static final String TAG = "SalesforceHybridSDKManager";
 
     /**
-     * Paths to the assets files containing configs for SmartStore / SmartSync in hybrid apps
+     * Paths to the assets files containing configs for SmartStore/SmartSync in hybrid apps.
      */
     private enum ConfigAssetPath {
 
@@ -77,34 +77,10 @@ public class SalesforceHybridSDKManager extends SmartSyncSDKManager {
         super(context, mainActivity, loginActivity);
     }
 
-    /**
-     * Protected constructor.
-	 *
-     * @param context Application context.
-     * @param keyImpl Implementation of KeyInterface.
-	 * @param mainActivity Activity that should be launched after the login flow.
-	 * @param loginActivity Login activity.
-     * @deprecated Will be removed in Mobile SDK 7.0. Use {@link #SalesforceHybridSDKManager(Context, Class, Class)} instead.
-	 */
-    @Deprecated
-    protected SalesforceHybridSDKManager(Context context, KeyInterface keyImpl,
-								  Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-    	super(context, keyImpl, mainActivity, loginActivity);
-    }
-
-	/**
-	 * Initializes components required for this class
-	 * to properly function. This method should be called
-	 * by apps using the Salesforce Mobile SDK.
-	 * @param context Application context.
-     * @param keyImpl Implementation of KeyInterface.
-	 * @param mainActivity Activity that should be launched after the login flow.
-	 * @param loginActivity Login activity.
-	 */
-	private static void init(Context context, KeyInterface keyImpl,
-							 Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+	private static void init(Context context, Class<? extends Activity> mainActivity,
+							 Class<? extends Activity> loginActivity) {
 		if (INSTANCE == null) {
-    		INSTANCE = new SalesforceHybridSDKManager(context, keyImpl, mainActivity, loginActivity);
+    		INSTANCE = new SalesforceHybridSDKManager(context, mainActivity, loginActivity);
     	}
 
 		// Upgrade to the latest version.
@@ -121,22 +97,7 @@ public class SalesforceHybridSDKManager extends SmartSyncSDKManager {
      * @param context Application context.
      */
     public static void initHybrid(Context context) {
-        SalesforceHybridSDKManager.init(context, null, SalesforceDroidGapActivity.class,
-                LoginActivity.class);
-    }
-
-	/**
-	 * Initializes components required for this class
-	 * to properly function. This method should be called
-	 * by hybrid apps using the Salesforce Mobile SDK.
-	 *
-	 * @param context Application context.
-     * @param keyImpl Implementation of KeyInterface.
-     * @deprecated Will be removed in Mobile SDK 7.0. Use {@link #initHybrid(Context)} instead.
-	 */
-	@Deprecated
-    public static void initHybrid(Context context, KeyInterface keyImpl) {
-		SalesforceHybridSDKManager.init(context, keyImpl, SalesforceDroidGapActivity.class,
+        SalesforceHybridSDKManager.init(context, SalesforceDroidGapActivity.class,
                 LoginActivity.class);
     }
 
@@ -149,25 +110,8 @@ public class SalesforceHybridSDKManager extends SmartSyncSDKManager {
      * @param loginActivity Login activity.
      */
     public static void initHybrid(Context context, Class<? extends Activity> loginActivity) {
-        SalesforceHybridSDKManager.init(context, null, SalesforceDroidGapActivity.class,
+        SalesforceHybridSDKManager.init(context, SalesforceDroidGapActivity.class,
                 loginActivity);
-    }
-
-	/**
-	 * Initializes components required for this class
-	 * to properly function. This method should be called
-	 * by hybrid apps using the Salesforce Mobile SDK.
-	 *
-	 * @param context Application context.
-     * @param keyImpl Implementation of KeyInterface.
-     * @param loginActivity Login activity.
-     * @deprecated Will be removed in Mobile SDK 7.0. Use {@link #initHybrid(Context, Class)} instead.
-	 */
-	@Deprecated
-    public static void initHybrid(Context context, KeyInterface keyImpl,
-    		Class<? extends Activity> loginActivity) {
-		SalesforceHybridSDKManager.init(context, keyImpl, SalesforceDroidGapActivity.class,
-				loginActivity);
     }
 
     /**
@@ -181,25 +125,7 @@ public class SalesforceHybridSDKManager extends SmartSyncSDKManager {
      */
     public static void initHybrid(Context context, Class<? extends SalesforceDroidGapActivity> mainActivity,
                                   Class<? extends Activity> loginActivity) {
-        SalesforceHybridSDKManager.init(context, null, mainActivity, loginActivity);
-    }
-
-	/**
-	 * Initializes components required for this class
-	 * to properly function. This method should be called
-	 * by hybrid apps that use a subclass of SalesforceDroidGapActivity.
-	 *
-	 * @param context Application context.
-     * @param keyImpl Implementation of KeyInterface.
-     * @param mainActivity Main activity.
-     * @param loginActivity Login activity.
-     * @deprecated Will be removed in Mobile SDK 7.0. Use {@link #initHybrid(Context, Class, Class)} instead.
-	 */
-	@Deprecated
-    public static void initHybrid(Context context, KeyInterface keyImpl,
-    		Class<? extends SalesforceDroidGapActivity> mainActivity,
-    		Class<? extends Activity> loginActivity) {
-		SalesforceHybridSDKManager.init(context, keyImpl, mainActivity, loginActivity);
+        SalesforceHybridSDKManager.init(context, mainActivity, loginActivity);
     }
     
     /**

@@ -137,7 +137,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
             else {
                 throw new SyncManager.SmartSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
             }
-            ReactBridgeHelper.invokeSuccess(successCallback, sync == null ? null : sync.asJSON());
+            ReactBridgeHelper.invoke(successCallback, sync == null ? null : sync.asJSON());
         } catch (Exception e) {
             SalesforceReactLogger.e(TAG, "getSyncStatusByName call failed", e);
             errorCallback.invoke(e.toString());
@@ -220,7 +220,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
             syncManager.cleanResyncGhosts(syncId, new SyncManager.CleanResyncGhostsCallback() {
                 @Override
                 public void onSuccess(int numRecords) {
-                    successCallback.invoke();
+                    successCallback.invoke(numRecords);
                 }
 
                 @Override
@@ -247,10 +247,11 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                 case RUNNING:
                     break;
                 case DONE:
-                    ReactBridgeHelper.invokeSuccess(successCallback, sync.asJSON());
+                    ReactBridgeHelper.invoke(successCallback, sync.asJSON());
                     break;
                 case FAILED:
-                    errorCallback.invoke("Sync failed");
+                    //Return sync to React Native with the error message in the JSON
+                    ReactBridgeHelper.invoke(errorCallback, sync.asJSON());
                     break;
             }
         } catch (Exception e) {

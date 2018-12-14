@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.smartsync.util;
 
 import java.util.HashMap;
+import java.util.Locale;
 
 /**
  * Helper class to build a SOSL returning statement.
@@ -54,7 +55,7 @@ public class SOSLReturningBuilder {
      * Private constructor.
      */
     private SOSLReturningBuilder() {
-        properties = new HashMap<String, Object>();
+        properties = new HashMap<>();
     }
 
     /**
@@ -146,7 +147,7 @@ public class SOSLReturningBuilder {
             final Integer limit = (Integer) properties.get("limit");
             if (limit != null && limit > 0) {
                 query.append(" limit ");
-                query.append(String.format("%d", limit));
+                query.append(String.format(Locale.US, "%d", limit));
             }
             query.append(")");
         }

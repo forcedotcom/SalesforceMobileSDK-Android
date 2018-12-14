@@ -135,7 +135,7 @@ public class SyncManager {
      */
     public static synchronized SyncManager getInstance(UserAccount account, String communityId, SmartStore smartStore) {
         if (account == null) {
-            account = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+            account = SmartSyncSDKManager.getInstance().getUserAccountManager().getCachedCurrentUser();
         }
         if (smartStore == null) {
             smartStore = SmartSyncSDKManager.getInstance().getSmartStore(account, communityId);
@@ -361,6 +361,9 @@ public class SyncManager {
                     // Do not do anything - let the logout go through!
                 } catch (Exception e) {
                     SmartSyncLogger.e(TAG, "Exception thrown in runSync", e);
+
+                    //Set error message to sync state
+                    sync.setError(e.getMessage());
                     // Update status to failed
                     updateSync(sync, SyncState.Status.FAILED, UNCHANGED, callback);
                 }
@@ -793,6 +796,4 @@ public class SyncManager {
          */
         void onError(Exception e);
     }
-
-
 }

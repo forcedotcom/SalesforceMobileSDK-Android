@@ -14,76 +14,6 @@ aliases:
     when: always
     command:  source .circleci/ci-helper.sh && runDanger
 
-  - &launch-emulator
-    name:  Launch Emulator
-    command: source .circleci/ci-helper.sh && startAVD
-    background: true
-
-  - &wait-for-emulator
-    name:  Wait for Emulator to boot
-    command: source .circleci/ci-helper.sh && waitForAVD
-
-  - &lib-run-base
-    halt_build_on_fail: false
-    no_output_timeout: 900
-
-  - &run-unit-tests
-    <<: *lib-run-base
-    command: source .circleci/ci-helper.sh && runTests
-
-  - &test-salesforce-analytics
-    <<: *lib-run-base
-    name: Test SalesforceAnalytics
-    command: ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
-    when: always
-
-  - &test-salesforce-sdk
-    <<: *lib-run-base
-    name: Test SalesforceSDK
-    command: ./gradlew :libs:SalesforceSDK:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
-    when: always
-
-  - &test-smart-store
-    <<: *lib-run-base
-    name: Test SmartStore
-    command: ./gradlew :libs:SmartStore:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
-    when: always
-
-  - &test-smart-sync
-    <<: *lib-run-base
-    name: Test SmartSync
-    command: ./gradlew :libs:SmartSync:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
-    when: always
-
-  - &test-salesforce-hybrid
-    <<: *lib-run-base
-    name: Test SalesforceHybrid
-    command: ./gradlew :libs:SalesforceHybrid:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
-    when: always
-
-  - &test-rest-explorer
-    <<: *lib-run-base
-    name: Test RestExplorer
-    command: ./gradlew :native:NativeSampleApps:RestExplorer:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
-    when: always
-
-  - &test-salesforce-react
-    <<: *lib-run-base
-    name: Test SalesforceReact
-    command: ./gradlew :libs:SalesforceReact:connectedAndroidTest --continue --no-daemon --profile --max-workers 2
-    when: always
-
-  - &compile-libraries
-    name: Build Libraries
-    command:  |
-      ./gradlew :libs:SalesforceAnalytics:assemble
-      ./gradlew :libs:SalesforceSDK:assemble
-      ./gradlew :libs:SmartStore:assemble
-      ./gradlew :libs:SmartSync:assemble
-      ./gradlew :libs:SalesforceHybrid:assemble
-      ./gradlew :libs:SalesforceReact:assemble
-    when: always
-
   - &android-lint
     name: Run Android Lint
     command:  ./gradlew lint
@@ -133,10 +63,39 @@ aliases:
     command: bash <(curl -s https://codecov.io/bash)
     when: always
 
+  - &build-for-testing
+    name: Build For Testing
+    command: ./gradlew libs:${CURRENT_LIB}:assembleAndroidTest
+
+  - &gcloud-auth
+    name: Authorize gcloud and set config defaults
+    command:  |
+        echo $GCLOUD_SERVICE_KEY | base64 --decode --ignore-garbage > ${HOME}/gcloud-service-key.json
+        gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
+        gcloud --quiet config set project mobile-apps-firebase-test
+
+  - &get-firebase-results
+    name: Copy test results data
+    command: |
+        mkdir -p firebase/results
+        gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${CURRENT_LIB}-${CIRCLE_BUILD_NUM} | tail -1`*" ./firebase/
+        mv firebase/test_result_1.xml firebase/results
+    when: always
+
+  - &run-firebase-tests
+    name: Run Tests
+    command: source .circleci/ci-helper.sh && runTests
+    no_output_timeout: 600
+    halt_build_on_fail: false
+
+  - &attach_workspace
+    attach_workspace:
+      at: ~/SalesforceMobileSDK-Android
+
 defaults: &defaults
   working_directory: ~/SalesforceMobileSDK-Android
   docker:
-    - image: circleci/android:api-27-node8-alpha
+    - image: circleci/android:api-28-node8-alpha
   environment:
     - TERM: "dumb"
     - ADB_INSTALL_TIMEOUT: 15
@@ -145,14 +104,10 @@ defaults: &defaults
     - ANDROID_NDK: '/opt/ndk/android-ndk-r10e'
     - BUILD_THREADS: 2
 
-  attach_workspace: &attach_workspace
-    attach_workspace:
-      at: ~/SalesforceMobileSDK-Android
-
 
 #########################
 #                       #
-#        PR Jobs        #
+#       Test Jobs       #
 #                       #
 #########################
 
@@ -162,20 +117,24 @@ jobs:
     <<: *defaults
     steps:
       - checkout
-      - run: *determine-tests-to-run
       - restore_cache: *restore-gradle-cache
       - restore_cache: *restore-node-cache
       - restore_cache: *restore-ruby-cache
       - run: *setup-env
       - run: *android-lint
+      - run:
+          name: Build for Testing
+          command:  |
+            ./gradlew libs:SalesforceAnalytics:assembleAndroidTest
+            ./gradlew libs:SalesforceSDK:assembleAndroidTest
+            ./gradlew native:NativeSampleApps:RestExplorer:assembleAndroidTest
+            ./gradlew :native:NativeSampleApps:RestExplorer:assembleDebug
+      - run: *run-danger
       - save_cache: *save-gradle-cache
       - save_cache: *save-node-cache
       - save_cache: *save-ruby-cache
-      - run: *run-danger
       - persist_to_workspace:
-          # Must be an absolute path, or relative path from working_directory
           root: .
-          # Must be relative path from root
           paths:
             - ./**
 
@@ -183,20 +142,20 @@ jobs:
     <<: *defaults
     environment:
       - CURRENT_LIB: "SalesforceAnalytics"
+      - TEST_APK: "libs/SalesforceAnalytics/build/outputs/apk/androidTest/debug/SalesforceAnalytics-debug-androidTest.apk"
     steps:
       - *attach_workspace
-      - restore_cache: *restore-gradle-cache
-      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
-      - run: *launch-emulator
-      - run: *wait-for-emulator
-      - run: *run-unit-tests
-      - save_cache: *save-gradle-cache
+      - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-node-cache
+      - restore_cache: *restore-ruby-cache
+      - run: *gcloud-auth
+      - run: *run-firebase-tests
+      - run: *get-firebase-results
       - store_artifacts:
-          path: libs/SalesforceAnalytics/build/reports/
-          destination: SalesforceAnalytics
+            path: firebase/
       - store_test_results:
-          path: libs/SalesforceAnalytics/build/outputs/androidTest-results/
+            path: firebase/results
       - run: *run-danger
       - run: *codecov
 
@@ -204,20 +163,20 @@ jobs:
     <<: *defaults
     environment:
       - CURRENT_LIB: "SalesforceSDK"
+      - TEST_APK: "libs/SalesforceSDK/build/outputs/apk/androidTest/debug/SalesforceSDK-debug-androidTest.apk"
     steps:
       - *attach_workspace
-      - restore_cache: *restore-gradle-cache
-      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
-      - run: *launch-emulator
-      - run: *wait-for-emulator
-      - run: *run-unit-tests
-      - save_cache: *save-gradle-cache
+      - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-node-cache
+      - restore_cache: *restore-ruby-cache
+      - run: *gcloud-auth
+      - run: *run-firebase-tests
+      - run: *get-firebase-results
       - store_artifacts:
-          path: libs/SalesforceSDK/build/reports/
-          destination: SalesforceSDK
+            path: firebase/
       - store_test_results:
-          path: libs/SalesforceSDK/build/outputs/androidTest-results/
+            path: firebase/results
       - run: *run-danger
       - run: *codecov
 
@@ -225,20 +184,21 @@ jobs:
     <<: *defaults
     environment:
       - CURRENT_LIB: "SmartStore"
+      - TEST_APK: "libs/SmartStore/build/outputs/apk/androidTest/debug/SmartStore-debug-androidTest.apk"
     steps:
       - *attach_workspace
-      - restore_cache: *restore-gradle-cache
-      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
-      - run: *launch-emulator
-      - run: *wait-for-emulator
-      - run: *run-unit-tests
-      - save_cache: *save-gradle-cache
+      - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-node-cache
+      - restore_cache: *restore-ruby-cache
+      - run: *build-for-testing
+      - run: *gcloud-auth
+      - run: *run-firebase-tests
+      - run: *get-firebase-results
       - store_artifacts:
-          path: libs/SmartStore/build/reports/
-          destination: SmartStore
+            path: firebase/
       - store_test_results:
-          path: libs/SmartStore/build/outputs/androidTest-results/
+            path: firebase/results
       - run: *run-danger
       - run: *codecov
 
@@ -246,20 +206,21 @@ jobs:
     <<: *defaults
     environment:
       - CURRENT_LIB: "SmartSync"
+      - TEST_APK: "libs/SmartSync/build/outputs/apk/androidTest/debug/SmartSync-debug-androidTest.apk"
     steps:
       - *attach_workspace
-      - restore_cache: *restore-gradle-cache
-      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
-      - run: *launch-emulator
-      - run: *wait-for-emulator
-      - run: *run-unit-tests
-      - save_cache: *save-gradle-cache
+      - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-node-cache
+      - restore_cache: *restore-ruby-cache
+      - run: *build-for-testing
+      - run: *gcloud-auth
+      - run: *run-firebase-tests
+      - run: *get-firebase-results
       - store_artifacts:
-          path: libs/SmartSync/build/reports/
-          destination: SmartSync
+            path: firebase/
       - store_test_results:
-          path: libs/SmartSync/build/outputs/androidTest-results/
+            path: firebase/results
       - run: *run-danger
       - run: *codecov
 
@@ -267,41 +228,21 @@ jobs:
     <<: *defaults
     environment:
       - CURRENT_LIB: "SalesforceHybrid"
+      - TEST_APK: "libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk"
     steps:
       - *attach_workspace
-      - restore_cache: *restore-gradle-cache
-      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
-      - run: *launch-emulator
-      - run: *wait-for-emulator
-      - run: *run-unit-tests
-      - save_cache: *save-gradle-cache
-      - store_artifacts:
-          path: libs/SalesforceHybrid/build/reports/
-          destination: SalesforceHybrid
-      - store_test_results:
-          path: libs/SalesforceHybrid/build/outputs/androidTest-results/
-      - run: *run-danger
-      - run: *codecov
-
-  test-RestExplorer:
-    <<: *defaults
-    environment:
-      - CURRENT_LIB: "RestExplorer"
-    steps:
-      - *attach_workspace
       - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-node-cache
       - restore_cache: *restore-ruby-cache
-      - run: *determine-tests-to-run
-      - run: *launch-emulator
-      - run: *wait-for-emulator
-      - run: *run-unit-tests
-      - save_cache: *save-gradle-cache
+      - run: *build-for-testing
+      - run: *gcloud-auth
+      - run: *run-firebase-tests
+      - run: *get-firebase-results
       - store_artifacts:
-          path: native/NativeSampleApps/RestExplorer/build/reports/
-          destination: RestExplorer
+          path: firebase/
       - store_test_results:
-          path: native/NativeSampleApps/RestExplorer/build/outputs/androidTest-results/
+          path: firebase/results
       - run: *run-danger
       - run: *codecov
 
@@ -309,20 +250,42 @@ jobs:
     <<: *defaults
     environment:
       - CURRENT_LIB: "SalesforceReact"
+      - TEST_APK: "libs/SalesforceReact/build/outputs/apk/androidTest/debug/SalesforceReact-debug-androidTest.apk"
     steps:
       - *attach_workspace
-      - restore_cache: *restore-gradle-cache
-      - restore_cache: *restore-ruby-cache
       - run: *determine-tests-to-run
-      - run: *launch-emulator
-      - run: *wait-for-emulator
-      - run: *run-unit-tests
-      - save_cache: *save-gradle-cache
+      - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-node-cache
+      - restore_cache: *restore-ruby-cache
+      - run: *build-for-testing
+      - run: *gcloud-auth
+      - run: *run-firebase-tests
+      - run: *get-firebase-results
       - store_artifacts:
-          path: libs/SalesforceReact/build/reports/
-          destination: SalesforceReact
+            path: firebase/
       - store_test_results:
-          path: libs/SalesforceReact/build/outputs/androidTest-results/
+            path: firebase/results
+      - run: *run-danger
+      - run: *codecov
+
+  test-RestExplorer:
+    <<: *defaults
+    environment:
+      - CURRENT_LIB: "RestExplorer"
+      - TEST_APK: "native/NativeSampleApps/RestExplorer/build/outputs/apk/androidTest/debug/RestExplorer-debug-androidTest.apk"
+    steps:
+      - *attach_workspace
+      - run: *determine-tests-to-run
+      - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-node-cache
+      - restore_cache: *restore-ruby-cache
+      - run: *gcloud-auth
+      - run: *run-firebase-tests
+      - run: *get-firebase-results
+      - store_artifacts:
+            path: firebase/
+      - store_test_results:
+            path: firebase/results
       - run: *run-danger
       - run: *codecov
 
@@ -333,72 +296,6 @@ jobs:
 #                        #
 ##########################
 
-  nightly-test:
-    <<: *defaults
-    steps:
-      - checkout
-      - restore_cache: *restore-gradle-cache
-      - restore_cache: *restore-node-cache
-      - run: *setup-env
-      - save_cache: *save-node-cache
-      - save_cache: *save-ruby-cache
-      - run: *launch-emulator
-      - run: *android-lint
-      - run: *wait-for-emulator
-      - run: *test-salesforce-analytics
-      - run: *test-salesforce-sdk
-      - run: *test-smart-store
-      - run: *test-smart-sync
-      - run:
-          name:  Restart Emulator
-          command: source .circleci/avd_helper.sh && restartAVD
-          background: true
-          when: always
-      - run:
-          name: Wait for Emulator
-          command: source .circleci/avd_helper.sh && waitForAVD
-          when: always
-      - run: *test-salesforce-hybrid
-      - run: *test-rest-explorer
-      - run: *test-salesforce-react
-      - save_cache: *save-gradle-cache
-      - store_artifacts:
-          path: libs/SalesforceAnalytics/build/reports/
-          destination: SalesforceAnalytics
-      - store_test_results:
-          path: libs/SalesforceAnalytics/build/outputs/androidTest-results/
-      - store_artifacts:
-          path: libs/SalesforceSDK/build/reports/
-          destination: SalesforceSDK
-      - store_test_results:
-          path: libs/SalesforceSDK/build/outputs/androidTest-results/
-      - store_artifacts:
-          path: libs/SmartStore/build/reports/
-          destination: SmartStore
-      - store_test_results:
-          path: libs/SmartStore/build/outputs/androidTest-results/
-      - store_artifacts:
-          path: libs/SmartSync/build/reports/
-          destination: SmartSync
-      - store_test_results:
-          path: libs/SmartSync/build/outputs/androidTest-results/
-      - store_artifacts:
-          path: libs/SalesforceHybrid/build/reports/
-          destination: SalesforceHybrid
-      - store_test_results:
-          path: libs/SalesforceHybrid/build/outputs/androidTest-results/
-      - store_artifacts:
-          path: native/NativeSampleApps/RestExplorer/build/reports/
-          destination: RestExplorer
-      - store_test_results:
-          path: native/NativeSampleApps/RestExplorer/build/outputs/androidTest-results/
-      - store_artifacts:
-          path: libs/SalesforceReact/build/reports/
-          destination: SalesforceReact
-      - store_test_results:
-          path: libs/SalesforceReact/build/outputs/androidTest-results/
-      - run: *codecov
-
   generate-artifacts:
     <<: *defaults
     steps:
@@ -407,7 +304,16 @@ jobs:
       - restore_cache: *restore-node-cache
       - run: *setup-env
       - save_cache: *save-node-cache
-      - run: *compile-libraries
+      - run:
+          name: Build Libraries
+          command:  |
+            ./gradlew :libs:SalesforceAnalytics:assemble
+            ./gradlew :libs:SalesforceSDK:assemble
+            ./gradlew :libs:SmartStore:assemble
+            ./gradlew :libs:SmartSync:assemble
+            ./gradlew :libs:SalesforceHybrid:assemble
+            ./gradlew :libs:SalesforceReact:assemble
+          when: always
       - store_artifacts:
           path: libs/SalesforceAnalytics/build/outputs/aar/
           destination: libraries
@@ -474,9 +380,14 @@ jobs:
 workflows:
   version: 2
 
+  # PRs run on Android API 27
   pr-test:
     jobs:
-      - setup
+      - setup:
+          filters:
+            branches:
+              only:
+                - /pull.*/
       - test-SalesforceAnalytics:
           requires:
             - setup
@@ -499,16 +410,47 @@ workflows:
           requires:
             - setup
 
- # Cron are on a timezone 8 hours ahead of PST
- # Nightly run is set for midnight Monday - Friday
+  # Cron are on a timezone 8 hours ahead of PST
+  # Nightly run is set for ~10PM
+  # Monday    - API 21
+  # Wednesday - API 23
+  # Friday    - API 25
   nightly-test:
      triggers:
        - schedule:
-           cron: "00 8 * * 2,3,4,5,6"
+           cron: "00 6 * * 2,4,6"
            filters:
              branches:
                only:
                  - dev
      jobs:
-        - nightly-test
         - generate-artifacts
+        - setup
+        - test-SalesforceAnalytics:
+            context: nightly-test
+            requires:
+                - setup
+        - test-SalesforceSDK:
+            context: nightly-test
+            requires:
+                - setup
+        - test-SmartStore:
+            context: nightly-test
+            requires:
+                - setup
+        - test-SmartSync:
+            context: nightly-test
+            requires:
+                - setup
+        - test-SalesforceHybrid:
+            context: nightly-test
+            requires:
+                - setup
+        - test-RestExplorer:
+            context: nightly-test
+            requires:
+                - setup
+        - test-SalesforceReact:
+            context: nightly-test
+            requires:
+                - setup

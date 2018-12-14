@@ -26,9 +26,9 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import android.support.test.InstrumentationRegistry;
-import android.support.test.filters.LargeTest;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.filters.LargeTest;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -39,12 +39,11 @@ import com.salesforce.androidsdk.rest.RestClient.AuthTokenProvider;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 
-import junit.framework.Assert;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -97,14 +96,13 @@ public class RestClientTest {
     public static final String TEST_LAST_NAME = "lastName";
     public static final String TEST_DISPLAY_NAME = "displayName";
     public static final String TEST_EMAIL = "test@email.com";
-    public static final String TEST_PHOTO_URL = "http://some.photo.url";
     public static final String TEST_THUMBNAIL_URL = "http://some.thumbnail.url";
     public static final String TEST_CUSTOM_KEY = "test_custom_key";
     public static final String TEST_CUSTOM_VALUE = "test_custom_value";
 
     @Before
     public void setUp() throws Exception {
-        TestCredentials.init(InstrumentationRegistry.getContext());
+        TestCredentials.init(InstrumentationRegistry.getInstrumentation().getContext());
         httpAccess = new HttpAccess(null, "dummy-agent");
         TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,
                 new URI(TestCredentials.LOGIN_URL), TestCredentials.CLIENT_ID,
@@ -121,7 +119,7 @@ public class RestClientTest {
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null, null,
-                TEST_FIRST_NAME, TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL,
+                TEST_FIRST_NAME, TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TestCredentials.PHOTO_URL,
                 TEST_THUMBNAIL_URL, testOauthValues);
         restClient = new RestClient(clientInfo, authToken, httpAccess, null);
     }
@@ -150,7 +148,7 @@ public class RestClientTest {
         Assert.assertEquals("Wrong lastName", TEST_LAST_NAME, restClient.getClientInfo().lastName);
         Assert.assertEquals("Wrong displayName", TEST_DISPLAY_NAME, restClient.getClientInfo().displayName);
         Assert.assertEquals("Wrong email", TEST_EMAIL, restClient.getClientInfo().email);
-        Assert.assertEquals("Wrong photoUrl", TEST_PHOTO_URL, restClient.getClientInfo().photoUrl);
+        Assert.assertEquals("Wrong photoUrl", TestCredentials.PHOTO_URL, restClient.getClientInfo().photoUrl);
         Assert.assertEquals("Wrong thumbnailUrl", TEST_THUMBNAIL_URL, restClient.getClientInfo().thumbnailUrl);
         Assert.assertEquals("Wrong additional OAuth value", testOauthValues, restClient.getClientInfo().additionalOauthValues);
     }
@@ -237,7 +235,7 @@ public class RestClientTest {
      * @throws IOException
      */
     @Test
-    public void testCallWithBadAuthToken() throws URISyntaxException, IOException {
+    public void testCallWithBadAuthToken() throws IOException {
         RestClient.clearCaches();
         RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, null);
         RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
@@ -252,7 +250,7 @@ public class RestClientTest {
      * @throws IOException
      */
     @Test
-    public void testCallWithBadTokenAndTokenProvider() throws URISyntaxException, IOException {
+    public void testCallWithBadTokenAndTokenProvider() throws IOException {
         RestClient.clearCaches();
         AuthTokenProvider authTokenProvider = new AuthTokenProvider() {
             @Override
@@ -469,7 +467,7 @@ public class RestClientTest {
     public void testUpsert() throws Exception {
 
         // Create with upsert call
-        Map<String, Object> fields = new HashMap<String, Object>();
+        Map<String, Object> fields = new HashMap<>();
         String accountName = ENTITY_NAME_PREFIX + "-" + System.nanoTime();
         fields.put(NAME, accountName);
         RestResponse response = restClient.sendSync(RestRequest.getRequestForUpsert(TestCredentials.API_VERSION, ACCOUNT, "Id", null, fields));
@@ -498,7 +496,7 @@ public class RestClientTest {
      */
     @Test
     public void testUpdateWithIfUnmodifiedSince() throws Exception {
-        Map<String, Object> fields = new HashMap<String, Object>();
+        Map<String, Object> fields = new HashMap<>();
         Date pastDate = new Date(new Date().getTime() - 3600*1000); // an hour ago
 
         // Create
@@ -836,11 +834,11 @@ public class RestClientTest {
      */
     @Test
     public void testBatchRequest() throws IOException, JSONException {
-        Map<String, Object> accountFields = new HashMap<String, Object>();
+        Map<String, Object> accountFields = new HashMap<>();
         String accountName = ENTITY_NAME_PREFIX + System.nanoTime();
         accountFields.put(NAME, accountName);
         RestRequest firstRequest = RestRequest.getRequestForCreate(TestCredentials.API_VERSION, ACCOUNT, accountFields);
-        Map<String, Object> contactFields = new HashMap<String, Object>();
+        Map<String, Object> contactFields = new HashMap<>();
         String contactName = ENTITY_NAME_PREFIX + System.nanoTime();
         contactFields.put("LastName", contactName);
         RestRequest secondRequest = RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "contact", contactFields);
@@ -886,7 +884,7 @@ public class RestClientTest {
      */
     @Test
     public void testCompositeRequest() throws IOException, JSONException {
-        Map<String, Object> accountFields = new HashMap<String, Object>();
+        Map<String, Object> accountFields = new HashMap<>();
         String accountName = ENTITY_NAME_PREFIX + System.nanoTime();
         accountFields.put(NAME, accountName);
         RestRequest firstRequest = RestRequest.getRequestForCreate(TestCredentials.API_VERSION, ACCOUNT, accountFields);
@@ -938,13 +936,13 @@ public class RestClientTest {
      */
     @Test
     public void testSObjectTreeRequest() throws IOException, JSONException {
-        Map<String, Object> accountFields = new HashMap<String, Object>();
+        Map<String, Object> accountFields = new HashMap<>();
         String accountName = ENTITY_NAME_PREFIX + System.nanoTime();
         accountFields.put(NAME, accountName);
-        Map<String, Object> contactFields = new HashMap<String, Object>();
+        Map<String, Object> contactFields = new HashMap<>();
         String contactName = ENTITY_NAME_PREFIX + System.nanoTime();
         contactFields.put("LastName", contactName);
-        Map<String, Object> otherContactFields = new HashMap<String, Object>();
+        Map<String, Object> otherContactFields = new HashMap<>();
         String otherContactName = ENTITY_NAME_PREFIX + System.nanoTime();
         otherContactFields.put("LastName", otherContactName);
         List<RestRequest.SObjectTree> childrenTrees = new ArrayList<>();
@@ -1050,7 +1048,7 @@ public class RestClientTest {
      * Helper method to create a account with a unique name and returns its name and id
      */
     private IdName createAccount() throws Exception {
-        Map<String, Object> fields = new HashMap<String, Object>();
+        Map<String, Object> fields = new HashMap<>();
         String newAccountName = ENTITY_NAME_PREFIX + "-" + System.nanoTime();
         fields.put(NAME, newAccountName);
         RestResponse response = restClient.sendSync(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, ACCOUNT, fields));

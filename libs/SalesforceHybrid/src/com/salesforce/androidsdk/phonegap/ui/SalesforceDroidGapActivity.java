@@ -26,20 +26,22 @@
  */
 package com.salesforce.androidsdk.phonegap.ui;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.view.KeyEvent;
 import android.view.View;
 import android.webkit.CookieManager;
+import android.webkit.URLUtil;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess.NoNetworkException;
 import com.salesforce.androidsdk.config.BootConfig;
+import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.phonegap.app.SalesforceHybridSDKManager;
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
-import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
@@ -50,6 +52,7 @@ import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.ui.SalesforceActivityDelegate;
 import com.salesforce.androidsdk.ui.SalesforceActivityInterface;
+import com.salesforce.androidsdk.util.AuthConfigUtil;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
@@ -80,6 +83,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
 
     // Config
     private BootConfig bootconfig;
+    private AuthConfigUtil.MyDomainAuthConfig authConfig;
 
     // Web app loaded?
     private boolean webAppLoaded = false;
@@ -133,6 +137,13 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
     @Override
     public void onResume() {
         super.onResume();
+
+        // Fetches auth config if required.
+        try {
+            (new FetchAuthConfigTask()).execute().get();
+        } catch (Exception e) {
+            SalesforceHybridLogger.e(TAG, "Exception occurred while fetching auth config", e);
+        }
         delegate.onResume(false);
         // will call this.onResume(RestClient client) with a null client
     }
@@ -150,7 +161,11 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
 
         // Not logged in
         if (client == null) {
-            onResumeNotLoggedIn();
+            if (!webAppLoaded) {
+                onResumeNotLoggedIn();
+            } else {
+                SalesforceHybridLogger.i(TAG, "onResume - unauthenticated web app already loaded");
+            }
         }
 
         // Logged in
@@ -166,6 +181,15 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
                 SalesforceHybridLogger.i(TAG, "onResume - already logged in/web app already loaded");
             }
         }
+    }
+
+    /**
+     * Returns the auth config associated with the current login server, if it exists.
+     *
+     * @return Auth config.
+     */
+    public AuthConfigUtil.MyDomainAuthConfig getAuthConfig() {
+        return authConfig;
     }
 
     /**
@@ -385,6 +409,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
             public void onSuccess(RestRequest request, RestResponse response) {
                 SalesforceHybridLogger.i(TAG, "refresh callback - refresh succeeded");
                 runOnUiThread(new Runnable() {
+
                     @Override
                     public void run() {
                         /*
@@ -394,7 +419,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
                         SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
                         setSidCookies();
                         loadVFPingPage();
-                        final String frontDoorUrl = getFrontDoorUrl(url, true);
+                        final String frontDoorUrl = getFrontDoorUrl(url, BootConfig.isAbsoluteUrl(url));
                         loadUrl(frontDoorUrl);
                     }
                 });
@@ -491,6 +516,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
      * @return Front-doored URL.
      */
     public String getFrontDoorUrl(String url, boolean isAbsUrl) {
+
         /*
          * We need to use the absolute URL in some cases and relative URL in some
          * other cases, because of differences between instance URL and community
@@ -498,13 +524,12 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
          * URL to use is in the 'resolveUrl' method in 'ClientInfo'.
          */
         url = (isAbsUrl ? url : client.getClientInfo().resolveUrl(url).toString());
-
-        HttpUrl frontDoorUrl = HttpUrl.parse(client.getClientInfo().getInstanceUrlAsString() + "/secur/frontdoor.jsp?").newBuilder()
+        final HttpUrl frontDoorUrl = HttpUrl.parse(client.getClientInfo().getInstanceUrlAsString()
+                + "/secur/frontdoor.jsp?").newBuilder()
                 .addQueryParameter("sid", client.getAuthToken())
                 .addQueryParameter("retURL", url)
                 .addQueryParameter("display", "touch")
                 .build();
-
         return frontDoorUrl.toString();
     }
 
@@ -584,6 +609,21 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
             } catch (AccountInfoNotFoundException e) {
                 SalesforceHybridLogger.i(TAG, "restartIfUserSwitched - no user account found");
             }
+        }
+    }
+
+    private class FetchAuthConfigTask extends AsyncTask<Void, Void, Void> {
+
+        @Override
+        protected Void doInBackground(Void... nothings) {
+            final String loginServer = SalesforceHybridSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url.trim();
+            if (loginServer.equals(LoginServerManager.PRODUCTION_LOGIN_URL) ||
+                    loginServer.equals(LoginServerManager.SANDBOX_LOGIN_URL) ||
+                    !URLUtil.isHttpsUrl(loginServer) || HttpUrl.parse(loginServer) == null) {
+                return null;
+            }
+            authConfig = AuthConfigUtil.getMyDomainAuthConfig(loginServer);
+            return null;
         }
     }
 }

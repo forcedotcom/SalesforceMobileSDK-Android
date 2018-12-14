@@ -26,9 +26,9 @@
  */
 package com.salesforce.androidsdk.auth;
 
-import android.support.test.InstrumentationRegistry;
-import android.support.test.filters.SmallTest;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.filters.SmallTest;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -36,9 +36,8 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 
-import junit.framework.Assert;
-
 import org.json.JSONObject;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -68,7 +67,7 @@ public class HttpAccessTest {
 
 	@Before
 	public void setUp() throws Exception {
-		TestCredentials.init(InstrumentationRegistry.getContext());
+		TestCredentials.init(InstrumentationRegistry.getInstrumentation().getContext());
 		final HttpAccess httpAccess = new HttpAccess(null, "dummy-agent");
 		okHttpClient = httpAccess.getOkHttpClient();
 		resourcesUrl = HttpUrl.parse(TestCredentials.INSTANCE_URL + "/services/data/" + TestCredentials.API_VERSION + "/");
@@ -87,7 +86,7 @@ public class HttpAccessTest {
 	 * @throws URISyntaxException 
 	 */
     @Test
-	public void testDoGet() throws IOException, URISyntaxException {
+	public void testDoGet() throws IOException {
 		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUrl).headers(headers).get().build()).execute();
 		checkResponse(response, HttpURLConnection.HTTP_OK, "sobjects", "identity", "recent", "search");
 	}
@@ -98,7 +97,7 @@ public class HttpAccessTest {
 	 * @throws URISyntaxException 
 	 */
     @Test
-	public void testDoHead() throws IOException, URISyntaxException {
+	public void testDoHead() throws IOException {
 		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUrl).headers(headers).head().build()).execute();
         Assert.assertEquals("200 response expected", HttpURLConnection.HTTP_OK, response.code());
 	}

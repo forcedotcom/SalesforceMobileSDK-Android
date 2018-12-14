@@ -26,8 +26,8 @@
  */
 package com.salesforce.androidsdk.store;
 
-import android.support.test.filters.LargeTest;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.filters.LargeTest;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import android.util.Log;
 
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
@@ -71,5 +71,4 @@ public class SmartStoreOtherLoadTest extends SmartStoreLoadTestCase {
         alterSoup("Adding one index / dropping one index / with re-indexing", true, new IndexSpec[] {new IndexSpec("k_0", indexType), new IndexSpec("k_2", indexType)});
         alterSoup("Dropping one index / with re-indexing", true, new IndexSpec[] {new IndexSpec("k_0", indexType)});
     }
-
 }

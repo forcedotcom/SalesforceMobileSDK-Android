@@ -28,9 +28,9 @@ package com.salesforce.androidsdk.auth;
 
 import android.app.Application;
 import android.app.Instrumentation;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.filters.SmallTest;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.filters.SmallTest;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import android.util.Log;
 
 import com.salesforce.androidsdk.TestCredentials;
@@ -43,8 +43,7 @@ import com.salesforce.androidsdk.auth.idp.IDPRequestHandler;
 import com.salesforce.androidsdk.auth.idp.SPConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -69,9 +68,9 @@ public class IDPRequestHandlerTest {
     @Before
     public void setUp() throws Exception {
         final Application app = Instrumentation.newApplication(TestForceApp.class,
-                InstrumentationRegistry.getContext());
+                InstrumentationRegistry.getInstrumentation().getContext());
         InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
-        TestCredentials.init(InstrumentationRegistry.getContext());
+        TestCredentials.init(InstrumentationRegistry.getInstrumentation().getContext());
     }
 
     /**

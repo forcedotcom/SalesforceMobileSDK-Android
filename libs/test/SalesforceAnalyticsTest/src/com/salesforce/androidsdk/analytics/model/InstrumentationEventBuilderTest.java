@@ -27,19 +27,18 @@
 package com.salesforce.androidsdk.analytics.model;
 
 import android.content.Context;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.filters.SmallTest;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.filters.SmallTest;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import android.text.TextUtils;
 import android.util.Log;
 
 import com.salesforce.androidsdk.analytics.manager.AnalyticsManager;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 
-import junit.framework.Assert;
-
 import org.json.JSONObject;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -70,7 +69,7 @@ public class InstrumentationEventBuilderTest {
 
     @Before
     public void setUp() throws Exception {
-        targetContext = InstrumentationRegistry.getTargetContext();
+        targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         uniqueId = UUID.randomUUID().toString();
         analyticsManager = new AnalyticsManager(uniqueId,
                 targetContext, TEST_ENCRYPTION_KEY, TEST_DEVICE_APP_ATTRIBUTES);
@@ -83,11 +82,9 @@ public class InstrumentationEventBuilderTest {
 
     /**
      * Test for missing mandatory field 'schema type'.
-     *
-     * @throws Exception
      */
     @Test
-    public void testMissingSchemaType() throws Exception {
+    public void testMissingSchemaType() {
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
         long curTime = System.currentTimeMillis();
         final String eventName = String.format(TEST_EVENT_NAME, curTime);
@@ -108,11 +105,9 @@ public class InstrumentationEventBuilderTest {
 
     /**
      * Test for missing mandatory field 'event type' in interaction event.
-     *
-     * @throws Exception
      */
     @Test
-    public void testMissingEventTypeInInteraction() throws Exception {
+    public void testMissingEventTypeInInteraction() {
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
         long curTime = System.currentTimeMillis();
         final String eventName = String.format(TEST_EVENT_NAME, curTime);
@@ -132,11 +127,9 @@ public class InstrumentationEventBuilderTest {
 
     /**
      * Test for missing optional field 'event type' in error event.
-     *
-     * @throws Exception
      */
     @Test
-    public void testMissingEventTypeInError() throws Exception {
+    public void testMissingEventTypeInError() {
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
         long curTime = System.currentTimeMillis();
         final String eventName = String.format(TEST_EVENT_NAME, curTime);
@@ -157,11 +150,9 @@ public class InstrumentationEventBuilderTest {
 
     /**
      * Test for missing mandatory field 'page'.
-     *
-     * @throws Exception
      */
     @Test
-    public void testMissingPage() throws Exception {
+    public void testMissingPage() {
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
         long curTime = System.currentTimeMillis();
         final String eventName = String.format(TEST_EVENT_NAME, curTime);
@@ -182,11 +173,9 @@ public class InstrumentationEventBuilderTest {
 
     /**
      * Test for missing mandatory field 'name'.
-     *
-     * @throws Exception
      */
     @Test
-    public void testMissingName() throws Exception {
+    public void testMissingName() {
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
         long curTime = System.currentTimeMillis();
         eventBuilder.startTime(curTime);
@@ -206,11 +195,9 @@ public class InstrumentationEventBuilderTest {
 
     /**
      * Test for missing mandatory field 'device app attributes'.
-     *
-     * @throws Exception
      */
     @Test
-    public void testMissingDeviceAppAttributes() throws Exception {
+    public void testMissingDeviceAppAttributes() {
         analyticsManager.reset();
         analyticsManager = new AnalyticsManager(uniqueId, targetContext, TEST_ENCRYPTION_KEY, null);
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);

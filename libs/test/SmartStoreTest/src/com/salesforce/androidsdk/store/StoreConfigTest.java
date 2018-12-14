@@ -28,9 +28,9 @@
 package com.salesforce.androidsdk.store;
 
 import android.content.Context;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.filters.SmallTest;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.filters.SmallTest;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.salesforce.androidsdk.MainActivity;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
@@ -38,10 +38,9 @@ import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.ui.LoginActivity;
 
-import junit.framework.Assert;
-
 import org.json.JSONException;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -59,7 +58,7 @@ public class StoreConfigTest extends SmartStoreTestCase {
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        SmartStoreSDKTestManager.init(InstrumentationRegistry.getTargetContext(), store);
+        SmartStoreSDKTestManager.init(InstrumentationRegistry.getInstrumentation().getTargetContext(), store);
         sdkManager = SmartStoreSDKTestManager.getInstance();
         globalStore = sdkManager.getGlobalSmartStore();
         userStore = sdkManager.getSmartStore();
@@ -165,7 +164,7 @@ public class StoreConfigTest extends SmartStoreTestCase {
          *  @param userStore    The store to return from getSmartStore()
          */
         protected SmartStoreSDKTestManager(Context context, SmartStore userStore) {
-            super(context, null, MainActivity.class, LoginActivity.class);
+            super(context, MainActivity.class, LoginActivity.class);
             this.userStore = userStore;
         }
 

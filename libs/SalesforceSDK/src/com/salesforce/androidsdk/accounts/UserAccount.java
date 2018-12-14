@@ -382,17 +382,22 @@ public class UserAccount {
         final File file = getProfilePhotoFile();
         final BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
         bitmapOptions.inPreferredConfig = Bitmap.Config.ARGB_8888;
-        final Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), bitmapOptions);
-        return bitmap;
+        return BitmapFactory.decodeFile(file.getAbsolutePath(), bitmapOptions);
     }
 
     /**
      * Fetches this user's profile photo from the server and stores it in the cache.
      */
     public void downloadProfilePhoto() {
+        if (photoUrl == null) {
+            return;
+        }
         final File file = getProfilePhotoFile();
         final Uri srcUri = Uri.parse(photoUrl);
         final Uri destUri = Uri.fromFile(file);
+        if (srcUri == null || destUri == null) {
+        	return;
+		}
         final DownloadManager.Request downloadReq = new DownloadManager.Request(srcUri);
         downloadReq.setDestinationUri(destUri);
         downloadReq.addRequestHeader(AUTHORIZATION, BEARER + authToken);

@@ -340,10 +340,13 @@ public class LoginServerManager {
 		if (values != null && !values.isEmpty()) {
 			return;
 		}
-		List<LoginServer> servers = getLoginServersFromXML();
-		if (servers == null || servers.isEmpty()) {
-			servers = getLegacyLoginServers();
-		}
+		List<LoginServer> servers = getLoginServers();
+                if (servers == null || servers.isEmpty()) {
+            	    servers = getLoginServersFromXML();
+                    if (servers == null || servers.isEmpty()) {
+                        servers = getLegacyLoginServers();
+                    }
+                }
 		int numServers = servers.size();
 	    final Editor edit = settings.edit();
 		for (int i = 0; i < numServers; i++) {

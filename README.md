@@ -23,32 +23,28 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 6.2
+### What's New in 7.0
 
-**Library Upgrades**
-- We've updated React Native to version 0.55.4.
+**Android Platform Enhancements**
+Mobile SDK now supports
+- AndroidX and Jetpack. See https://developer.android.com/jetpack/.
+- Firebase Cloud Messaging (FCM) push notifications. Because FCM currently works with the GCM infrastructure, no migration is
+necessary at this time.
 
-**Tool Version Upgrades**
-- We now require Cordova CLI 8.0.0.
-- We now support Android Studio 3.1 and Gradle 4.4.
-
-**SmartSync Data Framework Enhancements**
-- The SmartSync Data Framework now saves the error returned when records fail to sync up.
-- A new utility, `MetadataSyncManager`, harnesses the power of SmartSync Data Framework to query Salesforce object metadata.
-- Another new utility, `LayoutSyncManager`, harnesses the power of SmartSync Data Framework to query Salesforce object layouts.
-
-**Other Technical Improvements**
-- We've replaced `IntentService` with `JobService`. This change helps optimize the execution of background tasks, especially on newer Android versions.
-- We’ve given the Switch User screen a face lift.
-- We've consolidated our templates under a [single repository](https://github.com/forcedotcom/SalesforceMobileSDK-Templates).
-- Improvements to sample apps.
-- Various bug fixes.
-
+**Version Updates**
+- Android target SDK: Android Pie (API 28)
+- Gradle: 4.6
+- Android Studio: 3.2
+- OkHttp: 3.10
+- Cordova for Android: 7.1.2
+- Cordova command line: 8.1.2
+- SQLCipher: 3.5.9
+- SQLite: 3.20.1
+- React Native: 0.56.1
+- node: 11.1
+  
 **Deprecations**
-- `MetadataManager` is now deprecated and will be removed in Mobile SDK 7.0. Instead, use `MetadataSyncManager` and `LayoutSyncManager`.
-- `CacheManager` is now deprecated and will be removed in Mobile SDK 7.0. Offline caching is now automatically handled by the SmartSync Data Framework.
-- `SalesforceObjectType` is now deprecated and will be removed in Mobile SDK 7.0. Instead, use `Metadata`.
-- `SalesforceObjectTypeLayout` and `SalesforceObjectLayoutColumn` are now deprecated and will be removed in Mobile SDK 7.0. Instead, use `Layout`.
+- Android GCM push notifications are no longer supported.
 
 Check http://developer.force.com/mobilesdk for additional articles and tutorials.
 

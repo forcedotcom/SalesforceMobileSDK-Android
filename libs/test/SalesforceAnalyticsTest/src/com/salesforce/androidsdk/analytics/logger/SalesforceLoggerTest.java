@@ -27,13 +27,12 @@
 package com.salesforce.androidsdk.analytics.logger;
 
 import android.content.Context;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.filters.SmallTest;
-import android.support.test.runner.AndroidJUnit4;
-
-import junit.framework.Assert;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.filters.SmallTest;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,7 +55,7 @@ public class SalesforceLoggerTest {
 
     @Before
     public void setUp() throws Exception {
-        targetContext = InstrumentationRegistry.getTargetContext();
+        targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         SalesforceLogger.flushComponents();
         SalesforceLogger.resetLoggerPrefs(targetContext);
         final Set<String> components = SalesforceLogger.getComponents();
@@ -71,11 +70,9 @@ public class SalesforceLoggerTest {
 
     /**
      * Test for adding a single component.
-     *
-     * @throws Exception
      */
     @Test
-    public void testAddSingleComponent() throws Exception {
+    public void testAddSingleComponent() {
         final SalesforceLogger logger = SalesforceLogger.getLogger(TEST_COMPONENT_1, targetContext);
         Assert.assertNotNull("SalesforceLogger instance should not be null", logger);
         final Set<String> components = SalesforceLogger.getComponents();
@@ -84,11 +81,9 @@ public class SalesforceLoggerTest {
 
     /**
      * Test for adding multiple components.
-     *
-     * @throws Exception
      */
     @Test
-    public void testAddMultipleComponents() throws Exception {
+    public void testAddMultipleComponents() {
         SalesforceLogger logger = SalesforceLogger.getLogger(TEST_COMPONENT_1, targetContext);
         Assert.assertNotNull("SalesforceLogger instance should not be null", logger);
         logger = SalesforceLogger.getLogger(TEST_COMPONENT_2, targetContext);
@@ -101,11 +96,9 @@ public class SalesforceLoggerTest {
 
     /**
      * Test for setting log level.
-     *
-     * @throws Exception
      */
     @Test
-    public void testSetLogLevel() throws Exception {
+    public void testSetLogLevel() {
         final SalesforceLogger logger = SalesforceLogger.getLogger(TEST_COMPONENT_1, targetContext);
         Assert.assertNotNull("SalesforceLogger instance should not be null", logger);
         SalesforceLogger.Level logLevel = logger.getLogLevel();

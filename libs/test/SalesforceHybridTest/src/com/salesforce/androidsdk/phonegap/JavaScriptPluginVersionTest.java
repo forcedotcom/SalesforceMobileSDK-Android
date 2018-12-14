@@ -26,14 +26,13 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
-import android.support.test.filters.SmallTest;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.phonegap.plugin.JavaScriptPluginVersion;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -145,7 +144,7 @@ public class JavaScriptPluginVersionTest {
 	 */
     @Test
 	public void testJavaScriptPluginVersionsWithNewVersion() {
-		for (String version : new String[] {"6.3.0", "6.4.0", "6.5.0"}) {
+		for (String version : new String[] {"7.1.0", "7.2.0", "7.3.0"}) {
             Assert.assertFalse((new JavaScriptPluginVersion(version)).isOlder());
             Assert.assertFalse((new JavaScriptPluginVersion(version)).isCurrent());
             Assert.assertTrue((new JavaScriptPluginVersion(version)).isNewer());

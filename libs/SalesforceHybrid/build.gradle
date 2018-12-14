@@ -15,14 +15,20 @@ apply plugin: 'com.jfrog.bintray'
 
 dependencies {
   api project(':libs:SmartSync')
-  api 'org.apache.cordova:framework:7.0.0'
-  androidTestImplementation 'com.android.support.test:runner:1.0.1'
-  androidTestImplementation 'com.android.support.test:rules:1.0.1'
+  api 'org.apache.cordova:framework:7.1.2'
+  androidTestImplementation 'androidx.test:runner:1.1.0'
+  androidTestImplementation 'androidx.test:rules:1.1.0'
+  androidTestImplementation 'androidx.test.ext:junit:1.0.0'
 }
 
 android {
-  compileSdkVersion 27
-  buildToolsVersion '27.0.3'
+    compileSdkVersion 28
+    buildToolsVersion '28.0.3'
+
+    defaultConfig {
+        targetSdkVersion 28
+        minSdkVersion 21
+    }
 
   buildTypes {
     debug {
@@ -49,7 +55,7 @@ android {
   }
   defaultConfig {
     testApplicationId "com.salesforce.androidsdk.salesforcehybrid.tests"
-    testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'
@@ -62,12 +68,6 @@ android {
     xmlReport true
     abortOnError false
   }
-}
-
-afterEvaluate {
-  // Find all connected Android tests and ensure they log all passed tests. This keeps the Travis
-  // from timing out since executing tests are printed to the console.
-  tasks.matching { it.name ==~ /^connected.*AndroidTest$/ }*.logging*.setLevel(LogLevel.INFO)
 }
 
 install {
@@ -128,9 +128,9 @@ bintray {
         licenses = ['Apache-2.0']
         labels = ['android', 'salesforce', 'mobilesdk']
         version {
-            name = '6.2.0'
+            name = '7.0.0'
             released  = new Date()
-            vcsTag = 'v6.2.0'
+            vcsTag = 'v7.0.0'
         }
     }
 }

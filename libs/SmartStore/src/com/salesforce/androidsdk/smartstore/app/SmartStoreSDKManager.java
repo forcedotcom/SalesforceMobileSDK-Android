@@ -71,35 +71,10 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         super(context, mainActivity, loginActivity);
     }
 
-    /**
-     * Protected constructor.
-     *
-     * @param context       Application context.
-     * @param keyImpl       Implementation of KeyInterface.
-     * @param mainActivity  Activity that should be launched after the login flow.
-     * @param loginActivity Login activity.
-     * @deprecated Will be removed in Mobile SDK 7.0. Use {@link #SmartStoreSDKManager(Context, Class, Class)} instead.
-     */
-    @Deprecated
-    protected SmartStoreSDKManager(Context context, KeyInterface keyImpl,
-                                   Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-        super(context, keyImpl, mainActivity, loginActivity);
-    }
-
-    /**
-     * Initializes components required for this class
-     * to properly function. This method should be called
-     * by apps using the Salesforce Mobile SDK.
-     *
-     * @param context       Application context.
-     * @param keyImpl       Implementation of KeyInterface.
-     * @param mainActivity  Activity that should be launched after the login flow.
-     * @param loginActivity Login activity.
-     */
-    private static void init(Context context, KeyInterface keyImpl,
-                             Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    private static void init(Context context, Class<? extends Activity> mainActivity,
+                             Class<? extends Activity> loginActivity) {
         if (INSTANCE == null) {
-            INSTANCE = new SmartStoreSDKManager(context, keyImpl, mainActivity, loginActivity);
+            INSTANCE = new SmartStoreSDKManager(context, mainActivity, loginActivity);
         }
 
         // Upgrade to the latest version.
@@ -117,22 +92,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @param mainActivity Activity that should be launched after the login flow.
      */
     public static void initNative(Context context, Class<? extends Activity> mainActivity) {
-        SmartStoreSDKManager.init(context, null, mainActivity, LoginActivity.class);
-    }
-
-    /**
-     * Initializes components required for this class
-     * to properly function. This method should be called
-     * by native apps using the Salesforce Mobile SDK.
-     *
-     * @param context      Application context.
-     * @param keyImpl      Implementation of KeyInterface.
-     * @param mainActivity Activity that should be launched after the login flow.
-     * @deprecated Will be removed in Mobile SDK 7.0. Use {@link #initNative(Context, Class)} instead.
-     */
-    @Deprecated
-    public static void initNative(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity) {
-        SmartStoreSDKManager.init(context, keyImpl, mainActivity, LoginActivity.class);
+        SmartStoreSDKManager.init(context, mainActivity, LoginActivity.class);
     }
 
     /**
@@ -146,24 +106,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      */
     public static void initNative(Context context, Class<? extends Activity> mainActivity,
                                   Class<? extends Activity> loginActivity) {
-        SmartStoreSDKManager.init(context, null, mainActivity, loginActivity);
-    }
-
-    /**
-     * Initializes components required for this class
-     * to properly function. This method should be called
-     * by native apps using the Salesforce Mobile SDK.
-     *
-     * @param context       Application context.
-     * @param keyImpl       Implementation of KeyInterface.
-     * @param mainActivity  Activity that should be launched after the login flow.
-     * @param loginActivity Login activity.
-     * @deprecated Will be removed in Mobile SDK 7.0. Use {@link #initNative(Context, Class, Class)} instead.
-     */
-    @Deprecated
-    public static void initNative(Context context, KeyInterface keyImpl,
-                                  Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-        SmartStoreSDKManager.init(context, keyImpl, mainActivity, loginActivity);
+        SmartStoreSDKManager.init(context, mainActivity, loginActivity);
     }
 
     /**
@@ -187,7 +130,6 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         } else {
             DBOpenHelper.deleteAllUserDatabases(getAppContext());
         }
-
         super.cleanUp(userAccount);
     }
 
@@ -224,7 +166,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @return SmartStore instance.
      */
     public SmartStore getSmartStore() {
-        return getSmartStore(getUserAccountManager().getCurrentUser());
+        return getSmartStore(getUserAccountManager().getCachedCurrentUser());
     }
 
     /**
@@ -291,7 +233,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @return True - if the user has a smart store database, False - otherwise.
      */
     public boolean hasSmartStore() {
-        return hasSmartStore(getUserAccountManager().getCurrentUser(), null);
+        return hasSmartStore(getUserAccountManager().getCachedCurrentUser(), null);
     }
 
     /**
@@ -348,7 +290,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * Removes the default smart store for the current user.
      */
     public void removeSmartStore() {
-        removeSmartStore(getUserAccountManager().getCurrentUser());
+        removeSmartStore(getUserAccountManager().getCachedCurrentUser());
     }
 
     /**
@@ -391,9 +333,9 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @throws JSONException
      */
     public List<String> getGlobalStoresPrefixList(){
-        UserAccount userAccount = getUserAccountManager().getCurrentUser();
+        UserAccount userAccount = getUserAccountManager().getCachedCurrentUser();
         String communityId = userAccount!=null?userAccount.getCommunityId():null;
-        List<String> globalDBNames = DBOpenHelper.getGlobalDatabasePrefixList(context,getUserAccountManager().getCurrentUser(),communityId);
+        List<String> globalDBNames = DBOpenHelper.getGlobalDatabasePrefixList(context,getUserAccountManager().getCachedCurrentUser(),communityId);
         return globalDBNames;
     }
 
@@ -403,9 +345,9 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @throws JSONException
      */
     public List<String> getUserStoresPrefixList() {
-        UserAccount userAccount = getUserAccountManager().getCurrentUser();
+        UserAccount userAccount = getUserAccountManager().getCachedCurrentUser();
         String communityId = userAccount!=null?userAccount.getCommunityId():null;
-        List<String> userDBName = DBOpenHelper.getUserDatabasePrefixList(context,getUserAccountManager().getCurrentUser(),communityId);
+        List<String> userDBName = DBOpenHelper.getUserDatabasePrefixList(context,getUserAccountManager().getCachedCurrentUser(),communityId);
         return userDBName;
     }
 
@@ -428,8 +370,8 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         List<String> globalDBNames = this.getUserStoresPrefixList();
         for(String storeName : globalDBNames) {
             removeSmartStore(storeName,
-                    UserAccountManager.getInstance().getCurrentUser(),
-                    UserAccountManager.getInstance().getCurrentUser().getCommunityId());
+                    UserAccountManager.getInstance().getCachedCurrentUser(),
+                    UserAccountManager.getInstance().getCachedCurrentUser().getCommunityId());
         }
     }
 

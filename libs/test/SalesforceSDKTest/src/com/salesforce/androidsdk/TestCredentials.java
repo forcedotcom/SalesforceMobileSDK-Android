@@ -53,6 +53,7 @@ public class TestCredentials {
     public static String IDENTITY_URL;
     public static String CLIENT_ID;
     public static String REFRESH_TOKEN;
+    public static String PHOTO_URL;
 
     public static void init(Context ctx) {
         API_VERSION = ApiVersionStrings.getVersionNumber(ctx);
@@ -67,5 +68,6 @@ public class TestCredentials {
         IDENTITY_URL = ctx.getString(R.string.identity_url);
         CLIENT_ID = ctx.getString(R.string.remoteAccessConsumerKey);
         REFRESH_TOKEN = ctx.getString(R.string.oauth_refresh_token);
+        PHOTO_URL = ctx.getString(R.string.photo_url);
     }
 }

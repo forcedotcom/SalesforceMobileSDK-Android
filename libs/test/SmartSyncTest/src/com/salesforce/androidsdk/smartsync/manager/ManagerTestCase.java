@@ -29,7 +29,7 @@ package com.salesforce.androidsdk.smartsync.manager;
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
-import android.support.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
 import com.salesforce.androidsdk.auth.HttpAccess;
@@ -51,10 +51,9 @@ import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
-import junit.framework.Assert;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.junit.Assert;
 
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -81,8 +80,6 @@ abstract public class ManagerTestCase {
     protected Context targetContext;
     protected EventsListenerQueue eq;
     protected SmartSyncSDKManager sdkManager;
-    protected MetadataManager metadataManager;
-    protected CacheManager cacheManager;
     protected SyncManager syncManager;
     protected SyncManager globalSyncManager;
     protected RestClient restClient;
@@ -92,12 +89,12 @@ abstract public class ManagerTestCase {
     protected String apiVersion;
 
     public void setUp() throws Exception {
-        targetContext = InstrumentationRegistry.getTargetContext();
+        targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         apiVersion = ApiVersionStrings.getVersionNumber(targetContext);
         final Application app = Instrumentation.newApplication(TestForceApp.class,
         		targetContext);
         InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
-        TestCredentials.init(InstrumentationRegistry.getContext());
+        TestCredentials.init(InstrumentationRegistry.getInstrumentation().getContext());
         eq = new EventsListenerQueue();
         if (SmartSyncSDKManager.getInstance() == null) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
@@ -112,19 +109,14 @@ abstract public class ManagerTestCase {
         		TestCredentials.LOGIN_URL, TestCredentials.IDENTITY_URL,
         		TestCredentials.CLIENT_ID, TestCredentials.ORG_ID,
         		TestCredentials.USER_ID, null, null, null,
-                null, null, null, null, null, null);
-    	MetadataManager.reset(null);
-    	CacheManager.hardReset(null);
+                null, null, null, TestCredentials.PHOTO_URL, null, null);
     	SyncManager.reset();
     	sdkManager = SmartSyncSDKManager.getInstance();
-        metadataManager = MetadataManager.getInstance(null);
-        cacheManager = CacheManager.getInstance(null);
         smartStore = sdkManager.getSmartStore();
         globalSmartStore = sdkManager.getGlobalSmartStore();
         syncManager = SyncManager.getInstance();
         globalSyncManager = SyncManager.getInstance(null, null, globalSmartStore);
         restClient = initRestClient();
-        metadataManager.setRestClient(restClient);
         syncManager.setRestClient(restClient);
         SmartSyncLogger.setLogLevel(SalesforceLogger.Level.DEBUG);
     }
@@ -134,8 +126,6 @@ abstract public class ManagerTestCase {
             eq.tearDown();
             eq = null;
         }
-    	MetadataManager.reset(null);
-    	CacheManager.hardReset(null);
     }
 
     private RestClient initRestClient() throws Exception {
@@ -149,7 +139,7 @@ abstract public class ManagerTestCase {
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null, null,
-                null, null, null, null, null, null, null);
+                null, null, null, null, TestCredentials.PHOTO_URL, null, null);
         return new RestClient(clientInfo, authToken, httpAccess, null);
     }
 
@@ -215,7 +205,7 @@ abstract public class ManagerTestCase {
 
             // Request.
             String name = createRecordName(objectType);
-            Map<String, Object> fields = new HashMap<String, Object>();
+            Map<String, Object> fields = new HashMap<>();
 
             // Add additional fields if any
             if (additionalFields != null) {
@@ -241,7 +231,6 @@ abstract public class ManagerTestCase {
                 default:
                     break;
             }
-
             listFields.add(fields);
         }
         return listFields;
@@ -263,7 +252,6 @@ abstract public class ManagerTestCase {
     /**
      * @return record name of the form SyncManagerTest<random number left-padded to be 8 digits long>
      */
-    @SuppressWarnings("resource")
     protected String createRecordName(String objectType) {
         return String.format(Locale.US, "ManagerTest_%s_%d", objectType, System.nanoTime());
     }

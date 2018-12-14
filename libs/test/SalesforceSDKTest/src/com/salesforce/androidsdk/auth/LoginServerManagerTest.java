@@ -29,9 +29,9 @@ package com.salesforce.androidsdk.auth;
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.filters.SmallTest;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.filters.SmallTest;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -40,9 +40,8 @@ import com.salesforce.androidsdk.config.LoginServerManager.LoginServer;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
-import junit.framework.Assert;
-
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -70,7 +69,7 @@ public class LoginServerManagerTest {
 
 	@Before
 	public void setUp() throws Exception {
-		targetContext = InstrumentationRegistry.getTargetContext();
+		targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         eq = new EventsListenerQueue();
 
         // Wait for app initialization to complete.

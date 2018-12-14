@@ -61,42 +61,20 @@ public class Constants {
      * Salesforce object types.
      */
     public static final String ACCOUNT = "Account";
-    public static final String LEAD = "Lead";
     public static final String CASE = "Case";
     public static final String OPPORTUNITY = "Opportunity";
-    public static final String TASK = "Task";
     public static final String CONTACT = "Contact";
-    public static final String CAMPAIGN = "Campaign";
-    public static final String CONTENT = "ContentDocument";
-    public static final String CONTENT_VERSION = "ContentVersion";
 
     /**
      * Salesforce object type field constants.
      */
     public static final String KEYPREFIX_FIELD = "keyPrefix";
-    public static final String NAME_FIELD = "name";
     public static final String LABEL_FIELD = "label";
-    public static final String LABELPLURAL_FIELD = "labelPlural";
-    public static final String FIELDS_FIELD = "fields";
-    public static final String LAYOUTABLE_FIELD = "layoutable";
-    public static final String SEARCHABLE_FIELD = "searchable";
-    public static final String HIDDEN_FIELD = "deprecatedAndHidden";
-    public static final String NAMEFIELD_FIELD = "nameField";
 
     /**
      * Salesforce object layout column field constants.
      */
     public static final String LAYOUT_TYPE_COMPACT = "Compact";
-    public static final String LAYOUT_NAME_FIELD = "name";
-    public static final String LAYOUT_FIELD_FIELD = "field";
-    public static final String LAYOUT_FORMAT_FIELD = "format";
-    public static final String LAYOUT_LABEL_FIELD = "label";
-
-    /**
-     * Salesforce object type layout field constants.
-     */
-    public static final String LAYOUT_LIMITS_FIELD = "limitRows";
-    public static final String LAYOUT_COLUMNS_FIELD = "searchColumns";
 
     /**
      * Salesforce timestamp format.
