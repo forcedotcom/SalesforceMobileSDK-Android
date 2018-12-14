@@ -144,7 +144,7 @@ public class JavaScriptPluginVersionTest {
 	 */
     @Test
 	public void testJavaScriptPluginVersionsWithNewVersion() {
-		for (String version : new String[] {"7.1.0", "7.2.0", "7.3.0"}) {
+		for (String version : new String[] {"7.2.0", "7.3.0", "8.0.0"}) {
             Assert.assertFalse((new JavaScriptPluginVersion(version)).isOlder());
             Assert.assertFalse((new JavaScriptPluginVersion(version)).isCurrent());
             Assert.assertTrue((new JavaScriptPluginVersion(version)).isNewer());
