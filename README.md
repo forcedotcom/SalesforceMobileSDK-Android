@@ -35,7 +35,14 @@ necessary at this time.
 - Android target SDK: Android Pie (API 28)
 - Gradle: 4.6
 - Android Studio: 3.2
-
+- OkHttp: 3.10
+- Cordova for Android: 7.1.2
+- Cordova command line: 8.1.2
+- SQLCipher: 3.5.9
+- SQLite: 3.20.1
+- React Native: 0.56.1
+- node: 11.1
+  
 **Deprecations**
 - Android GCM push notifications are no longer supported.
 
