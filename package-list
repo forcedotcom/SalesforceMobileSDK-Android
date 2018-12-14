@@ -7,7 +7,6 @@ com.salesforce.androidsdk.analytics.security
 com.salesforce.androidsdk.analytics.store
 com.salesforce.androidsdk.analytics.transform
 com.salesforce.androidsdk.analytics.util
-com.salesforce.androidsdk.analytics.util.test
 com.salesforce.androidsdk.app
 com.salesforce.androidsdk.auth
 com.salesforce.androidsdk.auth.idp
@@ -29,7 +28,6 @@ com.salesforce.androidsdk.smartstore.config
 com.salesforce.androidsdk.smartstore.store
 com.salesforce.androidsdk.smartstore.ui
 com.salesforce.androidsdk.smartstore.util
-com.salesforce.androidsdk.smartsync.accounts
 com.salesforce.androidsdk.smartsync.app
 com.salesforce.androidsdk.smartsync.config
 com.salesforce.androidsdk.smartsync.manager
