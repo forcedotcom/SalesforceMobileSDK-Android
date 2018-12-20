@@ -145,7 +145,7 @@ public class SyncState {
     	return SyncState.fromJSON(sync);
 	}
 
-	
+
 	/**
 	 * Create sync state in database for a sync up and return corresponding SyncState
 	 * NB: Throws exception if there is already a sync with the same name (when name is not null)
@@ -390,7 +390,7 @@ public class SyncState {
 	}
 	
 	public void setStatus(Status status) {
-		if (this.status == Status.NEW && status == Status.RUNNING) {
+		if (this.status != Status.RUNNING && status == Status.RUNNING) {
 			this.startTime = System.currentTimeMillis();
 		}
 		if (this.status == Status.RUNNING && (status == Status.DONE || status == Status.FAILED)) {
