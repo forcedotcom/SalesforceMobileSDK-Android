@@ -100,14 +100,4 @@ public class AnalyticsManager {
     public EventStoreManager getEventStoreManager() {
         return storeManager;
     }
-
-    /**
-     * Changes the encryption key to a new value.
-     *
-     * @param oldKey Old encryption key.
-     * @param newKey New encryption key.
-     */
-    public void changeEncryptionKey(String oldKey, String newKey) {
-        storeManager.changeEncryptionKey(oldKey, newKey);
-    }
 }
