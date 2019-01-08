@@ -52,6 +52,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -874,6 +875,57 @@ public class SmartStoreTest extends SmartStoreTestCase {
 				new JSONArray("['bbcd']"), new JSONArray("['abcd']"), new JSONArray("['abcc']"));
 	}
 
+	/**
+	 * Test query against soup with special characters when soup has string index
+	 * @throws JSONException
+	 */
+	@Test
+	public void testQueryDataWithSpecialCharactersWithStringIndex() throws JSONException {
+		tryQueryDataWithSpecialCharacters(Type.string);
+	}
+
+	/**
+	 * Test query against soup with special characters when soup has json1 index
+	 * @throws JSONException
+	 */
+	@Test
+	public void testQueryDataWithSpecialCharactersWithJSON1Index() throws JSONException {
+		tryQueryDataWithSpecialCharacters(Type.json1);
+	}
+
+	private void tryQueryDataWithSpecialCharacters(Type type) throws JSONException {
+		// Before
+		Assert.assertFalse("Soup other_test_soup should not exist", store.hasSoup(OTHER_TEST_SOUP));
+
+		// Register
+		store.registerSoup(OTHER_TEST_SOUP, new IndexSpec[] {new IndexSpec("key", type), new IndexSpec("value", type)});
+		Assert.assertTrue("Register soup call failed", store.hasSoup(OTHER_TEST_SOUP));
+
+		StringBuffer value = new StringBuffer();
+		for (int i=1; i<1000; i++) {
+			value.append(new Character((char) i));
+		}
+		String valueForAbcd = "abcd" + value;
+		String valueForDefg = "defg" + value;
+
+		// Populate soup
+		JSONObject soupElt1 = new JSONObject();
+		soupElt1.put("key", "abcd");
+		soupElt1.put("value", valueForAbcd);
+
+		JSONObject soupElt2 = new JSONObject("{'key':'defg'}");
+		soupElt2.put("key", "defg");
+		soupElt2.put("value", valueForDefg);
+
+		store.create(OTHER_TEST_SOUP, soupElt1);
+		store.create(OTHER_TEST_SOUP, soupElt2);
+
+		// Smart query
+		String sql = String.format("SELECT {%1$s:value} FROM {%1$s} ORDER BY {%1$s:key}", OTHER_TEST_SOUP);
+		runQueryCheckResultsAndExplainPlan(OTHER_TEST_SOUP, QuerySpec.buildSmartQuerySpec(sql, 10), 0, false, null,
+				new JSONArray(Collections.singletonList(valueForAbcd)), new JSONArray(Collections.singletonList(valueForDefg)));
+	}
+
     protected void runQueryCheckResultsAndExplainPlan(String soupName, QuerySpec querySpec, int page, boolean covering, String expectedDbOperation, JSONObject... expectedResults) throws JSONException {
 
         // Run query
@@ -901,7 +953,9 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		}
 
 		// Check explain plan and make sure index was used
-		checkExplainQueryPlan(soupName, 0, covering, expectedDbOperation);
+		if (expectedDbOperation != null) {
+			checkExplainQueryPlan(soupName, 0, covering, expectedDbOperation);
+		}
 	}
 
 	/**
