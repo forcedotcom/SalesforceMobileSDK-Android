@@ -896,16 +896,45 @@ public class SmartStore  {
 	}
 
 	private String escapeStringValue(String raw) {
-		String escaped = raw;
-		escaped = escaped.replace("\\", "\\\\");
-		escaped = escaped.replace("/", "\\/");
-		escaped = escaped.replace("\"", "\\\"");
-		escaped = escaped.replace("\b", "\\b");
-		escaped = escaped.replace("\f", "\\f");
-		escaped = escaped.replace("\n", "\\n");
-		escaped = escaped.replace("\r", "\\r");
-		escaped = escaped.replace("\t", "\\t");
-		return escaped;
+		StringBuilder sb = new StringBuilder();
+
+		for (int i = 0; i < raw.length(); i ++) {
+			char c = raw.charAt(i);
+			switch (c) {
+				case '\\':
+				case '"':
+					sb.append('\\');
+					sb.append(c);
+					break;
+				case '/':
+					sb.append('\\');
+					sb.append(c);
+					break;
+				case '\b':
+					sb.append("\\b");
+					break;
+				case '\t':
+					sb.append("\\t");
+					break;
+				case '\n':
+					sb.append("\\n");
+					break;
+				case '\f':
+					sb.append("\\f");
+					break;
+				case '\r':
+					sb.append("\\r");
+					break;
+				default:
+					if (c < ' ') {
+						String t = "000" + Integer.toHexString(c);
+						sb.append("\\u" + t.substring(t.length() - 4));
+					} else {
+						sb.append(c);
+					}
+			}
+		}
+		return sb.toString();
 	}
 
 	/**
