@@ -2,73 +2,45 @@
 
 #set -x
 
-OPT_VERSION_NAME=""
-OPT_VERSION_CODE=""
-OPT_IS_DEV=""
+OPT_VERSION=""
+OPT_CODE=""
+OPT_IS_DEV="no"
+RED='\033[0;31m'
 YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
 usage ()
 {
-    echo "Use this script to set Mobile SDK version name/code in source files"
-    echo "Usage: $0 -v <versionName e.g. 7.1.0> -c <versionCode e.g. 64> [-d <isDev e.g. yes>]"
+    echo "Use this script to set Mobile SDK version number in source files"
+    echo "Usage: $0 -v <versionName> -c <versionCode> [-d <isDev>]"
+    echo "  where: versionName is the version name e.g. 7.1.0"
+    echo "         versionCode is the version code e.g. 64"
+    echo "         isDev is yes or no (default) to indicate whether it is a dev build"
 }
 
 parse_opts ()
 {
-    while getopts v:c: command_line_opt
+    while getopts v:c:d: command_line_opt
     do
         case ${command_line_opt} in
-            v)
-                OPT_VERSION_NAME=${OPTARG};;
-            c)
-                OPT_VERSION_CODE=${OPTARG};;
-            ?)
-                echo "Unknown option '-${OPTARG}'."
-                usage
-                exit 1;;
+            v)  OPT_VERSION=${OPTARG};;
+            c)  OPT_CODE=${OPTARG};;
+            d)  OPT_IS_DEV=${OPTARG};;
         esac
     done
 
-    if [ "${OPT_VERSION_NAME}" == "" ]
+    if [ "${OPT_VERSION}" == "" ]
     then
-        echo "You must specify a value for the version name."
+        echo -e "${RED}You must specify a value for the version name.${NC}"
         usage
         exit 1
     fi
 
-    valid_version_name_regex='^[0-9]+\.[0-9]+\.[0-9]+$'
-    if [[ "${OPT_VERSION_NAME}" =~ $valid_version_name_regex ]]
-     then
-         # No action
-            :
-     else
-        echo "${OPT_VERSION_NAME} is not a valid version name. Should be in the format <integer.integer.interger>"
-        exit 2
-    fi
-
-    if [ "${OPT_VERSION_CODE}" == "" ]
+    if [ "${OPT_CODE}" == "" ]
     then
-        echo "You must specify a value for the version code."
+        echo -e "${RED}You must specify a value for the version code.${NC}"
         usage
         exit 1
-    fi
-
-    valid_version_code_regex='^[0-9]+$'
-    if [[ "${OPT_VERSION_CODE}" =~ $valid_version_code_regex ]]
-     then
-         # No action
-            :
-     else
-        echo "${OPT_VERSION_CODE} is not a valid version code. Should be a number>"
-        exit 2
-    fi
-
-    if [ "${OPT_IS_DEV}" == "yes" ]
-    then
-       OPT_IS_DEV=1
-    else
-       OPT_IS_DEV=0
     fi
 }
 
@@ -106,25 +78,36 @@ update_salesforcesdkmanager_java ()
 
 parse_opts "$@"
 
-echo -e "${YELLOW}*** SETTING VERSION NAME TO ${OPT_VERSION_NAME}, VERSION CODE TO ${OPT_VERSION_CODE}, IS DEV = ${OPT_IS_DEV} ***${NC}"
+VERSION_SUFFIXED=""
+if [ "$OPT_IS_DEV" == "yes" ]
+then
+    echo "here 1"
+    VERSION_SUFFIXED="${OPT_VERSION}.dev"
+else
+    echo "here 2"
+    VERSION_SUFFIXED=${OPT_VERSION}
+fi
+
+
+echo -e "${YELLOW}*** SETTING VERSION NAME TO ${OPT_VERSION}, VERSION CODE TO ${OPT_CODE}, IS DEV = ${OPT_IS_DEV} ***${NC}"
 
 echo "*** Updating package.json ***"
-update_package_json "./package.json" "${OPT_VERSION_NAME}"
+update_package_json "./package.json" "${OPT_VERSION}"
 
 echo "*** Updating manifests ***"
-update_manifest "./libs/SalesforceAnalytics/AndroidManifest.xml" "${OPT_VERSION_NAME}" "${OPT_VERSION_CODE}"
-update_manifest "./libs/SalesforceSDK/AndroidManifest.xml" "${OPT_VERSION_NAME}" "${OPT_VERSION_CODE}"
-update_manifest "./libs/SmartStore/AndroidManifest.xml" "${OPT_VERSION_NAME}" "${OPT_VERSION_CODE}"
-update_manifest "./libs/SmartSync/AndroidManifest.xml" "${OPT_VERSION_NAME}" "${OPT_VERSION_CODE}"
-update_manifest "./libs/SalesforceHybrid/AndroidManifest.xml" "${OPT_VERSION_NAME}" "${OPT_VERSION_CODE}"
-update_manifest "./libs/SalesforceReact/AndroidManifest.xml" "${OPT_VERSION_NAME}" "${OPT_VERSION_CODE}"
+update_manifest "./libs/SalesforceAnalytics/AndroidManifest.xml" "${VERSION_SUFFIXED}" "${OPT_CODE}"
+update_manifest "./libs/SalesforceSDK/AndroidManifest.xml" "${VERSION_SUFFIXED}" "${OPT_CODE}"
+update_manifest "./libs/SmartStore/AndroidManifest.xml" "${VERSION_SUFFIXED}" "${OPT_CODE}"
+update_manifest "./libs/SmartSync/AndroidManifest.xml" "${VERSION_SUFFIXED}" "${OPT_CODE}"
+update_manifest "./libs/SalesforceHybrid/AndroidManifest.xml" "${VERSION_SUFFIXED}" "${OPT_CODE}"
+update_manifest "./libs/SalesforceReact/AndroidManifest.xml" "${VERSION_SUFFIXED}" "${OPT_CODE}"
 
-echo "*** Updating config xmls ***"
-update_config_xml "./libs/SalesforceHybrid/res/xml/config.xml" "${OPT_VERSION_NAME}"
-update_config_xml "./libs/test/SalesforceHybridTest/res/xml/config.xml" "${OPT_VERSION_NAME}"
+echo "*** Updating config.xml files ***"
+update_config_xml "./libs/SalesforceHybrid/res/xml/config.xml" "${OPT_VERSION}"
+update_config_xml "./libs/test/SalesforceHybridTest/res/xml/config.xml" "${OPT_VERSION}"
 
-echo "*** Updating salesforce sdk manager java ***"
-update_salesforcesdkmanager_java "./libs/SalesforceSDK/src/com/salesforce/androidsdk/app/SalesforceSDKManager.java" "${OPT_VERSION_NAME}"
+echo "*** Updating SalesforceSDKManager.java ***"
+update_salesforcesdkmanager_java "./libs/SalesforceSDK/src/com/salesforce/androidsdk/app/SalesforceSDKManager.java" "${VERSION_SUFFIXED}"
 
 
 
