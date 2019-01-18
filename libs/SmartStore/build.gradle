@@ -15,7 +15,7 @@ apply plugin: 'com.jfrog.bintray'
 
 dependencies {
     api project(':libs:SalesforceSDK')
-    api 'net.zetetic:android-database-sqlcipher:3.5.9'
+    api 'net.zetetic:android-database-sqlcipher:4.0.1'
     androidTestImplementation 'androidx.test:runner:1.1.0'
     androidTestImplementation 'androidx.test:rules:1.1.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.0'
