@@ -397,16 +397,12 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 	static class DBHook implements SQLiteDatabaseHook {
 		public void preKey(SQLiteDatabase database) {
-			// using sqlcipher 2.x kdf iter
-			// because 3.x default (64000) and 4.x default (256000) are too slow
-			// to be able to open 2.x databases without any migration
+			// Using sqlcipher 3.x default settings
+			// => should open 3.x databases without any migration
+			database.execSQL("PRAGMA cipher_default_compatibility = 3");
+			// Using sqlcipher 2.x kdf iter because 3.x default (64000) and 4.x default (256000) are too slow
+			// => should open 2.x databases without any migration
 			database.execSQL("PRAGMA cipher_default_kdf_iter = 4000");
-
-			// using sqlcipher 3.x page size, hmac algorithm and kdf algorithm
-			// to be able to open 3.x databases without any migration
-			database.execSQL("PRAGMA cipher_default_page_size = 1024");
-			database.execSQL("PRAGMA cipher_default_hmac_algorithm = HMAC_SHA1");
-			database.execSQL("PRAGMA cipher_default_kdf_algorithm = PBKDF2_HMAC_SHA1");
 		}
 
 		public void postKey(SQLiteDatabase database) {
