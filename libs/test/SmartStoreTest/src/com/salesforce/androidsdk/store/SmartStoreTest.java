@@ -102,6 +102,14 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	}
 
 	/**
+	 * Checking sqlcipher version
+	 */
+	@Test
+	public void testSQLCipherVersion() {
+		Assert.assertEquals("Wrong sqlcipher version", "4.0.1 community", store.getSQLCipherVersion());
+	}
+
+	/**
 	 * Method to check soup blob with one stored by db. Can be overridden to check external storage if necessary.
 	 */
 	protected void assertSameSoupAsDB(JSONObject soup, Cursor c, String soupName, Long id) throws JSONException {
