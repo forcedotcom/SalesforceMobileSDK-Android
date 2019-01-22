@@ -52,6 +52,14 @@ update_package_json ()
     sed -i "s/\"version\":.*\"[^\"]*\"/\"version\": \"${versionName}\"/g" ${file}
 }
 
+update_build_gradle ()
+{
+    local file=$1
+    local versionName=$2
+    sed -i "s/name = '[0-9\.]*'/name = '${versionName}'/g" ${file}
+    sed -i "s/vcsTag = '[^']*'/vcsTag = 'v${versionName}'/g" ${file}
+}
+
 update_manifest ()
 {
     local file=$1
@@ -93,6 +101,14 @@ echo -e "${YELLOW}*** SETTING VERSION NAME TO ${OPT_VERSION}, VERSION CODE TO ${
 
 echo "*** Updating package.json ***"
 update_package_json "./package.json" "${OPT_VERSION}"
+
+echo "*** Updating build.gradle files ***"
+update_build_gradle "./libs/SalesforceAnalytics/build.gradle" "${OPT_VERSION}"
+update_build_gradle "./libs/SalesforceSDK/build.gradle" "${OPT_VERSION}"
+update_build_gradle "./libs/SmartStore/build.gradle" "${OPT_VERSION}"
+update_build_gradle "./libs/SmartSync/build.gradle" "${OPT_VERSION}"
+update_build_gradle "./libs/SalesforceHybrid/build.gradle" "${OPT_VERSION}"
+update_build_gradle "./libs/SalesforceReact/build.gradle" "${OPT_VERSION}"
 
 echo "*** Updating manifests ***"
 update_manifest "./libs/SalesforceAnalytics/AndroidManifest.xml" "${VERSION_SUFFIXED}" "${OPT_CODE}"
