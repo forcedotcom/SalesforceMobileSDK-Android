@@ -144,7 +144,13 @@ public class JavaScriptPluginVersionTest {
 	 */
     @Test
 	public void testJavaScriptPluginVersionsWithNewVersion() {
-		for (String version : new String[] {"7.2.0", "7.3.0", "8.0.0"}) {
+		String[] versionParts = SalesforceSDKManager.SDK_VERSION.split("\\.");
+		String nextMajor = String.join(".","" + (Integer.parseInt(versionParts[0])+1), versionParts[1], versionParts[2]);
+		String nextMinor = String.join(".",versionParts[0], "" + (Integer.parseInt(versionParts[1])+1), versionParts[2]);
+		String nextPatch = String.join(".",versionParts[0], versionParts[1], "" + (Integer.parseInt(versionParts[2])+1));
+
+
+		for (String version : new String[] {nextMajor, nextMinor, nextPatch}) {
             Assert.assertFalse((new JavaScriptPluginVersion(version)).isOlder());
             Assert.assertFalse((new JavaScriptPluginVersion(version)).isCurrent());
             Assert.assertTrue((new JavaScriptPluginVersion(version)).isNewer());
