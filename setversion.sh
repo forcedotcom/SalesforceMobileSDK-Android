@@ -84,6 +84,13 @@ update_salesforcesdkmanager_java ()
 
 }
 
+update_generate_doc ()
+{
+    local file=$1
+    local versionName=$2
+    sed -i "s/SalesforceSDK [0-9\.]* API/SalesforceSDK ${versionName} API/g" ${file}
+}
+
 parse_opts "$@"
 
 VERSION_SUFFIXED=""
@@ -96,6 +103,7 @@ else
     VERSION_SUFFIXED=${OPT_VERSION}
 fi
 
+SHORT_VERSION=`echo ${OPT_VERSION} | cut -d. -f1,2`
 
 echo -e "${YELLOW}*** SETTING VERSION NAME TO ${OPT_VERSION}, VERSION CODE TO ${OPT_CODE}, IS DEV = ${OPT_IS_DEV} ***${NC}"
 
@@ -125,6 +133,5 @@ update_config_xml "./libs/test/SalesforceHybridTest/res/xml/config.xml" "${OPT_V
 echo "*** Updating SalesforceSDKManager.java ***"
 update_salesforcesdkmanager_java "./libs/SalesforceSDK/src/com/salesforce/androidsdk/app/SalesforceSDKManager.java" "${VERSION_SUFFIXED}"
 
-
-
-
+echo "*** Updating generate_doc.sh ***"
+update_generate_doc "./tools/generate_doc.sh" "${SHORT_VERSION}"
