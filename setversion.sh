@@ -52,6 +52,21 @@ update_package_json ()
     sed -i "s/\"version\":.*\"[^\"]*\"/\"version\": \"${versionName}\"/g" ${file}
 }
 
+update_top_build_gradle ()
+{
+    local file=$1
+    local versionName=$2
+    sed -i "s/version = '[0-9\.]*'/version = '${versionName}'/g" ${file}
+}
+
+update_build_gradle ()
+{
+    local file=$1
+    local versionName=$2
+    sed -i "s/name = '[0-9\.]*'/name = '${versionName}'/g" ${file}
+    sed -i "s/vcsTag = '[^']*'/vcsTag = 'v${versionName}'/g" ${file}
+}
+
 update_manifest ()
 {
     local file=$1
@@ -76,6 +91,13 @@ update_salesforcesdkmanager_java ()
 
 }
 
+update_generate_doc ()
+{
+    local file=$1
+    local versionName=$2
+    sed -i "s/SalesforceSDK [0-9\.]* API/SalesforceSDK ${versionName} API/g" ${file}
+}
+
 parse_opts "$@"
 
 VERSION_SUFFIXED=""
@@ -88,11 +110,23 @@ else
     VERSION_SUFFIXED=${OPT_VERSION}
 fi
 
+SHORT_VERSION=`echo ${OPT_VERSION} | cut -d. -f1,2`
 
 echo -e "${YELLOW}*** SETTING VERSION NAME TO ${OPT_VERSION}, VERSION CODE TO ${OPT_CODE}, IS DEV = ${OPT_IS_DEV} ***${NC}"
 
 echo "*** Updating package.json ***"
 update_package_json "./package.json" "${OPT_VERSION}"
+
+echo "*** Updating top build.gradle file ***"
+update_top_build_gradle "./build.gradle" "${OPT_VERSION}"
+
+echo "*** Updating build.gradle files ***"
+update_build_gradle "./libs/SalesforceAnalytics/build.gradle" "${OPT_VERSION}"
+update_build_gradle "./libs/SalesforceSDK/build.gradle" "${OPT_VERSION}"
+update_build_gradle "./libs/SmartStore/build.gradle" "${OPT_VERSION}"
+update_build_gradle "./libs/SmartSync/build.gradle" "${OPT_VERSION}"
+update_build_gradle "./libs/SalesforceHybrid/build.gradle" "${OPT_VERSION}"
+update_build_gradle "./libs/SalesforceReact/build.gradle" "${OPT_VERSION}"
 
 echo "*** Updating manifests ***"
 update_manifest "./libs/SalesforceAnalytics/AndroidManifest.xml" "${VERSION_SUFFIXED}" "${OPT_CODE}"
@@ -109,6 +143,5 @@ update_config_xml "./libs/test/SalesforceHybridTest/res/xml/config.xml" "${OPT_V
 echo "*** Updating SalesforceSDKManager.java ***"
 update_salesforcesdkmanager_java "./libs/SalesforceSDK/src/com/salesforce/androidsdk/app/SalesforceSDKManager.java" "${VERSION_SUFFIXED}"
 
-
-
-
+echo "*** Updating generate_doc.sh ***"
+update_generate_doc "./tools/generate_doc.sh" "${SHORT_VERSION}"
