@@ -52,6 +52,13 @@ update_package_json ()
     sed -i "s/\"version\":.*\"[^\"]*\"/\"version\": \"${versionName}\"/g" ${file}
 }
 
+update_top_build_gradle ()
+{
+    local file=$1
+    local versionName=$2
+    sed -i "s/version = '[0-9\.]*'/version = '${versionName}'/g" ${file}
+}
+
 update_build_gradle ()
 {
     local file=$1
@@ -109,6 +116,9 @@ echo -e "${YELLOW}*** SETTING VERSION NAME TO ${OPT_VERSION}, VERSION CODE TO ${
 
 echo "*** Updating package.json ***"
 update_package_json "./package.json" "${OPT_VERSION}"
+
+echo "*** Updating top build.gradle file ***"
+update_top_build_gradle "./build.gradle" "${OPT_VERSION}"
 
 echo "*** Updating build.gradle files ***"
 update_build_gradle "./libs/SalesforceAnalytics/build.gradle" "${OPT_VERSION}"
