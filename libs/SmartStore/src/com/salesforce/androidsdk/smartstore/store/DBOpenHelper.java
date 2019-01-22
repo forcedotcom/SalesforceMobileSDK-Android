@@ -397,9 +397,12 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 	static class DBHook implements SQLiteDatabaseHook {
 		public void preKey(SQLiteDatabase database) {
-			database.execSQL("PRAGMA cipher_default_kdf_iter = '4000'");
-			// the new default for sqlcipher 3.x (64000) is too slow
-			// also that way we can open 2.x databases without any migration
+			// Using sqlcipher 3.x default settings
+			// => should open 3.x databases without any migration
+			database.execSQL("PRAGMA cipher_default_compatibility = 3");
+			// Using sqlcipher 2.x kdf iter because 3.x default (64000) and 4.x default (256000) are too slow
+			// => should open 2.x databases without any migration
+			database.execSQL("PRAGMA cipher_default_kdf_iter = 4000");
 		}
 
 		public void postKey(SQLiteDatabase database) {
