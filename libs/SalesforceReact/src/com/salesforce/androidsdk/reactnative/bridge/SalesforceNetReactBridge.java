@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.reactnative.bridge;
 
-import androidx.annotation.NonNull;
 import android.util.Base64;
 
 import com.facebook.react.bridge.Callback;
@@ -49,6 +48,7 @@ import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.util.Map;
 
+import androidx.annotation.NonNull;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -67,9 +67,8 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
     private static final String RETURN_BINARY = "returnBinary";
     private static final String ENCODED_BODY = "encodedBody";
     private static final String CONTENT_TYPE = "contentType";
+    private static final String DOES_NOT_REQUIRE_AUTHENTICATION = "doesNotRequireAuthentication";
     private static final String TAG = "SalesforceNetReactBridge";
-
-    private RestClient restClient;
 
     public SalesforceNetReactBridge(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -81,24 +80,25 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void sendRequest(ReadableMap args,
-                            final Callback successCallback, final Callback errorCallback) {
-
+    public void sendRequest(ReadableMap args, final Callback successCallback, final Callback errorCallback) {
         try {
             // Prepare request
-            RestRequest request = prepareRestRequest(args);
+            final RestRequest request = prepareRestRequest(args);
             final boolean returnBinary = args.hasKey(RETURN_BINARY) && args.getBoolean(RETURN_BINARY);
+            final boolean doesNotRequireAuth = args.hasKey(DOES_NOT_REQUIRE_AUTHENTICATION)
+                    && args.getBoolean(DOES_NOT_REQUIRE_AUTHENTICATION);
 
             // Sending request
-            RestClient restClient = getRestClient();
-
-            if (restClient == null)
+            final RestClient restClient = getRestClient(doesNotRequireAuth);
+            if (restClient == null) {
                 return; // we are detached - do nothing
-
+            }
             restClient.sendAsync(request, new RestClient.AsyncRequestCallback() {
+
                 @Override
                 public void onSuccess(RestRequest request, RestResponse response) {
                     try {
+
                         // Sending a string over and letting javascript do a JSON.parse(result)
                         // It would be better to use NativeMap/NativeArray
                         // Although the absence of a common super class would force us to
@@ -110,6 +110,7 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
                         if (!response.isSuccess()) {
                             errorCallback.invoke(response.asString());
                         }
+
                         // Binary response
                         else if (returnBinary) {
                             JSONObject result = new JSONObject();
@@ -117,6 +118,7 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
                             result.put(ENCODED_BODY, Base64.encodeToString(response.asBytes(), Base64.DEFAULT));
                             successCallback.invoke(result.toString());
                         }
+
                         // Other cases
                         else {
                             successCallback.invoke(response.asString());
@@ -132,14 +134,14 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
                     errorCallback.invoke(exception.getMessage());
                 }
             });
-        }
-        catch (Exception exception) {
+        } catch (Exception exception) {
             errorCallback.invoke(exception.getMessage());
         }
     }
 
     @NonNull
     private RestRequest prepareRestRequest(ReadableMap args) throws UnsupportedEncodingException, URISyntaxException {
+
         // Parse args
         RestRequest.RestMethod method = RestRequest.RestMethod.valueOf(args.getString(METHOD_KEY));
         String endPoint = args.getString(END_POINT_KEY);
@@ -152,32 +154,37 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
         Map<String, String> additionalHeaders = ReactBridgeHelper.toJavaStringStringMap(headerParams);
         Map<String, Object> queryParamsMap = ReactBridgeHelper.toJavaMap(queryParams);
         Map<String, Map<String, String>> fileParamsMap = ReactBridgeHelper.toJavaStringMapMap(fileParams);
-
         String urlParams = "";
         RequestBody requestBody = null;
-        if (method == RestRequest.RestMethod.DELETE || method == RestRequest.RestMethod.GET || method == RestRequest.RestMethod.HEAD) {
+        if (method == RestRequest.RestMethod.DELETE || method == RestRequest.RestMethod.GET
+                || method == RestRequest.RestMethod.HEAD) {
             urlParams = buildQueryString(queryParamsMap);
         } else {
             requestBody = buildRequestBody(queryParamsMap, fileParamsMap);
         }
-
         String separator = urlParams.isEmpty()
                 ? ""
                 : path.contains("?")
                     ? (path.endsWith("&") ? "" : "&")
                     : "?";
-
         return new RestRequest(method, endPoint + path + separator + urlParams, requestBody, additionalHeaders);
     }
 
     /**
      * Returns the RestClient instance being used by this bridge.
      *
+     * @param doesNotRequireAuth True - if an unauthenticated client should be used, False - otherwise.
      * @return RestClient instance.
      */
-    protected RestClient getRestClient() {
+    protected RestClient getRestClient(boolean doesNotRequireAuth) {
         final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
-        return currentActivity != null ? currentActivity.getRestClient() : null;
+        if (currentActivity == null) {
+            return null;
+        }
+        if (doesNotRequireAuth) {
+            return currentActivity.getClientManager().peekUnauthenticatedRestClient();
+        }
+        return currentActivity.getRestClient();
     }
 
     private static String buildQueryString(Map<String, Object> params) throws UnsupportedEncodingException {
@@ -191,8 +198,7 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
     private static RequestBody buildRequestBody(Map<String, Object> params, Map<String, Map<String, String>> fileParams) throws URISyntaxException {
         if (fileParams.isEmpty()) {
             return RequestBody.create(RestRequest.MEDIA_TYPE_JSON, new JSONObject(params).toString());
-        }
-        else {
+        } else {
             MultipartBody.Builder builder = new MultipartBody.Builder().setType(MultipartBody.FORM);
             for (Map.Entry<String, Object> entry : params.entrySet()) {
                 builder.addFormDataPart(entry.getKey(), entry.getValue().toString());
@@ -210,7 +216,6 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
                 MediaType mediaType = MediaType.parse(mimeType);
                 builder.addFormDataPart(fileParamName, name, RequestBody.create(mediaType, file));
             }
-
             return builder.build();
         }
     }
