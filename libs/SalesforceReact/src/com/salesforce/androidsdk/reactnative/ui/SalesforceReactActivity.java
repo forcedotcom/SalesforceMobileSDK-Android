@@ -243,15 +243,6 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
         return client;
     }
 
-    /**
-     * Returns an instance of ClientManager.
-     *
-     * @return An instance of ClientManager.
-     */
-    public ClientManager getClientManager() {
-        return clientManager;
-    }
-
     protected void setRestClient(RestClient restClient) {
         client = restClient;
         if (client != null) {

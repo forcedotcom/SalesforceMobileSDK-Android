@@ -33,6 +33,7 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
+import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
 import com.salesforce.androidsdk.reactnative.ui.SalesforceReactActivity;
 import com.salesforce.androidsdk.reactnative.util.SalesforceReactLogger;
 import com.salesforce.androidsdk.rest.RestClient;
@@ -182,7 +183,7 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
             return null;
         }
         if (doesNotRequireAuth) {
-            return currentActivity.getClientManager().peekUnauthenticatedRestClient();
+            return SalesforceReactSDKManager.getInstance().getClientManager().peekUnauthenticatedRestClient();
         }
         return currentActivity.getRestClient();
     }
