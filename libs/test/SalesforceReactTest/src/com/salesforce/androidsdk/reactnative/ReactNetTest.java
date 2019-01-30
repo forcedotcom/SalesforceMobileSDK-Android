@@ -24,11 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
 package com.salesforce.androidsdk.reactnative;
-
-
-import androidx.test.filters.SmallTest;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,6 +33,7 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.List;
 
+import androidx.test.filters.SmallTest;
 
 /**
  * Running javascript tests for Net react module.
@@ -63,7 +60,8 @@ public class ReactNetTest extends ReactTestCase {
                 "testUpsertUpdateRetrieve",
                 "testCreateDelRetrieve",
                 "testQuery",
-                "testSearch");
+                "testSearch",
+                "testPublicApiCall");
     }
 
     @Test
