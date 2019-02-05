@@ -116,9 +116,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
     }
 
     protected ClientManager buildClientManager() {
-        return new ClientManager(this, SalesforceSDKManager.getInstance().getAccountType(),
-                SalesforceSDKManager.getInstance().getLoginOptions(),
-                SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
+        return SalesforceHybridSDKManager.getInstance().getClientManager();
     }
 
     @Override
@@ -301,10 +299,20 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
         return delegate.onKeyUp(keyCode, event) || super.onKeyUp(keyCode, event);
     }
 
+    /**
+     * Returns an instance of BootConfig.
+     *
+     * @return Instance of BootConfig.
+     */
     public BootConfig getBootConfig() {
         return bootconfig;
     }
 
+    /**
+     * Returns an instance of RestClient.
+     *
+     * @return Instance of RestClient.
+     */
     public RestClient getRestClient() {
         return client;
     }

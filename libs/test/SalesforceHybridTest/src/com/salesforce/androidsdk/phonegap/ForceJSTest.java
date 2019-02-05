@@ -59,7 +59,8 @@ public class ForceJSTest extends JSTestCase {
                 "testBatchFileDetails",
                 "testFileShares",
                 "testAddFileShare",
-                "testDeleteFileShare"
+                "testDeleteFileShare",
+                "testRestEndpoint"
         });
     }
 
