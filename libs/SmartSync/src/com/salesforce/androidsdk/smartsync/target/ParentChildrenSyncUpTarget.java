@@ -131,7 +131,19 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
     }
 
     @Override
-    public void syncUpRecord(SyncManager syncManager, JSONObject record, List<String> fieldlist, SyncState.MergeMode mergeMode) throws JSONException, IOException {
+    public int getMaxBatchSize() {
+        return 1;
+    }
+
+    @Override
+    public void syncUpRecords(SyncManager syncManager, List<JSONObject> records, List<String> fieldlist, SyncState.MergeMode mergeMode) throws JSONException, IOException {
+        if (records.size() != 1) {
+            throw new RuntimeException(getClass().getSimpleName() + ":syncUpRecords can only handle 1 record at a time");
+        }
+        syncUpRecord(syncManager, records.get(0), fieldlist, mergeMode);
+    }
+
+    private void syncUpRecord(SyncManager syncManager, JSONObject record, List<String> fieldlist, SyncState.MergeMode mergeMode) throws JSONException, IOException {
 
         boolean isCreate = isLocallyCreated(record);
         boolean isDelete = isLocallyDeleted(record);

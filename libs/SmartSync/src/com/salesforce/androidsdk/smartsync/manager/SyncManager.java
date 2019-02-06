@@ -53,6 +53,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -581,7 +582,7 @@ public class SyncManager {
 
         // Advanced sync up target take it from here
         if (target instanceof AdvancedSyncUpTarget) {
-            ((AdvancedSyncUpTarget) target).syncUpRecord(this, record, options.getFieldlist(), options.getMergeMode());
+            ((AdvancedSyncUpTarget) target).syncUpRecords(this, Collections.singletonList(record), options.getFieldlist(), options.getMergeMode());
             return;
         }
 
