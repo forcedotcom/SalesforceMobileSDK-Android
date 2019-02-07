@@ -57,6 +57,13 @@ public class BatchingSyncUpTarget extends SyncUpTarget implements AdvancedSyncUp
     /**
      * Construct SyncUpTarget
      */
+    public BatchingSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist) {
+        this(createFieldlist, updateFieldlist, MAX_SUB_REQUESTS_COMPOSITE_API);
+    }
+
+    /**
+     * Construct SyncUpTarget with a different maxBatchSize (NB: cannot exceed MAX_SUB_REQUESTS_COMPOSITE_API)
+     */
     public BatchingSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist, int maxBatchSize) {
         super(createFieldlist, updateFieldlist);
         this.maxBatchSize = Math.min(maxBatchSize, MAX_SUB_REQUESTS_COMPOSITE_API); // composite api allows up to 25 subrequests

@@ -156,4 +156,15 @@ public class BatchingSyncUpTargetTest extends SyncUpTargetTest {
         JSONTestHelper.assertSameJSON("Wrong json", expectedTargetJson, target.asJSON());
     }
 
+    @Test
+    public void testBatchingSyncUpTargetIsDefault() throws Exception {
+        JSONObject targetJson = new JSONObject();
+
+        SyncUpTarget target = SyncUpTarget.fromJSON(targetJson);
+
+        Assert.assertTrue(target instanceof BatchingSyncUpTarget);
+        Assert.assertNull("Wrong createFieldList", target.createFieldlist);
+        Assert.assertNull("Wrong updateFieldList", target.updateFieldlist);
+        Assert.assertEquals("Wrong maxBatchSize", BatchingSyncUpTarget.MAX_SUB_REQUESTS_COMPOSITE_API, ((BatchingSyncUpTarget) target).getMaxBatchSize());
+    }
 }
