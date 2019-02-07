@@ -27,9 +27,6 @@
 
 package com.salesforce.androidsdk.smartsync.target;
 
-import androidx.test.filters.SmallTest;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-
 import com.salesforce.androidsdk.smartsync.manager.SyncManagerTestCase;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
@@ -41,6 +38,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Date;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
 
 /**
  * Test class for SoqlSyncDownTarget.
@@ -97,4 +97,19 @@ public class SoqlSyncDownTargetTest extends SyncManagerTestCase {
         final SoqlSyncDownTarget target = new SoqlSyncDownTarget(soqlQueryWithFromField);
         Assert.assertEquals("SELECT Id FROM Account limit 10", target.getSoqlForRemoteIds());
     }
+
+    /**
+     * Tests if missing fields are added to a SOQL target.
+     */
+    @Test
+    public void testAddMissingFieldsToSOQLTarget() throws Exception {
+        final String soqlQueryWithSpecialFields = SOQLBuilder.getInstanceWithFields("Id, LastModifiedDate, FirstName, LastName")
+                .from(Constants.CONTACT).limit(10).build();
+        final String soqlQueryWithoutSpecialFields = SOQLBuilder.getInstanceWithFields("FirstName, LastName")
+                .from(Constants.CONTACT).limit(10).build();
+        final SoqlSyncDownTarget target = new SoqlSyncDownTarget(soqlQueryWithoutSpecialFields);
+        final String targetSoqlQuery = target.getQuery();
+        Assert.assertEquals("SOQL query should contain Id and LastModifiedDate fields", soqlQueryWithSpecialFields, targetSoqlQuery);
+    }
+
 }
