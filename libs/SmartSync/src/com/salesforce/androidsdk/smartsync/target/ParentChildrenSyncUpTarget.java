@@ -135,10 +135,13 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
 
     @Override
     public void syncUpRecords(SyncManager syncManager, List<JSONObject> records, List<String> fieldlist, SyncState.MergeMode mergeMode) throws JSONException, IOException {
-        if (records.size() != 1) {
-            throw new SyncManager.SmartSyncException(getClass().getSimpleName() + ":syncUpRecords can only handle 1 record at a time");
+        if (records.size() > 1) {
+            throw new SyncManager.SmartSyncException(getClass().getSimpleName() + ":syncUpRecords can handle only 1 record at a time");
         }
-        syncUpRecord(syncManager, records.get(0), fieldlist, mergeMode);
+
+        if (!records.isEmpty()) {
+            syncUpRecord(syncManager, records.get(0), fieldlist, mergeMode);
+        }
     }
 
     private void syncUpRecord(SyncManager syncManager, JSONObject record, List<String> fieldlist, SyncState.MergeMode mergeMode) throws JSONException, IOException {
