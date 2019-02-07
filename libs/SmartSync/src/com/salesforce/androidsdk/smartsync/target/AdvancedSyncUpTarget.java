@@ -42,11 +42,12 @@ import java.util.List;
 public interface AdvancedSyncUpTarget {
 
     /**
-     * Return max number of records that can be passed to syncUpRecord at once
+     * @return max number of records that can be passed to syncUpRecord at once
      */
     int getMaxBatchSize();
 
     /**
+     * Sync up a batch of records
      *
      * @param syncManager
      * @param records
