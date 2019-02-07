@@ -53,8 +53,9 @@ public interface AdvancedSyncUpTarget {
      * @param records
      * @param fieldlist
      * @param mergeMode
+     * @param syncSoupName
      * @throws JSONException
      * @throws IOException
      */
-    void syncUpRecords(SyncManager syncManager, List<JSONObject> records, List<String> fieldlist, SyncState.MergeMode mergeMode) throws JSONException, IOException;
+    void syncUpRecords(SyncManager syncManager, List<JSONObject> records, List<String> fieldlist, SyncState.MergeMode mergeMode, String syncSoupName) throws JSONException, IOException;
 }

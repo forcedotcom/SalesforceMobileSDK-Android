@@ -580,7 +580,7 @@ public class SyncManager {
             // Process batch if max batch size reached or at the end of dirtyRecordIds
             if (batch.size() == maxBatchSize || i == totalSize - 1) {
 
-                ((AdvancedSyncUpTarget) target).syncUpRecords(this, batch, options.getFieldlist(), options.getMergeMode());
+                ((AdvancedSyncUpTarget) target).syncUpRecords(this, batch, options.getFieldlist(), options.getMergeMode(), sync.getSoupName());
                 batch.clear();
             }
 

@@ -49,11 +49,7 @@ public class BatchingSyncUpTarget extends SyncUpTarget implements AdvancedSyncUp
 
     // Constants
     public static final int MAX_SUB_REQUESTS_COMPOSITE_API = 25;
-    public static final String SOUP_NAME = "soupName";
     public static final String MAX_BATCH_SIZE = "maxBatchSize";
-
-    // Soup records are coming from
-    protected String soupName;
 
     // Max batch size
     protected int maxBatchSize;
@@ -61,9 +57,8 @@ public class BatchingSyncUpTarget extends SyncUpTarget implements AdvancedSyncUp
     /**
      * Construct SyncUpTarget
      */
-    public BatchingSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist, String soupName, int maxBatchSize) {
+    public BatchingSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist, int maxBatchSize) {
         super(createFieldlist, updateFieldlist);
-        this.soupName = soupName;
         this.maxBatchSize = Math.min(maxBatchSize, MAX_SUB_REQUESTS_COMPOSITE_API); // composite api allows up to 25 subrequests
     }
 
@@ -74,7 +69,6 @@ public class BatchingSyncUpTarget extends SyncUpTarget implements AdvancedSyncUp
      */
     public BatchingSyncUpTarget(JSONObject target) throws JSONException {
         super(target);
-        this.soupName = target.getString(SOUP_NAME);
         this.maxBatchSize = Math.min(target.getInt(MAX_BATCH_SIZE), MAX_SUB_REQUESTS_COMPOSITE_API); // composite api allows up to 25 subrequests
     }
 
@@ -84,7 +78,6 @@ public class BatchingSyncUpTarget extends SyncUpTarget implements AdvancedSyncUp
      */
     public JSONObject asJSON() throws JSONException {
         JSONObject target = super.asJSON();
-        target.put(SOUP_NAME, soupName);
         target.put(MAX_BATCH_SIZE, maxBatchSize);
         return target;
     }
@@ -95,7 +88,7 @@ public class BatchingSyncUpTarget extends SyncUpTarget implements AdvancedSyncUp
     }
 
     @Override
-    public void syncUpRecords(SyncManager syncManager, List<JSONObject> records, List<String> fieldlist, SyncState.MergeMode mergeMode) throws JSONException, IOException {
+    public void syncUpRecords(SyncManager syncManager, List<JSONObject> records, List<String> fieldlist, SyncState.MergeMode mergeMode, String syncSoupName) throws JSONException, IOException {
 
         if (records.size() > getMaxBatchSize()) {
             throw new SyncManager.SmartSyncException(getClass().getSimpleName() + ":syncUpRecords can handle up to " + getMaxBatchSize() + " records");
@@ -129,13 +122,13 @@ public class BatchingSyncUpTarget extends SyncUpTarget implements AdvancedSyncUp
             String id = record.getString(getIdFieldName());
 
             if (isDirty(record)) {
-                needReRun = needReRun || updateRecordInLocalStore(syncManager, record, mergeMode, refIdToServerId, refIdToResponses.get(id));
+                needReRun = needReRun || updateRecordInLocalStore(syncManager, syncSoupName, record, mergeMode, refIdToServerId, refIdToResponses.get(id));
             }
         }
 
         // Re-run if required
         if (needReRun) {
-            syncUpRecords(syncManager, records, fieldlist, mergeMode);
+            syncUpRecords(syncManager, records, fieldlist, mergeMode, syncSoupName);
         }
 
     }
@@ -179,7 +172,7 @@ public class BatchingSyncUpTarget extends SyncUpTarget implements AdvancedSyncUp
     }
 
 
-    protected boolean updateRecordInLocalStore(SyncManager syncManager, JSONObject record, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, JSONObject response) throws JSONException, IOException {
+    protected boolean updateRecordInLocalStore(SyncManager syncManager, String soupName, JSONObject record, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, JSONObject response) throws JSONException, IOException {
 
         boolean needReRun = false;
         final Integer statusCode = response != null ? response.getInt(CompositeRequestHelper.HTTP_STATUS_CODE) : -1;
