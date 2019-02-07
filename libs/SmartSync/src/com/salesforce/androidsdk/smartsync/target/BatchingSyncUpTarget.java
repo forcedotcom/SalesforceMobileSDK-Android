@@ -69,7 +69,7 @@ public class BatchingSyncUpTarget extends SyncUpTarget implements AdvancedSyncUp
      */
     public BatchingSyncUpTarget(JSONObject target) throws JSONException {
         super(target);
-        this.maxBatchSize = Math.min(target.getInt(MAX_BATCH_SIZE), MAX_SUB_REQUESTS_COMPOSITE_API); // composite api allows up to 25 subrequests
+        this.maxBatchSize = Math.min(target.optInt(MAX_BATCH_SIZE, MAX_SUB_REQUESTS_COMPOSITE_API), MAX_SUB_REQUESTS_COMPOSITE_API); // composite api allows up to 25 subrequests
     }
 
     /**

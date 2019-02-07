@@ -111,6 +111,19 @@ public class BatchingSyncUpTargetTest extends SyncUpTargetTest {
 
 
     @Test
+    public void testConstructorWithJSONWithoutOptionalFields() throws Exception {
+        JSONObject targetJson = new JSONObject();
+        targetJson.put(SyncTarget.ANDROID_IMPL, BatchingSyncUpTarget.class.getName());
+
+        BatchingSyncUpTarget target = new BatchingSyncUpTarget(targetJson);
+
+        Assert.assertNull("Wrong createFieldList", target.createFieldlist);
+        Assert.assertNull("Wrong updateFieldList", target.updateFieldlist);
+        Assert.assertEquals("Wrong maxBatchSize", BatchingSyncUpTarget.MAX_SUB_REQUESTS_COMPOSITE_API, target.getMaxBatchSize());
+    }
+
+
+    @Test
     public void testFromJSON() throws Exception {
         int maxBatchSize = 12;
 
