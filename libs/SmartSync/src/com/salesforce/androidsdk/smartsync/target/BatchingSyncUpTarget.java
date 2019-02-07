@@ -49,16 +49,21 @@ public class BatchingSyncUpTarget extends SyncUpTarget implements AdvancedSyncUp
 
     // Constants
     public static final String SOUP_NAME = "soupName";
+    public static final String MAX_BATCH_SIZE = "maxBatchSize";
 
     // Soup records are coming from
     protected String soupName;
 
+    // Max batch size
+    protected int maxBatchSize;
+
     /**
      * Construct SyncUpTarget
      */
-    public BatchingSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist, String soupName) {
+    public BatchingSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist, String soupName, int maxBatchSize) {
         super(createFieldlist, updateFieldlist);
         this.soupName = soupName;
+        this.maxBatchSize = Math.min(maxBatchSize, 25); // composite api allows up to 25 subrequests
     }
 
     /**
@@ -69,6 +74,7 @@ public class BatchingSyncUpTarget extends SyncUpTarget implements AdvancedSyncUp
     public BatchingSyncUpTarget(JSONObject target) throws JSONException {
         super(target);
         this.soupName = target.getString(SOUP_NAME);
+        this.maxBatchSize = target.getInt(MAX_BATCH_SIZE);
     }
 
     /**
@@ -78,16 +84,25 @@ public class BatchingSyncUpTarget extends SyncUpTarget implements AdvancedSyncUp
     public JSONObject asJSON() throws JSONException {
         JSONObject target = super.asJSON();
         target.put(SOUP_NAME, soupName);
+        target.put(MAX_BATCH_SIZE, maxBatchSize);
         return target;
     }
 
     @Override
     public int getMaxBatchSize() {
-        return 25; // composite api allows up to 25 subrequests
+        return maxBatchSize;
     }
 
     @Override
     public void syncUpRecords(SyncManager syncManager, List<JSONObject> records, List<String> fieldlist, SyncState.MergeMode mergeMode) throws JSONException, IOException {
+
+        if (records.size() > getMaxBatchSize()) {
+            throw new SyncManager.SmartSyncException(getClass().getSimpleName() + ":syncUpRecords can handle up to " + getMaxBatchSize() + " records");
+        }
+
+        if (records.isEmpty()) {
+            return;
+        }
 
         LinkedHashMap<String, RestRequest> refIdToRequests = new LinkedHashMap<>();
         for (int i = 0; i < records.size(); i++) {
