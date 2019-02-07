@@ -48,6 +48,7 @@ import java.util.Map;
 public class BatchingSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTarget {
 
     // Constants
+    public static final int MAX_SUB_REQUESTS_COMPOSITE_API = 25;
     public static final String SOUP_NAME = "soupName";
     public static final String MAX_BATCH_SIZE = "maxBatchSize";
 
@@ -63,7 +64,7 @@ public class BatchingSyncUpTarget extends SyncUpTarget implements AdvancedSyncUp
     public BatchingSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist, String soupName, int maxBatchSize) {
         super(createFieldlist, updateFieldlist);
         this.soupName = soupName;
-        this.maxBatchSize = Math.min(maxBatchSize, 25); // composite api allows up to 25 subrequests
+        this.maxBatchSize = Math.min(maxBatchSize, MAX_SUB_REQUESTS_COMPOSITE_API); // composite api allows up to 25 subrequests
     }
 
     /**
@@ -74,7 +75,7 @@ public class BatchingSyncUpTarget extends SyncUpTarget implements AdvancedSyncUp
     public BatchingSyncUpTarget(JSONObject target) throws JSONException {
         super(target);
         this.soupName = target.getString(SOUP_NAME);
-        this.maxBatchSize = target.getInt(MAX_BATCH_SIZE);
+        this.maxBatchSize = Math.min(target.getInt(MAX_BATCH_SIZE), MAX_SUB_REQUESTS_COMPOSITE_API); // composite api allows up to 25 subrequests
     }
 
     /**
