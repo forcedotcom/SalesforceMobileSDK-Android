@@ -609,6 +609,20 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
 	}
 
     /**
+     * Return array of names
+     * @param idToFields
+     */
+    protected String[] getNamesFromIdToFields(Map<String, Map<String, Object>> idToFields) {
+        String[] names = new String[idToFields.size()];
+        int i = 0;
+        for (String id : idToFields.keySet()) {
+            names[i] = (String) idToFields.get(id).get(Constants.NAME);
+            i++;
+        }
+        return names;
+    }
+
+    /**
      * Return map of id to fields given records names
      * @param soupName
      * @param fieldNames
