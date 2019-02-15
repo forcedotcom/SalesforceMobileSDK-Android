@@ -17,12 +17,12 @@ dependencies {
     api project(':libs:SalesforceAnalytics')
     api 'com.squareup.okhttp3:okhttp:3.10.0'
     api 'com.google.firebase:firebase-messaging:17.3.4'
-    api 'androidx.core:core:1.0.0'
+    api 'androidx.core:core:1.0.1'
     api 'androidx.browser:browser:1.0.0'
     api 'junit:junit:4.12'
-    androidTestImplementation 'androidx.test:runner:1.1.0'
-    androidTestImplementation 'androidx.test:rules:1.1.0'
-    androidTestImplementation 'androidx.test.ext:junit:1.0.0'
+    androidTestImplementation 'androidx.test:runner:1.1.1'
+    androidTestImplementation 'androidx.test:rules:1.1.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.0'
 }
 
 android {

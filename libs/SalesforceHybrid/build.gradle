@@ -15,10 +15,10 @@ apply plugin: 'com.jfrog.bintray'
 
 dependencies {
   api project(':libs:SmartSync')
-  api 'org.apache.cordova:framework:7.1.2'
-  androidTestImplementation 'androidx.test:runner:1.1.0'
-  androidTestImplementation 'androidx.test:rules:1.1.0'
-  androidTestImplementation 'androidx.test.ext:junit:1.0.0'
+  api 'org.apache.cordova:framework:8.0.0'
+  androidTestImplementation 'androidx.test:runner:1.1.1'
+  androidTestImplementation 'androidx.test:rules:1.1.1'
+  androidTestImplementation 'androidx.test.ext:junit:1.1.0'
 }
 
 android {
