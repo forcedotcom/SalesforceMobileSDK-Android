@@ -60,6 +60,7 @@ public class SmartStoreLoadTest extends SmartStoreLoadTestCase {
     @Parameterized.Parameters(name = "{0}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
+//                {"UpsertQuery1StringIndex1000fields1000characters", Type.string, NUMBER_ENTRIES, 1000, 1000, 1}, // to push memory utilization
                 {"UpsertQuery1StringIndex1field20characters", Type.string, NUMBER_ENTRIES, 1, 20, 1},
                 {"UpsertQuery1StringIndex1field1000characters", Type.string, NUMBER_ENTRIES, 1, 1000, 1},
                 {"UpsertQuery1StringIndex10fields20characters", Type.string, NUMBER_ENTRIES, 10, 20, 1},
