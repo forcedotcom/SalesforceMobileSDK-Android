@@ -82,9 +82,8 @@ public class StoreCursor {
 	 * Returns cursor meta data (page index, size etc) and data (entries in page) as a FakeJSONObject
 	 * NB: json data is never deserialized
 	 * @param smartStore
-	 * @throws JSONException
 	 */
-	public FakeJSONObject getData(SmartStore smartStore) throws JSONException {
+	public FakeJSONObject getData(SmartStore smartStore) {
 		StringBuilder resultBuilder = new StringBuilder();
 		resultBuilder.append("{")
 			.append("\"").append(CURSOR_ID).append("\":").append(cursorId).append(", ")

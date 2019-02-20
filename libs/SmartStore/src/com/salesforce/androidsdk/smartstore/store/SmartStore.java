@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.smartstore.store;
 
 import android.content.ContentValues;
 import android.database.Cursor;
-import androidx.annotation.NonNull;
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
@@ -51,6 +50,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import androidx.annotation.NonNull;
 
 /**
  * Smart store
@@ -808,10 +809,15 @@ public class SmartStore  {
 	 * @param resultBuilder string builder to which results are appended
 	 * @param querySpec
 	 * @param pageIndex
-	 * @throws JSONException
 	 */
-	public void queryAsString(StringBuilder resultBuilder, QuerySpec querySpec, int pageIndex) throws JSONException {
-		runQuery(null, resultBuilder, querySpec, pageIndex);
+	public void queryAsString(StringBuilder resultBuilder, QuerySpec querySpec, int pageIndex) {
+		try {
+			runQuery(null, resultBuilder, querySpec, pageIndex);
+		}
+		catch (JSONException e) {
+			// shouldn't happen since we call runQuery with a string builder
+			throw new SmartStoreException("Unexpected json exception", e);
+		}
 	}
 
 	private void runQuery(JSONArray resultAsArray, StringBuilder resultAsStringBuilder, QuerySpec querySpec, int pageIndex) throws JSONException {
@@ -837,20 +843,20 @@ public class SmartStore  {
 				int currentRow = 0;
 				if (cursor.moveToFirst()) {
 					do {
-						if (currentRow > 0) {
-							if (computeResultAsString) {
-								resultAsStringBuilder.append(", ");
-							}
+						if (computeResultAsString && currentRow > 0) {
+							resultAsStringBuilder.append(", ");
 						}
 						currentRow++;
 
 						// Smart queries
 						if (qt == QueryType.smart || querySpec.selectPaths != null) {
 							if (computeResultAsString) {
-								getDataFromRowAsString(resultAsStringBuilder, cursor);
+								getDataFromRow(null, resultAsStringBuilder, cursor);
 							}
 							else {
-								resultAsArray.put(getDataFromRow(cursor));
+								JSONArray rowArray = new JSONArray();
+								getDataFromRow(rowArray, null, cursor);
+								resultAsArray.put(rowArray);
 							}
 						}
 						// Exact/like/range queries
@@ -884,17 +890,24 @@ public class SmartStore  {
 		}
 	}
 
-	private void getDataFromRowAsString(StringBuilder resultBuilder, Cursor cursor)  {
+	private void getDataFromRow(JSONArray resultAsArray, StringBuilder resultAsStringBuilder, Cursor cursor) throws JSONException {
+		boolean computeResultAsString = resultAsStringBuilder != null;
 		int columnCount = cursor.getColumnCount();
-		resultBuilder.append("[");
+		if (computeResultAsString) {
+			resultAsStringBuilder.append("[");
+		}
 		for (int i=0; i<columnCount; i++) {
-			if (i > 0) {
-				resultBuilder.append(",");
+			if (computeResultAsString && i > 0) {
+				resultAsStringBuilder.append(",");
 			}
 			int valueType = cursor.getType(i);
 			String columnName = cursor.getColumnName(i);
 			if (valueType == Cursor.FIELD_TYPE_NULL) {
-				resultBuilder.append("null");
+				if (computeResultAsString) {
+					resultAsStringBuilder.append("null");
+				} else {
+					resultAsArray.put(null);
+				}
 			}
 			else if (valueType == Cursor.FIELD_TYPE_STRING) {
 				String raw = cursor.getString(i);
@@ -902,66 +915,47 @@ public class SmartStore  {
 					// Presence of external storage column implies we must fetch from storage. Soup name and entry id values can be extracted
 					String soupTableName = cursor.getString(i);
 					Long soupEntryId = cursor.getLong(i + 1);
-					resultBuilder.append(((DBOpenHelper) dbOpenHelper).loadSoupBlobAsString(soupTableName, soupEntryId, encryptionKey));
+					if (computeResultAsString) {
+						resultAsStringBuilder.append(((DBOpenHelper) dbOpenHelper).loadSoupBlobAsString(soupTableName, soupEntryId, encryptionKey));
+					} else {
+						resultAsArray.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, soupEntryId, encryptionKey));
+					}
 					i++; // skip next column (_soupEntryId)
 				} else if (columnName.equals(SOUP_COL) || columnName.startsWith(SOUP_COL + ":") /* :num is appended to column name when result set has more than one column with same name */) {
-					resultBuilder.append(raw);
+					if (computeResultAsString) {
+						resultAsStringBuilder.append(raw);
+					} else {
+						resultAsArray.put(new JSONObject(raw));
+					}
 					// Note: we could end up returning a string if you aliased the column
 				}
 				else {
-					raw = escapeStringValue(raw);
-					resultBuilder.append("\"").append(raw).append("\"");
+					if (computeResultAsString) {
+						raw = escapeStringValue(raw);
+						resultAsStringBuilder.append("\"").append(raw).append("\"");
+					} else {
+						resultAsArray.put(raw);
+					}
 				}
 			}
 			else if (valueType == Cursor.FIELD_TYPE_INTEGER) {
-				resultBuilder.append(cursor.getLong(i));
-			}
-			else if (valueType == Cursor.FIELD_TYPE_FLOAT) {
-				resultBuilder.append(cursor.getDouble(i));
-			}
-		}
-		resultBuilder.append("]");
-	}
-
-	/**
-	 * Return JSONArray for one row of data from cursor
-	 * @param cursor
-	 * @return
-	 * @throws JSONException
-	 */
-	private JSONArray getDataFromRow(Cursor cursor) throws JSONException {
-		JSONArray row = new JSONArray();
-		int columnCount = cursor.getColumnCount();
-		for (int i=0; i<columnCount; i++) {
-			int valueType = cursor.getType(i);
-			String columnName = cursor.getColumnName(i);
-			if (valueType == Cursor.FIELD_TYPE_NULL) {
-				row.put(null);
-			}
-			else if (valueType == Cursor.FIELD_TYPE_STRING) {
-				String raw = cursor.getString(i);
-				if (columnName.equals(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
-					// Presence of external storage column implies we must fetch from storage. Soup name and entry id values can be extracted
-					String soupTableName = cursor.getString(i);
-					Long soupEntryId = cursor.getLong(i + 1);
-					row.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, soupEntryId, encryptionKey));
-					i++; // skip next column (_soupEntryId)
-				} else if (columnName.equals(SOUP_COL) || columnName.startsWith(SOUP_COL + ":") /* :num is appended to column name when result set has more than one column with same name */) {
-					row.put(new JSONObject(raw));
-					// Note: we could end up returning a string if you aliased the column
-				}
-				else {
-					row.put(raw);
+				if (computeResultAsString) {
+					resultAsStringBuilder.append(cursor.getLong(i));
+				} else {
+					resultAsArray.put(cursor.getLong(i));
 				}
 			}
-			else if (valueType == Cursor.FIELD_TYPE_INTEGER) {
-				row.put(cursor.getLong(i));
-			}
 			else if (valueType == Cursor.FIELD_TYPE_FLOAT) {
-				row.put(cursor.getDouble(i));
+				if (computeResultAsString) {
+					resultAsStringBuilder.append(cursor.getDouble(i));
+				} else {
+					resultAsArray.put(cursor.getDouble(i));
+				}
 			}
 		}
-		return row;
+		if (computeResultAsString) {
+			resultAsStringBuilder.append("]");
+		}
 	}
 
 	private String escapeStringValue(String raw) {
@@ -1694,6 +1688,8 @@ public class SmartStore  {
         public SmartStoreException(String message) {
             super(message);
         }
+
+        public SmartStoreException(String message, Throwable t) { super(message, t); }
 
         private static final long serialVersionUID = -6369452803270075464L;
 
