@@ -797,9 +797,9 @@ public class SmartStore  {
      * @throws JSONException
 	 */
 	public JSONArray query(QuerySpec querySpec, int pageIndex) throws JSONException {
-		StringBuilder resultBuilder = new StringBuilder();
-		queryAsString(resultBuilder, querySpec, pageIndex);
-		return new JSONArray(resultBuilder.toString());
+		JSONArray resultAsArray = new JSONArray();
+		runQuery(resultAsArray, null, querySpec, pageIndex);
+		return resultAsArray;
 	}
 	/**
 	 * Run a query given by its query Spec, only returned results from selected page
@@ -808,8 +808,15 @@ public class SmartStore  {
 	 * @param resultBuilder string builder to which results are appended
 	 * @param querySpec
 	 * @param pageIndex
+	 * @throws JSONException
 	 */
-	public void queryAsString(StringBuilder resultBuilder, QuerySpec querySpec, int pageIndex) {
+	public void queryAsString(StringBuilder resultBuilder, QuerySpec querySpec, int pageIndex) throws JSONException {
+		runQuery(null, resultBuilder, querySpec, pageIndex);
+	}
+
+	private void runQuery(JSONArray resultAsArray, StringBuilder resultAsStringBuilder, QuerySpec querySpec, int pageIndex) throws JSONException {
+		boolean computeResultAsString = resultAsStringBuilder != null;
+
 		final SQLiteDatabase db = getDatabase();
 		synchronized(db) {
 			QueryType qt = querySpec.queryType;
@@ -822,33 +829,54 @@ public class SmartStore  {
 			Cursor cursor = null;
 			try {
 				cursor = DBHelper.getInstance(db).limitRawQuery(db, sql, limit, querySpec.getArgs());
-				resultBuilder.append("[");
+
+				if (computeResultAsString) {
+					resultAsStringBuilder.append("[");
+				}
+
 				int currentRow = 0;
 				if (cursor.moveToFirst()) {
 					do {
 						if (currentRow > 0) {
-							resultBuilder.append(", ");
+							if (computeResultAsString) {
+								resultAsStringBuilder.append(", ");
+							}
 						}
 						currentRow++;
 
 						// Smart queries
 						if (qt == QueryType.smart || querySpec.selectPaths != null) {
-							getDataFromRowAsString(resultBuilder, cursor);
+							if (computeResultAsString) {
+								getDataFromRowAsString(resultAsStringBuilder, cursor);
+							}
+							else {
+								resultAsArray.put(getDataFromRow(cursor));
+							}
 						}
 						// Exact/like/range queries
 						else {
+							String rowAsString = null;
 							if (cursor.getColumnIndex(SoupSpec.FEATURE_EXTERNAL_STORAGE) >= 0) {
 								// Presence of external storage column implies we must fetch from storage. Soup name and entry id values can be extracted
 								String soupTableName = cursor.getString(cursor.getColumnIndex(SoupSpec.FEATURE_EXTERNAL_STORAGE));
 								Long soupEntryId = cursor.getLong(cursor.getColumnIndex(SmartStore.SOUP_ENTRY_ID));
-								resultBuilder.append(((DBOpenHelper) dbOpenHelper).loadSoupBlobAsString(soupTableName, soupEntryId, encryptionKey));
+								rowAsString = ((DBOpenHelper) dbOpenHelper).loadSoupBlobAsString(soupTableName, soupEntryId, encryptionKey);
 							} else {
-								resultBuilder.append(cursor.getString(0));
+								rowAsString = cursor.getString(0);
+							}
+
+							if (computeResultAsString) {
+								resultAsStringBuilder.append(rowAsString);
+							}
+							else {
+								resultAsArray.put(new JSONObject(rowAsString));
 							}
 						}
 					} while (cursor.moveToNext());
 				}
-				resultBuilder.append("]");
+				if (computeResultAsString) {
+					resultAsStringBuilder.append("]");
+				}
 
 			} finally {
 				safeClose(cursor);
@@ -893,6 +921,47 @@ public class SmartStore  {
 			}
 		}
 		resultBuilder.append("]");
+	}
+
+	/**
+	 * Return JSONArray for one row of data from cursor
+	 * @param cursor
+	 * @return
+	 * @throws JSONException
+	 */
+	private JSONArray getDataFromRow(Cursor cursor) throws JSONException {
+		JSONArray row = new JSONArray();
+		int columnCount = cursor.getColumnCount();
+		for (int i=0; i<columnCount; i++) {
+			int valueType = cursor.getType(i);
+			String columnName = cursor.getColumnName(i);
+			if (valueType == Cursor.FIELD_TYPE_NULL) {
+				row.put(null);
+			}
+			else if (valueType == Cursor.FIELD_TYPE_STRING) {
+				String raw = cursor.getString(i);
+				if (columnName.equals(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
+					// Presence of external storage column implies we must fetch from storage. Soup name and entry id values can be extracted
+					String soupTableName = cursor.getString(i);
+					Long soupEntryId = cursor.getLong(i + 1);
+					row.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, soupEntryId, encryptionKey));
+					i++; // skip next column (_soupEntryId)
+				} else if (columnName.equals(SOUP_COL) || columnName.startsWith(SOUP_COL + ":") /* :num is appended to column name when result set has more than one column with same name */) {
+					row.put(new JSONObject(raw));
+					// Note: we could end up returning a string if you aliased the column
+				}
+				else {
+					row.put(raw);
+				}
+			}
+			else if (valueType == Cursor.FIELD_TYPE_INTEGER) {
+				row.put(cursor.getLong(i));
+			}
+			else if (valueType == Cursor.FIELD_TYPE_FLOAT) {
+				row.put(cursor.getDouble(i));
+			}
+		}
+		return row;
 	}
 
 	private String escapeStringValue(String raw) {
