@@ -157,6 +157,10 @@ public class SalesforceWebViewClientHelper {
         if (ctx instanceof SalesforceDroidGapActivity) {
             final AuthConfigUtil.MyDomainAuthConfig authConfig = ((SalesforceDroidGapActivity) ctx).getAuthConfig();
             if (authConfig != null) {
+                final String loginPageUrl = authConfig.getLoginPageUrl();
+                if (loginPageUrl != null && url.contains(loginPageUrl)) {
+                    return true;
+                }
                 final List<String> ssoUrls = authConfig.getSsoUrls();
                 if (ssoUrls != null && ssoUrls.size() > 0) {
                    for (String ssoUrl : ssoUrls) {

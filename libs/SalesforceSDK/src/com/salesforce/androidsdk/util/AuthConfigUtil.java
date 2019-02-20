@@ -90,10 +90,13 @@ public class AuthConfigUtil {
         private static final String USE_NATIVE_BROWSER_KEY = "UseAndroidNativeBrowserForAuthentication";
         private static final String SAML_PROVIDERS_KEY = "SamlProviders";
         private static final String SSO_URL_KEY = "SsoUrl";
+        private static final String LOGIN_PAGE_KEY = "LoginPage";
+        private static final String LOGIN_PAGE_URL_KEY = "LoginPageUrl";
 
         private JSONObject authConfig;
         private boolean browserLoginEnabled;
         private List<String> ssoUrls;
+        private String loginPageUrl;
 
         /**
          * Parameterized constructor.
@@ -119,6 +122,10 @@ public class AuthConfigUtil {
                             }
                         }
                     }
+                }
+                final JSONObject loginPageConfig = authConfig.optJSONObject(LOGIN_PAGE_KEY);
+                if (loginPageConfig != null) {
+                    loginPageUrl = loginPageConfig.optString(LOGIN_PAGE_URL_KEY);
                 }
             }
         }
@@ -148,6 +155,15 @@ public class AuthConfigUtil {
          */
         public List<String> getSsoUrls() {
             return ssoUrls;
+        }
+
+        /**
+         * Returns the configured login page URL.
+         *
+         * @return Configured login page URL.
+         */
+        public String getLoginPageUrl() {
+            return loginPageUrl;
         }
     }
 }
