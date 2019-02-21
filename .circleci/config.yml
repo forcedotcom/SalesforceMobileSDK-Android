@@ -28,9 +28,9 @@ aliases:
             fi
             danger --dangerfile=.circleci/Dangerfile_Lib.rb --danger_id="${CURRENT_LIB}" --verbose
         fi
-    else
+      else
         echo "No need to run Danger."
-    fi
+      fi
 
   - &android-lint
     name: Run Android Lint
