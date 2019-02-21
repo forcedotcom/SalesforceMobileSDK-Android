@@ -60,6 +60,7 @@ public class ReactSmartStoreTest extends ReactTestCase {
                 "testGetSoupIndexSpecs",
                 "testUpsertRetrieve",
                 "testQuerySoup",
+                "testMoveCursor",
                 "testSmartQuerySoup",
                 "testRemoveFromSoup",
                 "testClearSoup",
