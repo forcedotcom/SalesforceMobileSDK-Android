@@ -57,6 +57,13 @@ public class BatchingSyncUpTarget extends SyncUpTarget implements AdvancedSyncUp
     /**
      * Construct SyncUpTarget
      */
+    public BatchingSyncUpTarget() {
+        this(null, null);
+    }
+
+    /**
+     * Construct SyncUpTarget
+     */
     public BatchingSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist) {
         this(createFieldlist, updateFieldlist, MAX_SUB_REQUESTS_COMPOSITE_API);
     }
