@@ -77,13 +77,22 @@ public class BatchingSyncUpTargetTest extends SyncUpTargetTest {
 
 
     @Test
-    public void testConstructor() {
+    public void testConstructors() {
         String[] createdFieldArr = {Constants.NAME};
         String[] updatedFieldArr = {Constants.NAME, Constants.DESCRIPTION};
         int maxBatchSize = 12;
 
-        BatchingSyncUpTarget target = new BatchingSyncUpTarget( Arrays.asList(createdFieldArr),  Arrays.asList(updatedFieldArr), maxBatchSize);
+        BatchingSyncUpTarget target = new BatchingSyncUpTarget();
+        Assert.assertNull("Wrong createFieldList", target.createFieldlist);
+        Assert.assertNull("Wrong updateFieldList", target.updateFieldlist);
+        Assert.assertEquals("Wrong maxBatchSize", 25, target.getMaxBatchSize());
 
+        target = new BatchingSyncUpTarget( Arrays.asList(createdFieldArr),  Arrays.asList(updatedFieldArr));
+        Assert.assertArrayEquals("Wrong createFieldList", createdFieldArr, target.createFieldlist.toArray(new String[0]));
+        Assert.assertArrayEquals("Wrong updateFieldList", updatedFieldArr, target.updateFieldlist.toArray(new String[0]));
+        Assert.assertEquals("Wrong maxBatchSize", 25, target.getMaxBatchSize());
+
+        target = new BatchingSyncUpTarget( Arrays.asList(createdFieldArr),  Arrays.asList(updatedFieldArr), maxBatchSize);
         Assert.assertArrayEquals("Wrong createFieldList", createdFieldArr, target.createFieldlist.toArray(new String[0]));
         Assert.assertArrayEquals("Wrong updateFieldList", updatedFieldArr, target.updateFieldlist.toArray(new String[0]));
         Assert.assertEquals("Wrong maxBatchSize", maxBatchSize, target.getMaxBatchSize());
