@@ -45,7 +45,7 @@ import java.util.Map;
 /**
  * Subclass of SyncUpTarget that batches create/update/delete operations by using composite api
  */
-public class BatchingSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTarget {
+public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTarget {
 
     // Constants
     public static final int MAX_SUB_REQUESTS_COMPOSITE_API = 25;
@@ -57,21 +57,21 @@ public class BatchingSyncUpTarget extends SyncUpTarget implements AdvancedSyncUp
     /**
      * Construct SyncUpTarget
      */
-    public BatchingSyncUpTarget() {
+    public BatchSyncUpTarget() {
         this(null, null);
     }
 
     /**
      * Construct SyncUpTarget
      */
-    public BatchingSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist) {
+    public BatchSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist) {
         this(createFieldlist, updateFieldlist, MAX_SUB_REQUESTS_COMPOSITE_API);
     }
 
     /**
      * Construct SyncUpTarget with a different maxBatchSize (NB: cannot exceed MAX_SUB_REQUESTS_COMPOSITE_API)
      */
-    public BatchingSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist, int maxBatchSize) {
+    public BatchSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist, int maxBatchSize) {
         super(createFieldlist, updateFieldlist);
         this.maxBatchSize = Math.min(maxBatchSize, MAX_SUB_REQUESTS_COMPOSITE_API); // composite api allows up to 25 subrequests
     }
@@ -81,7 +81,7 @@ public class BatchingSyncUpTarget extends SyncUpTarget implements AdvancedSyncUp
      * @param target
      * @throws JSONException
      */
-    public BatchingSyncUpTarget(JSONObject target) throws JSONException {
+    public BatchSyncUpTarget(JSONObject target) throws JSONException {
         super(target);
         this.maxBatchSize = Math.min(target.optInt(MAX_BATCH_SIZE, MAX_SUB_REQUESTS_COMPOSITE_API), MAX_SUB_REQUESTS_COMPOSITE_API); // composite api allows up to 25 subrequests
     }
