@@ -75,7 +75,6 @@ public class KeyStoreWrapper {
                 INSTANCE = new KeyStoreWrapper();
                 INSTANCE.keyStore = INSTANCE.loadKeyStore();
             } catch (Exception e) {
-                INSTANCE = null;
                 SalesforceSDKLogger.e(TAG, "Could not load KeyStore", e);
             }
         }
