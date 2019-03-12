@@ -1129,7 +1129,7 @@ public class SalesforceSDKManager {
      * and use {@link SalesforceSDKManager#getEncryptionKey()} to fetch the encryption key to pass in.
      */
     public static String encrypt(String data) {
-        return Encryptor.encrypt(data, getEncryptionKey());
+        return encrypt(data, getEncryptionKey());
     }
 
     /**
@@ -1161,7 +1161,7 @@ public class SalesforceSDKManager {
      * and use {@link SalesforceSDKManager#getEncryptionKey()} to fetch the encryption key to pass in.
      */
     public static String decrypt(String data) {
-        return Encryptor.decrypt(data, getEncryptionKey());
+        return decrypt(data, getEncryptionKey());
     }
 
     /**
