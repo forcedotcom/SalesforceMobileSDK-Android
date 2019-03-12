@@ -910,9 +910,10 @@ public class SalesforceSDKManager {
 		String refreshToken = null;
 		String loginServer = null;
 		if (account != null) {
-			refreshToken = SalesforceSDKManager.decrypt(mgr.getPassword(account));
+		    final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
+			refreshToken = SalesforceSDKManager.decrypt(mgr.getPassword(account), encryptionKey);
 	        loginServer = SalesforceSDKManager.decrypt(mgr.getUserData(account,
-	        		AuthenticatorService.KEY_INSTANCE_URL));
+	        		AuthenticatorService.KEY_INSTANCE_URL), encryptionKey);
 		}
 
 		/*

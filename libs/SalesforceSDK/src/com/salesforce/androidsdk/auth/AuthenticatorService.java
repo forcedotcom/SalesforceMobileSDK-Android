@@ -121,34 +121,35 @@ public class AuthenticatorService extends Service {
         public Bundle getAuthToken(AccountAuthenticatorResponse response, Account account,
                             String authTokenType, Bundle options) throws NetworkErrorException {
             final AccountManager mgr = AccountManager.get(context);
-            final String refreshToken = SalesforceSDKManager.decrypt(mgr.getPassword(account));
-            final String loginServer = SalesforceSDKManager.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_LOGIN_URL));
-            final String clientId = SalesforceSDKManager.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_ID));
-            final String instServer = SalesforceSDKManager.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL));
-            final String userId = SalesforceSDKManager.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_USER_ID));
-            final String orgId = SalesforceSDKManager.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_ORG_ID));
-            final String username = SalesforceSDKManager.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_USERNAME));
-            final String lastName = SalesforceSDKManager.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_LAST_NAME));
-            final String email = SalesforceSDKManager.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_EMAIL));
+            final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
+            final String refreshToken = SalesforceSDKManager.decrypt(mgr.getPassword(account), encryptionKey);
+            final String loginServer = SalesforceSDKManager.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), encryptionKey);
+            final String clientId = SalesforceSDKManager.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), encryptionKey);
+            final String instServer = SalesforceSDKManager.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), encryptionKey);
+            final String userId = SalesforceSDKManager.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_USER_ID), encryptionKey);
+            final String orgId = SalesforceSDKManager.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_ORG_ID), encryptionKey);
+            final String username = SalesforceSDKManager.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_USERNAME), encryptionKey);
+            final String lastName = SalesforceSDKManager.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_LAST_NAME), encryptionKey);
+            final String email = SalesforceSDKManager.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_EMAIL), encryptionKey);
             final String encFirstName = mgr.getUserData(account, AuthenticatorService.KEY_FIRST_NAME);
             String firstName = null;
             if (encFirstName != null) {
-                 firstName = SalesforceSDKManager.decrypt(encFirstName);
+                 firstName = SalesforceSDKManager.decrypt(encFirstName, encryptionKey);
             }
             final String encDisplayName = mgr.getUserData(account, AuthenticatorService.KEY_DISPLAY_NAME);
             String displayName = null;
             if (encDisplayName != null) {
-                displayName = SalesforceSDKManager.decrypt(encDisplayName);
+                displayName = SalesforceSDKManager.decrypt(encDisplayName, encryptionKey);
             }
             final String encPhotoUrl = mgr.getUserData(account, AuthenticatorService.KEY_PHOTO_URL);
             String photoUrl = null;
             if (encPhotoUrl != null) {
-                photoUrl = SalesforceSDKManager.decrypt(encPhotoUrl);
+                photoUrl = SalesforceSDKManager.decrypt(encPhotoUrl, encryptionKey);
             }
             final String encThumbnailUrl = mgr.getUserData(account, AuthenticatorService.KEY_THUMBNAIL_URL);
             String thumbnailUrl = null;
             if (encThumbnailUrl != null) {
-                thumbnailUrl = SalesforceSDKManager.decrypt(encThumbnailUrl);
+                thumbnailUrl = SalesforceSDKManager.decrypt(encThumbnailUrl, encryptionKey);
             }
             final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
             Map<String, String> values = null;
@@ -157,7 +158,7 @@ public class AuthenticatorService extends Service {
                 for (final String key : additionalOauthKeys) {
                     final String encValue = mgr.getUserData(account, key);
                     if (encValue != null) {
-                        final String value = SalesforceSDKManager.decrypt(encValue);
+                        final String value = SalesforceSDKManager.decrypt(encValue, encryptionKey);
                         values.put(key, value);
                     }
                 }
@@ -166,18 +167,17 @@ public class AuthenticatorService extends Service {
             final String encCommunityId = mgr.getUserData(account, AuthenticatorService.KEY_COMMUNITY_ID);
             String communityId = null;
             if (encCommunityId != null) {
-            	communityId = SalesforceSDKManager.decrypt(encCommunityId);
+            	communityId = SalesforceSDKManager.decrypt(encCommunityId, encryptionKey);
             }
             final String encCommunityUrl = mgr.getUserData(account, AuthenticatorService.KEY_COMMUNITY_URL);
             String communityUrl = null;
             if (encCommunityUrl != null) {
-            	communityUrl = SalesforceSDKManager.decrypt(encCommunityUrl);
+            	communityUrl = SalesforceSDKManager.decrypt(encCommunityUrl, encryptionKey);
             }
             final Bundle resBundle = new Bundle();
             try {
                 final TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
                         new URI(loginServer), clientId, refreshToken, addlParamsMap);
-                final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
 
                 // Handle the case where the org has been migrated to a new instance, or has turned on my domains.
                 if (!instServer.equalsIgnoreCase(tr.instanceUrl)) {

@@ -34,9 +34,6 @@ import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.os.Bundle;
-import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.filters.MediumTest;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.TestForceApp;
@@ -65,6 +62,10 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.MediumTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 @RunWith(AndroidJUnit4.class)
 @MediumTest
@@ -214,22 +215,23 @@ public class ClientManagerTest {
         Assert.assertNotNull("Account should have been returned", account);
         Assert.assertEquals("Wrong account name", TEST_ACCOUNT_NAME, account.name);
         Assert.assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
-        String encryptedAuthToken = accountManager.getUserData(account, AccountManager.KEY_AUTHTOKEN);
-        String decryptedAuthToken = SalesforceSDKManager.decrypt(encryptedAuthToken);
+        final String encryptedAuthToken = accountManager.getUserData(account, AccountManager.KEY_AUTHTOKEN);
+        final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
+        final String decryptedAuthToken = SalesforceSDKManager.decrypt(encryptedAuthToken, encryptionKey);
         Assert.assertEquals("Wrong auth token", TEST_AUTH_TOKEN, decryptedAuthToken);
-        String encryptedRefreshToken = accountManager.getPassword(account);
-        String decryptedRefreshToken = SalesforceSDKManager.decrypt(encryptedRefreshToken);
+        final String encryptedRefreshToken = accountManager.getPassword(account);
+        final String decryptedRefreshToken = SalesforceSDKManager.decrypt(encryptedRefreshToken, encryptionKey);
         Assert.assertEquals("Wrong refresh token", TEST_REFRESH_TOKEN, decryptedRefreshToken);
-        Assert.assertEquals("Wrong instance url", TEST_INSTANCE_URL, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL)));
-        Assert.assertEquals("Wrong login url", TEST_LOGIN_URL, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL)));
-        Assert.assertEquals("Wrong client id", TEST_CLIENT_ID, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID)));
-        Assert.assertEquals("Wrong user id", TEST_USER_ID, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_USER_ID)));
-        Assert.assertEquals("Wrong org id", TEST_ORG_ID, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_ORG_ID)));
-        Assert.assertEquals("Wrong username", TEST_USERNAME, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_USERNAME)));
-        Assert.assertEquals("Wrong last name", TEST_LAST_NAME, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LAST_NAME)));
-        Assert.assertEquals("Wrong display name", TEST_DISPLAY_NAME, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_DISPLAY_NAME)));
-        Assert.assertEquals("Wrong email", TEST_EMAIL, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_EMAIL)));
-        Assert.assertEquals("Wrong additional OAuth value", TEST_CUSTOM_VALUE, SalesforceSDKManager.decrypt(accountManager.getUserData(account, TEST_CUSTOM_KEY)));
+        Assert.assertEquals("Wrong instance url", TEST_INSTANCE_URL, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), encryptionKey));
+        Assert.assertEquals("Wrong login url", TEST_LOGIN_URL, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), encryptionKey));
+        Assert.assertEquals("Wrong client id", TEST_CLIENT_ID, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), encryptionKey));
+        Assert.assertEquals("Wrong user id", TEST_USER_ID, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_USER_ID), encryptionKey));
+        Assert.assertEquals("Wrong org id", TEST_ORG_ID, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_ORG_ID), encryptionKey));
+        Assert.assertEquals("Wrong username", TEST_USERNAME, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_USERNAME), encryptionKey));
+        Assert.assertEquals("Wrong last name", TEST_LAST_NAME, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LAST_NAME), encryptionKey));
+        Assert.assertEquals("Wrong display name", TEST_DISPLAY_NAME, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_DISPLAY_NAME), encryptionKey));
+        Assert.assertEquals("Wrong email", TEST_EMAIL, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_EMAIL), encryptionKey));
+        Assert.assertEquals("Wrong additional OAuth value", TEST_CUSTOM_VALUE, SalesforceSDKManager.decrypt(accountManager.getUserData(account, TEST_CUSTOM_KEY), encryptionKey));
     }
 
     /**
