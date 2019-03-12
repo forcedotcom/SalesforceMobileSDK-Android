@@ -142,7 +142,7 @@ public class SalesforceKeyGenerator {
      * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
      * @param length Key length.
      * @return RSA public key.
-     * @deprecated Will be removed in Mobile SDK 8.0. Use {@link KeyStoreWrapper} instead.
+     * @deprecated Will be removed in Mobile SDK 8.0. Use {@link KeyStoreWrapper#getRSAPublicKey(String, int)} instead.
      */
     public static synchronized PublicKey getRSAPublicKey(String name, int length) {
         return KeyStoreWrapper.getInstance().getRSAPublicKey(name, length);
@@ -154,7 +154,7 @@ public class SalesforceKeyGenerator {
      * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
      * @param length Key length.
      * @return RSA public key string.
-     * @deprecated Will be removed in Mobile SDK 8.0. Use {@link KeyStoreWrapper} instead.
+     * @deprecated Will be removed in Mobile SDK 8.0. Use {@link KeyStoreWrapper#getRSAPublicString(String, int)} instead.
      */
     public static synchronized String getRSAPublicString(String name, int length) {
         return KeyStoreWrapper.getInstance().getRSAPublicString(name, length);
@@ -166,7 +166,7 @@ public class SalesforceKeyGenerator {
      * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
      * @param length Key length.
      * @return RSA private key.
-     * @deprecated Will be removed in Mobile SDK 8.0. Use {@link KeyStoreWrapper} instead.
+     * @deprecated Will be removed in Mobile SDK 8.0. Use {@link KeyStoreWrapper#getRSAPrivateKey(String, int)} instead.
      */
     public static synchronized PrivateKey getRSAPrivateKey(String name, int length) {
         return KeyStoreWrapper.getInstance().getRSAPrivateKey(name, length);
