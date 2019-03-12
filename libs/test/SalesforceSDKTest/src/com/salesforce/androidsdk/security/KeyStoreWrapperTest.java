@@ -55,6 +55,7 @@ public class KeyStoreWrapperTest {
 
     private static final String KEY_1 = "key_1";
     private static final String KEY_2 = "key_2";
+    private static final int RSA_LENGTH = 2048;
 
     @Before
     public void setUp() throws Exception {
@@ -67,9 +68,9 @@ public class KeyStoreWrapperTest {
     public void testGetRSAPublicString() {
         final KeyStoreWrapper keyStoreWrapper = KeyStoreWrapper.getInstance();
         Assert.assertNotNull("KeyStoreWrapper instance should not be null", keyStoreWrapper);
-        final String key1 = keyStoreWrapper.getRSAPublicString(KEY_1, 2048);
-        final String key1Again = keyStoreWrapper.getRSAPublicString(KEY_1, 2048);
-        final String key2 = keyStoreWrapper.getRSAPublicString(KEY_2, 2048);
+        final String key1 = keyStoreWrapper.getRSAPublicString(KEY_1, RSA_LENGTH);
+        final String key1Again = keyStoreWrapper.getRSAPublicString(KEY_1, RSA_LENGTH);
+        final String key2 = keyStoreWrapper.getRSAPublicString(KEY_2, RSA_LENGTH);
         Assert.assertEquals("Public keys with the same name should be the same", key1, key1Again);
         Assert.assertNotSame("Public keys with different names should be different", key1, key2);
     }
@@ -78,8 +79,8 @@ public class KeyStoreWrapperTest {
     public void testGetRSAPrivateKey() {
         final KeyStoreWrapper keyStoreWrapper = KeyStoreWrapper.getInstance();
         Assert.assertNotNull("KeyStoreWrapper instance should not be null", keyStoreWrapper);
-        final PrivateKey key1 = keyStoreWrapper.getRSAPrivateKey(KEY_1, 2048);
-        final PrivateKey key1Again = keyStoreWrapper.getRSAPrivateKey(KEY_1, 2048);
+        final PrivateKey key1 = keyStoreWrapper.getRSAPrivateKey(KEY_1, RSA_LENGTH);
+        final PrivateKey key1Again = keyStoreWrapper.getRSAPrivateKey(KEY_1, RSA_LENGTH);
         Assert.assertEquals("Private keys with the same name should be the same", key1, key1Again);
     }
 
@@ -87,12 +88,32 @@ public class KeyStoreWrapperTest {
     public void testRSAEncryptDecrypt() {
         final KeyStoreWrapper keyStoreWrapper = KeyStoreWrapper.getInstance();
         Assert.assertNotNull("KeyStoreWrapper instance should not be null", keyStoreWrapper);
-        final PrivateKey privateKey = keyStoreWrapper.getRSAPrivateKey(KEY_1, 2048);
-        final PublicKey publicKey = keyStoreWrapper.getRSAPublicKey(KEY_1, 2048);
+        final PrivateKey privateKey = keyStoreWrapper.getRSAPrivateKey(KEY_1, RSA_LENGTH);
+        final PublicKey publicKey = keyStoreWrapper.getRSAPublicKey(KEY_1, RSA_LENGTH);
         final String data = "Test data for encryption";
         final String encryptedData = Encryptor.encryptWithRSA(publicKey, data);
         Assert.assertNotSame("Encrypted data should not match original data", data, encryptedData);
         final String decryptedData = Encryptor.decryptWithRSA(privateKey, encryptedData);
         Assert.assertEquals("Decrypted data should match original data", data, decryptedData);
+    }
+
+    @Test
+    public void testGetECPublicString() {
+        final KeyStoreWrapper keyStoreWrapper = KeyStoreWrapper.getInstance();
+        Assert.assertNotNull("KeyStoreWrapper instance should not be null", keyStoreWrapper);
+        final String key1 = keyStoreWrapper.getECPublicString(KEY_1);
+        final String key1Again = keyStoreWrapper.getECPublicString(KEY_1);
+        final String key2 = keyStoreWrapper.getECPublicString(KEY_2);
+        Assert.assertEquals("Public keys with the same name should be the same", key1, key1Again);
+        Assert.assertNotSame("Public keys with different names should be different", key1, key2);
+    }
+
+    @Test
+    public void testGetECPrivateKey() {
+        final KeyStoreWrapper keyStoreWrapper = KeyStoreWrapper.getInstance();
+        Assert.assertNotNull("KeyStoreWrapper instance should not be null", keyStoreWrapper);
+        final PrivateKey key1 = keyStoreWrapper.getECPrivateKey(KEY_1);
+        final PrivateKey key1Again = keyStoreWrapper.getECPrivateKey(KEY_1);
+        Assert.assertEquals("Private keys with the same name should be the same", key1, key1Again);
     }
 }

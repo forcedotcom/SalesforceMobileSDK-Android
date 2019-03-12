@@ -58,6 +58,8 @@ public class KeyStoreWrapper {
 
     private static final String ANDROID_KEYSTORE = "AndroidKeyStore";
     private static final String RSA = "RSA";
+    private static final String EC = "EC";
+    private static final int EC_KEY_LENGTH = 256;
     private static final String TAG = "KeyStoreWrapper";
 
     private static KeyStoreWrapper INSTANCE;
@@ -88,15 +90,8 @@ public class KeyStoreWrapper {
      * @param length Key length.
      * @return RSA public key.
      */
-    public synchronized PublicKey getRSAPublicKey(String name, int length) {
-        PublicKey publicKey = null;
-        createRSAKeysIfNecessary(name, length);
-        try {
-            publicKey = keyStore.getCertificate(name).getPublicKey();
-        } catch (Exception e) {
-            SalesforceSDKLogger.e(TAG, "Could not retrieve RSA public key", e);
-        }
-        return publicKey;
+    public PublicKey getRSAPublicKey(String name, int length) {
+        return getPublicKey(RSA, name, length);
     }
 
     /**
@@ -106,14 +101,8 @@ public class KeyStoreWrapper {
      * @param length Key length.
      * @return RSA public key string.
      */
-    public synchronized String getRSAPublicString(String name, int length) {
-        final PublicKey publicKey = getRSAPublicKey(name, length);
-        String publicKeyBase64 = null;
-        if (publicKey != null) {
-            publicKeyBase64 = Base64.encodeToString(publicKey.getEncoded(),
-                    Base64.NO_WRAP | Base64.NO_PADDING);
-        }
-        return publicKeyBase64;
+    public String getRSAPublicString(String name, int length) {
+        return getPublicKeyString(RSA, name, length);
     }
 
     /**
@@ -123,19 +112,38 @@ public class KeyStoreWrapper {
      * @param length Key length.
      * @return RSA private key.
      */
-    public synchronized PrivateKey getRSAPrivateKey(String name, int length) {
-        PrivateKey privateKey = null;
-        createRSAKeysIfNecessary(name, length);
-        try {
-            final KeyStore.Entry entry = keyStore.getEntry(name, null);
-            if (entry == null) {
-                return null;
-            }
-            privateKey = ((KeyStore.PrivateKeyEntry) entry).getPrivateKey();
-        } catch (Exception e) {
-            SalesforceSDKLogger.e(TAG, "Could not retrieve RSA private key", e);
-        }
-        return privateKey;
+    public PrivateKey getRSAPrivateKey(String name, int length) {
+        return getPrivateKey(RSA, name, length);
+    }
+
+    /**
+     * Generates an EC keypair of length 256, and returns the public key.
+     *
+     * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
+     * @return EC public key.
+     */
+    public PublicKey getECPublicKey(String name) {
+        return getPublicKey(EC, name, EC_KEY_LENGTH);
+    }
+
+    /**
+     * Generates an EC keypair of length 256, and returns the encoded public key string.
+     *
+     * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
+     * @return EC public key string.
+     */
+    public String getECPublicString(String name) {
+        return getPublicKeyString(EC, name, EC_KEY_LENGTH);
+    }
+
+    /**
+     * Generates an EC keypair of length 256, and returns the private key.
+     *
+     * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
+     * @return EC private key.
+     */
+    public PrivateKey getECPrivateKey(String name) {
+        return getPrivateKey(EC, name, EC_KEY_LENGTH);
     }
 
     private KeyStore loadKeyStore() throws CertificateException, NoSuchAlgorithmException,
@@ -145,14 +153,49 @@ public class KeyStoreWrapper {
         return keyStore;
     }
 
-    private void createRSAKeysIfNecessary(String name, int length) {
+    private PublicKey getPublicKey(String algorithm, String name, int length) {
+        PublicKey publicKey = null;
+        createKeysIfNecessary(algorithm, name, length);
+        try {
+            publicKey = keyStore.getCertificate(name).getPublicKey();
+        } catch (Exception e) {
+            SalesforceSDKLogger.e(TAG, "Could not retrieve public key", e);
+        }
+        return publicKey;
+    }
+
+    private String getPublicKeyString(String algorithm, String name, int length) {
+        final PublicKey publicKey = getPublicKey(algorithm, name, length);
+        String publicKeyBase64 = null;
+        if (publicKey != null) {
+            publicKeyBase64 = Base64.encodeToString(publicKey.getEncoded(),
+                    Base64.NO_WRAP | Base64.NO_PADDING);
+        }
+        return publicKeyBase64;
+    }
+
+    private PrivateKey getPrivateKey(String algorithm, String name, int length) {
+        PrivateKey privateKey = null;
+        createKeysIfNecessary(algorithm, name, length);
+        try {
+            final KeyStore.Entry entry = keyStore.getEntry(name, null);
+            if (entry == null) {
+                return null;
+            }
+            privateKey = ((KeyStore.PrivateKeyEntry) entry).getPrivateKey();
+        } catch (Exception e) {
+            SalesforceSDKLogger.e(TAG, "Could not retrieve private key", e);
+        }
+        return privateKey;
+    }
+
+    private synchronized void createKeysIfNecessary(String algorithm, String name, int length) {
         try {
             if (!keyStore.containsAlias(name)) {
 
                 // Generates a new key pair.
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    final KeyPairGenerator kpg = KeyPairGenerator.getInstance(
-                            KeyProperties.KEY_ALGORITHM_RSA, ANDROID_KEYSTORE);
+                    final KeyPairGenerator kpg = KeyPairGenerator.getInstance(algorithm, ANDROID_KEYSTORE);
                     kpg.initialize(new KeyGenParameterSpec.Builder(
                             name,
                             KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
@@ -176,7 +219,7 @@ public class KeyStoreWrapper {
                             .setEndDate(end.getTime())
                             .setKeySize(length)
                             .build();
-                    final KeyPairGenerator kpg = KeyPairGenerator.getInstance(RSA, ANDROID_KEYSTORE);
+                    final KeyPairGenerator kpg = KeyPairGenerator.getInstance(algorithm, ANDROID_KEYSTORE);
                     kpg.initialize(spec);
                     kpg.generateKeyPair();
                 }
