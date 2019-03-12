@@ -1125,9 +1125,22 @@ public class SalesforceSDKManager {
      *
      * @param data Data to be encrypted.
      * @return Encrypted data.
+     * @deprecated Will be removed in Mobile SDK 8.0. Use {@link SalesforceSDKManager#encrypt(String, String)} instead
+     * and use {@link SalesforceSDKManager#getEncryptionKey()} to fetch the encryption key to pass in.
      */
     public static String encrypt(String data) {
         return Encryptor.encrypt(data, getEncryptionKey());
+    }
+
+    /**
+     * Encrypts the given data with the given key.
+     *
+     * @param data Data to be encrypted.
+     * @param key Encryption key.
+     * @return Encrypted data.
+     */
+    public static String encrypt(String data, String key) {
+        return Encryptor.encrypt(data, key);
     }
 
     /**
@@ -1144,9 +1157,22 @@ public class SalesforceSDKManager {
      *
      * @param data Data to be decrypted.
      * @return Decrypted data.
+     * @deprecated Will be removed in Mobile SDK 8.0. Use {@link SalesforceSDKManager#decrypt(String, String)} instead
+     * and use {@link SalesforceSDKManager#getEncryptionKey()} to fetch the encryption key to pass in.
      */
     public static String decrypt(String data) {
         return Encryptor.decrypt(data, getEncryptionKey());
+    }
+
+    /**
+     * Decrypts the given data with the given key.
+     *
+     * @param data Data to be decrypted.
+     * @param key Encryption key.
+     * @return Decrypted data.
+     */
+    public static String decrypt(String data, String key) {
+        return Encryptor.decrypt(data, key);
     }
 
     /**
