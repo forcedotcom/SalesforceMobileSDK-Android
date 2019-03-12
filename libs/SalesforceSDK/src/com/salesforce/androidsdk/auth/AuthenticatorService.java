@@ -177,43 +177,44 @@ public class AuthenticatorService extends Service {
             try {
                 final TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
                         new URI(loginServer), clientId, refreshToken, addlParamsMap);
+                final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
 
                 // Handle the case where the org has been migrated to a new instance, or has turned on my domains.
                 if (!instServer.equalsIgnoreCase(tr.instanceUrl)) {
-                    mgr.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL, SalesforceSDKManager.encrypt(tr.instanceUrl));
+                    mgr.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL, SalesforceSDKManager.encrypt(tr.instanceUrl, encryptionKey));
                 }
 
                 // Update auth token in account.
-                mgr.setUserData(account, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encrypt(tr.authToken));
+                mgr.setUserData(account, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encrypt(tr.authToken, encryptionKey));
                 resBundle.putString(AccountManager.KEY_ACCOUNT_NAME, account.name);
                 resBundle.putString(AccountManager.KEY_ACCOUNT_TYPE, account.type);
-                resBundle.putString(AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encrypt(tr.authToken));
-                resBundle.putString(AuthenticatorService.KEY_LOGIN_URL, SalesforceSDKManager.encrypt(loginServer));
-                resBundle.putString(AuthenticatorService.KEY_INSTANCE_URL, SalesforceSDKManager.encrypt(tr.instanceUrl));
-                resBundle.putString(AuthenticatorService.KEY_CLIENT_ID, SalesforceSDKManager.encrypt(clientId));
-                resBundle.putString(AuthenticatorService.KEY_USERNAME, SalesforceSDKManager.encrypt(username));
-                resBundle.putString(AuthenticatorService.KEY_USER_ID, SalesforceSDKManager.encrypt(userId));
-                resBundle.putString(AuthenticatorService.KEY_ORG_ID, SalesforceSDKManager.encrypt(orgId));
-                resBundle.putString(AuthenticatorService.KEY_LAST_NAME, SalesforceSDKManager.encrypt(lastName));
-                resBundle.putString(AuthenticatorService.KEY_EMAIL, SalesforceSDKManager.encrypt(email));
+                resBundle.putString(AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encrypt(tr.authToken, encryptionKey));
+                resBundle.putString(AuthenticatorService.KEY_LOGIN_URL, SalesforceSDKManager.encrypt(loginServer, encryptionKey));
+                resBundle.putString(AuthenticatorService.KEY_INSTANCE_URL, SalesforceSDKManager.encrypt(tr.instanceUrl, encryptionKey));
+                resBundle.putString(AuthenticatorService.KEY_CLIENT_ID, SalesforceSDKManager.encrypt(clientId, encryptionKey));
+                resBundle.putString(AuthenticatorService.KEY_USERNAME, SalesforceSDKManager.encrypt(username, encryptionKey));
+                resBundle.putString(AuthenticatorService.KEY_USER_ID, SalesforceSDKManager.encrypt(userId, encryptionKey));
+                resBundle.putString(AuthenticatorService.KEY_ORG_ID, SalesforceSDKManager.encrypt(orgId, encryptionKey));
+                resBundle.putString(AuthenticatorService.KEY_LAST_NAME, SalesforceSDKManager.encrypt(lastName, encryptionKey));
+                resBundle.putString(AuthenticatorService.KEY_EMAIL, SalesforceSDKManager.encrypt(email, encryptionKey));
                 String encrFirstName = null;
                 if (firstName != null) {
-                    encrFirstName = SalesforceSDKManager.encrypt(firstName);
+                    encrFirstName = SalesforceSDKManager.encrypt(firstName, encryptionKey);
                 }
                 resBundle.putString(AuthenticatorService.KEY_FIRST_NAME, encrFirstName);
                 String encrDisplayName = null;
                 if (displayName != null) {
-                    encrDisplayName = SalesforceSDKManager.encrypt(displayName);
+                    encrDisplayName = SalesforceSDKManager.encrypt(displayName, encryptionKey);
                 }
                 resBundle.putString(AuthenticatorService.KEY_DISPLAY_NAME, encrDisplayName);
                 String encrPhotoUrl = null;
                 if (photoUrl != null) {
-                    encrPhotoUrl = SalesforceSDKManager.encrypt(photoUrl);
+                    encrPhotoUrl = SalesforceSDKManager.encrypt(photoUrl, encryptionKey);
                 }
                 resBundle.putString(AuthenticatorService.KEY_PHOTO_URL, encrPhotoUrl);
                 String encrThumbnailUrl = null;
                 if (thumbnailUrl != null) {
-                    encrThumbnailUrl = SalesforceSDKManager.encrypt(thumbnailUrl);
+                    encrThumbnailUrl = SalesforceSDKManager.encrypt(thumbnailUrl, encryptionKey);
                 }
 
                 /*
@@ -226,14 +227,14 @@ public class AuthenticatorService extends Service {
                         if (tr.additionalOauthValues != null && tr.additionalOauthValues.containsKey(key)) {
                             final String newValue = tr.additionalOauthValues.get(key);
                             if (newValue != null) {
-                                final String encrNewValue = SalesforceSDKManager.encrypt(newValue);
+                                final String encrNewValue = SalesforceSDKManager.encrypt(newValue, encryptionKey);
                                 resBundle.putString(key, encrNewValue);
                                 mgr.setUserData(account, key, encrNewValue);
                             }
                         } else if (values != null && values.containsKey(key)) {
                             final String value = values.get(key);
                             if (value != null) {
-                                final String encrValue = SalesforceSDKManager.encrypt(value);
+                                final String encrValue = SalesforceSDKManager.encrypt(value, encryptionKey);
                                 resBundle.putString(key, encrValue);
                             }
                         }
@@ -242,12 +243,12 @@ public class AuthenticatorService extends Service {
                 resBundle.putString(AuthenticatorService.KEY_THUMBNAIL_URL, encrThumbnailUrl);
                 String encrCommunityId = null;
                 if (communityId != null) {
-                	encrCommunityId = SalesforceSDKManager.encrypt(communityId);
+                	encrCommunityId = SalesforceSDKManager.encrypt(communityId, encryptionKey);
                 }
                 resBundle.putString(AuthenticatorService.KEY_COMMUNITY_ID, encrCommunityId);
                 String encrCommunityUrl = null;
                 if (communityUrl != null) {
-                	encrCommunityUrl = SalesforceSDKManager.encrypt(communityUrl);
+                	encrCommunityUrl = SalesforceSDKManager.encrypt(communityUrl, encryptionKey);
                 }
                 resBundle.putString(AuthenticatorService.KEY_COMMUNITY_URL, encrCommunityUrl);
             } catch (OAuthFailedException ofe) {
