@@ -506,19 +506,21 @@ public class PasscodeManager  {
 
     public void showLockActivity(Context ctx) {
         locked = true;
-        if (ctx != null) {
-            final Intent i = new Intent(ctx, SalesforceSDKManager.getInstance().getPasscodeActivity());
-            i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-            i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-            if (ctx == SalesforceSDKManager.getInstance().getAppContext()) {
-                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            }
-            if (ctx instanceof Activity) {
-                ((Activity) ctx).startActivityForResult(i, PASSCODE_REQUEST_CODE);
-            } else {
-                ctx.startActivity(i);
-            }
+        if (ctx == null) {
+            ctx = SalesforceSDKManager.getInstance().getAppContext();
+        }
+
+        final Intent i = new Intent(ctx, SalesforceSDKManager.getInstance().getPasscodeActivity());
+        i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+        i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        if (ctx == SalesforceSDKManager.getInstance().getAppContext()) {
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        }
+        if (ctx instanceof Activity) {
+            ((Activity) ctx).startActivityForResult(i, PASSCODE_REQUEST_CODE);
+        } else {
+            ctx.startActivity(i);
         }
         EventsObservable.get().notifyEvent(EventType.AppLocked);
     }
