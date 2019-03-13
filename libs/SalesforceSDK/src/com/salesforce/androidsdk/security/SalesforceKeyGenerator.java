@@ -85,7 +85,7 @@ public class SalesforceKeyGenerator {
      * @param length Key length.
      * @return Unique ID.
      */
-    public static synchronized String getUniqueId(String name, int length) {
+    public static String getUniqueId(String name, int length) {
         if (UNIQUE_IDS.get(name) == null) {
             generateUniqueId(name, length);
         }
@@ -98,7 +98,7 @@ public class SalesforceKeyGenerator {
      * @param name Unique name associated with this encryption key.
      * @return Encryption key.
      */
-    public static synchronized String getEncryptionKey(String name) {
+    public static String getEncryptionKey(String name) {
         if (CACHED_ENCRYPTION_KEYS.get(name) == null) {
             generateEncryptionKey(name);
         }
@@ -144,7 +144,7 @@ public class SalesforceKeyGenerator {
      * @return RSA public key.
      * @deprecated Will be removed in Mobile SDK 8.0. Use {@link KeyStoreWrapper#getRSAPublicKey(String, int)} instead.
      */
-    public static synchronized PublicKey getRSAPublicKey(String name, int length) {
+    public static PublicKey getRSAPublicKey(String name, int length) {
         return KeyStoreWrapper.getInstance().getRSAPublicKey(name, length);
     }
 
@@ -156,7 +156,7 @@ public class SalesforceKeyGenerator {
      * @return RSA public key string.
      * @deprecated Will be removed in Mobile SDK 8.0. Use {@link KeyStoreWrapper#getRSAPublicString(String, int)} instead.
      */
-    public static synchronized String getRSAPublicString(String name, int length) {
+    public static String getRSAPublicString(String name, int length) {
         return KeyStoreWrapper.getInstance().getRSAPublicString(name, length);
     }
 
@@ -168,11 +168,11 @@ public class SalesforceKeyGenerator {
      * @return RSA private key.
      * @deprecated Will be removed in Mobile SDK 8.0. Use {@link KeyStoreWrapper#getRSAPrivateKey(String, int)} instead.
      */
-    public static synchronized PrivateKey getRSAPrivateKey(String name, int length) {
+    public static PrivateKey getRSAPrivateKey(String name, int length) {
         return KeyStoreWrapper.getInstance().getRSAPrivateKey(name, length);
     }
 
-    private static void generateEncryptionKey(String name) {
+    private synchronized static void generateEncryptionKey(String name) {
         try {
             final String keyString = getUniqueId(name);
             byte[] secretKey = keyString.getBytes(Charset.forName(UTF8));
@@ -186,7 +186,7 @@ public class SalesforceKeyGenerator {
         }
     }
 
-    private static void generateUniqueId(String name, int length) {
+    private synchronized static void generateUniqueId(String name, int length) {
         final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_FILE, 0);
         final String id = prefs.getString(getSharedPrefKey(name), null);
 
@@ -198,12 +198,11 @@ public class SalesforceKeyGenerator {
             try {
 
                 // Uses SecureRandom to generate an AES-256 key.
-                final int outputKeyLength = length;
                 final SecureRandom secureRandom = SecureRandom.getInstance(SHA1PRNG);
 
                 // SecureRandom does not require seeding. It's automatically seeded from system entropy.
                 final KeyGenerator keyGenerator = KeyGenerator.getInstance(AES);
-                keyGenerator.init(outputKeyLength, secureRandom);
+                keyGenerator.init(length, secureRandom);
 
                 // Generates a 256-bit key.
                 uniqueId = Base64.encodeToString(keyGenerator.generateKey().getEncoded(), Base64.NO_WRAP);
