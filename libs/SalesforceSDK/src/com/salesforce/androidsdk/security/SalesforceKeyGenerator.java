@@ -187,8 +187,7 @@ public class SalesforceKeyGenerator {
     }
 
     private synchronized static void generateUniqueId(String name, int length) {
-        final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_FILE, 0);
-        final String id = prefs.getString(getSharedPrefKey(name), null);
+        final String id = readFromSharedPrefs(name);
 
         // Checks if we have a unique identifier stored.
         if (id != null) {
@@ -212,9 +211,19 @@ public class SalesforceKeyGenerator {
                 // Generates a random UUID 128-bit key instead.
                 uniqueId = UUID.randomUUID().toString();
             }
-            prefs.edit().putString(getSharedPrefKey(name), uniqueId).commit();
+            storeInSharedPrefs(name, uniqueId);
             UNIQUE_IDS.put(name, uniqueId + getAddendum(name));
         }
+    }
+
+    private static String readFromSharedPrefs(String key) {
+        final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_FILE, 0);
+        return prefs.getString(getSharedPrefKey(key), null);
+    }
+
+    private synchronized static void storeInSharedPrefs(String key, String value) {
+        final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_FILE, 0);
+        prefs.edit().putString(getSharedPrefKey(key), value).commit();
     }
 
     private static String getSharedPrefKey(String name) {
