@@ -61,6 +61,7 @@ public class KeyStoreWrapper {
     private static final String RSA = "RSA";
     private static final String EC = "EC";
     private static final int EC_KEY_LENGTH = 256;
+    private static final int RSA_KEY_LENGTH = 2048;
     private static final String TAG = "KeyStoreWrapper";
 
     private static KeyStoreWrapper INSTANCE;
@@ -82,6 +83,36 @@ public class KeyStoreWrapper {
             }
         }
         return INSTANCE;
+    }
+
+    /**
+     * Generates an RSA keypair and returns the public key of length 2048.
+     *
+     * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
+     * @return RSA public key.
+     */
+    public PublicKey getRSAPublicKey(String name) {
+        return getRSAPublicKey(name, RSA_KEY_LENGTH);
+    }
+
+    /**
+     * Generates an RSA keypair and returns the encoded public key string of length 2048.
+     *
+     * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
+     * @return RSA public key string.
+     */
+    public String getRSAPublicString(String name) {
+        return getRSAPublicString(name, RSA_KEY_LENGTH);
+    }
+
+    /**
+     * Generates an RSA keypair and returns the private key of length 2048.
+     *
+     * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
+     * @return RSA private key.
+     */
+    public PrivateKey getRSAPrivateKey(String name) {
+        return getRSAPrivateKey(name, RSA_KEY_LENGTH);
     }
 
     /**
