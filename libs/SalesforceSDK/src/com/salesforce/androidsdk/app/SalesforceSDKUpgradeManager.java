@@ -78,7 +78,7 @@ public class SalesforceSDKUpgradeManager {
         writeCurVersion(ACC_MGR_KEY, SalesforceSDKManager.SDK_VERSION);
 
         /*
-         * If the installed version < v2.2.0, we need to store the current
+         * If the installed version < v7.1.0, we need to store the current
          * user's user ID and org ID in a shared preference file, to
          * support fast user switching.
          */
