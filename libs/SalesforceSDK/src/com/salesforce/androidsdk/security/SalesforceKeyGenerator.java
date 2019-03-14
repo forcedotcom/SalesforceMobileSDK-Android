@@ -30,6 +30,7 @@ import android.content.SharedPreferences;
 import android.text.TextUtils;
 import android.util.Base64;
 
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
@@ -40,9 +41,9 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.crypto.KeyGenerator;
@@ -57,16 +58,13 @@ public class SalesforceKeyGenerator {
 
     private static final String TAG = "SalesforceKeyGenerator";
     private static final String SHARED_PREF_FILE = "identifier.xml";
-    private static final String ID_SHARED_PREF_KEY = "id_%s";
-    private static final String ADDENDUM = "addendum_%s";
+    private static final String ENCRYPTED_ID_SHARED_PREF_KEY = "encrypted_id_%s";
+    private static final String KEYSTORE_ALIAS = "com.salesforce.androidsdk.security.KEYPAIR";
     private static final String UTF8 = "UTF-8";
     private static final String SHA1 = "SHA-1";
     private static final String SHA256 = "SHA-256";
     private static final String SHA1PRNG = "SHA1PRNG";
     private static final String AES = "AES";
-
-    private static Map<String, String> UNIQUE_IDS = new HashMap<>();
-    private static Map<String, String> CACHED_ENCRYPTION_KEYS = new HashMap<>();
 
     /**
      * Returns the unique ID being used. The default key length is 256 bits.
@@ -86,10 +84,7 @@ public class SalesforceKeyGenerator {
      * @return Unique ID.
      */
     public static String getUniqueId(String name, int length) {
-        if (UNIQUE_IDS.get(name) == null) {
-            generateUniqueId(name, length);
-        }
-        return UNIQUE_IDS.get(name);
+        return generateUniqueId(name, length);
     }
 
     /**
@@ -99,10 +94,7 @@ public class SalesforceKeyGenerator {
      * @return Encryption key.
      */
     public static String getEncryptionKey(String name) {
-        if (CACHED_ENCRYPTION_KEYS.get(name) == null) {
-            generateEncryptionKey(name);
-        }
-        return CACHED_ENCRYPTION_KEYS.get(name);
+        return generateEncryptionKey(name);
     }
 
     /**
@@ -172,7 +164,31 @@ public class SalesforceKeyGenerator {
         return KeyStoreWrapper.getInstance().getRSAPrivateKey(name, length);
     }
 
-    private synchronized static void generateEncryptionKey(String name) {
+    /**
+     * Upgrades the keys stored in SharedPrefs to encrypted keys. This is a one-time
+     * migration step that's run while upgrading to Mobile SDK 7.1.
+     */
+    public synchronized static void upgradeTo7Dot1() {
+        final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_FILE, 0);
+        final Map<String, ?> prefContents = prefs.getAll();
+        if (prefContents != null) {
+            final Set<String> keys = prefContents.keySet();
+            for (final String key : keys) {
+                if (key != null && key.startsWith("id")) {
+                    final String value = prefs.getString(key, null);
+                    if (value != null) {
+                        final PublicKey publicKey = KeyStoreWrapper.getInstance().getECPublicKey(KEYSTORE_ALIAS);
+                        final String encryptedValue = Encryptor.encryptWithRSA(publicKey, value);
+                        storeInSharedPrefs(key, encryptedValue);
+                        prefs.edit().remove(key).commit();
+                    }
+                }
+            }
+        }
+    }
+
+    private synchronized static String generateEncryptionKey(String name) {
+        String encryptionKey = null;
         try {
             final String keyString = getUniqueId(name);
             byte[] secretKey = keyString.getBytes(Charset.forName(UTF8));
@@ -180,20 +196,23 @@ public class SalesforceKeyGenerator {
             secretKey = md.digest(secretKey);
             byte[] dest = new byte[16];
             System.arraycopy(secretKey, 0, dest, 0, 16);
-            CACHED_ENCRYPTION_KEYS.put(name, Base64.encodeToString(dest, Base64.NO_WRAP));
+            encryptionKey = Base64.encodeToString(dest, Base64.NO_WRAP);
         } catch (Exception ex) {
             SalesforceSDKLogger.e(TAG, "Exception thrown while getting encryption key", ex);
         }
+        return encryptionKey;
     }
 
-    private synchronized static void generateUniqueId(String name, int length) {
+    private synchronized static String generateUniqueId(String name, int length) {
         final String id = readFromSharedPrefs(name);
 
         // Checks if we have a unique identifier stored.
         if (id != null) {
-            UNIQUE_IDS.put(name, id + getAddendum(name));
+            final PrivateKey privateKey = KeyStoreWrapper.getInstance().getECPrivateKey(KEYSTORE_ALIAS);
+            final String encryptionKey = Encryptor.decryptWithRSA(privateKey, getUniqueId(name));
+            return encryptionKey;
         } else {
-            String uniqueId;
+            String uniqueId = null;
             try {
 
                 // Uses SecureRandom to generate an AES-256 key.
@@ -211,8 +230,10 @@ public class SalesforceKeyGenerator {
                 // Generates a random UUID 128-bit key instead.
                 uniqueId = UUID.randomUUID().toString();
             }
-            storeInSharedPrefs(name, uniqueId);
-            UNIQUE_IDS.put(name, uniqueId + getAddendum(name));
+            final PublicKey publicKey = KeyStoreWrapper.getInstance().getECPublicKey(KEYSTORE_ALIAS);
+            final String encryptedKey = Encryptor.encryptWithRSA(publicKey, uniqueId);
+            storeInSharedPrefs(name, encryptedKey);
+            return uniqueId;
         }
     }
 
@@ -228,11 +249,6 @@ public class SalesforceKeyGenerator {
 
     private static String getSharedPrefKey(String name) {
         final String suffix = TextUtils.isEmpty(name) ? "" : name;
-        return String.format(Locale.US, ID_SHARED_PREF_KEY, suffix);
-    }
-
-    private static String getAddendum(String name) {
-        final String suffix = TextUtils.isEmpty(name) ? "" : name;
-        return String.format(Locale.US, ADDENDUM, suffix);
+        return String.format(Locale.US, ENCRYPTED_ID_SHARED_PREF_KEY, suffix);
     }
 }
