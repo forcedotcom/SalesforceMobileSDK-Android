@@ -58,7 +58,7 @@ public class SalesforceKeyGenerator {
 
     private static final String TAG = "SalesforceKeyGenerator";
     private static final String SHARED_PREF_FILE = "identifier.xml";
-    private static final String ENCRYPTED_ID_SHARED_PREF_KEY = "encrypted_id_%s";
+    private static final String ENCRYPTED_ID_SHARED_PREF_KEY = "encrypted_%s";
     private static final String KEYSTORE_ALIAS = "com.salesforce.androidsdk.security.KEYPAIR";
     private static final String UTF8 = "UTF-8";
     private static final String SHA1 = "SHA-1";
@@ -209,10 +209,9 @@ public class SalesforceKeyGenerator {
         // Checks if we have a unique identifier stored.
         if (id != null) {
             final PrivateKey privateKey = KeyStoreWrapper.getInstance().getRSAPrivateKey(KEYSTORE_ALIAS);
-            final String encryptionKey = Encryptor.decryptWithRSA(privateKey, getUniqueId(name));
-            return encryptionKey;
+            return Encryptor.decryptWithRSA(privateKey, getUniqueId(name));
         } else {
-            String uniqueId = null;
+            String uniqueId;
             try {
 
                 // Uses SecureRandom to generate an AES-256 key.
