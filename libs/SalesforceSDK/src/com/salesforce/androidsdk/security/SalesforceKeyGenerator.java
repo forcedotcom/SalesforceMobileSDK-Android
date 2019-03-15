@@ -210,7 +210,7 @@ public class SalesforceKeyGenerator {
         // Checks if we have a unique identifier stored.
         if (id != null) {
             final PrivateKey privateKey = KeyStoreWrapper.getInstance().getRSAPrivateKey(KEYSTORE_ALIAS);
-            return Encryptor.decryptWithRSA(privateKey, getUniqueId(name));
+            return Encryptor.decryptWithRSA(privateKey, id);
         } else {
             String uniqueId;
             try {
