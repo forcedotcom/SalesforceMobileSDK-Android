@@ -88,7 +88,7 @@ public class SalesforceSDKUpgradeManager {
             if (installedVerDouble < 7.1) {
                 upgradeTo7Dot1();
             }
-        } catch (NumberFormatException e) {
+        } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Failed to parse installed version.");
         }
     }
