@@ -177,7 +177,7 @@ public class SalesforceKeyGenerator {
                 if (key != null && key.startsWith("id")) {
                     final String value = prefs.getString(key, null);
                     if (value != null) {
-                        final PublicKey publicKey = KeyStoreWrapper.getInstance().getECPublicKey(KEYSTORE_ALIAS);
+                        final PublicKey publicKey = KeyStoreWrapper.getInstance().getRSAPublicKey(KEYSTORE_ALIAS);
                         final String encryptedValue = Encryptor.encryptWithRSA(publicKey, value);
                         storeInSharedPrefs(key, encryptedValue);
                         prefs.edit().remove(key).commit();
@@ -208,7 +208,7 @@ public class SalesforceKeyGenerator {
 
         // Checks if we have a unique identifier stored.
         if (id != null) {
-            final PrivateKey privateKey = KeyStoreWrapper.getInstance().getECPrivateKey(KEYSTORE_ALIAS);
+            final PrivateKey privateKey = KeyStoreWrapper.getInstance().getRSAPrivateKey(KEYSTORE_ALIAS);
             final String encryptionKey = Encryptor.decryptWithRSA(privateKey, getUniqueId(name));
             return encryptionKey;
         } else {
@@ -230,7 +230,7 @@ public class SalesforceKeyGenerator {
                 // Generates a random UUID 128-bit key instead.
                 uniqueId = UUID.randomUUID().toString();
             }
-            final PublicKey publicKey = KeyStoreWrapper.getInstance().getECPublicKey(KEYSTORE_ALIAS);
+            final PublicKey publicKey = KeyStoreWrapper.getInstance().getRSAPublicKey(KEYSTORE_ALIAS);
             final String encryptedKey = Encryptor.encryptWithRSA(publicKey, uniqueId);
             storeInSharedPrefs(name, encryptedKey);
             return uniqueId;
