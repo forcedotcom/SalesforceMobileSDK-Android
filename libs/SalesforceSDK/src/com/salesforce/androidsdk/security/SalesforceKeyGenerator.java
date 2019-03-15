@@ -59,6 +59,7 @@ public class SalesforceKeyGenerator {
     private static final String TAG = "SalesforceKeyGenerator";
     private static final String SHARED_PREF_FILE = "identifier.xml";
     private static final String ENCRYPTED_ID_SHARED_PREF_KEY = "encrypted_%s";
+    private static final String ID_PREFIX = "id_";
     private static final String KEYSTORE_ALIAS = "com.salesforce.androidsdk.security.KEYPAIR";
     private static final String UTF8 = "UTF-8";
     private static final String SHA1 = "SHA-1";
@@ -204,7 +205,7 @@ public class SalesforceKeyGenerator {
     }
 
     private synchronized static String generateUniqueId(String name, int length) {
-        final String id = readFromSharedPrefs(name);
+        final String id = readFromSharedPrefs(ID_PREFIX + name);
 
         // Checks if we have a unique identifier stored.
         if (id != null) {
@@ -231,7 +232,7 @@ public class SalesforceKeyGenerator {
             }
             final PublicKey publicKey = KeyStoreWrapper.getInstance().getRSAPublicKey(KEYSTORE_ALIAS);
             final String encryptedKey = Encryptor.encryptWithRSA(publicKey, uniqueId);
-            storeInSharedPrefs(name, encryptedKey);
+            storeInSharedPrefs(ID_PREFIX + name, encryptedKey);
             return uniqueId;
         }
     }
