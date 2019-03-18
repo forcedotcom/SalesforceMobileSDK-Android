@@ -36,7 +36,7 @@ import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
  */
 public class SalesforceHybridTestActivity extends SalesforceDroidGapActivity {
 
-	static String usernamae = "__USER_NAME__";
+	static String username = "__USER_NAME__";
 	static String accountName = "__ACCOUNT_NAME__";
 	static String refreshToken = "__REFRESH_TOKEN__";
 	static String authToken = "--will-be-set-through-refresh--";
