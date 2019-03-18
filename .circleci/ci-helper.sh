@@ -14,7 +14,7 @@ function envSetup {
     gem install danger-android_lint
     gem install danger-jacoco
 
-    ruby setTestCreds.rb
+    ruby .circleci/setTestCreds.rb 
 }
 
 function printTestsToRun {

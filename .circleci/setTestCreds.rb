@@ -1,9 +1,9 @@
-boot_configs = %w(../libs/test/SalesforceAnalyticsTest/res/values/bootconfig.xml
-                  ../libs/test/SalesforceSDKTest/res/values/bootconfig.xml
-                  ../libs/test/SmartStoreTest/res/values/bootconfig.xml
-                  ../libs/test/SmartSyncTest/res/values/bootconfig.xml
-                  ../libs/test/SalesforceHybridTest/src/com/salesforce/androidsdk/phonegap/ui/SalesforceHybridTestActivity.java
-                  ../libs/test/SalesforceReactTest/src/com/salesforce/androidsdk/reactnative/util/ReactTestActivity.java)
+boot_configs = %w(libs/test/SalesforceAnalyticsTest/res/values/bootconfig.xml
+                  libs/test/SalesforceSDKTest/res/values/bootconfig.xml
+                  libs/test/SmartStoreTest/res/values/bootconfig.xml
+                  libs/test/SmartSyncTest/res/values/bootconfig.xml
+                  libs/test/SalesforceHybridTest/src/com/salesforce/androidsdk/phonegap/ui/SalesforceHybridTestActivity.java
+                  libs/test/SalesforceReactTest/src/com/salesforce/androidsdk/reactnative/util/ReactTestActivity.java)
 
 for config in boot_configs do
     file_contents = File.read(config)
