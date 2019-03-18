@@ -36,16 +36,16 @@ import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
  */
 public class SalesforceHybridTestActivity extends SalesforceDroidGapActivity {
 
-	static String username = "sdktest@cs1.com";
-	static String accountName = "sdktest@cs1.com (https://cs1.salesforce.com) (test)";
-	static String refreshToken = "5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBS." + "SiQYYAy5I4qHxhn2TvpCA5uxkSv9hsdYnY55z0MzteIyAN";
+	static String usernamae = "__USER_NAME__";
+	static String accountName = "__ACCOUNT_NAME__";
+	static String refreshToken = "__REFRESH_TOKEN__";
 	static String authToken = "--will-be-set-through-refresh--";
-	static String identityUrl = "https://test.salesforce.com/id/00DS0000000HDptMAG/005S0000003yaERIAY";
-	static String instanceUrl = "https://sdk.cs1.my.salesforce.com";
-	static String loginUrl = "https://test.salesforce.com";
-	static String orgId = "00DS0000000HDptMAG";
-	static String userId = "005S0000003yaERIAY";
-    static String photoUrl = "https://sdk--c.cs1.content.force.com/profilephoto/005/F";
+	static String identityUrl = "__IDENTITY_URL__";
+	static String instanceUrl = "__INSTANCE_URL__";
+	static String loginUrl = "__LOGIN_URL__";
+	static String orgId = "__ORG_ID__";
+	static String userId = "__USER_ID__";
+    static String photoUrl = "__PHOTO_URL__";
 	
 	@Override
 	protected ClientManager buildClientManager() {
