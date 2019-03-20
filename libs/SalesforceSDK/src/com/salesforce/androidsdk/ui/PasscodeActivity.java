@@ -534,8 +534,12 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         done();
     }
 
+    private boolean canShowBiometric() {
+        return passcodeManager.getBiometricAllowed() && isFingerprintEnabled();
+    }
+
     private void launchBiometricAuth() {
-        if (passcodeManager != null && isFingerprintEnabled()) {
+        if (passcodeManager != null && canShowBiometric()) {
             if (VERSION.SDK_INT >= VERSION_CODES.P) {
                 showBiometricDialog();
             } else if (VERSION.SDK_INT >= VERSION_CODES.M) {
