@@ -42,6 +42,7 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -527,7 +528,7 @@ public class OAuth2 {
                 if (parsedResponse.has(MOBILE_POLICY)) {
                     pinLength = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(PIN_LENGTH);
                     screenLockTimeout = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(SCREEN_LOCK);
-                    String bioAttribute = customAttributes.optString(BIOMETRIC_UNLOCK).toLowerCase();
+                    String bioAttribute = customAttributes.optString(BIOMETRIC_UNLOCK).toLowerCase(Locale.US);
                     if (bioAttribute.equals("false")) {
                         biometricUnlockAlowed = false;
                         SalesforceSDKLogger.i(TAG, "Biometric Unlock disabled by connected app.");
