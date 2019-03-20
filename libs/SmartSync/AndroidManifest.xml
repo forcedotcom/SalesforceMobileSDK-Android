@@ -5,10 +5,6 @@
     android:versionCode="63"
     android:versionName="7.1.0.dev">
 
-    <application>
-        <service android:name="com.salesforce.androidsdk.analytics.AnalyticsPublisherService"
-            android:enabled="false" />
-    </application>
-
+    <application />
 
 </manifest>
