@@ -244,7 +244,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
                 } else {
                     passcodeManager.reset(this);
                     if (logoutEnabled) {
-                        SalesforceSDKManager.getInstance().logout(this);
+                        signoutAllUsers();
                     }
                 }
             }
@@ -401,29 +401,8 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 
             @Override
             public void onClick(DialogInterface dialog, int which) {
-            	final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
-            	final List<UserAccount> userAccounts = userAccMgr.getAuthenticatedUsers();
-
-            	/*
-            	 * If the user forgot his/her passcode, we log all the authenticated
-            	 * users out. All the existing accounts except the last account
-            	 * are removed without dismissing the PasscodeActivity. The last
-            	 * account is removed, after which the PasscodeActivity is dismissed,
-            	 * and the login page is brought up at this point.
-            	 */
-            	if (userAccounts != null) {
-            		int numAccounts = userAccounts.size();
-            		if (numAccounts > 0) {
-                		for (int i = 0; i < numAccounts - 1; i++) {
-                			final UserAccount account = userAccounts.get(i);
-                        	userAccMgr.signoutUser(account, null, false);
-                		}
-            			final UserAccount lastAccount = userAccounts.get(numAccounts - 1);
-                    	userAccMgr.signoutUser(lastAccount, PasscodeActivity.this);
-            		}
-            	} else {
-            		userAccMgr.signoutCurrentUser(PasscodeActivity.this);
-            	}
+                passcodeManager.reset(PasscodeActivity.this);
+                signoutAllUsers();
             }
         }).setNegativeButton(getLogoutNoString(), new DialogInterface.OnClickListener() {
 
@@ -434,6 +413,32 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             }
         })
         .create();
+    }
+
+    private void signoutAllUsers() {
+        final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
+        final List<UserAccount> userAccounts = userAccMgr.getAuthenticatedUsers();
+
+        /*
+         * If the user forgot his/her passcode, we log all the authenticated
+         * users out. All the existing accounts except the last account
+         * are removed without dismissing the PasscodeActivity. The last
+         * account is removed, after which the PasscodeActivity is dismissed,
+         * and the login page is brought up at this point.
+         */
+        if (userAccounts != null) {
+            int numAccounts = userAccounts.size();
+            if (numAccounts > 0) {
+                for (int i = 0; i < numAccounts - 1; i++) {
+                    final UserAccount account = userAccounts.get(i);
+                    userAccMgr.signoutUser(account, null, false);
+                }
+                final UserAccount lastAccount = userAccounts.get(numAccounts - 1);
+                userAccMgr.signoutUser(lastAccount, PasscodeActivity.this);
+            }
+        } else {
+            userAccMgr.signoutCurrentUser(PasscodeActivity.this);
+        }
     }
 
     /**
