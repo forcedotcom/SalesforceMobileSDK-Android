@@ -94,6 +94,7 @@ public class SyncManager {
         this.smartStore = smartStore;
         this.restClient = restClient;
         SyncState.setupSyncsSoupIfNeeded(smartStore);
+        SyncState.cleanupSyncsSoupIfNeeded(smartStore);
     }
 
     /**
