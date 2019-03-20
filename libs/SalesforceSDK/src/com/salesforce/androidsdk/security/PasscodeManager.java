@@ -178,15 +178,38 @@ public class PasscodeManager  {
      * @param account UserAccount instance.
      * @param timeout Timeout value, in ms.
      * @param passLen Minimum passcode length.
-     * @param bioAllowed If biometric Unlock is Allowed by connected App
+     *
+     * @deprecated Will be removed in Mobile SDK 8.0.
+     * Use {@link PasscodeManager#storeMobilePolicyForOrg(UserAccount, int, int, boolean)} instead.
      */
-    public void storeMobilePolicyForOrg(UserAccount account, int timeout, int passLen, boolean bioAllowed) {
+    public void storeMobilePolicyForOrg(UserAccount account, int timeout, int passLen) {
     	if (account == null) {
     		return;
     	}
     	final Context context = SalesforceSDKManager.getInstance().getAppContext();
         final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF
         		+ account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
+        final Editor e = sp.edit();
+        e.putInt(KEY_TIMEOUT, timeout);
+        e.putInt(KEY_PASSCODE_LENGTH, passLen);
+        e.commit();
+    }
+
+    /**
+     * Stores the mobile policy for the specified account.
+     *
+     * @param account UserAccount instance.
+     * @param timeout Timeout value, in ms.
+     * @param passLen Minimum passcode length.
+     * @param bioAllowed If biometric Unlock is Allowed by connected App
+     */
+    public void storeMobilePolicyForOrg(UserAccount account, int timeout, int passLen, boolean bioAllowed) {
+        if (account == null) {
+            return;
+        }
+        final Context context = SalesforceSDKManager.getInstance().getAppContext();
+        final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF
+                + account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
         final Editor e = sp.edit();
         e.putInt(KEY_TIMEOUT, timeout);
         e.putInt(KEY_PASSCODE_LENGTH, passLen);
