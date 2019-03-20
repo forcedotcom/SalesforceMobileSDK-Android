@@ -27,6 +27,8 @@
 package com.salesforce.androidsdk.smartsync.util;
 
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
@@ -82,19 +84,20 @@ public class SyncState {
 	 * @param store
 	 */
 	public static void setupSyncsSoupIfNeeded(SmartStore store) {
-    	if (store.hasSoup(SYNCS_SOUP) && store.getSoupIndexSpecs(SYNCS_SOUP).length == 2) {
+    	if (store.hasSoup(SYNCS_SOUP) && store.getSoupIndexSpecs(SYNCS_SOUP).length == 3) {
 			return;
 		}
 
 		final IndexSpec[] indexSpecs = {
-			new IndexSpec(SYNC_TYPE, SmartStore.Type.string),
-			new IndexSpec(SYNC_NAME, SmartStore.Type.string)
+			new IndexSpec(SYNC_TYPE, SmartStore.Type.json1),
+			new IndexSpec(SYNC_NAME, SmartStore.Type.json1),
+			new IndexSpec(SYNC_STATUS, SmartStore.Type.json1)
 		};
 
 		// Syncs soup exists but doesn't have all the required indexes
 		if (store.hasSoup(SYNCS_SOUP)) {
 			try {
-				store.alterSoup(SYNCS_SOUP, indexSpecs, false);
+				store.alterSoup(SYNCS_SOUP, indexSpecs, true /* reindexing to json1 is quick */);
 			}
 			catch (JSONException e) {
 				throw new SyncManager.SmartSyncException(e);
@@ -105,6 +108,28 @@ public class SyncState {
 			store.registerSoup(SYNCS_SOUP, indexSpecs);
 		}
 	}
+
+	/**
+	 * Cleanup syncs soup if needed
+	 * At startup, no sync could be running already
+	 * If a sync is in the running state, we change it to failed
+	 * @param store
+	 */
+	public static void cleanupSyncsSoupIfNeeded(SmartStore store) {
+		try {
+			QuerySpec runningSyncQuery = QuerySpec.buildSmartQuerySpec(String.format("select {%1$s:%2$s} from {%1$s} where {%1$s:%3$s} = '%4$s'", SYNCS_SOUP, SmartSqlHelper.SOUP, SYNC_STATUS, Status.RUNNING.name()), Integer.MAX_VALUE);
+			JSONArray rows = store.query(runningSyncQuery, 0);
+			for (int i=0; i<rows.length(); i++) {
+				JSONObject sync = rows.getJSONArray(i).getJSONObject(0);
+				sync.put(SYNC_STATUS, Status.FAILED.name());
+				sync.put(SYNC_ERROR, "Application likely killed while sync was running");
+				store.upsert(SYNCS_SOUP, sync);
+			}
+		} catch (JSONException e) {
+			throw new SyncManager.SmartSyncException(e);
+		}
+	}
+
 	
 	/**
 	 * Create sync state in database for a sync down and return corresponding SyncState
