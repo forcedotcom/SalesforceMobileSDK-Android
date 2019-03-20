@@ -34,7 +34,6 @@ import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -61,7 +60,6 @@ public class SalesforceKeyGenerator {
     private static final String ENCRYPTED_ID_SHARED_PREF_KEY = "encrypted_%s";
     private static final String ID_PREFIX = "id_";
     private static final String KEYSTORE_ALIAS = "com.salesforce.androidsdk.security.KEYPAIR";
-    private static final String UTF8 = "UTF-8";
     private static final String SHA1 = "SHA-1";
     private static final String SHA256 = "SHA-256";
     private static final String SHA1PRNG = "SHA1PRNG";
@@ -192,7 +190,7 @@ public class SalesforceKeyGenerator {
         String encryptionKey = null;
         try {
             final String keyString = getUniqueId(name);
-            byte[] secretKey = keyString.getBytes(Charset.forName(UTF8));
+            byte[] secretKey = keyString.getBytes(StandardCharsets.UTF_8);
             final MessageDigest md = MessageDigest.getInstance(SHA1);
             secretKey = md.digest(secretKey);
             byte[] dest = new byte[16];
