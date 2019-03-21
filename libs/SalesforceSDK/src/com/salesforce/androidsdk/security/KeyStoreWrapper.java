@@ -30,7 +30,6 @@ import android.os.Build;
 import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
-import android.security.keystore.StrongBoxUnavailableException;
 import android.util.Base64;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -61,6 +60,7 @@ public class KeyStoreWrapper {
     private static final String RSA = "RSA";
     private static final String EC = "EC";
     private static final int EC_KEY_LENGTH = 256;
+    private static final int RSA_KEY_LENGTH = 2048;
     private static final String TAG = "KeyStoreWrapper";
 
     private static KeyStoreWrapper INSTANCE;
@@ -82,6 +82,36 @@ public class KeyStoreWrapper {
             }
         }
         return INSTANCE;
+    }
+
+    /**
+     * Generates an RSA keypair and returns the public key of length 2048.
+     *
+     * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
+     * @return RSA public key.
+     */
+    public PublicKey getRSAPublicKey(String name) {
+        return getRSAPublicKey(name, RSA_KEY_LENGTH);
+    }
+
+    /**
+     * Generates an RSA keypair and returns the encoded public key string of length 2048.
+     *
+     * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
+     * @return RSA public key string.
+     */
+    public String getRSAPublicString(String name) {
+        return getRSAPublicString(name, RSA_KEY_LENGTH);
+    }
+
+    /**
+     * Generates an RSA keypair and returns the private key of length 2048.
+     *
+     * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
+     * @return RSA private key.
+     */
+    public PrivateKey getRSAPrivateKey(String name) {
+        return getRSAPrivateKey(name, RSA_KEY_LENGTH);
     }
 
     /**
@@ -179,11 +209,7 @@ public class KeyStoreWrapper {
         PrivateKey privateKey = null;
         createKeysIfNecessary(algorithm, name, length);
         try {
-            final KeyStore.Entry entry = keyStore.getEntry(name, null);
-            if (entry == null) {
-                return null;
-            }
-            privateKey = ((KeyStore.PrivateKeyEntry) entry).getPrivateKey();
+            privateKey = (PrivateKey) keyStore.getKey(name, null);
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Could not retrieve private key", e);
         }
@@ -202,17 +228,6 @@ public class KeyStoreWrapper {
                             KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
                             .setKeySize(length)
                             .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1);
-
-                    /*
-                     * TODO: Remove this check once minVersion > 28.
-                     */
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                        try {
-                            keyGenParameterSpecBuilder.setIsStrongBoxBacked(true);
-                        } catch (StrongBoxUnavailableException sb) {
-                            SalesforceSDKLogger.e(TAG, "StrongBox Keymaster unavailable", sb);
-                        }
-                    }
                     kpg.initialize(keyGenParameterSpecBuilder.build());
                     kpg.generateKeyPair();
                 } else {

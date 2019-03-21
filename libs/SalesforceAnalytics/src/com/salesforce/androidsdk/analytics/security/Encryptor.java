@@ -236,8 +236,8 @@ public class Encryptor {
         try {
 
             // Signs with SHA-256.
-            byte [] keyBytes = key.getBytes(StandardCharsets.UTF_8);
-            byte [] dataBytes = data.getBytes(StandardCharsets.UTF_8);
+            byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
+            byte[] dataBytes = data.getBytes(StandardCharsets.UTF_8);
             Mac sha;
 
             /*
@@ -250,7 +250,7 @@ public class Encryptor {
             }
             final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, sha.getAlgorithm());
             sha.init(keySpec);
-            byte [] sig = sha.doFinal(dataBytes);
+            byte[] sig = sha.doFinal(dataBytes);
 
             // Encodes with Base64.
             return Base64.encodeToString(sig, Base64.NO_WRAP);
@@ -284,17 +284,7 @@ public class Encryptor {
      * @return Encrypted data.
      */
     public static byte[] encryptWithRSABytes(PublicKey publicKey, String data) {
-        if (publicKey == null || TextUtils.isEmpty(data)) {
-            return null;
-        }
-        try {
-            final Cipher cipher = Cipher.getInstance(RSA_PKCS1);
-            cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-            return cipher.doFinal(data.getBytes());
-        } catch (Exception e) {
-            SalesforceAnalyticsLogger.e(null, TAG, "Error during asymmetric encryption using RSA", e);
-        }
-        return null;
+        return encryptWithPublicKey(publicKey, data, RSA_PKCS1);
     }
 
     /**
@@ -325,18 +315,7 @@ public class Encryptor {
      * @return Decrypted data.
      */
     public static byte[] decryptWithRSABytes(PrivateKey privateKey, String data) {
-        if (privateKey == null || TextUtils.isEmpty(data)) {
-            return null;
-        }
-        try {
-            final Cipher cipher = Cipher.getInstance(RSA_PKCS1);
-            cipher.init(Cipher.DECRYPT_MODE, privateKey);
-            byte[] decodedBytes = Base64.decode(data.getBytes(),Base64.NO_WRAP | Base64.NO_PADDING);
-            return cipher.doFinal(decodedBytes);
-        } catch (Exception e) {
-            SalesforceAnalyticsLogger.e(null, TAG, "Error during asymmetric decryption using RSA", e);
-        }
-        return null;
+        return decryptWithPrivateKey(privateKey, data, RSA_PKCS1);
     }
 
     /**
@@ -357,6 +336,35 @@ public class Encryptor {
             return new String(result, 0, result.length, StandardCharsets.UTF_8);
         } catch (Exception e) {
             SalesforceAnalyticsLogger.e(null, TAG, "Error during symmetric decryption using AES", e);
+        }
+        return null;
+    }
+
+    private static byte[] encryptWithPublicKey(PublicKey publicKey, String data, String cipher) {
+        if (publicKey == null || TextUtils.isEmpty(data)) {
+            return null;
+        }
+        try {
+            final Cipher cipherInstance = Cipher.getInstance(cipher);
+            cipherInstance.init(Cipher.ENCRYPT_MODE, publicKey);
+            return cipherInstance.doFinal(data.getBytes());
+        } catch (Exception e) {
+            SalesforceAnalyticsLogger.e(null, TAG, "Error during asymmetric encryption", e);
+        }
+        return null;
+    }
+
+    private static byte[] decryptWithPrivateKey(PrivateKey privateKey, String data, String cipher) {
+        if (privateKey == null || TextUtils.isEmpty(data)) {
+            return null;
+        }
+        try {
+            final Cipher cipherInstance = Cipher.getInstance(cipher);
+            cipherInstance.init(Cipher.DECRYPT_MODE, privateKey);
+            byte[] decodedBytes = Base64.decode(data.getBytes(),Base64.NO_WRAP | Base64.NO_PADDING);
+            return cipherInstance.doFinal(decodedBytes);
+        } catch (Exception e) {
+            SalesforceAnalyticsLogger.e(null, TAG, "Error during asymmetric decryption", e);
         }
         return null;
     }
