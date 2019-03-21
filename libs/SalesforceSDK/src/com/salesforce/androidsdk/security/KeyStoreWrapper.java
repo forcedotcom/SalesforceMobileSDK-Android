@@ -209,11 +209,7 @@ public class KeyStoreWrapper {
         PrivateKey privateKey = null;
         createKeysIfNecessary(algorithm, name, length);
         try {
-            final KeyStore.Entry entry = keyStore.getEntry(name, null);
-            if (entry == null) {
-                return null;
-            }
-            privateKey = ((KeyStore.PrivateKeyEntry) entry).getPrivateKey();
+            privateKey = (PrivateKey) keyStore.getKey(name, null);
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Could not retrieve private key", e);
         }
