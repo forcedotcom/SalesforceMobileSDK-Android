@@ -59,6 +59,7 @@ public class SalesforceKeyGenerator {
     private static final String SHARED_PREF_FILE = "identifier.xml";
     private static final String ENCRYPTED_ID_SHARED_PREF_KEY = "encrypted_%s";
     private static final String ID_PREFIX = "id_";
+    private static final String ADDENDUM = "addendum_%s";
     private static final String KEYSTORE_ALIAS = "com.salesforce.androidsdk.security.KEYPAIR";
     private static final String SHA1 = "SHA-1";
     private static final String SHA256 = "SHA-256";
@@ -177,7 +178,8 @@ public class SalesforceKeyGenerator {
                     final String value = prefs.getString(key, null);
                     if (value != null) {
                         final PublicKey publicKey = KeyStoreWrapper.getInstance().getRSAPublicKey(KEYSTORE_ALIAS);
-                        final String encryptedValue = Encryptor.encryptWithRSA(publicKey, value);
+                        final String encryptedValue = Encryptor.encryptWithRSA(publicKey,
+                                value + String.format(Locale.US, ADDENDUM, key));
                         storeInSharedPrefs(key, encryptedValue);
                         prefs.edit().remove(key).commit();
                     }
