@@ -236,8 +236,8 @@ public class Encryptor {
         try {
 
             // Signs with SHA-256.
-            byte [] keyBytes = key.getBytes(StandardCharsets.UTF_8);
-            byte [] dataBytes = data.getBytes(StandardCharsets.UTF_8);
+            byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
+            byte[] dataBytes = data.getBytes(StandardCharsets.UTF_8);
             Mac sha;
 
             /*
@@ -250,7 +250,7 @@ public class Encryptor {
             }
             final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, sha.getAlgorithm());
             sha.init(keySpec);
-            byte [] sig = sha.doFinal(dataBytes);
+            byte[] sig = sha.doFinal(dataBytes);
 
             // Encodes with Base64.
             return Base64.encodeToString(sig, Base64.NO_WRAP);
