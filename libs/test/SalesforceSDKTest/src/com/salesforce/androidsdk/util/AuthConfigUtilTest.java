@@ -42,7 +42,7 @@ import androidx.test.filters.SmallTest;
 @SmallTest
 public class AuthConfigUtilTest {
 
-    private static final String MY_DOMAIN_ENDPOINT = "https://sdk.cs1.my.salesforce.com";
+    private static final String MY_DOMAIN_ENDPOINT = "https://mobilesdk.my.salesforce.com";
     private static final String ALTERNATE_MY_DOMAIN_ENDPOINT = "https://powerofus.force.com";
     private static final String SANDBOX_ENDPOINT = "https://test.salesforce.com";
     private static final String FORWARD_SLASH = "/";
