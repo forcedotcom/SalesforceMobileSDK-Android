@@ -30,7 +30,6 @@ import android.os.Build;
 import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
-import android.security.keystore.StrongBoxUnavailableException;
 import android.util.Base64;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -233,17 +232,6 @@ public class KeyStoreWrapper {
                             KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
                             .setKeySize(length)
                             .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1);
-
-                    /*
-                     * TODO: Remove this check once minVersion > 28.
-                     */
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                        try {
-                            keyGenParameterSpecBuilder.setIsStrongBoxBacked(true);
-                        } catch (StrongBoxUnavailableException sb) {
-                            SalesforceSDKLogger.e(TAG, "StrongBox Keymaster unavailable", sb);
-                        }
-                    }
                     kpg.initialize(keyGenParameterSpecBuilder.build());
                     kpg.generateKeyPair();
                 } else {
