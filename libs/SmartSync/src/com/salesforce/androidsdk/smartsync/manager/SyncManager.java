@@ -54,6 +54,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -79,6 +80,7 @@ public class SyncManager {
 
     // Members
     private Set<Long> runningSyncIds = new HashSet<Long>();
+    private boolean pauseSignal = false;
     public final String apiVersion;
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
     private SmartStore smartStore;
@@ -194,6 +196,47 @@ public class SyncManager {
             // The set is backed by the map, so changes to the map are reflected in the set, and vice-versa.
             INSTANCES.keySet().removeAll(keysToRemove);
         }
+    }
+
+    /**
+     * Pause the sync manager
+     * It might take a while for running syncs to actually get paused
+     * Call isPaused() to see if syncManager is fully paused
+     */
+    public void pause() {
+        pauseSignal = true;
+    }
+
+    /**
+     * @return true if pause was requested but there are still running syncs
+     */
+    public boolean isPausing() {
+        return pauseSignal && runningSyncIds.size() > 0;
+    }
+
+    /**
+     * @return true if pause was requested and there no syncs are running anymore
+     */
+    public boolean isPaused() {
+        return pauseSignal && runningSyncIds.size() == 0;
+    }
+
+
+    /**
+     * Resume this sync manager
+     * NB: Application needs to call reSync for any pausedpause sync
+     */
+    public void resume() {
+        pauseSignal = false;
+    }
+
+
+
+    /**
+     * Get running syncs
+     */
+    public Set<Long> getRunningSyncIds() {
+        return Collections.unmodifiableSet(runningSyncIds);
     }
 
     /**
@@ -353,6 +396,10 @@ public class SyncManager {
      * @param callback
      */
     public void runSync(final SyncState sync, final SyncUpdateCallback callback) {
+        if (pauseSignal) {
+            throw new SmartSyncException("Cannot run sync - SyncManager is paused");
+        }
+
         updateSync(sync, SyncState.Status.RUNNING, 0, callback);
         threadPool.execute(new Runnable() {
             @Override
@@ -450,6 +497,10 @@ public class SyncManager {
      * @throws IOException
      */
     public void cleanResyncGhosts(final long syncId, final CleanResyncGhostsCallback callback) throws JSONException {
+        if (pauseSignal) {
+            throw new SmartSyncException("Cannot run cleanResyncGhosts - SyncManager is paused");
+        }
+
         if (runningSyncIds.contains(syncId)) {
             throw new SmartSyncException("Cannot run cleanResyncGhosts:" + syncId + ": still running");
         }
@@ -521,6 +572,7 @@ public class SyncManager {
                 case RUNNING:
                     runningSyncIds.add(sync.getId());
                     break;
+                case PAUSED:
                 case DONE:
                 case FAILED:
                     int totalSize = sync.getTotalSize();
@@ -572,6 +624,11 @@ public class SyncManager {
 
         updateSync(sync, SyncState.Status.RUNNING, 0, callback);
         for (int i=0; i<totalSize; i++) {
+            if (pauseSignal) {
+                updateSync(sync, SyncState.Status.PAUSED, UNCHANGED, callback);
+                return;
+            }
+
             JSONObject record = target.getFromLocalStore(this, soupName, dirtyRecordIds.get(i));
 
             if (shouldSyncUpRecord(target, record, options)) {
@@ -602,6 +659,11 @@ public class SyncManager {
         updateSync(sync, SyncState.Status.RUNNING, 0, callback);
         int i = 0;
         for (final String id : dirtyRecordIds) {
+            if (pauseSignal) {
+                updateSync(sync, SyncState.Status.PAUSED, UNCHANGED, callback);
+                return;
+            }
+
             JSONObject record = target.getFromLocalStore(this, soupName, id);
 
             if (shouldSyncUpRecord(target, record, options)) {
@@ -736,6 +798,11 @@ public class SyncManager {
         }
 
         while (records != null) {
+            if (pauseSignal) {
+                updateSync(sync, SyncState.Status.PAUSED, UNCHANGED, callback);
+                return;
+            }
+
             // Figure out records to save
             JSONArray recordsToSave = idsToSkip == null ? records : removeWithIds(records, idsToSkip, idField);
 

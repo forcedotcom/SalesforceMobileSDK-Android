@@ -418,7 +418,7 @@ public class SyncState {
 		if (this.status != Status.RUNNING && status == Status.RUNNING) {
 			this.startTime = System.currentTimeMillis();
 		}
-		if (this.status == Status.RUNNING && (status == Status.DONE || status == Status.FAILED)) {
+		if (this.status == Status.RUNNING && (status == Status.DONE || status == Status.FAILED || status == Status.PAUSED)) {
 			this.endTime = System.currentTimeMillis();
 		}
 
@@ -436,7 +436,11 @@ public class SyncState {
 	public boolean hasFailed() {
 		return this.status == Status.FAILED;
 	}
-	
+
+	public boolean isPaused() {
+		return this.status == Status.PAUSED;
+	}
+
 	public boolean isRunning() {
 		return this.status == Status.RUNNING;
 	}
@@ -459,6 +463,7 @@ public class SyncState {
      */
     public enum Status {
     	NEW,
+		PAUSED,
     	RUNNING,
     	DONE,
     	FAILED
