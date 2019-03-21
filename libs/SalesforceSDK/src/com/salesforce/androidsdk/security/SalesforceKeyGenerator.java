@@ -178,8 +178,9 @@ public class SalesforceKeyGenerator {
                     final String value = prefs.getString(key, null);
                     if (value != null) {
                         final PublicKey publicKey = KeyStoreWrapper.getInstance().getRSAPublicKey(KEYSTORE_ALIAS);
-                        final String encryptedValue = Encryptor.encryptWithRSA(publicKey,
-                                value + String.format(Locale.US, ADDENDUM, key));
+                        final String keyBase = key.replaceFirst(ID_PREFIX, "");
+                        final String mutatedValue = value + String.format(Locale.US, ADDENDUM, keyBase);
+                        final String encryptedValue = Encryptor.encryptWithRSA(publicKey, mutatedValue);
                         storeInSharedPrefs(key, encryptedValue);
                         prefs.edit().remove(key).commit();
                     }
