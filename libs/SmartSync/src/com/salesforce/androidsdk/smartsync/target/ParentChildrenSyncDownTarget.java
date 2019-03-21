@@ -162,7 +162,6 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
         return builder.build();
     }
 
-
     @Override
     public int cleanGhosts(SyncManager syncManager, String soupName, long syncId) throws JSONException, IOException {
         // Taking care of ghost parents
@@ -258,7 +257,13 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
         SOQLBuilder builder = SOQLBuilder.getInstanceWithFields(fields);
         builder.from(parentInfo.sobjectType);
         builder.where(parentWhere.toString());
+        builder.orderBy(parentInfo.modificationDateFieldName);
         return builder.build();
+    }
+
+    @Override
+    public boolean isSyncDownSortedByLatestModification() {
+        return true;
     }
 
     private StringBuilder buildModificationDateFilter(String modificationDateFieldName, long maxTimeStamp) {

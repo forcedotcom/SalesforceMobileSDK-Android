@@ -77,7 +77,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
     public SoqlSyncDownTarget(String idFieldName, String modificationDateFieldName, String query) {
         super(idFieldName, modificationDateFieldName);
         this.queryType = QueryType.soql;
-        this.query = addSpecialFieldsIfRequired(query);
+        this.query = addOrderByLastModifiedIfRequired(addSpecialFieldsIfRequired(query));
     }
 
     private String addSpecialFieldsIfRequired(String query) {
@@ -96,6 +96,23 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
             }
         }
         return query;
+    }
+
+    private String addOrderByLastModifiedIfRequired(String query) {
+        if (!TextUtils.isEmpty(query)) {
+
+            // Order by 'LastModifiedDate' field if no order by specified
+            final String lastModFieldName = getModificationDateFieldName();
+            if (!query.matches(".*[oO][rR][dD][eE][rR][ ]+[bB][yY].*")) {
+                query = query + " order by " + lastModFieldName;
+            }
+        }
+        return query;
+    }
+
+    @Override
+    public boolean isSyncDownSortedByLatestModification() {
+        return this.query.matches(".*[oO][rR][dD][eE][rR][ ]+[bB][yY].*" + getModificationDateFieldName());
     }
 
 	/**
