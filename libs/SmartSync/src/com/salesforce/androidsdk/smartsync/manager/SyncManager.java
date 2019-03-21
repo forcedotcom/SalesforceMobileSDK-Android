@@ -818,8 +818,17 @@ public class SyncManager {
 
             // Fetch next records, if any.
             records = target.continueFetch(this);
+
+            // Updating maxTimeStamp as we go if records are ordered by latest modification
+            if (target.isSyncDownSortedByLatestModification()) {
+                sync.setMaxTimeStamp(maxTimeStamp);
+            }
         }
-        sync.setMaxTimeStamp(maxTimeStamp);
+
+        // Updating maxTimeStamp once at the end if records are NOT ordered by latest modification
+        if (!target.isSyncDownSortedByLatestModification()) {
+            sync.setMaxTimeStamp(maxTimeStamp);
+        }
 	}
 
     private JSONArray removeWithIds(JSONArray records, Set<String> idsToSkip, String idField) throws JSONException {
