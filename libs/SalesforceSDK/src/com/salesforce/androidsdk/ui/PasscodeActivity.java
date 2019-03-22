@@ -33,7 +33,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.fingerprint.FingerprintManager;
@@ -534,8 +533,12 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         done();
     }
 
+    private boolean canShowBiometric() {
+        return passcodeManager.getBiometricAllowed() && isFingerprintEnabled();
+    }
+
     private void launchBiometricAuth() {
-        if (passcodeManager != null && isFingerprintEnabled()) {
+        if (passcodeManager != null && canShowBiometric()) {
             if (VERSION.SDK_INT >= VERSION_CODES.P) {
                 showBiometricDialog();
             } else if (VERSION.SDK_INT >= VERSION_CODES.M) {

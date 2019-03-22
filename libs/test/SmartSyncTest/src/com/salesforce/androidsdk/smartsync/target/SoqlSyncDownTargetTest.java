@@ -88,14 +88,25 @@ public class SoqlSyncDownTargetTest extends SyncManagerTestCase {
     }
 
     /**
+     * Test query with subqueries
+     */
+    @Test
+    public void testQueryWithSubqueries() throws Exception {
+        SoqlSyncDownTarget targetWithSubqueryInSelect = new SoqlSyncDownTarget("SELECT Name, (SELECT Contact.LastName FROM Account.Contacts) FROM Account WHERE Name = 'James Bond' LIMIT 10");
+        Assert.assertEquals("SELECT Id FROM Account WHERE Name = 'James Bond' LIMIT 10", targetWithSubqueryInSelect.getSoqlForRemoteIds());
+        SoqlSyncDownTarget targetWithSubqueryInWhere = new SoqlSyncDownTarget("SELECT Name FROM Account WHERE Id IN (SELECT Id FROM Account WHERE Name = 'James Bond' LIMIT 10)");
+        Assert.assertEquals("SELECT Id FROM Account WHERE Id IN (SELECT Id FROM Account WHERE Name = 'James Bond' LIMIT 10)", targetWithSubqueryInWhere.getSoqlForRemoteIds());
+        SoqlSyncDownTarget targetWithSubqueries = new SoqlSyncDownTarget("SELECT Name, (SELECT Contact.LastName FROM Account.Contacts) FROM Account WHERE Id IN (SELECT Id FROM Account WHERE Name = 'James Bond' LIMIT 10)");
+        Assert.assertEquals("SELECT Id FROM Account WHERE Id IN (SELECT Id FROM Account WHERE Name = 'James Bond' LIMIT 10)", targetWithSubqueries.getSoqlForRemoteIds());
+    }
+
+    /**
      * Test query with "From_customer__c" field
      */
     @Test
     public void testQueryWithFromField() throws Exception {
-        final String soqlQueryWithFromField = SOQLBuilder.getInstanceWithFields("From_customer__c, Id")
-                .from(Constants.ACCOUNT).limit(10).build();
-        final SoqlSyncDownTarget target = new SoqlSyncDownTarget(soqlQueryWithFromField);
-        Assert.assertEquals("SELECT Id FROM Account limit 10", target.getSoqlForRemoteIds());
+        SoqlSyncDownTarget target = new SoqlSyncDownTarget("SELECT From_customer__c FROM Account WHERE Name = 'James Bond' LIMIT 10");
+        Assert.assertEquals("SELECT Id FROM Account WHERE Name = 'James Bond' LIMIT 10", target.getSoqlForRemoteIds());
     }
 
     /**

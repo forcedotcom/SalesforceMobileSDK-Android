@@ -75,6 +75,9 @@ public class PasscodeManager  {
     // Key in preference for the passcode length.
     protected static final String KEY_PASSCODE_LENGTH = "passcode_length";
 
+    // Key in preference for connect app biometric flag.
+    protected static final String KEY_BIOMETRIC_ALLOWED = "biometric_allowed";
+
     // Key in preference to indicate passcode change is required.
     protected static final String KEY_PASSCODE_CHANGE_REQUIRED= "passcode_change_required";
 
@@ -91,6 +94,7 @@ public class PasscodeManager  {
     boolean locked;
     private int timeoutMs;
     private int minPasscodeLength;
+    private boolean biometricAllowed;
     private boolean passcodeChangeRequired;
     private LockChecker lockChecker;
 
@@ -174,17 +178,33 @@ public class PasscodeManager  {
      * @param account UserAccount instance.
      * @param timeout Timeout value, in ms.
      * @param passLen Minimum passcode length.
+     *
+     * @deprecated Will be removed in Mobile SDK 8.0.
+     * Use {@link PasscodeManager#storeMobilePolicyForOrg(UserAccount, int, int, boolean)} instead.
      */
     public void storeMobilePolicyForOrg(UserAccount account, int timeout, int passLen) {
-    	if (account == null) {
-    		return;
-    	}
-    	final Context context = SalesforceSDKManager.getInstance().getAppContext();
+    	storeMobilePolicyForOrg(account, timeout, passLen, true);
+    }
+
+    /**
+     * Stores the mobile policy for the specified account.
+     *
+     * @param account UserAccount instance.
+     * @param timeout Timeout value, in ms.
+     * @param passLen Minimum passcode length.
+     * @param bioAllowed If biometric Unlock is Allowed by connected App
+     */
+    public void storeMobilePolicyForOrg(UserAccount account, int timeout, int passLen, boolean bioAllowed) {
+        if (account == null) {
+            return;
+        }
+        final Context context = SalesforceSDKManager.getInstance().getAppContext();
         final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF
-        		+ account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
+                + account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
         final Editor e = sp.edit();
         e.putInt(KEY_TIMEOUT, timeout);
         e.putInt(KEY_PASSCODE_LENGTH, passLen);
+        e.putBoolean(KEY_BIOMETRIC_ALLOWED, bioAllowed);
         e.commit();
     }
 
@@ -202,6 +222,7 @@ public class PasscodeManager  {
             Editor e = sp.edit();
             e.putInt(KEY_TIMEOUT, timeoutMs);
             e.putInt(KEY_PASSCODE_LENGTH, minPasscodeLength);
+            e.putBoolean(KEY_BIOMETRIC_ALLOWED, biometricAllowed);
             e.putBoolean(KEY_PASSCODE_CHANGE_REQUIRED, passcodeChangeRequired);
             e.commit();
         }
@@ -227,6 +248,7 @@ public class PasscodeManager  {
             }
             timeoutMs = sp.getInt(KEY_TIMEOUT, 0);
             minPasscodeLength = sp.getInt(KEY_PASSCODE_LENGTH, MIN_PASSCODE_LENGTH);
+            biometricAllowed = sp.getBoolean(KEY_BIOMETRIC_ALLOWED, true);
             passcodeChangeRequired = sp.getBoolean(KEY_PASSCODE_CHANGE_REQUIRED, false);
         }
     }
@@ -252,9 +274,11 @@ public class PasscodeManager  {
         Editor e = sp.edit();
         e.remove(KEY_PASSCODE);
         e.remove(KEY_FAILED_ATTEMPTS);
+        e.remove(KEY_BIOMETRIC_ALLOWED);
         e.commit();
         timeoutMs = 0;
         minPasscodeLength = MIN_PASSCODE_LENGTH;
+        biometricAllowed = true;
         passcodeChangeRequired = false;
         storeMobilePolicy(ctx);
         handler = null;
@@ -482,6 +506,10 @@ public class PasscodeManager  {
         return minPasscodeLength;
     }
 
+    public boolean getBiometricAllowed() {
+        return biometricAllowed;
+    }
+
     /**
      * @param ctx
      * @param minPasscodeLength
@@ -493,6 +521,16 @@ public class PasscodeManager  {
             }
     	}
         this.minPasscodeLength = minPasscodeLength;
+        storeMobilePolicy(ctx);
+    }
+
+    /**
+     * Called when biometric unlock requirement for the org changes.
+     */
+    public void setBiometricAllowed(Context ctx, boolean allowed) {
+        if (this.biometricAllowed) {
+            this.biometricAllowed = allowed;
+        }
         storeMobilePolicy(ctx);
     }
 

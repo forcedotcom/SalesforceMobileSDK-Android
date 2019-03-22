@@ -196,12 +196,33 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
     }
 
     protected String getSoqlForRemoteIds() {
-        // Alters the SOQL query to get only IDs.
-        final StringBuilder soql = new StringBuilder("SELECT ");
-        soql.append(getIdFieldName());
-        soql.append(" FROM ");
-        final String[] fromClause = getQuery(0).split("([ ][fF][rR][oO][mM][ ])");
-        soql.append(fromClause[1]);
+        String fullQuery = getQuery(0);
+
+        StringBuffer soql = new StringBuffer();
+        soql.append("SELECT ").append(getIdFieldName()).append(" FROM");
+
+
+        // Using a tokenizer to extract the from clause
+        // NB: we need to find the from of the main query (not any subqueries)
+        StringTokenizer tokenizer = new StringTokenizer(fullQuery, " ", false);
+        int depth = 0;
+        boolean afterFrom = false;
+        while (tokenizer.hasMoreElements()) {
+            String token = tokenizer.nextToken();
+
+            if (afterFrom) {
+                soql.append(" ").append(token);
+            }
+
+            if (token.startsWith("(")) {
+                depth++;
+            } else if (token.endsWith(")")) {
+                depth--;
+            } else if (depth == 0 && afterFrom == false && token.toLowerCase().equals("from")) {
+                afterFrom = true;
+            }
+        }
+
         return soql.toString();
     }
 
