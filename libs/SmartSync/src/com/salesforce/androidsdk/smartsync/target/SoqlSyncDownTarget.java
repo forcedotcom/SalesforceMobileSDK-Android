@@ -179,23 +179,33 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
     }
 
     protected String getSoqlForRemoteIds() {
-	    // Full query
-        final String fullQuery = getQuery(0);
-        final String fullQueryLC = fullQuery.toLowerCase();
-        final String select = "select ";
-        final String from = " from ";
-        final String orderBy = " order by ";
-        final int fromIndex = fullQueryLC.lastIndexOf(from);
-        final int orderByIndex = fullQueryLC.lastIndexOf(orderBy);
-        // from clause: everything from the last from (SOQL allows subqueries in the select) - dropping any order by (to be faster)
-        final String fromClause = query.substring(fromIndex + from.length(), orderByIndex > 0 ? orderByIndex : query.length());
+        String fullQuery = getQuery(0);
 
-        // Alters the SOQL query to get only IDs.
-        final StringBuilder soql = new StringBuilder()
-                .append(select)
-                .append(getIdFieldName())
-                .append(from)
-                .append(fromClause);
+        StringBuffer soql = new StringBuffer();
+        soql.append("SELECT ").append(getIdFieldName()).append(" FROM");
+
+
+        // Using a tokenizer to extract the from clause
+        // NB: we need to find the from of the main query (not any subqueries)
+        StringTokenizer tokenizer = new StringTokenizer(fullQuery, " ", false);
+        int depth = 0;
+        boolean afterFrom = false;
+        while (tokenizer.hasMoreElements()) {
+            String token = tokenizer.nextToken();
+
+            if (afterFrom) {
+                soql.append(" ").append(token);
+            }
+
+            if (token.startsWith("(")) {
+                depth++;
+            } else if (token.endsWith(")")) {
+                depth--;
+            } else if (depth == 0 && afterFrom == false && token.toLowerCase().equals("from")) {
+                afterFrom = true;
+            }
+        }
+
         return soql.toString();
     }
 
