@@ -34,6 +34,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -42,29 +45,55 @@ import java.util.Set;
  */
 public class TestSyncDownTarget extends SyncDownTarget {
 
-    // Fields in records
-    public static final String NAME = "name";
-    public static final String SEQ = "seq";
-
-    // All the records
-    private final JSONObject[] records;
+    // Fields in serialized target
+    public static final String NUMBER_OF_RECORDS_PER_PAGE = "numberOfRecordsPerPage";
+    public static final String NUMBER_OF_RECORDS = "numberOfRecords";
+    public static final String SLEEP_PER_FETCH = "sleepPerFetch";
 
     // Target config
     private final int numberOfRecords;
     private final int numberOfRecordsPerPage;
+    private final int sleepPerFetch;
 
     // Target state
     private int position = 0;
+    private int totalSize;
 
-    public TestSyncDownTarget(int numberOfRecords, int numberOfRecordsPerPage) throws JSONException {
+    // All the records
+    private final JSONObject[] records;
+
+    public static Date dateForPosition(int i) {
+        return new GregorianCalendar(2019, Calendar.MARCH, 1, 12, i /60, i % 60).getTime();
+    }
+
+    public static int positionForDate(long time) {
+        return (int) (time - dateForPosition(0).getTime()) / 1000;
+    }
+
+    public TestSyncDownTarget(JSONObject target) throws JSONException {
+        this(target.getInt(NUMBER_OF_RECORDS), target.getInt(NUMBER_OF_RECORDS_PER_PAGE), target.getInt(SLEEP_PER_FETCH));
+    }
+
+    @Override
+    public JSONObject asJSON() throws JSONException {
+        JSONObject target = super.asJSON();
+        target.put(NUMBER_OF_RECORDS, this.numberOfRecords);
+        target.put(NUMBER_OF_RECORDS_PER_PAGE, this.numberOfRecordsPerPage);
+        target.put(SLEEP_PER_FETCH, this.sleepPerFetch);
+        return target;
+    }
+
+    public TestSyncDownTarget(int numberOfRecords, int numberOfRecordsPerPage, int sleepPerFetch) throws JSONException {
+        this.queryType = QueryType.custom;
         this.numberOfRecords = numberOfRecords;
         this.numberOfRecordsPerPage = numberOfRecordsPerPage;
+        this.sleepPerFetch = sleepPerFetch;
         this.records = new JSONObject[numberOfRecords];
         for (int i=0; i<numberOfRecords; i++) {
             JSONObject record = new JSONObject();
             record.put(Constants.ID, "" + (10000 + i));
-            record.put(NAME, "record" + i);
-            record.put(SEQ, i);
+            record.put(Constants.NAME, "record" + i);
+            record.put(Constants.LAST_MODIFIED_DATE, Constants.TIMESTAMP_FORMAT.format(dateForPosition(i)));
             this.records[i] = record;
         }
     }
@@ -91,18 +120,30 @@ public class TestSyncDownTarget extends SyncDownTarget {
     }
 
     @Override
-    public String getModificationDateFieldName() {
-        return SEQ;
+    public int getTotalSize() {
+        return this.totalSize;
     }
 
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
-        this.position = (int) maxTimeStamp;
+        this.position = maxTimeStamp == -1 ? 0 : positionForDate(maxTimeStamp) + 1;
+        this.totalSize = numberOfRecords - this.position;
+        sleepIfNeeded();
         return recordsFromPosition();
+    }
+
+    private void sleepIfNeeded() {
+        if (sleepPerFetch > 0) {
+            try {
+                Thread.sleep(sleepPerFetch);
+            } catch (InterruptedException e) {
+            }
+        }
     }
 
     @Override
     public JSONArray continueFetch(SyncManager syncManager) throws IOException, JSONException {
+        sleepIfNeeded();
         return recordsFromPosition();
     }
 

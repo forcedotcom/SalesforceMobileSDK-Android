@@ -36,6 +36,7 @@ import com.salesforce.androidsdk.smartsync.target.SoslSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
+import com.salesforce.androidsdk.smartsync.target.TestSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.TestSyncUpTarget;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SOSLBuilder;
@@ -68,6 +69,7 @@ import java.util.Set;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 
+import static java.util.Collections.max;
 import static java.util.Collections.singletonList;
 
 /**
@@ -774,7 +776,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Check status updates
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, -1);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, idToFields.size()); // totalSize is off for resync of sync-down-target if not all recrods got updated
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, idToFields.size()); // totalSize is off for resync of sync-down-target if not all records got updated
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 10, idToFields.size());
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 10, idToFields.size());
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 20, idToFields.size());
@@ -937,6 +939,88 @@ public class SyncManagerTest extends SyncManagerTestCase {
         SyncState.deleteSync(smartStore, syncName);
         Assert.assertNull("Sync should be gone", SyncState.byName(smartStore, syncName));
     }
+
+
+    /**
+     * Run sync down using TestSyncDownTarget
+     * @throws JSONException
+     */
+    @Test
+    public void testCustomSyncDownTarget() throws JSONException {
+        String syncName = "testCustomSyncDownTarget";
+        int numberOfRecords = 30;
+        SyncDownTarget target = new TestSyncDownTarget(numberOfRecords, 10, 0);
+        long syncId = trySyncDown(MergeMode.LEAVE_IF_CHANGED, target, ACCOUNTS_SOUP, numberOfRecords, 3, syncName);
+
+        // Check sync time stamp
+        SyncState sync = syncManager.getSyncStatus(syncId);
+        Assert.assertEquals("Wrong time stamp", TestSyncDownTarget.dateForPosition(numberOfRecords-1).getTime(), sync.getMaxTimeStamp());
+    }
+
+    /**
+     * Run sync down using TestSyncDownTarget with pauses
+     * @throws JSONException
+     */
+    @Test
+    public void testPausingCustomSyncDownTarget() throws JSONException, InterruptedException {
+        String syncName = "testPausingCustomSyncDownTarget";
+        int numberOfRecords = 50;
+        SyncDownTarget target = new TestSyncDownTarget(numberOfRecords, 10, 50);
+        SyncOptions options = SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED);
+        SyncState sync = SyncState.createSyncDown(smartStore, target, options, ACCOUNTS_SOUP, syncName);
+        long syncId = sync.getId();
+
+        // Run sync
+        SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+        syncManager.reSync(syncName, queue);
+
+        // Check status updates
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, -1);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, numberOfRecords);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 20, numberOfRecords);
+        pauseSyncManager(100);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.PAUSED, 20, numberOfRecords);
+
+        // Check sync time stamp and status
+        sync = syncManager.getSyncStatus(syncId);
+        Assert.assertEquals("Wrong time stamp", TestSyncDownTarget.dateForPosition(9).getTime(), sync.getMaxTimeStamp());
+        Assert.assertEquals("Wrong status", SyncState.Status.PAUSED, sync.getStatus());
+
+        // Try to restart sync while sync manager is paused
+        try {
+            syncManager.reSync(syncName, queue);
+            Assert.fail("Expected exception");
+        } catch (SyncManager.SmartSyncException e) {
+            Assert.assertTrue("Wrong exception", e.getMessage().contains("Cannot run sync - SyncManager is paused"));
+        }
+
+        // Resuming sync manager
+        syncManager.resume();
+
+        // Check sync status - should still be paused
+        sync = syncManager.getSyncStatus(syncId);
+        Assert.assertEquals("Wrong status", SyncState.Status.PAUSED, sync.getStatus());
+
+        // Restarting sync
+        syncManager.reSync(syncName, queue);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, -1);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, 40);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 25, 40);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 50, 40);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 75, 40);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100, 40);
+    }
+
+    private void pauseSyncManager(int sleepDuration) throws InterruptedException {
+        Assert.assertFalse("Paused should be false", syncManager.isPaused());
+        Assert.assertFalse("Pausing should be false", syncManager.isPausing());
+        syncManager.pause();
+        Assert.assertTrue("Pausing should be true", syncManager.isPausing());
+        Thread.sleep(sleepDuration);
+//        Assert.assertFalse("Pausing should be false", syncManager.isPausing());
+//        Assert.assertTrue("Paused should be true", syncManager.isPaused());
+    }
+
 
     /**
 	 * Sync down helper

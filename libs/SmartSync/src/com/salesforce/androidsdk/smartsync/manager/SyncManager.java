@@ -231,14 +231,6 @@ public class SyncManager {
     }
 
 
-
-    /**
-     * Get running syncs
-     */
-    public Set<Long> getRunningSyncIds() {
-        return Collections.unmodifiableSet(runningSyncIds);
-    }
-
     /**
      * Get details of a sync by id
      *
