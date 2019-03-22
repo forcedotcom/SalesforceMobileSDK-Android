@@ -109,18 +109,15 @@ public class SoqlSyncDownTargetTest extends SyncManagerTestCase {
         Assert.assertEquals("SELECT Id FROM Account WHERE Name = 'James Bond' LIMIT 10", target.getSoqlForRemoteIds());
     }
 
+
     /**
-     * Tests if missing fields are added to a SOQL target.
+     * Tests if missing fields / order by are added to a SOQL target.
      */
     @Test
-    public void testAddMissingFieldsToSOQLTarget() throws Exception {
-        final String soqlQueryWithSpecialFields = SOQLBuilder.getInstanceWithFields("Id, LastModifiedDate, FirstName, LastName")
-                .from(Constants.CONTACT).limit(10).build();
-        final String soqlQueryWithoutSpecialFields = SOQLBuilder.getInstanceWithFields("FirstName, LastName")
-                .from(Constants.CONTACT).limit(10).build();
-        final SoqlSyncDownTarget target = new SoqlSyncDownTarget(soqlQueryWithoutSpecialFields);
-        final String targetSoqlQuery = target.getQuery();
-        Assert.assertEquals("SOQL query should contain Id and LastModifiedDate fields", soqlQueryWithSpecialFields, targetSoqlQuery);
+    public void testAddMissingFieldsAndOrderByToSOQLTarget() {
+        String soqlExpected = "select Id, LastModifiedDate, FirstName, LastName from Contact order by LastModifiedDate";
+        SoqlSyncDownTarget target = new SoqlSyncDownTarget("select FirstName, LastName from Contact");
+        Assert.assertEquals("SOQL query should contain Id and LastModifiedDate fields", soqlExpected, target.getQuery());
     }
 
 }

@@ -60,7 +60,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
      */
     public SoqlSyncDownTarget(JSONObject target) throws JSONException {
         super(target);
-        this.query = addSpecialFieldsIfRequired(JSONObjectHelper.optString(target, QUERY));
+        this.query = modifyQueryIfNeeded(JSONObjectHelper.optString(target, QUERY));
     }
 
 	/**
@@ -78,10 +78,10 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
     public SoqlSyncDownTarget(String idFieldName, String modificationDateFieldName, String query) {
         super(idFieldName, modificationDateFieldName);
         this.queryType = QueryType.soql;
-        this.query = addOrderByLastModifiedIfRequired(addSpecialFieldsIfRequired(query));
+        this.query = modifyQueryIfNeeded(query);
     }
 
-    private String addSpecialFieldsIfRequired(String query) {
+    private String modifyQueryIfNeeded(String query) {
         if (!TextUtils.isEmpty(query)) {
 
             // Inserts the mandatory 'LastModifiedDate' field if it doesn't exist.
@@ -95,21 +95,15 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
             if (!query.contains(idFieldName)) {
                 query = query.replaceFirst("([sS][eE][lL][eE][cC][tT] )", "select " + idFieldName + ", ");
             }
-        }
-        return query;
-    }
-
-    private String addOrderByLastModifiedIfRequired(String query) {
-        if (!TextUtils.isEmpty(query)) {
 
             // Order by 'LastModifiedDate' field if no order by specified
-            final String lastModFieldName = getModificationDateFieldName();
             if (!query.matches(".*[oO][rR][dD][eE][rR][ ]+[bB][yY].*")) {
                 query = query + " order by " + lastModFieldName;
             }
         }
         return query;
     }
+
 
     @Override
     public boolean isSyncDownSortedByLatestModification() {
@@ -199,9 +193,8 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
     protected String getSoqlForRemoteIds() {
         String fullQuery = getQuery(0);
 
-        StringBuffer soql = new StringBuffer();
-        soql.append("SELECT ").append(getIdFieldName()).append(" FROM");
-
+        StringBuffer soqlBuffer = new StringBuffer();
+        soqlBuffer.append("SELECT ").append(getIdFieldName()).append(" FROM");
 
         // Using a tokenizer to extract the from clause
         // NB: we need to find the from of the main query (not any subqueries)
@@ -212,7 +205,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
             String token = tokenizer.nextToken();
 
             if (afterFrom) {
-                soql.append(" ").append(token);
+                soqlBuffer.append(" ").append(token);
             }
 
             if (token.startsWith("(")) {
@@ -224,7 +217,15 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
             }
         }
 
-        return soql.toString();
+        String soql = soqlBuffer.toString();
+
+        // Pointless to order by last modification date field
+        String orderBy = " order by " + getModificationDateFieldName();
+        if (soql.endsWith(orderBy)) {
+            soql = soql.substring(0, soql.length() - orderBy.length());
+        }
+
+        return soql;
     }
 
     protected static String addFilterForReSync(String query, String modificationFieldDatName, long maxTimeStamp) {

@@ -74,7 +74,7 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
                 new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
-        Assert.assertEquals("select ParentName, Title, ParentId, ParentModifiedDate, (select ChildName, School, ChildId, ChildLastModifiedDate from Children) from Parent where School = 'MIT'", target.getQuery());
+        Assert.assertEquals("select ParentName, Title, ParentId, ParentModifiedDate, (select ChildName, School, ChildId, ChildLastModifiedDate from Children) from Parent where School = 'MIT' order by ParentModifiedDate", target.getQuery());
 
         // With default id and modification date fields
         target = new ParentChildrenSyncDownTarget(
@@ -84,7 +84,7 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
                 new ChildrenInfo("Child", "Children", "childrenSoup", "parentId"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
-        Assert.assertEquals("select ParentName, Title, Id, LastModifiedDate, (select ChildName, School, Id, LastModifiedDate from Children) from Parent where School = 'MIT'", target.getQuery());
+        Assert.assertEquals("select ParentName, Title, Id, LastModifiedDate, (select ChildName, School, Id, LastModifiedDate from Children) from Parent where School = 'MIT' order by LastModifiedDate", target.getQuery());
     }
 
     /**
@@ -102,7 +102,7 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
                 new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
-        Assert.assertEquals("select ParentName, Title, ParentId, ParentModifiedDate, (select ChildName, School, ChildId, ChildLastModifiedDate from Children where ChildLastModifiedDate > " + dateStr + ") from Parent where ParentModifiedDate > " + dateStr + " and School = 'MIT'", target.getQuery(dateLong));
+        Assert.assertEquals("select ParentName, Title, ParentId, ParentModifiedDate, (select ChildName, School, ChildId, ChildLastModifiedDate from Children where ChildLastModifiedDate > " + dateStr + ") from Parent where ParentModifiedDate > " + dateStr + " and School = 'MIT' order by ParentModifiedDate", target.getQuery(dateLong));
 
         // With default id and modification date fields
         target = new ParentChildrenSyncDownTarget(
@@ -112,7 +112,7 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
                 new ChildrenInfo("Child", "Children", "childrenSoup", "parentId"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
-        Assert.assertEquals("select ParentName, Title, Id, LastModifiedDate, (select ChildName, School, Id, LastModifiedDate from Children where LastModifiedDate > " + dateStr + ") from Parent where LastModifiedDate > " + dateStr + " and School = 'MIT'", target.getQuery(dateLong));
+        Assert.assertEquals("select ParentName, Title, Id, LastModifiedDate, (select ChildName, School, Id, LastModifiedDate from Children where LastModifiedDate > " + dateStr + ") from Parent where LastModifiedDate > " + dateStr + " and School = 'MIT' order by LastModifiedDate", target.getQuery(dateLong));
     }
 
     /**
