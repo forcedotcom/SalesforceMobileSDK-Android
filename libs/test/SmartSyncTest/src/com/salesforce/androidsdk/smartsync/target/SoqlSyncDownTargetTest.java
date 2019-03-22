@@ -83,8 +83,17 @@ public class SoqlSyncDownTargetTest extends SyncManagerTestCase {
      */
     @Test
     public void testGetSoqlForRemoteIds() {
-        SoqlSyncDownTarget target = new SoqlSyncDownTarget("SELECT Name FROM Account WHERE Name = 'James Bond'");
-        Assert.assertEquals("SELECT Id FROM Account WHERE Name = 'James Bond'", target.getSoqlForRemoteIds());
+        SoqlSyncDownTarget target = new SoqlSyncDownTarget("SELECT Name FROM Account WHERE Name = 'James Bond' ORDER BY Name");
+        Assert.assertEquals("select Id from Account WHERE Name = 'James Bond'", target.getSoqlForRemoteIds());
+    }
+
+    /**
+     * Test query with subquery
+     */
+    @Test
+    public void testQueryWithSubquery() throws Exception {
+        SoqlSyncDownTarget target = new SoqlSyncDownTarget("SELECT Name, (SELECT Contact.LastName FROM Account.Contacts) FROM Account WHERE Name = 'James Bond' LIMIT 10 ORDER BY Name");
+        Assert.assertEquals("select Id from Account WHERE Name = 'James Bond' LIMIT 10", target.getSoqlForRemoteIds());
     }
 
     /**
@@ -92,10 +101,8 @@ public class SoqlSyncDownTargetTest extends SyncManagerTestCase {
      */
     @Test
     public void testQueryWithFromField() throws Exception {
-        final String soqlQueryWithFromField = SOQLBuilder.getInstanceWithFields("From_customer__c, Id")
-                .from(Constants.ACCOUNT).limit(10).build();
-        final SoqlSyncDownTarget target = new SoqlSyncDownTarget(soqlQueryWithFromField);
-        Assert.assertEquals("SELECT Id FROM Account limit 10", target.getSoqlForRemoteIds());
+        SoqlSyncDownTarget target = new SoqlSyncDownTarget("SELECT From_customer__c FROM Account WHERE Name = 'James Bond' LIMIT 10 ORDER BY Name");
+        Assert.assertEquals("select Id from Account WHERE Name = 'James Bond' LIMIT 10", target.getSoqlForRemoteIds());
     }
 
     /**

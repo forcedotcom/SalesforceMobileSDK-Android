@@ -179,12 +179,23 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
     }
 
     protected String getSoqlForRemoteIds() {
+	    // Full query
+        final String fullQuery = getQuery(0);
+        final String fullQueryLC = fullQuery.toLowerCase();
+        final String select = "select ";
+        final String from = " from ";
+        final String orderBy = " order by ";
+        final int fromIndex = fullQueryLC.lastIndexOf(from);
+        final int orderByIndex = fullQueryLC.lastIndexOf(orderBy);
+        // from clause: everything from the last from (SOQL allows subqueries in the select) - dropping any order by (to be faster)
+        final String fromClause = query.substring(fromIndex + from.length(), orderByIndex > 0 ? orderByIndex : query.length());
+
         // Alters the SOQL query to get only IDs.
-        final StringBuilder soql = new StringBuilder("SELECT ");
-        soql.append(getIdFieldName());
-        soql.append(" FROM ");
-        final String[] fromClause = getQuery(0).split("([ ][fF][rR][oO][mM][ ])");
-        soql.append(fromClause[1]);
+        final StringBuilder soql = new StringBuilder()
+                .append(select)
+                .append(getIdFieldName())
+                .append(from)
+                .append(fromClause);
         return soql.toString();
     }
 
