@@ -42,6 +42,7 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 /**
  * Target for sync defined by a SOQL query
