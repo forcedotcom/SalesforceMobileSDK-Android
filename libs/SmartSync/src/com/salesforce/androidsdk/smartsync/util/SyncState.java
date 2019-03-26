@@ -120,7 +120,7 @@ public class SyncState {
 	 */
 	public static void cleanupSyncsSoupIfNeeded(SmartStore store) {
 		try {
-			List<SyncState> syncs = getRunningSyncsAccordingToStore(store);
+			List<SyncState> syncs = getSyncsWithStatus(store, Status.RUNNING);
 			for (SyncState sync : syncs) {
 				sync.setStatus(Status.FAILED);
 				sync.setError("Application likely killed while sync was running");
@@ -132,10 +132,17 @@ public class SyncState {
 	}
 
 
-	public static List<SyncState> getRunningSyncsAccordingToStore(SmartStore store) throws JSONException {
+	/**
+	 * Get syncs with given status in the given store
+	 * @param store
+	 * @param status
+	 * @return list of SyncState
+	 * @throws JSONException
+	 */
+	public static List<SyncState> getSyncsWithStatus(SmartStore store, Status status) throws JSONException {
 		List<SyncState> syncs = new ArrayList<>();
-		QuerySpec runningSyncQuery = QuerySpec.buildSmartQuerySpec(String.format("select {%1$s:%2$s} from {%1$s} where {%1$s:%3$s} = '%4$s'", SYNCS_SOUP, SmartSqlHelper.SOUP, SYNC_STATUS, Status.RUNNING.name()), Integer.MAX_VALUE);
-		JSONArray rows = store.query(runningSyncQuery, 0);
+		QuerySpec query = QuerySpec.buildSmartQuerySpec(String.format("select {%1$s:%2$s} from {%1$s} where {%1$s:%3$s} = '%4$s'", SYNCS_SOUP, SmartSqlHelper.SOUP, SYNC_STATUS, status.name()), Integer.MAX_VALUE);
+		JSONArray rows = store.query(query, 0);
 		for (int i=0; i<rows.length(); i++) {
 			syncs.add(SyncState.fromJSON(rows.getJSONArray(i).getJSONObject(0)));
 		}
@@ -359,6 +366,7 @@ public class SyncState {
 		if (sync == null) {
 			throw new SyncManager.SmartSyncException("Failed to save sync state");
 		}
+		SmartSyncLogger.d("SyncState", "Saving sync==>" + sync.toString().replaceAll("\n", " "));
 	}
 	
 	public long getId() {
@@ -429,7 +437,7 @@ public class SyncState {
 		if (this.status != Status.RUNNING && status == Status.RUNNING) {
 			this.startTime = System.currentTimeMillis();
 		}
-		if (this.status == Status.RUNNING && (status == Status.DONE || status == Status.FAILED || status == Status.PAUSED)) {
+		if (this.status == Status.RUNNING && (status == Status.DONE || status == Status.FAILED || status == Status.STOPPED)) {
 			this.endTime = System.currentTimeMillis();
 		}
 
@@ -448,8 +456,8 @@ public class SyncState {
 		return this.status == Status.FAILED;
 	}
 
-	public boolean isPaused() {
-		return this.status == Status.PAUSED;
+	public boolean isStopped() {
+		return this.status == Status.STOPPED;
 	}
 
 	public boolean isRunning() {
@@ -474,7 +482,7 @@ public class SyncState {
      */
     public enum Status {
     	NEW,
-		PAUSED,
+		STOPPED,
     	RUNNING,
     	DONE,
     	FAILED

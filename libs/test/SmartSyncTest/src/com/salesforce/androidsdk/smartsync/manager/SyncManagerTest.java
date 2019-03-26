@@ -69,7 +69,6 @@ import java.util.Set;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 
-import static java.util.Collections.max;
 import static java.util.Collections.singletonList;
 
 /**
@@ -94,7 +93,9 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
     @After
     public void tearDown() throws Exception {
-        deleteRecordsOnServer(idToFields.keySet(), Constants.ACCOUNT);
+        if (idToFields != null) {
+            deleteRecordsOnServer(idToFields.keySet(), Constants.ACCOUNT);
+        }
     	dropAccountsSoup();
     	super.tearDown();
     }
@@ -958,12 +959,12 @@ public class SyncManagerTest extends SyncManagerTestCase {
     }
 
     /**
-     * Run sync down using TestSyncDownTarget with pauses
+     * Run stopping sync down using TestSyncDownTarget
      * @throws JSONException
      */
     @Test
-    public void testPausingCustomSyncDownTarget() throws JSONException, InterruptedException {
-        String syncName = "testPausingCustomSyncDownTarget";
+    public void testStoppingSyncDownTarget() throws JSONException, InterruptedException {
+        String syncName = "testStoppingSyncDownTarget";
         int numberOfRecords = 50;
         SyncDownTarget target = new TestSyncDownTarget(numberOfRecords, 10, 50);
         SyncOptions options = SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED);
@@ -978,13 +979,13 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, -1);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, numberOfRecords);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 20, numberOfRecords);
-        pauseSyncManager(100);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.PAUSED, 20, numberOfRecords);
+        stopSyncManager(100);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.STOPPED, 20, numberOfRecords);
 
         // Check sync time stamp and status
         sync = syncManager.getSyncStatus(syncId);
         Assert.assertEquals("Wrong time stamp", TestSyncDownTarget.dateForPosition(9).getTime(), sync.getMaxTimeStamp());
-        Assert.assertEquals("Wrong status", SyncState.Status.PAUSED, sync.getStatus());
+        Assert.assertEquals("Wrong status", SyncState.Status.STOPPED, sync.getStatus());
 
         // Try to restart sync while sync manager is paused
         try {
@@ -995,14 +996,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         }
 
         // Resuming sync manager
-        syncManager.resume();
-
-        // Check sync status - should still be paused
-        sync = syncManager.getSyncStatus(syncId);
-        Assert.assertEquals("Wrong status", SyncState.Status.PAUSED, sync.getStatus());
-
-        // Restarting sync
-        syncManager.reSync(syncName, queue);
+        syncManager.resumeAll(queue);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, -1);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, 40);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 25, 40);
@@ -1011,14 +1005,14 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100, 40);
     }
 
-    private void pauseSyncManager(int sleepDuration) throws InterruptedException {
-        Assert.assertFalse("Paused should be false", syncManager.isPaused());
-        Assert.assertFalse("Pausing should be false", syncManager.isPausing());
-        syncManager.pause();
-        Assert.assertTrue("Pausing should be true", syncManager.isPausing());
+    private void stopSyncManager(int sleepDuration) throws InterruptedException {
+        Assert.assertFalse("Paused should be false", syncManager.isStopped());
+        Assert.assertFalse("Pausing should be false", syncManager.isStopping());
+        syncManager.stopAll();
+        Assert.assertTrue("Pausing should be true", syncManager.isStopping());
         Thread.sleep(sleepDuration);
-//        Assert.assertFalse("Pausing should be false", syncManager.isPausing());
-//        Assert.assertTrue("Paused should be true", syncManager.isPaused());
+        Assert.assertFalse("Pausing should be false", syncManager.isStopping());
+        Assert.assertTrue("Paused should be true", syncManager.isStopped());
     }
 
 

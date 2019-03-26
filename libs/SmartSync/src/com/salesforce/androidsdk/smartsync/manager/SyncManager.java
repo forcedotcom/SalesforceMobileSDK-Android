@@ -54,7 +54,6 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -80,7 +79,7 @@ public class SyncManager {
 
     // Members
     private Set<Long> runningSyncIds = new HashSet<Long>();
-    private boolean pauseSignal = false;
+    private boolean stopRequested = false;
     public final String apiVersion;
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
     private SmartStore smartStore;
@@ -172,6 +171,7 @@ public class SyncManager {
      */
     public static synchronized void reset() {
         for (SyncManager syncManager : INSTANCES.values()) {
+            syncManager.stopAll();
             syncManager.threadPool.shutdownNow();
         }
         INSTANCES.clear();
@@ -189,6 +189,7 @@ public class SyncManager {
                 if (key.startsWith(account.getUserId())) {
                     keysToRemove.add(key);
                     SyncManager syncManager = INSTANCES.get(key);
+                    syncManager.stopAll();
                     syncManager.threadPool.shutdownNow();
                 }
             }
@@ -199,37 +200,42 @@ public class SyncManager {
     }
 
     /**
-     * Pause the sync manager
+     * Stop the sync manager
      * It might take a while for running syncs to actually get paused
-     * Call isPaused() to see if syncManager is fully paused
+     * Call isStopped() to see if syncManager is fully paused
      */
-    public void pause() {
-        pauseSignal = true;
+    public void stopAll() {
+        stopRequested = true;
+    }
+    
+    /**
+     * @return true if stop was requested but there are still running syncs
+     */
+    public boolean isStopping() {
+        return stopRequested && runningSyncIds.size() > 0;
     }
 
     /**
-     * @return true if pause was requested but there are still running syncs
+     * @return true if stop was requested and there no syncs are running anymore
      */
-    public boolean isPausing() {
-        return pauseSignal && runningSyncIds.size() > 0;
-    }
-
-    /**
-     * @return true if pause was requested and there no syncs are running anymore
-     */
-    public boolean isPaused() {
-        return pauseSignal && runningSyncIds.size() == 0;
+    public boolean isStopped() {
+        return stopRequested && runningSyncIds.size() == 0;
     }
 
 
     /**
      * Resume this sync manager
-     * NB: Application needs to call reSync for any pausedpause sync
+     *
+     * @param callback
+     * @throws JSONException
      */
-    public void resume() {
-        pauseSignal = false;
+    public void resumeAll(SyncUpdateCallback callback) throws JSONException {
+        stopRequested = false;
+        List<SyncState> stoppedSyncs = SyncState.getSyncsWithStatus(this.smartStore, SyncState.Status.STOPPED);
+        for (SyncState sync : stoppedSyncs) {
+            reSync(sync.getId(), callback);
+        }
     }
-
 
     /**
      * Get details of a sync by id
@@ -388,7 +394,7 @@ public class SyncManager {
      * @param callback
      */
     public void runSync(final SyncState sync, final SyncUpdateCallback callback) {
-        if (pauseSignal) {
+        if (stopRequested) {
             throw new SmartSyncException("Cannot run sync - SyncManager is paused");
         }
 
@@ -405,7 +411,11 @@ public class SyncManager {
                             syncUp(sync, callback);
                             break;
                     }
-                    updateSync(sync, SyncState.Status.DONE, 100, callback);
+                    if (stopRequested) {
+                        updateSync(sync, SyncState.Status.STOPPED, UNCHANGED, callback);
+                    } else {
+                        updateSync(sync, SyncState.Status.DONE, 100, callback);
+                    }
                 } catch (RestClient.RefreshTokenRevokedException re) {
                     SmartSyncLogger.e(TAG, "Exception thrown in runSync", re);
                     // Do not do anything - let the logout go through!
@@ -489,7 +499,7 @@ public class SyncManager {
      * @throws IOException
      */
     public void cleanResyncGhosts(final long syncId, final CleanResyncGhostsCallback callback) throws JSONException {
-        if (pauseSignal) {
+        if (stopRequested) {
             throw new SmartSyncException("Cannot run cleanResyncGhosts - SyncManager is paused");
         }
 
@@ -564,7 +574,7 @@ public class SyncManager {
                 case RUNNING:
                     runningSyncIds.add(sync.getId());
                     break;
-                case PAUSED:
+                case STOPPED:
                 case DONE:
                 case FAILED:
                     int totalSize = sync.getTotalSize();
@@ -616,8 +626,7 @@ public class SyncManager {
 
         updateSync(sync, SyncState.Status.RUNNING, 0, callback);
         for (int i=0; i<totalSize; i++) {
-            if (pauseSignal) {
-                updateSync(sync, SyncState.Status.PAUSED, UNCHANGED, callback);
+            if (stopRequested) {
                 return;
             }
 
@@ -651,8 +660,7 @@ public class SyncManager {
         updateSync(sync, SyncState.Status.RUNNING, 0, callback);
         int i = 0;
         for (final String id : dirtyRecordIds) {
-            if (pauseSignal) {
-                updateSync(sync, SyncState.Status.PAUSED, UNCHANGED, callback);
+            if (stopRequested) {
                 return;
             }
 
@@ -790,8 +798,7 @@ public class SyncManager {
         }
 
         while (records != null) {
-            if (pauseSignal) {
-                updateSync(sync, SyncState.Status.PAUSED, UNCHANGED, callback);
+            if (stopRequested) {
                 return;
             }
 
