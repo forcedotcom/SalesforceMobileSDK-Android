@@ -250,6 +250,7 @@ public class KeyStoreWrapper {
                             kpg.generateKeyPair();
                         }
                     } else {
+                        kpg.initialize(keyGenParameterSpecBuilder.build());
                         kpg.generateKeyPair();
                     }
                 } else {
