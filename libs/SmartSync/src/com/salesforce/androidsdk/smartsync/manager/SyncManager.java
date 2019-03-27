@@ -171,7 +171,7 @@ public class SyncManager {
      */
     public static synchronized void reset() {
         for (SyncManager syncManager : INSTANCES.values()) {
-            syncManager.stopAll();
+            syncManager.stop();
             syncManager.threadPool.shutdownNow();
         }
         INSTANCES.clear();
@@ -189,7 +189,7 @@ public class SyncManager {
                 if (key.startsWith(account.getUserId())) {
                     keysToRemove.add(key);
                     SyncManager syncManager = INSTANCES.get(key);
-                    syncManager.stopAll();
+                    syncManager.stop();
                     syncManager.threadPool.shutdownNow();
                 }
             }
@@ -201,10 +201,10 @@ public class SyncManager {
 
     /**
      * Stop the sync manager
-     * It might take a while for running syncs to actually get paused
+     * It might take a while for running syncs to actually get stopped
      * Call isStopped() to see if syncManager is fully paused
      */
-    public void stopAll() {
+    public void stop() {
         stopRequested = true;
     }
     
@@ -222,18 +222,22 @@ public class SyncManager {
         return stopRequested && runningSyncIds.size() == 0;
     }
 
-
     /**
      * Resume this sync manager
+     * Restart all stopped syncs if restartStoppedSyncs is true
      *
+     * @param restartStoppedSyncs
      * @param callback
      * @throws JSONException
      */
-    public void resumeAll(SyncUpdateCallback callback) throws JSONException {
+    public void resume(boolean restartStoppedSyncs, SyncUpdateCallback callback) throws JSONException {
         stopRequested = false;
-        List<SyncState> stoppedSyncs = SyncState.getSyncsWithStatus(this.smartStore, SyncState.Status.STOPPED);
-        for (SyncState sync : stoppedSyncs) {
-            reSync(sync.getId(), callback);
+        if (restartStoppedSyncs) {
+            List<SyncState> stoppedSyncs = SyncState.getSyncsWithStatus(this.smartStore, SyncState.Status.STOPPED);
+            for (SyncState sync : stoppedSyncs) {
+                sync.setTotalSize(-1); // should we not do that?
+                runSync(sync, callback);
+            }
         }
     }
 

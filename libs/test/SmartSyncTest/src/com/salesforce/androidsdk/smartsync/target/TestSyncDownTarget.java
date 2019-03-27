@@ -46,11 +46,13 @@ import java.util.Set;
 public class TestSyncDownTarget extends SyncDownTarget {
 
     // Fields in serialized target
+    public static final String PREFIX = "prefix";
     public static final String NUMBER_OF_RECORDS_PER_PAGE = "numberOfRecordsPerPage";
     public static final String NUMBER_OF_RECORDS = "numberOfRecords";
     public static final String SLEEP_PER_FETCH = "sleepPerFetch";
 
     // Target config
+    private final String prefix;
     private final int numberOfRecords;
     private final int numberOfRecordsPerPage;
     private final int sleepPerFetch;
@@ -62,37 +64,30 @@ public class TestSyncDownTarget extends SyncDownTarget {
     // All the records
     private final JSONObject[] records;
 
-    public static Date dateForPosition(int i) {
-        return new GregorianCalendar(2019, Calendar.MARCH, 1, 12, i /60, i % 60).getTime();
-    }
-
-    public static int positionForDate(long time) {
-        return (int) (time - dateForPosition(0).getTime()) / 1000;
-    }
-
     public TestSyncDownTarget(JSONObject target) throws JSONException {
-        this(target.getInt(NUMBER_OF_RECORDS), target.getInt(NUMBER_OF_RECORDS_PER_PAGE), target.getInt(SLEEP_PER_FETCH));
+        this(target.getString(PREFIX), target.getInt(NUMBER_OF_RECORDS), target.getInt(NUMBER_OF_RECORDS_PER_PAGE), target.getInt(SLEEP_PER_FETCH));
     }
 
     @Override
     public JSONObject asJSON() throws JSONException {
         JSONObject target = super.asJSON();
+        target.put(PREFIX, this.prefix);
         target.put(NUMBER_OF_RECORDS, this.numberOfRecords);
         target.put(NUMBER_OF_RECORDS_PER_PAGE, this.numberOfRecordsPerPage);
         target.put(SLEEP_PER_FETCH, this.sleepPerFetch);
         return target;
     }
 
-    public TestSyncDownTarget(int numberOfRecords, int numberOfRecordsPerPage, int sleepPerFetch) throws JSONException {
+    public TestSyncDownTarget(String prefix, int numberOfRecords, int numberOfRecordsPerPage, int sleepPerFetch) throws JSONException {
         this.queryType = QueryType.custom;
+        this.prefix = prefix;
         this.numberOfRecords = numberOfRecords;
         this.numberOfRecordsPerPage = numberOfRecordsPerPage;
         this.sleepPerFetch = sleepPerFetch;
         this.records = new JSONObject[numberOfRecords];
         for (int i=0; i<numberOfRecords; i++) {
             JSONObject record = new JSONObject();
-            record.put(Constants.ID, "" + (10000 + i));
-            record.put(Constants.NAME, "record" + i);
+            record.put(Constants.ID, idForPosition(i));
             record.put(Constants.LAST_MODIFIED_DATE, Constants.TIMESTAMP_FORMAT.format(dateForPosition(i)));
             this.records[i] = record;
         }
@@ -154,5 +149,21 @@ public class TestSyncDownTarget extends SyncDownTarget {
             remoteIds.add(record.getString(Constants.ID));
         }
         return remoteIds;
+    }
+
+    public String idForPosition(int i) {
+        return this.prefix + (10000 + i);
+    }
+
+    public Date dateForPosition(int i) {
+        return new GregorianCalendar(2019, Calendar.MARCH, 1, 12, i /60, i % 60).getTime();
+    }
+
+    public int positionForDate(long time) {
+        return (int) (time - dateForPosition(0).getTime()) / 1000;
+    }
+
+    public String getIdPrefix() {
+        return this.prefix;
     }
 }
