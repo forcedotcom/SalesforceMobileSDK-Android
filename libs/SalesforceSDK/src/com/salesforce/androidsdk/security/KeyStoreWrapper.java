@@ -241,9 +241,17 @@ public class KeyStoreWrapper {
                         } catch (StrongBoxUnavailableException sb) {
                             SalesforceSDKLogger.e(TAG, "StrongBox Keymaster unavailable", sb);
                             keyGenParameterSpecBuilder.setIsStrongBoxBacked(false);
+
+                            /*
+                             * This code is repeated because it's the code that generates the
+                             * exception and we need to call it again if StrongBox is unavailable.
+                             */
                             kpg.initialize(keyGenParameterSpecBuilder.build());
                             kpg.generateKeyPair();
                         }
+                    } else {
+                        kpg.initialize(keyGenParameterSpecBuilder.build());
+                        kpg.generateKeyPair();
                     }
                 } else {
 
