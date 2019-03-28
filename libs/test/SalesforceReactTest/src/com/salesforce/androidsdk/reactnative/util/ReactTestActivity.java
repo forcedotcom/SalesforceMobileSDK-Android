@@ -50,13 +50,13 @@ public class ReactTestActivity extends SalesforceReactActivity {
     static String orgId = TestCredentials.ORG_ID;
     static String userId = TestCredentials.USER_ID;
     static String photoUrl = TestCredentials.PHOTO_URL;
+    static String clientId = TestCredentials.CLIENT_ID;
 
     @Override
     protected ClientManager buildClientManager() {
         final ClientManager clientManager = super.buildClientManager();
-        final ClientManager.LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
         clientManager.createNewAccount(accountName, username, refreshToken, authToken, instanceUrl,
-                loginUrl, identityUrl, loginOptions.getOauthClientId(), orgId, userId,
+                loginUrl, identityUrl, clientId, orgId, userId,
                 null, null, null, null, null,
                 null, photoUrl, null, null);
         return clientManager;

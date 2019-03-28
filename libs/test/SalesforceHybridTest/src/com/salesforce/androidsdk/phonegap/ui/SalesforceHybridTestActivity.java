@@ -49,13 +49,13 @@ public class SalesforceHybridTestActivity extends SalesforceDroidGapActivity {
 	static String orgId = TestCredentials.ORG_ID;
 	static String userId = TestCredentials.USER_ID;
     static String photoUrl = TestCredentials.PHOTO_URL;
-	
+	static String clientId = TestCredentials.CLIENT_ID;
+
 	@Override
 	protected ClientManager buildClientManager() {
 		final ClientManager clientManager = super.buildClientManager();
-		final LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
 		clientManager.createNewAccount(accountName, username, refreshToken, authToken, instanceUrl,
-        		loginUrl, identityUrl, loginOptions.getOauthClientId(), orgId, userId,
+        		loginUrl, identityUrl, clientId, orgId, userId,
 				null, null, null, null, null,
                 null, photoUrl, null, null);
 		return clientManager;
