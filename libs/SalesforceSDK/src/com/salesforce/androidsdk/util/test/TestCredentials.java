@@ -24,15 +24,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.smartsync;
+package com.salesforce.androidsdk.util.test;
 
 import android.content.Context;
 
+import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
-import com.salesforce.androidsdk.smartsync.tests.R;
+import com.salesforce.androidsdk.util.ResourceReaderHelper;
+
+import org.json.JSONObject;
 
 /**
- * Authentication credentials used to make live server calls in tests.
+ * Authentication credentials used to make live server calls in tests
+ *
+ * To populate test_credentials.json clone SalesforceMobileSDK-Shared and run web app in credsHelper folder
  */
 public class TestCredentials {
 
@@ -51,18 +56,25 @@ public class TestCredentials {
     public static String PHOTO_URL;
 
     public static void init(Context ctx) {
-        API_VERSION = ApiVersionStrings.getVersionNumber(ctx);
-        ACCOUNT_TYPE = ctx.getString(R.string.account_type);
-        ORG_ID = ctx.getString(R.string.org_id);
-        USERNAME = ctx.getString(R.string.username);
-        ACCOUNT_NAME = ctx.getString(R.string.account_name);
-        USER_ID = ctx.getString(R.string.user_id);
-        LOGIN_URL = ctx.getString(R.string.login_url);
-        INSTANCE_URL = ctx.getString(R.string.instance_url);
-        COMMUNITY_URL = ctx.getString(R.string.community_url);
-        IDENTITY_URL = ctx.getString(R.string.identity_url);
-        CLIENT_ID = ctx.getString(R.string.remoteAccessConsumerKey);
-        REFRESH_TOKEN = ctx.getString(R.string.oauth_refresh_token);
-        PHOTO_URL = ctx.getString(R.string.photo_url);
+        try {
+            JSONObject json = new JSONObject(ResourceReaderHelper.readAssetFile(ctx, "test_credentials.json"));
+
+            API_VERSION = ApiVersionStrings.getVersionNumber(ctx);
+            ACCOUNT_TYPE = ctx.getString(R.string.account_type);
+            ORG_ID = json.getString("organization_id");
+            USERNAME = json.getString("username");
+            ACCOUNT_NAME = json.getString("display_name");
+            USER_ID = json.getString("user_id");
+            LOGIN_URL = json.getString("test_login_domain");
+            INSTANCE_URL = json.getString("instance_url");
+            COMMUNITY_URL = json.optString("community_url", INSTANCE_URL /* in case the test_credentials.json was obtained for a user / org without community setup */);
+            IDENTITY_URL = json.getString("identity_url");
+            CLIENT_ID = json.getString("test_client_id");
+            REFRESH_TOKEN = json.getString("refresh_token");
+            PHOTO_URL = json.getString("photo_url");
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Failed to read test_credentials.json", e);
+        }
     }
 }

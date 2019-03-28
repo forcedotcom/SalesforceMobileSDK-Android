@@ -35,7 +35,6 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.os.Bundle;
 
-import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
@@ -44,6 +43,7 @@ import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
+import com.salesforce.androidsdk.util.test.TestCredentials;
 
 import org.junit.After;
 import org.junit.Assert;
