@@ -115,7 +115,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
         delegate.onCreate();
     }
 
-    protected ClientManager buildClientManager() {
+    public ClientManager buildClientManager() {
         return SalesforceHybridSDKManager.getInstance().getClientManager();
     }
 

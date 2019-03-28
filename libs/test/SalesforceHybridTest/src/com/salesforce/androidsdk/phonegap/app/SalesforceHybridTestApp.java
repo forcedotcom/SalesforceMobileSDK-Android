@@ -30,6 +30,7 @@ import android.app.Application;
 
 import com.salesforce.androidsdk.phonegap.ui.SalesforceHybridTestActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
+import com.salesforce.androidsdk.util.test.TestCredentials;
 
 /**
  * Test application for Salesforce Cordova plugins.
@@ -41,5 +42,6 @@ public class SalesforceHybridTestApp extends Application {
 		super.onCreate();
 		SalesforceHybridSDKManager.initHybrid(getApplicationContext(),
 				SalesforceHybridTestActivity.class, LoginActivity.class);
+		TestCredentials.init(this);
 	}
 }

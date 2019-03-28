@@ -41,6 +41,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import java.util.StringTokenizer;
 
@@ -212,7 +213,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
                 depth++;
             } else if (token.endsWith(")")) {
                 depth--;
-            } else if (depth == 0 && afterFrom == false && token.toLowerCase().equals("from")) {
+            } else if (depth == 0 && !afterFrom && token.toLowerCase(Locale.US).equals("from")) {
                 afterFrom = true;
             }
         }
