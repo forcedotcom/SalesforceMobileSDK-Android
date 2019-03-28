@@ -244,7 +244,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
             return null;
         }
         if (doesNotRequireAuth) {
-            return SalesforceHybridSDKManager.getInstance().getClientManager().peekUnauthenticatedRestClient();
+            return currentActivity.buildClientManager().peekUnauthenticatedRestClient();
         }
         return currentActivity.getRestClient();
     }

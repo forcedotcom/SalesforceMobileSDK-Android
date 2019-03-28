@@ -145,7 +145,7 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
         // Parse args
         RestRequest.RestMethod method = RestRequest.RestMethod.valueOf(args.getString(METHOD_KEY));
-        String endPoint = args.getString(END_POINT_KEY);
+        String endPoint = args.isNull(END_POINT_KEY) ? "" : args.getString(END_POINT_KEY);
         String path = args.getString(PATH_KEY);
         ReadableMap queryParams = args.getMap(QUERY_PARAMS_KEY);
         ReadableMap headerParams = args.getMap(HEADER_PARAMS_KEY);
@@ -183,7 +183,7 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
             return null;
         }
         if (doesNotRequireAuth) {
-            return SalesforceReactSDKManager.getInstance().getClientManager().peekUnauthenticatedRestClient();
+            return currentActivity.buildClientManager().peekUnauthenticatedRestClient();
         }
         return currentActivity.getRestClient();
     }
