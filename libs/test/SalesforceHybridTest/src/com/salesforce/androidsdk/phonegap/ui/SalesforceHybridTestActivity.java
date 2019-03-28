@@ -52,7 +52,7 @@ public class SalesforceHybridTestActivity extends SalesforceDroidGapActivity {
 	static String clientId = TestCredentials.CLIENT_ID;
 
 	@Override
-	protected ClientManager buildClientManager() {
+	public ClientManager buildClientManager() {
 		final ClientManager clientManager = super.buildClientManager();
 		clientManager.createNewAccount(accountName, username, refreshToken, authToken, instanceUrl,
         		loginUrl, identityUrl, clientId, orgId, userId,

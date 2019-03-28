@@ -198,7 +198,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
         final JSONObject arg0 = args.optJSONObject(0);
         if (arg0 != null) {
             final RestRequest.RestMethod method = RestRequest.RestMethod.valueOf(arg0.optString(METHOD_KEY));
-            final String endPoint = arg0.optString(END_POINT_KEY);
+            final String endPoint = arg0.optString(END_POINT_KEY, "");
             final String path = arg0.optString(PATH_KEY);
             final String queryParamString = arg0.optString(QUERY_PARAMS_KEY);
             JSONObject queryParams = new JSONObject();
@@ -244,7 +244,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
             return null;
         }
         if (doesNotRequireAuth) {
-            return SalesforceHybridSDKManager.getInstance().getClientManager().peekUnauthenticatedRestClient();
+            return currentActivity.buildClientManager().peekUnauthenticatedRestClient();
         }
         return currentActivity.getRestClient();
     }
