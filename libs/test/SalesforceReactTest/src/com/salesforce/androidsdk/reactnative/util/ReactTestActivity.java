@@ -31,6 +31,7 @@ import com.facebook.react.ReactActivityDelegate;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.reactnative.ui.SalesforceReactActivity;
 import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.util.test.TestCredentials;
 
 /**
  * Sub-class of SalesforceReactActivity that authenticates using hard-coded credentials.
@@ -39,16 +40,16 @@ import com.salesforce.androidsdk.rest.ClientManager;
  */
 public class ReactTestActivity extends SalesforceReactActivity {
 
-    static String username = "__USER_NAME__";
-    static String accountName = "__ACCOUNT_NAME__";
-    static String refreshToken = "__REFRESH_TOKEN__";
+    static String username = TestCredentials.USERNAME;
+    static String accountName = TestCredentials.ACCOUNT_NAME;
+    static String refreshToken = TestCredentials.REFRESH_TOKEN;
     static String authToken = "--will-be-set-through-refresh--";
-    static String identityUrl = "__IDENTITY_URL__";
-    static String instanceUrl = "__INSTANCE_URL__";
-    static String loginUrl = "__LOGIN_URL__";
-    static String orgId = "__ORG_ID__";
-    static String userId = "__USER_ID__";
-    static String photoUrl = "__PHOTO_URL__";
+    static String identityUrl = TestCredentials.IDENTITY_URL;
+    static String instanceUrl = TestCredentials.INSTANCE_URL;
+    static String loginUrl = TestCredentials.LOGIN_URL;
+    static String orgId = TestCredentials.ORG_ID;
+    static String userId = TestCredentials.USER_ID;
+    static String photoUrl = TestCredentials.PHOTO_URL;
 
     @Override
     protected ClientManager buildClientManager() {

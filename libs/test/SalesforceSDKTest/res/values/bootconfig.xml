@@ -8,16 +8,6 @@
         <item>web</item>
     </string-array>
     <string name="androidPushNotificationClientId"></string>
-    <string name="account_name">__ACCOUNT_NAME__</string>
     <string name="account_type">com.salesforce.androidsdk.salesforcesdktest.login</string>
     <string name="encoding">UTF-8</string>
-    <string name="instance_url">__INSTANCE_URL__</string>
-    <string name="community_url">__COMMUNITY_URL__</string>
-    <string name="identity_url">__IDENTITY_URL__</string>
-    <string name="login_url">__LOGIN_URL__</string>
-    <string name="oauth_refresh_token">"__REFRESH_TOKEN__"</string>
-    <string name="org_id">__ORG_ID__</string>
-    <string name="user_id">__USER_ID__</string>
-    <string name="username">__USER_NAME__</string>
-    <string name="photo_url">__PHOTO_URL__</string>
 </resources>
