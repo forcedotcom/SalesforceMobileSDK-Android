@@ -115,15 +115,14 @@ public class SyncState {
 	/**
 	 * Cleanup syncs soup if needed
 	 * At startup, no sync could be running already
-	 * If a sync is in the running state, we change it to failed
+	 * If a sync is in the running state, we change it to stopped
 	 * @param store
 	 */
 	public static void cleanupSyncsSoupIfNeeded(SmartStore store) {
 		try {
 			List<SyncState> syncs = getSyncsWithStatus(store, Status.RUNNING);
 			for (SyncState sync : syncs) {
-				sync.setStatus(Status.FAILED);
-				sync.setError("Application likely killed while sync was running");
+				sync.setStatus(Status.STOPPED);
 				sync.save(store);
 			}
 		} catch (JSONException e) {

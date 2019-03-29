@@ -123,11 +123,11 @@ public class SyncStateTest {
 
         // Check the syncs
         checkSyncStatus("newSyncUp", SyncState.Status.NEW, "");
-        checkSyncStatus("runningSyncUp", SyncState.Status.FAILED, "Application likely killed while sync was running");
+        checkSyncStatus("runningSyncUp", SyncState.Status.STOPPED, "");
         checkSyncStatus("failedSyncUp", SyncState.Status.FAILED, "");
         checkSyncStatus("doneSyncUp", SyncState.Status.DONE, "");
         checkSyncStatus("newSyncDown", SyncState.Status.NEW, "");
-        checkSyncStatus("runningSyncDown", SyncState.Status.FAILED, "Application likely killed while sync was running");
+        checkSyncStatus("runningSyncDown", SyncState.Status.STOPPED, "");
         checkSyncStatus("failedSyncDown", SyncState.Status.FAILED, "");
         checkSyncStatus("doneSyncDown", SyncState.Status.DONE, "");
     }
