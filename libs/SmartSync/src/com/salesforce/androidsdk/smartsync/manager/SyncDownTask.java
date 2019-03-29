@@ -40,9 +40,9 @@ import java.util.Set;
 /**
  * Runnable class responsible for running a sync down
  */
-public class SyncDownRunnable extends SyncRunnable {
+public class SyncDownTask extends SyncTask {
 
-    public SyncDownRunnable(SyncManager syncManager, SyncState sync, SyncManager.SyncUpdateCallback callback) {
+    public SyncDownTask(SyncManager syncManager, SyncState sync, SyncManager.SyncUpdateCallback callback) {
         super(syncManager, sync, callback);
     }
 

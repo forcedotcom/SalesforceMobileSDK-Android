@@ -39,10 +39,10 @@ import org.json.JSONObject;
 /**
  * Abstract super class of runnable classes responsible for running syncs
  */
-public abstract class SyncRunnable implements Runnable {
+public abstract class SyncTask implements Runnable {
 
     // Constant
-    private static final String TAG = "SyncRunnable";
+    private static final String TAG = "SyncTask";
     static final int UNCHANGED = -1;
 
     // Fields
@@ -53,7 +53,7 @@ public abstract class SyncRunnable implements Runnable {
     // Flag set when stop requested
     private boolean stopRequested = false;
 
-    public SyncRunnable(SyncManager syncManager, SyncState sync, SyncManager.SyncUpdateCallback  callback) {
+    public SyncTask(SyncManager syncManager, SyncState sync, SyncManager.SyncUpdateCallback  callback) {
         this.syncManager = syncManager;
         this.sync = sync;
         this.callback = callback;

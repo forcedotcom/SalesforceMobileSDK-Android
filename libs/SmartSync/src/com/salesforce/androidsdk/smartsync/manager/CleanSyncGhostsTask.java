@@ -37,14 +37,14 @@ import org.json.JSONObject;
 /**
  * Runnable class responsible for running clean sync ghosts operation
  */
-public class CleanSyncGhostsRunnable extends SyncRunnable {
+public class CleanSyncGhostsTask extends SyncTask {
 
     // Constants
     private static final String TAG = "SyncManager";
 
     private final SyncManager.CleanResyncGhostsCallback cleanSyncCallback;
 
-    public CleanSyncGhostsRunnable(SyncManager syncManager, SyncState sync, SyncManager.CleanResyncGhostsCallback callback) {
+    public CleanSyncGhostsTask(SyncManager syncManager, SyncState sync, SyncManager.CleanResyncGhostsCallback callback) {
         super(syncManager, sync, null);
         this.cleanSyncCallback = callback;
     }

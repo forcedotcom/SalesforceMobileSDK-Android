@@ -44,11 +44,11 @@ import java.util.List;
 /**
  * Runnable class responsible for running a sync up
  */
-public class SyncUpRunnable extends SyncRunnable {
+public class SyncUpTask extends SyncTask {
 
-    private static final String TAG = "SyncUpRunnable";
+    private static final String TAG = "SyncUpTask";
 
-    public SyncUpRunnable(SyncManager syncManager, SyncState sync, SyncManager.SyncUpdateCallback callback) {
+    public SyncUpTask(SyncManager syncManager, SyncState sync, SyncManager.SyncUpdateCallback callback) {
         super(syncManager, sync, callback);
     }
 

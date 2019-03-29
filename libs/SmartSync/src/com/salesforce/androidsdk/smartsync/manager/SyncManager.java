@@ -70,7 +70,7 @@ public class SyncManager {
     private static Map<String, SyncManager> INSTANCES = new HashMap<String, SyncManager>();
 
     // Keeping track of active syncs (could be waiting for thread or running on a thread)
-    private Map<Long, SyncRunnable> activeSyncs = new HashMap<>();
+    private Map<Long, SyncTask> activeSyncs = new HashMap<>();
 
     // Flag set when stop is requested
     private boolean stopRequested = false;
@@ -208,8 +208,8 @@ public class SyncManager {
      */
     public void stop() {
         stopRequested = true;
-        for (SyncRunnable syncRunnable : activeSyncs.values()) {
-            syncRunnable.stop();
+        for (SyncTask syncTask : activeSyncs.values()) {
+            syncTask.stop();
         }
     }
 
@@ -249,18 +249,18 @@ public class SyncManager {
 
     /**
      * Add to active syncs map
-     * @param syncRunnable
+     * @param syncTask
      */
-    synchronized void addToActiveSyncs(SyncRunnable syncRunnable) {
-        activeSyncs.put(syncRunnable.getSyncId(), syncRunnable);
+    synchronized void addToActiveSyncs(SyncTask syncTask) {
+        activeSyncs.put(syncTask.getSyncId(), syncTask);
     }
 
     /**
      * Remove from active syncs map
-     * @param syncRunnable
+     * @param syncTask
      */
-    synchronized void removeFromActiveSyncs(SyncRunnable syncRunnable) {
-        activeSyncs.remove(syncRunnable.getSyncId());
+    synchronized void removeFromActiveSyncs(SyncTask syncTask) {
+        activeSyncs.remove(syncTask.getSyncId());
     }
 
     /**
@@ -418,21 +418,21 @@ public class SyncManager {
         validateNotRunning("runSync", sync.getId());
         validateNotStopping("runSync");
 
-        SyncRunnable syncRunnable = null;
+        SyncTask syncTask = null;
         switch(sync.getType()) {
             case syncDown:
-                syncRunnable = new SyncDownRunnable(this, sync, callback);
+                syncTask = new SyncDownTask(this, sync, callback);
                 break;
             case syncUp:
                 if (sync.getTarget() instanceof AdvancedSyncUpTarget) {
-                    syncRunnable = new AdvancedSyncUpRunnable(this, sync, callback);
+                    syncTask = new AdvancedSyncUpTask(this, sync, callback);
                 } else {
-                    syncRunnable = new SyncUpRunnable(this, sync, callback);
+                    syncTask = new SyncUpTask(this, sync, callback);
                 }
                 break;
         }
 
-        threadPool.execute(syncRunnable);
+        threadPool.execute(syncTask);
     }
 
     /**
@@ -516,7 +516,7 @@ public class SyncManager {
 
         // Ask target to clean up ghosts
         SmartSyncLogger.d(TAG, "cleanResyncGhosts called", sync);
-        threadPool.execute(new CleanSyncGhostsRunnable(this, sync, callback));
+        threadPool.execute(new CleanSyncGhostsTask(this, sync, callback));
 
     }
 

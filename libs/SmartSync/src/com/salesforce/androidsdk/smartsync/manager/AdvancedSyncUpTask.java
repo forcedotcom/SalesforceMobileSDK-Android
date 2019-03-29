@@ -42,9 +42,9 @@ import java.util.List;
 /**
  * Runnable class responsible for running a sync up that uses and AdvancedSyncUpTarget
  */
-public class AdvancedSyncUpRunnable extends SyncUpRunnable {
+public class AdvancedSyncUpTask extends SyncUpTask {
 
-    public AdvancedSyncUpRunnable(SyncManager syncManager, SyncState sync, SyncManager.SyncUpdateCallback callback) {
+    public AdvancedSyncUpTask(SyncManager syncManager, SyncState sync, SyncManager.SyncUpdateCallback callback) {
         super(syncManager, sync, callback);
     }
 
