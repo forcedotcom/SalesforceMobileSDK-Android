@@ -968,8 +968,8 @@ public class SyncManagerTest extends SyncManagerTestCase {
     @Test
     public void testStopResumeSingleSyncDown() throws JSONException {
         String syncName = "testStopResumeSingleSyncDown";
-        int numberOfRecords = 100;
-        TestSyncDownTarget target = new TestSyncDownTarget("test", numberOfRecords, 10, 50);
+        int numberOfRecords = 10;
+        TestSyncDownTarget target = new TestSyncDownTarget("test", numberOfRecords, 1, 50);
         SyncOptions options = SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED);
         SyncState sync = SyncState.createSyncDown(smartStore, target, options, ACCOUNTS_SOUP, syncName);
         long syncId = sync.getId();
@@ -991,7 +991,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         stopSyncManager(100);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.STOPPED, 50, numberOfRecords);
         int numberOfRecordsFetched = (int) (numberOfRecords * 0.5);
-        int numberOfRecordsLeft = numberOfRecords-numberOfRecordsFetched;
+        int numberOfRecordsLeft = numberOfRecords-numberOfRecordsFetched + 1 /* we refetch records at maxTimeStamp when a sync was stopped */;
 
         // Check db
         checkDbForAfterTestSyncDown(target, ACCOUNTS_SOUP, numberOfRecordsFetched);
@@ -1021,10 +1021,11 @@ public class SyncManagerTest extends SyncManagerTestCase {
         syncManager.resume(true, queue);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, -1);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, numberOfRecordsLeft);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 20, numberOfRecordsLeft);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 40, numberOfRecordsLeft);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 60, numberOfRecordsLeft);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 80, numberOfRecordsLeft);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 16, numberOfRecordsLeft);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 33, numberOfRecordsLeft);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 50, numberOfRecordsLeft);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 66, numberOfRecordsLeft);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 83, numberOfRecordsLeft);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100, numberOfRecordsLeft);
         checkDbForAfterTestSyncDown(target, ACCOUNTS_SOUP, numberOfRecords);
     }
@@ -1038,12 +1039,12 @@ public class SyncManagerTest extends SyncManagerTestCase {
         String syncName1 = "testStopResumeMultipleSyncDowns1";
         String syncName2 = "testStopResumeMultipleSyncDowns2";
 
-        int numberRecords1 = 10;
-        int numberRecords2 = 20;
+        int numberRecords1 = 5;
+        int numberRecords2 = 4;
 
         SyncOptions options = SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED);
-        TestSyncDownTarget target1 = new TestSyncDownTarget("test1", numberRecords1, 2, 50);
-        TestSyncDownTarget target2 = new TestSyncDownTarget("test2", numberRecords2, 5, 50);
+        TestSyncDownTarget target1 = new TestSyncDownTarget("test1", numberRecords1, 1, 50);
+        TestSyncDownTarget target2 = new TestSyncDownTarget("test2", numberRecords2, 1, 50);
         long syncId1 = SyncState.createSyncDown(smartStore, target1, options, ACCOUNTS_SOUP, syncName1).getId();
         long syncId2 = SyncState.createSyncDown(smartStore, target2, options, ACCOUNTS_SOUP, syncName2).getId();
 
@@ -1069,7 +1070,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.STOPPED, 20, numberRecords1);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.STOPPED, 0, -1);
         int numberOfRecordsFetched1 = (int) (numberRecords1 * 0.2);
-        int numberRecordsLeft1 = numberRecords1-numberOfRecordsFetched1;
+        int numberRecordsLeft1 = numberRecords1-numberOfRecordsFetched1 + 1/* we refetch records at maxTimeStamp when a sync was stopped */;
 
         // Check db
         checkDbForAfterTestSyncDown(target1, ACCOUNTS_SOUP, numberOfRecordsFetched1);
@@ -1094,7 +1095,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         stopSyncManager(100);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.STOPPED, 50, numberRecords2);
         int numberRecordsFetched2 = (int) (numberRecords2 * 0.50);
-        int numberRecordsLeft2 = numberRecords2-numberRecordsFetched2;
+        int numberRecordsLeft2 = numberRecords2-numberRecordsFetched2 + 1/* we refetch records at maxTimeStamp when a sync was stopped */;
 
         // Check sync time stamp and status
         checkSyncState(syncId1, target1.dateForPosition(numberOfRecordsFetched1-1).getTime(), SyncState.Status.STOPPED);
@@ -1109,14 +1110,16 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.RUNNING, 0, -1);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.RUNNING, 0, -1);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.RUNNING, 0, numberRecordsLeft1);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.RUNNING, 25, numberRecordsLeft1);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.RUNNING, 50, numberRecordsLeft1);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.RUNNING, 75, numberRecordsLeft1);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.RUNNING, 20, numberRecordsLeft1);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.RUNNING, 40, numberRecordsLeft1);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.RUNNING, 60, numberRecordsLeft1);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.RUNNING, 80, numberRecordsLeft1);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.DONE, 100, numberRecordsLeft1);
 
         // sync1 is done, sync2 should run next
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.RUNNING, 0, numberRecordsLeft2);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.RUNNING, 50, numberRecordsLeft2);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.RUNNING, 33, numberRecordsLeft2);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.RUNNING, 66, numberRecordsLeft2);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.DONE, 100, numberRecordsLeft2);
 
         // Check db

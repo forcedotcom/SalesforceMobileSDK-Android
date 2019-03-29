@@ -354,6 +354,15 @@ public class SyncState {
 		sync.put(SYNC_ERROR, errorJSON);
 		return sync;
 	}
+
+	@Override
+	public String toString() {
+		try {
+			return asJSON().toString().replaceAll("\n", " ");
+		} catch (JSONException e) {
+			return super.toString();
+		}
+	}
 	
 	/**
 	 * Save SyncState to db
@@ -365,7 +374,6 @@ public class SyncState {
 		if (sync == null) {
 			throw new SyncManager.SmartSyncException("Failed to save sync state");
 		}
-		SmartSyncLogger.d("SyncState", "Saving sync==>" + sync.toString().replaceAll("\n", " "));
 	}
 	
 	public long getId() {

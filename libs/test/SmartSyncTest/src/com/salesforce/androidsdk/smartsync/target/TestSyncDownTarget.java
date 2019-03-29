@@ -120,8 +120,8 @@ public class TestSyncDownTarget extends SyncDownTarget {
     }
 
     @Override
-    public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
-        this.position = maxTimeStamp == -1 ? 0 : positionForDate(maxTimeStamp) + 1;
+    public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) {
+        this.position = positionForDate(maxTimeStamp);
         this.totalSize = numberOfRecords - this.position;
         sleepIfNeeded();
         return recordsFromPosition();
@@ -160,7 +160,12 @@ public class TestSyncDownTarget extends SyncDownTarget {
     }
 
     public int positionForDate(long time) {
-        return (int) (time - dateForPosition(0).getTime()) / 1000;
+        for (int i=0; i<records.length; i++) {
+            if (dateForPosition(i).getTime() > time) {
+                return i;
+            }
+        }
+        return records.length;
     }
 
     public String getIdPrefix() {

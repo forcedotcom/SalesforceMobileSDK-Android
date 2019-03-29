@@ -251,8 +251,7 @@ public class SyncManager {
             List<SyncState> stoppedSyncs = SyncState.getSyncsWithStatus(this.smartStore, SyncState.Status.STOPPED);
             for (SyncState sync : stoppedSyncs) {
                 SmartSyncLogger.d(TAG, "resuming", sync);
-                sync.setTotalSize(-1); // should we not do that?
-                runSync(sync, callback);
+                reSync(sync.getId(), callback);
             }
         }
     }
@@ -398,6 +397,12 @@ public class SyncManager {
             throw new SmartSyncException("Cannot run reSync:" + syncId + ": no sync found");
         }
         sync.setTotalSize(-1);
+
+        if (sync.isStopped()) {
+            // Sync was interrupted, refetch records including those with maxTimeStamp
+            long maxTimeStamp = sync.getMaxTimeStamp();
+            sync.setMaxTimeStamp(Math.max(maxTimeStamp - 1, -1L));
+        }
         SmartSyncLogger.d(TAG, "reSync called", sync);
         runSync(sync, callback);
         return sync;
