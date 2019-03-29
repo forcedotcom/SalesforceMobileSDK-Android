@@ -66,9 +66,7 @@ public class SyncDownTask extends SyncTask {
         }
 
         while (records != null) {
-            if (isStopRequested()) {
-                return;
-            }
+            checkIfStopRequested();
 
             // Figure out records to save
             JSONArray recordsToSave = idsToSkip == null ? records : removeWithIds(records, idsToSkip, idField);

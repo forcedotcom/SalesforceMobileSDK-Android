@@ -69,9 +69,7 @@ public class SyncUpTask extends SyncTask {
         updateSync(sync, SyncState.Status.RUNNING, 0, callback);
         int i = 0;
         for (final String id : dirtyRecordIds) {
-            if (isStopRequested()) {
-                return;
-            }
+            checkIfStopRequested();
 
             JSONObject record = target.getFromLocalStore(syncManager, soupName, id);
 

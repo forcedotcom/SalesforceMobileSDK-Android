@@ -228,6 +228,16 @@ public class SyncManager {
     }
 
     /**
+     * Check if stop was called
+     * Throw a SyncManagerStoppedException if it was
+     */
+    public void checkIfStopRequested() {
+        if(this.stopRequested) {
+            throw new SyncManagerStoppedException("sync manager stopped");
+        }
+    }
+
+    /**
      * Resume this sync manager
      * Restart all stopped syncs if restartStoppedSyncs is true
      *
@@ -574,6 +584,20 @@ public class SyncManager {
         }
 
 		private static final long serialVersionUID = 1L;
+    }
+
+    /**
+     * Exception thrown when sync manager is stopped
+     */
+    public static class SyncManagerStoppedException extends SmartSyncException {
+
+        public SyncManagerStoppedException(String message) {
+            super(message);
+        }
+
+        public SyncManagerStoppedException(Throwable e) {
+            super(e);
+        }
     }
 
     /**

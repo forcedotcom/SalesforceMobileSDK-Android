@@ -1016,7 +1016,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Stop sync manager
         stopSyncManager(0);
-//        Assert.assertFalse("Stopped should be false", syncManager.isStopped());
 
         // Resuming sync manager restarting syncs
         syncManager.resume(true, queue);

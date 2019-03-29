@@ -57,9 +57,6 @@ public class CleanSyncGhostsTask extends SyncTask {
 
     @Override
     protected void runSync() throws Exception {
-
-        // TODO: handle stop request
-
         try {
             final long syncId = sync.getId();
             final String soupName = sync.getSoupName();
@@ -91,7 +88,5 @@ public class CleanSyncGhostsTask extends SyncTask {
                 cleanSyncCallback.onError(e);
             }
         }
-
-
     }
 }

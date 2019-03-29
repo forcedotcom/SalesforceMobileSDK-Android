@@ -72,30 +72,24 @@ public abstract class SyncTask implements Runnable {
         this.stopRequested = true;
     }
 
-    public boolean isStopRequested() {
-        return this.stopRequested;
+    /**
+     * Check if stop was called
+     * Throw a SyncManagerStoppedException if it was
+     */
+    public void checkIfStopRequested() {
+        syncManager.checkIfStopRequested();
     }
 
     @Override
     public void run() {
         try {
-            // Was a stop requested since the runnable was queued
-            if (isStopRequested()) {
-                updateSync(sync, SyncState.Status.STOPPED, UNCHANGED, callback);
-                return;
-            }
-
+            checkIfStopRequested();
             runSync();
-
-            // Did runSync() returns because a stop was requested
-            if (isStopRequested()) {
-                updateSync(sync, SyncState.Status.STOPPED, UNCHANGED, callback);
-            }
-            // Otherwise sync is done
-            else {
-                updateSync(sync, SyncState.Status.DONE, 100, callback);
-            }
-
+            updateSync(sync, SyncState.Status.DONE, 100, callback);
+        } catch (SyncManager.SyncManagerStoppedException se) {
+            SmartSyncLogger.d(TAG, "Sync stopped", se);
+            // Update status to failed
+            updateSync(sync, SyncState.Status.STOPPED, UNCHANGED, callback);
         } catch (RestClient.RefreshTokenRevokedException re) {
             SmartSyncLogger.e(TAG, "Exception thrown running sync", re);
             // Do not do anything - let the logout go through!
