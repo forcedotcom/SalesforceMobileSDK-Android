@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.smartsync.manager;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
@@ -35,7 +34,6 @@ import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 import com.salesforce.androidsdk.smartsync.app.Features;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.target.AdvancedSyncUpTarget;
@@ -45,15 +43,10 @@ import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
-import com.salesforce.androidsdk.util.JSONObjectHelper;
 
-import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -68,7 +61,6 @@ import java.util.concurrent.Executors;
 public class SyncManager {
 
     // Constants
-    private static final int UNCHANGED = -1;
     private static final String TAG = "SyncManager";
 
     // For user agent
@@ -77,13 +69,23 @@ public class SyncManager {
     // Static member
     private static Map<String, SyncManager> INSTANCES = new HashMap<String, SyncManager>();
 
-    // Members
-    private Set<Long> runningSyncIds = new HashSet<Long>();
+    // Keeping track of active syncs (could be waiting for thread or running on a thread)
+    private Map<Long, SyncRunnable> activeSyncs = new HashMap<>();
+
+    // Flag set when stop is requested
     private boolean stopRequested = false;
-    public final String apiVersion;
+
+    // Thread pool for running syncs
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
+
+    // Backing smartstore
     private SmartStore smartStore;
+
+    // Rest client for network calls
     private RestClient restClient;
+
+    // Api version
+    public final String apiVersion;
 
     /**
      * Private constructor
@@ -201,25 +203,28 @@ public class SyncManager {
 
     /**
      * Stop the sync manager
-     * It might take a while for running syncs to actually get stopped
+     * It might take a while for active syncs to actually get stopped
      * Call isStopped() to see if syncManager is fully paused
      */
     public void stop() {
         stopRequested = true;
-    }
-    
-    /**
-     * @return true if stop was requested but there are still running syncs
-     */
-    public boolean isStopping() {
-        return stopRequested && runningSyncIds.size() > 0;
+        for (SyncRunnable syncRunnable : activeSyncs.values()) {
+            syncRunnable.stop();
+        }
     }
 
     /**
-     * @return true if stop was requested and there no syncs are running anymore
+     * @return true if stop was requested but there are still active syncs
+     */
+    public boolean isStopping() {
+        return stopRequested && activeSyncs.size() > 0;
+    }
+
+    /**
+     * @return true if stop was requested and there no syncs are active anymore
      */
     public boolean isStopped() {
-        return stopRequested && runningSyncIds.size() == 0;
+        return stopRequested && activeSyncs.size() == 0;
     }
 
     /**
@@ -235,10 +240,27 @@ public class SyncManager {
         if (restartStoppedSyncs) {
             List<SyncState> stoppedSyncs = SyncState.getSyncsWithStatus(this.smartStore, SyncState.Status.STOPPED);
             for (SyncState sync : stoppedSyncs) {
+                SmartSyncLogger.d(TAG, "resuming", sync);
                 sync.setTotalSize(-1); // should we not do that?
                 runSync(sync, callback);
             }
         }
+    }
+
+    /**
+     * Add to active syncs map
+     * @param syncRunnable
+     */
+    synchronized void addToActiveSyncs(SyncRunnable syncRunnable) {
+        activeSyncs.put(syncRunnable.getSyncId(), syncRunnable);
+    }
+
+    /**
+     * Remove from active syncs map
+     * @param syncRunnable
+     */
+    synchronized void removeFromActiveSyncs(SyncRunnable syncRunnable) {
+        activeSyncs.remove(syncRunnable.getSyncId());
     }
 
     /**
@@ -278,9 +300,8 @@ public class SyncManager {
      *
      * @param syncId
      * @return
-     * @throws JSONException
      */
-    public void deleteSync(long syncId) throws JSONException {
+    public void deleteSync(long syncId) {
         SyncState.deleteSync(smartStore, syncId);
     }
 
@@ -289,9 +310,8 @@ public class SyncManager {
      *
      * @param name
      * @return
-     * @throws JSONException
      */
-    public void deleteSync(String name) throws JSONException {
+    public void deleteSync(String name) {
         SyncState.deleteSync(smartStore, name);
     }
 
@@ -363,9 +383,6 @@ public class SyncManager {
      * @throws JSONException
      */
     public SyncState reSync(long syncId, SyncUpdateCallback callback) throws JSONException {
-        if (runningSyncIds.contains(syncId)) {
-            throw new SmartSyncException("Cannot run reSync:" + syncId + ": still running");
-        }
         SyncState sync = SyncState.byId(smartStore, syncId);
         if (sync == null) {
             throw new SmartSyncException("Cannot run reSync:" + syncId + ": no sync found");
@@ -398,41 +415,24 @@ public class SyncManager {
      * @param callback
      */
     public void runSync(final SyncState sync, final SyncUpdateCallback callback) {
-        if (stopRequested) {
-            throw new SmartSyncException("Cannot run sync - SyncManager is paused");
+        validateNotRunning("runSync", sync.getId());
+        validateNotStopping("runSync");
+
+        SyncRunnable syncRunnable = null;
+        switch(sync.getType()) {
+            case syncDown:
+                syncRunnable = new SyncDownRunnable(this, sync, callback);
+                break;
+            case syncUp:
+                if (sync.getTarget() instanceof AdvancedSyncUpTarget) {
+                    syncRunnable = new AdvancedSyncUpRunnable(this, sync, callback);
+                } else {
+                    syncRunnable = new SyncUpRunnable(this, sync, callback);
+                }
+                break;
         }
 
-        updateSync(sync, SyncState.Status.RUNNING, 0, callback);
-        threadPool.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    switch (sync.getType()) {
-                        case syncDown:
-                            syncDown(sync, callback);
-                            break;
-                        case syncUp:
-                            syncUp(sync, callback);
-                            break;
-                    }
-                    if (stopRequested) {
-                        updateSync(sync, SyncState.Status.STOPPED, UNCHANGED, callback);
-                    } else {
-                        updateSync(sync, SyncState.Status.DONE, 100, callback);
-                    }
-                } catch (RestClient.RefreshTokenRevokedException re) {
-                    SmartSyncLogger.e(TAG, "Exception thrown in runSync", re);
-                    // Do not do anything - let the logout go through!
-                } catch (Exception e) {
-                    SmartSyncLogger.e(TAG, "Exception thrown in runSync", e);
-
-                    //Set error message to sync state
-                    sync.setError(e.getMessage());
-                    // Update status to failed
-                    updateSync(sync, SyncState.Status.FAILED, UNCHANGED, callback);
-                }
-            }
-        });
+        threadPool.execute(syncRunnable);
     }
 
     /**
@@ -503,13 +503,9 @@ public class SyncManager {
      * @throws IOException
      */
     public void cleanResyncGhosts(final long syncId, final CleanResyncGhostsCallback callback) throws JSONException {
-        if (stopRequested) {
-            throw new SmartSyncException("Cannot run cleanResyncGhosts - SyncManager is paused");
-        }
+        validateNotRunning("cleanResyncGhosts", syncId);
+        validateNotStopping("cleanResyncGhosts");
 
-        if (runningSyncIds.contains(syncId)) {
-            throw new SmartSyncException("Cannot run cleanResyncGhosts:" + syncId + ": still running");
-        }
         final SyncState sync = SyncState.byId(smartStore, syncId);
         if (sync == null) {
             throw new SmartSyncException("Cannot run cleanResyncGhosts:" + syncId + ": no sync found");
@@ -517,335 +513,11 @@ public class SyncManager {
         if (sync.getType() != SyncState.Type.syncDown) {
             throw new SmartSyncException("Cannot run cleanResyncGhosts:" + syncId + ": wrong type:" + sync.getType());
         }
-        SmartSyncLogger.d(TAG, "cleanResyncGhosts called", sync);
-        final String soupName = sync.getSoupName();
-        final SyncDownTarget target = (SyncDownTarget) sync.getTarget();
 
         // Ask target to clean up ghosts
-        threadPool.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    final int localIdSize = target.cleanGhosts(SyncManager.this, soupName, syncId);
+        SmartSyncLogger.d(TAG, "cleanResyncGhosts called", sync);
+        threadPool.execute(new CleanSyncGhostsRunnable(this, sync, callback));
 
-                    final JSONObject attributes = new JSONObject();
-                    if (localIdSize > 0) {
-                        try {
-                            attributes.put("numRecords", localIdSize);
-                            attributes.put("syncId", sync.getId());
-                            attributes.put("syncTarget", target.getClass().getName());
-                            EventBuilderHelper.createAndStoreEventSync("cleanResyncGhosts", null, TAG, attributes);
-                        } catch (JSONException e) {
-                            SmartSyncLogger.e(TAG, "Unexpected JSON error for cleanResyncGhosts sync tag: " + sync.getId(), e);
-                        }
-                    }
-
-                    if (callback != null) {
-                        callback.onSuccess(localIdSize);
-                    }
-
-                } catch (Exception e) {
-
-                    SmartSyncLogger.e(TAG, "Exception thrown cleaning resync ghosts", e);
-
-                    if (callback != null) {
-                        callback.onError(e);
-                    }
-                }
-
-            }
-        });
-
-    }
-
-    /**
-     * Update sync with new status, progress, totalSize
-     *
-     * @param sync
-     * @param status
-     * @param progress pass -1 to keep the current value
-     * @param callback
-     */
-    private void updateSync(SyncState sync, SyncState.Status status, int progress, SyncUpdateCallback callback) {
-        try {
-            sync.setStatus(status);
-            if (progress != UNCHANGED) {
-                sync.setProgress(progress);
-            }
-            switch (status) {
-                case NEW:
-                    break;
-                case RUNNING:
-                    runningSyncIds.add(sync.getId());
-                    break;
-                case STOPPED:
-                case DONE:
-                case FAILED:
-                    int totalSize = sync.getTotalSize();
-                    final JSONObject attributes = new JSONObject();
-                    try {
-                        if (totalSize > 0) {
-                            attributes.put("numRecords", totalSize);
-                        }
-                        attributes.put("syncId", sync.getId());
-                        attributes.put("syncTarget", sync.getTarget().getClass().getName());
-                        attributes.put(EventBuilderHelper.START_TIME, sync.getStartTime());
-                        attributes.put(EventBuilderHelper.END_TIME, sync.getEndTime());
-                    } catch (JSONException e) {
-                        SmartSyncLogger.e(TAG, "Exception thrown while building attributes", e);
-                    }
-                    EventBuilderHelper.createAndStoreEvent(sync.getType().name(), null, TAG, attributes);
-                    runningSyncIds.remove(sync.getId());
-                    break;
-            }
-            sync.save(smartStore);
-        } catch (JSONException e) {
-            SmartSyncLogger.e(TAG, "Unexpected JSON error for sync: " + sync.getId(), e);
-        } catch (SmartStoreException e) {
-            SmartSyncLogger.e(TAG, "Unexpected smart store error for sync: " + sync.getId(), e);
-        } finally {
-            callback.onUpdate(sync);
-        }
-    }
-
-    private void syncUp(SyncState sync, SyncUpdateCallback callback) throws Exception {
-        final SyncUpTarget target = (SyncUpTarget) sync.getTarget();
-        final List<String> dirtyRecordIds = new ArrayList<>(target.getIdsOfRecordsToSyncUp(this, sync.getSoupName()));
-        sync.setTotalSize(dirtyRecordIds.size());
-
-        if (target instanceof AdvancedSyncUpTarget) {
-            advancedSyncUp(sync, callback, dirtyRecordIds);
-        } else {
-            syncUp(sync, callback, dirtyRecordIds);
-        }
-    }
-
-    private void advancedSyncUp(SyncState sync, SyncUpdateCallback callback, List<String> dirtyRecordIds) throws JSONException, IOException {
-        final String soupName = sync.getSoupName();
-        final SyncUpTarget target = (SyncUpTarget) sync.getTarget();
-        final SyncOptions options = sync.getOptions();
-        int totalSize = dirtyRecordIds.size();
-        int maxBatchSize = ((AdvancedSyncUpTarget) target).getMaxBatchSize();
-        List<JSONObject> batch = new ArrayList<>();
-
-        updateSync(sync, SyncState.Status.RUNNING, 0, callback);
-        for (int i=0; i<totalSize; i++) {
-            if (stopRequested) {
-                return;
-            }
-
-            JSONObject record = target.getFromLocalStore(this, soupName, dirtyRecordIds.get(i));
-
-            if (shouldSyncUpRecord(target, record, options)) {
-                batch.add(record);
-            }
-
-            // Process batch if max batch size reached or at the end of dirtyRecordIds
-            if (batch.size() == maxBatchSize || i == totalSize - 1) {
-
-                ((AdvancedSyncUpTarget) target).syncUpRecords(this, batch, options.getFieldlist(), options.getMergeMode(), sync.getSoupName());
-                batch.clear();
-            }
-
-            // Updating status
-            int progress = (i + 1) * 100 / totalSize;
-            if (progress < 100) {
-                updateSync(sync, SyncState.Status.RUNNING, progress, callback);
-            }
-        }
-    }
-
-    private void syncUp(SyncState sync, SyncUpdateCallback callback, List<String> dirtyRecordIds) throws JSONException, IOException {
-        final String soupName = sync.getSoupName();
-        final SyncUpTarget target = (SyncUpTarget) sync.getTarget();
-        final SyncOptions options = sync.getOptions();
-        int totalSize = dirtyRecordIds.size();
-
-        updateSync(sync, SyncState.Status.RUNNING, 0, callback);
-        int i = 0;
-        for (final String id : dirtyRecordIds) {
-            if (stopRequested) {
-                return;
-            }
-
-            JSONObject record = target.getFromLocalStore(this, soupName, id);
-
-            if (shouldSyncUpRecord(target, record, options)) {
-                syncUpOneRecord(target, soupName, record, options);
-            }
-
-            // Updating status
-            int progress = (i + 1) * 100 / totalSize;
-            if (progress < 100) {
-                updateSync(sync, SyncState.Status.RUNNING, progress, callback);
-            }
-
-            // Incrementing i
-            i++;
-        }
-    }
-
-    private boolean shouldSyncUpRecord(SyncUpTarget target, JSONObject record, SyncOptions options) throws IOException, JSONException {
-        /*
-         * Checks if we are attempting to sync up a record that has been updated
-         * on the server AFTER the client's last sync down. If the merge mode
-         * passed in tells us to leave the record alone under these
-         * circumstances, we will do nothing and return here.
-         */
-        if (options.getMergeMode() == MergeMode.LEAVE_IF_CHANGED &&
-                !target.isNewerThanServer(this, record)) {
-
-            // Nothing to do for this record
-            SmartSyncLogger.d(TAG, "syncUpOneRecord: Record not synched since client does not have the latest from server", record);
-            return false;
-        }
-        else {
-            return true;
-        }
-    }
-
-    private void syncUpOneRecord(SyncUpTarget target, String soupName,
-                                 JSONObject record, SyncOptions options) throws JSONException, IOException {
-        SmartSyncLogger.d(TAG, "syncUpOneRecord called", record);
-
-
-        // Do we need to do a create, update or delete
-        boolean locallyDeleted = target.isLocallyDeleted(record);
-        boolean locallyCreated = target.isLocallyCreated(record);
-        boolean locallyUpdated = target.isLocallyUpdated(record);
-
-        Action action = null;
-        if (locallyDeleted)
-            action = Action.delete;
-        else if (locallyCreated)
-            action = Action.create;
-        else if (locallyUpdated)
-            action = Action.update;
-
-        if (action == null) {
-            // Nothing to do for this record
-            return;
-        }
-
-        // Create/update/delete record on server and update smartstore
-        String recordServerId;
-        int statusCode;
-        switch (action) {
-            case create:
-                recordServerId = target.createOnServer(this, record, options.getFieldlist());
-                // Success
-                if (recordServerId != null) {
-                    record.put(target.getIdFieldName(), recordServerId);
-                    target.cleanAndSaveInLocalStore(this, soupName, record);
-                }
-                // Failure
-                else {
-                    target.saveRecordToLocalStoreWithLastError(this, soupName, record);
-                }
-                break;
-            case delete:
-                statusCode = (locallyCreated
-                        ? HttpURLConnection.HTTP_NOT_FOUND // if locally created it can't exist on the server - we don't need to actually do the deleteOnServer call
-                        : target.deleteOnServer(this, record));
-                // Success
-                if (RestResponse.isSuccess(statusCode) || statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
-                    target.deleteFromLocalStore(this, soupName, record);
-                }
-                // Failure
-                else {
-                    target.saveRecordToLocalStoreWithLastError(this, soupName, record);
-                }
-                break;
-            case update:
-                statusCode = target.updateOnServer(this, record, options.getFieldlist());
-                // Success
-                if (RestResponse.isSuccess(statusCode)) {
-                    target.cleanAndSaveInLocalStore(this, soupName, record);
-                }
-                // Handling remotely deleted records
-                else if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
-                    if (options.getMergeMode() == MergeMode.OVERWRITE) {
-                        recordServerId = target.createOnServer(this, record, options.getFieldlist());
-                        if (recordServerId != null) {
-                            record.put(target.getIdFieldName(), recordServerId);
-                            target.cleanAndSaveInLocalStore(this, soupName, record);
-                        }
-                    }
-                    else {
-                        // Leave local record alone
-                    }
-                }
-                // Failure
-                else {
-                    target.saveRecordToLocalStoreWithLastError(this, soupName, record);
-                }
-                break;
-        }
-    }
-
-    private void syncDown(SyncState sync, SyncUpdateCallback callback) throws Exception {
-        String soupName = sync.getSoupName();
-        SyncDownTarget target = (SyncDownTarget) sync.getTarget();
-        MergeMode mergeMode = sync.getMergeMode();
-        long maxTimeStamp = sync.getMaxTimeStamp();
-        JSONArray records = target.startFetch(this, maxTimeStamp);
-        int countSaved = 0;
-        int totalSize = target.getTotalSize();
-        sync.setTotalSize(totalSize);
-        updateSync(sync, SyncState.Status.RUNNING, 0, callback);
-        final String idField = sync.getTarget().getIdFieldName();
-
-        // Get ids of records to leave alone
-        Set<String> idsToSkip = null;
-        if (mergeMode == MergeMode.LEAVE_IF_CHANGED) {
-            idsToSkip = target.getIdsToSkip(this, soupName);
-        }
-
-        while (records != null) {
-            if (stopRequested) {
-                return;
-            }
-
-            // Figure out records to save
-            JSONArray recordsToSave = idsToSkip == null ? records : removeWithIds(records, idsToSkip, idField);
-
-            // Save to smartstore.
-            target.saveRecordsToLocalStore(this, soupName, recordsToSave, sync.getId());
-            countSaved += records.length();
-            maxTimeStamp = Math.max(maxTimeStamp, target.getLatestModificationTimeStamp(records));
-
-            // Update sync status.
-            if (countSaved < totalSize) {
-                updateSync(sync, SyncState.Status.RUNNING, countSaved*100 / totalSize, callback);
-            }
-
-            // Fetch next records, if any.
-            records = target.continueFetch(this);
-
-            // Updating maxTimeStamp as we go if records are ordered by latest modification
-            if (target.isSyncDownSortedByLatestModification()) {
-                sync.setMaxTimeStamp(maxTimeStamp);
-            }
-        }
-
-        // Updating maxTimeStamp once at the end if records are NOT ordered by latest modification
-        if (!target.isSyncDownSortedByLatestModification()) {
-            sync.setMaxTimeStamp(maxTimeStamp);
-        }
-	}
-
-    private JSONArray removeWithIds(JSONArray records, Set<String> idsToSkip, String idField) throws JSONException {
-        JSONArray arr = new JSONArray();
-        for (int i = 0; i < records.length(); i++) {
-            JSONObject record = records.getJSONObject(i);
-
-            // Keep ?
-            String id = JSONObjectHelper.optString(record, idField);
-            if (id == null || !idsToSkip.contains(id)) {
-                arr.put(record);
-            }
-        }
-        return arr;
     }
 
     /**
@@ -868,18 +540,28 @@ public class SyncManager {
     }
 
     /**
-     * Enum for action
-     *
+     * Throw exception if syncId is already running
+     * @param operation
+     * @param syncId
      */
-    public enum Action {
-    	create,
-    	update,
-    	delete
+    private void validateNotRunning(String operation, long syncId) {
+        if (activeSyncs.containsKey(syncId)) {
+            throw new SmartSyncException("Cannot run " + operation + " " + syncId + " - sync is still running");
+        }
+    }
+
+    /**
+     * Throw exception if sync manager is stopping or stopped
+     * @param operation
+     */
+    private void validateNotStopping(String operation) {
+        if (stopRequested) {
+            throw new SmartSyncException("Cannot run " + operation + " - sync manager is stopping or stopped");
+        }
     }
 
     /**
      * Exception thrown by smart sync manager
-     *
      */
     public static class SmartSyncException extends RuntimeException {
 

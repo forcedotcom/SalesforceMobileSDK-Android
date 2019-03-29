@@ -1004,7 +1004,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
             syncManager.reSync(syncName, queue);
             Assert.fail("Expected exception");
         } catch (SyncManager.SmartSyncException e) {
-            Assert.assertTrue("Wrong exception", e.getMessage().contains("Cannot run sync - SyncManager is paused"));
+            Assert.assertTrue("Wrong exception", e.getMessage().contains("sync manager is stopping or stopped"));
         }
 
         // Resuming sync manager without restarting syncs
@@ -1068,8 +1068,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         // Stop sync manager
         stopSyncManager(200);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.STOPPED, 20, numberRecords1);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.RUNNING, 0, numberRecords2);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.STOPPED, 0, numberRecords2);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.STOPPED, 0, -1);
         int numberOfRecordsFetched1 = (int) (numberRecords1 * 0.2);
         int numberRecordsLeft1 = numberRecords1-numberOfRecordsFetched1;
 
