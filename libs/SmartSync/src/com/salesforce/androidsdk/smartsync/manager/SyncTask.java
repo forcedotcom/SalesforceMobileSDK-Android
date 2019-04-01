@@ -50,9 +50,6 @@ public abstract class SyncTask implements Runnable {
     protected final SyncState sync;
     protected final SyncManager.SyncUpdateCallback callback;
 
-    // Flag set when stop requested
-    private boolean stopRequested = false;
-
     public SyncTask(SyncManager syncManager, SyncState sync, SyncManager.SyncUpdateCallback  callback) {
         this.syncManager = syncManager;
         this.sync = sync;
@@ -66,10 +63,6 @@ public abstract class SyncTask implements Runnable {
 
     public Long getSyncId() {
         return sync.getId();
-    }
-
-    public void stop() {
-        this.stopRequested = true;
     }
 
     /**
