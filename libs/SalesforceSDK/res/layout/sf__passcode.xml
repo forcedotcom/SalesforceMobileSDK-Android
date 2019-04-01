@@ -6,36 +6,171 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".ui.PasscodeActivity">
+    tools:context=".ui.PasscodeActivity" >
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/sf__passcode_toolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/sf__passcode_bg"
+        android:background="@drawable/sf__passcode_box_style"
         android:minHeight="?attr/actionBarSize"
-        android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+        android:theme="@style/Theme.AppCompat.Light.NoActionBar" >
 
-    <TextView android:id="@+id/sf__passcode_title"
-        style="@style/SalesforceSDK.Passcode.Text.Title" />
+    <TextView
+        android:id="@+id/sf__passcode_title"
+        style="@style/SalesforceSDK.Passcode.Text.Title"
+        android:layout_marginTop="20dp"
+        android:layout_width="wrap_content"
+        android:textColor="@color/sf__passcode_text_color"
+        android:textStyle="bold"/>
+        
+    <Button
+        style="?android:attr/borderlessButtonStyle"
+        android:id="@+id/sf__passcode_logout_button"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:textColor="@color/sf__passcode_primary_color"
+        android:text="@string/sf__passcode_logout"
+        android:background="@color/sf__passcode_secondary_color"
+        android:textAllCaps="false" />
 
-    <TextView android:id="@+id/sf__passcode_instructions"
+    </androidx.appcompat.widget.Toolbar>
+
+    <TextView
+        android:id="@+id/sf__passcode_instructions"
         style="@style/SalesforceSDK.Passcode.Text.Instructions"
-        android:layout_below="@+id/sf__passcode_toolbar" />
+        android:layout_below="@+id/sf__passcode_toolbar"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="85dp"
+        android:textColor="@color/sf__passcode_text_color" />
 
     <LinearLayout
         style="@style/SalesforceSDK.Passcode.Box"
+        android:id="@+id/sf__passcode_box"
+        android:layout_below="@+id/sf__passcode_toolbar"
         android:layout_alignParentStart="true"
         android:layout_alignParentEnd="true"
         android:layout_marginStart="0dp"
+        android:layout_marginTop="120dp"
         android:layout_marginEnd="0dp"
+        android:orientation="vertical"
+        android:background="@drawable/sf__passcode_box_style" >
+
+        <com.salesforce.androidsdk.ui.PasscodeField
+            android:id="@+id/sf__passcode_text"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@null"
+            android:inputType="textPassword"
+            android:longClickable="false"
+            android:textSelectHandle="@drawable/sf__empty_shape" />
+
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/sf__passcode_toolbar"
+        android:layout_marginTop="80dp"
         android:orientation="vertical">
 
-        <EditText
-            android:id="@+id/sf__passcode_text"
-            style="@style/SalesforceSDK.Passcode.Text.Entry"
-            android:inputType="textPassword"
-            android:cursorVisible="false"/>
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/sf__fingerprint_icon"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_below="@+id/sf__fingerprint_description"
+            android:layout_marginTop="20dp"
+            android:src="@drawable/ic_fp_40px"/>
+
+        <LinearLayout
+            style="@style/SalesforceSDK.Passcode.Box"
+            android:id="@+id/sf__biometric_box"
+            android:layout_width="match_parent"
+            android:layout_height="160dp"
+            android:layout_marginStart="0dp"
+            android:layout_marginTop="40dp"
+            android:layout_marginEnd="0dp"
+            android:orientation="vertical"
+            android:background="@drawable/sf__passcode_box_style" >
+
+            <TextView
+                style="@style/SalesforceSDK.Passcode.Text.Instructions"
+                android:id="@+id/sf__biometric_instructions_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="left"
+                android:layout_marginTop="15dp"
+                android:layout_marginLeft="10dp"
+                android:text="@string/sf__biometric_allow_instructiuons_title"
+                android:textColor="@color/sf__passcode_text_color"
+                android:textStyle="bold"/>
+
+            <TextView
+                style="@style/SalesforceSDK.Passcode.Text.Instructions"
+                android:id="@+id/sf__biometric_instructions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="left"
+                android:gravity="left"
+                android:layout_below="@+id/sf__passcode_toolbar"
+                android:layout_marginTop="10dp"
+                android:layout_marginLeft="10dp"
+                android:text="@string/sf__biometric_allow_instructiuons"
+                android:textColor="@color/sf__passcode_text_color" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:layout_gravity="center">
+
+                <Button
+                    android:id="@+id/sf__biometric_not_now_button"
+                    android:layout_width="120dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center"
+                    android:layout_marginLeft="50dp"
+                    android:background="@drawable/sf__passcode_secondary_color_button"
+                    android:text="@string/sf__biometric_not_now_button"
+                    android:textColor="@color/sf__passcode_primary_color"
+                    android:textAllCaps="false" />
+
+                <Button
+                    android:id="@+id/sf__biometric_enable_button"
+                    android:layout_width="120dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center"
+                    android:layout_marginLeft="50dp"
+                    android:background="@drawable/sf__passcode_primary_color_button"
+                    android:text="@string/sf__biometric_enable_button"
+                    android:textColor="@color/sf__passcode_secondary_color"
+                    android:textAllCaps="false" />
+            </LinearLayout>
+
+        </LinearLayout>
+
     </LinearLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentBottom="true" >
+
+        <Button
+            android:id="@+id/sf_passcode_verify_button"
+            android:layout_width="140dp"
+            android:layout_height="50dp"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginRight="20dp"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/sf__passcode_primary_color_button"
+            android:text="@string/sf__passcode_verify_button"
+            android:textColor="@color/sf__passcode_secondary_color"
+            android:textAllCaps="false" />
+
+    </RelativeLayout>
 
 </RelativeLayout>

@@ -55,9 +55,9 @@
     <style name="SalesforceSDK.Passcode.Box">
         <item name="android:padding">@dimen/sf__passcode_layout_padding</item>
         <item name="android:layout_width">@dimen/sf__passcode_layout_width</item>
+        <item name="android:layout_height">@dimen/sf__passcode_layout_height</item>
         <item name="android:layout_centerHorizontal">true</item>
         <item name="android:layout_marginTop">@dimen/sf__passcode_layout_margin_top</item>
-        <item name="android:layout_height">wrap_content</item>
         <item name="android:background">@color/sf__passcode_bg</item>
     </style>
     

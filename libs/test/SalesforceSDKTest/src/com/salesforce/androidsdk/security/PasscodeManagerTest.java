@@ -160,12 +160,12 @@ public class PasscodeManagerTest {
         Assert.assertFalse(pm.isPasscodeChangeRequired());
 
         // Increase passcode length without a passcode stored
-        pm.setMinPasscodeLength(ctx, 5);
+        pm.setPasscodeLength(ctx, 5);
         Assert.assertFalse(pm.isPasscodeChangeRequired());
 
         // Increase passcode length with a passcode stored
         pm.store(ctx, "12345");
-        pm.setMinPasscodeLength(ctx, 6);
+        pm.setPasscodeLength(ctx, 6);
         Assert.assertTrue(pm.isPasscodeChangeRequired());
     }
 
@@ -177,7 +177,7 @@ public class PasscodeManagerTest {
         // Increase passcode length with a passcode stored
         Assert.assertFalse(pm.isPasscodeChangeRequired());
         pm.store(ctx, "1234");
-        pm.setMinPasscodeLength(ctx, 5);
+        pm.setPasscodeLength(ctx, 5);
         Assert.assertTrue(pm.isPasscodeChangeRequired());
 
 
@@ -206,10 +206,10 @@ public class PasscodeManagerTest {
         // Initial values
         checkMobilePrefs(TEST_TIMEOUT_MS, PasscodeManager.MIN_PASSCODE_LENGTH, true, false);
         // Decreasing length
-        pm.setMinPasscodeLength(ctx, 3);
+        pm.setPasscodeLength(ctx, 3);
         checkMobilePrefs(TEST_TIMEOUT_MS, 3, true, false);
         // Increasing length
-        pm.setMinPasscodeLength(ctx, 5);
+        pm.setPasscodeLength(ctx, 5);
         checkMobilePrefs(TEST_TIMEOUT_MS, 5, true, false);
     }
 
@@ -242,7 +242,7 @@ public class PasscodeManagerTest {
         // Setting passcode
         pm.store(ctx, "1234");
         // Increasing length
-        pm.setMinPasscodeLength(ctx, 5);
+        pm.setPasscodeLength(ctx, 5);
         checkMobilePrefs(TEST_TIMEOUT_MS, 5, true, true);
         // Changing passcode
         pm.store(ctx, "12345");
