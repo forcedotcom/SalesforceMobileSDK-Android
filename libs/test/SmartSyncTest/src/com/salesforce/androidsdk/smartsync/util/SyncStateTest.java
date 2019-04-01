@@ -41,6 +41,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -136,7 +137,7 @@ public class SyncStateTest {
 
         SyncState sync;
         if (isSyncUp) {
-            sync = SyncState.createSyncUp(store, new SyncUpTarget(), SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED), "Accounts", name);
+            sync = SyncState.createSyncUp(store, new SyncUpTarget(), SyncOptions.optionsForSyncUp(Collections.singletonList("Name")), "Accounts", name);
         } else {
             sync = SyncState.createSyncDown(store, new SoqlSyncDownTarget("SELECT Id, Name from Account"), SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED), "Accounts", name);
         }
