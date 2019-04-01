@@ -75,8 +75,17 @@ public class PasscodeManager  {
     // Key in preference for the passcode length.
     protected static final String KEY_PASSCODE_LENGTH = "passcode_length";
 
+    // Key in preferences for actual passcode length known
+    protected static final String KEY_PASSCODE_LENGTH_KNOWN = "passcode_length_known";
+
     // Key in preference for connect app biometric flag.
     protected static final String KEY_BIOMETRIC_ALLOWED = "biometric_allowed";
+
+    // Key in preferences to indicate if the user has been prompted to use biometric.
+    protected static final String KEY_BIOMETRIC_ENROLLMENT = "biometric_enrollment";
+
+    // Key in preferences to indicate if the user has enabled biometric.
+    protected static final String KEY_BIOMETRIC_ENABLED = "biometric_enabled";
 
     // Key in preference to indicate passcode change is required.
     protected static final String KEY_PASSCODE_CHANGE_REQUIRED= "passcode_change_required";
@@ -95,8 +104,11 @@ public class PasscodeManager  {
     private int timeoutMs;
     private int minPasscodeLength;
     private boolean biometricAllowed;
+    private boolean biometricEnrollmentShown;
+    private boolean biometricEnabled;
     private boolean passcodeChangeRequired;
     private LockChecker lockChecker;
+    boolean passcodeLengthKnown;
 
     /**
      * Parameterized constructor.
@@ -161,6 +173,8 @@ public class PasscodeManager  {
      *
      * @param account UserAccount instance.
      * @return Minimum passcode length.
+     *
+     * @deprecated Will be removed in Mobile SDK 8.0. Use {@link PasscodeManager#getPasscodeLength(Context)} instead.
      */
     public int getPasscodeLengthForOrg(UserAccount account) {
     	if (account == null) {
@@ -170,6 +184,16 @@ public class PasscodeManager  {
         final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF
         		+ account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
         return sp.getInt(KEY_PASSCODE_LENGTH, MIN_PASSCODE_LENGTH);
+    }
+
+    /**
+     * Returns the actual passcode length if known, otherwise the org requirement.
+     *
+     * @return Passcode length if known, otherwise the org requirement.
+     */
+    public int getPasscodeLength(Context ctx) {
+        final SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
+        return sp.getInt(KEY_PASSCODE_LENGTH, 0);
     }
 
     /**
@@ -204,6 +228,7 @@ public class PasscodeManager  {
         final Editor e = sp.edit();
         e.putInt(KEY_TIMEOUT, timeout);
         e.putInt(KEY_PASSCODE_LENGTH, passLen);
+        e.putBoolean(KEY_PASSCODE_LENGTH_KNOWN, passcodeLengthKnown);
         e.putBoolean(KEY_BIOMETRIC_ALLOWED, bioAllowed);
         e.commit();
     }
@@ -222,8 +247,11 @@ public class PasscodeManager  {
             Editor e = sp.edit();
             e.putInt(KEY_TIMEOUT, timeoutMs);
             e.putInt(KEY_PASSCODE_LENGTH, minPasscodeLength);
-            e.putBoolean(KEY_BIOMETRIC_ALLOWED, biometricAllowed);
+            e.putBoolean(KEY_PASSCODE_LENGTH_KNOWN, passcodeLengthKnown);
             e.putBoolean(KEY_PASSCODE_CHANGE_REQUIRED, passcodeChangeRequired);
+            e.putBoolean(KEY_BIOMETRIC_ALLOWED, biometricAllowed);
+            e.putBoolean(KEY_BIOMETRIC_ENROLLMENT, biometricEnrollmentShown);
+            e.putBoolean(KEY_BIOMETRIC_ENABLED, biometricEnabled);
             e.commit();
         }
     }
@@ -243,13 +271,19 @@ public class PasscodeManager  {
                 timeoutMs = 0;
                 minPasscodeLength = MIN_PASSCODE_LENGTH;
                 passcodeChangeRequired = false;
+                biometricAllowed = true;
+                biometricEnrollmentShown = false;
+                biometricEnabled = false;
                 storeMobilePolicy(context);
                 return;
             }
             timeoutMs = sp.getInt(KEY_TIMEOUT, 0);
             minPasscodeLength = sp.getInt(KEY_PASSCODE_LENGTH, MIN_PASSCODE_LENGTH);
-            biometricAllowed = sp.getBoolean(KEY_BIOMETRIC_ALLOWED, true);
+            passcodeLengthKnown = sp.getBoolean(KEY_PASSCODE_LENGTH_KNOWN, false);
             passcodeChangeRequired = sp.getBoolean(KEY_PASSCODE_CHANGE_REQUIRED, false);
+            biometricAllowed = sp.getBoolean(KEY_BIOMETRIC_ALLOWED, false);
+            biometricEnrollmentShown = sp.getBoolean(KEY_BIOMETRIC_ENROLLMENT, true);
+            biometricEnabled = sp.getBoolean(KEY_BIOMETRIC_ENABLED, false);
         }
     }
 
@@ -274,12 +308,18 @@ public class PasscodeManager  {
         Editor e = sp.edit();
         e.remove(KEY_PASSCODE);
         e.remove(KEY_FAILED_ATTEMPTS);
+        e.remove(KEY_PASSCODE_LENGTH_KNOWN);
         e.remove(KEY_BIOMETRIC_ALLOWED);
+        e.remove(KEY_BIOMETRIC_ENROLLMENT);
+        e.remove(KEY_BIOMETRIC_ENABLED);
         e.commit();
         timeoutMs = 0;
         minPasscodeLength = MIN_PASSCODE_LENGTH;
-        biometricAllowed = true;
+        passcodeLengthKnown = false;
         passcodeChangeRequired = false;
+        biometricAllowed = true;
+        biometricEnrollmentShown = false;
+        biometricEnabled = false;
         storeMobilePolicy(ctx);
         handler = null;
     }
@@ -374,6 +414,10 @@ public class PasscodeManager  {
         SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
         Editor e = sp.edit();
         e.putString(KEY_PASSCODE, hashForVerification(passcode));
+        e.putInt(KEY_PASSCODE_LENGTH, passcode.length());
+        e.putBoolean(KEY_PASSCODE_LENGTH_KNOWN, true);
+        e.putBoolean(KEY_BIOMETRIC_ENROLLMENT, biometricEnrollmentShown);
+        e.putBoolean(KEY_BIOMETRIC_ENABLED, biometricEnabled);
         e.commit();
         setPasscodeChangeRequired(ctx,false);
     }
@@ -506,21 +550,48 @@ public class PasscodeManager  {
         return minPasscodeLength;
     }
 
+    public boolean getPasscodeLengthKnown() {
+        return passcodeLengthKnown;
+    }
+
     public boolean getBiometricAllowed() {
         return biometricAllowed;
     }
 
     /**
+     * Whether or not the user has been shown the screen prompting them to enroll in biometric unlock.
+     * @return true if the user has been prompted to enable biometric
+     */
+    public boolean getBiometricEnrollmentShown() {
+        return biometricEnrollmentShown;
+    }
+
+    public boolean getBiometricEnabled() {
+        return biometricEnabled;
+    }
+
+    /**
      * @param ctx
      * @param minPasscodeLength
+     *
+     * @deprecated Will be removed in Mobile SDK 8.0. Use {@link PasscodeManager#setPasscodeLength(Context, int)}  instead.
      */
     public void setMinPasscodeLength(Context ctx, int minPasscodeLength) {
-    	if (minPasscodeLength > this.minPasscodeLength) {
+        setPasscodeLength(ctx, minPasscodeLength);
+    }
+
+    /**
+     * @param ctx
+     * @param passcodeLength
+     */
+    public void setPasscodeLength(Context ctx, int passcodeLength) {
+    	if (passcodeLength > this.minPasscodeLength) {
             if (hasStoredPasscode(ctx)) {
                 this.passcodeChangeRequired = true;
             }
     	}
-        this.minPasscodeLength = minPasscodeLength;
+        this.minPasscodeLength = passcodeLength;
+    	this.passcodeLengthKnown = true;
         storeMobilePolicy(ctx);
     }
 
@@ -535,9 +606,26 @@ public class PasscodeManager  {
     }
 
     /**
+     * By default biometric enrollment is only shown to the user once.
+     *
+     * @param shouldShow set to true to show biometric prompt on next passcode unlock.
+     */
+    public void setBiometricEnrollmentShown(Context ctx, boolean shouldShow) {
+        biometricEnrollmentShown = shouldShow;
+        storeMobilePolicy(ctx);
+    }
+
+    /**
+     * Sets biometric enabled.
+     */
+    public void setBiometricEnabled(Context ctx, boolean enabled) {
+        biometricEnabled = enabled && getBiometricAllowed();
+        storeMobilePolicy(ctx);
+    }
+
+    /**
      * @return true if time elapsed since the last user activity in the app exceeds the timeoutMs
      */
-
     public boolean shouldLock() {
         return timeoutMs > 0 && now() >= (lastActivity + timeoutMs);
     }

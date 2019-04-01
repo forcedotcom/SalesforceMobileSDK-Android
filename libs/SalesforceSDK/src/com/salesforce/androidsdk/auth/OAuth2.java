@@ -528,10 +528,12 @@ public class OAuth2 {
                 if (parsedResponse.has(MOBILE_POLICY)) {
                     pinLength = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(PIN_LENGTH);
                     screenLockTimeout = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(SCREEN_LOCK);
-                    String bioAttribute = customAttributes.optString(BIOMETRIC_UNLOCK).toLowerCase(Locale.US);
-                    if (bioAttribute.equals("false")) {
-                        biometricUnlockAlowed = false;
-                        SalesforceSDKLogger.i(TAG, "Biometric Unlock disabled by connected app.");
+                    if (customAttributes != null) {
+                        String bioAttribute = customAttributes.optString(BIOMETRIC_UNLOCK).toLowerCase(Locale.US);
+                        if (bioAttribute.equals("false")) {
+                            biometricUnlockAlowed = false;
+                            SalesforceSDKLogger.i(TAG, "Biometric Unlock disabled by connected app.");
+                        }
                     }
                 }
             } catch (Exception e) {
