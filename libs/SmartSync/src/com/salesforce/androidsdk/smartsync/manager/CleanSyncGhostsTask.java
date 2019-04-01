@@ -40,7 +40,7 @@ import org.json.JSONObject;
 public class CleanSyncGhostsTask extends SyncTask {
 
     // Constants
-    private static final String TAG = "SyncManager";
+    private static final String TAG = "CleanSyncGhostsTask";
 
     private final SyncManager.CleanResyncGhostsCallback cleanSyncCallback;
 
