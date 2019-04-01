@@ -32,6 +32,7 @@ import android.app.Application;
 import com.facebook.react.ReactApplication;
 import com.facebook.react.ReactNativeHost;
 import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
+import com.salesforce.androidsdk.util.test.TestCredentials;
 
 /**
  * Test application for Salesforce react native modules.
@@ -49,6 +50,7 @@ public class SalesforceReactTestApp extends Application implements ReactApplicat
     public void onCreate() {
         super.onCreate();
         SalesforceReactSDKManager.initReactNative(getApplicationContext(), ReactTestActivity.class);
+        TestCredentials.init(this);
     }
 
 }

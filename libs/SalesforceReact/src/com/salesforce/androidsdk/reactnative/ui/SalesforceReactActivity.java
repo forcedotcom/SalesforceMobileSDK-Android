@@ -250,7 +250,7 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
         }
     }
 
-    protected ClientManager buildClientManager() {
+    public ClientManager buildClientManager() {
         return SalesforceReactSDKManager.getInstance().getClientManager();
     }
 
