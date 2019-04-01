@@ -217,7 +217,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         int sliceSize = getCountIdsPerSoql();
         int countSlices = (int) Math.ceil((double) localIds.size() / sliceSize);
         for (int slice = 0; slice < countSlices; slice++) {
-            syncManager.checkIfStopRequested();
+            syncManager.checkAcceptingSyncs();
 
             List<String> idsToFetch = localIdsList.subList(slice * sliceSize, Math.min(localIdsList.size(), (slice + 1) * sliceSize));
             JSONArray records = fetchFromServer(syncManager, idsToFetch, Arrays.asList(getIdFieldName()), 0 /* get all */);

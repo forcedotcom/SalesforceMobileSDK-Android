@@ -183,7 +183,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         JSONArray records = startFetch(syncManager, soqlForRemoteIds);
         remoteIds.addAll(parseIdsFromResponse(records));
         while (records != null) {
-            syncManager.checkIfStopRequested();
+            syncManager.checkAcceptingSyncs();
 
             // Fetch next records, if any.
             records = continueFetch(syncManager);

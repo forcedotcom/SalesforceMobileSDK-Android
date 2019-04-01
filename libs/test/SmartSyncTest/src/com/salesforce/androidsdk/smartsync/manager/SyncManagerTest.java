@@ -1004,7 +1004,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
             syncManager.reSync(syncName, queue);
             Assert.fail("Expected exception");
         } catch (SyncManager.SmartSyncException e) {
-            Assert.assertTrue("Wrong exception", e.getMessage().contains("sync manager is stopping or stopped"));
+            Assert.assertTrue("Wrong exception", e instanceof SyncManager.SyncManagerStoppedException);
         }
 
         // Resuming sync manager without restarting syncs

@@ -70,7 +70,7 @@ public abstract class SyncTask implements Runnable {
      * Throw a SyncManagerStoppedException if it was
      */
     public void checkIfStopRequested() {
-        syncManager.checkIfStopRequested();
+        syncManager.checkAcceptingSyncs();
     }
 
     @Override

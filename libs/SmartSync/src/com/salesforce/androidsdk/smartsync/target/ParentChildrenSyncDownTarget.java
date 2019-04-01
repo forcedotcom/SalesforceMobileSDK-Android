@@ -188,7 +188,7 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
         JSONArray records = startFetch(syncManager, soqlForChildrenRemoteIds);
         final Set<String> remoteChildrenIds = new HashSet<>(parseChildrenIdsFromResponse(records));
         while (records != null) {
-            syncManager.checkIfStopRequested();
+            syncManager.checkAcceptingSyncs();
 
             // Fetch next records, if any.
             records = continueFetch(syncManager);

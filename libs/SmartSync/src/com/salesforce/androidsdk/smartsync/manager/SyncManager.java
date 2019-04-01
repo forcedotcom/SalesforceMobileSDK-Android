@@ -72,8 +72,8 @@ public class SyncManager {
     // Keeping track of active syncs (could be waiting for thread or running on a thread)
     private Map<Long, SyncTask> activeSyncs = new HashMap<>();
 
-    // Flag set when stop is requested
-    private boolean stopRequested = false;
+    // Sync manager state
+    private State state;
 
     // Thread pool for running syncs
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
@@ -96,6 +96,7 @@ public class SyncManager {
         apiVersion = ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext());
         this.smartStore = smartStore;
         this.restClient = restClient;
+        this.state = State.ACCEPTING_SYNCS;
         SyncState.setupSyncsSoupIfNeeded(smartStore);
         SyncState.cleanupSyncsSoupIfNeeded(smartStore);
     }
@@ -206,10 +207,11 @@ public class SyncManager {
      * It might take a while for active syncs to actually get stopped
      * Call isStopped() to see if syncManager is fully paused
      */
-    public void stop() {
-        stopRequested = true;
-        for (SyncTask syncTask : activeSyncs.values()) {
-            syncTask.stop();
+    public synchronized void stop() {
+        if (this.activeSyncs.size() == 0) {
+            this.state = State.STOPPED;
+        } else {
+            this.state = State.STOP_REQUESTED;
         }
     }
 
@@ -217,23 +219,23 @@ public class SyncManager {
      * @return true if stop was requested but there are still active syncs
      */
     public boolean isStopping() {
-        return stopRequested && activeSyncs.size() > 0;
+        return this.state == State.STOP_REQUESTED;
     }
 
     /**
      * @return true if stop was requested and there no syncs are active anymore
      */
     public boolean isStopped() {
-        return stopRequested && activeSyncs.size() == 0;
+        return this.state == State.STOPPED;
     }
 
     /**
-     * Check if stop was called
-     * Throw a SyncManagerStoppedException if it was
+     * Check if syncs are allowed to run
+     * Throw a SyncManagerStoppedException if sync manager is stopping/stopped
      */
-    public void checkIfStopRequested() {
-        if(this.stopRequested) {
-            throw new SyncManagerStoppedException("sync manager stopped");
+    public void checkAcceptingSyncs() {
+        if(this.state != State.ACCEPTING_SYNCS) {
+            throw new SyncManagerStoppedException("sync manager has state:" + state.name());
         }
     }
 
@@ -245,14 +247,18 @@ public class SyncManager {
      * @param callback
      * @throws JSONException
      */
-    public void resume(boolean restartStoppedSyncs, SyncUpdateCallback callback) throws JSONException {
-        stopRequested = false;
-        if (restartStoppedSyncs) {
-            List<SyncState> stoppedSyncs = SyncState.getSyncsWithStatus(this.smartStore, SyncState.Status.STOPPED);
-            for (SyncState sync : stoppedSyncs) {
-                SmartSyncLogger.d(TAG, "resuming", sync);
-                reSync(sync.getId(), callback);
+    public synchronized void resume(boolean restartStoppedSyncs, SyncUpdateCallback callback) throws JSONException {
+        if (isStopped()) {
+            this.state = State.ACCEPTING_SYNCS;
+            if (restartStoppedSyncs) {
+                List<SyncState> stoppedSyncs = SyncState.getSyncsWithStatus(this.smartStore, SyncState.Status.STOPPED);
+                for (SyncState sync : stoppedSyncs) {
+                    SmartSyncLogger.d(TAG, "resuming", sync);
+                    reSync(sync.getId(), callback);
+                }
             }
+        } else {
+            SmartSyncLogger.d(TAG, "resume() called on a sync manager that has state:" + state.name());
         }
     }
 
@@ -270,6 +276,9 @@ public class SyncManager {
      */
     synchronized void removeFromActiveSyncs(SyncTask syncTask) {
         activeSyncs.remove(syncTask.getSyncId());
+        if (this.state == State.STOP_REQUESTED && activeSyncs.size() == 0) {
+            this.state = State.STOPPED;
+        }
     }
 
     /**
@@ -430,8 +439,8 @@ public class SyncManager {
      * @param callback
      */
     public void runSync(final SyncState sync, final SyncUpdateCallback callback) {
-        validateNotRunning("runSync", sync.getId());
-        validateNotStopping("runSync");
+        checkNotRunning("runSync", sync.getId());
+        checkAcceptingSyncs();
 
         SyncTask syncTask = null;
         switch(sync.getType()) {
@@ -518,8 +527,8 @@ public class SyncManager {
      * @throws IOException
      */
     public void cleanResyncGhosts(final long syncId, final CleanResyncGhostsCallback callback) throws JSONException {
-        validateNotRunning("cleanResyncGhosts", syncId);
-        validateNotStopping("cleanResyncGhosts");
+        checkNotRunning("cleanResyncGhosts", syncId);
+        checkAcceptingSyncs();
 
         final SyncState sync = SyncState.byId(smartStore, syncId);
         if (sync == null) {
@@ -559,19 +568,9 @@ public class SyncManager {
      * @param operation
      * @param syncId
      */
-    private void validateNotRunning(String operation, long syncId) {
+    private void checkNotRunning(String operation, long syncId) {
         if (activeSyncs.containsKey(syncId)) {
             throw new SmartSyncException("Cannot run " + operation + " " + syncId + " - sync is still running");
-        }
-    }
-
-    /**
-     * Throw exception if sync manager is stopping or stopped
-     * @param operation
-     */
-    private void validateNotStopping(String operation) {
-        if (stopRequested) {
-            throw new SmartSyncException("Cannot run " + operation + " - sync manager is stopping or stopped");
         }
     }
 
@@ -643,5 +642,15 @@ public class SyncManager {
          * @param e Error
          */
         void onError(Exception e);
+    }
+
+    /**
+     * Enum for sync manager state
+     *
+     */
+    public enum State {
+        ACCEPTING_SYNCS, // you can submit a sync to be run
+        STOP_REQUESTED,  // sync manager is stopping - sync submitted before the stop request are finishing up - submitting a sync to run will fail
+        STOPPED          // sync manager is stopped - no sync are running anymore - submitting a sync to run will fail
     }
 }
