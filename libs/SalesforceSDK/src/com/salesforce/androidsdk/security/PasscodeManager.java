@@ -102,13 +102,13 @@ public class PasscodeManager  {
     private long lastActivity;
     boolean locked;
     private int timeoutMs;
-    private int minPasscodeLength;
+    private int passcodeLength;
     private boolean biometricAllowed;
     private boolean biometricEnrollmentShown;
     private boolean biometricEnabled;
     private boolean passcodeChangeRequired;
     private LockChecker lockChecker;
-    boolean passcodeLengthKnown;
+    private boolean passcodeLengthKnown;
 
     /**
      * Parameterized constructor.
@@ -122,7 +122,7 @@ public class PasscodeManager  {
    }
 
    public PasscodeManager(Context ctx, HashConfig verificationHashConfig) {
-       this.minPasscodeLength = MIN_PASSCODE_LENGTH;
+       this.passcodeLength = MIN_PASSCODE_LENGTH;
        this.lastActivity = now();
        this.verificationHashConfig = verificationHashConfig;
        readMobilePolicy(ctx);
@@ -173,8 +173,6 @@ public class PasscodeManager  {
      *
      * @param account UserAccount instance.
      * @return Minimum passcode length.
-     *
-     * @deprecated Will be removed in Mobile SDK 8.0. Use {@link PasscodeManager#getPasscodeLength(Context)} instead.
      */
     public int getPasscodeLengthForOrg(UserAccount account) {
     	if (account == null) {
@@ -184,16 +182,6 @@ public class PasscodeManager  {
         final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF
         		+ account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
         return sp.getInt(KEY_PASSCODE_LENGTH, MIN_PASSCODE_LENGTH);
-    }
-
-    /**
-     * Returns the actual passcode length if known, otherwise the org requirement.
-     *
-     * @return Passcode length if known, otherwise the org requirement.
-     */
-    public int getPasscodeLength(Context ctx) {
-        final SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
-        return sp.getInt(KEY_PASSCODE_LENGTH, 0);
     }
 
     /**
@@ -246,7 +234,7 @@ public class PasscodeManager  {
             		Context.MODE_PRIVATE);
             Editor e = sp.edit();
             e.putInt(KEY_TIMEOUT, timeoutMs);
-            e.putInt(KEY_PASSCODE_LENGTH, minPasscodeLength);
+            e.putInt(KEY_PASSCODE_LENGTH, passcodeLength);
             e.putBoolean(KEY_PASSCODE_LENGTH_KNOWN, passcodeLengthKnown);
             e.putBoolean(KEY_PASSCODE_CHANGE_REQUIRED, passcodeChangeRequired);
             e.putBoolean(KEY_BIOMETRIC_ALLOWED, biometricAllowed);
@@ -269,7 +257,7 @@ public class PasscodeManager  {
             		Context.MODE_PRIVATE);
             if (!sp.contains(KEY_TIMEOUT) || !sp.contains(KEY_PASSCODE_LENGTH)) {
                 timeoutMs = 0;
-                minPasscodeLength = MIN_PASSCODE_LENGTH;
+                passcodeLength = MIN_PASSCODE_LENGTH;
                 passcodeChangeRequired = false;
                 biometricAllowed = true;
                 biometricEnrollmentShown = false;
@@ -278,7 +266,7 @@ public class PasscodeManager  {
                 return;
             }
             timeoutMs = sp.getInt(KEY_TIMEOUT, 0);
-            minPasscodeLength = sp.getInt(KEY_PASSCODE_LENGTH, MIN_PASSCODE_LENGTH);
+            passcodeLength = sp.getInt(KEY_PASSCODE_LENGTH, MIN_PASSCODE_LENGTH);
             passcodeLengthKnown = sp.getBoolean(KEY_PASSCODE_LENGTH_KNOWN, false);
             passcodeChangeRequired = sp.getBoolean(KEY_PASSCODE_CHANGE_REQUIRED, false);
             biometricAllowed = sp.getBoolean(KEY_BIOMETRIC_ALLOWED, false);
@@ -314,7 +302,7 @@ public class PasscodeManager  {
         e.remove(KEY_BIOMETRIC_ENABLED);
         e.commit();
         timeoutMs = 0;
-        minPasscodeLength = MIN_PASSCODE_LENGTH;
+        passcodeLength = MIN_PASSCODE_LENGTH;
         passcodeLengthKnown = false;
         passcodeChangeRequired = false;
         biometricAllowed = true;
@@ -546,8 +534,16 @@ public class PasscodeManager  {
         return timeoutMs;
     }
 
+    /**
+     *
+     * @deprecated Will be removed in Mobile SDK 8.0. Use {@link PasscodeManager#getPasscodeLength()}  instead.
+     */
     public int getMinPasscodeLength() {
-        return minPasscodeLength;
+        return passcodeLength;
+    }
+
+    public int getPasscodeLength() {
+        return passcodeLength;
     }
 
     public boolean getPasscodeLengthKnown() {
@@ -585,12 +581,12 @@ public class PasscodeManager  {
      * @param passcodeLength
      */
     public void setPasscodeLength(Context ctx, int passcodeLength) {
-    	if (passcodeLength > this.minPasscodeLength) {
+    	if (passcodeLength > this.passcodeLength) {
             if (hasStoredPasscode(ctx)) {
                 this.passcodeChangeRequired = true;
             }
     	}
-        this.minPasscodeLength = passcodeLength;
+        this.passcodeLength = passcodeLength;
     	this.passcodeLengthKnown = true;
         storeMobilePolicy(ctx);
     }
@@ -608,10 +604,10 @@ public class PasscodeManager  {
     /**
      * By default biometric enrollment is only shown to the user once.
      *
-     * @param shouldShow set to true to show biometric prompt on next passcode unlock.
+     * @param shown set to true to show biometric prompt on next passcode unlock.
      */
-    public void setBiometricEnrollmentShown(Context ctx, boolean shouldShow) {
-        biometricEnrollmentShown = shouldShow;
+    public void setBiometricEnrollmentShown(Context ctx, boolean shown) {
+        biometricEnrollmentShown = shown;
         storeMobilePolicy(ctx);
     }
 

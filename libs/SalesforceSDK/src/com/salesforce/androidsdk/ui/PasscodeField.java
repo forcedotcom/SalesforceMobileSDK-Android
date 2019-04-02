@@ -12,7 +12,6 @@ import android.view.MenuItem;
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.security.PasscodeManager;
-import com.salesforce.androidsdk.ui.PasscodeActivity.PasscodeMode;
 
 import androidx.appcompat.widget.AppCompatEditText;
 
@@ -22,8 +21,6 @@ public class PasscodeField extends AppCompatEditText {
     private static final int LINE_WIDTH = 2;
     private static final int DEFAULT_PADDING = 20;
     private static final int CIRCLE_SPACING = 20;
-
-    private PasscodeMode currentMode = PasscodeMode.Check;
 
     public PasscodeField(Context context) {
         super(context);
@@ -45,7 +42,6 @@ public class PasscodeField extends AppCompatEditText {
      */
     @Override
     public void onSelectionChanged(int start, int end) {
-
         CharSequence text = getText();
         if (text != null) {
             if (start != text.length() || end != text.length()) {
@@ -66,10 +62,9 @@ public class PasscodeField extends AppCompatEditText {
     protected void onDraw(Canvas canvas) {
         PasscodeManager passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
         boolean passcodeLengthKnown = passcodeManager.getPasscodeLengthKnown();
-        int passcodeLength = passcodeManager.getMinPasscodeLength();
+        int passcodeLength = passcodeManager.getPasscodeLength();
 
         float density = getResources().getDisplayMetrics().density;
-
         float diameter = CIRCLE_DIAMETER * density;
         float lineWidth = LINE_WIDTH * density;
         float padding = DEFAULT_PADDING * density;
@@ -85,10 +80,11 @@ public class PasscodeField extends AppCompatEditText {
 
         int circleSpacing = 0;
         int lengthForSpacing = passcodeLengthKnown ? passcodeLength : MAX_PASSCODE_LENGTH;
-        float yPosition = getHeight()/2;
+        float yPosition = getHeight()/2f;
         float startX = (getWidth() - (diameter * lengthForSpacing) - (padding * (lengthForSpacing - 1)) + (lineWidth * lengthForSpacing * 2)) / 2;
 
-        if (!currentMode.equals(PasscodeMode.Check) || passcodeLengthKnown) {
+        // If passcode length is unknown (upgrade) don't draw open circles and left align
+        if (passcodeLengthKnown) {
             for (int count = 0; count < passcodeLength; count++) {
                 canvas.drawCircle(startX + circleSpacing, yPosition, diameter/2, openCirclePaint);
                 circleSpacing += diameter + spacing;
@@ -102,10 +98,6 @@ public class PasscodeField extends AppCompatEditText {
             canvas.drawCircle(startX + circleSpacing, yPosition, diameter/2, typedCirclePaint);
             circleSpacing += diameter + spacing;
         }
-    }
-
-    public void setPasscodeMode(PasscodeMode mode) {
-        currentMode = mode;
     }
 
     private void disableActions() {

@@ -31,6 +31,7 @@ import android.annotation.TargetApi;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.hardware.fingerprint.FingerprintManager;
@@ -142,9 +143,18 @@ public class FingerprintAuthDialogFragment extends DialogFragment {
             @Override
             public void onClick(View view) {
                 dismiss();
+                mContext.biometricDeclined();
             }
         });
         mStatusText = v.findViewById(R.id.sf__fingerprint_status);
+
+        ApplicationInfo applicationInfo = mContext.getApplicationInfo();
+        int resId = applicationInfo.labelRes;
+        String appName = resId == 0 ? "" : getString(resId);
+        TextView textView = v.findViewById(R.id.sf__fingerprint_description);
+        textView.setText(getString(R.string.sf__fingerprint_description, appName));
+
+        getDialog().setCanceledOnTouchOutside(false);
         return v;
     }
 

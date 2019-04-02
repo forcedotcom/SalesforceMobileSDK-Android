@@ -32,6 +32,7 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.fingerprint.FingerprintManager;
@@ -39,6 +40,8 @@ import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.os.CancellationSignal;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -63,7 +66,6 @@ import java.util.List;
 public class PasscodeActivity extends Activity {
 
     private static final String EXTRA_KEY = "input_text";
-    private static final String LOGOUT_EXTRA = "logout_key";
     protected static final int MAX_PASSCODE_ATTEMPTS = 10;
 
     final private int REQUEST_CODE_ASK_PERMISSIONS = 11;
@@ -100,7 +102,21 @@ public class PasscodeActivity extends Activity {
         title = getTitleView();
         instr = getInstructionsView();
         passcodeField = getPasscodeField();
-        passcodeField.setPasscodeMode(currentMode);
+        passcodeField.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                final String passcode = s.toString();
+                if (passcodeManager.getPasscodeLengthKnown() && passcode.length() == passcodeManager.getPasscodeLength()) {
+                    onSubmit(passcode);
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) { }
+        });
         passcodeBox = getPasscodeBox();
         logoutButton = getLogoutButton();
         logoutButton.setOnClickListener(new OnClickListener() {
@@ -113,21 +129,23 @@ public class PasscodeActivity extends Activity {
         verifyButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                onSubmit(passcodeField.getText().toString());
+                Editable passcode = passcodeField.getText();
+                if (passcode != null) {
+                    onSubmit(passcode.toString());
+                }
             }
         });
 
         fingerImage = getFingerImage();
         bioInstrTitle =  getBioInstrTitle();
         bioInstr = getBioInstr();
+        bioInstr.setText(getBioInstrMessage());
         biometricBox = getBiometricBox();
         notNowButton = getNotNowButton();
         notNowButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                passcodeManager.setBiometricEnabled(PasscodeActivity.this, false);
-                passcodeManager.unlock();
-                done();
+                biometricDeclined();
             }
         });
         enableButton = getEnableButton();
@@ -160,6 +178,16 @@ public class PasscodeActivity extends Activity {
         }
     }
 
+    protected void biometricDeclined() {
+        if (passcodeManager.getBiometricEnabled()) {
+            setMode(PasscodeMode.Check);
+        } else {
+            passcodeManager.setBiometricEnabled(PasscodeActivity.this, false);
+            passcodeManager.unlock();
+            done();
+        }
+    }
+
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
@@ -168,22 +196,6 @@ public class PasscodeActivity extends Activity {
         }
         return super.onKeyDown(keyCode, event);
     }
-
-    @Override
-    public boolean onKeyUp(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_BACK) {
-            moveTaskToBack(true);
-            return true;
-        }
-
-        final String pc = passcodeField.getText().toString();
-        if (pc.length() == passcodeManager.getMinPasscodeLength()) {
-            onSubmit(pc);
-        }
-
-        return true;
-    }
-
 
     /**
      * Saves the entered text before activity rotation.
@@ -218,6 +230,7 @@ public class PasscodeActivity extends Activity {
             if (!passcodeManager.getPasscodeLengthKnown()) {
                 verifyButton.setVisibility(View.VISIBLE);
             }
+            passcodeField.requestFocus();
             break;
         case Create:
             title.setText(getCreateTitle());
@@ -226,6 +239,7 @@ public class PasscodeActivity extends Activity {
             instr.setVisibility(View.VISIBLE);
             passcodeBox.setVisibility(View.VISIBLE);
             passcodeField.setVisibility(View.VISIBLE);
+            passcodeField.requestFocus();
             break;
         case CreateConfirm:
             title.setText(getConfirmTitle());
@@ -234,6 +248,7 @@ public class PasscodeActivity extends Activity {
             instr.setVisibility(View.VISIBLE);
             passcodeBox.setVisibility(View.VISIBLE);
             passcodeField.setVisibility(View.VISIBLE);
+            passcodeField.requestFocus();
             break;
         case Change:
             title.setText(getCreateTitle());
@@ -242,6 +257,7 @@ public class PasscodeActivity extends Activity {
             instr.setVisibility(View.VISIBLE);
             passcodeBox.setVisibility(View.VISIBLE);
             passcodeField.setVisibility(View.VISIBLE);
+            passcodeField.requestFocus();
         	break;
         case EnableBiometric:
             title.setText(getBiometricTitle());
@@ -252,6 +268,7 @@ public class PasscodeActivity extends Activity {
             notNowButton.setVisibility(View.VISIBLE);
             enableButton.setVisibility(View.VISIBLE);
             fingerImage.setVisibility(View.VISIBLE);
+            passcodeManager.setBiometricEnrollmentShown(this, true);
             break;
         case BiometricCheck:
             if (canShowBiometric()) {
@@ -263,8 +280,6 @@ public class PasscodeActivity extends Activity {
         }
         passcodeField.setText("");
         currentMode = newMode;
-        passcodeField.setPasscodeMode(currentMode);
-        passcodeField.requestFocus();
     }
 
     /**
@@ -293,7 +308,6 @@ public class PasscodeActivity extends Activity {
                 passcodeManager.store(this, enteredPasscode);
 
                 if (showBiometricEnrollment) {
-                    passcodeManager.setBiometricEnrollmentShown(this,true);
                     setMode(PasscodeMode.EnableBiometric);
                 } else {
                     if (!passcodeManager.getPasscodeLengthKnown()) {
@@ -311,7 +325,6 @@ public class PasscodeActivity extends Activity {
         case Check:
             if (passcodeManager.check(this, enteredPasscode)) {
                 if (showBiometricEnrollment) {
-                    passcodeManager.setBiometricEnrollmentShown(this,true);
                     setMode(PasscodeMode.EnableBiometric);
                 } else {
                     passcodeManager.unlock();
@@ -369,23 +382,23 @@ public class PasscodeActivity extends Activity {
     }
 
     protected String getCreateTitle() {
-    	return String.format(getString(R.string.sf__passcode_create_title));
+    	return getString(R.string.sf__passcode_create_title);
     }
 
     protected String getEnterTitle() {
-    	return String.format(getString(R.string.sf__passcode_enter_title));
+    	return getString(R.string.sf__passcode_enter_title);
     }
 
     protected String getConfirmTitle() {
-    	return String.format(getString(R.string.sf__passcode_confirm_title));
+    	return getString(R.string.sf__passcode_confirm_title);
     }
 
     protected String getEnterInstructions() {
-    	return String.format(getString(R.string.sf__passcode_enter_instructions));
+    	return getString(R.string.sf__passcode_enter_instructions);
     }
 
     protected String getCreateInstructions() {
-    	return String.format(getString(R.string.sf__passcode_create_instructions));
+    	return getString(R.string.sf__passcode_create_instructions);
     }
 
     protected String getChangeInstructions() {
@@ -393,7 +406,7 @@ public class PasscodeActivity extends Activity {
     }
 
     protected String getConfirmInstructions() {
-    	return String.format(getString(R.string.sf__passcode_confirm_instructions));
+    	return getString(R.string.sf__passcode_confirm_instructions);
     }
 
     protected String getPasscodeTryAgainError(int countAttemptsLeft) {
@@ -424,6 +437,13 @@ public class PasscodeActivity extends Activity {
         return findViewById(R.id.sf__biometric_instructions);
     }
 
+    protected String getBioInstrMessage() {
+        ApplicationInfo applicationInfo = getApplicationInfo();
+        int resId = applicationInfo.labelRes;
+        String appName = resId == 0 ? "the app" : getString(resId);
+        return getString(R.string.sf__biometric_allow_instructiuons, appName);
+    }
+
     protected LinearLayout getBiometricBox() {
         return findViewById(R.id.sf__biometric_box);
     }
@@ -444,7 +464,13 @@ public class PasscodeActivity extends Activity {
         return getString(R.string.sf__biometric_title);
     }
 
-    //TODO: separate title/instrTitle/title for biometric prompt?
+    protected String getFingerprintDescription() {
+        ApplicationInfo applicationInfo = getApplicationInfo();
+        int resId = applicationInfo.labelRes;
+        String appName = resId == 0 ? "" : getString(resId);
+
+        return getString(R.string.sf__fingerprint_description, appName);
+    }
 
     /**
      * @return maximum number of passcode attempts
@@ -501,16 +527,17 @@ public class PasscodeActivity extends Activity {
          */
         if (VERSION.SDK_INT >= VERSION_CODES.P) {
             final BiometricPrompt.Builder bioBuilder = new BiometricPrompt.Builder(this);
-            bioBuilder.setDescription(getString(R.string.sf__fingerprint_description));
+            bioBuilder.setDescription(getFingerprintDescription());
             bioBuilder.setTitle(getString(R.string.sf__fingerprint_title));
             bioBuilder.setNegativeButton(getString(R.string.sf__fingerprint_cancel), getMainExecutor(),
                     new DialogInterface.OnClickListener() {
 
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    setMode(PasscodeMode.Check);
+                    biometricDeclined();
                 }
             });
+
             final BiometricPrompt bioPrompt = bioBuilder.build();
             bioPrompt.authenticate(new CancellationSignal(), getMainExecutor(),
                     new BiometricPrompt.AuthenticationCallback() {
@@ -518,6 +545,7 @@ public class PasscodeActivity extends Activity {
                 @Override
                 public void onAuthenticationError(int errorCode, CharSequence errString) {
                     super.onAuthenticationError(errorCode, errString);
+                    biometricDeclined();
                 }
 
                 @Override
@@ -567,6 +595,9 @@ public class PasscodeActivity extends Activity {
     }
 
     public void unlockViaFingerprintScan() {
+        if (!passcodeManager.getBiometricEnabled()) {
+            passcodeManager.setBiometricEnabled(this, true);
+        }
         passcodeManager.unlock();
         done();
     }

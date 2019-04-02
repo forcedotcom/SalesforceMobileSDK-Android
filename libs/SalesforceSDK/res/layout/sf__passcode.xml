@@ -160,11 +160,12 @@
 
         <Button
             android:id="@+id/sf_passcode_verify_button"
-            android:layout_width="140dp"
+            android:layout_width="match_parent"
             android:layout_height="50dp"
             android:layout_alignParentRight="true"
             android:layout_alignParentBottom="true"
             android:layout_marginRight="20dp"
+            android:layout_marginLeft="20dp"
             android:layout_marginBottom="20dp"
             android:background="@drawable/sf__passcode_primary_color_button"
             android:text="@string/sf__passcode_verify_button"

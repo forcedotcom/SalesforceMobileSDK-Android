@@ -76,10 +76,10 @@
     <string name="sf__idp_app_url_scheme_description">Used to specify IDP app\'s URL scheme to be used.</string>
 
 	<!-- Fingerprint auth resources-->
-	<string name="sf__fingerprint_title">Fingerprint Authentication</string>
-	<string name="sf__fingerprint_description">Confirm fingerprint to continue</string>
+	<string name="sf__fingerprint_title">Fingerprint Unlock</string>
+	<string name="sf__fingerprint_description">Unlock using your fingerprint to access your %s account.</string>
 	<string name="sf__fingerprint_hint">Touch sensor</string>
-	<string name="sf__fingerprint_cancel">Use Passcode</string>
+	<string name="sf__fingerprint_cancel">cancel</string>
 	<string name="sf__fingerprint_success">Success</string>
 	<string name="sf__fingerprint_failed">Fingerprint authentication failed</string>
 
