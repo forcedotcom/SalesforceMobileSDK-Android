@@ -49,6 +49,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.salesforce.androidsdk.R;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 import javax.crypto.Cipher;
 
@@ -148,11 +149,8 @@ public class FingerprintAuthDialogFragment extends DialogFragment {
         });
         mStatusText = v.findViewById(R.id.sf__fingerprint_status);
 
-        ApplicationInfo applicationInfo = mContext.getApplicationInfo();
-        int resId = applicationInfo.labelRes;
-        String appName = resId == 0 ? "" : getString(resId);
         TextView textView = v.findViewById(R.id.sf__fingerprint_description);
-        textView.setText(getString(R.string.sf__fingerprint_description, appName));
+        textView.setText(getString(R.string.sf__fingerprint_description, SalesforceSDKManager.getInstance().provideAppName()));
 
         getDialog().setCanceledOnTouchOutside(false);
         return v;

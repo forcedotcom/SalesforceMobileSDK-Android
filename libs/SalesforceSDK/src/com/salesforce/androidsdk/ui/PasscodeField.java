@@ -1,5 +1,33 @@
+/*
+ * Copyright (c) 2011-present, salesforce.com, inc.
+ * All rights reserved.
+ * Redistribution and use of this software in source and binary forms, with or
+ * without modification, are permitted provided that the following conditions
+ * are met:
+ * - Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * - Neither the name of salesforce.com, inc. nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission of salesforce.com, inc.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 package com.salesforce.androidsdk.ui;
 
+import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -8,37 +36,48 @@ import android.util.AttributeSet;
 import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.EditText;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.security.PasscodeManager;
 
-import androidx.appcompat.widget.AppCompatEditText;
-
-public class PasscodeField extends AppCompatEditText {
+@SuppressLint("AppCompatCustomView")
+public class PasscodeField extends EditText {
     private static final int MAX_PASSCODE_LENGTH = 8;
     private static final int CIRCLE_DIAMETER = 24;
     private static final int LINE_WIDTH = 2;
     private static final int DEFAULT_PADDING = 20;
     private static final int CIRCLE_SPACING = 20;
 
+    /**
+     * {@inheritDoc}
+     */
     public PasscodeField(Context context) {
         super(context);
         disableActions();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public PasscodeField(Context context, AttributeSet attrs) {
         super(context, attrs);
         disableActions();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public PasscodeField(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         disableActions();
     }
 
-    /*
-     * This is necessary to make sure the user is always typing on the end of the passcode string.
+    /**
+     * This override is necessary to ensure the user is always typing on the end of the passcode string.
+     *
+     * {@inheritDoc}
      */
     @Override
     public void onSelectionChanged(int start, int end) {
@@ -53,11 +92,22 @@ public class PasscodeField extends AppCompatEditText {
         super.onSelectionChanged(start, end);
     }
 
+    /**
+     * Override provided to disable suggestions.
+     *
+     * @return false
+     */
     @Override
     public boolean isSuggestionsEnabled() {
         return false;
     }
 
+
+    /**
+     * Override provided to draw the passcode field UI element instead of the standard EditText
+     *
+     * @param canvas the provided canvas
+     */
     @Override
     protected void onDraw(Canvas canvas) {
         PasscodeManager passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
@@ -100,6 +150,10 @@ public class PasscodeField extends AppCompatEditText {
         }
     }
 
+    /**
+     * Overrides the Custom Insert Action callbacks to disable all actions, such as select and paste.
+     */
+    @TargetApi(Build.VERSION_CODES.M)
     private void disableActions() {
         /*
          * TODO: Remove this check once minAPI >= 23.

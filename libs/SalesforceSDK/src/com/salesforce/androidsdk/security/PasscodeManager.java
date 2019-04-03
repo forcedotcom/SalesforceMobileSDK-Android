@@ -269,8 +269,8 @@ public class PasscodeManager  {
             passcodeLength = sp.getInt(KEY_PASSCODE_LENGTH, MIN_PASSCODE_LENGTH);
             passcodeLengthKnown = sp.getBoolean(KEY_PASSCODE_LENGTH_KNOWN, false);
             passcodeChangeRequired = sp.getBoolean(KEY_PASSCODE_CHANGE_REQUIRED, false);
-            biometricAllowed = sp.getBoolean(KEY_BIOMETRIC_ALLOWED, false);
-            biometricEnrollmentShown = sp.getBoolean(KEY_BIOMETRIC_ENROLLMENT, true);
+            biometricAllowed = sp.getBoolean(KEY_BIOMETRIC_ALLOWED, true);
+            biometricEnrollmentShown = sp.getBoolean(KEY_BIOMETRIC_ENROLLMENT, false);
             biometricEnabled = sp.getBoolean(KEY_BIOMETRIC_ENABLED, false);
         }
     }
@@ -530,6 +530,11 @@ public class PasscodeManager  {
         reset(SalesforceSDKManager.getInstance().getAppContext());
     }
 
+    /**
+     * The current inactivity timeout before the app locks, in milliseconds.
+     *
+     * @return the inactivity timeout
+     */
     public int getTimeoutMs() {
         return timeoutMs;
     }
@@ -542,14 +547,31 @@ public class PasscodeManager  {
         return passcodeLength;
     }
 
+    /**
+     * The exact length of the passcode if it is known.  It may be unknown on upgrade before first unlock.
+     * Use {@link PasscodeManager#getPasscodeLengthKnown()} to check if return is exact length or org minimum.
+     *
+     * @return passcode length
+     */
     public int getPasscodeLength() {
         return passcodeLength;
     }
 
+    /**
+     * Whether or not the exact passcode length is known.  It may be unknown on upgrade before first unlock.
+     * Use {@link PasscodeManager#getPasscodeLength()} to get the length.
+     *
+     * @return true if the length is known
+     */
     public boolean getPasscodeLengthKnown() {
         return passcodeLengthKnown;
     }
 
+    /**
+     * Whether or not the connected app allows biometric as an alternative to passcode.
+     *
+     * @return true if biometric is allowed
+     */
     public boolean getBiometricAllowed() {
         return biometricAllowed;
     }
@@ -562,6 +584,11 @@ public class PasscodeManager  {
         return biometricEnrollmentShown;
     }
 
+    /**
+     * Whether or not the user has enabled the ability to use biometric to bypass passcode.
+     *
+     * @return true if the user has enabled biometric
+     */
     public boolean getBiometricEnabled() {
         return biometricEnabled;
     }

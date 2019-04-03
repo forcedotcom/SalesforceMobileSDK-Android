@@ -79,7 +79,7 @@
 	<string name="sf__fingerprint_title">Fingerprint Unlock</string>
 	<string name="sf__fingerprint_description">Unlock using your fingerprint to access your %s account.</string>
 	<string name="sf__fingerprint_hint">Touch sensor</string>
-	<string name="sf__fingerprint_cancel">cancel</string>
+	<string name="sf__fingerprint_cancel">Cancel</string>
 	<string name="sf__fingerprint_success">Success</string>
 	<string name="sf__fingerprint_failed">Fingerprint authentication failed</string>
 

@@ -438,10 +438,7 @@ public class PasscodeActivity extends Activity {
     }
 
     protected String getBioInstrMessage() {
-        ApplicationInfo applicationInfo = getApplicationInfo();
-        int resId = applicationInfo.labelRes;
-        String appName = resId == 0 ? "the app" : getString(resId);
-        return getString(R.string.sf__biometric_allow_instructiuons, appName);
+        return getString(R.string.sf__biometric_allow_instructiuons, SalesforceSDKManager.getInstance().provideAppName());
     }
 
     protected LinearLayout getBiometricBox() {
@@ -617,17 +614,17 @@ public class PasscodeActivity extends Activity {
     }
 
     private void clearUi() {
-        title.setVisibility(View.INVISIBLE);
-        instr.setVisibility(View.INVISIBLE);
-        passcodeField.setVisibility(View.INVISIBLE);
-        passcodeBox.setVisibility(View.INVISIBLE);
-        logoutButton.setVisibility(View.INVISIBLE);
-        verifyButton.setVisibility(View.INVISIBLE);
-        bioInstrTitle.setVisibility(View.INVISIBLE);
-        bioInstr.setVisibility(View.INVISIBLE);
-        notNowButton.setVisibility(View.INVISIBLE);
-        enableButton.setVisibility(View.INVISIBLE);
-        biometricBox.setVisibility(View.INVISIBLE);
-        fingerImage.setVisibility(View.INVISIBLE);
+        title.setVisibility(View.GONE);
+        instr.setVisibility(View.GONE);
+        passcodeField.setVisibility(View.GONE);
+        passcodeBox.setVisibility(View.GONE);
+        logoutButton.setVisibility(View.GONE);
+        verifyButton.setVisibility(View.GONE);
+        bioInstrTitle.setVisibility(View.GONE);
+        bioInstr.setVisibility(View.GONE);
+        notNowButton.setVisibility(View.GONE);
+        enableButton.setVisibility(View.GONE);
+        biometricBox.setVisibility(View.GONE);
+        fingerImage.setVisibility(View.GONE);
     }
 }
