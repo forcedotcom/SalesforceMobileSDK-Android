@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.ui;
 
 import android.app.Activity;
 import android.app.PendingIntent;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
@@ -41,7 +42,6 @@ import android.os.Bundle;
 import android.security.KeyChain;
 import android.security.KeyChainAliasCallback;
 import android.security.KeyChainException;
-import androidx.browser.customtabs.CustomTabsIntent;
 import android.text.TextUtils;
 import android.webkit.ClientCertRequest;
 import android.webkit.SslErrorHandler;
@@ -87,6 +87,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import androidx.browser.customtabs.CustomTabsIntent;
 
 /**
  * Helper class to manage a WebView instance that is going through the OAuth login process.
@@ -237,7 +239,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             t.show();
         }
         final Intent intent = new Intent(AUTHENTICATION_FAILED_INTENT);
-        if (e != null && e instanceof OAuth2.OAuthFailedException) {
+        if (e instanceof OAuth2.OAuthFailedException) {
             final OAuth2.OAuthFailedException exception = (OAuth2.OAuthFailedException) e;
             int statusCode = exception.getHttpStatusCode();
             intent.putExtra(HTTP_ERROR_RESPONSE_CODE_INTENT, statusCode);
@@ -327,7 +329,14 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
          * ensures that Chrome custom tab is dismissed once the login process is complete.
          */
         customTabsIntent.intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-        customTabsIntent.launchUrl(activity, url);
+        try {
+            customTabsIntent.launchUrl(activity, url);
+        } catch (ActivityNotFoundException e) {
+            SalesforceSDKLogger.w(TAG, "Browser not installed on this device", e);
+            Toast.makeText(getContext(), "Browser not installed on this device",
+                    Toast.LENGTH_LONG).show();
+            callback.finish(null);
+        }
     }
 
     private boolean doesChromeExist() {
