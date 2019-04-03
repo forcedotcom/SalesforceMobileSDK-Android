@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.security;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -144,7 +145,7 @@ public class PasscodeManager  {
 
     /**
      * Set passcode change required flag to the passed value
-     * @param ctx
+     * @param ctx Context.
      * @param passcodeChangeRequired value to set passcode change required flag to
      */
     public void setPasscodeChangeRequired(Context ctx, boolean passcodeChangeRequired) {
@@ -206,6 +207,7 @@ public class PasscodeManager  {
      * @param passLen Minimum passcode length.
      * @param bioAllowed If biometric Unlock is Allowed by connected App
      */
+    @SuppressLint("ApplySharedPref")
     public void storeMobilePolicyForOrg(UserAccount account, int timeout, int passLen, boolean bioAllowed) {
         if (account == null) {
             return;
@@ -226,6 +228,7 @@ public class PasscodeManager  {
      *
      * @param context Context.
      */
+    @SuppressLint("ApplySharedPref")
     private void storeMobilePolicy(Context context) {
 
         // Context will be null only in test runs.
@@ -278,6 +281,7 @@ public class PasscodeManager  {
     /**
      * Reset this passcode manager: delete stored passcode and reset fields to their starting value
      */
+    @SuppressLint("ApplySharedPref")
     public void reset(Context ctx) {
 
     	// Deletes the underlying org policy files for all orgs.
@@ -318,6 +322,7 @@ public class PasscodeManager  {
      * @param context Context.
      * @param account User account.
      */
+    @SuppressLint("ApplySharedPref")
     public void reset(Context context, UserAccount account) {
     	if (account == null) {
     		return;
@@ -361,8 +366,8 @@ public class PasscodeManager  {
     }
 
     /**
-     * @param ctx
-     * @param passcode
+     * @param ctx Context.
+     * @param passcode Passcode.
      * @return true if passcode matches the one stored (hashed) in private preference
      */
     public boolean check(Context ctx, String passcode) {
@@ -395,9 +400,10 @@ public class PasscodeManager  {
 
     /**
      * Store the given passcode (hashed) in private preference
-     * @param ctx
-     * @param passcode
+     * @param ctx Context.
+     * @param passcode Passcode.
      */
+    @SuppressLint("ApplySharedPref")
     public void store(Context ctx, String passcode) {
         SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
         Editor e = sp.edit();
@@ -411,7 +417,7 @@ public class PasscodeManager  {
     }
 
     /**
-     * @param ctx
+     * @param ctx Context.
      * @return true if passcode was already created
      */
     public boolean hasStoredPasscode(Context ctx) {
@@ -427,6 +433,7 @@ public class PasscodeManager  {
         return sp.getInt(KEY_FAILED_ATTEMPTS, 0);
     }
 
+    @SuppressLint("ApplySharedPref")
     private void setFailedPasscodeAttempts(int failedPasscodeAttempts) {
         SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
         Editor e = sp.edit();
@@ -442,7 +449,7 @@ public class PasscodeManager  {
     }
 
     /**
-     * @param ctx
+     * @param ctx Context.
      */
     public void lock(Context ctx) {
         showLockActivity(ctx);
@@ -594,8 +601,8 @@ public class PasscodeManager  {
     }
 
     /**
-     * @param ctx
-     * @param minPasscodeLength
+     * @param ctx Context.
+     * @param minPasscodeLength The new minimum passcode length to set.
      *
      * @deprecated Will be removed in Mobile SDK 8.0. Use {@link PasscodeManager#setPasscodeLength(Context, int)}  instead.
      */
@@ -604,8 +611,8 @@ public class PasscodeManager  {
     }
 
     /**
-     * @param ctx
-     * @param passcodeLength
+     * @param ctx Context.
+     * @param passcodeLength The new passcode length to set.
      */
     public void setPasscodeLength(Context ctx, int passcodeLength) {
     	if (passcodeLength > this.passcodeLength) {

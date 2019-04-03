@@ -32,7 +32,6 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.fingerprint.FingerprintManager;
@@ -97,11 +96,11 @@ public class PasscodeActivity extends Activity {
         // Protect against screenshots.
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
                 WindowManager.LayoutParams.FLAG_SECURE);
-        setContentView(getLayoutId());
+        setContentView(R.layout.sf__passcode);
 
-        title = getTitleView();
-        instr = getInstructionsView();
-        passcodeField = getPasscodeField();
+        title = findViewById(R.id.sf__passcode_title);
+        instr = findViewById(R.id.sf__passcode_instructions);
+        passcodeField = findViewById(R.id.sf__passcode_text);
         passcodeField.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
@@ -117,15 +116,15 @@ public class PasscodeActivity extends Activity {
             @Override
             public void afterTextChanged(Editable s) { }
         });
-        passcodeBox = getPasscodeBox();
-        logoutButton = getLogoutButton();
+        passcodeBox = findViewById(R.id.sf__passcode_box);
+        logoutButton = findViewById(R.id.sf__passcode_logout_button);
         logoutButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 signoutAllUsers();
             }
         });
-        verifyButton = getVerifyButton();
+        verifyButton = findViewById(R.id.sf_passcode_verify_button);
         verifyButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -136,19 +135,19 @@ public class PasscodeActivity extends Activity {
             }
         });
 
-        fingerImage = getFingerImage();
-        bioInstrTitle =  getBioInstrTitle();
-        bioInstr = getBioInstr();
-        bioInstr.setText(getBioInstrMessage());
-        biometricBox = getBiometricBox();
-        notNowButton = getNotNowButton();
+        fingerImage = findViewById(R.id.sf__fingerprint_icon);
+        bioInstrTitle = findViewById(R.id.sf__biometric_instructions_title);
+        bioInstr = findViewById(R.id.sf__biometric_instructions);
+        bioInstr.setText(getString(R.string.sf__biometric_allow_instructiuons, SalesforceSDKManager.getInstance().provideAppName()));
+        biometricBox = findViewById(R.id.sf__biometric_box);
+        notNowButton = findViewById(R.id.sf__biometric_not_now_button);
         notNowButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 biometricDeclined();
             }
         });
-        enableButton = getEnableButton();
+        enableButton = findViewById(R.id.sf__biometric_enable_button);
         enableButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -220,9 +219,9 @@ public class PasscodeActivity extends Activity {
         clearUi();
         switch(newMode) {
         case Check:
-            title.setText(getEnterTitle());
+            title.setText(getString(R.string.sf__passcode_enter_title));
             title.setVisibility(View.VISIBLE);
-            instr.setText(getEnterInstructions());
+            instr.setText(getString(R.string.sf__passcode_enter_instructions));
             instr.setVisibility(View.VISIBLE);
             passcodeBox.setVisibility(View.VISIBLE);
             passcodeField.setVisibility(View.VISIBLE);
@@ -233,34 +232,34 @@ public class PasscodeActivity extends Activity {
             passcodeField.requestFocus();
             break;
         case Create:
-            title.setText(getCreateTitle());
+            title.setText(getString(R.string.sf__passcode_create_title));
             title.setVisibility(View.VISIBLE);
-            instr.setText(getCreateInstructions());
+            instr.setText(getString(R.string.sf__passcode_create_instructions));
             instr.setVisibility(View.VISIBLE);
             passcodeBox.setVisibility(View.VISIBLE);
             passcodeField.setVisibility(View.VISIBLE);
             passcodeField.requestFocus();
             break;
         case CreateConfirm:
-            title.setText(getConfirmTitle());
+            title.setText(getString(R.string.sf__passcode_confirm_title));
             title.setVisibility(View.VISIBLE);
-            instr.setText(getConfirmInstructions());
+            instr.setText(getString(R.string.sf__passcode_confirm_instructions));
             instr.setVisibility(View.VISIBLE);
             passcodeBox.setVisibility(View.VISIBLE);
             passcodeField.setVisibility(View.VISIBLE);
             passcodeField.requestFocus();
             break;
         case Change:
-            title.setText(getCreateTitle());
+            title.setText(getString(R.string.sf__passcode_change_instructions));
             title.setVisibility(View.VISIBLE);
-            instr.setText(getChangeInstructions());
+            instr.setText(R.string.sf__passcode_change_instructions);
             instr.setVisibility(View.VISIBLE);
             passcodeBox.setVisibility(View.VISIBLE);
             passcodeField.setVisibility(View.VISIBLE);
             passcodeField.requestFocus();
         	break;
         case EnableBiometric:
-            title.setText(getBiometricTitle());
+            title.setText(getString(R.string.sf__biometric_title));
             title.setVisibility(View.VISIBLE);
             biometricBox.setVisibility(View.VISIBLE);
             bioInstrTitle.setVisibility(View.VISIBLE);
@@ -318,7 +317,7 @@ public class PasscodeActivity extends Activity {
                     done();
                 }
             } else {
-                instr.setText(getPasscodesDontMatchError());
+                instr.setText(getString(R.string.sf__passcodes_dont_match));
             }
             return true;
 
@@ -336,9 +335,9 @@ public class PasscodeActivity extends Activity {
                 passcodeField.setText("");
                 int maxAttempts = getMaxPasscodeAttempts();
                 if (attempts < maxAttempts - 1) {
-                    instr.setText(getPasscodeTryAgainError(maxAttempts - attempts));
+                    instr.setText(getString(R.string.sf__passcode_try_again, (maxAttempts - attempts)));
                 } else if (attempts < maxAttempts) {
-                    instr.setText(getPasscodeFinalAttemptError());
+                    instr.setText(getString(R.string.sf__passcode_final));
                 } else {
                     passcodeManager.reset(this);
                     if (logoutEnabled) {
@@ -361,112 +360,188 @@ public class PasscodeActivity extends Activity {
         finish();
     }
 
+
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected int getLayoutId() {
         return R.layout.sf__passcode;
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected TextView getTitleView() {
         return (TextView) findViewById(R.id.sf__passcode_title);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected TextView getInstructionsView() {
         return (TextView) findViewById(R.id.sf__passcode_instructions);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected PasscodeField getPasscodeField() {
         return (PasscodeField) findViewById(R.id.sf__passcode_text);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected LinearLayout getPasscodeBox() {
         return findViewById(R.id.sf__passcode_box);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected String getCreateTitle() {
     	return getString(R.string.sf__passcode_create_title);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected String getEnterTitle() {
     	return getString(R.string.sf__passcode_enter_title);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected String getConfirmTitle() {
     	return getString(R.string.sf__passcode_confirm_title);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected String getEnterInstructions() {
     	return getString(R.string.sf__passcode_enter_instructions);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected String getCreateInstructions() {
     	return getString(R.string.sf__passcode_create_instructions);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected String getChangeInstructions() {
     	return getString(R.string.sf__passcode_change_instructions);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected String getConfirmInstructions() {
     	return getString(R.string.sf__passcode_confirm_instructions);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected String getPasscodeTryAgainError(int countAttemptsLeft) {
         return getString(R.string.sf__passcode_try_again, countAttemptsLeft);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected String getPasscodeFinalAttemptError() {
         return getString(R.string.sf__passcode_final);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected String getPasscodesDontMatchError() {
         return getString(R.string.sf__passcodes_dont_match);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected Button getLogoutButton() {
         return findViewById(R.id.sf__passcode_logout_button);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected Button getVerifyButton() {
         return findViewById(R.id.sf_passcode_verify_button);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected TextView getBioInstrTitle() {
         return findViewById(R.id.sf__biometric_instructions_title);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected TextView getBioInstr() {
         return findViewById(R.id.sf__biometric_instructions);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected String getBioInstrMessage() {
         return getString(R.string.sf__biometric_allow_instructiuons, SalesforceSDKManager.getInstance().provideAppName());
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected LinearLayout getBiometricBox() {
         return findViewById(R.id.sf__biometric_box);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected Button getNotNowButton() {
         return findViewById(R.id.sf__biometric_not_now_button);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected Button getEnableButton() {
         return findViewById(R.id.sf__biometric_enable_button);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected ImageView getFingerImage() {
         return findViewById(R.id.sf__fingerprint_icon);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
     protected String getBiometricTitle() {
         return getString(R.string.sf__biometric_title);
     }
 
-    protected String getFingerprintDescription() {
-        ApplicationInfo applicationInfo = getApplicationInfo();
-        int resId = applicationInfo.labelRes;
-        String appName = resId == 0 ? "" : getString(resId);
 
-        return getString(R.string.sf__fingerprint_description, appName);
+    /**
+     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
+     */
+    protected String getFingerprintDescription() {
+        return getString(R.string.sf__fingerprint_description, SalesforceSDKManager.getInstance().provideAppName());
     }
 
     /**
@@ -524,7 +599,7 @@ public class PasscodeActivity extends Activity {
          */
         if (VERSION.SDK_INT >= VERSION_CODES.P) {
             final BiometricPrompt.Builder bioBuilder = new BiometricPrompt.Builder(this);
-            bioBuilder.setDescription(getFingerprintDescription());
+            bioBuilder.setDescription(getString(R.string.sf__fingerprint_description, SalesforceSDKManager.getInstance().provideAppName()));
             bioBuilder.setTitle(getString(R.string.sf__fingerprint_title));
             bioBuilder.setNegativeButton(getString(R.string.sf__fingerprint_cancel), getMainExecutor(),
                     new DialogInterface.OnClickListener() {
