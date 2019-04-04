@@ -153,6 +153,11 @@ public class SOQLMutatorTest {
     }
 
     @Test
+    public void testHasOrderByWhenPresentInValue() {
+        Assert.assertFalse(new SOQLMutator("SELECT Description FROM Account WHERE Name = ' order by \' order by \''").hasOrderBy());
+    }
+
+    @Test
     public void testHasOrderByWhenAbsent() {
         Assert.assertFalse(new SOQLMutator("SELECT Description FROM Account LIMIT 1000").hasOrderBy());
     }
