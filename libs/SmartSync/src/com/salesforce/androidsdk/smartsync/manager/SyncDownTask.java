@@ -76,6 +76,11 @@ public class SyncDownTask extends SyncTask {
             countSaved += records.length();
             maxTimeStamp = Math.max(maxTimeStamp, target.getLatestModificationTimeStamp(records));
 
+            // Updating maxTimeStamp as we go if records are ordered by latest modification
+            if (target.isSyncDownSortedByLatestModification()) {
+                sync.setMaxTimeStamp(maxTimeStamp);
+            }
+
             // Update sync status.
             if (countSaved < totalSize) {
                 updateSync(sync, SyncState.Status.RUNNING, countSaved*100 / totalSize, callback);
@@ -83,11 +88,6 @@ public class SyncDownTask extends SyncTask {
 
             // Fetch next records, if any.
             records = target.continueFetch(syncManager);
-
-            // Updating maxTimeStamp as we go if records are ordered by latest modification
-            if (target.isSyncDownSortedByLatestModification()) {
-                sync.setMaxTimeStamp(maxTimeStamp);
-            }
         }
 
         // Updating maxTimeStamp once at the end if records are NOT ordered by latest modification

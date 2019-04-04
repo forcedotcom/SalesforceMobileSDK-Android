@@ -123,7 +123,6 @@ public class SOQLMutatorTest {
         Assert.assertEquals("select Description from Account order by LastModifiedDate", new SOQLMutator(soql).replaceOrderBy("LastModifiedDate").asBuilder().build());
     }
 
-
     @Test
     public void testReplaceOrderByWhenLimit() {
         String soql = "SELECT Description FROM Account LIMIT 1000";
@@ -142,4 +141,21 @@ public class SOQLMutatorTest {
         String soql = "SELECT Description FROM Account ORDER BY FirstName LIMIT 1000";
         Assert.assertEquals("select Description from Account limit 1000", new SOQLMutator(soql).replaceOrderBy("").asBuilder().build());
     }
+
+    @Test
+    public void testHasOrderByWhenPresent() {
+        Assert.assertTrue(new SOQLMutator("SELECT Description FROM Account ORDER BY FirstName LIMIT 1000").hasOrderBy());
+    }
+
+    @Test
+    public void testHasOrderByWhenPresentInSubquery() {
+        Assert.assertFalse(new SOQLMutator("SELECT Description FROM Account WHERE Id IN (SELECT Id FROM Account ORDER BY FirstName) LIMIT 1000").hasOrderBy());
+    }
+
+    @Test
+    public void testHasOrderByWhenAbsent() {
+        Assert.assertFalse(new SOQLMutator("SELECT Description FROM Account LIMIT 1000").hasOrderBy());
+    }
+
+
 }

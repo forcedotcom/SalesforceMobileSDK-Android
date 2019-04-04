@@ -98,7 +98,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
             }
 
             // Order by 'LastModifiedDate' field if no order by specified
-            if (!mutator.isOrderingBy(lastModFieldName)) {
+            if (!mutator.hasOrderBy()) {
                 mutator.replaceOrderBy(lastModFieldName);
             }
 

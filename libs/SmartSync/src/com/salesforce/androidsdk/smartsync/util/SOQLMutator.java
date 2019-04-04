@@ -116,7 +116,7 @@ public class SOQLMutator {
 
     /**
      * Replace fields being selected
-     * @param commaSeparatedFields
+     * @param commaSeparatedFields Comma separated fields to use in top level query's select.
      */
     public SOQLMutator replaceSelectFields(String commaSeparatedFields) {
         clauses.put(SELECT, commaSeparatedFields);
@@ -126,7 +126,7 @@ public class SOQLMutator {
 
     /**
      * Add fields to select
-     * @param commaSeparatedFields
+     * @param commaSeparatedFields Comma separated fields to add to top level query's select.
      */
     public SOQLMutator addSelectFields(String commaSeparatedFields) {
         clauses.put(SELECT, commaSeparatedFields + "," + trimmedClause(SELECT));
@@ -135,7 +135,7 @@ public class SOQLMutator {
 
     /**
      * Add predicates to where clause
-     * @param commaSeparatedPredicates
+     * @param commaSeparatedPredicates Comma separated predicates to add to top level query's where.
      */
     public SOQLMutator addWherePredicates(String commaSeparatedPredicates) {
         if (clauses.containsKey(WHERE)) {
@@ -148,7 +148,7 @@ public class SOQLMutator {
 
     /**
      * Replace order by clause (or add one if none)
-     * @param commaSeparatedFields
+     * @param commaSeparatedFields Comma separated fields to add to top level query's select.
      */
     public SOQLMutator replaceOrderBy(String commaSeparatedFields) {
         clauses.put(ORDER_BY, commaSeparatedFields);
@@ -157,17 +157,26 @@ public class SOQLMutator {
 
     /**
      * Check if query is ordering by given fields
-     * @param commaSeparatedFields
-     * @return
+     * @param commaSeparatedFields Comma separated fields to look for.
+     * @return true if it is the case.
      */
     public boolean isOrderingBy(String commaSeparatedFields) {
         return clauses.containsKey(ORDER_BY) && equalsIgnoringWhiteSpaces(commaSeparatedFields, clauses.get(ORDER_BY));
     }
 
     /**
+     * Check if query has order by clause
+     * @return true if it is the case.
+     */
+    public boolean hasOrderBy() {
+        return clauses.containsKey(ORDER_BY);
+    }
+
+
+    /**
      * Check if query is selecting by given field
-     * @param field
-     * @return
+     * @param field Field to look for.
+     * @return true if it is the case.
      */
     public boolean isSelectingField(String field) {
         List<String> selectedFields = Arrays.asList(clausesWithoutSubqueries.get(SELECT).split("[, ]+"));
