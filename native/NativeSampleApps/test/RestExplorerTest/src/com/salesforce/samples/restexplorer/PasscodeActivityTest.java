@@ -28,19 +28,14 @@ package com.salesforce.samples.restexplorer;
 
 import android.content.Context;
 import android.content.Intent;
-
-import androidx.test.espresso.matcher.ViewMatchers;
-import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.filters.LargeTest;
-import androidx.test.rule.ActivityTestRule;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-
+import android.os.Build;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.security.PasscodeManager;
+import com.salesforce.androidsdk.ui.FingerprintAuthDialogFragment;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.ui.PasscodeActivity.PasscodeMode;
 
@@ -50,6 +45,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.LargeTest;
+import androidx.test.filters.SdkSuppress;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.rule.ActivityTestRule;
 
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
@@ -68,6 +69,7 @@ public class PasscodeActivityTest {
     private Context targetContext;
     private PasscodeActivity passcodeActivity;
     private PasscodeManager passcodeManager;
+    private FingerprintAuthDialogFragment fingerprintDialog;
 
     /**
      * Custom activity launch rules to run steps before the activity is launched.
@@ -118,10 +120,6 @@ public class PasscodeActivityTest {
         passcodeActivity = passcodeActivityTestRule.getActivity();
         Assert.assertEquals("Activity expected in create mode", PasscodeMode.Create, passcodeActivity.getMode());
         checkUi();
-
-        // TODO: Assert verify button is not present
-
-        // TODO: assert biometric stuff not shown
 
         // Entering in 123456
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
@@ -415,6 +413,7 @@ public class PasscodeActivityTest {
      */
     @Test
     public void testPasscodeLengthUnknownError() {
+
         // Store passcode and set mode to Check.
         passcodeManager.store(targetContext, "123456");
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
@@ -445,45 +444,12 @@ public class PasscodeActivityTest {
      * Test biometric enrollment declined
      */
     @Test
+    @SdkSuppress(minSdkVersion = 23)
     public void testBiometricEnrollmentDecline() {
+
         // Store passcode and set mode to Check.
         passcodeManager.store(targetContext, "123456");
         Assert.assertFalse("Biometric enrollment shown wrong.", passcodeManager.getBiometricEnrollmentShown());
-        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.getBiometricEnabled());
-
-        // Get activity
-        final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
-                SalesforceSDKManager.getInstance().getPasscodeActivity());
-        passcodeActivityTestRule.launchActivity(i);
-        passcodeActivity = passcodeActivityTestRule.getActivity();
-
-        // Force biometric
-        passcodeActivity.forceBiometric(true);
-        setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        waitSome();
-        Assert.assertEquals("Activity expected in check mode", PasscodeMode.EnableBiometric, passcodeActivity.getMode());
-        Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
-
-        // Verify biometric screen
-        checkUi();
-
-        // Tap not now button
-        clickView(R.id.sf__biometric_enable_button);
-        Assert.assertFalse("Application should not be locked", passcodeManager.isLocked());
-        Assert.assertTrue("Biometric enrollment shown wrong.", passcodeManager.getBiometricEnrollmentShown());
-        // This won't change because we can't confirm the fingerprint/biometric prompt
-        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.getBiometricEnabled());
-    }
-
-    /**
-     * Test biometric enrollment enabled (almost).  Biometric can't actually be enabled but we can
-     * assert things are working properly behind the scenes.
-     */
-    @Test
-    public void testBiometricEnrollmentEnable() {
-        // Store passcode and set mode to Check.
-        passcodeManager.store(targetContext, "123456");
-        Assert.assertFalse("Biometric enrollemnt shown wrong.", passcodeManager.getBiometricEnrollmentShown());
         Assert.assertFalse("Biometric should not be enabled.", passcodeManager.getBiometricEnabled());
 
         // Get activity
@@ -510,10 +476,58 @@ public class PasscodeActivityTest {
     }
 
     /**
+     * Test biometric enrollment enabled (almost).  Biometric can't actually be enabled but we can
+     * assert things are working properly behind the scenes.
+     */
+    @Test
+    @SdkSuppress(minSdkVersion = 23)
+    public void testBiometricEnrollmentEnable() {
+
+        // Store passcode and set mode to Check.
+        passcodeManager.store(targetContext, "123456");
+        Assert.assertFalse("Biometric enrollemnt shown wrong.", passcodeManager.getBiometricEnrollmentShown());
+        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.getBiometricEnabled());
+
+        // Get activity
+        final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+                SalesforceSDKManager.getInstance().getPasscodeActivity());
+        passcodeActivityTestRule.launchActivity(i);
+        passcodeActivity = passcodeActivityTestRule.getActivity();
+
+        // Force biometric
+        passcodeActivity.forceBiometric(true);
+        setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
+        waitSome();
+        Assert.assertEquals("Activity expected in check mode", PasscodeMode.EnableBiometric, passcodeActivity.getMode());
+        Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
+
+        // Verify biometric screen
+        checkUi();
+
+        // Tap enable button
+        clickView(R.id.sf__biometric_enable_button);
+        waitSome();
+        Assert.assertTrue("Biometric enrollment shown wrong.", passcodeManager.getBiometricEnrollmentShown());
+        // This won't change because we can't confirm the fingerprint/biometric prompt
+        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.getBiometricEnabled());
+
+        // TODO: Remove when API 28 is the min version
+        // Biometric prompt on API 28+ actually checks for permissions so flow is ended early.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            // Biometric Prompt actually checks for permissions and quits early
+            Assert.assertFalse("Application should not be locked", passcodeManager.isLocked());
+        } else {
+            Assert.assertTrue("Application should be locked", passcodeManager.isLocked());
+        }
+    }
+
+    /**
      * Biometric enrollment prompt should only be shown once
      */
     @Test
+    @SdkSuppress(minSdkVersion = 23)
     public void testBiometricEnrollmentNotShown() {
+
         // Store passcode and set mode to Check.
         passcodeManager.store(targetContext, "123456");
         Assert.assertFalse("Biometric enrollment shown wrong.", passcodeManager.getBiometricEnrollmentShown());
@@ -542,6 +556,7 @@ public class PasscodeActivityTest {
      */
     @Test
     public void testConnectedAppDisableBiometric() {
+
         // Store passcode and set mode to Check.
         passcodeManager.store(targetContext, "123456");
         Assert.assertFalse("Biometric enrollment shown wrong.", passcodeManager.getBiometricEnrollmentShown());
