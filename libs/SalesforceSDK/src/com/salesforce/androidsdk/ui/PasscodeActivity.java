@@ -78,6 +78,7 @@ public class PasscodeActivity extends Activity {
     private PasscodeManager passcodeManager;
     private String firstPasscode;
     private boolean logoutEnabled;
+    private boolean forceBiometric;
 
     public enum PasscodeMode {
         Create,
@@ -124,7 +125,7 @@ public class PasscodeActivity extends Activity {
                 signoutAllUsers();
             }
         });
-        verifyButton = findViewById(R.id.sf_passcode_verify_button);
+        verifyButton = findViewById(R.id.sf__passcode_verify_button);
         verifyButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -151,7 +152,6 @@ public class PasscodeActivity extends Activity {
         enableButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                passcodeManager.setBiometricEnabled(PasscodeActivity.this, true);
                 launchBiometricAuth();
             }
         });
@@ -169,6 +169,7 @@ public class PasscodeActivity extends Activity {
             }
         }
         logoutEnabled = true;
+        forceBiometric = false;
         if (savedInstanceState != null) {
             final String inputText = savedInstanceState.getString(EXTRA_KEY);
             if (passcodeField != null && inputText != null) {
@@ -250,7 +251,7 @@ public class PasscodeActivity extends Activity {
             passcodeField.requestFocus();
             break;
         case Change:
-            title.setText(getString(R.string.sf__passcode_change_instructions));
+            title.setText(getString(R.string.sf__passcode_change_title));
             title.setVisibility(View.VISIBLE);
             instr.setText(R.string.sf__passcode_change_instructions);
             instr.setVisibility(View.VISIBLE);
@@ -288,6 +289,15 @@ public class PasscodeActivity extends Activity {
      */
     public void enableLogout(boolean b) {
         logoutEnabled = b;
+    }
+
+    /**
+     * Used for tests to allow biometric when the device is not set up
+     *
+     * @param b True - if biometric checks skipped, False - otherwise.
+     */
+    public void forceBiometric(boolean b) {
+        forceBiometric = b;
     }
 
     protected boolean onSubmit(String enteredPasscode) {
@@ -339,10 +349,7 @@ public class PasscodeActivity extends Activity {
                 } else if (attempts < maxAttempts) {
                     instr.setText(getString(R.string.sf__passcode_final));
                 } else {
-                    passcodeManager.reset(this);
-                    if (logoutEnabled) {
-                        signoutAllUsers();
-                    }
+                    signoutAllUsers();
                 }
             }
             return true;
@@ -477,7 +484,7 @@ public class PasscodeActivity extends Activity {
      * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
      */
     protected Button getVerifyButton() {
-        return findViewById(R.id.sf_passcode_verify_button);
+        return findViewById(R.id.sf__passcode_verify_button);
     }
 
     /**
@@ -552,6 +559,13 @@ public class PasscodeActivity extends Activity {
     }
 
     private void signoutAllUsers() {
+        passcodeManager.reset(this);
+
+        // Used for tests
+        if (!logoutEnabled) {
+            return;
+        }
+
         final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
         final List<UserAccount> userAccounts = userAccMgr.getAuthenticatedUsers();
 
@@ -640,6 +654,11 @@ public class PasscodeActivity extends Activity {
 
     @TargetApi(VERSION_CODES.M)
     private boolean isFingerprintEnabled() {
+        // Used for tests
+        if (forceBiometric) {
+            return true;
+        }
+
 	    /*
          * TODO: Remove this check once minAPI >= 23.
          */

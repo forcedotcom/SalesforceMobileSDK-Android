@@ -159,7 +159,7 @@
         android:layout_alignParentBottom="true" >
 
         <Button
-            android:id="@+id/sf_passcode_verify_button"
+            android:id="@+id/sf__passcode_verify_button"
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:layout_alignParentRight="true"

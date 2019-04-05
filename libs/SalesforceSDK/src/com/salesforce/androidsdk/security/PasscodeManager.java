@@ -626,6 +626,18 @@ public class PasscodeManager  {
     }
 
     /**
+     * This method can be used to force the stored or default passcode length to be trusted
+     * upon upgrade if set to 'true'.
+     *
+     * @param ctx Context
+     * @param lengthKnown Whether or not the passcode length is known.
+     */
+    public void setPasscodeLengthKnown(Context ctx, boolean lengthKnown) {
+        this.passcodeLengthKnown = lengthKnown;
+        storeMobilePolicy(ctx);
+    }
+
+    /**
      * Called when biometric unlock requirement for the org changes.
      */
     public void setBiometricAllowed(Context ctx, boolean allowed) {

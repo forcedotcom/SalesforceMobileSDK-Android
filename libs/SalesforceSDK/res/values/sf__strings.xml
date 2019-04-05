@@ -40,6 +40,7 @@
 	<!-- Passcode entry screen -->
 	<string name="sf__passcode_create_title">Passcode</string>
 	<string name="sf__passcode_create_instructions">Create a passcode</string>
+	<string name="sf__passcode_change_title">Passcode</string>
 	<string name="sf__passcode_change_instructions">Create a passcode</string>
 	<string name="sf__passcode_confirm_title">Passcode</string>
 	<string name="sf__passcode_confirm_instructions">Verify passcode</string>
