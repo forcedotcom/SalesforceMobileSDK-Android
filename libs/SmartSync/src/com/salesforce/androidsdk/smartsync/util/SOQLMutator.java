@@ -87,11 +87,11 @@ public class SOQLMutator {
                 depth--;
             }
 
-            if (token.startsWith("'")) {
-                inQuotes = true;
-            } else if (token.endsWith("'") && !token.endsWith("\'")) {
-                inQuotes = false;
-            }
+//            if (token.startsWith("'")) {
+//                inQuotes = true;
+//            } else if (token.endsWith("'") && !token.endsWith("\'")) {
+//                inQuotes = false;
+//            }
 
             // Only looking to parse top level query
             else if (depth == 0 && !inQuotes) {
