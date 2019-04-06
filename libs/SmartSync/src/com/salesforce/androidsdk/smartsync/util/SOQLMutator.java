@@ -76,7 +76,6 @@ public class SOQLMutator {
         int depth = 0;
         String matchingClauseType = null;
         String currentClauseType = null;    // one of the clause types of interest
-        boolean inQuotes = false;
         while (tokenizer.hasMoreElements()) {
             String token = tokenizer.nextToken();
 
@@ -87,14 +86,8 @@ public class SOQLMutator {
                 depth--;
             }
 
-//            if (token.startsWith("'")) {
-//                inQuotes = true;
-//            } else if (token.endsWith("'") && !token.endsWith("\'")) {
-//                inQuotes = false;
-//            }
-
             // Only looking to parse top level query
-            else if (depth == 0 && !inQuotes) {
+            else if (depth == 0) {
                 for (String clauseType : CLAUSE_TYPE_KEYWORDS) {
                     if (token.toLowerCase(Locale.US).matches(clauseType)) {
                         matchingClauseType = clauseType;

@@ -270,7 +270,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
             syncManager.reSync(syncName, null);
             Assert.fail("Expected exception");
         } catch (SyncManager.SmartSyncException e) {
-            Assert.assertTrue(e.getMessage().contains("no sync found"));
+            Assert.assertTrue(e.getMessage().contains("does not exist"));
         }
     }
 

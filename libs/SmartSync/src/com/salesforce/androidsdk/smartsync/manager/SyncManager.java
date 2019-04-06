@@ -401,20 +401,8 @@ public class SyncManager {
      * @throws JSONException
      */
     public SyncState reSync(long syncId, SyncUpdateCallback callback) throws JSONException {
-        SyncState sync = SyncState.byId(smartStore, syncId);
-        if (sync == null) {
-            throw new SmartSyncException("Cannot run reSync:" + syncId + ": no sync found");
-        }
-        sync.setTotalSize(-1);
-
-        if (sync.isStopped()) {
-            // Sync was interrupted, refetch records including those with maxTimeStamp
-            long maxTimeStamp = sync.getMaxTimeStamp();
-            sync.setMaxTimeStamp(Math.max(maxTimeStamp - 1, -1L));
-        }
-        SmartSyncLogger.d(TAG, "reSync called", sync);
-        runSync(sync, callback);
-        return sync;
+        SyncState sync = checkExistsById(syncId);
+        return reSync(sync, callback);
     }
 
     /**
@@ -425,11 +413,21 @@ public class SyncManager {
      * @throws JSONException
      */
     public SyncState reSync(String syncName, SyncUpdateCallback callback) throws JSONException {
-        SyncState sync = getSyncStatus(syncName);
-        if (sync == null) {
-            throw new SmartSyncException("Cannot run reSync:" + syncName + ": no sync found");
+        SyncState sync = checkExistsByName(syncName);
+        return reSync(sync, callback);
+    }
+
+    private SyncState reSync(SyncState sync, SyncUpdateCallback callback) {
+        sync.setTotalSize(-1);
+
+        if (sync.isStopped()) {
+            // Sync was interrupted, refetch records including those with maxTimeStamp
+            long maxTimeStamp = sync.getMaxTimeStamp();
+            sync.setMaxTimeStamp(Math.max(maxTimeStamp - 1, -1L));
         }
-        return reSync(sync.getId(), callback);
+        SmartSyncLogger.d(TAG, "reSync called", sync);
+        runSync(sync, callback);
+        return sync;
     }
 
     /**
@@ -527,21 +525,35 @@ public class SyncManager {
      * @throws IOException
      */
     public void cleanResyncGhosts(final long syncId, final CleanResyncGhostsCallback callback) throws JSONException {
-        checkNotRunning("cleanResyncGhosts", syncId);
+        SyncState sync = checkExistsById(syncId);
+        cleanResyncGhosts(sync, callback);
+    }
+
+    /**
+     * Removes local copies of records that have been deleted on the server
+     * or do not match the query results on the server anymore.
+     *
+     * @param syncName
+     * @param callback Callback to get clean resync ghosts completion status.
+     * @throws JSONException
+     * @throws IOException
+     */
+    public void cleanResyncGhosts(final String syncName, final CleanResyncGhostsCallback callback) throws JSONException {
+        SyncState sync = checkExistsByName(syncName);
+        cleanResyncGhosts(sync, callback);
+    }
+
+    private void cleanResyncGhosts(final SyncState sync, final CleanResyncGhostsCallback callback) {
+        checkNotRunning("cleanResyncGhosts", sync.getId());
         checkAcceptingSyncs();
 
-        final SyncState sync = SyncState.byId(smartStore, syncId);
-        if (sync == null) {
-            throw new SmartSyncException("Cannot run cleanResyncGhosts:" + syncId + ": no sync found");
-        }
         if (sync.getType() != SyncState.Type.syncDown) {
-            throw new SmartSyncException("Cannot run cleanResyncGhosts:" + syncId + ": wrong type:" + sync.getType());
+            throw new SmartSyncException("Cannot run cleanResyncGhosts:" + sync.getId() + ": wrong type:" + sync.getType());
         }
 
         // Ask target to clean up ghosts
         SmartSyncLogger.d(TAG, "cleanResyncGhosts called", sync);
         threadPool.execute(new CleanSyncGhostsTask(this, sync, callback));
-
     }
 
     /**
@@ -573,6 +585,33 @@ public class SyncManager {
             throw new SmartSyncException("Cannot run " + operation + " " + syncId + " - sync is still running");
         }
     }
+
+    /**
+     * Throw excpetion if no sync found with id syncId
+     * @param syncId Id of sync to look for.
+     * @return sync if found.
+     */
+    private SyncState checkExistsById(long syncId) throws JSONException {
+        SyncState sync = getSyncStatus(syncId);
+        if (sync == null) {
+            throw new SmartSyncException("Sync " + syncId + " does not exist");
+        }
+        return sync;
+    }
+
+    /**
+     * Throw excpetion if no sync found with name syncName
+     * @param syncName Name of sync to look for.
+     * @return sync if found.
+     */
+    private SyncState checkExistsByName(String syncName) throws JSONException {
+        SyncState sync = getSyncStatus(syncName);
+        if (sync == null) {
+            throw new SmartSyncException("Sync " + syncName + " does not exist");
+        }
+        return sync;
+    }
+
 
     /**
      * Exception thrown by smart sync manager
