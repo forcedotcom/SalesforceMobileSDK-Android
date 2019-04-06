@@ -1092,7 +1092,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.RUNNING, 50, numberRecords2);
 
         // Stop sync manager
-        stopSyncManager(100);
+        stopSyncManager(200);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.STOPPED, 50, numberRecords2);
         int numberRecordsFetched2 = (int) (numberRecords2 * 0.50);
         int numberRecordsLeft2 = numberRecords2-numberRecordsFetched2 + 1/* we refetch records at maxTimeStamp when a sync was stopped */;
