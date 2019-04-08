@@ -45,10 +45,10 @@ import com.salesforce.androidsdk.security.PasscodeManager;
 @SuppressLint("AppCompatCustomView")
 public class PasscodeField extends EditText {
     private static final int MAX_PASSCODE_LENGTH = 8;
-    private static final int CIRCLE_DIAMETER = 24;
+    private static final int CIRCLE_DIAMETER = 22;
     private static final int LINE_WIDTH = 2;
     private static final int DEFAULT_PADDING = 20;
-    private static final int CIRCLE_SPACING = 20;
+    private static final int CIRCLE_SPACING = 16;
 
     /**
      * {@inheritDoc}
@@ -131,7 +131,7 @@ public class PasscodeField extends EditText {
         int circleSpacing = 0;
         int lengthForSpacing = passcodeLengthKnown ? passcodeLength : MAX_PASSCODE_LENGTH;
         float yPosition = getHeight()/2f;
-        float startX = (getWidth() - (diameter * lengthForSpacing) - (padding * (lengthForSpacing - 1)) + (lineWidth * lengthForSpacing * 2)) / 2;
+        float startX = (getWidth() - (diameter * lengthForSpacing) - (spacing * (lengthForSpacing - 1)) + (lineWidth * lengthForSpacing * 2)) / 2;
 
         // If passcode length is unknown (upgrade) don't draw open circles and left align
         if (passcodeLengthKnown) {

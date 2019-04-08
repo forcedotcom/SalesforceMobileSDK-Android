@@ -796,12 +796,12 @@ public class PasscodeActivityTest {
                 Assert.assertEquals("Expected biometric title instructions to be visible.", View.VISIBLE,
                         passcodeActivity.findViewById(R.id.sf__biometric_instructions_title).getVisibility());
                 Assert.assertEquals("Biometric instructions title is wrong.",
-                        passcodeActivity.getString(R.string.sf__biometric_allow_instructiuons_title),
+                        passcodeActivity.getString(R.string.sf__biometric_allow_instructions_title),
                         ((TextView) passcodeActivity.findViewById(R.id.sf__biometric_instructions_title)).getText());
                 Assert.assertEquals("Expected biometric instructions to be visible.", View.VISIBLE,
                         passcodeActivity.findViewById(R.id.sf__biometric_instructions).getVisibility());
                 Assert.assertEquals("Biometric instructions are wrong.",
-                        passcodeActivity.getString(R.string.sf__biometric_allow_instructiuons, "RestExplorer"),
+                        passcodeActivity.getString(R.string.sf__biometric_allow_instructions, "RestExplorer"),
                         ((TextView) passcodeActivity.findViewById(R.id.sf__biometric_instructions)).getText());
 
                 // Buttons

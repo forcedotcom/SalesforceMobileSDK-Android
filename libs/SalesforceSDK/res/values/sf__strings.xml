@@ -52,8 +52,8 @@
 	<string name="sf__passcode_logout">Log out</string>
 	<string name="sf__passcode_verify_button">Verify Passcode</string>
 	<string name="sf__biometric_title">Fingerprint Unlock</string>
-	<string name="sf__biometric_allow_instructiuons_title">Set up fingerprint unlock</string>
-	<string name="sf__biometric_allow_instructiuons">You can not unlock %s using biometric for extra security and convenience.</string>
+	<string name="sf__biometric_allow_instructions_title">Set up fingerprint unlock</string>
+	<string name="sf__biometric_allow_instructions">You can not unlock %s using biometric for extra security and convenience.</string>
 	<string name="sf__biometric_not_now_button">Not Now</string>
 	<string name="sf__biometric_enable_button">Enable</string>
 

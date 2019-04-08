@@ -1,81 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:orientation="vertical">
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/fingerprint_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:paddingStart="24dp"
+    android:paddingEnd="0dp"
+    android:paddingTop="16dp">
 
-    <FrameLayout
+    <TextView
+        android:id="@+id/sf__fingerprint_title"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:text="@string/sf__fingerprint_title"
+        android:textStyle="bold"
+        android:textColor="@color/sf__passcode_text_color"
+        android:textSize="20sp"/>
 
-        <RelativeLayout
-            android:id="@+id/fingerprint_container"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:paddingStart="24dp"
-            android:paddingEnd="0dp"
-            android:paddingTop="16dp">
+    <TextView
+        android:id="@+id/sf__fingerprint_description"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/sf__fingerprint_title"
+        android:layout_marginTop="10dp"
+        android:paddingEnd="20dp"
+        android:text="@string/sf__fingerprint_description"
+        android:textColor="@color/sf__passcode_text_color"
+        android:textSize="16sp"/>
 
-            <TextView
-                android:id="@+id/sf__fingerprint_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_alignParentTop="true"
-                android:text="@string/sf__fingerprint_title"
-                android:textStyle="bold"
-                android:textColor="@color/sf__passcode_text_color"
-                android:textSize="20dp"/>
+    <ImageView
+        android:id="@+id/sf__fingerprint_icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/sf__fingerprint_description"
+        android:layout_marginTop="20dp"
+        android:src="@drawable/ic_fp_40px" />
 
-            <TextView
-                android:id="@+id/sf__fingerprint_description"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/sf__fingerprint_title"
-                android:layout_marginTop="10dp"
-                android:paddingEnd="20dp"
-                android:text="@string/sf__fingerprint_description"
-                android:textColor="@color/sf__passcode_text_color"
-                android:textSize="16dp"/>
+    <TextView
+        android:id="@+id/sf__fingerprint_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/sf__fingerprint_icon"
+        android:layout_alignTop="@+id/sf__fingerprint_icon"
+        android:layout_marginStart="16dp"
+        android:layout_toEndOf="@+id/sf__fingerprint_icon"
+        android:gravity="center_vertical"
+        android:text="@string/sf__fingerprint_hint"
+        android:textColor="@color/sf__hint_color" />
 
-
-            <ImageView
-                android:id="@+id/sf__fingerprint_icon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_below="@+id/sf__fingerprint_description"
-                android:layout_marginTop="20dp"
-                android:src="@drawable/ic_fp_40px" />
-
-            <TextView
-                android:id="@+id/sf__fingerprint_status"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignBottom="@+id/sf__fingerprint_icon"
-                android:layout_alignTop="@+id/sf__fingerprint_icon"
-                android:layout_marginStart="16dp"
-                android:layout_toEndOf="@+id/sf__fingerprint_icon"
-                android:gravity="center_vertical"
-                android:text="@string/sf__fingerprint_hint"
-                android:textColor="@color/sf__hint_color" />
-
-            <Button
-                android:id="@+id/sf__use_password_button"
-                style="?android:attr/borderlessButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/sf__fingerprint_status"
-                android:layout_alignParentRight="true"
-                android:layout_marginTop="10dp"
-                android:layout_marginRight="0dp"
-                android:layout_marginBottom="0dp"
-                android:text="@string/sf__fingerprint_cancel"
-                android:textColor="@color/sf__passcode_primary_color"
-                android:textStyle="bold" />
-        </RelativeLayout>
-
-    </FrameLayout>
-
-</LinearLayout>
+    <Button
+        android:id="@+id/sf__use_password_button"
+        style="?android:attr/borderlessButtonStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/sf__fingerprint_status"
+        android:layout_alignParentRight="true"
+        android:layout_marginTop="10dp"
+        android:layout_marginRight="0dp"
+        android:layout_marginBottom="0dp"
+        android:text="@string/sf__fingerprint_cancel"
+        android:textColor="@color/sf__passcode_primary_color"
+        android:textStyle="bold" />
+</RelativeLayout>

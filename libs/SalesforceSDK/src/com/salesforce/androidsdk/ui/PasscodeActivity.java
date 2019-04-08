@@ -74,7 +74,7 @@ public class PasscodeActivity extends Activity {
     private PasscodeField passcodeField;
     private LinearLayout passcodeBox, biometricBox;
     private Button logoutButton, notNowButton, enableButton, verifyButton;
-    private ImageView fingerImage;
+    private View fingerImage;
     private PasscodeManager passcodeManager;
     private String firstPasscode;
     private boolean logoutEnabled;
@@ -139,7 +139,7 @@ public class PasscodeActivity extends Activity {
         fingerImage = findViewById(R.id.sf__fingerprint_icon);
         bioInstrTitle = findViewById(R.id.sf__biometric_instructions_title);
         bioInstr = findViewById(R.id.sf__biometric_instructions);
-        bioInstr.setText(getString(R.string.sf__biometric_allow_instructiuons, SalesforceSDKManager.getInstance().provideAppName()));
+        bioInstr.setText(getString(R.string.sf__biometric_allow_instructions, SalesforceSDKManager.getInstance().provideAppName()));
         biometricBox = findViewById(R.id.sf__biometric_box);
         notNowButton = findViewById(R.id.sf__biometric_not_now_button);
         notNowButton.setOnClickListener(new OnClickListener() {
@@ -505,7 +505,7 @@ public class PasscodeActivity extends Activity {
      * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
      */
     protected String getBioInstrMessage() {
-        return getString(R.string.sf__biometric_allow_instructiuons, SalesforceSDKManager.getInstance().provideAppName());
+        return getString(R.string.sf__biometric_allow_instructions, SalesforceSDKManager.getInstance().provideAppName());
     }
 
     /**
