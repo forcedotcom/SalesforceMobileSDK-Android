@@ -392,20 +392,6 @@ public class PasscodeActivity extends Activity {
     /**
      * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
      */
-    protected PasscodeField getPasscodeField() {
-        return (PasscodeField) findViewById(R.id.sf__passcode_text);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected LinearLayout getPasscodeBox() {
-        return findViewById(R.id.sf__passcode_box);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
     protected String getCreateTitle() {
     	return getString(R.string.sf__passcode_create_title);
     }
@@ -485,70 +471,6 @@ public class PasscodeActivity extends Activity {
      */
     protected Button getVerifyButton() {
         return findViewById(R.id.sf__passcode_verify_button);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected TextView getBioInstrTitle() {
-        return findViewById(R.id.sf__biometric_instructions_title);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected TextView getBioInstr() {
-        return findViewById(R.id.sf__biometric_instructions);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getBioInstrMessage() {
-        return getString(R.string.sf__biometric_allow_instructions, SalesforceSDKManager.getInstance().provideAppName());
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected LinearLayout getBiometricBox() {
-        return findViewById(R.id.sf__biometric_box);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected Button getNotNowButton() {
-        return findViewById(R.id.sf__biometric_not_now_button);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected Button getEnableButton() {
-        return findViewById(R.id.sf__biometric_enable_button);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected ImageView getFingerImage() {
-        return findViewById(R.id.sf__fingerprint_icon);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getBiometricTitle() {
-        return getString(R.string.sf__biometric_title);
-    }
-
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getFingerprintDescription() {
-        return getString(R.string.sf__fingerprint_description, SalesforceSDKManager.getInstance().provideAppName());
     }
 
     /**
