@@ -96,7 +96,6 @@
             android:id="@+id/sf__biometric_box"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/sf__fingerprint_icon"
             android:layout_marginStart="0dp"
             android:layout_marginTop="64.5dp"
             android:layout_marginEnd="0dp"
@@ -108,9 +107,9 @@
                 android:id="@+id/sf__biometric_instructions_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="left"
+                android:layout_gravity="start"
                 android:layout_marginTop="20dp"
-                android:layout_marginLeft="20dp"
+                android:layout_marginStart="20dp"
                 android:text="@string/sf__biometric_allow_instructions_title"
                 android:textColor="@color/sf__passcode_text_color"
                 android:textSize="18sp"
@@ -121,11 +120,10 @@
                 android:id="@+id/sf__biometric_instructions"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="left"
-                android:gravity="left"
-                android:layout_below="@+id/sf__biometric_instructions_title"
+                android:layout_gravity="start"
+                android:gravity="start"
                 android:layout_marginTop="10dp"
-                android:layout_marginLeft="20dp"
+                android:layout_marginStart="20dp"
                 android:text="@string/sf__biometric_allow_instructions"
                 android:textColor="@color/sf__passcode_text_color"
                 android:textSize="14sp"/>
@@ -135,7 +133,6 @@
                 android:layout_height="match_parent"
                 android:orientation="horizontal"
                 android:layout_gravity="center"
-                android:layout_below="@+id/sf__biometric_instructions"
                 android:layout_marginTop="20dp"
                 android:layout_marginBottom="20dp">
 
@@ -145,14 +142,15 @@
                     android:layout_weight="1"
                     android:layout_height="47dp"
                     android:layout_gravity="center"
-                    android:layout_marginLeft="20dp"
-                    android:layout_marginRight="10dp"
+                    android:layout_marginStart="20dp"
+                    android:layout_marginEnd="10dp"
                     android:background="@drawable/sf__passcode_secondary_color_button"
                     android:text="@string/sf__biometric_not_now_button"
                     android:textColor="@color/sf__passcode_primary_color"
                     android:textAllCaps="false"
                     android:textSize="14sp"
-                    android:textStyle="bold"/>
+                    android:textStyle="bold"
+                    tools:ignore="ButtonStyle" />
 
                 <Button
                     android:id="@+id/sf__biometric_enable_button"
@@ -160,14 +158,15 @@
                     android:layout_weight="1"
                     android:layout_height="47dp"
                     android:layout_gravity="center"
-                    android:layout_marginRight="20dp"
-                    android:layout_marginLeft="10dp"
+                    android:layout_marginStart="20dp"
+                    android:layout_marginEnd="10dp"
                     android:background="@drawable/sf__passcode_primary_color_button"
                     android:text="@string/sf__biometric_enable_button"
                     android:textColor="@color/sf__passcode_secondary_color"
                     android:textAllCaps="false"
                     android:textSize="14sp"
-                    android:textStyle="bold"/>
+                    android:textStyle="bold"
+                    tools:ignore="ButtonStyle" />
             </LinearLayout>
 
         </LinearLayout>
@@ -183,7 +182,7 @@
             android:id="@+id/sf__passcode_verify_button"
             android:layout_width="match_parent"
             android:layout_height="50dp"
-            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
             android:layout_alignParentBottom="true"
             android:layout_marginRight="20dp"
             android:layout_marginLeft="20dp"

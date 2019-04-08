@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+<layer-list xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="oval" >
 
@@ -15,5 +16,6 @@
     <item android:drawable="@drawable/sf__fingerprint"
         android:width="42dp"
         android:height="42dp"
-        android:gravity="center"/>
+        android:gravity="center"
+        tools:targetApi="m" />
 </layer-list>
