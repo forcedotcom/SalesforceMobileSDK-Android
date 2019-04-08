@@ -14,7 +14,7 @@ function envSetup {
     gem install danger-android_lint
     gem install danger-jacoco
 
-    ruby .circleci/setTestCreds.rb 
+    echo $TEST_CREDENTIALS > ./shared/test/test_credentials.json
 }
 
 function printTestsToRun {

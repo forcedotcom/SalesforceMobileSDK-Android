@@ -246,6 +246,16 @@ public abstract class SyncDownTarget extends SyncTarget {
     }
 
     /**
+     * When sync down fetches records from older to newer, the maxTimeStamp for the sync
+     * can be updated throughout the sync, and as a result running a paused (or killed) sync
+     * does not refetch all records.
+     * @return true if sync down is sorted by latest modification time stamp
+     */
+    public boolean isSyncDownSortedByLatestModification() {
+        return false;
+    }
+
+    /**
      * Gets the latest modification timestamp from the array of records.
      * @param records
      * @param modifiedDateFieldName

@@ -40,6 +40,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 /**
  * State of a sync-down or sync-up 
@@ -112,25 +115,39 @@ public class SyncState {
 	/**
 	 * Cleanup syncs soup if needed
 	 * At startup, no sync could be running already
-	 * If a sync is in the running state, we change it to failed
+	 * If a sync is in the running state, we change it to stopped
 	 * @param store
 	 */
 	public static void cleanupSyncsSoupIfNeeded(SmartStore store) {
 		try {
-			QuerySpec runningSyncQuery = QuerySpec.buildSmartQuerySpec(String.format("select {%1$s:%2$s} from {%1$s} where {%1$s:%3$s} = '%4$s'", SYNCS_SOUP, SmartSqlHelper.SOUP, SYNC_STATUS, Status.RUNNING.name()), Integer.MAX_VALUE);
-			JSONArray rows = store.query(runningSyncQuery, 0);
-			for (int i=0; i<rows.length(); i++) {
-				JSONObject sync = rows.getJSONArray(i).getJSONObject(0);
-				sync.put(SYNC_STATUS, Status.FAILED.name());
-				sync.put(SYNC_ERROR, "Application likely killed while sync was running");
-				store.upsert(SYNCS_SOUP, sync);
+			List<SyncState> syncs = getSyncsWithStatus(store, Status.RUNNING);
+			for (SyncState sync : syncs) {
+				sync.setStatus(Status.STOPPED);
+				sync.save(store);
 			}
 		} catch (JSONException e) {
 			throw new SyncManager.SmartSyncException(e);
 		}
 	}
 
-	
+
+	/**
+	 * Get syncs with given status in the given store
+	 * @param store
+	 * @param status
+	 * @return list of SyncState
+	 * @throws JSONException
+	 */
+	public static List<SyncState> getSyncsWithStatus(SmartStore store, Status status) throws JSONException {
+		List<SyncState> syncs = new ArrayList<>();
+		QuerySpec query = QuerySpec.buildSmartQuerySpec(String.format("select {%1$s:%2$s} from {%1$s} where {%1$s:%3$s} = '%4$s'", SYNCS_SOUP, SmartSqlHelper.SOUP, SYNC_STATUS, status.name()), Integer.MAX_VALUE);
+		JSONArray rows = store.query(query, 0);
+		for (int i=0; i<rows.length(); i++) {
+			syncs.add(SyncState.fromJSON(rows.getJSONArray(i).getJSONObject(0)));
+		}
+		return syncs;
+	}
+
 	/**
 	 * Create sync state in database for a sync down and return corresponding SyncState
 	 * NB: Throws exception if there is already a sync with the same name (when name is not null)
@@ -337,6 +354,15 @@ public class SyncState {
 		sync.put(SYNC_ERROR, errorJSON);
 		return sync;
 	}
+
+	@Override
+	public String toString() {
+		try {
+			return asJSON().toString().replaceAll("\n", " ");
+		} catch (JSONException e) {
+			return super.toString();
+		}
+	}
 	
 	/**
 	 * Save SyncState to db
@@ -418,7 +444,7 @@ public class SyncState {
 		if (this.status != Status.RUNNING && status == Status.RUNNING) {
 			this.startTime = System.currentTimeMillis();
 		}
-		if (this.status == Status.RUNNING && (status == Status.DONE || status == Status.FAILED)) {
+		if (this.status == Status.RUNNING && (status == Status.DONE || status == Status.FAILED || status == Status.STOPPED)) {
 			this.endTime = System.currentTimeMillis();
 		}
 
@@ -436,7 +462,11 @@ public class SyncState {
 	public boolean hasFailed() {
 		return this.status == Status.FAILED;
 	}
-	
+
+	public boolean isStopped() {
+		return this.status == Status.STOPPED;
+	}
+
 	public boolean isRunning() {
 		return this.status == Status.RUNNING;
 	}
@@ -459,6 +489,7 @@ public class SyncState {
      */
     public enum Status {
     	NEW,
+		STOPPED,
     	RUNNING,
     	DONE,
     	FAILED
