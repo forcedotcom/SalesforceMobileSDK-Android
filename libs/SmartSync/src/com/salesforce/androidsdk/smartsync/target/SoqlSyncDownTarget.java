@@ -32,6 +32,7 @@ import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.SOQLMutator;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
@@ -41,9 +42,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Set;
-import java.util.StringTokenizer;
 
 /**
  * Target for sync defined by a SOQL query
@@ -61,7 +60,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
      */
     public SoqlSyncDownTarget(JSONObject target) throws JSONException {
         super(target);
-        this.query = addSpecialFieldsIfRequired(JSONObjectHelper.optString(target, QUERY));
+        this.query = modifyQueryIfNeeded(JSONObjectHelper.optString(target, QUERY));
     }
 
 	/**
@@ -79,25 +78,39 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
     public SoqlSyncDownTarget(String idFieldName, String modificationDateFieldName, String query) {
         super(idFieldName, modificationDateFieldName);
         this.queryType = QueryType.soql;
-        this.query = addSpecialFieldsIfRequired(query);
+        this.query = modifyQueryIfNeeded(query);
     }
 
-    private String addSpecialFieldsIfRequired(String query) {
+    private String modifyQueryIfNeeded(String query) {
         if (!TextUtils.isEmpty(query)) {
 
+            SOQLMutator mutator = new SOQLMutator(query);
             // Inserts the mandatory 'LastModifiedDate' field if it doesn't exist.
             final String lastModFieldName = getModificationDateFieldName();
-            if (!query.contains(lastModFieldName)) {
-                query = query.replaceFirst("([sS][eE][lL][eE][cC][tT] )", "select " + lastModFieldName + ", ");
+            if (!mutator.isSelectingField(lastModFieldName)) {
+                mutator.addSelectFields(lastModFieldName);
             }
 
             // Inserts the mandatory 'Id' field if it doesn't exist.
             final String idFieldName = getIdFieldName();
-            if (!query.contains(idFieldName)) {
-                query = query.replaceFirst("([sS][eE][lL][eE][cC][tT] )", "select " + idFieldName + ", ");
+            if (!mutator.isSelectingField(idFieldName)) {
+                mutator.addSelectFields(idFieldName);
             }
+
+            // Order by 'LastModifiedDate' field if no order by specified
+            if (!mutator.hasOrderBy()) {
+                mutator.replaceOrderBy(lastModFieldName);
+            }
+
+            query = mutator.asBuilder().build();
         }
         return query;
+    }
+
+
+    @Override
+    public boolean isSyncDownSortedByLatestModification() {
+        return new SOQLMutator(query).isOrderingBy(getModificationDateFieldName());
     }
 
 	/**
@@ -172,6 +185,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         JSONArray records = startFetch(syncManager, soqlForRemoteIds);
         remoteIds.addAll(parseIdsFromResponse(records));
         while (records != null) {
+            syncManager.checkAcceptingSyncs();
 
             // Fetch next records, if any.
             records = continueFetch(syncManager);
@@ -182,41 +196,13 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
 
     protected String getSoqlForRemoteIds() {
         String fullQuery = getQuery(0);
-
-        StringBuffer soql = new StringBuffer();
-        soql.append("SELECT ").append(getIdFieldName()).append(" FROM");
-
-
-        // Using a tokenizer to extract the from clause
-        // NB: we need to find the from of the main query (not any subqueries)
-        StringTokenizer tokenizer = new StringTokenizer(fullQuery, " ", false);
-        int depth = 0;
-        boolean afterFrom = false;
-        while (tokenizer.hasMoreElements()) {
-            String token = tokenizer.nextToken();
-
-            if (afterFrom) {
-                soql.append(" ").append(token);
-            }
-
-            if (token.startsWith("(")) {
-                depth++;
-            } else if (token.endsWith(")")) {
-                depth--;
-            } else if (depth == 0 && !afterFrom && token.toLowerCase(Locale.US).equals("from")) {
-                afterFrom = true;
-            }
-        }
-
-        return soql.toString();
+        return new SOQLMutator(fullQuery).replaceSelectFields(getIdFieldName()).replaceOrderBy("").asBuilder().build();
     }
 
     protected static String addFilterForReSync(String query, String modificationFieldDatName, long maxTimeStamp) {
         if (maxTimeStamp > 0) {
             String extraPredicate = modificationFieldDatName + " > " + Constants.TIMESTAMP_FORMAT.format(new Date(maxTimeStamp));
-            query = query.toLowerCase().contains(" where ")
-                    ? query.replaceFirst("( [wW][hH][eE][rR][eE] )", "$1" + extraPredicate + " and ")
-                    : query.replaceFirst("( [fF][rR][oO][mM][ ]+[^ ]*)", "$1 where " + extraPredicate);
+            query = new SOQLMutator(query).addWherePredicates(extraPredicate).asBuilder().build();
         }
         return query;
     }

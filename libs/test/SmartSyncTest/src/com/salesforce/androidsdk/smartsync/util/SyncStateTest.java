@@ -41,6 +41,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -109,10 +110,12 @@ public class SyncStateTest {
 
         // Create syncs - some in the running state
         createSyncChangeStatus("newSyncUp", true, SyncState.Status.NEW);
+        createSyncChangeStatus("stoppedSyncUp", true, SyncState.Status.STOPPED);
         createSyncChangeStatus("runningSyncUp", true, SyncState.Status.RUNNING);
         createSyncChangeStatus("failedSyncUp", true, SyncState.Status.FAILED);
         createSyncChangeStatus("doneSyncUp", true, SyncState.Status.DONE);
         createSyncChangeStatus("newSyncDown", false, SyncState.Status.NEW);
+        createSyncChangeStatus("stoppedSyncDown", false, SyncState.Status.STOPPED);
         createSyncChangeStatus("runningSyncDown", false, SyncState.Status.RUNNING);
         createSyncChangeStatus("failedSyncDown", false, SyncState.Status.FAILED);
         createSyncChangeStatus("doneSyncDown", false, SyncState.Status.DONE);
@@ -122,21 +125,23 @@ public class SyncStateTest {
         SyncState.cleanupSyncsSoupIfNeeded(store);
 
         // Check the syncs
-        checkSyncStatus("newSyncUp", SyncState.Status.NEW, "");
-        checkSyncStatus("runningSyncUp", SyncState.Status.FAILED, "Application likely killed while sync was running");
-        checkSyncStatus("failedSyncUp", SyncState.Status.FAILED, "");
-        checkSyncStatus("doneSyncUp", SyncState.Status.DONE, "");
-        checkSyncStatus("newSyncDown", SyncState.Status.NEW, "");
-        checkSyncStatus("runningSyncDown", SyncState.Status.FAILED, "Application likely killed while sync was running");
-        checkSyncStatus("failedSyncDown", SyncState.Status.FAILED, "");
-        checkSyncStatus("doneSyncDown", SyncState.Status.DONE, "");
+        checkSyncStatus("newSyncUp", SyncState.Status.NEW);
+        checkSyncStatus("stoppedSyncUp", SyncState.Status.STOPPED);
+        checkSyncStatus("runningSyncUp", SyncState.Status.STOPPED);
+        checkSyncStatus("failedSyncUp", SyncState.Status.FAILED);
+        checkSyncStatus("doneSyncUp", SyncState.Status.DONE);
+        checkSyncStatus("newSyncDown", SyncState.Status.NEW);
+        checkSyncStatus("stoppedSyncDown", SyncState.Status.STOPPED);
+        checkSyncStatus("runningSyncDown", SyncState.Status.STOPPED);
+        checkSyncStatus("failedSyncDown", SyncState.Status.FAILED);
+        checkSyncStatus("doneSyncDown", SyncState.Status.DONE);
     }
 
     private void createSyncChangeStatus(String name, boolean isSyncUp, SyncState.Status status) throws JSONException  {
 
         SyncState sync;
         if (isSyncUp) {
-            sync = SyncState.createSyncUp(store, new SyncUpTarget(), SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED), "Accounts", name);
+            sync = SyncState.createSyncUp(store, new SyncUpTarget(), SyncOptions.optionsForSyncUp(Collections.singletonList("Name")), "Accounts", name);
         } else {
             sync = SyncState.createSyncDown(store, new SoqlSyncDownTarget("SELECT Id, Name from Account"), SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED), "Accounts", name);
         }
@@ -145,10 +150,9 @@ public class SyncStateTest {
         sync.save(store);
     }
 
-    private void checkSyncStatus(String name, SyncState.Status expectedStatus, String expectedError) throws JSONException {
+    private void checkSyncStatus(String name, SyncState.Status expectedStatus) throws JSONException {
         SyncState sync = SyncState.byName(store, name);
         Assert.assertEquals("Wrong status for " + name, expectedStatus, sync.getStatus());
-        Assert.assertEquals("Wrong error for " + name, expectedError, sync.getError());
     }
 
     /**

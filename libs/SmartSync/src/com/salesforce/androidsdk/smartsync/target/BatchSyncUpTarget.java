@@ -117,6 +117,12 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
             JSONObject record = records.get(i);
             String id = record.getString(getIdFieldName());
 
+            if (id == null) {
+                // create local id - needed for refId
+                id = String.format("local_%ld", record.getLong(SmartStore.SOUP_ENTRY_ID));
+                record.put(getIdFieldName(), id);
+            }
+
             RestRequest request = buildRequestForRecord(syncManager.apiVersion, record, fieldlist);
             if (request != null) refIdToRequests.put(id, request);
         }
