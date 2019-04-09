@@ -46,7 +46,6 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -162,7 +161,7 @@ public class PasscodeActivity extends Activity {
             setMode(PasscodeMode.Change);
         } else {
             if (passcodeManager.hasStoredPasscode(this)) {
-                PasscodeMode mode = passcodeManager.getBiometricEnabled() ? PasscodeMode.BiometricCheck : PasscodeMode.Check;
+                PasscodeMode mode = passcodeManager.biometricEnabled() ? PasscodeMode.BiometricCheck : PasscodeMode.Check;
                 setMode(mode);
             } else {
                 setMode(PasscodeMode.Create);
@@ -179,7 +178,7 @@ public class PasscodeActivity extends Activity {
     }
 
     protected void biometricDeclined() {
-        if (passcodeManager.getBiometricEnabled()) {
+        if (passcodeManager.biometricEnabled()) {
             setMode(PasscodeMode.Check);
         } else {
             passcodeManager.setBiometricEnabled(PasscodeActivity.this, false);
@@ -301,9 +300,9 @@ public class PasscodeActivity extends Activity {
     }
 
     protected boolean onSubmit(String enteredPasscode) {
-        boolean showBiometricEnrollment = !passcodeManager.getBiometricEnabled() &&
-                                          !passcodeManager.getBiometricEnrollmentShown() &&
-                                          passcodeManager.getBiometricAllowed() &&
+        boolean showBiometricEnrollment = !passcodeManager.biometricEnabled() &&
+                                          !passcodeManager.biometricEnrollmentShown() &&
+                                          passcodeManager.biometricAllowed() &&
                                           canShowBiometric();
 
         switch (getMode()) {
@@ -608,7 +607,7 @@ public class PasscodeActivity extends Activity {
     }
 
     public void unlockViaFingerprintScan() {
-        if (!passcodeManager.getBiometricEnabled()) {
+        if (!passcodeManager.biometricEnabled()) {
             passcodeManager.setBiometricEnabled(this, true);
         }
         passcodeManager.unlock();
@@ -616,7 +615,7 @@ public class PasscodeActivity extends Activity {
     }
 
     private boolean canShowBiometric() {
-        return passcodeManager.getBiometricAllowed() && isFingerprintEnabled();
+        return passcodeManager.biometricAllowed() && isFingerprintEnabled();
     }
 
     private void launchBiometricAuth() {

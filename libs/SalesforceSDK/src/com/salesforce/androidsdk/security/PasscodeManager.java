@@ -579,7 +579,7 @@ public class PasscodeManager  {
      *
      * @return true if biometric is allowed
      */
-    public boolean getBiometricAllowed() {
+    public boolean biometricAllowed() {
         return biometricAllowed;
     }
 
@@ -587,7 +587,7 @@ public class PasscodeManager  {
      * Whether or not the user has been shown the screen prompting them to enroll in biometric unlock.
      * @return true if the user has been prompted to enable biometric
      */
-    public boolean getBiometricEnrollmentShown() {
+    public boolean biometricEnrollmentShown() {
         return biometricEnrollmentShown;
     }
 
@@ -596,7 +596,7 @@ public class PasscodeManager  {
      *
      * @return true if the user has enabled biometric
      */
-    public boolean getBiometricEnabled() {
+    public boolean biometricEnabled() {
         return biometricEnabled;
     }
 
@@ -661,7 +661,7 @@ public class PasscodeManager  {
      * Sets biometric enabled.
      */
     public void setBiometricEnabled(Context ctx, boolean enabled) {
-        biometricEnabled = enabled && getBiometricAllowed();
+        biometricEnabled = enabled && biometricAllowed();
         storeMobilePolicy(ctx);
     }
 

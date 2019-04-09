@@ -129,7 +129,7 @@
                 android:textSize="14sp"/>
 
             <LinearLayout
-                android:layout_width="fill_parent"
+                android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:orientation="horizontal"
                 android:layout_gravity="center"
@@ -158,8 +158,8 @@
                     android:layout_weight="1"
                     android:layout_height="47dp"
                     android:layout_gravity="center"
-                    android:layout_marginStart="20dp"
-                    android:layout_marginEnd="10dp"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginEnd="20dp"
                     android:background="@drawable/sf__passcode_primary_color_button"
                     android:text="@string/sf__biometric_enable_button"
                     android:textColor="@color/sf__passcode_secondary_color"

@@ -449,8 +449,8 @@ public class PasscodeActivityTest {
 
         // Store passcode and set mode to Check.
         passcodeManager.store(targetContext, "123456");
-        Assert.assertFalse("Biometric enrollment shown wrong.", passcodeManager.getBiometricEnrollmentShown());
-        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.getBiometricEnabled());
+        Assert.assertFalse("Biometric enrollment shown wrong.", passcodeManager.biometricEnrollmentShown());
+        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.biometricEnabled());
 
         // Get activity
         final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
@@ -471,8 +471,8 @@ public class PasscodeActivityTest {
         // Tap not now button
         clickView(R.id.sf__biometric_not_now_button);
         Assert.assertFalse("Application should not be locked", passcodeManager.isLocked());
-        Assert.assertTrue("Biometric enrollment shown wrong.", passcodeManager.getBiometricEnrollmentShown());
-        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.getBiometricEnabled());
+        Assert.assertTrue("Biometric enrollment shown wrong.", passcodeManager.biometricEnrollmentShown());
+        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.biometricEnabled());
     }
 
     /**
@@ -485,8 +485,8 @@ public class PasscodeActivityTest {
 
         // Store passcode and set mode to Check.
         passcodeManager.store(targetContext, "123456");
-        Assert.assertFalse("Biometric enrollemnt shown wrong.", passcodeManager.getBiometricEnrollmentShown());
-        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.getBiometricEnabled());
+        Assert.assertFalse("Biometric enrollemnt shown wrong.", passcodeManager.biometricEnrollmentShown());
+        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.biometricEnabled());
 
         // Get activity
         final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
@@ -507,9 +507,9 @@ public class PasscodeActivityTest {
         // Tap enable button
         clickView(R.id.sf__biometric_enable_button);
         waitSome();
-        Assert.assertTrue("Biometric enrollment shown wrong.", passcodeManager.getBiometricEnrollmentShown());
+        Assert.assertTrue("Biometric enrollment shown wrong.", passcodeManager.biometricEnrollmentShown());
         // This won't change because we can't confirm the fingerprint/biometric prompt
-        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.getBiometricEnabled());
+        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.biometricEnabled());
 
         // TODO: Remove when API 28 is the min version
         // Biometric prompt on API 28+ actually checks for permissions so flow is ended early.
@@ -530,8 +530,8 @@ public class PasscodeActivityTest {
 
         // Store passcode and set mode to Check.
         passcodeManager.store(targetContext, "123456");
-        Assert.assertFalse("Biometric enrollment shown wrong.", passcodeManager.getBiometricEnrollmentShown());
-        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.getBiometricEnabled());
+        Assert.assertFalse("Biometric enrollment shown wrong.", passcodeManager.biometricEnrollmentShown());
+        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.biometricEnabled());
 
         // Get activity
         final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
@@ -543,12 +543,12 @@ public class PasscodeActivityTest {
         passcodeActivity.forceBiometric(true);
         // Set enrollment screen already shown
         passcodeManager.setBiometricEnrollmentShown(targetContext, true);
-        Assert.assertTrue("Biometric enrollment shown wrong.", passcodeManager.getBiometricEnrollmentShown());
+        Assert.assertTrue("Biometric enrollment shown wrong.", passcodeManager.biometricEnrollmentShown());
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
 
         // Biometric enrollment should not be shown
         Assert.assertFalse("Application should not be locked", passcodeManager.isLocked());
-        Assert.assertTrue("Biometric enrollment shown wrong.", passcodeManager.getBiometricEnrollmentShown());
+        Assert.assertTrue("Biometric enrollment shown wrong.", passcodeManager.biometricEnrollmentShown());
     }
 
     /**
@@ -559,8 +559,8 @@ public class PasscodeActivityTest {
 
         // Store passcode and set mode to Check.
         passcodeManager.store(targetContext, "123456");
-        Assert.assertFalse("Biometric enrollment shown wrong.", passcodeManager.getBiometricEnrollmentShown());
-        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.getBiometricEnabled());
+        Assert.assertFalse("Biometric enrollment shown wrong.", passcodeManager.biometricEnrollmentShown());
+        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.biometricEnabled());
 
         // Get activity
         final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
@@ -572,15 +572,15 @@ public class PasscodeActivityTest {
         passcodeActivity.forceBiometric(true);
         // Set connected app setting
         passcodeManager.setBiometricAllowed(targetContext, false);
-        Assert.assertFalse("Biometric allowed not set.", passcodeManager.getBiometricAllowed());
-        Assert.assertFalse("Biometric enrollment shown wrong.", passcodeManager.getBiometricEnrollmentShown());
+        Assert.assertFalse("Biometric allowed not set.", passcodeManager.biometricAllowed());
+        Assert.assertFalse("Biometric enrollment shown wrong.", passcodeManager.biometricEnrollmentShown());
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
 
         // Biometric enrollment should not be shown
         Assert.assertFalse("Application should not be locked", passcodeManager.isLocked());
-        Assert.assertFalse("Biometric enrollment shown wrong.", passcodeManager.getBiometricEnrollmentShown());
-        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.getBiometricEnabled());
-        Assert.assertFalse("Biometric should not be allowed.", passcodeManager.getBiometricAllowed());
+        Assert.assertFalse("Biometric enrollment shown wrong.", passcodeManager.biometricEnrollmentShown());
+        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.biometricEnabled());
+        Assert.assertFalse("Biometric should not be allowed.", passcodeManager.biometricAllowed());
     }
 
     private void enterWrongPasscode(int count, boolean passcodeLengthKnow) {
