@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="sf__passcode_layout_bg">#000000</color>
-    <color name="sf__passcode_bg">#888888</color>
+    <color name="sf__passcode_layout_bg">#F5F6FA</color>
+    <color name="sf__passcode_bg">#FFFFFF</color>
+    <color name="sf__passcode_text_color">#16325C</color>
+    <color name="sf__passcode_border_color">#D9DDE6</color>
+    <color name="sf__passcode_primary_color">#0070D2</color>
+    <color name="sf__passcode_secondary_color">#FFFF</color>
     <color name="sf__forgot_passcode_text">#000</color>
     <color name="sf__passcode_error_text">#F00</color>
     <color name="sf__chrome_nav_bar_azure">#1589ee</color>

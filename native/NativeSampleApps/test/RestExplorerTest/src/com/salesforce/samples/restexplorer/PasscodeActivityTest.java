@@ -26,18 +26,15 @@
  */
 package com.salesforce.samples.restexplorer;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
-import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.filters.LargeTest;
-import androidx.test.rule.ActivityTestRule;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import android.text.TextUtils;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.security.PasscodeManager;
+import com.salesforce.androidsdk.ui.FingerprintAuthDialogFragment;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.ui.PasscodeActivity.PasscodeMode;
 
@@ -47,6 +44,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.LargeTest;
+import androidx.test.filters.SdkSuppress;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.rule.ActivityTestRule;
 
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
@@ -65,6 +68,7 @@ public class PasscodeActivityTest {
     private Context targetContext;
     private PasscodeActivity passcodeActivity;
     private PasscodeManager passcodeManager;
+    private FingerprintAuthDialogFragment fingerprintDialog;
 
     /**
      * Custom activity launch rules to run steps before the activity is launched.
@@ -88,15 +92,16 @@ public class PasscodeActivityTest {
     public PasscodeActivityRule<PasscodeActivity> passcodeActivityTestRule = new PasscodeActivityRule<>(PasscodeActivity.class);
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         passcodeManager.reset(targetContext);
         passcodeManager.setTimeoutMs(600000);
+        passcodeManager.setPasscodeLength(targetContext, 6);
         Assert.assertTrue("Application should be locked", passcodeManager.isLocked());
         Assert.assertFalse("Application should not have a passcode", passcodeManager.hasStoredPasscode(targetContext));
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         passcodeManager.reset(targetContext);
         passcodeManager.setTimeoutMs(600000);
     }
@@ -108,20 +113,21 @@ public class PasscodeActivityTest {
     public void testCreateWithNoMistakes() {
 
         // Get activity
+        final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+                SalesforceSDKManager.getInstance().getPasscodeActivity());
+        passcodeActivityTestRule.launchActivity(i);
         passcodeActivity = passcodeActivityTestRule.getActivity();
         Assert.assertEquals("Activity expected in create mode", PasscodeMode.Create, passcodeActivity.getMode());
+        checkUi();
 
-        // Entering in 123456 and submitting
+        // Entering in 123456
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
         Assert.assertEquals("Activity expected in check mode", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
-        Assert.assertTrue("Error message should be empty", TextUtils.isEmpty(
-                ((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_error)).getText()));
+        checkUi();
 
         // Re-entering 123456 and submitting
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertFalse("Application should be unlocked", passcodeManager.isLocked());
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
     }
@@ -137,25 +143,22 @@ public class PasscodeActivityTest {
         passcodeManager.setPasscodeChangeRequired(SalesforceSDKManager.getInstance().getAppContext(), true);
         Assert.assertTrue(passcodeManager.isPasscodeChangeRequired());
 
-
         // Get activity
         final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
                 SalesforceSDKManager.getInstance().getPasscodeActivity());
         passcodeActivityTestRule.launchActivity(i);
         passcodeActivity = passcodeActivityTestRule.getActivity();
         Assert.assertEquals("Activity expected in change mode", PasscodeMode.Change, passcodeActivity.getMode());
+        checkUi();
 
         // Entering in 123456 and submitting
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
         Assert.assertEquals("Activity expected in check mode", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
-        Assert.assertTrue("Error message should be empty", TextUtils.isEmpty(
-                ((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_error)).getText()));
+        checkUi();
 
         // Re-entering 123456 and submitting
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertFalse("Application should be unlocked", passcodeManager.isLocked());
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
 
@@ -164,92 +167,35 @@ public class PasscodeActivityTest {
     }
 
     /**
-     * Test passcode creation flow when user try to enter a passcode too short.
+     * Test passcode creation flow when user try to enter a passcode matching the minimum value.
      */
     @Test
-    public void testCreateWithPasscodeTooShort() {
+    public void testCreatewithPasscodeMinimumLength() {
 
-        // Get activity
+        // Set passcode length and Get activity
+        passcodeManager.setPasscodeLength(targetContext, 4);
         passcodeActivity = passcodeActivityTestRule.getActivity();
         Assert.assertEquals("Activity expected in create mode", PasscodeMode.Create, passcodeActivity.getMode());
 
-        // Entering nothing and submitting -> expect passcode too short error
-        setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
+        setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "1234");
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
-        Assert.assertEquals("Activity expected in create mode still", PasscodeMode.Create, passcodeActivity.getMode());
-        Assert.assertEquals("Error expected", "The passcode must be at least 4 characters long",
-                ((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_error)).getText());
-
-        // Entering in 123 and submitting -> expect passcode too short error
-        setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
-        Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
-        Assert.assertEquals("Activity expected in create mode still", PasscodeMode.Create, passcodeActivity.getMode());
-        Assert.assertEquals("Error expected", "The passcode must be at least 4 characters long",
-                ((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_error)).getText());
-
-        // Entering in 123456 and submitting
-        setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
-        Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
-        Assert.assertEquals("Activity expected in create confirm mode", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
-
-        // Re-entering 123456 and submitting
-        setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
-        Assert.assertFalse("Application should be unlocked", passcodeManager.isLocked());
-        Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
+        Assert.assertEquals("Activity expected in create mode still", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
     }
 
     /**
      * Test passcode creation flow when user try to enter a passcode matching the minimum value.
      */
     @Test
-    public void testCreatewithPasscodeMinimumLength() {
+    public void testCreatewithPasscodeMaximumLength() {
 
-        // Get activity
+        // Set passcode length and Get activity
+        passcodeManager.setPasscodeLength(targetContext, 8);
         passcodeActivity = passcodeActivityTestRule.getActivity();
         Assert.assertEquals("Activity expected in create mode", PasscodeMode.Create, passcodeActivity.getMode());
 
-        // Entering nothing and submitting -> expect passcode too short error
-        setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "1234");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
+        setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "12345678");
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
         Assert.assertEquals("Activity expected in create mode still", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
-        Assert.assertTrue("Error Message should be empty", TextUtils.isEmpty(
-                ((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_error)).getText()));
-    }
-
-    /**
-     * Test passcode creation flow when user enter a passcode too short during confirmation.
-     */
-    @Test
-    public void testCreateWithConfirmPasscodeTooShort() {
-
-        // Get activity
-        passcodeActivity = passcodeActivityTestRule.getActivity();
-        Assert.assertEquals("Activity expected in create mode", PasscodeMode.Create, passcodeActivity.getMode());
-
-        // Entering in 123456 and submitting
-        setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
-        Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
-        Assert.assertEquals("Activity expected in check mode", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
-
-        // Entering in 123 and submitting -> expect passcode too short error
-        setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
-        Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
-        Assert.assertEquals("Activity expected in create confirm mode still", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
-        Assert.assertEquals("Error expected", "The passcode must be at least 4 characters long",
-                ((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_error)).getText());
-
-        // Entering 123456 and submitting
-        setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
-        Assert.assertFalse("Application should be unlocked", passcodeManager.isLocked());
-        Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
     }
 
     /**
@@ -259,26 +205,27 @@ public class PasscodeActivityTest {
     public void testCreateWithWrongConfirmPasscode() {
 
         // Get activity
+        final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+                SalesforceSDKManager.getInstance().getPasscodeActivity());
+        passcodeActivityTestRule.launchActivity(i);
         passcodeActivity = passcodeActivityTestRule.getActivity();
         Assert.assertEquals("Activity expected in create mode", PasscodeMode.Create, passcodeActivity.getMode());
 
         // Entering in 123456 and submitting
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertTrue("Application should be still locked", passcodeManager.isLocked());
         Assert.assertEquals("Activity expected in check mode", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
 
         // Entering in 654321 and submitting -> expect passcodes don't match error
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "654321");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertTrue("Application should be still locked", passcodeManager.isLocked());
         Assert.assertEquals("Activity expected in create confirm mode still", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
-        Assert.assertEquals("Error expected", "Passcodes don't match!",
-                ((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_error)).getText());
+        Assert.assertEquals("Expected error message.", passcodeActivity.getString(R.string.sf__passcodes_dont_match),
+                ((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_instructions)).getText());
 
+        waitSome();
         // Entering 123456 and submitting
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertFalse("Application should be unlocked", passcodeManager.isLocked());
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
     }
@@ -299,13 +246,13 @@ public class PasscodeActivityTest {
         passcodeActivityTestRule.launchActivity(i);
         passcodeActivity = passcodeActivityTestRule.getActivity();
         Assert.assertEquals("Activity expected in check mode", PasscodeMode.Check, passcodeActivity.getMode());
+        checkUi();
 
         // We should still be locked
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
 
         // Entering 123456 and submitting
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertFalse("Application should be unlocked", passcodeManager.isLocked());
     }
 
@@ -329,13 +276,12 @@ public class PasscodeActivityTest {
         // We should still be locked
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
 
-        // Entering 654321 and submitting -> expect passcode incorrect error
+        // Entering 654321 -> expect passcode incorrect error
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "654321");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
         Assert.assertEquals("Activity expected in check mode still", PasscodeMode.Check, passcodeActivity.getMode());
-        Assert.assertEquals("Error expected", "The passcode you entered is incorrect. Please try again. You have 9 attempts remaining.",
-                ((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_error)).getText());
+        Assert.assertEquals("Error expected", passcodeActivity.getString(R.string.sf__passcode_try_again, 9),
+                ((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_instructions)).getText());
         Assert.assertEquals("Wrong failure count", 1, passcodeManager.getFailedPasscodeAttempts());
 
         // Entering 123456 and submitting
@@ -364,43 +310,12 @@ public class PasscodeActivityTest {
         // We should still be locked
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
         for (int i = 1; i < 10; i++) {
-            enterWrongPasscode(i);
+            enterWrongPasscode(i, true);
         }
 
         // Entering 123456 and submitting
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertFalse("Application should be unlocked", passcodeManager.isLocked());
-    }
-
-    /**
-     * Test passcode verification flow when user enters a passcode too short.
-     */
-    @Test
-    public void testVerificationWithPasscodeTooShort() {
-
-        // Store passcode and set mode to Check
-        passcodeManager.store(targetContext, "123456");
-        Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
-
-        // Get activity
-        final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
-                SalesforceSDKManager.getInstance().getPasscodeActivity());
-        passcodeActivityTestRule.launchActivity(i);
-        passcodeActivity = passcodeActivityTestRule.getActivity();
-        Assert.assertEquals("Activity expected in check mode", PasscodeMode.Check, passcodeActivity.getMode());
-
-        // We should still be locked
-        Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
-
-        // Entering 123 and submitting -> expect passcode too short error, not counted as attempt
-        setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "654321");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
-        Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
-        Assert.assertEquals("Activity expected in check mode still", PasscodeMode.Check, passcodeActivity.getMode());
-        Assert.assertEquals("Error expected", "The passcode you entered is incorrect. Please try again. You have 9 attempts remaining.",
-                ((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_error)).getText());
-        Assert.assertEquals("Wrong failure count", 1, passcodeManager.getFailedPasscodeAttempts());
     }
 
     /**
@@ -412,6 +327,7 @@ public class PasscodeActivityTest {
         // Store passcode and set mode to Check
         passcodeManager.store(targetContext, "123456");
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
+        waitSome();
 
         // Get activity
         final Intent intent = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
@@ -424,20 +340,19 @@ public class PasscodeActivityTest {
         // We should still be locked
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
         for (int i = 1; i < 10; i++) {
-            enterWrongPasscode(i);
+            enterWrongPasscode(i, true);
         }
 
         // Entering 132645 and submitting -> expect passcode manager to be reset
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "132645");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
         Assert.assertFalse("Application should not have a passcode", passcodeManager.hasStoredPasscode(targetContext));
     }
 
     /**
-     * Test when user clicks on the 'Forgot Passcode' link.
+     * Test when user clicks on the 'Logout' button.
      */
     @Test
-    public void testForgotPasscodeLink() throws Throwable {
+    public void testForgotPasscodeLogout() {
 
         // Store passcode and set mode to Check.
         passcodeManager.store(targetContext, "123456");
@@ -453,47 +368,187 @@ public class PasscodeActivityTest {
 
         // We should still be locked.
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
+        Assert.assertEquals("Logout button should not be visible.", View.GONE,
+                passcodeActivity.findViewById(R.id.sf__passcode_logout_button).getVisibility());
 
-        // Click on 'Forgot Passcode' link.
-        Assert.assertFalse("Logout dialog should not be showing", passcodeActivityTestRule.getActivity().getIsLogoutDialogShowing());
-        clickView(com.salesforce.androidsdk.R.id.sf__passcode_forgot);
-        waitSome();
-        Assert.assertTrue("Logout dialog should be showing", passcodeActivityTestRule.getActivity().getIsLogoutDialogShowing());
-
-        // Clicking on 'Cancel' should take us back to the passcode screen.
-        final AlertDialog logoutDialog = passcodeActivityTestRule.getActivity().getLogoutAlertDialog();
-        passcodeActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                logoutDialog.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
-            }
-        });
-        waitSome();
-        Assert.assertFalse("Logout dialog should not be showing", passcodeActivityTestRule.getActivity().getIsLogoutDialogShowing());
-
-        // Clicking on 'Ok' should log the user out.
-        clickView(com.salesforce.androidsdk.R.id.sf__passcode_forgot);
-        waitSome();
-        passcodeActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                logoutDialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
-            }
-        });
-        waitSome();
+        // Entering 654321 -> Logout button should be shown
+        setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "654321");
+        Assert.assertEquals("Logout button should be visible.", View.VISIBLE,
+                passcodeActivity.findViewById(R.id.sf__passcode_logout_button).getVisibility());
+        Assert.assertEquals("Logout button has wrong text.", passcodeActivity.getString(R.string.sf__passcode_logout),
+                ((Button) passcodeActivity.findViewById(R.id.sf__passcode_logout_button)).getText());
+        clickView(R.id.sf__passcode_logout_button);
         Assert.assertFalse("Application should not have a passcode", passcodeManager.hasStoredPasscode(targetContext));
     }
 
-    private void enterWrongPasscode(int count) {
+    /**
+     * Test upgrade when passcode length is not known
+     */
+    @Test
+    public void testPasscodeLengthUnknown() {
+
+        // Store passcode and set mode to Check.
+        passcodeManager.store(targetContext, "123456");
+        Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
+        passcodeManager.setPasscodeLengthKnown(targetContext, false);
+
+        // Get activity
+        final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+                SalesforceSDKManager.getInstance().getPasscodeActivity());
+        passcodeActivityTestRule.launchActivity(i);
+        passcodeActivity = passcodeActivityTestRule.getActivity();
+        Assert.assertEquals("Activity expected in check mode", PasscodeMode.Check, passcodeActivity.getMode());
+        // Verify button should be shown
+        checkUi();
+
+        // Entering in 123456 and submitting
+        setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
+        clickView(R.id.sf__passcode_verify_button);
+        Assert.assertFalse("Application should be unlocked", passcodeManager.isLocked());
+    }
+
+    /**
+     * Test entering wrong passcode on upgrade with unknown length
+     */
+    @Test
+    public void testPasscodeLengthUnknownError() {
+
+        // Store passcode and set mode to Check.
+        passcodeManager.store(targetContext, "123456");
+        Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
+        passcodeManager.setPasscodeLengthKnown(targetContext, false);
+
+        // Get activity
+        final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+                SalesforceSDKManager.getInstance().getPasscodeActivity());
+        passcodeActivityTestRule.launchActivity(i);
+        passcodeActivity = passcodeActivityTestRule.getActivity();
+        Assert.assertEquals("Activity expected in check mode", PasscodeMode.Check, passcodeActivity.getMode());
+
+        enterWrongPasscode(1, false);
+        // Verify button should still be shown
+        Assert.assertEquals("Verify passcode button should be visible.", View.VISIBLE,
+                passcodeActivity.findViewById(R.id.sf__passcode_verify_button).getVisibility());
+        Assert.assertEquals("Verify passcode button has wrong text.",
+                passcodeActivity.getString(R.string.sf__passcode_verify_button),
+                ((Button) passcodeActivity.findViewById(R.id.sf__passcode_verify_button)).getText());
+
+        // Entering in 123456 and submitting
+        setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
+        clickView(R.id.sf__passcode_verify_button);
+        Assert.assertFalse("Application should be unlocked", passcodeManager.isLocked());
+    }
+
+    /**
+     * Test biometric enrollment declined
+     */
+    @Test
+    @SdkSuppress(minSdkVersion = 23)
+    public void testBiometricEnrollmentDecline() {
+
+        // Store passcode and set mode to Check.
+        passcodeManager.store(targetContext, "123456");
+        Assert.assertFalse("Biometric enrollment shown wrong.", passcodeManager.biometricEnrollmentShown());
+        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.biometricEnabled());
+
+        // Get activity
+        final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+                SalesforceSDKManager.getInstance().getPasscodeActivity());
+        passcodeActivityTestRule.launchActivity(i);
+        passcodeActivity = passcodeActivityTestRule.getActivity();
+
+        // Force biometric
+        passcodeActivity.forceBiometric(true);
+        setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
+        waitSome();
+        Assert.assertEquals("Activity expected in check mode", PasscodeMode.EnableBiometric, passcodeActivity.getMode());
+        Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
+
+        // Verify biometric screen
+        checkUi();
+
+        // Tap not now button
+        clickView(R.id.sf__biometric_not_now_button);
+        Assert.assertFalse("Application should not be locked", passcodeManager.isLocked());
+        Assert.assertTrue("Biometric enrollment shown wrong.", passcodeManager.biometricEnrollmentShown());
+        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.biometricEnabled());
+    }
+
+    /**
+     * Biometric enrollment prompt should only be shown once
+     */
+    @Test
+    @SdkSuppress(minSdkVersion = 23)
+    public void testBiometricEnrollmentNotShown() {
+
+        // Store passcode and set mode to Check.
+        passcodeManager.store(targetContext, "123456");
+        Assert.assertFalse("Biometric enrollment shown wrong.", passcodeManager.biometricEnrollmentShown());
+        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.biometricEnabled());
+
+        // Get activity
+        final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+                SalesforceSDKManager.getInstance().getPasscodeActivity());
+        passcodeActivityTestRule.launchActivity(i);
+        passcodeActivity = passcodeActivityTestRule.getActivity();
+
+        // Force biometric
+        passcodeActivity.forceBiometric(true);
+        // Set enrollment screen already shown
+        passcodeManager.setBiometricEnrollmentShown(targetContext, true);
+        Assert.assertTrue("Biometric enrollment shown wrong.", passcodeManager.biometricEnrollmentShown());
+        setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
+
+        // Biometric enrollment should not be shown
+        Assert.assertFalse("Application should not be locked", passcodeManager.isLocked());
+        Assert.assertTrue("Biometric enrollment shown wrong.", passcodeManager.biometricEnrollmentShown());
+    }
+
+    /**
+     * Test respecting connected app setting to disable biometric
+     */
+    @Test
+    public void testConnectedAppDisableBiometric() {
+
+        // Store passcode and set mode to Check.
+        passcodeManager.store(targetContext, "123456");
+        Assert.assertFalse("Biometric enrollment shown wrong.", passcodeManager.biometricEnrollmentShown());
+        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.biometricEnabled());
+
+        // Get activity
+        final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+                SalesforceSDKManager.getInstance().getPasscodeActivity());
+        passcodeActivityTestRule.launchActivity(i);
+        passcodeActivity = passcodeActivityTestRule.getActivity();
+
+        // Force biometric
+        passcodeActivity.forceBiometric(true);
+        // Set connected app setting
+        passcodeManager.setBiometricAllowed(targetContext, false);
+        Assert.assertFalse("Biometric allowed not set.", passcodeManager.biometricAllowed());
+        Assert.assertFalse("Biometric enrollment shown wrong.", passcodeManager.biometricEnrollmentShown());
+        setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
+
+        // Biometric enrollment should not be shown
+        Assert.assertFalse("Application should not be locked", passcodeManager.isLocked());
+        Assert.assertFalse("Biometric enrollment shown wrong.", passcodeManager.biometricEnrollmentShown());
+        Assert.assertFalse("Biometric should not be enabled.", passcodeManager.biometricEnabled());
+        Assert.assertFalse("Biometric should not be allowed.", passcodeManager.biometricAllowed());
+    }
+
+    private void enterWrongPasscode(int count, boolean passcodeLengthKnow) {
 
         // Entering 321654 and submitting -> expect passcode incorrect error
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "321654");
-        doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text);
+        if (!passcodeLengthKnow) {
+            clickView(R.id.sf__passcode_verify_button);
+        }
+
         Assert.assertTrue("Application should still be locked", passcodeManager.isLocked());
         Assert.assertEquals("Activity expected in check mode still", PasscodeMode.Check, passcodeActivity.getMode());
         if (count == 9) {
-            Assert.assertEquals("Error expected", "Final passcode attempt",
-                    ((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_error)).getText());
+            Assert.assertEquals("Error expected", passcodeActivity.getString(R.string.sf__passcode_final),
+                    ((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_instructions)).getText());
         }
         Assert.assertEquals("Wrong failure count", count, passcodeManager.getFailedPasscodeAttempts());
     }
@@ -527,6 +582,201 @@ public class PasscodeActivityTest {
             Thread.sleep(500);
         } catch (InterruptedException e) {
             Assert.fail("Test interrupted");
+        }
+    }
+
+    private void checkUi() {
+        switch (passcodeActivity.getMode()) {
+            case Check:
+                // Verify Button
+                if (passcodeManager.getPasscodeLengthKnown()) {
+                    Assert.assertEquals("Verify passcode button should be visible.", View.GONE,
+                            passcodeActivity.findViewById(R.id.sf__passcode_verify_button).getVisibility());
+                } else {
+                    Assert.assertEquals("Verify passcode button should be visible.", View.VISIBLE,
+                            passcodeActivity.findViewById(R.id.sf__passcode_verify_button).getVisibility());
+                    Assert.assertEquals("Verify passcode button has wrong text.",
+                            passcodeActivity.getString(R.string.sf__passcode_verify_button),
+                            ((Button) passcodeActivity.findViewById(R.id.sf__passcode_verify_button)).getText());
+                }
+
+                // Title
+                Assert.assertEquals("Expected title to be visible.", View.VISIBLE,
+                        passcodeActivity.findViewById(R.id.sf__passcode_title).getVisibility());
+                Assert.assertEquals("Title not correct.", passcodeActivity.getString(R.string.sf__passcode_enter_title),
+                        ((TextView) passcodeActivity.findViewById(R.id.sf__passcode_title)).getText());
+
+                // instructions
+                Assert.assertEquals("Instructions should be visible.", View.VISIBLE,
+                        passcodeActivity.findViewById(R.id.sf__passcode_instructions).getVisibility());
+                Assert.assertEquals("Instructions text is wrong.", passcodeActivity.getString(R.string.sf__passcode_enter_instructions),
+                        ((TextView) passcodeActivity.findViewById(R.id.sf__passcode_instructions)).getText());
+
+                // Passcode Field
+                Assert.assertEquals("Expected passcode box to be visible.", View.VISIBLE,
+                        passcodeActivity.findViewById(R.id.sf__passcode_box).getVisibility());
+                Assert.assertEquals("Expected passcode field to be visible.", View.VISIBLE,
+                        passcodeActivity.findViewById(R.id.sf__passcode_text).getVisibility());
+
+                // Biometric
+                Assert.assertEquals("Expected fingerprint image to not be visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__fingerprint_icon).getVisibility());
+                Assert.assertEquals("Expected biometric UI to be not visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_box).getVisibility());
+                Assert.assertEquals("Expected biometric title instructions to be not visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_instructions_title).getVisibility());
+                Assert.assertEquals("Expected biometric instructions to be not visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_instructions).getVisibility());
+                Assert.assertEquals("Expected not now button to be not visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_not_now_button).getVisibility());
+                Assert.assertEquals("Expected enable button to be not visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_enable_button).getVisibility());
+                break;
+            case Change:
+                // Title
+                Assert.assertEquals("Expected title to be visible.", View.VISIBLE,
+                        passcodeActivity.findViewById(R.id.sf__passcode_title).getVisibility());
+                Assert.assertEquals("Title not correct.", passcodeActivity.getString(R.string.sf__passcode_change_title),
+                        ((TextView) passcodeActivity.findViewById(R.id.sf__passcode_title)).getText());
+
+                // instructions
+                Assert.assertEquals("Change passcode instructions should be shown.", passcodeActivity.getString(R.string.sf__passcode_change_instructions),
+                        ((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_instructions)).getText());
+                Assert.assertEquals("Change passcode title expected.", passcodeActivity.getString(R.string.sf__passcode_change_title),
+                        ((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_title)).getText());
+
+                // Passcode Field
+                Assert.assertEquals("Expected passcode box to be visible.", View.VISIBLE,
+                        passcodeActivity.findViewById(R.id.sf__passcode_box).getVisibility());
+                Assert.assertEquals("Expected passcode field to be visible.", View.VISIBLE,
+                        passcodeActivity.findViewById(R.id.sf__passcode_text).getVisibility());
+
+                // Biometric
+                Assert.assertEquals("Expected fingerprint image to not be visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__fingerprint_icon).getVisibility());
+                Assert.assertEquals("Expected biometric UI to be not visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_box).getVisibility());
+                Assert.assertEquals("Expected biometric title instructions to be not visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_instructions_title).getVisibility());
+                Assert.assertEquals("Expected biometric instructions to be not visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_instructions).getVisibility());
+                Assert.assertEquals("Expected not now button to be not visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_not_now_button).getVisibility());
+                Assert.assertEquals("Expected enable button to be not visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_enable_button).getVisibility());
+                break;
+            case Create:
+                // Title
+                Assert.assertEquals("Expected title to be visible.", View.VISIBLE,
+                        passcodeActivity.findViewById(R.id.sf__passcode_title).getVisibility());
+                Assert.assertEquals("Title not correct.", passcodeActivity.getString(R.string.sf__passcode_create_title),
+                        ((TextView) passcodeActivity.findViewById(R.id.sf__passcode_title)).getText());
+
+                // instructions
+                Assert.assertEquals("Create instructions should be shown.", passcodeActivity.getString(R.string.sf__passcode_create_instructions),
+                        ((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_instructions)).getText());
+                Assert.assertEquals("Create title expected.", passcodeActivity.getString(R.string.sf__passcode_create_title),
+                        ((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_title)).getText());
+
+                // Passcode Field
+                Assert.assertEquals("Expected passcode box to be visible.", View.VISIBLE,
+                        passcodeActivity.findViewById(R.id.sf__passcode_box).getVisibility());
+                Assert.assertEquals("Expected passcode field to be visible.", View.VISIBLE,
+                        passcodeActivity.findViewById(R.id.sf__passcode_text).getVisibility());
+
+                // Biometric
+                Assert.assertEquals("Expected fingerprint image to not be visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__fingerprint_icon).getVisibility());
+                Assert.assertEquals("Expected biometric UI to be not visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_box).getVisibility());
+                Assert.assertEquals("Expected biometric title instructions to be not visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_instructions_title).getVisibility());
+                Assert.assertEquals("Expected biometric instructions to be not visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_instructions).getVisibility());
+                Assert.assertEquals("Expected not now button to be not visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_not_now_button).getVisibility());
+                Assert.assertEquals("Expected enable button to be not visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_enable_button).getVisibility());
+                break;
+            case CreateConfirm:
+                // Title
+                Assert.assertEquals("Expected title to be visible.", View.VISIBLE,
+                        passcodeActivity.findViewById(R.id.sf__passcode_title).getVisibility());
+                Assert.assertEquals("Title not correct.", passcodeActivity.getString(R.string.sf__passcode_confirm_title),
+                        ((TextView) passcodeActivity.findViewById(R.id.sf__passcode_title)).getText());
+
+                // instructions
+                Assert.assertEquals("Confirm instructions should be shown.", passcodeActivity.getString(R.string.sf__passcode_confirm_instructions),
+                        ((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_instructions)).getText());
+                Assert.assertEquals("Confirm title expected.", passcodeActivity.getString(R.string.sf__passcode_confirm_title),
+                        ((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_title)).getText());
+
+                // Passcode Field
+                Assert.assertEquals("Expected passcode box to be visible.", View.VISIBLE,
+                        passcodeActivity.findViewById(R.id.sf__passcode_box).getVisibility());
+                Assert.assertEquals("Expected passcode field to be visible.", View.VISIBLE,
+                        passcodeActivity.findViewById(R.id.sf__passcode_text).getVisibility());
+
+                // Biometric
+                Assert.assertEquals("Expected fingerprint image to not be visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__fingerprint_icon).getVisibility());
+                Assert.assertEquals("Expected biometric UI to be not visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_box).getVisibility());
+                Assert.assertEquals("Expected biometric title instructions to be not visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_instructions_title).getVisibility());
+                Assert.assertEquals("Expected biometric instructions to be not visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_instructions).getVisibility());
+                Assert.assertEquals("Expected not now button to be not visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_not_now_button).getVisibility());
+                Assert.assertEquals("Expected enable button to be not visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_enable_button).getVisibility());
+                break;
+
+            case EnableBiometric:
+                // Title
+                Assert.assertEquals("Expected title to be visible.", View.VISIBLE,
+                        passcodeActivity.findViewById(R.id.sf__passcode_title).getVisibility());
+                Assert.assertEquals("Title not correct.", passcodeActivity.getString(R.string.sf__fingerprint_title),
+                        ((TextView) passcodeActivity.findViewById(R.id.sf__passcode_title)).getText());
+                // Image
+                Assert.assertEquals("Expected fingerprint image to be visible.", View.VISIBLE,
+                        passcodeActivity.findViewById(R.id.sf__fingerprint_icon).getVisibility());
+                // UI Box
+                Assert.assertEquals("Expected biometric UI to be visible.", View.VISIBLE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_box).getVisibility());
+
+                // Instructions
+                Assert.assertEquals("Expected biometric title instructions to be visible.", View.VISIBLE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_instructions_title).getVisibility());
+                Assert.assertEquals("Biometric instructions title is wrong.",
+                        passcodeActivity.getString(R.string.sf__biometric_allow_instructions_title),
+                        ((TextView) passcodeActivity.findViewById(R.id.sf__biometric_instructions_title)).getText());
+                Assert.assertEquals("Expected biometric instructions to be visible.", View.VISIBLE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_instructions).getVisibility());
+                Assert.assertEquals("Biometric instructions are wrong.",
+                        passcodeActivity.getString(R.string.sf__biometric_allow_instructions, "RestExplorer"),
+                        ((TextView) passcodeActivity.findViewById(R.id.sf__biometric_instructions)).getText());
+
+                // Buttons
+                Assert.assertEquals("Expected not now button to be visible.", View.VISIBLE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_not_now_button).getVisibility());
+                Assert.assertEquals("Not now button text incorrect.", passcodeActivity.getString(R.string.sf__biometric_not_now_button),
+                        ((Button) passcodeActivity.findViewById(R.id.sf__biometric_not_now_button)).getText());
+                Assert.assertEquals("Expected enable button to be visible.", View.VISIBLE,
+                        passcodeActivity.findViewById(R.id.sf__biometric_enable_button).getVisibility());
+                Assert.assertEquals("Not now button text incorrect.", passcodeActivity.getString(R.string.sf__biometric_enable_button),
+                        ((Button) passcodeActivity.findViewById(R.id.sf__biometric_enable_button)).getText());
+
+                // Passcode
+                Assert.assertEquals("Passcode instructions should not be shown.", View.GONE,
+                        passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_instructions).getVisibility());
+                Assert.assertEquals("Expected passcode box to not be visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__passcode_box).getVisibility());
+                Assert.assertEquals("Expected passcode field to not be visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__passcode_text).getVisibility());
+                Assert.assertEquals("Verify passcode button should not be visible.", View.GONE,
+                        passcodeActivity.findViewById(R.id.sf__passcode_verify_button).getVisibility());
+                break;
         }
     }
 }

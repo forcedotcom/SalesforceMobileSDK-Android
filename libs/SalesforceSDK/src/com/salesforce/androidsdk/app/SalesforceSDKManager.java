@@ -1014,7 +1014,7 @@ public class SalesforceSDKManager {
      *
      * @return The app name to use when constructing the user agent string
      */
-    protected String provideAppName() {
+    public String provideAppName() {
         try {
             PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
             return context.getString(packageInfo.applicationInfo.labelRes);
