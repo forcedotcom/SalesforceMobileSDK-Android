@@ -247,18 +247,18 @@ public class SyncManager {
      * @param callback
      * @throws JSONException
      */
-    public synchronized void resume(boolean restartStoppedSyncs, SyncUpdateCallback callback) throws JSONException {
+    public synchronized void restart(boolean restartStoppedSyncs, SyncUpdateCallback callback) throws JSONException {
         if (isStopped()) {
             this.state = State.ACCEPTING_SYNCS;
             if (restartStoppedSyncs) {
                 List<SyncState> stoppedSyncs = SyncState.getSyncsWithStatus(this.smartStore, SyncState.Status.STOPPED);
                 for (SyncState sync : stoppedSyncs) {
-                    SmartSyncLogger.d(TAG, "resuming", sync);
+                    SmartSyncLogger.d(TAG, "restarting", sync);
                     reSync(sync.getId(), callback);
                 }
             }
         } else {
-            SmartSyncLogger.d(TAG, "resume() called on a sync manager that has state:" + state.name());
+            SmartSyncLogger.d(TAG, "restart() called on a sync manager that has state:" + state.name());
         }
     }
 
