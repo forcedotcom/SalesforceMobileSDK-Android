@@ -1007,8 +1007,8 @@ public class SyncManagerTest extends SyncManagerTestCase {
             Assert.assertTrue("Wrong exception", e instanceof SyncManager.SyncManagerStoppedException);
         }
 
-        // Resuming sync manager without restarting syncs
-        syncManager.resume(false, null);
+        // Restarting sync manager without restarting syncs
+        syncManager.restart(false, null);
         Assert.assertFalse("Stopped should be false", syncManager.isStopped());
 
         // Check sync time stamp and status
@@ -1017,8 +1017,8 @@ public class SyncManagerTest extends SyncManagerTestCase {
         // Stop sync manager
         stopSyncManager(0);
 
-        // Resuming sync manager restarting syncs
-        syncManager.resume(true, queue);
+        // Restarting sync manager restarting syncs
+        syncManager.restart(true, queue);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, -1);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, numberOfRecordsLeft);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 16, numberOfRecordsLeft);
@@ -1080,8 +1080,8 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkSyncState(syncId1, target1.dateForPosition(numberOfRecordsFetched1-1).getTime(), SyncState.Status.STOPPED);
         checkSyncState(syncId2, -1, SyncState.Status.STOPPED);
 
-        // Resuming sync manager without restarting syncs
-        syncManager.resume(false, queue);
+        // Restarting sync manager without restarting syncs
+        syncManager.restart(false, queue);
         Assert.assertFalse("Stopped should be false", syncManager.isStopped());
 
         // Manually restart second sync
@@ -1105,8 +1105,8 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkDbForAfterTestSyncDown(target1, ACCOUNTS_SOUP, numberOfRecordsFetched1);
         checkDbForAfterTestSyncDown(target2, ACCOUNTS_SOUP, numberRecordsFetched2);
 
-        // Resuming sync manager restarting syncs
-        syncManager.resume(true, queue);
+        // Restarting sync manager restarting syncs
+        syncManager.restart(true, queue);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.RUNNING, 0, -1);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.RUNNING, 0, -1);
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.RUNNING, 0, numberRecordsLeft1);
