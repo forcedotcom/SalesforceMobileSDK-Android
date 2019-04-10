@@ -85,24 +85,31 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         if (!TextUtils.isEmpty(query)) {
 
             SOQLMutator mutator = new SOQLMutator(query);
+            boolean mutated = false;
+
             // Inserts the mandatory 'LastModifiedDate' field if it doesn't exist.
             final String lastModFieldName = getModificationDateFieldName();
             if (!mutator.isSelectingField(lastModFieldName)) {
+                mutated = true;
                 mutator.addSelectFields(lastModFieldName);
             }
 
             // Inserts the mandatory 'Id' field if it doesn't exist.
             final String idFieldName = getIdFieldName();
             if (!mutator.isSelectingField(idFieldName)) {
+                mutated = true;
                 mutator.addSelectFields(idFieldName);
             }
 
             // Order by 'LastModifiedDate' field if no order by specified
             if (!mutator.hasOrderBy()) {
+                mutated = true;
                 mutator.replaceOrderBy(lastModFieldName);
             }
 
-            query = mutator.asBuilder().build();
+            if (mutated) {
+                query = mutator.asBuilder().build();
+            }
         }
         return query;
     }

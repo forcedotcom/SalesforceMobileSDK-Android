@@ -118,8 +118,14 @@ public class SOQLMutatorTest {
     }
 
     @Test
-    public void testReplaceOrderBy() {
+    public void testReplaceOrderByWhenAbsent() {
         String soql = "SELECT Description FROM Account";
+        Assert.assertEquals("select Description from Account order by LastModifiedDate", new SOQLMutator(soql).replaceOrderBy("LastModifiedDate").asBuilder().build());
+    }
+
+    @Test
+    public void testReplaceOrderByWhenPresent() {
+        String soql = "SELECT Description FROM Account ORDER BY Name";
         Assert.assertEquals("select Description from Account order by LastModifiedDate", new SOQLMutator(soql).replaceOrderBy("LastModifiedDate").asBuilder().build());
     }
 
@@ -164,5 +170,11 @@ public class SOQLMutatorTest {
         Assert.assertFalse(new SOQLMutator("SELECT Description FROM Account LIMIT 1000").hasOrderBy());
     }
 
+    @Test
+    public void testModifyQueryWithInClause() {
+        String soql = "select Name from Account where Id IN ('001P000001NQPjJIAX','001P000001NQPkdIAH') order by Name";
+        String expectedSoql = "select Id,LastModifiedDate,Name from Account where Id IN ('001P000001NQPjJIAX','001P000001NQPkdIAH') order by LastModifiedDate";
+        Assert.assertEquals(expectedSoql, new SOQLMutator(soql).addSelectFields("LastModifiedDate").addSelectFields("Id").replaceOrderBy("LastModifiedDate").asBuilder().build());
+    }
 
 }

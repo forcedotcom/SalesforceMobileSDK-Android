@@ -82,7 +82,9 @@ public class SOQLMutator {
 
             if (token.startsWith("(")) {
                 depth++;
-            } else if (token.endsWith(")")) {
+            }
+            // NB: same token could end with ")" .e.g "('abc','def')"
+            if (token.endsWith(")")) {
                 depth--;
             }
 
