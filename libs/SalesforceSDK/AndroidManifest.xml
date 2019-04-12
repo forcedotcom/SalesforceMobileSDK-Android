@@ -37,7 +37,7 @@
             android:theme="@style/Theme.Design.NoActionBar"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustResize" />
+            android:windowSoftInputMode="adjustResize|stateAlwaysVisible" />
 
         <!-- Manage space activity -->
         <activity android:name="com.salesforce.androidsdk.ui.ManageSpaceActivity"

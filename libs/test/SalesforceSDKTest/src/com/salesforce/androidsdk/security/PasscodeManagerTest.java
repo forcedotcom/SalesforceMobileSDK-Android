@@ -205,9 +205,6 @@ public class PasscodeManagerTest {
     public void testMobilePrefsWhenLengthChanged() {
         // Initial values
         checkMobilePrefs(TEST_TIMEOUT_MS, PasscodeManager.MIN_PASSCODE_LENGTH, true, false);
-        // Decreasing length
-        pm.setPasscodeLength(ctx, 3);
-        checkMobilePrefs(TEST_TIMEOUT_MS, 3, true, false);
         // Increasing length
         pm.setPasscodeLength(ctx, 5);
         checkMobilePrefs(TEST_TIMEOUT_MS, 5, true, false);

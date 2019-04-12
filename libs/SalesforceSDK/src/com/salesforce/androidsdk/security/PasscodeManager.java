@@ -300,6 +300,7 @@ public class PasscodeManager  {
         Editor e = sp.edit();
         e.remove(KEY_PASSCODE);
         e.remove(KEY_FAILED_ATTEMPTS);
+        e.remove(KEY_PASSCODE_LENGTH);
         e.remove(KEY_PASSCODE_LENGTH_KNOWN);
         e.remove(KEY_BIOMETRIC_ALLOWED);
         e.remove(KEY_BIOMETRIC_ENROLLMENT);
@@ -414,6 +415,7 @@ public class PasscodeManager  {
         e.putBoolean(KEY_BIOMETRIC_ENABLED, biometricEnabled);
         e.commit();
         setPasscodeChangeRequired(ctx,false);
+        setPasscodeLengthKnown(ctx, true);
     }
 
     /**
@@ -616,12 +618,14 @@ public class PasscodeManager  {
      */
     public void setPasscodeLength(Context ctx, int passcodeLength) {
     	if (passcodeLength > this.passcodeLength) {
-            if (hasStoredPasscode(ctx)) {
+            if (hasStoredPasscode(ctx) && passcodeLengthKnown) {
                 this.passcodeChangeRequired = true;
             }
+
+            this.passcodeLength = passcodeLength;
     	}
-        this.passcodeLength = passcodeLength;
-    	this.passcodeLengthKnown = true;
+
+        this.passcodeLengthKnown = true;
         storeMobilePolicy(ctx);
     }
 
