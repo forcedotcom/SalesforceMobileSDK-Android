@@ -616,12 +616,14 @@ public class PasscodeManager  {
      */
     public void setPasscodeLength(Context ctx, int passcodeLength) {
     	if (passcodeLength > this.passcodeLength) {
-            if (hasStoredPasscode(ctx)) {
+            if (hasStoredPasscode(ctx) && passcodeLengthKnown) {
                 this.passcodeChangeRequired = true;
             }
+
+            this.passcodeLength = passcodeLength;
     	}
-        this.passcodeLength = passcodeLength;
-    	this.passcodeLengthKnown = true;
+
+        this.passcodeLengthKnown = true;
         storeMobilePolicy(ctx);
     }
 

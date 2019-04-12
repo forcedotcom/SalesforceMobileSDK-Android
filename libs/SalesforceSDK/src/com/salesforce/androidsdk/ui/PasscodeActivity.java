@@ -45,6 +45,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -259,6 +260,7 @@ public class PasscodeActivity extends Activity {
             passcodeField.requestFocus();
         	break;
         case EnableBiometric:
+            hideKeyboard();
             title.setText(getString(R.string.sf__biometric_title));
             title.setVisibility(View.VISIBLE);
             biometricBox.setVisibility(View.VISIBLE);
@@ -270,6 +272,7 @@ public class PasscodeActivity extends Activity {
             passcodeManager.setBiometricEnrollmentShown(this, true);
             break;
         case BiometricCheck:
+            hideKeyboard();
             if (canShowBiometric()) {
                 launchBiometricAuth();
             } else {
@@ -318,20 +321,22 @@ public class PasscodeActivity extends Activity {
                 if (showBiometricEnrollment) {
                     setMode(PasscodeMode.EnableBiometric);
                 } else {
-                    if (!passcodeManager.getPasscodeLengthKnown()) {
-                        passcodeManager.setPasscodeLength(this, enteredPasscode.length());
-                    }
-
                     passcodeManager.unlock();
                     done();
                 }
             } else {
+                setMode(PasscodeMode.Create);
                 instr.setText(getString(R.string.sf__passcodes_dont_match));
+                passcodeField.setText("");
             }
             return true;
 
         case Check:
             if (passcodeManager.check(this, enteredPasscode)) {
+                if (!passcodeManager.getPasscodeLengthKnown()) {
+                    passcodeManager.setPasscodeLength(this, enteredPasscode.length());
+                }
+
                 if (showBiometricEnrollment) {
                     setMode(PasscodeMode.EnableBiometric);
                 } else {
@@ -641,5 +646,12 @@ public class PasscodeActivity extends Activity {
         enableButton.setVisibility(View.GONE);
         biometricBox.setVisibility(View.GONE);
         fingerImage.setVisibility(View.GONE);
+    }
+
+    private void hideKeyboard() {
+        InputMethodManager imm = (InputMethodManager) this.getSystemService(Activity.INPUT_METHOD_SERVICE);
+        if (this.passcodeField != null) {
+            imm.hideSoftInputFromWindow(this.passcodeField.getWindowToken(), 0);
+        }
     }
 }
