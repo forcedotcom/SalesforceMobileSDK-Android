@@ -95,7 +95,6 @@ public class PasscodeActivityTest {
     public void setUp() {
         passcodeManager.reset(targetContext);
         passcodeManager.setTimeoutMs(600000);
-        passcodeManager.setPasscodeLength(targetContext, 6);
         Assert.assertTrue("Application should be locked", passcodeManager.isLocked());
         Assert.assertFalse("Application should not have a passcode", passcodeManager.hasStoredPasscode(targetContext));
     }
@@ -112,6 +111,7 @@ public class PasscodeActivityTest {
     @Test
     public void testCreateWithNoMistakes() {
 
+        passcodeManager.setPasscodeLength(targetContext, 6);
         // Get activity
         final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
                 SalesforceSDKManager.getInstance().getPasscodeActivity());
@@ -138,6 +138,7 @@ public class PasscodeActivityTest {
     @Test
     public void testChangeWithNoMistakes() {
 
+        passcodeManager.setPasscodeLength(targetContext, 6);
         // Make passcode change required
         Assert.assertFalse(passcodeManager.isPasscodeChangeRequired());
         passcodeManager.setPasscodeChangeRequired(SalesforceSDKManager.getInstance().getAppContext(), true);
@@ -204,6 +205,7 @@ public class PasscodeActivityTest {
     @Test
     public void testCreateWithWrongConfirmPasscode() {
 
+        passcodeManager.setPasscodeLength(targetContext, 6);
         // Get activity
         final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
                 SalesforceSDKManager.getInstance().getPasscodeActivity());
@@ -214,17 +216,19 @@ public class PasscodeActivityTest {
         // Entering in 123456 and submitting
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
         Assert.assertTrue("Application should be still locked", passcodeManager.isLocked());
-        Assert.assertEquals("Activity expected in check mode", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
+        Assert.assertEquals("Activity expected in Create Confirm mode", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
+        checkUi();
 
         // Entering in 654321 and submitting -> expect passcodes don't match error
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "654321");
         Assert.assertTrue("Application should be still locked", passcodeManager.isLocked());
-        Assert.assertEquals("Activity expected in create confirm mode still", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
+        Assert.assertEquals("Activity expected in create mode", PasscodeMode.Create, passcodeActivity.getMode());
         Assert.assertEquals("Expected error message.", passcodeActivity.getString(R.string.sf__passcodes_dont_match),
                 ((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_instructions)).getText());
 
-        waitSome();
-        // Entering 123456 and submitting
+        // Entering 123456 twice to create passcode
+        setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
+        checkUi();
         setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
         Assert.assertFalse("Application should be unlocked", passcodeManager.isLocked());
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
@@ -236,6 +240,7 @@ public class PasscodeActivityTest {
     @Test
     public void testVerificationWithNoMistakes() {
 
+        passcodeManager.setPasscodeLength(targetContext, 6);
         // Store passcode and set mode to Check
         passcodeManager.store(targetContext, "123456");
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
@@ -262,6 +267,7 @@ public class PasscodeActivityTest {
     @Test
     public void testVerificationWithWrongPasscodeOnce() {
 
+        passcodeManager.setPasscodeLength(targetContext, 6);
         // Store passcode and set mode to Check
         passcodeManager.store(targetContext, "123456");
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
@@ -296,6 +302,7 @@ public class PasscodeActivityTest {
     @Test
     public void testVerificationWithWrongPasscodeTwice() {
 
+        passcodeManager.setPasscodeLength(targetContext, 6);
         // Store passcode and set mode to Check
         passcodeManager.store(targetContext, "123456");
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
@@ -324,6 +331,7 @@ public class PasscodeActivityTest {
     @Test
     public void testVerificationWithWrongPasscodeTooManyTimes() {
 
+        passcodeManager.setPasscodeLength(targetContext, 6);
         // Store passcode and set mode to Check
         passcodeManager.store(targetContext, "123456");
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
@@ -354,6 +362,7 @@ public class PasscodeActivityTest {
     @Test
     public void testForgotPasscodeLogout() {
 
+        passcodeManager.setPasscodeLength(targetContext, 6);
         // Store passcode and set mode to Check.
         passcodeManager.store(targetContext, "123456");
         Assert.assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
@@ -446,6 +455,7 @@ public class PasscodeActivityTest {
     @SdkSuppress(minSdkVersion = 23)
     public void testBiometricEnrollmentDecline() {
 
+        passcodeManager.setPasscodeLength(targetContext, 6);
         // Store passcode and set mode to Check.
         passcodeManager.store(targetContext, "123456");
         Assert.assertFalse("Biometric enrollment shown wrong.", passcodeManager.biometricEnrollmentShown());
@@ -481,6 +491,7 @@ public class PasscodeActivityTest {
     @SdkSuppress(minSdkVersion = 23)
     public void testBiometricEnrollmentNotShown() {
 
+        passcodeManager.setPasscodeLength(targetContext, 6);
         // Store passcode and set mode to Check.
         passcodeManager.store(targetContext, "123456");
         Assert.assertFalse("Biometric enrollment shown wrong.", passcodeManager.biometricEnrollmentShown());
@@ -510,6 +521,7 @@ public class PasscodeActivityTest {
     @Test
     public void testConnectedAppDisableBiometric() {
 
+        passcodeManager.setPasscodeLength(targetContext, 6);
         // Store passcode and set mode to Check.
         passcodeManager.store(targetContext, "123456");
         Assert.assertFalse("Biometric enrollment shown wrong.", passcodeManager.biometricEnrollmentShown());
