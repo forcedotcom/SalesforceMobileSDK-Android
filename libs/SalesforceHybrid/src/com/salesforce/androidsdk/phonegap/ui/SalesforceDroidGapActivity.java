@@ -138,7 +138,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
 
         // Fetches auth config if required.
         try {
-            (new FetchAuthConfigTask()).execute().get();
+            (new FetchAuthConfigTask()).execute();
         } catch (Exception e) {
             SalesforceHybridLogger.e(TAG, "Exception occurred while fetching auth config", e);
         }
