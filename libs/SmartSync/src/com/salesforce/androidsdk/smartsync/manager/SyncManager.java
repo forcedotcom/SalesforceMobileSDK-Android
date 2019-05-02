@@ -248,7 +248,7 @@ public class SyncManager {
      * @throws JSONException
      */
     public synchronized void restart(boolean restartStoppedSyncs, SyncUpdateCallback callback) throws JSONException {
-        if (isStopped()) {
+        if (isStopped() || isStopping()) {
             this.state = State.ACCEPTING_SYNCS;
             if (restartStoppedSyncs) {
                 List<SyncState> stoppedSyncs = SyncState.getSyncsWithStatus(this.smartStore, SyncState.Status.STOPPED);
