@@ -411,6 +411,13 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
      */
     public void refresh(final String url) {
         SalesforceHybridLogger.i(TAG, "refresh called");
+
+        if (client == null) {
+            // If the client is null, we should refresh through other means
+            authenticate(null);
+            return;
+        }
+
         client.sendAsync(RestRequest.getRequestForUserInfo(), new AsyncRequestCallback() {
 
             @Override
