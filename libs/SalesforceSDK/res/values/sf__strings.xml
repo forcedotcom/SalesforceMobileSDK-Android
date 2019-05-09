@@ -58,7 +58,7 @@
 	<string name="sf__biometric_not_now_button">Not Now</string>
 	<string name="sf__biometric_enable_button">Enable</string>
 	<string name="sf__accessibility_passcode_field_label">Passcode field</string>
-	<string name="sf__accessibility_passcode_length_hint">Passcode is %d numbers long.</string>
+	<string name="sf__accessibility_passcode_length_hint">Passcode is %d alphanumeric characters long.</string>
 	<string name="sf__accessibility_unlock_announcement">Passcode confirmed.</string>
 	<string name="sf__accessibility_logged_out_announcement">You are logged out.</string>
 
