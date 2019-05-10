@@ -66,17 +66,17 @@ public class SalesforceKeyGeneratorTest {
         final String id1Again = SalesforceKeyGenerator.getUniqueId(KEY_1);
 		final String id2 = SalesforceKeyGenerator.getUniqueId(KEY_2);
 
-        // Output: 4*Math.Ceiling(((double)bytes.Length/3))) + length of getAddendum(KEY)
-        // 4*Math.Ceiling(32/3)+14 = 58
-        Assert.assertEquals("The encoded string based on an AES-256 key should have 58 characters", id1.length(), 58);
-		Assert.assertEquals("Unique IDs with the same name should be the same", id1, id1Again);
-        Assert.assertNotSame("Unique IDs with different names should be different", id1, id2);
+        // Output: 4*Math.Ceiling(((double)bytes.Length/3)))
+        // 4*Math.Ceiling(32/3) = 44
+        Assert.assertEquals("The encoded string based on an AES-256 key should have 58 characters", 44, id1.length());
+		Assert.assertEquals("Unique IDs with the same name should be the same", id1Again, id1);
+        Assert.assertNotSame("Unique IDs with different names should be different", id2, id1);
         final String id3 = SalesforceKeyGenerator.getUniqueId(KEY_3, 128);
         final String id3Again = SalesforceKeyGenerator.getUniqueId(KEY_3, 128);
 
-        // 4*Math.Ceiling(16/3)+14 = 38
-        Assert.assertEquals("The encoded string based on an AES-128 key should have 38 characters", id3.length(), 38);
-        Assert.assertEquals("Unique IDs with the same name should be the same", id3, id3Again);
+        // 4*Math.Ceiling(16/3) = 24
+        Assert.assertEquals("The encoded string based on an AES-128 key should have 38 characters", 24, id3.length());
+        Assert.assertEquals("Unique IDs with the same name should be the same", id3Again, id3);
     }
 
 	@Test
@@ -84,7 +84,7 @@ public class SalesforceKeyGeneratorTest {
         final String id1 = SalesforceKeyGenerator.getEncryptionKey(KEY_1);
         final String id1Again = SalesforceKeyGenerator.getEncryptionKey(KEY_1);
         final String id2 = SalesforceKeyGenerator.getEncryptionKey(KEY_2);
-        Assert.assertEquals("Encryption keys with the same name should be the same", id1, id1Again);
-        Assert.assertNotSame("Encryption keys with different names should be different", id1, id2);
+        Assert.assertEquals("Encryption keys with the same name should be the same", id1Again, id1);
+        Assert.assertNotSame("Encryption keys with different names should be different", id2, id1);
     }
 }
