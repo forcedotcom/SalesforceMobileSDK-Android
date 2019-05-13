@@ -235,7 +235,15 @@ public class KeyStoreWrapper {
                      */
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                         try {
-                            keyGenParameterSpecBuilder.setIsStrongBoxBacked(true);
+
+                            /*
+                             * Disabling StrongBox for now, since it's too slow on Pixel 3
+                             * and Pixel 3 XL.
+                             *
+                             * TODO: Re-enable in Mobile SDK 7.2.
+                             */
+                            //keyGenParameterSpecBuilder.setIsStrongBoxBacked(true);
+                            keyGenParameterSpecBuilder.setIsStrongBoxBacked(false);
                             kpg.initialize(keyGenParameterSpecBuilder.build());
                             kpg.generateKeyPair();
                         } catch (StrongBoxUnavailableException sb) {
