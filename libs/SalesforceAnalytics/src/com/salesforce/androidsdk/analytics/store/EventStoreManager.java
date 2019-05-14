@@ -286,9 +286,11 @@ public class EventStoreManager {
     private List<File> getAllFiles() {
         final List<File> files = new ArrayList<>();
         final File[] listOfFiles = rootDir.listFiles();
-        for (final File file : listOfFiles) {
-            if (file != null && fileFilter.accept(rootDir, file.getName())) {
-                files.add(file);
+        if (listOfFiles != null) {
+            for (final File file : listOfFiles) {
+                if (file != null && fileFilter.accept(rootDir, file.getName())) {
+                    files.add(file);
+                }
             }
         }
         return files;
