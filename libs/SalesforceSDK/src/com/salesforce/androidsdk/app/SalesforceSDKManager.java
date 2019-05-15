@@ -45,7 +45,6 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.os.AsyncTask;
 import android.os.Build;
-import android.os.SystemClock;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.webkit.CookieManager;
@@ -88,12 +87,10 @@ import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.SortedSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -171,7 +168,6 @@ public class SalesforceSDKManager {
     private boolean browserLoginEnabled;
     private String idpAppURIScheme;
     private boolean idpAppLoginFlowActive;
-    private Map<Account, Boolean> postPushCalled = new HashMap<>();
 
     /**
      * PasscodeManager object lock.
@@ -823,52 +819,23 @@ public class SalesforceSDKManager {
                 }
             }
         };
-        getAppContext().registerReceiver(pushUnregisterReceiver, intentFilter);
+        context.registerReceiver(pushUnregisterReceiver, intentFilter);
 
         // Unregisters from notifications on logout.
 		final UserAccount userAcc = getUserAccountManager().buildUserAccount(account);
         PushMessaging.unregister(context, userAcc, isLastAccount);
-
-        /*
-         * Starts a background thread to wait up to the timeout period. If
-         * another thread has already performed logout, we exit immediately.
-         */
-        (new Thread() {
-            public void run() {
-                long startTime = System.currentTimeMillis();
-                while ((System.currentTimeMillis() - startTime) < PUSH_UNREGISTER_TIMEOUT_MILLIS) {
-
-                    // Waits for half a second at a time.
-                    SystemClock.sleep(500);
-                }
-                postPushUnregister(pushUnregisterReceiver, clientMgr, showLoginPage,
-                		refreshToken, loginServer, account, frontActivity);
-            }
-        }).start();
     }
 
-    private synchronized void postPushUnregister(BroadcastReceiver pushReceiver,
+    private void postPushUnregister(BroadcastReceiver pushReceiver,
     		final ClientManager clientMgr, final boolean showLoginPage,
     		final String refreshToken, final String loginServer,
             final Account account, Activity frontActivity) {
-
-        /*
-         * This method can be triggered from 2 places - either when the push un-registration call
-         * completes, or when the server times out. Since they're on different threads, we don't
-         * know when either of those calls returns. However, the code should be executed only
-         * once. We also need to make sure that the value is reset once both calls come in,
-         * to ensure that push un-registration works in the multi-user scenario.
-         */
-        final Boolean postPushCalledBool = postPushCalled.get(account);
-        if (postPushCalledBool == null || !postPushCalledBool) {
-            postPushCalled.put(account, true);
-            try {
-                context.unregisterReceiver(pushReceiver);
-            } catch (Exception e) {
-                SalesforceSDKLogger.e(TAG, "Exception occurred while un-registering", e);
-            }
-            removeAccount(clientMgr, showLoginPage, refreshToken, loginServer, account, frontActivity);
+        try {
+            context.unregisterReceiver(pushReceiver);
+        } catch (Exception e) {
+            SalesforceSDKLogger.e(TAG, "Exception occurred while un-registering", e);
         }
+        removeAccount(clientMgr, showLoginPage, refreshToken, loginServer, account, frontActivity);
     }
 
     /**
