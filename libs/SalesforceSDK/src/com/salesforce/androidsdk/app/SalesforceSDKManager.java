@@ -169,6 +169,7 @@ public class SalesforceSDKManager {
     private boolean browserLoginEnabled;
     private String idpAppURIScheme;
     private boolean idpAppLoginFlowActive;
+    private int numPostPushUnregisterCalls;
 
     /**
      * PasscodeManager object lock.
@@ -815,6 +816,7 @@ public class SalesforceSDKManager {
             @Override
             public void onReceive(Context context, Intent intent) {
                 if (PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT.equals(intent.getAction())) {
+                    numPostPushUnregisterCalls++;
                     postPushUnregister(this, clientMgr, showLoginPage,
                     		refreshToken, loginServer, account, frontActivity);
                 }
@@ -838,6 +840,7 @@ public class SalesforceSDKManager {
                     // Waits for half a second at a time.
                     SystemClock.sleep(500);
                 }
+                numPostPushUnregisterCalls++;
                 postPushUnregister(pushUnregisterReceiver, clientMgr, showLoginPage,
                 		refreshToken, loginServer, account, frontActivity);
             }
@@ -848,12 +851,24 @@ public class SalesforceSDKManager {
     		final ClientManager clientMgr, final boolean showLoginPage,
     		final String refreshToken, final String loginServer,
             final Account account, Activity frontActivity) {
-        try {
-            context.unregisterReceiver(pushReceiver);
-        } catch (Exception e) {
-            SalesforceSDKLogger.e(TAG, "Exception occurred while un-registering", e);
+
+        /*
+         * This method can be triggered from 2 places - either when the push un-registration call
+         * completes, or when the server times out. Since they're on different threads, we don't
+         * know when either of those calls returns. However, the code should be executed only
+         * once. We also need to make sure that the value is reset once both calls come in,
+         * to ensure that push un-registration works in the multi-user scenario.
+         */
+        if (numPostPushUnregisterCalls <= 1) {
+            try {
+                context.unregisterReceiver(pushReceiver);
+            } catch (Exception e) {
+                SalesforceSDKLogger.e(TAG, "Exception occurred while un-registering", e);
+            }
+            removeAccount(clientMgr, showLoginPage, refreshToken, loginServer, account, frontActivity);
+        } else {
+            numPostPushUnregisterCalls = 0;
         }
-        removeAccount(clientMgr, showLoginPage, refreshToken, loginServer, account, frontActivity);
     }
 
     /**
