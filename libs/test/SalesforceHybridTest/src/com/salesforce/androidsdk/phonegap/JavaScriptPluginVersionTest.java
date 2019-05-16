@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
+import android.text.TextUtils;
+
 import androidx.test.filters.SmallTest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -145,9 +147,9 @@ public class JavaScriptPluginVersionTest {
     @Test
 	public void testJavaScriptPluginVersionsWithNewVersion() {
 		String[] versionParts = SalesforceSDKManager.SDK_VERSION.split("\\.");
-		String nextMajor = String.join(".","" + (Integer.parseInt(versionParts[0])+1), versionParts[1], versionParts[2]);
-		String nextMinor = String.join(".",versionParts[0], "" + (Integer.parseInt(versionParts[1])+1), versionParts[2]);
-		String nextPatch = String.join(".",versionParts[0], versionParts[1], "" + (Integer.parseInt(versionParts[2])+1));
+		String nextMajor = TextUtils.join(".", new String[] { "" + (Integer.parseInt(versionParts[0])+1), versionParts[1], versionParts[2]});
+		String nextMinor = TextUtils.join(".", new String[] {versionParts[0], "" + (Integer.parseInt(versionParts[1])+1), versionParts[2]});
+		String nextPatch = TextUtils.join(".", new String[] { versionParts[0], versionParts[1], "" + (Integer.parseInt(versionParts[2])+1)});
 
 
 		for (String version : new String[] {nextMajor, nextMinor, nextPatch}) {
