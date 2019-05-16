@@ -54,9 +54,13 @@
 	<string name="sf__passcode_fingerprint_icon_description">Fingerprint icon</string>
 	<string name="sf__biometric_title">Fingerprint Unlock</string>
 	<string name="sf__biometric_allow_instructions_title">Set up fingerprint unlock</string>
-	<string name="sf__biometric_allow_instructions">You can not unlock %s using biometric for extra security and convenience.</string>
+	<string name="sf__biometric_allow_instructions">You can now unlock %s using biometric for extra security and convenience.</string>
 	<string name="sf__biometric_not_now_button">Not Now</string>
 	<string name="sf__biometric_enable_button">Enable</string>
+	<string name="sf__accessibility_passcode_field_label">Passcode field</string>
+	<string name="sf__accessibility_passcode_length_hint">Passcode is %d alphanumeric characters long.</string>
+	<string name="sf__accessibility_unlock_announcement">Passcode confirmed.</string>
+	<string name="sf__accessibility_logged_out_announcement">You are logged out.</string>
 
 	<!-- Manage space activity -->
 	<string name="sf__manage_space_confirmation">Clearing user data will log the current user out. Are you sure you want to perform this action?</string>

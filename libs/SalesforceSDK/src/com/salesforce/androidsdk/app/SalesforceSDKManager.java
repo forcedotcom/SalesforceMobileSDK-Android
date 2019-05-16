@@ -45,7 +45,6 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.os.AsyncTask;
 import android.os.Build;
-import android.os.SystemClock;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.webkit.CookieManager;
@@ -820,28 +819,11 @@ public class SalesforceSDKManager {
                 }
             }
         };
-        getAppContext().registerReceiver(pushUnregisterReceiver, intentFilter);
+        context.registerReceiver(pushUnregisterReceiver, intentFilter);
 
         // Unregisters from notifications on logout.
 		final UserAccount userAcc = getUserAccountManager().buildUserAccount(account);
         PushMessaging.unregister(context, userAcc, isLastAccount);
-
-        /*
-         * Starts a background thread to wait up to the timeout period. If
-         * another thread has already performed logout, we exit immediately.
-         */
-        (new Thread() {
-            public void run() {
-                long startTime = System.currentTimeMillis();
-                while ((System.currentTimeMillis() - startTime) < PUSH_UNREGISTER_TIMEOUT_MILLIS) {
-
-                    // Waits for half a second at a time.
-                    SystemClock.sleep(500);
-                }
-                postPushUnregister(pushUnregisterReceiver, clientMgr, showLoginPage,
-                		refreshToken, loginServer, account, frontActivity);
-            }
-        }).start();
     }
 
     private void postPushUnregister(BroadcastReceiver pushReceiver,

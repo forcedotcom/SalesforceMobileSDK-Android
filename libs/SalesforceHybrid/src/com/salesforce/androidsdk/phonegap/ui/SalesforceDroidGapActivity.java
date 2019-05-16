@@ -411,6 +411,23 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
      */
     public void refresh(final String url) {
         SalesforceHybridLogger.i(TAG, "refresh called");
+
+        /*
+         * If client is null at this point, authentication hasn't been performed yet.
+         * We need to trigger authentication, and recreate the webview in the
+         * callback, to load the page correctly. This handles some corner cases
+         * involving hitting the back button when authentication is in progress.
+         */
+        if (client == null) {
+            clientManager.getRestClient(this, new RestClientCallback() {
+
+                @Override
+                public void authenticatedRestClient(RestClient client) {
+                    recreate();
+                }
+            });
+            return;
+        }
         client.sendAsync(RestRequest.getRequestForUserInfo(), new AsyncRequestCallback() {
 
             @Override

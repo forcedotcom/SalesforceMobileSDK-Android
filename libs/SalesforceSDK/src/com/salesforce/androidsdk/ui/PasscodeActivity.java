@@ -45,6 +45,8 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.WindowManager;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -117,6 +119,9 @@ public class PasscodeActivity extends Activity {
             @Override
             public void afterTextChanged(Editable s) { }
         });
+        if (passcodeManager.getPasscodeLengthKnown()) {
+            passcodeField.setHint(getString(R.string.sf__accessibility_passcode_length_hint, passcodeManager.getPasscodeLength()));
+        }
         passcodeBox = findViewById(R.id.sf__passcode_box);
         logoutButton = findViewById(R.id.sf__passcode_logout_button);
         logoutButton.setOnClickListener(new OnClickListener() {
@@ -138,6 +143,7 @@ public class PasscodeActivity extends Activity {
 
         fingerImage = findViewById(R.id.sf__fingerprint_icon);
         bioInstrTitle = findViewById(R.id.sf__biometric_instructions_title);
+        passcodeField.announceForAccessibility(bioInstrTitle.getText());
         bioInstr = findViewById(R.id.sf__biometric_instructions);
         bioInstr.setText(getString(R.string.sf__biometric_allow_instructions, SalesforceSDKManager.getInstance().provideAppName()));
         biometricBox = findViewById(R.id.sf__biometric_box);
@@ -230,16 +236,22 @@ public class PasscodeActivity extends Activity {
             if (!passcodeManager.getPasscodeLengthKnown()) {
                 verifyButton.setVisibility(View.VISIBLE);
             }
-            passcodeField.requestFocus();
+            showKeyboard();
+            sendAccessibilityEvent(instr.getText().toString());
             break;
         case Create:
             title.setText(getString(R.string.sf__passcode_create_title));
             title.setVisibility(View.VISIBLE);
-            instr.setText(getString(R.string.sf__passcode_create_instructions));
+            // Check if passcodes did not match
+            int instructionText = (currentMode == PasscodeMode.CreateConfirm) ? R.string.sf__passcodes_dont_match
+                                                                              : R.string.sf__passcode_create_instructions;
+            instr.setText(getString(instructionText));
             instr.setVisibility(View.VISIBLE);
             passcodeBox.setVisibility(View.VISIBLE);
             passcodeField.setVisibility(View.VISIBLE);
             passcodeField.requestFocus();
+            showKeyboard();
+            sendAccessibilityEvent(instr.getText().toString());
             break;
         case CreateConfirm:
             title.setText(getString(R.string.sf__passcode_confirm_title));
@@ -249,15 +261,19 @@ public class PasscodeActivity extends Activity {
             passcodeBox.setVisibility(View.VISIBLE);
             passcodeField.setVisibility(View.VISIBLE);
             passcodeField.requestFocus();
+            showKeyboard();
+            sendAccessibilityEvent(instr.getText().toString());
             break;
         case Change:
             title.setText(getString(R.string.sf__passcode_change_title));
             title.setVisibility(View.VISIBLE);
-            instr.setText(R.string.sf__passcode_change_instructions);
+            instr.setText(getString(R.string.sf__passcode_change_instructions));
             instr.setVisibility(View.VISIBLE);
             passcodeBox.setVisibility(View.VISIBLE);
             passcodeField.setVisibility(View.VISIBLE);
             passcodeField.requestFocus();
+            showKeyboard();
+            sendAccessibilityEvent(instr.getText().toString());
         	break;
         case EnableBiometric:
             hideKeyboard();
@@ -265,6 +281,7 @@ public class PasscodeActivity extends Activity {
             title.setVisibility(View.VISIBLE);
             biometricBox.setVisibility(View.VISIBLE);
             bioInstrTitle.setVisibility(View.VISIBLE);
+            sendAccessibilityEvent(bioInstrTitle.getText().toString());
             bioInstr.setVisibility(View.VISIBLE);
             notNowButton.setVisibility(View.VISIBLE);
             enableButton.setVisibility(View.VISIBLE);
@@ -326,13 +343,12 @@ public class PasscodeActivity extends Activity {
                 }
             } else {
                 setMode(PasscodeMode.Create);
-                instr.setText(getString(R.string.sf__passcodes_dont_match));
-                passcodeField.setText("");
             }
             return true;
 
         case Check:
             if (passcodeManager.check(this, enteredPasscode)) {
+                sendAccessibilityEvent(getString(R.string.sf__accessibility_unlock_announcement));
                 if (!passcodeManager.getPasscodeLengthKnown()) {
                     passcodeManager.setPasscodeLength(this, enteredPasscode.length());
                 }
@@ -350,8 +366,10 @@ public class PasscodeActivity extends Activity {
                 int maxAttempts = getMaxPasscodeAttempts();
                 if (attempts < maxAttempts - 1) {
                     instr.setText(getString(R.string.sf__passcode_try_again, (maxAttempts - attempts)));
+                    sendAccessibilityEvent(instr.getText().toString());
                 } else if (attempts < maxAttempts) {
                     instr.setText(getString(R.string.sf__passcode_final));
+                    sendAccessibilityEvent(instr.getText().toString());
                 } else {
                     signoutAllUsers();
                 }
@@ -486,6 +504,7 @@ public class PasscodeActivity extends Activity {
 
     private void signoutAllUsers() {
         passcodeManager.reset(this);
+        sendAccessibilityEvent(getString(R.string.sf__accessibility_logged_out_announcement));
 
         // Used for tests
         if (!logoutEnabled) {
@@ -652,6 +671,33 @@ public class PasscodeActivity extends Activity {
         InputMethodManager imm = (InputMethodManager) this.getSystemService(Activity.INPUT_METHOD_SERVICE);
         if (this.passcodeField != null) {
             imm.hideSoftInputFromWindow(this.passcodeField.getWindowToken(), 0);
+        }
+    }
+
+    private void showKeyboard() {
+        AccessibilityManager am = (AccessibilityManager) this.getSystemService(Context.ACCESSIBILITY_SERVICE);
+        if (am.isEnabled()) {
+            // Check if keyboard is shown based on verify button, which is oriented to the bottom of
+            // the layout.  Checking window instead of screen even works for split screen.
+            int[] location = new int[2];
+            verifyButton.getLocationInWindow(location);
+            if (location[1] == 0) {
+                passcodeField.requestFocus();
+            }
+        } else {
+            passcodeField.requestFocus();
+        }
+    }
+
+    private void sendAccessibilityEvent(String text) {
+        AccessibilityManager am = (AccessibilityManager) this.getSystemService(Context.ACCESSIBILITY_SERVICE);
+        if (am.isEnabled()) {
+            AccessibilityEvent event = AccessibilityEvent.obtain();
+            event.setEventType(AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED);
+            event.setClassName(getClass().getName());
+            event.setPackageName(this.getPackageName());
+            event.getText().add(text);
+            am.sendAccessibilityEvent(event);
         }
     }
 }

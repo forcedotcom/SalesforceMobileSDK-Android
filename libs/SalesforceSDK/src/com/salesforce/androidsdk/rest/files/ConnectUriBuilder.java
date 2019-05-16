@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.rest.files;
 
 import android.net.Uri;
+
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 
 /**
@@ -38,7 +39,6 @@ import com.salesforce.androidsdk.rest.ApiVersionStrings;
 public class ConnectUriBuilder {
 
     public static final String EMPTY = "";
-
     private static final String ME = "me";
     private static final String PAGE = "page";
     private static final String PAGESIZE = "pageSize";
@@ -60,14 +60,14 @@ public class ConnectUriBuilder {
     }
 
     public ConnectUriBuilder appendUserId(String userId) {
-        if (userId != null && EMPTY.equals(userId)) {
+        if (EMPTY.equals(userId)) {
             throw new IllegalArgumentException("invalid user id");
         }
         return appendPath(userId == null ? ME : userId);
     }
 
     public ConnectUriBuilder appendFolderId(String folderId) {
-        if (folderId != null && EMPTY.equals(folderId)) {
+        if (EMPTY.equals(folderId)) {
             throw new IllegalArgumentException("invalid folder id");
         }
         return appendPath(folderId);
