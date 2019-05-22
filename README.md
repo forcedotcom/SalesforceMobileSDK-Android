@@ -37,11 +37,11 @@ Introduction
 - We’ve improved support for using biometric input to supply application passcodes.
 
 **Version Updates**
-Android Studio: 3.4.1
-SQLCipher: 4.0.1
+- Android Studio: 3.4.1
+- SQLCipher: 4.0.1
 
 **Deprecation**
-The `encrypt` and `decrypt` methods in `SalesforceSDKManager` have been deprecated in favor of new methods that take an additional parameter.
+- The `encrypt` and `decrypt` methods in `SalesforceSDKManager` have been deprecated in favor of new methods that take an additional parameter.
 
 Check http://developer.force.com/mobilesdk for additional articles and tutorials.
 
