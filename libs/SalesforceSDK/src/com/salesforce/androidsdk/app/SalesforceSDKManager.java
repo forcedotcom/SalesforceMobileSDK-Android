@@ -108,7 +108,7 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "7.1.0.dev";
+    public static final String SDK_VERSION = "7.2.0.dev";
 
     /**
      * Intent action meant for instances of SalesforceSDKManager residing in other processes
