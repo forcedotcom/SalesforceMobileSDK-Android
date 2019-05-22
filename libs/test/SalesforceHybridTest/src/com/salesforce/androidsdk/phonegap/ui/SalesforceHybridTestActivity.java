@@ -30,29 +30,32 @@ package com.salesforce.androidsdk.phonegap.ui;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.util.test.TestCredentials;
+
+import org.junit.Test;
 
 /**
  * Sub-class of SalesforceDroidGapActivity that authenticates using hard-coded credentials.
  */
 public class SalesforceHybridTestActivity extends SalesforceDroidGapActivity {
 
-	static String username = "sdktest@cs1.com";
-	static String accountName = "sdktest@cs1.com (https://cs1.salesforce.com) (test)";
-	static String refreshToken = "5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBS." + "SiQYYAy5I4qHxhn2TvpCA5uxkSv9hsdYnY55z0MzteIyAN";
+	static String username = TestCredentials.USERNAME;
+	static String accountName = TestCredentials.ACCOUNT_NAME;
+	static String refreshToken = TestCredentials.REFRESH_TOKEN;
 	static String authToken = "--will-be-set-through-refresh--";
-	static String identityUrl = "https://test.salesforce.com/id/00DS0000000HDptMAG/005S0000003yaERIAY";
-	static String instanceUrl = "https://sdk.cs1.my.salesforce.com";
-	static String loginUrl = "https://test.salesforce.com";
-	static String orgId = "00DS0000000HDptMAG";
-	static String userId = "005S0000003yaERIAY";
-    static String photoUrl = "https://sdk--c.cs1.content.force.com/profilephoto/005/F";
-	
+	static String identityUrl = TestCredentials.IDENTITY_URL;
+	static String instanceUrl = TestCredentials.INSTANCE_URL;
+	static String loginUrl = TestCredentials.LOGIN_URL;
+	static String orgId = TestCredentials.ORG_ID;
+	static String userId = TestCredentials.USER_ID;
+    static String photoUrl = TestCredentials.PHOTO_URL;
+	static String clientId = TestCredentials.CLIENT_ID;
+
 	@Override
-	protected ClientManager buildClientManager() {
+	public ClientManager buildClientManager() {
 		final ClientManager clientManager = super.buildClientManager();
-		final LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
 		clientManager.createNewAccount(accountName, username, refreshToken, authToken, instanceUrl,
-        		loginUrl, identityUrl, loginOptions.getOauthClientId(), orgId, userId,
+        		loginUrl, identityUrl, clientId, orgId, userId,
 				null, null, null, null, null,
                 null, photoUrl, null, null);
 		return clientManager;

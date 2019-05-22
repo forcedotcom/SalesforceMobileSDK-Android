@@ -38,24 +38,34 @@
 	<string name="sf__server_url_reset">Reset</string>
 	
 	<!-- Passcode entry screen -->
-	<string name="sf__passcode_create_title">Create %s passcode</string>
-	<string name="sf__passcode_create_instructions">For increased security, please create a passcode that you will use to access %s when the session has timed out due to inactivity.</string>
-	<string name="sf__passcode_change_instructions">For increased security, your admininstrator requires you to change your passcode.</string>
-	<string name="sf__passcode_confirm_title">Re-enter your %s passcode</string>
-	<string name="sf__passcode_confirm_instructions">Confirm your mobile passcode for %s</string>
-	<string name="sf__passcode_enter_title">Enter %s Passcode</string>
-	<string name="sf__passcode_enter_instructions">Enter your mobile passcode for %s</string>
-	<string name="sf__passcodes_dont_match">Passcodes don\'t match!</string>
-	<string name="sf__passcode_try_again">The passcode you entered is incorrect. Please try again. You have %d attempts remaining.</string>
-	<string name="sf__passcode_final">Final passcode attempt</string>
-	<string name="sf__passcode_min_length">The passcode must be at least %d characters long</string>
-	<string name="sf__passcode_forgot_string">&lt;u>Forgot Passcode?&lt;/u></string>
-	<string name="sf__passcode_logout_confirmation">Are you sure you want to logout?</string>
-	<string name="sf__passcode_logout_yes">Yes</string>
-	<string name="sf__passcode_logout_no">No</string>
+	<string name="sf__passcode_create_title">Passcode</string>
+	<string name="sf__passcode_create_instructions">Create a passcode</string>
+	<string name="sf__passcode_change_title">Passcode</string>
+	<string name="sf__passcode_change_instructions">Create a passcode</string>
+	<string name="sf__passcode_confirm_title">Passcode</string>
+	<string name="sf__passcode_confirm_instructions">Verify passcode</string>
+	<string name="sf__passcode_enter_title">Passcode</string>
+	<string name="sf__passcode_enter_instructions">Enter passcode</string>
+	<string name="sf__passcodes_dont_match">Passcodes do not match. Try again.</string>
+	<string name="sf__passcode_try_again">Incorrect passcode. %d attempts remaining.</string>
+	<string name="sf__passcode_final">Final passcode attempt.</string>
+	<string name="sf__passcode_logout">Log out</string>
+	<string name="sf__passcode_verify_button">Verify Passcode</string>
+	<string name="sf__passcode_fingerprint_icon_description">Fingerprint icon</string>
+	<string name="sf__biometric_title">Fingerprint Unlock</string>
+	<string name="sf__biometric_allow_instructions_title">Set up fingerprint unlock</string>
+	<string name="sf__biometric_allow_instructions">You can now unlock %s using biometric for extra security and convenience.</string>
+	<string name="sf__biometric_not_now_button">Not Now</string>
+	<string name="sf__biometric_enable_button">Enable</string>
+	<string name="sf__accessibility_passcode_field_label">Passcode field</string>
+	<string name="sf__accessibility_passcode_length_hint">Passcode is %d alphanumeric characters long.</string>
+	<string name="sf__accessibility_unlock_announcement">Passcode confirmed.</string>
+	<string name="sf__accessibility_logged_out_announcement">You are logged out.</string>
 
 	<!-- Manage space activity -->
 	<string name="sf__manage_space_confirmation">Clearing user data will log the current user out. Are you sure you want to perform this action?</string>
+	<string name="sf__manage_space_logout_yes">Yes</string>
+	<string name="sf__manage_space_logout_no">No</string>
 
 	<!-- Account switcher screen -->
 	<string name="sf__add_new_account">Add new account</string>
@@ -72,10 +82,10 @@
     <string name="sf__idp_app_url_scheme_description">Used to specify IDP app\'s URL scheme to be used.</string>
 
 	<!-- Fingerprint auth resources-->
-	<string name="sf__fingerprint_title">Fingerprint Authentication</string>
-	<string name="sf__fingerprint_description">Confirm fingerprint to continue</string>
+	<string name="sf__fingerprint_title">Fingerprint Unlock</string>
+	<string name="sf__fingerprint_description">Unlock using your fingerprint to access your %s account.</string>
 	<string name="sf__fingerprint_hint">Touch sensor</string>
-	<string name="sf__fingerprint_cancel">Use passcode</string>
+	<string name="sf__fingerprint_cancel">Cancel</string>
 	<string name="sf__fingerprint_success">Success</string>
 	<string name="sf__fingerprint_failed">Fingerprint authentication failed</string>
 

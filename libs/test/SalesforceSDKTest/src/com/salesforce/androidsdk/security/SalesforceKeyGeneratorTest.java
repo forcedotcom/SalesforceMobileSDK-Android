@@ -28,20 +28,17 @@ package com.salesforce.androidsdk.security;
 
 import android.app.Application;
 import android.app.Instrumentation;
-import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.filters.SmallTest;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.salesforce.androidsdk.TestForceApp;
-import com.salesforce.androidsdk.analytics.security.Encryptor;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 /**
  * Tests for {@link SalesforceKeyGenerator}.
@@ -69,17 +66,17 @@ public class SalesforceKeyGeneratorTest {
         final String id1Again = SalesforceKeyGenerator.getUniqueId(KEY_1);
 		final String id2 = SalesforceKeyGenerator.getUniqueId(KEY_2);
 
-        // Output: 4*Math.Ceiling(((double)bytes.Length/3))) + length of getAddendum(KEY)
-        // 4*Math.Ceiling(32/3)+14 = 58
-        Assert.assertEquals("The encoded string based on an AES-256 key should have 58 characters", id1.length(), 58);
-		Assert.assertEquals("Unique IDs with the same name should be the same", id1, id1Again);
-        Assert.assertNotSame("Unique IDs with different names should be different", id1, id2);
+        // Output: 4*Math.Ceiling(((double)bytes.Length/3)))
+        // 4*Math.Ceiling(32/3) = 44
+        Assert.assertEquals("The encoded string based on an AES-256 key should have 58 characters", 44, id1.length());
+		Assert.assertEquals("Unique IDs with the same name should be the same", id1Again, id1);
+        Assert.assertNotSame("Unique IDs with different names should be different", id2, id1);
         final String id3 = SalesforceKeyGenerator.getUniqueId(KEY_3, 128);
         final String id3Again = SalesforceKeyGenerator.getUniqueId(KEY_3, 128);
 
-        // 4*Math.Ceiling(16/3)+14 = 38
-        Assert.assertEquals("The encoded string based on an AES-128 key should have 38 characters", id3.length(), 38);
-        Assert.assertEquals("Unique IDs with the same name should be the same", id3, id3Again);
+        // 4*Math.Ceiling(16/3) = 24
+        Assert.assertEquals("The encoded string based on an AES-128 key should have 38 characters", 24, id3.length());
+        Assert.assertEquals("Unique IDs with the same name should be the same", id3Again, id3);
     }
 
 	@Test
@@ -87,34 +84,7 @@ public class SalesforceKeyGeneratorTest {
         final String id1 = SalesforceKeyGenerator.getEncryptionKey(KEY_1);
         final String id1Again = SalesforceKeyGenerator.getEncryptionKey(KEY_1);
         final String id2 = SalesforceKeyGenerator.getEncryptionKey(KEY_2);
-        Assert.assertEquals("Encryption keys with the same name should be the same", id1, id1Again);
-        Assert.assertNotSame("Encryption keys with different names should be different", id1, id2);
-    }
-
-    @Test
-    public void testGetRSAPublicString() {
-        final String key1 = SalesforceKeyGenerator.getRSAPublicString(KEY_1, 2048);
-        final String key1Again = SalesforceKeyGenerator.getRSAPublicString(KEY_1, 2048);
-        final String key2 = SalesforceKeyGenerator.getRSAPublicString(KEY_2, 2048);
-        Assert.assertEquals("Public keys with the same name should be the same", key1, key1Again);
-        Assert.assertNotSame("Public keys with different names should be different", key1, key2);
-    }
-
-    @Test
-    public void testGetRSAPrivateKey() {
-        final PrivateKey key1 = SalesforceKeyGenerator.getRSAPrivateKey(KEY_1, 2048);
-        final PrivateKey key1Again = SalesforceKeyGenerator.getRSAPrivateKey(KEY_1, 2048);
-        Assert.assertEquals("Private keys with the same name should be the same", key1, key1Again);
-    }
-
-    @Test
-    public void testRSAEncryptDecrypt() throws Exception {
-        final PrivateKey privateKey = SalesforceKeyGenerator.getRSAPrivateKey(KEY_1, 2048);
-        final PublicKey publicKey = SalesforceKeyGenerator.getRSAPublicKey(KEY_1, 2048);
-        final String data = "Test data for encryption";
-        final String encryptedData = Encryptor.encryptWithRSA(publicKey, data);
-        Assert.assertNotSame("Encrypted data should not match original data", data, encryptedData);
-        final String decryptedData = Encryptor.decryptWithRSA(privateKey, encryptedData);
-        Assert.assertEquals("Decrypted data should match original data", data, decryptedData);
+        Assert.assertEquals("Encryption keys with the same name should be the same", id1Again, id1);
+        Assert.assertNotSame("Encryption keys with different names should be different", id2, id1);
     }
 }

@@ -83,7 +83,7 @@ public class StoreCursor {
 	 * NB: json data is never deserialized
 	 * @param smartStore
 	 */
-	public FakeJSONObject getData(SmartStore smartStore)  {
+	public FakeJSONObject getData(SmartStore smartStore) {
 		StringBuilder resultBuilder = new StringBuilder();
 		resultBuilder.append("{")
 			.append("\"").append(CURSOR_ID).append("\":").append(cursorId).append(", ")

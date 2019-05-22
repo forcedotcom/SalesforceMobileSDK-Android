@@ -96,9 +96,9 @@ public class SyncUpTarget extends SyncTarget {
      */
     @SuppressWarnings("unchecked")
     public static SyncUpTarget fromJSON(JSONObject target) throws JSONException {
-        // Default sync up target
-        if (target == null || target.isNull(ANDROID_IMPL) || SyncUpTarget.class.getName().equals(target.getString(ANDROID_IMPL))) {
-            return new SyncUpTarget(target);
+        // Default sync up target (it's BatchSyncUpTarget starting in Mobile SDK 7.1)
+        if (target == null || target.isNull(ANDROID_IMPL)) {
+            return new BatchSyncUpTarget(target);
         }
 
         // Non default sync up target

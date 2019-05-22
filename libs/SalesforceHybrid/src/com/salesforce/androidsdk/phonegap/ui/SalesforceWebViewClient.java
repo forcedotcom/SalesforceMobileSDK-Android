@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.phonegap.ui;
 
 import android.content.Context;
 import android.net.Uri;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -88,6 +89,9 @@ public class SalesforceWebViewClient extends SystemWebViewClient {
         }
     }
 
+    /*
+     * TODO: Remove this method and move the logic into the method below once minApi >= 24.
+     */
     @Override
     public boolean shouldOverrideUrlLoading(final WebView view, String url) {
     	if (SalesforceWebViewClientHelper.shouldOverrideUrlLoading(ctx, view, url)) {
@@ -96,6 +100,11 @@ public class SalesforceWebViewClient extends SystemWebViewClient {
         	return super.shouldOverrideUrlLoading(view, url);
         }
     }
+
+    @Override
+	public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+		return shouldOverrideUrlLoading(view, request.getUrl().toString());
+	}
 
     @Override
     public void onPageFinished(WebView view, String url) {

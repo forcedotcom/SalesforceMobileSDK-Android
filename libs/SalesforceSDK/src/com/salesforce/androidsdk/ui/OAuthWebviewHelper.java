@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.ui;
 
 import android.app.Activity;
 import android.app.PendingIntent;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
@@ -41,7 +42,6 @@ import android.os.Bundle;
 import android.security.KeyChain;
 import android.security.KeyChainAliasCallback;
 import android.security.KeyChainException;
-import androidx.browser.customtabs.CustomTabsIntent;
 import android.text.TextUtils;
 import android.webkit.ClientCertRequest;
 import android.webkit.SslErrorHandler;
@@ -87,6 +87,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import androidx.browser.customtabs.CustomTabsIntent;
 
 /**
  * Helper class to manage a WebView instance that is going through the OAuth login process.
@@ -237,7 +239,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             t.show();
         }
         final Intent intent = new Intent(AUTHENTICATION_FAILED_INTENT);
-        if (e != null && e instanceof OAuth2.OAuthFailedException) {
+        if (e instanceof OAuth2.OAuthFailedException) {
             final OAuth2.OAuthFailedException exception = (OAuth2.OAuthFailedException) e;
             int statusCode = exception.getHttpStatusCode();
             intent.putExtra(HTTP_ERROR_RESPONSE_CODE_INTENT, statusCode);
@@ -327,7 +329,14 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
          * ensures that Chrome custom tab is dismissed once the login process is complete.
          */
         customTabsIntent.intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-        customTabsIntent.launchUrl(activity, url);
+        try {
+            customTabsIntent.launchUrl(activity, url);
+        } catch (ActivityNotFoundException e) {
+            SalesforceSDKLogger.w(TAG, "Browser not installed on this device", e);
+            Toast.makeText(getContext(), "Browser not installed on this device",
+                    Toast.LENGTH_LONG).show();
+            callback.finish(null);
+        }
     }
 
     private boolean doesChromeExist() {
@@ -578,18 +587,19 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
                 // Stores the mobile policy for the org.
                 final PasscodeManager passcodeManager = mgr.getPasscodeManager();
-                passcodeManager.storeMobilePolicyForOrg(account, id.screenLockTimeout * 1000 * 60, id.pinLength);
+                passcodeManager.storeMobilePolicyForOrg(account, id.screenLockTimeout * 1000 * 60, id.pinLength, id.biometricUnlockAlowed);
                 passcodeManager.setTimeoutMs(id.screenLockTimeout * 1000 * 60);
-                // NB setMinPasscodeLength(...)
+                // NB setPasscodeLength(...)
                 //    If there was a passcode and the length is increased, the passcode manager will remember that a passcode change is required
                 //    The next SalesforceActivity to resume, will cause the locking screen to popup in passcode change mode
-                passcodeManager.setMinPasscodeLength((Activity) getContext(), id.pinLength);
+                passcodeManager.setPasscodeLength((Activity) getContext(), id.pinLength);
+                passcodeManager.setBiometricAllowed((Activity) getContext(), id.biometricUnlockAlowed);
             }
 
             // No screen lock required or no mobile policy specified.
             else {
                 final PasscodeManager passcodeManager = mgr.getPasscodeManager();
-                passcodeManager.storeMobilePolicyForOrg(account, 0, PasscodeManager.MIN_PASSCODE_LENGTH);
+                passcodeManager.storeMobilePolicyForOrg(account, 0, PasscodeManager.MIN_PASSCODE_LENGTH , true);
             }
 
             // All done

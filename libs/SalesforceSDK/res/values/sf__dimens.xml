@@ -10,9 +10,10 @@
     <dimen name="sf__server_picker_margin_bottom">3dp</dimen>
 
     <!-- Dimensions used in sf__passcode.xml -->
-    <dimen name="sf__passcode_layout_padding">20dp</dimen>
+    <dimen name="sf__passcode_layout_padding">0dp</dimen>
     <dimen name="sf__passcode_layout_margin_top">100dp</dimen>
     <dimen name="sf__passcode_layout_width">300dp</dimen>
+    <dimen name="sf__passcode_layout_height">50dp</dimen>
     <dimen name="sf__passcode_title_margin_top">10dp</dimen>
     <dimen name="sf__passcode_title_margin_bottom">10dp</dimen>
     <dimen name="sf__passcode_text_min_width">160dp</dimen>

@@ -194,29 +194,6 @@ public class EventStoreManager {
     }
 
     /**
-     * Changes the encryption key to a new value. Fetches all stored events
-     * and re-encrypts them with the new encryption key.
-     *
-     * @param oldKey Old encryption key.
-     * @param newKey New encryption key.
-     */
-    public void changeEncryptionKey(String oldKey, String newKey) {
-
-        /*
-         * We need to disable logging while the upgrade is in progress to
-         * prevent rogue threads from attempting to write data with the old key.
-         */
-        boolean logEnabledStatus = isLoggingEnabled;
-        isLoggingEnabled = false;
-        encryptionKey = oldKey;
-        final List<InstrumentationEvent> storedEvents = fetchAllEvents();
-        deleteAllEvents();
-        encryptionKey = newKey;
-        storeEvents(storedEvents);
-        isLoggingEnabled = logEnabledStatus;
-    }
-
-    /**
      * Disables or enables logging of events. If logging is disabled, no events
      * will be stored. However, publishing of events is still possible.
      *
@@ -309,9 +286,11 @@ public class EventStoreManager {
     private List<File> getAllFiles() {
         final List<File> files = new ArrayList<>();
         final File[] listOfFiles = rootDir.listFiles();
-        for (final File file : listOfFiles) {
-            if (file != null && fileFilter.accept(rootDir, file.getName())) {
-                files.add(file);
+        if (listOfFiles != null) {
+            for (final File file : listOfFiles) {
+                if (file != null && fileFilter.accept(rootDir, file.getName())) {
+                    files.add(file);
+                }
             }
         }
         return files;
@@ -339,16 +318,13 @@ public class EventStoreManager {
          *
          * @param fileSuffix Filename suffix.
          */
-        public EventFileFilter(String fileSuffix) {
+        EventFileFilter(String fileSuffix) {
             this.fileSuffix = fileSuffix;
         }
 
         @Override
         public boolean accept(File dir, String filename) {
-            if (filename != null && filename.endsWith(fileSuffix)) {
-                return true;
-            }
-            return false;
+            return (filename != null && filename.endsWith(fileSuffix));
         }
     }
 }

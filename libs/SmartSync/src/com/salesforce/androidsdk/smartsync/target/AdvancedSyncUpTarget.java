@@ -37,17 +37,25 @@ import java.util.List;
 
 /**
  * Interface for advanced sync up target where records are not simply created/updated/deleted
- * With advanced sync up target, sync manager simply calls the method: syncUpRecord
+ * With advanced sync up target, sync manager simply calls the method: syncUpRecords
  */
 public interface AdvancedSyncUpTarget {
+
     /**
+     * @return max number of records that can be passed to syncUpRecord at once
+     */
+    int getMaxBatchSize();
+
+    /**
+     * Sync up a batch of records
      *
      * @param syncManager
-     * @param record
+     * @param records
      * @param fieldlist
      * @param mergeMode
+     * @param syncSoupName
      * @throws JSONException
      * @throws IOException
      */
-    void syncUpRecord(SyncManager syncManager, JSONObject record, List<String> fieldlist, SyncState.MergeMode mergeMode) throws JSONException, IOException;
+    void syncUpRecords(SyncManager syncManager, List<JSONObject> records, List<String> fieldlist, SyncState.MergeMode mergeMode, String syncSoupName) throws JSONException, IOException;
 }

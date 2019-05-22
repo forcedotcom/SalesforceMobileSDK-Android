@@ -2,8 +2,8 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.salesforce.androidsdk" 
-	android:versionCode="62"
-	android:versionName="7.0.0">
+	android:versionCode="63"
+	android:versionName="7.1.0">
 
     <application>
 
@@ -34,9 +34,10 @@
 
         <!-- Passcode activity -->
         <activity android:name="com.salesforce.androidsdk.ui.PasscodeActivity"
-            android:theme="@style/SalesforceSDK.ActionBarTheme"
+            android:theme="@style/Theme.Design.NoActionBar"
             android:exported="false"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize|stateAlwaysVisible" />
 
         <!-- Manage space activity -->
         <activity android:name="com.salesforce.androidsdk.ui.ManageSpaceActivity"

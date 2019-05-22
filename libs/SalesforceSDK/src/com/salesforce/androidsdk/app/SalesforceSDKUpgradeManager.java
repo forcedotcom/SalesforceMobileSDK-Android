@@ -29,6 +29,9 @@ package com.salesforce.androidsdk.app;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
+
 /**
  * This class handles upgrades from one version to another.
  *
@@ -38,6 +41,7 @@ public class SalesforceSDKUpgradeManager {
 
     private static final String VERSION_SHARED_PREF = "version_info";
     private static final String ACC_MGR_KEY = "acc_mgr_version";
+    private static final String TAG = "SalesforceSDKUpgradeManager";
 
     private static SalesforceSDKUpgradeManager INSTANCE = null;
 
@@ -72,6 +76,21 @@ public class SalesforceSDKUpgradeManager {
 
         // Update shared preference file to reflect the latest version.
         writeCurVersion(ACC_MGR_KEY, SalesforceSDKManager.SDK_VERSION);
+
+        /*
+         * If the installed version < v7.1.0, we need to store the current
+         * user's user ID and org ID in a shared preference file, to
+         * support fast user switching.
+         */
+        try {
+            final String majorVersionNum = installedVersion.substring(0, 3);
+            double installedVerDouble = Double.parseDouble(majorVersionNum);
+            if (installedVerDouble < 7.1) {
+                upgradeTo7Dot1();
+            }
+        } catch (Exception e) {
+            SalesforceSDKLogger.e(TAG, "Failed to parse installed version.");
+        }
     }
 
     /**
@@ -103,5 +122,9 @@ public class SalesforceSDKUpgradeManager {
         final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(VERSION_SHARED_PREF,
                 Context.MODE_PRIVATE);
         return sp.getString(key, "");
+    }
+
+    private void upgradeTo7Dot1() {
+        SalesforceKeyGenerator.upgradeTo7Dot1();
     }
 }

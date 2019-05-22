@@ -250,10 +250,8 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
         }
     }
 
-    protected ClientManager buildClientManager() {
-        return new ClientManager(this, SalesforceReactSDKManager.getInstance().getAccountType(),
-                SalesforceReactSDKManager.getInstance().getLoginOptions(),
-                SalesforceReactSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
+    public ClientManager buildClientManager() {
+        return SalesforceReactSDKManager.getInstance().getClientManager();
     }
 
     @Override

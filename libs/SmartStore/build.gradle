@@ -15,11 +15,11 @@ apply plugin: 'com.jfrog.bintray'
 
 dependencies {
     api project(':libs:SalesforceSDK')
-    api 'net.zetetic:android-database-sqlcipher:3.5.9'
-    androidTestImplementation 'androidx.test:runner:1.1.0'
-    androidTestImplementation 'androidx.test:rules:1.1.0'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.0'
-    androidTestImplementation 'androidx.test.ext:junit:1.0.0'
+    api 'net.zetetic:android-database-sqlcipher:4.0.1'
+    androidTestImplementation 'androidx.test:runner:1.1.1'
+    androidTestImplementation 'androidx.test:rules:1.1.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.0'
 }
 
 android {
@@ -131,9 +131,9 @@ bintray {
         licenses = ['Apache-2.0']
         labels = ['android', 'salesforce', 'mobilesdk']
         version {
-            name = '7.0.0'
+            name = '7.1.0'
             released  = new Date()
-            vcsTag = 'v7.0.0'
+            vcsTag = 'v7.1.0'
         }
     }
 }

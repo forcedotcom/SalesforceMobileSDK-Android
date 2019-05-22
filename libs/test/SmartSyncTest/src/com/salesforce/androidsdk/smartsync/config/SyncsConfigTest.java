@@ -27,13 +27,10 @@
 
 package com.salesforce.androidsdk.smartsync.config;
 
-import androidx.test.filters.SmallTest;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManagerTestCase;
+import com.salesforce.androidsdk.smartsync.target.BatchSyncUpTarget;
 import com.salesforce.androidsdk.smartsync.target.SoqlSyncDownTarget;
-import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 
@@ -45,6 +42,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Arrays;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
@@ -81,7 +81,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
         SyncState actualSync2 = globalSyncManager.getSyncStatus("globalSync2");
         Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, actualSync2.getSoupName());
         checkStatus(actualSync2, SyncState.Type.syncUp, actualSync2.getId(),
-                new SyncUpTarget(Arrays.asList(new String[]{"Name"}), null),
+                new BatchSyncUpTarget(Arrays.asList(new String[]{"Name"}), null),
                 SyncOptions.optionsForSyncUp(Arrays.asList(new String[]{"Id", "Name", "LastModifiedDate"}), SyncState.MergeMode.LEAVE_IF_CHANGED),
                 SyncState.Status.NEW, 0);
     }
@@ -107,7 +107,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
         SyncState actualSync2 = syncManager.getSyncStatus("userSync2");
         Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, actualSync2.getSoupName());
         checkStatus(actualSync2, SyncState.Type.syncUp, actualSync2.getId(),
-                new SyncUpTarget(Arrays.asList(new String[]{"Name"}), null),
+                new BatchSyncUpTarget(Arrays.asList(new String[]{"Name"}), null),
                 SyncOptions.optionsForSyncUp(Arrays.asList(new String[]{"Id", "Name", "LastModifiedDate"}), SyncState.MergeMode.LEAVE_IF_CHANGED),
                 SyncState.Status.NEW, 0);
     }

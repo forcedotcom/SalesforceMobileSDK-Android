@@ -26,12 +26,12 @@
  */
 package com.salesforce.androidsdk.util;
 
-import androidx.test.filters.SmallTest;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
 
 /**
  * Tests for AuthConfigUtil.
@@ -42,7 +42,7 @@ import org.junit.runner.RunWith;
 @SmallTest
 public class AuthConfigUtilTest {
 
-    private static final String MY_DOMAIN_ENDPOINT = "https://sdk.cs1.my.salesforce.com";
+    private static final String MY_DOMAIN_ENDPOINT = "https://mobilesdk.my.salesforce.com";
     private static final String ALTERNATE_MY_DOMAIN_ENDPOINT = "https://powerofus.force.com";
     private static final String SANDBOX_ENDPOINT = "https://test.salesforce.com";
     private static final String FORWARD_SLASH = "/";
@@ -75,7 +75,8 @@ public class AuthConfigUtilTest {
         Assert.assertNotNull("Auth config should not be null", authConfig);
         Assert.assertNotNull("Auth config JSON should not be null", authConfig.getAuthConfig());
         Assert.assertNotNull("SSO URLs should not be null", authConfig.getSsoUrls());
-        Assert.assertTrue("SSO URLs should have at least 1 valid entry", authConfig.getSsoUrls().size() >= 1);
+        Assert.assertTrue("SSO URLs should have at least 1 valid entry",
+                authConfig.getSsoUrls().size() >= 1);
     }
 
     @Test
@@ -84,6 +85,16 @@ public class AuthConfigUtilTest {
         Assert.assertNotNull("Auth config should not be null", authConfig);
         Assert.assertNotNull("Auth config JSON should not be null", authConfig.getAuthConfig());
         Assert.assertNull("SSO URLs should be null", authConfig.getSsoUrls());
+    }
+
+    @Test
+    public void testGetLoginPageUrl() {
+        final AuthConfigUtil.MyDomainAuthConfig authConfig = AuthConfigUtil.getMyDomainAuthConfig(ALTERNATE_MY_DOMAIN_ENDPOINT);
+        Assert.assertNotNull("Auth config should not be null", authConfig);
+        Assert.assertNotNull("Auth config JSON should not be null", authConfig.getAuthConfig());
+        Assert.assertNotNull("Login page URL should not be null", authConfig.getLoginPageUrl());
+        Assert.assertTrue("Login page URL should contain correct URL",
+                authConfig.getLoginPageUrl().contains(ALTERNATE_MY_DOMAIN_ENDPOINT));
     }
 
     @Test

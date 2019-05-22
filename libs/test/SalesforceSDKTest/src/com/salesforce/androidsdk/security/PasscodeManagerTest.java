@@ -160,12 +160,12 @@ public class PasscodeManagerTest {
         Assert.assertFalse(pm.isPasscodeChangeRequired());
 
         // Increase passcode length without a passcode stored
-        pm.setMinPasscodeLength(ctx, 5);
+        pm.setPasscodeLength(ctx, 5);
         Assert.assertFalse(pm.isPasscodeChangeRequired());
 
         // Increase passcode length with a passcode stored
         pm.store(ctx, "12345");
-        pm.setMinPasscodeLength(ctx, 6);
+        pm.setPasscodeLength(ctx, 6);
         Assert.assertTrue(pm.isPasscodeChangeRequired());
     }
 
@@ -177,7 +177,7 @@ public class PasscodeManagerTest {
         // Increase passcode length with a passcode stored
         Assert.assertFalse(pm.isPasscodeChangeRequired());
         pm.store(ctx, "1234");
-        pm.setMinPasscodeLength(ctx, 5);
+        pm.setPasscodeLength(ctx, 5);
         Assert.assertTrue(pm.isPasscodeChangeRequired());
 
 
@@ -204,13 +204,10 @@ public class PasscodeManagerTest {
     @Test
     public void testMobilePrefsWhenLengthChanged() {
         // Initial values
-        checkMobilePrefs(TEST_TIMEOUT_MS, PasscodeManager.MIN_PASSCODE_LENGTH, false);
-        // Decreasing length
-        pm.setMinPasscodeLength(ctx, 3);
-        checkMobilePrefs(TEST_TIMEOUT_MS, 3, false);
+        checkMobilePrefs(TEST_TIMEOUT_MS, PasscodeManager.MIN_PASSCODE_LENGTH, true, false);
         // Increasing length
-        pm.setMinPasscodeLength(ctx, 5);
-        checkMobilePrefs(TEST_TIMEOUT_MS, 5, false);
+        pm.setPasscodeLength(ctx, 5);
+        checkMobilePrefs(TEST_TIMEOUT_MS, 5, true, false);
     }
 
     /**
@@ -219,16 +216,16 @@ public class PasscodeManagerTest {
     @Test
     public void testMobilePrefsWhenTimeoutChanged() {
         // Initial values
-        checkMobilePrefs(TEST_TIMEOUT_MS, PasscodeManager.MIN_PASSCODE_LENGTH, false);
+        checkMobilePrefs(TEST_TIMEOUT_MS, PasscodeManager.MIN_PASSCODE_LENGTH, true, false);
         // Increasing timeout -> change should not be applied
         pm.setTimeoutMs(TEST_TIMEOUT_MS*2);
-        checkMobilePrefs(TEST_TIMEOUT_MS, 4, false);
+        checkMobilePrefs(TEST_TIMEOUT_MS, 4, true, false);
         // Decreasing timeout -> change should be applied
         pm.setTimeoutMs(TEST_TIMEOUT_MS/2);
-        checkMobilePrefs(TEST_TIMEOUT_MS/2, 4, false);
+        checkMobilePrefs(TEST_TIMEOUT_MS/2, 4, true, false);
         // Changing timeout to 0 => does a reset
         pm.setTimeoutMs(0);
-        checkMobilePrefs(0, 4, false);
+        checkMobilePrefs(0, 4, true, false);
     }
 
 
@@ -238,23 +235,60 @@ public class PasscodeManagerTest {
     @Test
     public void testMobilePrefsWhenPasscodeChangeRequiredOrStored() {
         // Initial values
-        checkMobilePrefs(TEST_TIMEOUT_MS, PasscodeManager.MIN_PASSCODE_LENGTH, false);
+        checkMobilePrefs(TEST_TIMEOUT_MS, PasscodeManager.MIN_PASSCODE_LENGTH, true, false);
         // Setting passcode
         pm.store(ctx, "1234");
         // Increasing length
-        pm.setMinPasscodeLength(ctx, 5);
-        checkMobilePrefs(TEST_TIMEOUT_MS, 5, true);
+        pm.setPasscodeLength(ctx, 5);
+        checkMobilePrefs(TEST_TIMEOUT_MS, 5, true, true);
         // Changing passcode
         pm.store(ctx, "12345");
-        checkMobilePrefs(TEST_TIMEOUT_MS, 5, false);
+        checkMobilePrefs(TEST_TIMEOUT_MS, 5, true, false);
     }
 
+    /**
+     * Make sure mobile prefs are stored in prefs and updated when biometric unlock is changed
+     */
+    @Test
+    public void testMobilePrefsWhenBiometricChanged() {
+        // Initial values
+        checkMobilePrefs(TEST_TIMEOUT_MS, PasscodeManager.MIN_PASSCODE_LENGTH, true, false);
+        // Set biometric allowed
+        pm.setBiometricAllowed(ctx, false);
+        checkMobilePrefs(TEST_TIMEOUT_MS, PasscodeManager.MIN_PASSCODE_LENGTH, false, false);
+    }
 
-    private void checkMobilePrefs(int timeoutMs, int minPasscodeLength, boolean passcodeChangeRequired) {
+    /**
+     * Make sure biometric cannot be allowed if previously disallowed
+     */
+    @Test
+    public void testSetBiometricAllowed() {
+        pm.setBiometricAllowed(ctx, false);
+        // Initial values + Biometric disallowed
+        checkMobilePrefs(TEST_TIMEOUT_MS, PasscodeManager.MIN_PASSCODE_LENGTH, false, false);
+        // Set biometric allowed
+        pm.setBiometricAllowed(ctx, true);
+        checkMobilePrefs(TEST_TIMEOUT_MS, PasscodeManager.MIN_PASSCODE_LENGTH, false, false);
+    }
+
+    /**
+     * Make sure biometric is allowed after reset
+     */
+    @Test
+    public void testBiometricAllowedAfterReset() {
+        pm.setBiometricAllowed(ctx, false);
+        // Initial values + Biometric disallowed
+        checkMobilePrefs(TEST_TIMEOUT_MS, PasscodeManager.MIN_PASSCODE_LENGTH, false, false);
+        pm.reset(ctx);
+        checkMobilePrefs(0, PasscodeManager.MIN_PASSCODE_LENGTH, true, false);
+    }
+
+    private void checkMobilePrefs(int timeoutMs, int minPasscodeLength, boolean biometricAllowed, boolean passcodeChangeRequired) {
         final SharedPreferences sp = ctx.getSharedPreferences(PasscodeManager.MOBILE_POLICY_PREF,
                 Context.MODE_PRIVATE);
         Assert.assertEquals(timeoutMs, sp.getInt(PasscodeManager.KEY_TIMEOUT, 0));
         Assert.assertEquals(minPasscodeLength, sp.getInt(PasscodeManager.KEY_PASSCODE_LENGTH, PasscodeManager.MIN_PASSCODE_LENGTH));
+        Assert.assertEquals(biometricAllowed, sp.getBoolean(PasscodeManager.KEY_BIOMETRIC_ALLOWED, true));
         Assert.assertEquals(passcodeChangeRequired, sp.getBoolean(PasscodeManager.KEY_PASSCODE_CHANGE_REQUIRED, false));
 
     }

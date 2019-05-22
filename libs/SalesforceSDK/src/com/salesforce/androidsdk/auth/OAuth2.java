@@ -42,6 +42,7 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -90,6 +91,7 @@ public class OAuth2 {
     private static final String JSON = "json";
     private static final String MOBILE_POLICY = "mobile_policy";
     private static final String PIN_LENGTH = "pin_length";
+    private static final String BIOMETRIC_UNLOCK = "biometric_unlock";
     private static final String REFRESH_TOKEN = "refresh_token";
     private static final String RESPONSE_TYPE = "response_type";
     private static final String SCOPE = "scope";
@@ -499,6 +501,7 @@ public class OAuth2 {
         public String thumbnailUrl;
         public int pinLength = -1;
         public int screenLockTimeout = -1;
+        public boolean biometricUnlockAlowed = true;
         public JSONObject customAttributes;
         public JSONObject customPermissions;
 
@@ -525,6 +528,13 @@ public class OAuth2 {
                 if (parsedResponse.has(MOBILE_POLICY)) {
                     pinLength = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(PIN_LENGTH);
                     screenLockTimeout = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(SCREEN_LOCK);
+                    if (customAttributes != null) {
+                        String bioAttribute = customAttributes.optString(BIOMETRIC_UNLOCK).toLowerCase(Locale.US);
+                        if (bioAttribute.equals("false")) {
+                            biometricUnlockAlowed = false;
+                            SalesforceSDKLogger.i(TAG, "Biometric Unlock disabled by connected app.");
+                        }
+                    }
                 }
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse identity response", e);

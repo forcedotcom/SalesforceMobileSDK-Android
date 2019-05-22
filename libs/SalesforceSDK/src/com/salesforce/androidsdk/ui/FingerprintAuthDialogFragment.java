@@ -31,6 +31,7 @@ import android.annotation.TargetApi;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.hardware.fingerprint.FingerprintManager;
@@ -48,6 +49,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.salesforce.androidsdk.R;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 import javax.crypto.Cipher;
 
@@ -142,9 +144,15 @@ public class FingerprintAuthDialogFragment extends DialogFragment {
             @Override
             public void onClick(View view) {
                 dismiss();
+                mContext.biometricDeclined();
             }
         });
         mStatusText = v.findViewById(R.id.sf__fingerprint_status);
+
+        TextView textView = v.findViewById(R.id.sf__fingerprint_description);
+        textView.setText(getString(R.string.sf__fingerprint_description, SalesforceSDKManager.getInstance().provideAppName()));
+
+        getDialog().setCanceledOnTouchOutside(false);
         return v;
     }
 

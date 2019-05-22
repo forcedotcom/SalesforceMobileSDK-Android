@@ -27,6 +27,8 @@
 package com.salesforce.androidsdk.smartsync.util;
 
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
@@ -37,6 +39,9 @@ import com.salesforce.androidsdk.util.JSONObjectHelper;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -82,19 +87,20 @@ public class SyncState {
 	 * @param store
 	 */
 	public static void setupSyncsSoupIfNeeded(SmartStore store) {
-    	if (store.hasSoup(SYNCS_SOUP) && store.getSoupIndexSpecs(SYNCS_SOUP).length == 2) {
+    	if (store.hasSoup(SYNCS_SOUP) && store.getSoupIndexSpecs(SYNCS_SOUP).length == 3) {
 			return;
 		}
 
 		final IndexSpec[] indexSpecs = {
-			new IndexSpec(SYNC_TYPE, SmartStore.Type.string),
-			new IndexSpec(SYNC_NAME, SmartStore.Type.string)
+			new IndexSpec(SYNC_TYPE, SmartStore.Type.json1),
+			new IndexSpec(SYNC_NAME, SmartStore.Type.json1),
+			new IndexSpec(SYNC_STATUS, SmartStore.Type.json1)
 		};
 
 		// Syncs soup exists but doesn't have all the required indexes
 		if (store.hasSoup(SYNCS_SOUP)) {
 			try {
-				store.alterSoup(SYNCS_SOUP, indexSpecs, false);
+				store.alterSoup(SYNCS_SOUP, indexSpecs, true /* reindexing to json1 is quick */);
 			}
 			catch (JSONException e) {
 				throw new SyncManager.SmartSyncException(e);
@@ -105,7 +111,43 @@ public class SyncState {
 			store.registerSoup(SYNCS_SOUP, indexSpecs);
 		}
 	}
-	
+
+	/**
+	 * Cleanup syncs soup if needed
+	 * At startup, no sync could be running already
+	 * If a sync is in the running state, we change it to stopped
+	 * @param store
+	 */
+	public static void cleanupSyncsSoupIfNeeded(SmartStore store) {
+		try {
+			List<SyncState> syncs = getSyncsWithStatus(store, Status.RUNNING);
+			for (SyncState sync : syncs) {
+				sync.setStatus(Status.STOPPED);
+				sync.save(store);
+			}
+		} catch (JSONException e) {
+			throw new SyncManager.SmartSyncException(e);
+		}
+	}
+
+
+	/**
+	 * Get syncs with given status in the given store
+	 * @param store
+	 * @param status
+	 * @return list of SyncState
+	 * @throws JSONException
+	 */
+	public static List<SyncState> getSyncsWithStatus(SmartStore store, Status status) throws JSONException {
+		List<SyncState> syncs = new ArrayList<>();
+		QuerySpec query = QuerySpec.buildSmartQuerySpec(String.format("select {%1$s:%2$s} from {%1$s} where {%1$s:%3$s} = '%4$s'", SYNCS_SOUP, SmartSqlHelper.SOUP, SYNC_STATUS, status.name()), Integer.MAX_VALUE);
+		JSONArray rows = store.query(query, 0);
+		for (int i=0; i<rows.length(); i++) {
+			syncs.add(SyncState.fromJSON(rows.getJSONArray(i).getJSONObject(0)));
+		}
+		return syncs;
+	}
+
 	/**
 	 * Create sync state in database for a sync down and return corresponding SyncState
 	 * NB: Throws exception if there is already a sync with the same name (when name is not null)
@@ -145,7 +187,7 @@ public class SyncState {
     	return SyncState.fromJSON(sync);
 	}
 
-	
+
 	/**
 	 * Create sync state in database for a sync up and return corresponding SyncState
 	 * NB: Throws exception if there is already a sync with the same name (when name is not null)
@@ -312,6 +354,15 @@ public class SyncState {
 		sync.put(SYNC_ERROR, errorJSON);
 		return sync;
 	}
+
+	@Override
+	public String toString() {
+		try {
+			return asJSON().toString().replaceAll("\n", " ");
+		} catch (JSONException e) {
+			return super.toString();
+		}
+	}
 	
 	/**
 	 * Save SyncState to db
@@ -390,10 +441,10 @@ public class SyncState {
 	}
 	
 	public void setStatus(Status status) {
-		if (this.status == Status.NEW && status == Status.RUNNING) {
+		if (this.status != Status.RUNNING && status == Status.RUNNING) {
 			this.startTime = System.currentTimeMillis();
 		}
-		if (this.status == Status.RUNNING && (status == Status.DONE || status == Status.FAILED)) {
+		if (this.status == Status.RUNNING && (status == Status.DONE || status == Status.FAILED || status == Status.STOPPED)) {
 			this.endTime = System.currentTimeMillis();
 		}
 
@@ -411,7 +462,11 @@ public class SyncState {
 	public boolean hasFailed() {
 		return this.status == Status.FAILED;
 	}
-	
+
+	public boolean isStopped() {
+		return this.status == Status.STOPPED;
+	}
+
 	public boolean isRunning() {
 		return this.status == Status.RUNNING;
 	}
@@ -434,6 +489,7 @@ public class SyncState {
      */
     public enum Status {
     	NEW,
+		STOPPED,
     	RUNNING,
     	DONE,
     	FAILED
