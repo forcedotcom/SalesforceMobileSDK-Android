@@ -23,28 +23,25 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 7.0
+### What's New in 7.1
 
-**Android Platform Enhancements**
-Mobile SDK now supports
-- AndroidX and Jetpack. See https://developer.android.com/jetpack/.
-- Firebase Cloud Messaging (FCM) push notifications. Because FCM currently works with the GCM infrastructure, no migration is
-necessary at this time.
+**SmartSync Data Framework Updates**
+- SmartSync Data Framework now supports a batch sync up target that uses the Salesforce Composite API for uploading groups of up to 25 records per call.
+- New methods allow native apps to stop and restart in-flight sync operations. To reflect the new sync state, we’ve added a stopped sync status.
+- You can now call `cleanResyncGhosts` with a sync name.
+
+**Security Updates**
+- We’ve upgraded our master key security to use the Android Keystore.
+
+**Miscellaneous Changes**
+- We’ve improved support for using biometric input to supply application passcodes.
 
 **Version Updates**
-- Android target SDK: Android Pie (API 28)
-- Gradle: 4.6
-- Android Studio: 3.2
-- OkHttp: 3.10
-- Cordova for Android: 7.1.2
-- Cordova command line: 8.1.2
-- SQLCipher: 3.5.9
-- SQLite: 3.20.1
-- React Native: 0.56.1
-- node: 11.1
-  
-**Deprecations**
-- Android GCM push notifications are no longer supported.
+- Android Studio: 3.4.1
+- SQLCipher: 4.0.1
+
+**Deprecation**
+- The `encrypt` and `decrypt` methods in `SalesforceSDKManager` have been deprecated in favor of new methods that take an additional parameter.
 
 Check http://developer.force.com/mobilesdk for additional articles and tutorials.
 
