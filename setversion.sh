@@ -13,7 +13,7 @@ usage ()
 {
     echo "Use this script to set Mobile SDK version number in source files"
     echo "Usage: $0 -v <versionName> -c <versionCode> [-d <isDev>]"
-    echo "  where: versionName is the version name e.g. 7.1.0"
+    echo "  where: versionName is the version name e.g. 7.2.0"
     echo "         versionCode is the version code e.g. 64"
     echo "         isDev is yes or no (default) to indicate whether it is a dev build"
 }
