@@ -49,22 +49,22 @@ update_package_json ()
 {
     local file=$1
     local versionName=$2
-    sed -i "s/\"version\":.*\"[^\"]*\"/\"version\": \"${versionName}\"/g" ${file}
+    gsed -i "s/\"version\":.*\"[^\"]*\"/\"version\": \"${versionName}\"/g" ${file}
 }
 
 update_top_build_gradle ()
 {
     local file=$1
     local versionName=$2
-    sed -i "s/version = '[0-9\.]*'/version = '${versionName}'/g" ${file}
+    gsed -i "s/version = '[0-9\.]*'/version = '${versionName}'/g" ${file}
 }
 
 update_build_gradle ()
 {
     local file=$1
     local versionName=$2
-    sed -i "s/name = '[0-9\.]*'/name = '${versionName}'/g" ${file}
-    sed -i "s/vcsTag = '[^']*'/vcsTag = 'v${versionName}'/g" ${file}
+    gsed -i "s/name = '[0-9\.]*'/name = '${versionName}'/g" ${file}
+    gsed -i "s/vcsTag = '[^']*'/vcsTag = 'v${versionName}'/g" ${file}
 }
 
 update_manifest ()
@@ -72,22 +72,22 @@ update_manifest ()
     local file=$1
     local versionName=$2
     local versionCode=$3
-    sed -i "s/android\:versionCode=\"[^\"]*\"/android:versionCode=\"${versionCode}\"/g" ${file}
-    sed -i "s/android\:versionName=\"[^\"]*\"/android:versionName=\"${versionName}\"/g" ${file}
+    gsed -i "s/android\:versionCode=\"[^\"]*\"/android:versionCode=\"${versionCode}\"/g" ${file}
+    gsed -i "s/android\:versionName=\"[^\"]*\"/android:versionName=\"${versionName}\"/g" ${file}
 }
 
 update_config_xml ()
 {
     local file=$1
     local versionName=$2
-    sed -i "s/version.*=.*\"[^\"]*\">/version   = \"${versionName}\">/g" ${file}
+    gsed -i "s/version.*=.*\"[^\"]*\">/version   = \"${versionName}\">/g" ${file}
 }
 
 update_salesforcesdkmanager_java ()
 {
     local file=$1
     local versionName=$2
-    sed -i "s/SDK_VERSION.*=.*\"[^\"]*\"/SDK_VERSION = \"${versionName}\"/g" ${file}
+    gsed -i "s/SDK_VERSION.*=.*\"[^\"]*\"/SDK_VERSION = \"${versionName}\"/g" ${file}
 
 }
 
@@ -95,7 +95,7 @@ update_generate_doc ()
 {
     local file=$1
     local versionName=$2
-    sed -i "s/SalesforceSDK [0-9\.]* API/SalesforceSDK ${versionName} API/g" ${file}
+    gsed -i "s/SalesforceSDK [0-9\.]* API/SalesforceSDK ${versionName} API/g" ${file}
 }
 
 parse_opts "$@"
