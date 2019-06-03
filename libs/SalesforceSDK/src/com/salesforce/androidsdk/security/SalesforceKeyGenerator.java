@@ -40,11 +40,11 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.crypto.KeyGenerator;
 
@@ -67,7 +67,7 @@ public class SalesforceKeyGenerator {
     private static final String SHA1PRNG = "SHA1PRNG";
     private static final String AES = "AES";
 
-    private static Map<String, String> CACHED_ENCRYPTION_KEYS = new HashMap<>();
+    private static Map<String, String> CACHED_ENCRYPTION_KEYS = new ConcurrentHashMap<>();
 
     /**
      * Returns the unique ID being used. The default key length is 256 bits.
