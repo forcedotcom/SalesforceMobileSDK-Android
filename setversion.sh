@@ -98,15 +98,29 @@ update_generate_doc ()
     gsed -i "s/SalesforceSDK [0-9\.]* API/SalesforceSDK ${versionName} API/g" ${file}
 }
 
+update_react_package_json ()
+{
+    local file=$1
+    local versionName=$2
+    local isDev=$3
+    local branch=${versionName}
+
+    if [ "$OPT_IS_DEV" == "yes" ]
+    then
+        branch="dev"
+    fi
+
+    gsed -i "s/\"version\":.*\"[^\"]*\"/\"version\": \"${versionName}\"/g" ${file}
+    gsed -i "s/SalesforceMobileSDK-ReactNative.git\#[^\"]*\"/SalesforceMobileSDK-ReactNative.git\#${branch}\"/g" ${file}
+}
+
 parse_opts "$@"
 
 VERSION_SUFFIXED=""
 if [ "$OPT_IS_DEV" == "yes" ]
 then
-    echo "here 1"
     VERSION_SUFFIXED="${OPT_VERSION}.dev"
 else
-    echo "here 2"
     VERSION_SUFFIXED=${OPT_VERSION}
 fi
 
@@ -114,8 +128,11 @@ SHORT_VERSION=`echo ${OPT_VERSION} | cut -d. -f1,2`
 
 echo -e "${YELLOW}*** SETTING VERSION NAME TO ${OPT_VERSION}, VERSION CODE TO ${OPT_CODE}, IS DEV = ${OPT_IS_DEV} ***${NC}"
 
-echo "*** Updating package.json ***"
+echo "*** Updating main package.json ***"
 update_package_json "./package.json" "${OPT_VERSION}"
+
+echo "*** Updating react package.json ***"
+update_react_package_json "./libs/SalesforceReact/package.json" "${OPT_VERSION}" "${OPT_IS_DEV}"
 
 echo "*** Updating top build.gradle file ***"
 update_top_build_gradle "./build.gradle" "${OPT_VERSION}"
