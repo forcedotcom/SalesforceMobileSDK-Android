@@ -26,11 +26,13 @@
  */
 package com.salesforce.androidsdk.smartsync.util;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
+import java.util.List;
 
 /**
  * Test class for SyncState.
@@ -158,12 +160,10 @@ public class SOQLMutatorTest {
         Assert.assertFalse(new SOQLMutator("SELECT Description FROM Account WHERE Id IN (SELECT Id FROM Account ORDER BY FirstName) LIMIT 1000").hasOrderBy());
     }
 
-// XXX we need to use a real parser to handle cases like that
-//
-//    @Test
-//    public void testHasOrderByWhenPresentInValue() {
-//        Assert.assertFalse(new SOQLMutator("SELECT Description FROM Account WHERE Name = ' order by \' order by \''").hasOrderBy());
-//    }
+    @Test
+    public void testHasOrderByWhenPresentInValue() {
+        Assert.assertFalse(new SOQLMutator("SELECT Description FROM Account WHERE Name = ' order by \\' order by \\''").hasOrderBy());
+    }
 
     @Test
     public void testHasOrderByWhenAbsent() {
@@ -177,4 +177,55 @@ public class SOQLMutatorTest {
         Assert.assertEquals(expectedSoql, new SOQLMutator(soql).addSelectFields("LastModifiedDate").addSelectFields("Id").replaceOrderBy("LastModifiedDate").asBuilder().build());
     }
 
+    @Test
+    public void testModifyQueryWithComplexExpressions() {
+        String soql = "select Name from Account where ((Name = 'James Bond') or (Name = 'Batman')) and (Description like '%savior%') order by Name";
+        String expectedSoql = "select Id,LastModifiedDate,Name from Account where ((Name = 'James Bond') or (Name = 'Batman')) and (Description like '%savior%') order by LastModifiedDate";
+        Assert.assertEquals(expectedSoql, new SOQLMutator(soql).addSelectFields("LastModifiedDate").addSelectFields("Id").replaceOrderBy("LastModifiedDate").asBuilder().build());
+    }
+
+
+    @Test
+    public void testTokenizeBasic() {
+        tryTokenize("hello world", "hello# #world");
+        tryTokenize("hello world: my name is   James    Bond", "hello# #world:# #my# #name# #is#   #James#    #Bond");
+    }
+
+    @Test
+    public void testTokenizeWithOrderGroupBy() {
+        tryTokenize("hello order by world", "hello# #order by# #world");
+        tryTokenize("hello group by world", "hello# #group by# #world");
+        tryTokenize("hello something by world", "hello# #something# #by# #world");
+        tryTokenize("hello something  by world order  by abc group    by def order", "hello# #something#  #by# #world# #order by# #abc# #group by# #def# #order");
+    }
+
+    @Test
+    public void testTokenizeWithQuotes() {
+        tryTokenize("hello 'my world'", "hello# #'my world'");
+        tryTokenize("hello 'my world\\''", "hello# #'my world\\''");
+    }
+
+    @Test
+    public void testTokenizeWithParentheses() {
+        tryTokenize("hello (this is a group)", "hello# #(this is a group)");
+        tryTokenize("hello (a or (b and c) or d),(e or f)", "hello# #(a or (b and c) or d)#,#(e or f)");
+    }
+
+    @Test
+    public void testTokenizeWithQuotesInParentheses() {
+        tryTokenize("hello (this is a 'group')", "hello# #(this is a 'group')");
+        tryTokenize("hello (a or (b and 'the name of c') or d)", "hello# #(a or (b and 'the name of c') or d)");
+    }
+
+    @Test
+    public void testTokenizeWithParenthesesInQuotes() {
+        tryTokenize("hello 'oh oh ( ) ( )))'", "hello# #'oh oh ( ) ( )))'");
+    }
+
+
+    private void tryTokenize(String soql, String expectedTokensJoined) {
+        List<String> tokens = new SOQLMutator.SOQLTokenizer(soql).tokenize();
+        String actualTokensJoined = String.join("#", tokens);
+        Assert.assertEquals(expectedTokensJoined, actualTokensJoined);
+    }
 }
