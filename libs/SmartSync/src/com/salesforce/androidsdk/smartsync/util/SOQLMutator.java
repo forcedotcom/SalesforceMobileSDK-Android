@@ -26,12 +26,12 @@
  */
 package com.salesforce.androidsdk.smartsync.util;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.StringTokenizer;
 
 /**
  * To manipulate a SOQL query given by a String
@@ -46,8 +46,8 @@ public class SOQLMutator {
     private static final String FROM = "from";
     private static final String WHERE = "where";
     private static final String HAVING = "having";
-    private static final String ORDER_BY = "order_by";
-    private static final String GROUP_BY = "group_by";
+    private static final String ORDER_BY = "order by";
+    private static final String GROUP_BY = "group by";
     private static final String LIMIT = "limit";
     private static final String OFFSET = "offset";
     private static final String[] CLAUSE_TYPE_KEYWORDS = new String[] {SELECT, FROM, WHERE, HAVING, GROUP_BY, ORDER_BY, LIMIT, OFFSET};
@@ -67,34 +67,15 @@ public class SOQLMutator {
     }
 
     private void parseQuery() {
-        // Dealing with two words keywords
-        String preparedQuery = this.originalSoql
-                .replaceAll("[ ]+[oO][rR][dD][eE][rR][ ]+[bB][yY][ ]+", " order_by ")
-                .replaceAll("[ ]+[g][r][o][u][p][ ]+[bB][yY][ ]+", " group_by ");
-
-        StringTokenizer tokenizer = new StringTokenizer(preparedQuery, " ", true);
-        int depth = 0;
         String matchingClauseType = null;
         String currentClauseType = null;    // one of the clause types of interest
-        while (tokenizer.hasMoreElements()) {
-            String token = tokenizer.nextToken();
+        SOQLTokenizer tokenizer = new SOQLTokenizer(this.originalSoql);
 
-
-            if (token.startsWith("(")) {
-                depth++;
-            }
-            // NB: same token could end with ")" .e.g "('abc','def')"
-            if (token.endsWith(")")) {
-                depth--;
-            }
-
-            // Only looking to parse top level query
-            else if (depth == 0) {
-                for (String clauseType : CLAUSE_TYPE_KEYWORDS) {
-                    if (token.toLowerCase(Locale.US).matches(clauseType)) {
-                        matchingClauseType = clauseType;
-                        break;
-                    }
+        for (String token : tokenizer.tokenize()) {
+            for (String clauseType : CLAUSE_TYPE_KEYWORDS) {
+                if (token.toLowerCase(Locale.US).matches(clauseType)) {
+                    matchingClauseType = clauseType;
+                    break;
                 }
             }
 
@@ -109,7 +90,7 @@ public class SOQLMutator {
                 if (currentClauseType != null) {
                     clauses.put(currentClauseType, clauses.get(currentClauseType) + token);
                     // We are inside a clause and not in a subquery
-                    if (depth == 0) {
+                    if (!token.startsWith("(")) {
                         clausesWithoutSubqueries.put(currentClauseType, clausesWithoutSubqueries.get(currentClauseType) + token);
                     }
                 }
@@ -216,4 +197,171 @@ public class SOQLMutator {
     private Integer clauseAsInteger(String clauseType) {
         return clauses.containsKey(clauseType) ? new Integer(clauses.get(clauseType).trim()) : null;
     }
+
+    /**
+     * Simple SOQL tokenizer
+     * Tokens returned are either:
+     *  - SOQL keyworkds (select, from, where, having, group by, order by, limit, offset)
+     *  - top level parenthesized expression
+     *  - top level single quoted expression
+     *  - strings without white spaces
+     *  - white spaces
+     */
+    public static class SOQLTokenizer {
+
+        private String soql;
+
+        public SOQLTokenizer(String soql) {
+            this.soql = soql;
+        }
+
+        // Used during tokenization
+        private List<String> tokens = new ArrayList<>();
+        private boolean inWhiteSpace = false;
+        private boolean inQuotes = false;
+        private int depth = 0;
+        private char lastCh = 0;
+        private StringBuilder currentToken = new StringBuilder();
+
+        private void pushToken() {
+            tokens.add(currentToken.toString());
+            currentToken = new StringBuilder();
+        }
+
+        private void beginWhiteSpace() {
+            if (depth == 0) {
+                pushToken();
+            }
+            inWhiteSpace = true;
+            currentToken.append(' ');
+        }
+
+        private void beginWord(char ch) {
+            if (depth == 0) {
+                pushToken();
+            }
+            inWhiteSpace = false;
+            currentToken.append(ch);
+        }
+
+        private void beginParenthesized() {
+            if (depth == 0) {
+                pushToken();
+            }
+            inWhiteSpace = false;
+            depth++;
+            currentToken.append('(');
+        }
+
+        private void endParenthesized() {
+            currentToken.append(')');
+            depth--;
+            if (depth == 0) {
+                pushToken();
+            }
+        }
+
+        private void beginQuoted() {
+            if (depth == 0) {
+                pushToken();
+            }
+            inQuotes = true;
+            inWhiteSpace = false;
+            currentToken.append('\'');
+        }
+
+        private void endQuoted() {
+            currentToken.append('\'');
+            if (depth == 0) {
+                pushToken();
+            }
+            inQuotes = false;
+        }
+
+        // Combining order by, group by into single token
+        private List<String> processTokens() {
+            List<String> processedTokens = new ArrayList<>();
+            for (int i=0; i<tokens.size(); i++) {
+                String token = tokens.get(i);
+                if (i+2 < tokens.size()) {
+                    String nextToken = tokens.get(i+1);
+                    String afterNextToken = tokens.get(i+2);
+                    if (nextToken.trim().isEmpty() && afterNextToken.equalsIgnoreCase("by") && (token.equalsIgnoreCase("order") || token.equalsIgnoreCase("group"))) {
+                        processedTokens.add(token + " " + afterNextToken);
+                        i += 2;
+                        continue;
+                    }
+                }
+                processedTokens.add(token);
+            }
+
+            return processedTokens;
+        }
+
+        public List<String> tokenize() {
+            char[] chars = this.soql.toCharArray();
+            for (char ch : chars) {
+                switch (ch) {
+                    case '\'':
+                        if (!inQuotes) { // starting '' expression
+                            beginQuoted();
+                        }
+                        else if (lastCh != '\\') { // ending '' expression
+                            endQuoted();
+                        }
+                        else { // within '' expression but escaped
+                            currentToken.append(ch);
+                        }
+                        break;
+
+                    case '(':
+                        if (!inQuotes) { // starting () expressions
+                            beginParenthesized();
+                        }
+                        else { // within '' expression
+                            currentToken.append(ch);
+                        }
+                        break;
+
+                    case ')':
+                        if (!inQuotes) { // starting () expressions
+                            endParenthesized();
+                        }
+                        else { // within '' expression
+                            currentToken.append(ch);
+                        }
+                        break;
+
+                    case ' ':
+                        if (!inWhiteSpace && !inQuotes && depth == 0) { // starting top level white space
+                            beginWhiteSpace();
+                        }
+                        else {
+                            currentToken.append(ch);
+                        }
+                        break;
+
+                    default:
+                        if (inWhiteSpace) {
+                            beginWord(ch);
+                        }
+                        else {
+                            currentToken.append(ch);
+                        }
+                }
+                lastCh = ch;
+            }
+            // Don't forget last token
+            if (currentToken.length() > 0) {
+                tokens.add(currentToken.toString());
+            }
+
+            // Process tokens
+            return processTokens();
+        }
+
+    }
+
+
+
 }
