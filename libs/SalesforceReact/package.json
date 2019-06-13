@@ -1,6 +1,6 @@
 {
     "name": "SalesforceReact",
-    "version": "7.1.2",
+    "version": "7.2.0",
     "private": true,
     "scripts": {
         "start": "node node_modules/react-native/local-cli/cli.js start"
@@ -11,7 +11,7 @@
         "react": "16.4.1",
         "react-native": "0.56.1",
         "react-native-cli": "^2.0.1",
-        "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#7.1.2",
+        "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#dev",
         "whatwg-fetch": "1.1.1"
     },
     "devDependencies": {
