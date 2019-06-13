@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <widget xmlns     = "http://www.w3.org/ns/widgets"
     id        = "com.salesforce.androidsdk"
-    version   = "7.1.0">
+    version   = "7.2.0">
 
     <feature name="Whitelist">
         <param name="android-package" value="org.apache.cordova.whitelist.WhitelistPlugin" />
@@ -12,11 +12,17 @@
     <allow-navigation href="https://localhost" />
     <allow-navigation href="https://*.force.com" />
     <allow-navigation href="https://*.salesforce.com" />
+    <allow-navigation href="https://*.visualforce.com" />
+    <allow-navigation href="https://*.documentforce.com" />
+    <allow-navigation href="https://*.salesforce-communities.com" />
 
     <!-- For legacy apps that don't use CSP -->
     <access origin="https://localhost" />
     <access origin="https://*.force.com" />
     <access origin="https://*.salesforce.com" />
+    <access origin="https://*.visualforce.com" />
+    <access origin="https://*.documentforce.com" />
+    <access origin="https://*.salesforce-communities.com" />
 
     <preference name="loglevel" level="DEBUG"/>
     <preference name="classicRender" value="true" />
