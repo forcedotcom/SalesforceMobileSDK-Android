@@ -103,15 +103,17 @@ update_react_package_json ()
     local file=$1
     local versionName=$2
     local isDev=$3
-    local branch=${versionName}
+    local sdkTag=""
 
     if [ "$OPT_IS_DEV" == "yes" ]
     then
-        branch="dev"
+        sdkTag="dev"
+    else
+        sdkTag="v${versionName}"
     fi
 
     gsed -i "s/\"version\":.*\"[^\"]*\"/\"version\": \"${versionName}\"/g" ${file}
-    gsed -i "s/SalesforceMobileSDK-ReactNative.git\#[^\"]*\"/SalesforceMobileSDK-ReactNative.git\#${branch}\"/g" ${file}
+    gsed -i "s/SalesforceMobileSDK-ReactNative.git\#[^\"]*\"/SalesforceMobileSDK-ReactNative.git\#${sdkTag}\"/g" ${file}
 }
 
 parse_opts "$@"
