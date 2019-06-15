@@ -375,7 +375,11 @@ public class SyncState {
 			throw new SyncManager.SmartSyncException("Failed to save sync state");
 		}
 	}
-	
+
+	public String getName() {
+		return name;
+	}
+
 	public long getId() {
 		return id;
 	}
