@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.smartstore.store;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.util.LruCache;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -390,7 +391,12 @@ public class DBHelper {
 	 */
 	public long insert(SQLiteDatabase db, String table, ContentValues contentValues) {
 		InsertHelper ih = getInsertHelper(db, table);
-		return ih.insert(contentValues);
+		long rowId = ih.insert(contentValues);
+		if (rowId == -1) {
+			// In case of failure InsertHelper.insert swallows the SQLException and returns -1
+			throw new SQLException(String.format("Insert into %s failed", table));
+		}
+		return rowId;
 	}
 
 	/**
