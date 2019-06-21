@@ -23,25 +23,16 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 7.1
+### What's New in 7.2
 
-**SmartSync Data Framework Updates**
-- SmartSync Data Framework now supports a batch sync up target that uses the Salesforce Composite API for uploading groups of up to 25 records per call.
-- New methods allow native apps to stop and restart in-flight sync operations. To reflect the new sync state, we’ve added a stopped sync status.
-- You can now call `cleanResyncGhosts` with a sync name.
-
-**Security Updates**
-- We’ve upgraded our master key security to use the Android Keystore.
-
-**Miscellaneous Changes**
-- We’ve improved support for using biometric input to supply application passcodes.
+**SmartStore Updates**
+- Using LruCaches for SmartStore statement caches
 
 **Version Updates**
-- Android Studio: 3.4.1
-- SQLCipher: 4.0.1
+- SQLCipher: 4.2.0
 
 **Deprecation**
-- The `encrypt` and `decrypt` methods in `SalesforceSDKManager` have been deprecated in favor of new methods that take an additional parameter.
+- N/A
 
 Check http://developer.force.com/mobilesdk for additional articles and tutorials.
 
