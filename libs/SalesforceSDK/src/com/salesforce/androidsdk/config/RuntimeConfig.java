@@ -69,7 +69,7 @@ public class RuntimeConfig {
 
 	private static RuntimeConfig INSTANCE = null;
 
-	private RuntimeConfig(Context ctx) {
+	RuntimeConfig(Context ctx) {
 		configurations = getRestrictions(ctx);
 		isManaged = hasRestrictionsProvider(ctx);
 
@@ -146,6 +146,27 @@ public class RuntimeConfig {
 		return (configurations == null ? null : configurations.getStringArray(configKey.name()));
 	}
 
+	/**
+	 * Get string array run time configuration either stored as a string array or stored in
+	 * a string field as CSV
+	 * @param configKey key
+	 * @return string array value
+	 */
+	public String[] getStringArrayStoredAsArrayOrCSV(ConfigKey configKey) {
+		String[] result = getStringArray(configKey);
+
+		if (result != null) {
+			return result;
+		}
+
+		String csv = getString(configKey);
+		if (csv != null) {
+			result = csv.split(",");
+		}
+
+		return result;
+	}
+
     /**
      * Get boolean run time configuration
      * @param configKey key
@@ -185,6 +206,14 @@ public class RuntimeConfig {
 	Bundle getRestrictions(Context ctx) {
 		RestrictionsManager restrictionsManager = (RestrictionsManager) ctx.getSystemService(Context.RESTRICTIONS_SERVICE);
 		return restrictionsManager.getApplicationRestrictions();
+	}
+
+	/**
+	 * Test only: set the bundle restrictions
+	 * @param restrictions
+	 */
+	void setRestrictions(Bundle restrictions) {
+		this.configurations = restrictions;
 	}
 
     private boolean hasRestrictionsProvider(Context ctx) {

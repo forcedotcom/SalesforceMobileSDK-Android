@@ -232,29 +232,17 @@ public class LoginServerManager {
 		final RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(ctx);
 		String[] mdmLoginServers = null;
 		try {
-			mdmLoginServers = runtimeConfig.getStringArray(ConfigKey.AppServiceHosts);
+			mdmLoginServers = runtimeConfig.getStringArrayStoredAsArrayOrCSV(ConfigKey.AppServiceHosts);
 		} catch (Exception e) {
 			SalesforceSDKLogger.w(TAG, "Exception thrown while attempting to read array, attempting to read string value instead", e);
-		}
-		if (mdmLoginServers == null) {
-			final String loginServer = runtimeConfig.getString(ConfigKey.AppServiceHosts);
-			if (!TextUtils.isEmpty(loginServer)) {
-				mdmLoginServers = new String[] {loginServer};
-			}
 		}
 		final List<LoginServer> allServers = new ArrayList<>();
 		if (mdmLoginServers != null) {
 			String[] mdmLoginServersLabels = null;
 			try {
-				mdmLoginServersLabels = runtimeConfig.getStringArray(ConfigKey.AppServiceHostLabels);
+				mdmLoginServersLabels = runtimeConfig.getStringArrayStoredAsArrayOrCSV(ConfigKey.AppServiceHostLabels);
 			} catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Exception thrown while attempting to read array, attempting to read string value instead", e);
-			}
-			if (mdmLoginServersLabels == null) {
-				final String loginServerLabel = runtimeConfig.getString(ConfigKey.AppServiceHostLabels);
-				if (!TextUtils.isEmpty(loginServerLabel)) {
-					mdmLoginServersLabels = new String[] {loginServerLabel};
-				}
 			}
 			if (mdmLoginServersLabels == null || mdmLoginServersLabels.length != mdmLoginServers.length) {
                 SalesforceSDKLogger.w(TAG, "No login servers labels provided or wrong number of login servers labels provided - using URLs for the labels");
