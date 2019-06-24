@@ -29,6 +29,8 @@ package com.salesforce.androidsdk.smartstore.store;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.SQLException;
+import android.util.LruCache;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
@@ -91,26 +93,44 @@ public class DBHelper {
 	private static final String SEQ_SELECT = "SELECT seq FROM SQLITE_SEQUENCE WHERE name = ?";
 	private static final String LIMIT_SELECT = "SELECT * FROM (%s) LIMIT %s";
 
+	// Caches count limit
+	private static final int CACHES_COUNT_LIMIT = 1024;
+
 	// Cache of soup name to soup table names
-	private Map<String, String> soupNameToTableNamesMap = new HashMap<String, String>();
+	private LruCache<String, String> soupNameToTableNamesMap = new LruCache<String, String>(CACHES_COUNT_LIMIT);
 
 	// Cache of soup name to index specs
-	private Map<String, IndexSpec[]> soupNameToIndexSpecsMap = new HashMap<String, IndexSpec[]>();
+	private LruCache<String, IndexSpec[]> soupNameToIndexSpecsMap = new LruCache<String, IndexSpec[]>(CACHES_COUNT_LIMIT);
 
 	// Cache of soup name to boolean indicating if soup uses FTS
-	private Map<String, Boolean> soupNameToHasFTS = new HashMap<String, Boolean>();
+	private LruCache<String, Boolean> soupNameToHasFTS = new LruCache<String, Boolean>(CACHES_COUNT_LIMIT);
 
 	// Cache of soup name to soup features
-	private Map<String, List<String>> soupNameToFeaturesMap = new HashMap<>();
+	private LruCache<String, List<String>> soupNameToFeaturesMap = new LruCache<>(CACHES_COUNT_LIMIT);
 
 	// Cache of table name to get-next-id compiled statements
-	private Map<String, SQLiteStatement> tableNameToNextIdStatementsMap = new HashMap<String, SQLiteStatement>();
+	private LruCache<String, SQLiteStatement> tableNameToNextIdStatementsMap = new LruCache<String, SQLiteStatement>(CACHES_COUNT_LIMIT) {
+		@Override
+		protected void entryRemoved(boolean evicted, String key, SQLiteStatement oldValue, SQLiteStatement newValue) {
+			oldValue.close();
+		}
+	};
 
 	// Cache of table name to insert helpers
-	private Map<String, InsertHelper> tableNameToInsertHelpersMap = new HashMap<String, InsertHelper>();
+	private LruCache<String, InsertHelper> tableNameToInsertHelpersMap = new LruCache<String, InsertHelper>(CACHES_COUNT_LIMIT) {
+		@Override
+		protected void entryRemoved(boolean evicted, String key, InsertHelper oldValue, InsertHelper newValue) {
+			oldValue.close();
+		}
+	};
 
 	// Cache of raw count sql to compiled statements
-	private Map<String, SQLiteStatement> rawCountSqlToStatementsMap = new HashMap<String, SQLiteStatement>();
+	private LruCache<String, SQLiteStatement> rawCountSqlToStatementsMap = new LruCache<String, SQLiteStatement>(CACHES_COUNT_LIMIT) {
+		@Override
+		protected void entryRemoved(boolean evicted, String key, SQLiteStatement oldValue, SQLiteStatement newValue) {
+			oldValue.close();
+		}
+	};
 
 	// Boolean to turn explain query plan capture on or off
 	private boolean captureExplainQueryPlan;
@@ -201,7 +221,7 @@ public class DBHelper {
 
 	private void cleanupRawCountSqlToStatementMaps(String tableName) {
 		List<String> countSqlToRemove = new ArrayList<String>();
-		for (Entry<String, SQLiteStatement>  entry : rawCountSqlToStatementsMap.entrySet()) {
+		for (Entry<String, SQLiteStatement>  entry : rawCountSqlToStatementsMap.snapshot().entrySet()) {
 			String countSql = entry.getKey();
 			if (countSql.contains(tableName)) {
 				SQLiteStatement countProg = entry.getValue();
@@ -371,7 +391,12 @@ public class DBHelper {
 	 */
 	public long insert(SQLiteDatabase db, String table, ContentValues contentValues) {
 		InsertHelper ih = getInsertHelper(db, table);
-		return ih.insert(contentValues);
+		long rowId = ih.insert(contentValues);
+		if (rowId == -1) {
+			// In case of failure InsertHelper.insert swallows the SQLException and returns -1
+			throw new SQLException(String.format("Insert into %s failed", table));
+		}
+		return rowId;
 	}
 
 	/**
@@ -428,25 +453,12 @@ public class DBHelper {
 	 * Resets all cached data from memory.
 	 */
 	public synchronized void clearMemoryCache() {
-
-		// Closes all statements.
-		for (final InsertHelper  ih : tableNameToInsertHelpersMap.values()) {
-			ih.close();
-		}
-		for (final SQLiteStatement prog : tableNameToNextIdStatementsMap.values()) {
-			prog.close();
-		}
-		for (final SQLiteStatement rawCountSql : rawCountSqlToStatementsMap.values()) {
-			rawCountSql.close();
-		}
-
-		// Clears all maps.
-		soupNameToTableNamesMap.clear();
-		soupNameToIndexSpecsMap.clear();
-		soupNameToFeaturesMap.clear();
-		tableNameToInsertHelpersMap.clear();
-		tableNameToNextIdStatementsMap.clear();
-		rawCountSqlToStatementsMap.clear();
+		soupNameToTableNamesMap.evictAll();
+		soupNameToIndexSpecsMap.evictAll();
+		soupNameToFeaturesMap.evictAll();
+		tableNameToInsertHelpersMap.evictAll();
+		tableNameToNextIdStatementsMap.evictAll();
+		rawCountSqlToStatementsMap.evictAll();
 	}
 
     /**
