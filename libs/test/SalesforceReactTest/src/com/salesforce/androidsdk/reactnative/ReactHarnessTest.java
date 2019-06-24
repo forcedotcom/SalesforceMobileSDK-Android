@@ -44,28 +44,18 @@ import java.util.Collection;
 @RunWith(Parameterized.class)
 @SmallTest
 public class ReactHarnessTest extends ReactTestCase {
-
     @Parameterized.Parameter(0) public String testName;
-    @Parameterized.Parameter(1) public Boolean shouldSucceed;
-
 
     @Parameterized.Parameters(name = "{0}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
-                {"testPassing", true},
-                {"testFailing", false},
-                {"testAsyncPassing", true},
-                {"testAsyncFailing", false}
+                {"testPassing"},
+                {"testAsyncPassing"}
         });
     }
 
     @Test
     public void test() throws Exception {
-        if (shouldSucceed) {
-            runReactNativeTest(testName);
-        }
-        else {
-            runReactNativeTestFakeFailure(testName);
-        }
+        runReactNativeTest(testName);
     }
 }
