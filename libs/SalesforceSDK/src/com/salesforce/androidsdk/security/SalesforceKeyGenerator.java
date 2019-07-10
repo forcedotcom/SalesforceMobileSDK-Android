@@ -182,7 +182,7 @@ public class SalesforceKeyGenerator {
         if (prefContents != null) {
             final Set<String> keys = prefContents.keySet();
             for (final String key : keys) {
-                if (key != null && key.startsWith("id")) {
+                if (key != null && key.startsWith(ID_PREFIX)) {
                     final String value = prefs.getString(key, null);
                     if (value != null) {
                         final PublicKey publicKey = KeyStoreWrapper.getInstance().getRSAPublicKey(KEYSTORE_ALIAS);
