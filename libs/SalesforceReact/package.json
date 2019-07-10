@@ -7,12 +7,10 @@
     },
     "dependencies": {
         "chai": "4.1.2",
-        "eslint": "^4.17.0",
-        "react": "16.8.3",
-        "react-native": "0.59.9",
         "react-native-cli": "^2.0.1",
-        "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#dev",
-        "whatwg-fetch": "1.1.1"
+        "react": "16.8.6",
+        "react-native": "0.60.0",
+        "react-native-force": "git+https://github.com/wmathurin/SalesforceMobileSDK-ReactNative.git#rn60"
     },
     "devDependencies": {
         "metro-react-native-babel-preset": "^0.45.0"
