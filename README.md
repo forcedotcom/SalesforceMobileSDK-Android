@@ -23,17 +23,23 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 7.2
+### What’s New in 7.2
 
 **SmartStore Updates**
-- Using LruCaches for SmartStore statement caches
+- SmartStore now uses LruCache for its memory caches.
+
+**React Native Update**
+- React Native has been upgraded to support 64-bit apps on Android.
 
 **Version Updates**
-- SQLCipher: 4.2.0
+- SQLCipher: 4.2
+- SQLite: 3.28.0
+- OkHttp: 3.12.1
+- shell.js: 0.8.3
+- React Native: 0.59.9
 
-**Deprecation**
-- N/A
-
+**Deprecations**
+- See [Android Current Deprecations](https://developer.salesforce.com/docs/atlas.en-us.mobile_sdk.meta/mobile_sdk/reference_current_deprecations_android.htm).
 Check http://developer.force.com/mobilesdk for additional articles and tutorials.
 
 ### Native Applications
