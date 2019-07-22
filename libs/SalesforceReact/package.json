@@ -11,7 +11,7 @@
         "react": "16.8.3",
         "react-native": "0.59.9",
         "react-native-cli": "^2.0.1",
-        "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#dev",
+        "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#v7.2.0",
         "whatwg-fetch": "1.1.1"
     },
     "devDependencies": {
