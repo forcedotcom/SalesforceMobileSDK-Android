@@ -1735,18 +1735,27 @@ public class SmartStore  {
 	}
 
 	/**
-	 * Get compile options
+	 * Get SQLCipher runtime settings
 	 *
-	 * @return list of compile options
+	 * @return list of SQLCipher runtime settings
+	 */
+	public List<String> getRuntimeSettings() {
+		return queryPragma("cipher_settings");
+	}
+
+	/**
+	 * Get SQLCipher compile options
+	 *
+	 * @return list of SQLCipher compile options
 	 */
 	public List<String> getCompileOptions() {
 		return queryPragma("compile_options");
 	}
 
 	/**
-	 * Get sqlcipher version
+	 * Get SQLCipher version
 	 *
-	 * @return sqlcipher version
+	 * @return SQLCipher version
 	 */
 	public String getSQLCipherVersion() {
 		return TextUtils.join(" ", queryPragma("cipher_version"));

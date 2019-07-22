@@ -4,7 +4,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.github.dcendents:android-maven-gradle-plugin:2.0'
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
     }
 }
@@ -16,9 +16,9 @@ apply plugin: 'com.jfrog.bintray'
 dependencies {
   api project(':libs:SmartSync')
   api 'org.apache.cordova:framework:8.0.0'
-  androidTestImplementation 'androidx.test:runner:1.1.1'
-  androidTestImplementation 'androidx.test:rules:1.1.1'
-  androidTestImplementation 'androidx.test.ext:junit:1.1.0'
+  androidTestImplementation 'androidx.test:runner:1.2.0'
+  androidTestImplementation 'androidx.test:rules:1.2.0'
+  androidTestImplementation 'androidx.test.ext:junit:1.1.1'
 }
 
 android {
@@ -128,9 +128,9 @@ bintray {
         licenses = ['Apache-2.0']
         labels = ['android', 'salesforce', 'mobilesdk']
         version {
-            name = '7.1.2'
+            name = '7.2.0'
             released  = new Date()
-            vcsTag = 'v7.1.2'
+            vcsTag = 'v7.2.0'
         }
     }
 }

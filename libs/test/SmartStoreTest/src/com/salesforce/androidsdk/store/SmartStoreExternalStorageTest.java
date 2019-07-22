@@ -128,7 +128,7 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
 		int dbBlobsDirSizeBefore = totalSizeBefore - dBFileSizeBefore;
 
 		// Populate db with several entries
-		for (int i = 0; i < 100; i++) {
+		for (int i = 0; i < 512; i++) {
 			JSONObject soupElt = new JSONObject("{'key':'abcd" + i + "', 'value':'va" + i + "', 'otherValue':'ova" + i + "'}");
 			store.create(TEST_SOUP, soupElt);
 		}

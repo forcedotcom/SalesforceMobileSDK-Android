@@ -28,8 +28,9 @@ package com.salesforce.androidsdk.store;
 
 import android.database.Cursor;
 import android.os.SystemClock;
-import androidx.test.filters.MediumTest;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.MediumTest;
 
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
@@ -102,11 +103,26 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	}
 
 	/**
+	 * Checking runtime settings
+	 */
+	@Test
+	public void testRuntimeSettings() {
+		List<String> settings = store.getRuntimeSettings();
+		// Make sure run time settings are 4.x settings except for kdf_iter
+		Assert.assertTrue("Wrong kdf_iter", settings.contains("PRAGMA kdf_iter = 4000;"));
+		Assert.assertTrue("Wrong cipher_page_size", settings.contains("PRAGMA cipher_page_size = 4096;"));
+		Assert.assertTrue("Wrong cipher_user_hmac", settings.contains("PRAGMA cipher_use_hmac = 1;"));
+		Assert.assertTrue("Wrong cipher_plaintext_header_size", settings.contains("PRAGMA cipher_plaintext_header_size = 0;"));
+		Assert.assertTrue("Wrong cipher_hmac_algorithm", settings.contains("PRAGMA cipher_hmac_algorithm = HMAC_SHA512;"));
+		Assert.assertTrue("Wrong cipher_kdf_algorithm", settings.contains("PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA512;"));
+	}
+
+	/**
 	 * Checking sqlcipher version
 	 */
 	@Test
 	public void testSQLCipherVersion() {
-		Assert.assertEquals("Wrong sqlcipher version", "4.0.1 community", store.getSQLCipherVersion());
+		Assert.assertEquals("Wrong sqlcipher version", "4.2.0 community", store.getSQLCipherVersion());
 	}
 
 	/**

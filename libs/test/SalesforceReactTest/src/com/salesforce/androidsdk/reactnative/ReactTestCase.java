@@ -42,9 +42,8 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public abstract class ReactTestCase {
 
-    private static final long TEST_TIMEOUT_SECONDS = 60;
+    private static final long TEST_TIMEOUT_SECONDS = 90;
     public static final String TEST_NAME = "testName";
-    public static final String FAKE_FAILURE = "FAKE_FAILURE";
 
     @Rule
     public ActivityTestRule<ReactTestActivity> mActivityRule = new ActivityTestRule<ReactTestActivity>(
@@ -63,16 +62,6 @@ public abstract class ReactTestCase {
         }
         else {
             Assert.assertTrue(result.message, result.status);
-        }
-    }
-
-    protected void runReactNativeTestFakeFailure(String testName) throws InterruptedException {
-        TestResult result = getTestResult(testName);
-        if (result == null) {
-            Assert.fail(testName + " timed out");
-        }
-        else {
-            Assert.assertTrue(testName + " should have failed with a FAKE_FAILURE error", !result.status && result.message.contains(FAKE_FAILURE));
         }
     }
 
