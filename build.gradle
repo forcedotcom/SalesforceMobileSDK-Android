@@ -5,13 +5,13 @@ buildscript {
   }
 
   dependencies {
-    classpath 'com.android.tools.build:gradle:3.4.1'
+    classpath 'com.android.tools.build:gradle:3.4.2'
   }
 }
 
 allprojects {
   group = 'com.salesforce.mobilesdk'
-  version = '7.2.0'
+  version = '7.3.0'
   repositories {
     mavenLocal()
     maven {
