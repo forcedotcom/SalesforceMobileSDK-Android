@@ -13,9 +13,15 @@ allprojects {
   group = 'com.salesforce.mobilesdk'
   version = '7.3.0'
   repositories {
+    mavenLocal()
     maven {
-      // All of React Native (JS, Android binaries) is installed from npm
-      url "$rootProject.projectDir/libs/SalesforceReact/node_modules/react-native/android"
+      // All of React Native (JS, Obj-C sources, Android binaries) is installed from npm
+      url("$rootProject.projectDir/libs/SalesforceReact/node_modules/react-native/android")
+
+    }
+    maven {
+      // Android JSC is installed from npm
+      url("$rootProject.projectDir/libs/SalesforceReact/node_modules/jsc-android/dist")
     }
     google()
     jcenter()

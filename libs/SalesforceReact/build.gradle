@@ -1,5 +1,14 @@
 import org.apache.tools.ant.taskdefs.condition.Os
 
+/**
+ * Use international variant JavaScriptCore
+ * International variant includes ICU i18n library and necessary data allowing to use
+ * e.g. Date.toLocaleString and String.localeCompare that give correct results
+ * when using with locales other than en-US.
+ * Note that this variant is about 6MiB larger per architecture than default.
+ */
+def useIntlJsc = false
+
 buildscript {
     repositories {
         jcenter()
@@ -17,10 +26,18 @@ apply plugin: 'com.jfrog.bintray'
 
 dependencies {
   api project(':libs:SmartSync')
-  api 'com.facebook.react:react-native:0.59.9'
+  api 'com.facebook.react:react-native:0.60.4'
   androidTestImplementation 'androidx.test:runner:1.2.0'
   androidTestImplementation 'androidx.test:rules:1.2.0'
   androidTestImplementation 'androidx.test.ext:junit:1.1.1'
+
+    // JSC from node_modules
+    if (useIntlJsc) {
+        androidTestImplementation 'org.webkit:android-jsc-intl:+'
+    } else {
+        androidTestImplementation 'org.webkit:android-jsc:+'
+    }
+
 }
 
 android {

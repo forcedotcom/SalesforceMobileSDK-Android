@@ -31,6 +31,8 @@ import android.app.Application;
 
 import com.facebook.react.ReactApplication;
 import com.facebook.react.ReactNativeHost;
+import com.facebook.soloader.SoLoader;
+import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
 import com.salesforce.androidsdk.util.test.TestCredentials;
 
@@ -49,6 +51,8 @@ public class SalesforceReactTestApp extends Application implements ReactApplicat
     @Override
     public void onCreate() {
         super.onCreate();
+        SoLoader.init(this, /* native exopackage */ false);
+        EventBuilderHelper.enableDisable(false);
         SalesforceReactSDKManager.initReactNative(getApplicationContext(), ReactTestActivity.class);
         TestCredentials.init(this);
     }
