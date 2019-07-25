@@ -11,7 +11,7 @@
         "acorn": "^6.0.0",
         "react-native-cli": "^2.0.1",
         "react": "16.8.6",
-        "react-native": "0.60.0",
+        "react-native": "0.60.4",
         "react-native-force": "git+https://github.com/wmathurin/SalesforceMobileSDK-ReactNative.git#rn60"
     },
     "devDependencies": {
