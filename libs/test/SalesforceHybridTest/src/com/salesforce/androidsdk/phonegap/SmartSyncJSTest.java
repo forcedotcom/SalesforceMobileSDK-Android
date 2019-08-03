@@ -50,8 +50,7 @@ public class SmartSyncJSTest extends JSTestCase {
 
     @Parameterized.Parameters(name = "{0}")
     public static List<String> data() {
-        return Arrays.asList(new String[]{
-                "testStoreCacheInit",
+        return Arrays.asList("testStoreCacheInit",
                 "testStoreCacheRetrieve",
                 "testStoreCacheSave",
                 "testStoreCacheSaveAll",
@@ -111,8 +110,7 @@ public class SmartSyncJSTest extends JSTestCase {
                 "testSyncDownGetSyncDeleteSyncById",
                 "testSyncDownGetSyncDeleteSyncByName",
                 "testSyncUpGetSyncDeleteSyncById",
-                "testSyncUpGetSyncDeleteSyncByName"
-        });
+                "testSyncUpGetSyncDeleteSyncByName");
     }
 
     @BeforeClass

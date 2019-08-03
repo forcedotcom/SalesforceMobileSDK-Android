@@ -56,7 +56,7 @@ function runTests {
         --device model=$device,version=$android_api,locale=en,orientation=portrait  \
         --results-dir=${CURRENT_LIB}-${CIRCLE_BUILD_NUM}  \
         --results-history-name=${CURRENT_LIB}  \
-        --timeout 10m
+        --timeout 10m --no-auto-google-login --no-record-video --no-performance-metrics
 }
 
 function runDanger {
