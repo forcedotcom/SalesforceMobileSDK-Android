@@ -231,7 +231,14 @@ public class SOQLMutatorTest {
 
     private void tryTokenize(String soql, String expectedTokensJoined) {
         List<String> tokens = new SOQLMutator.SOQLTokenizer(soql).tokenize();
-        String actualTokensJoined = String.join("#", tokens);
-        Assert.assertEquals(expectedTokensJoined, actualTokensJoined);
+        // TODO:  Change this to "String actualTokensJoined = String.join("#", tokens);" in 8.0 when the project is upgraded to Java 8.
+        int lastIndex = tokens.size() - 1;
+        StringBuilder actualTokensJoined = new StringBuilder();
+        for (int i = 0; i < lastIndex; i++) {
+            actualTokensJoined.append(tokens.get(i).concat("#"));
+        }
+        actualTokensJoined.append(tokens.get(lastIndex));
+
+        Assert.assertEquals(expectedTokensJoined, actualTokensJoined.toString());
     }
 }

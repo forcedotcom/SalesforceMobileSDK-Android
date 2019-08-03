@@ -561,6 +561,9 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Wait for sync to complete successfully
         while (!queue.getNextSyncUpdate().isDone());
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) { }
 
         // Calling reSync again -- does not expect exception
         try {
