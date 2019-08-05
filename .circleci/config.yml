@@ -378,46 +378,47 @@ workflows:
         - run-tests:
             requires:
               - setup
-            name: "SalesforceAnalytics"
+            name: "SalesforceAnalytics Nightly"
+            nightly: true
         - run-tests:
             requires:
               - setup
-            name: "SalesforceSDK"
+            name: "SalesforceSDK Nightly"
             lib: "SalesforceSDK"
             test_apk: "libs/SalesforceSDK/build/outputs/apk/androidTest/debug/SalesforceSDK-debug-androidTest.apk"
             nightly: true
         - run-tests:
             requires:
               - setup
-            name: "SmartStore"
+            name: "SmartStore Nightly"
             lib: "SmartStore"
             test_apk: "libs/SmartStore/build/outputs/apk/androidTest/debug/SmartStore-debug-androidTest.apk"
             nightly: true
         - run-tests:
             requires:
               - setup
-            name: "SmartSync"
+            name: "SmartSync Nightly"
             lib: "SmartSync"
             test_apk: "libs/SmartSync/build/outputs/apk/androidTest/debug/SmartSync-debug-androidTest.apk"
             nightly: true
         - run-tests:
             requires:
               - setup
-            name: "SalesforceHybrid"
+            name: "SalesforceHybrid Nightly"
             lib: "SalesforceHybrid"
             test_apk: "libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk"
             nightly: true
         - run-tests:
             requires:
               - setup
-            name: "RestExplorer"
+            name: "RestExplorer Nightly"
             lib: "RestExplorer"
             test_apk: "native/NativeSampleApps/RestExplorer/build/outputs/apk/androidTest/debug/RestExplorer-debug-androidTest.apk"
             nightly: true
         - run-tests:
             requires:
               - setup
-            name: "SalesforceReact"
+            name: "SalesforceReact Nightly"
             lib: "SalesforceReact"
             test_apk: "libs/SalesforceReact/build/outputs/apk/androidTest/debug/SalesforceReact-debug-androidTest.apk"
             nightly: true
