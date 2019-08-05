@@ -58,7 +58,7 @@ executors:
   linux:
     working_directory: ~/SalesforceMobileSDK-Android
     docker:
-      - image: circleci/android:api-28-node8
+      - image: circleci/android:api-28-node
     environment:
       - TERM: "dumb"
       - GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'
@@ -102,7 +102,7 @@ jobs:
                 export CI_PULL_REQUEST="https://github.com/forcedotcom/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
                 export CI_PULL_REQUESTS="https://github.com/forcedotcom/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
                 # This token is completely harmless as it only has public permission and
-                # is owned by a bot who isn't a member of hte org.
+                # is owned by a bot who isn't a member of the org.
                 DANGER_GITHUB_API_TOKEN="279a29d75427e4178cef""b7b5b2d7646c540f025a" danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
             else
                 echo "No need to run Danger."
