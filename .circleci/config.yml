@@ -90,8 +90,12 @@ jobs:
           command:  |
             ./gradlew libs:SalesforceAnalytics:assembleAndroidTest
             ./gradlew libs:SalesforceSDK:assembleAndroidTest
+            ./gradlew libs:SmartStore:assembleAndroidTest
+            ./gradlew libs:SmartSync:assembleAndroidTest
+            ./gradlew libs:SalesforceHybrid:assembleAndroidTest
+            ./gradlew libs:SalesforceReact:assembleAndroidTest
             ./gradlew native:NativeSampleApps:RestExplorer:assembleAndroidTest
-            ./gradlew :native:NativeSampleApps:RestExplorer:assembleDebug
+            ./gradlew native:NativeSampleApps:RestExplorer:assembleDebug
       - run:
           name: Run Danger
           command: |
@@ -151,9 +155,6 @@ jobs:
       - restore_cache: *restore-node-cache
       - restore_cache: *restore-ruby-cache
       - run:
-          name: Build For Testing
-          command: ./gradlew libs:<< parameters.lib >>:assembleAndroidTest
-      - run:
           name: Authorize gcloud and set config defaults
           command:  |
             echo $GCLOUD_SERVICE_KEY | base64 --decode --ignore-garbage > ${HOME}/gcloud-service-key.json
@@ -183,7 +184,6 @@ jobs:
                 --results-history-name=<< parameters.lib >>  \
                 --timeout 10m --no-auto-google-login --no-record-video --no-performance-metrics
           no_output_timeout: 600
-          halt_build_on_fail: false
       - run:
           name: Copy test results data
           command: |
