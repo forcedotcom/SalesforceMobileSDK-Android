@@ -548,7 +548,7 @@ public class PasscodeActivity extends Activity {
 
     /**
      * Displays the dialog provided by the OS for biometric authentication
-     * using {@link android.hardware.biometrics.BiometricPrompt}.
+     * using {@link BiometricPrompt}.
      */
     @TargetApi(VERSION_CODES.P)
     protected void showBiometricDialog() {
