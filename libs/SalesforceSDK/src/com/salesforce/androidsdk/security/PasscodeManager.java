@@ -642,7 +642,12 @@ public class PasscodeManager  {
     }
 
     /**
-     * Called when biometric unlock requirement for the org changes.
+     * Called when the biometric unlock requirement for the org changes.
+     *
+     * This API is intended for internal Salesforce only.  Setting this value in an app overrides the server's connected app policy and is not recommended.
+     * Although setting {@code allowed} to false prevents users from being able to enroll in biometric unlock, the proper
+     * way to prevent user enrollment is through the connected app.
+     * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.mobile_sdk.meta/mobile_sdk/android_passcodes.htm">Using Passcodes</a>
      */
     public void setBiometricAllowed(Context ctx, boolean allowed) {
         if (this.biometricAllowed) {
@@ -662,7 +667,17 @@ public class PasscodeManager  {
     }
 
     /**
-     * Sets biometric enabled.
+     * Enables biometric input.
+     *
+     * This API is intended to let the end user toggle the use of biometric entry.  Setting this property to false does not prevent
+     * the biometric enrollment screen from being shown to the user, nor does it prevent the user from enabling the
+     * feature.
+     *
+     * To prevent users from enrolling in biometric, ask an administrator in the Salesforce org to configure the
+     * connected app. For details, see <a href ="https://developer.salesforce.com/docs/atlas.en-us.mobile_sdk.meta/mobile_sdk/android_passcodes.htm">Using Passcodes</a>
+     * in the <i>Mobile SDK Development Guide</i>.
+     *
+     * If you absolutely must disable biometric input at the app level see {@link PasscodeManager#setBiometricAllowed(Context, boolean)}.
      */
     public void setBiometricEnabled(Context ctx, boolean enabled) {
         biometricEnabled = enabled && biometricAllowed();
