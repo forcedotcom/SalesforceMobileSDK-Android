@@ -716,8 +716,9 @@ public class SalesforceSDKManager {
      *
      * @param frontActivity Front activity.
      * @param account Account.
+     * @param shouldDismissActivity Dismisses current activity if true, does nothing otherwise.
      */
-    private void cleanUp(Activity frontActivity, Account account) {
+    private void cleanUp(Activity frontActivity, Account account, boolean shouldDismissActivity) {
         final UserAccount userAccount = UserAccountManager.getInstance().buildUserAccount(account);
 
         // Clean up in this process
@@ -728,8 +729,8 @@ public class SalesforceSDKManager {
 
         final List<UserAccount> users = getUserAccountManager().getAuthenticatedUsers();
 
-        // Finishes front activity if specified, and if this is the last account.
-        if (frontActivity != null && (users == null || users.size() <= 1)) {
+        // Finishes front activity if specified, if this is the last account.
+        if (shouldDismissActivity && frontActivity != null && (users == null || users.size() <= 1)) {
             frontActivity.finish();
         }
 
@@ -922,7 +923,7 @@ public class SalesforceSDKManager {
     private void removeAccount(ClientManager clientMgr, final boolean showLoginPage,
     		String refreshToken, String loginServer,
     		Account account, Activity frontActivity) {
-    	cleanUp(frontActivity, account);
+    	cleanUp(frontActivity, account, showLoginPage);
 
     	/*
     	 * Removes the existing account, if any. 'account == null' does not
