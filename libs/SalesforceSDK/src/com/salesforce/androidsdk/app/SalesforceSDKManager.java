@@ -116,9 +116,6 @@ public class SalesforceSDKManager {
      */
     private static final String CLEANUP_INTENT_ACTION = "com.salesforce.CLEANUP";
 
-    // Receiver for CLEANUP_INTENT_ACTION broadcast
-    private CleanupReceiver cleanupReceiver;
-
     // Key in broadcast for process id
     private static final String PROCESS_ID_KEY = "processId";
 
@@ -139,20 +136,19 @@ public class SalesforceSDKManager {
     private static final String DEFAULT_APP_DISPLAY_NAME = "Salesforce";
     private static final String INTERNAL_ENTROPY = "6cgs4f";
     private static final String TAG = "SalesforceSDKManager";
-    protected static String AILTN_APP_NAME;
+    private static String AILTN_APP_NAME;
 
     /**
      * Instance of the SalesforceSDKManager to use for this process.
      */
     protected static SalesforceSDKManager INSTANCE;
-    private static final int PUSH_UNREGISTER_TIMEOUT_MILLIS = 30000;
 
     protected Context context;
-    protected LoginOptions loginOptions;
-    protected Class<? extends Activity> mainActivityClass;
-    protected Class<? extends Activity> loginActivityClass = LoginActivity.class;
-    protected Class<? extends PasscodeActivity> passcodeActivityClass = PasscodeActivity.class;
-    protected Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
+    private LoginOptions loginOptions;
+    private Class<? extends Activity> mainActivityClass;
+    private Class<? extends Activity> loginActivityClass = LoginActivity.class;
+    private Class<? extends PasscodeActivity> passcodeActivityClass = PasscodeActivity.class;
+    private Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
     private PasscodeManager passcodeManager;
     private LoginServerManager loginServerManager;
     private boolean isTestRun = false;
@@ -257,7 +253,7 @@ public class SalesforceSDKManager {
         }
 
         // If your app runs in multiple processes, all the SalesforceSDKManager need to run cleanup during a logout
-        cleanupReceiver = new CleanupReceiver();
+        final CleanupReceiver cleanupReceiver = new CleanupReceiver();
         context.registerReceiver(cleanupReceiver, new IntentFilter(SalesforceSDKManager.CLEANUP_INTENT_ACTION));
     }
 
@@ -349,7 +345,7 @@ public class SalesforceSDKManager {
 	 *
 	 * @param context Application context.
 	 */
-    public static void initInternal(Context context) {
+    protected static void initInternal(Context context) {
 
         // Upgrades to the latest version.
         SalesforceSDKUpgradeManager.getInstance().upgrade();
