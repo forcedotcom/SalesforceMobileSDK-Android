@@ -345,7 +345,7 @@ public class SalesforceSDKManager {
 	 *
 	 * @param context Application context.
 	 */
-    protected static void initInternal(Context context) {
+    public static void initInternal(Context context) {
 
         // Upgrades to the latest version.
         SalesforceSDKUpgradeManager.getInstance().upgrade();
