@@ -202,7 +202,7 @@ public class SalesforceSDKManagerTest {
          * This is meant to be used ONLY by tests.
          */
         public static void resetAiltnAppName() {
-            AILTN_APP_NAME = null;
+            setAiltnAppName(null);
         }
 
         /**
