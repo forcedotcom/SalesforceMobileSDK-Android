@@ -131,6 +131,8 @@ jobs:
       nightly:
         type: boolean
         default: false
+    environment:
+      CURRENT_LIB: << parameters.lib >>
     steps:
       - attach_workspace:
           at: ~/SalesforceMobileSDK-Android
@@ -216,7 +218,9 @@ jobs:
             fi
       - run:
           name: Codecov
-          command: bash <(curl -s https://codecov.io/bash)
+          command:  |
+            ./gradlew connectedCheck
+            bash <(curl -s https://codecov.io/bash)
           when: always
 
 ##########################
