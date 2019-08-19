@@ -136,7 +136,7 @@ public class SalesforceSDKManager {
     private static final String DEFAULT_APP_DISPLAY_NAME = "Salesforce";
     private static final String INTERNAL_ENTROPY = "6cgs4f";
     private static final String TAG = "SalesforceSDKManager";
-    private static String AILTN_APP_NAME;
+    protected static String AILTN_APP_NAME;
 
     /**
      * Instance of the SalesforceSDKManager to use for this process.
