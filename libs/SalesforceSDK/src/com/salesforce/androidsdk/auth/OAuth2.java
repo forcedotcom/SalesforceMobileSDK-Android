@@ -302,8 +302,9 @@ public class OAuth2 {
      * @param codeVerifier Code verifier used by the SP to generate 'code_challenge'.
      * @param callbackUrl Callback URL.
      * @return Full set of credentials.
-     * @throws OAuthFailedException
-     * @throws IOException
+     *
+     * @throws OAuthFailedException See {@link OAuthFailedException}.
+     * @throws IOException See {@link IOException}.
      */
     public static TokenEndpointResponse getSPCredentials(HttpAccess httpAccessor, URI loginServer,
                                                          String clientId, String code, String codeVerifier,
@@ -329,8 +330,8 @@ public class OAuth2 {
      * @param addlParams Additional parameters.
      * @return Token response.
      *
-     * @throws OAuthFailedException
-     * @throws IOException
+     * @throws OAuthFailedException See {@link OAuthFailedException}.
+     * @throws IOException See {@link IOException}.
      */
     public static TokenEndpointResponse refreshAuthToken(HttpAccess httpAccessor, URI loginServer,
                                                          String clientId, String refreshToken,
@@ -355,9 +356,6 @@ public class OAuth2 {
      * @param httpAccessor HttpAccess instance.
      * @param loginServer Login server.
      * @param refreshToken Refresh token.
-     *
-     * @throws OAuthFailedException
-     * @throws IOException
      */
     public static void revokeRefreshToken(HttpAccess httpAccessor, URI loginServer, String refreshToken) {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
@@ -381,8 +379,8 @@ public class OAuth2 {
      *                       the auth code was generated from.
      * @param jwt JWT issued by the OAuth authorization flow.
      *
-     * @throws IOException
-     * @throws OAuthFailedException
+     * @throws IOException See {@link IOException}.
+     * @throws OAuthFailedException See {@link OAuthFailedException}.
      */
     public static TokenEndpointResponse swapJWTForTokens(HttpAccess httpAccessor, URI loginServerUrl,
                                                          String jwt) throws IOException, OAuthFailedException {
@@ -400,7 +398,7 @@ public class OAuth2 {
      * @param authToken Access token.
      * @return IdServiceResponse instance.
      *
-     * @throws IOException
+     * @throws IOException See {@link IOException}.
      */
     public static final IdServiceResponse callIdentityService(HttpAccess httpAccessor,
                                                               String identityServiceIdUrl,
