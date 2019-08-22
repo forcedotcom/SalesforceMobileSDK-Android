@@ -28,9 +28,10 @@ package com.salesforce.androidsdk.auth;
 
 import android.app.Application;
 import android.app.Instrumentation;
-import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.filters.SmallTest;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -77,7 +78,7 @@ public class OAuth2Test {
 	/**
 	 * Testing getAuthorizationUrl.
      *
-	 * @throws URISyntaxException
+	 * @throws URISyntaxException See {@link URISyntaxException}.
 	 */
     @Test
 	public void testGetAuthorizationUrl() throws URISyntaxException {
@@ -101,7 +102,7 @@ public class OAuth2Test {
 	/**
 	 * Testing getAuthorizationUrl with params.
      *
-	 * @throws URISyntaxException
+	 * @throws URISyntaxException See {@link URISyntaxException}.
 	 */
     @Test
 	public void testGetAuthorizationUrlWithParams() throws URISyntaxException {
@@ -120,7 +121,7 @@ public class OAuth2Test {
     /**
      * Testing getAuthorizationUrl with branded login path.
      *
-     * @throws URISyntaxException
+     * @throws URISyntaxException See {@link URISyntaxException}.
      */
     @Test
     public void testGetAuthorizationUrlWithBrandedLoginPath() throws URISyntaxException {
@@ -146,7 +147,7 @@ public class OAuth2Test {
     /**
      * Testing getAuthorizationUrl with branded login path with leading slash.
      *
-     * @throws URISyntaxException
+     * @throws URISyntaxException See {@link URISyntaxException}.
      */
     @Test
     public void testGetAuthorizationUrlWithBrandedLoginPathWithLeadingSlash() throws URISyntaxException {
@@ -172,7 +173,7 @@ public class OAuth2Test {
     /**
      * Testing getAuthorizationUrl with branded login path with trailing slash.
      *
-     * @throws URISyntaxException
+     * @throws URISyntaxException See {@link URISyntaxException}.
      */
     @Test
     public void testGetAuthorizationUrlWithBrandedLoginPathWithTrailingSlash() throws URISyntaxException {
@@ -218,7 +219,7 @@ public class OAuth2Test {
     /**
 	 * Testing getAuthorizationUrl with scopes.
      *
-	 * @throws URISyntaxException
+	 * @throws URISyntaxException See {@link URISyntaxException}.
 	 */
     @Test
 	public void testGetAuthorizationUrlWithScopes() throws URISyntaxException {
@@ -238,43 +239,39 @@ public class OAuth2Test {
 	
 	
 	/**
-	 * Testing refreshAuthToken.
-	 * 
-	 * Call refresh token, then try out the auth token by calling /services/data/vXX.
-	 * 
-	 * @throws IOException
-	 * @throws URISyntaxException 
-	 * @throws OAuthFailedException 
+	 * Testing refreshAuthToken. Call refresh token, then try out the auth token by calling /services/data/vXX.
+	 *
+	 * @throws IOException See {@link IOException}.
+	 * @throws URISyntaxException See {@link URISyntaxException}.
+	 * @throws OAuthFailedException See {@link OAuthFailedException}.
 	 */
     @Test
 	public void testRefreshAuthToken() throws IOException, OAuthFailedException, URISyntaxException {
 
-		// Get an auth token using the refresh token
+		// Get an auth token using the refresh token.
 		TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,
 				new URI(TestCredentials.LOGIN_URL), TestCredentials.CLIENT_ID,
                 TestCredentials.REFRESH_TOKEN, null);
         Assert.assertNotNull("Auth token should not be null", refreshResponse.authToken);
-		
-		// Let's try it out
+
+		// Let's try it out.
 		Request request = new Request.Builder()
 				.addHeader("Content-Type", "application/json")
 				.addHeader("Authorization", "Bearer " + refreshResponse.authToken)
 				.url(TestCredentials.INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER)
 				.get()
 				.build();
-
 		Response resourcesResponse = httpAccess.getOkHttpClient().newCall(request).execute();
         Assert.assertEquals("HTTP response status code should have been 200 (OK)", HttpURLConnection.HTTP_OK, resourcesResponse.code());
 	}
 	
 	/**
-	 * Testing callIdentityService.
-	 * 
-	 * Call refresh token then call out to identity service and check that username returned match the one in TestCredentials.
-	 * 
-	 * @throws IOException
-	 * @throws OAuthFailedException
-	 * @throws URISyntaxException
+	 * Testing callIdentityService. Call refresh token then call out to identity service and
+     * check that username returned match the one in TestCredentials.
+	 *
+	 * @throws IOException See {@link IOException}.
+	 * @throws OAuthFailedException See {@link OAuthFailedException}.
+	 * @throws URISyntaxException See {@link URISyntaxException}.
 	 */
     @Test
 	public void testCallIdentityService() throws IOException, OAuthFailedException, URISyntaxException {
@@ -291,6 +288,6 @@ public class OAuth2Test {
         Assert.assertEquals("Wrong username returned", TestCredentials.USERNAME, id.username);
         Assert.assertEquals("Wrong pinLength returned", -1, id.pinLength);
         Assert.assertEquals("Wrong screenLockTimeout returned", -1, id.screenLockTimeout);
-        Assert.assertEquals("Wrong biometricUnlockAllowed returned", true, id.biometricUnlockAlowed);
+        Assert.assertTrue("Wrong biometricUnlockAllowed returned", id.biometricUnlockAlowed);
 	}
 }
