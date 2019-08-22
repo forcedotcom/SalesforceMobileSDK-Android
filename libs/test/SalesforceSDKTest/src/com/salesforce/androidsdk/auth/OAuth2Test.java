@@ -290,4 +290,14 @@ public class OAuth2Test {
         Assert.assertEquals("Wrong screenLockTimeout returned", -1, id.screenLockTimeout);
         Assert.assertTrue("Wrong biometricUnlockAllowed returned", id.biometricUnlockAlowed);
 	}
+
+    /**
+     * Testing getOpenIDToken.
+     */
+	@Test
+	public void testGetOpenIDToken() {
+        final String openIdToken = OAuth2.getOpenIDToken(TestCredentials.LOGIN_URL,
+                TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
+        Assert.assertNotNull("OpenID token should not be null", openIdToken);
+    }
 }
