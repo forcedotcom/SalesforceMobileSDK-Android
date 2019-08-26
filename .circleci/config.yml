@@ -53,49 +53,54 @@ aliases:
       gem install danger-jacoco
       echo $TEST_CREDENTIALS > ./shared/test/test_credentials.json
 
+  # Test APK paths
+  - &analytics-apk-path
+      "libs/SalesforceAnalytics/build/outputs/apk/androidTest/debug/SalesforceAnalytics-debug-androidTest.apk"
+  - &coresdk-apk-path
+      "libs/SalesforceSDK/build/outputs/apk/androidTest/debug/SalesforceSDK-debug-androidTest.apk"
+  - &smartStore-apk-path
+      "libs/SmartStore/build/outputs/apk/androidTest/debug/SmartStore-debug-androidTest.apk"
+  - &smartSync-apk-path
+      "libs/SmartSync/build/outputs/apk/androidTest/debug/SmartSync-debug-androidTest.apk"
+  - &salesforceHybrid-apk-path
+      "libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk"
+  - &restExplorer-apk-path
+      "native/NativeSampleApps/RestExplorer/build/outputs/apk/androidTest/debug/RestExplorer-debug-androidTest.apk"
+  - &salesforceReact-apk-path
+      "libs/SalesforceReact/build/outputs/apk/androidTest/debug/SalesforceReact-debug-androidTest.apk"
 
+
+version: 2.1
 executors:
   linux:
     working_directory: ~/SalesforceMobileSDK-Android
     docker:
-      - image: circleci/android:api-28-node
+      - image: circleci/android:api-29-node
     environment:
       - TERM: "dumb"
       - GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'
 
-
-
-#########################
-#                       #
-#       Test Jobs       #
-#                       #
-#########################
-
-version: 2.1
 jobs:
-  setup:
+  static-analysis:
     executor: linux
     steps:
       - checkout
       - restore_cache: *restore-gradle-cache
       - restore_cache: *restore-node-cache
       - restore_cache: *restore-ruby-cache
-      - run: *setup-env
+      - run:
+          name: Setup Environment
+          command: |
+            ./install.sh
+            gem install bundler
+            gem install danger
+            gem install danger-junit
+            gem install danger-android_lint
+            gem install danger-jacoco
       - run:
           name: Run Android Lint
           command:  ./gradlew lint
           when: always
-      - run:
-          name: Build for Testing
-          command:  |
-            ./gradlew libs:SalesforceAnalytics:assembleAndroidTest
-            ./gradlew libs:SalesforceSDK:assembleAndroidTest
-            ./gradlew libs:SmartStore:assembleAndroidTest
-            ./gradlew libs:SmartSync:assembleAndroidTest
-            ./gradlew libs:SalesforceHybrid:assembleAndroidTest
-            ./gradlew libs:SalesforceReact:assembleAndroidTest
-            ./gradlew native:NativeSampleApps:RestExplorer:assembleAndroidTest
-            ./gradlew native:NativeSampleApps:RestExplorer:assembleDebug
       - run:
           name: Run Danger
           command: |
@@ -114,48 +119,58 @@ jobs:
       - save_cache: *save-gradle-cache
       - save_cache: *save-node-cache
       - save_cache: *save-ruby-cache
-      - persist_to_workspace:
-          root: .
-          paths:
-            - ./**
 
   run-tests:
     executor: linux
     parameters:
       lib:
-        type: string
+        type: enum
+        enum: ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "SmartSync", "SalesforceHybrid", "RestExplorer", "SalesforceReact"]
         default: "SalesforceAnalytics"
       test_apk:
         type: string
-        default: "libs/SalesforceAnalytics/build/outputs/apk/androidTest/debug/SalesforceAnalytics-debug-androidTest.apk"
-      nightly:
+        default: *analytics-apk-path
+      pr:
         type: boolean
         default: false
+      api_level:
+        type: integer
+        default: 27
     environment:
       CURRENT_LIB: << parameters.lib >>
     steps:
-      - attach_workspace:
-          at: ~/SalesforceMobileSDK-Android
-      - run:
-          name: Determine Tests to Run
-          command: |
-            if << parameters.nightly >>; then
-                echo -e "\n\nNightly -> Run everything."
-            else
-                LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
-                echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
-
-                # Check if tests should run
-                if [[ ${LIBS_TO_TEST} == *"<< parameters.lib >>"* ]]; then
-                    echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
-                else
-                    echo -e "\n\nNo need to test << parameters.lib >> for this PR, stopping execution."
-                    circleci step halt
-                fi
-            fi
+      - checkout
       - restore_cache: *restore-gradle-cache
       - restore_cache: *restore-node-cache
       - restore_cache: *restore-ruby-cache
+      - run: *setup-env
+      - when:
+          condition: << parameters.pr >>
+          steps:
+            - run:
+                name: Determine Tests to Run
+                command: |
+                  LIBS_TO_TEST=$(ruby .circleci/gitChangedLibs.rb)
+                  echo -e "export LIBS_TO_TEST=${LIBS_TO_TEST}" >> "${BASH_ENV}"
+
+                  # Check if tests should run
+                  if [[ ${LIBS_TO_TEST} == *"<< parameters.lib >>"* ]]; then
+                      echo -e "\n\nLibraries to Test-> ${LIBS_TO_TEST//","/", "}."
+                  else
+                      echo -e "\n\nNo need to test << parameters.lib >> for this PR, stopping execution."
+                      circleci step halt
+                  fi
+      - run:
+          name: Build for Testing
+          command:  |
+            ./gradlew libs:SalesforceAnalytics:assembleAndroidTest
+            ./gradlew libs:SalesforceSDK:assembleAndroidTest
+            ./gradlew libs:SmartStore:assembleAndroidTest
+            ./gradlew libs:SmartSync:assembleAndroidTest
+            ./gradlew libs:SalesforceHybrid:assembleAndroidTest
+            ./gradlew libs:SalesforceReact:assembleAndroidTest
+            ./gradlew native:NativeSampleApps:RestExplorer:assembleAndroidTest
+            ./gradlew native:NativeSampleApps:RestExplorer:assembleDebug
       - run:
           name: Authorize gcloud and set config defaults
           command:  |
@@ -163,23 +178,16 @@ jobs:
             gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
             gcloud --quiet config set project mobile-apps-firebase-test
       - run:
-          name: Run << parameters.lib >> Tests
+          name: Run << parameters.lib >> Tests with API << parameters.api_level >>
           command: |
-            if [[ $CIRCLE_BRANCH == *"pull"* ]]; then
-                android_api=27
-            else
-                # Run API 21 on Mon, 23 on Wed, 25 on Fri
-                android_api=$((19 + $(date +"%u")))
-            fi
-
-            [[ $android_api < 23 ]] && device="Nexus6" || device="NexusLowRes"
+            [[ << parameters.api_level >> < 23 ]] && device="Nexus6" || device="NexusLowRes"
 
             gcloud firebase test android run \
                 --project mobile-apps-firebase-test \
                 --type instrumentation \
                 --app "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk" \
                 --test << parameters.test_apk >>  \
-                --device model=$device,version=$android_api,locale=en,orientation=portrait  \
+                --device model=$device,version=<< parameters.api_level >>,locale=en,orientation=portrait  \
                 --environment-variables coverage=true,coverageFile="/sdcard/coverage.ec"  \
                 --directories-to-pull=/sdcard  \
                 --results-dir=<< parameters.lib >>-${CIRCLE_BUILD_NUM}  \
@@ -193,41 +201,35 @@ jobs:
             gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/<< parameters.lib >>-${CIRCLE_BUILD_NUM} | tail -1`*" ./firebase/
             mv firebase/test_result_1.xml firebase/results
           when: always
+      - when:
+          condition: << parameters.pr >>
+          steps:
+            - run:
+                name: Run Danger
+                command: |
+                  # These env vars are not set properly on rebuilds
+                  export CIRCLE_PULL_REQUEST="https://github.com/forcedotcom/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
+                  export CIRCLE_PULL_REQUESTS="https://github.com/forcedotcom/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
+                  export CI_PULL_REQUEST="https://github.com/forcedotcom/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
+                  export CI_PULL_REQUESTS="https://github.com/forcedotcom/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
+
+                  if ls libs/<< parameters.lib >>/build/outputs/androidTest-results/connected/*.xml 1> /dev/null 2>&1; then
+                       mv libs/<< parameters.lib >>/build/outputs/androidTest-results/connected/*.xml libs/<< parameters.lib >>/build/outputs/androidTest-results/connected/test-results.xml
+                  fi
+                  # This token is completely harmless as it only has public permission and
+                  # is owned by a bot who isn't a member of hte org.
+                  DANGER_GITHUB_API_TOKEN="279a29d75427e4178cef""b7b5b2d7646c540f025a" danger --dangerfile=.circleci/Dangerfile_Lib.rb --danger_id=<< parameters.lib >> --verbose
+                background: true
+                when: always
+            - run:
+                name: Codecov
+                command: bash <(curl -s https://codecov.io/bash) -f firebase/artifacts/coverage.ec
+                background: true
+                when: always
       - store_artifacts:
-            path: firebase/
+          path: firebase/
       - store_test_results:
-            path: firebase/results
-      - run:
-          name: Run Danger
-          command: |
-            if [[ $CIRCLE_BRANCH == *"pull"* ]]; then
-                # These env vars are not set properly on rebuilds
-                export CIRCLE_PULL_REQUEST="https://github.com/forcedotcom/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
-                export CIRCLE_PULL_REQUESTS="https://github.com/forcedotcom/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
-                export CI_PULL_REQUEST="https://github.com/forcedotcom/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
-                export CI_PULL_REQUESTS="https://github.com/forcedotcom/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
-
-                if ls libs/<< parameters.lib >>/build/outputs/androidTest-results/connected/*.xml 1> /dev/null 2>&1; then
-                     mv libs/<< parameters.lib >>/build/outputs/androidTest-results/connected/*.xml libs/<< parameters.lib >>/build/outputs/androidTest-results/connected/test-results.xml
-                fi
-                # This token is completely harmless as it only has public permission and
-                # is owned by a bot who isn't a member of hte org.
-                DANGER_GITHUB_API_TOKEN="279a29d75427e4178cef""b7b5b2d7646c540f025a" danger --dangerfile=.circleci/Dangerfile_Lib.rb --danger_id=<< parameters.lib >> --verbose
-            else
-                echo "No need to run Danger."
-            fi
-      - run:
-          name: Codecov
-          command:  |
-            ./gradlew connectedCheck
-            bash <(curl -s https://codecov.io/bash)
-          when: always
-
-##########################
-#                        #
-#      Nightly Jobs      #
-#                        #
-##########################
+          path: firebase/results
 
   generate-artifacts:
     executor: linux
@@ -304,125 +306,430 @@ jobs:
       - save_cache: *save-gradle-cache
 
 
-#####################
-#                   #
-#     Workflows     #
-#                   #
-#####################
-
 workflows:
   version: 2
 
   # PRs run on Android API 27
   pr-test:
     jobs:
-      - setup:
+      - static-analysis:
           filters:
             branches:
               only:
                 - /pull.*/
       - run-tests:
-          requires:
-            - setup
+          filters:
+            branches:
+              only:
+                - /pull.*/
           name: "SalesforceAnalytics"
+          pr: true
       - run-tests:
-          requires:
-            - setup
+          filters:
+            branches:
+              only:
+                - /pull.*/
           name: "SalesforceSDK"
           lib: "SalesforceSDK"
-          test_apk: "libs/SalesforceSDK/build/outputs/apk/androidTest/debug/SalesforceSDK-debug-androidTest.apk"
+          test_apk: *coresdk-apk-path
+          pr: true
       - run-tests:
-          requires:
-            - setup
+          filters:
+            branches:
+              only:
+                - /pull.*/
           name: "SmartStore"
           lib: "SmartStore"
-          test_apk: "libs/SmartStore/build/outputs/apk/androidTest/debug/SmartStore-debug-androidTest.apk"
+          test_apk: *smartStore-apk-path
+          pr: true
       - run-tests:
-          requires:
-            - setup
+          filters:
+            branches:
+              only:
+                - /pull.*/
           name: "SmartSync"
           lib: "SmartSync"
-          test_apk: "libs/SmartSync/build/outputs/apk/androidTest/debug/SmartSync-debug-androidTest.apk"
+          test_apk: *smartSync-apk-path
+          pr: true
       - run-tests:
-          requires:
-            - setup
+          filters:
+            branches:
+              only:
+                - /pull.*/
           name: "SalesforceHybrid"
           lib: "SalesforceHybrid"
-          test_apk: "libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk"
+          test_apk: *salesforceHybrid-apk-path
+          pr: true
       - run-tests:
-          requires:
-            - setup
+          filters:
+            branches:
+              only:
+                - /pull.*/
           name: "RestExplorer"
           lib: "RestExplorer"
-          test_apk: "native/NativeSampleApps/RestExplorer/build/outputs/apk/androidTest/debug/RestExplorer-debug-androidTest.apk"
+          test_apk: *restExplorer-apk-path
+          pr: true
       - run-tests:
-          requires:
-            - setup
+          filters:
+            branches:
+              only:
+                - /pull.*/
           name: "SalesforceReact"
           lib: "SalesforceReact"
-          test_apk: "libs/SalesforceReact/build/outputs/apk/androidTest/debug/SalesforceReact-debug-androidTest.apk"
+          test_apk: *salesforceReact-apk-path
+          pr: true
 
 
   # Cron are on a timezone 8 hours ahead of PST
-  # Nightly run is set for ~10PM
-  # Monday    - API 21
-  # Wednesday - API 23
-  # Friday    - API 25
-  nightly-test:
-     triggers:
-       - schedule:
-           cron: "00 6 * * 2,4,6"
-           filters:
-             branches:
-               only:
-                 - dev
-     jobs:
-        - generate-artifacts
-        - setup
-        - run-tests:
-            requires:
-              - setup
-            name: "SalesforceAnalytics Nightly"
-            nightly: true
-        - run-tests:
-            requires:
-              - setup
-            name: "SalesforceSDK Nightly"
-            lib: "SalesforceSDK"
-            test_apk: "libs/SalesforceSDK/build/outputs/apk/androidTest/debug/SalesforceSDK-debug-androidTest.apk"
-            nightly: true
-        - run-tests:
-            requires:
-              - setup
-            name: "SmartStore Nightly"
-            lib: "SmartStore"
-            test_apk: "libs/SmartStore/build/outputs/apk/androidTest/debug/SmartStore-debug-androidTest.apk"
-            nightly: true
-        - run-tests:
-            requires:
-              - setup
-            name: "SmartSync Nightly"
-            lib: "SmartSync"
-            test_apk: "libs/SmartSync/build/outputs/apk/androidTest/debug/SmartSync-debug-androidTest.apk"
-            nightly: true
-        - run-tests:
-            requires:
-              - setup
-            name: "SalesforceHybrid Nightly"
-            lib: "SalesforceHybrid"
-            test_apk: "libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk"
-            nightly: true
-        - run-tests:
-            requires:
-              - setup
-            name: "RestExplorer Nightly"
-            lib: "RestExplorer"
-            test_apk: "native/NativeSampleApps/RestExplorer/build/outputs/apk/androidTest/debug/RestExplorer-debug-androidTest.apk"
-            nightly: true
-        - run-tests:
-            requires:
-              - setup
-            name: "SalesforceReact Nightly"
-            lib: "SalesforceReact"
-            test_apk: "libs/SalesforceReact/build/outputs/apk/androidTest/debug/SalesforceReact-debug-androidTest.apk"
-            nightly: true
+  # Monday 8 PM  - API 28
+  # Monday 9 PM  - API 26
+  # Monday 10 PM - API 24
+  # Monday 11 PM - API 22
+  # Friday 8 PM  - API 27
+  # Friday 9 PM  - API 25
+  # Friday 10 PM - API 23
+  # Friday 11 PM - API 21
+  test-api-28:
+    triggers:
+      - schedule:
+          cron: "0 4 * * 2"
+          filters:
+            branches:
+              only:
+                - dev
+    jobs:
+      - generate-artifacts
+      - run-tests:
+          name: "SalesforceAnalytics API 28"
+          api_level: 28
+      - run-tests:
+          name: "SalesforceSDK API 28"
+          lib: "SalesforceSDK"
+          test_apk: *coresdk-apk-path
+          api_level: 28
+      - run-tests:
+          name: "SmartStore API 28"
+          lib: "SmartStore"
+          test_apk: *smartStore-apk-path
+          api_level: 28
+      - run-tests:
+          name: "SmartSync API 28"
+          lib: "SmartSync"
+          test_apk: *smartSync-apk-path
+          api_level: 28
+      - run-tests:
+          name: "SalesforceHybrid API 28"
+          lib: "SalesforceHybrid"
+          test_apk: *salesforceHybrid-apk-path
+          api_level: 28
+      - run-tests:
+          name: "RestExplorer API 28"
+          lib: "RestExplorer"
+          test_apk: *restExplorer-apk-path
+          api_level: 28
+      - run-tests:
+          name: "SalesforceReact API 28"
+          lib: "SalesforceReact"
+          test_apk: *salesforceReact-apk-path
+          api_level: 28
+
+  test-api-26:
+    triggers:
+      - schedule:
+          cron: "0 5 * * 2"
+          filters:
+            branches:
+              only:
+                - dev
+    jobs:
+      - run-tests:
+          name: "SalesforceAnalytics API 26"
+          api_level: 26
+      - run-tests:
+          name: "SalesforceSDK API 26"
+          lib: "SalesforceSDK"
+          test_apk: *coresdk-apk-path
+          api_level: 26
+      - run-tests:
+          name: "SmartStore API 26"
+          lib: "SmartStore"
+          test_apk: *smartStore-apk-path
+          api_level: 26
+      - run-tests:
+          name: "SmartSync API 26"
+          lib: "SmartSync"
+          test_apk: *smartSync-apk-path
+          api_level: 26
+      - run-tests:
+          name: "SalesforceHybrid API 26"
+          lib: "SalesforceHybrid"
+          test_apk: *salesforceHybrid-apk-path
+          api_level: 26
+      - run-tests:
+          name: "RestExplorer API 26"
+          lib: "RestExplorer"
+          test_apk: *restExplorer-apk-path
+          api_level: 26
+      - run-tests:
+          name: "SalesforceReact API 26"
+          lib: "SalesforceReact"
+          test_apk: *salesforceReact-apk-path
+          api_level: 26
+
+  test-api-24:
+    triggers:
+      - schedule:
+          cron: "0 6 * * 2"
+          filters:
+            branches:
+              only:
+                - dev
+    jobs:
+      - run-tests:
+          name: "SalesforceAnalytics API 24"
+          api_level: 24
+      - run-tests:
+          name: "SalesforceSDK API 24"
+          lib: "SalesforceSDK"
+          test_apk: *coresdk-apk-path
+          api_level: 24
+      - run-tests:
+          name: "SmartStore API 24"
+          lib: "SmartStore"
+          test_apk: *smartStore-apk-path
+          api_level: 24
+      - run-tests:
+          name: "SmartSync API 24"
+          lib: "SmartSync"
+          test_apk: *smartSync-apk-path
+          api_level: 24
+      - run-tests:
+          name: "SalesforceHybrid API 24"
+          lib: "SalesforceHybrid"
+          test_apk: *salesforceHybrid-apk-path
+          api_level: 24
+      - run-tests:
+          name: "RestExplorer API 24"
+          lib: "RestExplorer"
+          test_apk: *restExplorer-apk-path
+          api_level: 24
+      - run-tests:
+          name: "SalesforceReact API 24"
+          lib: "SalesforceReact"
+          test_apk: *salesforceReact-apk-path
+          api_level: 24
+
+  test-api-22:
+    triggers:
+      - schedule:
+          cron: "0 7 * * 2"
+          filters:
+            branches:
+              only:
+                - dev
+    jobs:
+      - run-tests:
+          name: "SalesforceAnalytics API 22"
+          api_level: 22
+      - run-tests:
+          name: "SalesforceSDK API 22"
+          lib: "SalesforceSDK"
+          test_apk: *coresdk-apk-path
+          api_level: 22
+      - run-tests:
+          name: "SmartStore API 22"
+          lib: "SmartStore"
+          test_apk: *smartStore-apk-path
+          api_level: 22
+      - run-tests:
+          name: "SmartSync API 22"
+          lib: "SmartSync"
+          test_apk: *smartSync-apk-path
+          api_level: 22
+      - run-tests:
+          name: "SalesforceHybrid API 22"
+          lib: "SalesforceHybrid"
+          test_apk: *salesforceHybrid-apk-path
+          api_level: 22
+      - run-tests:
+          name: "RestExplorer API 22"
+          lib: "RestExplorer"
+          test_apk: *restExplorer-apk-path
+          api_level: 22
+      - run-tests:
+          name: "SalesforceReact API 22"
+          lib: "SalesforceReact"
+          test_apk: *salesforceReact-apk-path
+          api_level: 22
+
+  test-api-27:
+    triggers:
+      - schedule:
+          cron: "0 4 * * 6"
+          filters:
+            branches:
+              only:
+                - dev
+    jobs:
+      - run-tests:
+          name: "SalesforceAnalytics API 27"
+          api_level: 27
+      - run-tests:
+          name: "SalesforceSDK  API 27"
+          lib: "SalesforceSDK"
+          test_apk: *coresdk-apk-path
+          api_level: 27
+      - run-tests:
+          name: "SmartStore API 27"
+          lib: "SmartStore"
+          test_apk: *smartStore-apk-path
+          api_level: 27
+      - run-tests:
+          name: "SmartSync API 27"
+          lib: "SmartSync"
+          test_apk: *smartSync-apk-path
+          api_level: 27
+      - run-tests:
+          name: "SalesforceHybrid API 27"
+          lib: "SalesforceHybrid"
+          test_apk: *salesforceHybrid-apk-path
+          api_level: 27
+      - run-tests:
+          name: "RestExplorer API 27"
+          lib: "RestExplorer"
+          test_apk: *restExplorer-apk-path
+          api_level: 27
+      - run-tests:
+          name: "SalesforceReact API 27"
+          lib: "SalesforceReact"
+          test_apk: *salesforceReact-apk-path
+          api_level: 27
+
+  test-api-25:
+    triggers:
+      - schedule:
+          cron: "0 5 * * 6"
+          filters:
+            branches:
+              only:
+                - dev
+    jobs:
+      - run-tests:
+          name: "SalesforceAnalytics API 25"
+          api_level: 25
+      - run-tests:
+          name: "SalesforceSDK API 25"
+          lib: "SalesforceSDK"
+          test_apk: *coresdk-apk-path
+          api_level: 25
+      - run-tests:
+          name: "SmartStore API 25"
+          lib: "SmartStore"
+          test_apk: *smartStore-apk-path
+          api_level: 25
+      - run-tests:
+          name: "SmartSync API 25"
+          lib: "SmartSync"
+          test_apk: *smartSync-apk-path
+          api_level: 25
+      - run-tests:
+          name: "SalesforceHybrid API 25"
+          lib: "SalesforceHybrid"
+          test_apk: *salesforceHybrid-apk-path
+          api_level: 25
+      - run-tests:
+          name: "RestExplorer API 25"
+          lib: "RestExplorer"
+          test_apk: *restExplorer-apk-path
+          api_level: 25
+      - run-tests:
+          name: "SalesforceReact API 25"
+          lib: "SalesforceReact"
+          test_apk: *salesforceReact-apk-path
+          api_level: 25
+
+  test-api-23:
+    triggers:
+      - schedule:
+          cron: "0 6 * * 6"
+          filters:
+            branches:
+              only:
+                - dev
+    jobs:
+      - run-tests:
+          name: "SalesforceAnalytics API 23"
+          api_level: 23
+      - run-tests:
+          name: "SalesforceSDK API 23"
+          lib: "SalesforceSDK"
+          test_apk: *coresdk-apk-path
+          api_level: 23
+      - run-tests:
+          name: "SmartStore API 23"
+          lib: "SmartStore"
+          test_apk: *smartStore-apk-path
+          api_level: 23
+      - run-tests:
+          name: "SmartSync API 23"
+          lib: "SmartSync"
+          test_apk: *smartSync-apk-path
+          api_level: 23
+      - run-tests:
+          name: "SalesforceHybrid API 23"
+          lib: "SalesforceHybrid"
+          test_apk: *salesforceHybrid-apk-path
+          api_level: 23
+      - run-tests:
+          name: "RestExplorer API 23"
+          lib: "RestExplorer"
+          test_apk: *restExplorer-apk-path
+          api_level: 23
+      - run-tests:
+          name: "SalesforceReact API 23"
+          lib: "SalesforceReact"
+          test_apk: *salesforceReact-apk-path
+          api_level: 23
+
+  test-api-21:
+    triggers:
+      - schedule:
+          cron: "0 7 * * 6"
+          filters:
+            branches:
+              only:
+                - dev
+    jobs:
+      - run-tests:
+          name: "SalesforceAnalytics API 21"
+          api_level: 21
+      - run-tests:
+          name: "SalesforceSDK API 21"
+          lib: "SalesforceSDK"
+          test_apk: *coresdk-apk-path
+          api_level: 21
+      - run-tests:
+          name: "SmartStore API 21"
+          lib: "SmartStore"
+          test_apk: *smartStore-apk-path
+          api_level: 21
+      - run-tests:
+          name: "SmartSync API 21"
+          lib: "SmartSync"
+          test_apk: *smartSync-apk-path
+          api_level: 21
+      - run-tests:
+          name: "SalesforceHybrid API 21"
+          lib: "SalesforceHybrid"
+          test_apk: *salesforceHybrid-apk-path
+          api_level: 21
+      - run-tests:
+          name: "RestExplorer API 21"
+          lib: "RestExplorer"
+          test_apk: *restExplorer-apk-path
+          api_level: 21
+      - run-tests:
+          name: "SalesforceReact API 21"
+          lib: "SalesforceReact"
+          test_apk: *salesforceReact-apk-path
+          api_level: 21
