@@ -597,26 +597,19 @@ public class PasscodeActivity extends Activity {
         }
     }
 
-    @TargetApi(VERSION_CODES.M)
     private boolean isFingerprintEnabled() {
         // Used for tests
         if (forceBiometric) {
             return true;
         }
+        final FingerprintManager fingerprintManager = (FingerprintManager) this.getSystemService(Context.FINGERPRINT_SERVICE);
 
-	    /*
-         * TODO: Remove this check once minAPI >= 23.
-         */
-        if (VERSION.SDK_INT >= VERSION_CODES.M) {
-            final FingerprintManager fingerprintManager = (FingerprintManager) this.getSystemService(Context.FINGERPRINT_SERVICE);
-
-            // Here, this activity is the current activity.
-            if (checkSelfPermission(Manifest.permission.USE_FINGERPRINT) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{ permission.USE_FINGERPRINT}, REQUEST_CODE_ASK_PERMISSIONS);
-            } else {
-                return fingerprintManager != null && fingerprintManager.isHardwareDetected()
-                        && fingerprintManager.hasEnrolledFingerprints();
-            }
+        // Here, this activity is the current activity.
+        if (checkSelfPermission(Manifest.permission.USE_FINGERPRINT) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{ permission.USE_FINGERPRINT}, REQUEST_CODE_ASK_PERMISSIONS);
+        } else {
+            return fingerprintManager != null && fingerprintManager.isHardwareDetected()
+                    && fingerprintManager.hasEnrolledFingerprints();
         }
         return false;
     }
