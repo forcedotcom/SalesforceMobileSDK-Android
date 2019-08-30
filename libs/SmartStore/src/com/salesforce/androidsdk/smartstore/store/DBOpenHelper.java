@@ -261,12 +261,6 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		if (oldVersion == 1) {
 			SmartStore.createLongOperationsStatusTable(db);
 		}
-
-		if (oldVersion < 3) {
-			// DB versions before 3 used soup_names, which has changed to soup_attrs
-			SmartStore.updateTableNameAndAddColumns(db, SmartStore.SOUP_NAMES_TABLE,
-													SmartStore.SOUP_ATTRS_TABLE, new String[] { SoupSpec.FEATURE_EXTERNAL_STORAGE });
-		}
 	}
 
 	@Override
