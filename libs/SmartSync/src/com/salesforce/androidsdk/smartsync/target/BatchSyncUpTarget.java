@@ -32,6 +32,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -115,7 +116,7 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
         LinkedHashMap<String, RestRequest> refIdToRequests = new LinkedHashMap<>();
         for (int i = 0; i < records.size(); i++) {
             JSONObject record = records.get(i);
-            String id = record.getString(getIdFieldName());
+            String id = JSONObjectHelper.optString(record, getIdFieldName());
 
             if (id == null) {
                 // create local id - needed for refId
