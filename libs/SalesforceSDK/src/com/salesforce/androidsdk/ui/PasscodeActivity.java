@@ -327,6 +327,7 @@ public class PasscodeActivity extends Activity {
 
         switch (getMode()) {
         case Create:
+        case Change:
             firstPasscode = enteredPasscode;
             setMode(PasscodeMode.CreateConfirm);
             return true;
@@ -375,11 +376,6 @@ public class PasscodeActivity extends Activity {
                 }
             }
             return true;
-
-        case Change:
-            firstPasscode = enteredPasscode;
-            setMode(PasscodeMode.CreateConfirm);
-            return true;
         }
         return false;
     }
@@ -387,112 +383,6 @@ public class PasscodeActivity extends Activity {
     protected void done() {
         setResult(RESULT_OK);
         finish();
-    }
-
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected int getLayoutId() {
-        return R.layout.sf__passcode;
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected TextView getTitleView() {
-        return (TextView) findViewById(R.id.sf__passcode_title);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected TextView getInstructionsView() {
-        return (TextView) findViewById(R.id.sf__passcode_instructions);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getCreateTitle() {
-    	return getString(R.string.sf__passcode_create_title);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getEnterTitle() {
-    	return getString(R.string.sf__passcode_enter_title);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getConfirmTitle() {
-    	return getString(R.string.sf__passcode_confirm_title);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getEnterInstructions() {
-    	return getString(R.string.sf__passcode_enter_instructions);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getCreateInstructions() {
-    	return getString(R.string.sf__passcode_create_instructions);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getChangeInstructions() {
-    	return getString(R.string.sf__passcode_change_instructions);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getConfirmInstructions() {
-    	return getString(R.string.sf__passcode_confirm_instructions);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getPasscodeTryAgainError(int countAttemptsLeft) {
-        return getString(R.string.sf__passcode_try_again, countAttemptsLeft);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getPasscodeFinalAttemptError() {
-        return getString(R.string.sf__passcode_final);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getPasscodesDontMatchError() {
-        return getString(R.string.sf__passcodes_dont_match);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected Button getLogoutButton() {
-        return findViewById(R.id.sf__passcode_logout_button);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected Button getVerifyButton() {
-        return findViewById(R.id.sf__passcode_verify_button);
     }
 
     /**
