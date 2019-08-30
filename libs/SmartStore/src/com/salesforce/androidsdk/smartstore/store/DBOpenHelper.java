@@ -32,6 +32,7 @@ import android.text.TextUtils;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 
 import net.sqlcipher.database.SQLiteDatabase;
@@ -264,9 +265,8 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	}
 
 	@Override
-	@SuppressWarnings("deprecation")
 	public void onOpen(SQLiteDatabase db) {
-		(new SmartStore(db)).resumeLongOperations();
+		(new SmartStore(this, SmartStoreSDKManager.getEncryptionKey())).resumeLongOperations();
 	}
 
 	/**
