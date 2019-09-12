@@ -294,6 +294,7 @@ public class PasscodeActivity extends Activity {
                 launchBiometricAuth();
             } else {
                 setMode(PasscodeMode.Check);
+                newMode = PasscodeMode.Check;
             }
             break;
         }
