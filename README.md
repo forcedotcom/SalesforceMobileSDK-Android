@@ -23,7 +23,7 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 7.3
+### What's New in 7.3.0
 See [release notes](https://github.com/forcedotcom/SalesforceMobileSDK-Android/releases/tag/v7.3.0).
 
 ### Native Applications
