@@ -97,10 +97,15 @@ public class SalesforceKeyGenerator {
      * @return Encryption key.
      */
     public static String getEncryptionKey(String name) {
+        if (TextUtils.isEmpty(name)) {
+            return null;
+        }
         String encryptionKey = CACHED_ENCRYPTION_KEYS.get(name);
         if (encryptionKey == null) {
             encryptionKey = generateEncryptionKey(name);
-            CACHED_ENCRYPTION_KEYS.put(name, encryptionKey);
+            if (encryptionKey != null) {
+                CACHED_ENCRYPTION_KEYS.put(name, encryptionKey);
+            }
         }
         return encryptionKey;
     }

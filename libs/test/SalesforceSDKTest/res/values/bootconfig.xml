@@ -6,6 +6,7 @@
     <string-array name="oauthScopes">
         <item>api</item>
         <item>web</item>
+        <item>openid</item>
     </string-array>
     <string name="androidPushNotificationClientId"></string>
     <string name="account_type">com.salesforce.androidsdk.salesforcesdktest.login</string>

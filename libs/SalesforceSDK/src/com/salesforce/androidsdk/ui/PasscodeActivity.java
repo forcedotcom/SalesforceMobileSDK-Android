@@ -222,6 +222,9 @@ public class PasscodeActivity extends Activity {
         if (newMode == PasscodeMode.EnableBiometric && !canShowBiometric()) {
             return;
         }
+        if (newMode == PasscodeMode.BiometricCheck && !canShowBiometric()) {
+            newMode = PasscodeMode.Check;
+        }
 
         clearUi();
         switch(newMode) {
@@ -290,12 +293,7 @@ public class PasscodeActivity extends Activity {
             break;
         case BiometricCheck:
             hideKeyboard();
-            if (canShowBiometric()) {
-                launchBiometricAuth();
-            } else {
-                setMode(PasscodeMode.Check);
-            }
-            break;
+            launchBiometricAuth();
         }
         passcodeField.setText("");
         currentMode = newMode;
@@ -548,7 +546,7 @@ public class PasscodeActivity extends Activity {
 
     /**
      * Displays the dialog provided by the OS for biometric authentication
-     * using {@link android.hardware.biometrics.BiometricPrompt}.
+     * using {@link BiometricPrompt}.
      */
     @TargetApi(VERSION_CODES.P)
     protected void showBiometricDialog() {

@@ -115,6 +115,7 @@ public class OAuth2 {
     private static final String CUSTOM_PERMISSIONS = "custom_permissions";
     private static final String SFDC_COMMUNITY_ID = "sfdc_community_id";
     private static final String SFDC_COMMUNITY_URL = "sfdc_community_url";
+    private static final String ID_TOKEN = "id_token";
     private static final String AND = "&";
     private static final String EQUAL = "=";
     private static final String QUESTION = "?";
@@ -302,8 +303,9 @@ public class OAuth2 {
      * @param codeVerifier Code verifier used by the SP to generate 'code_challenge'.
      * @param callbackUrl Callback URL.
      * @return Full set of credentials.
-     * @throws OAuthFailedException
-     * @throws IOException
+     *
+     * @throws OAuthFailedException See {@link OAuthFailedException}.
+     * @throws IOException See {@link IOException}.
      */
     public static TokenEndpointResponse getSPCredentials(HttpAccess httpAccessor, URI loginServer,
                                                          String clientId, String code, String codeVerifier,
@@ -329,8 +331,8 @@ public class OAuth2 {
      * @param addlParams Additional parameters.
      * @return Token response.
      *
-     * @throws OAuthFailedException
-     * @throws IOException
+     * @throws OAuthFailedException See {@link OAuthFailedException}.
+     * @throws IOException See {@link IOException}.
      */
     public static TokenEndpointResponse refreshAuthToken(HttpAccess httpAccessor, URI loginServer,
                                                          String clientId, String refreshToken,
@@ -355,9 +357,6 @@ public class OAuth2 {
      * @param httpAccessor HttpAccess instance.
      * @param loginServer Login server.
      * @param refreshToken Refresh token.
-     *
-     * @throws OAuthFailedException
-     * @throws IOException
      */
     public static void revokeRefreshToken(HttpAccess httpAccessor, URI loginServer, String refreshToken) {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
@@ -381,8 +380,8 @@ public class OAuth2 {
      *                       the auth code was generated from.
      * @param jwt JWT issued by the OAuth authorization flow.
      *
-     * @throws IOException
-     * @throws OAuthFailedException
+     * @throws IOException See {@link IOException}.
+     * @throws OAuthFailedException See {@link OAuthFailedException}.
      */
     public static TokenEndpointResponse swapJWTForTokens(HttpAccess httpAccessor, URI loginServerUrl,
                                                          String jwt) throws IOException, OAuthFailedException {
@@ -400,7 +399,7 @@ public class OAuth2 {
      * @param authToken Access token.
      * @return IdServiceResponse instance.
      *
-     * @throws IOException
+     * @throws IOException See {@link IOException}.
      */
     public static final IdServiceResponse callIdentityService(HttpAccess httpAccessor,
                                                               String identityServiceIdUrl,
@@ -439,6 +438,28 @@ public class OAuth2 {
         } else {
             throw new OAuthFailedException(new TokenErrorResponse(response), response.code());
         }
+    }
+
+    /**
+     * Fetches an OpenID token from the Salesforce backend. This requires an OpenID token to be
+     * configured on the Salesforce connected app in the backend. It also requires the "openid"
+     * scope to be added on the client side through bootconfig and on the connected app.
+     *
+     * @param loginServer Login server.
+     * @param clientId Client ID.
+     * @param refreshToken Refresh token.
+     * @return OpenID token.
+     */
+    public static String getOpenIDToken(String loginServer, String clientId, String refreshToken) {
+        String idToken = null;
+        try {
+            final TokenEndpointResponse tr = refreshAuthToken(HttpAccess.DEFAULT,
+                    new URI(loginServer), clientId, refreshToken, null);
+            idToken = tr.idToken;
+        } catch (Exception e) {
+            SalesforceSDKLogger.e(TAG, "Exception thrown while fetching OpenID token", e);
+        }
+        return idToken;
     }
 
     /**
@@ -587,6 +608,7 @@ public class OAuth2 {
         public String communityId;
         public String communityUrl;
         public Map<String, String> additionalOauthValues;
+        public String idToken;
 
         /**
          * Parameterized constructor built during login flow.
@@ -615,6 +637,7 @@ public class OAuth2 {
                         }
                     }
                 }
+                idToken = callbackUrlParams.get(ID_TOKEN);
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);
             }
@@ -656,6 +679,7 @@ public class OAuth2 {
                         }
                     }
                 }
+                idToken = parsedResponse.optString(ID_TOKEN);
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);
             }

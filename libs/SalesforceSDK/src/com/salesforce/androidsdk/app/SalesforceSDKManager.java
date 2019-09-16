@@ -108,16 +108,13 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "7.2.0";
+    public static final String SDK_VERSION = "7.3.0.dev";
 
     /**
      * Intent action meant for instances of SalesforceSDKManager residing in other processes
      * to order them to clean up in-memory caches
      */
     private static final String CLEANUP_INTENT_ACTION = "com.salesforce.CLEANUP";
-
-    // Receiver for CLEANUP_INTENT_ACTION broadcast
-    private CleanupReceiver cleanupReceiver;
 
     // Key in broadcast for process id
     private static final String PROCESS_ID_KEY = "processId";
@@ -145,14 +142,13 @@ public class SalesforceSDKManager {
      * Instance of the SalesforceSDKManager to use for this process.
      */
     protected static SalesforceSDKManager INSTANCE;
-    private static final int PUSH_UNREGISTER_TIMEOUT_MILLIS = 30000;
 
     protected Context context;
-    protected LoginOptions loginOptions;
-    protected Class<? extends Activity> mainActivityClass;
-    protected Class<? extends Activity> loginActivityClass = LoginActivity.class;
-    protected Class<? extends PasscodeActivity> passcodeActivityClass = PasscodeActivity.class;
-    protected Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
+    private LoginOptions loginOptions;
+    private Class<? extends Activity> mainActivityClass;
+    private Class<? extends Activity> loginActivityClass = LoginActivity.class;
+    private Class<? extends PasscodeActivity> passcodeActivityClass = PasscodeActivity.class;
+    private Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
     private PasscodeManager passcodeManager;
     private LoginServerManager loginServerManager;
     private boolean isTestRun = false;
@@ -257,7 +253,7 @@ public class SalesforceSDKManager {
         }
 
         // If your app runs in multiple processes, all the SalesforceSDKManager need to run cleanup during a logout
-        cleanupReceiver = new CleanupReceiver();
+        final CleanupReceiver cleanupReceiver = new CleanupReceiver();
         context.registerReceiver(cleanupReceiver, new IntentFilter(SalesforceSDKManager.CLEANUP_INTENT_ACTION));
     }
 
@@ -716,8 +712,9 @@ public class SalesforceSDKManager {
      *
      * @param frontActivity Front activity.
      * @param account Account.
+     * @param shouldDismissActivity Dismisses current activity if true, does nothing otherwise.
      */
-    private void cleanUp(Activity frontActivity, Account account) {
+    private void cleanUp(Activity frontActivity, Account account, boolean shouldDismissActivity) {
         final UserAccount userAccount = UserAccountManager.getInstance().buildUserAccount(account);
 
         // Clean up in this process
@@ -728,8 +725,8 @@ public class SalesforceSDKManager {
 
         final List<UserAccount> users = getUserAccountManager().getAuthenticatedUsers();
 
-        // Finishes front activity if specified, and if this is the last account.
-        if (frontActivity != null && (users == null || users.size() <= 1)) {
+        // Finishes front activity if specified, if this is the last account.
+        if (shouldDismissActivity && frontActivity != null && (users == null || users.size() <= 1)) {
             frontActivity.finish();
         }
 
@@ -922,7 +919,7 @@ public class SalesforceSDKManager {
     private void removeAccount(ClientManager clientMgr, final boolean showLoginPage,
     		String refreshToken, String loginServer,
     		Account account, Activity frontActivity) {
-    	cleanUp(frontActivity, account);
+    	cleanUp(frontActivity, account, showLoginPage);
 
     	/*
     	 * Removes the existing account, if any. 'account == null' does not

@@ -29,11 +29,14 @@ package com.salesforce.androidsdk.reactnative.util;
 
 import android.app.Application;
 
+import com.facebook.infer.annotation.Assertions;
 import com.facebook.react.ReactInstanceManager;
 import com.facebook.react.ReactInstanceManagerBuilder;
 import com.facebook.react.ReactNativeHost;
 import com.facebook.react.ReactPackage;
 import com.facebook.react.bridge.NativeModuleCallExceptionHandler;
+import com.facebook.react.bridge.ReactMarker;
+import com.facebook.react.bridge.ReactMarkerConstants;
 import com.facebook.react.common.LifecycleState;
 import com.facebook.react.shell.MainReactPackage;
 import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
@@ -83,6 +86,7 @@ public class ReactNativeTestHost extends ReactNativeHost {
                 // Always reading from bundle
                 // NB: Bundle is generated during build
                 .setBundleAssetName("index.android.bundle")
+                .setJSIModulesPackage(getJSIModulePackage())
                 .setUseDeveloperSupport(false)
                 .setNativeModuleCallExceptionHandler(new NativeModuleCallExceptionTestHandler());
 
