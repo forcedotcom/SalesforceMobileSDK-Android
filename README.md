@@ -26,10 +26,6 @@ Introduction
 ### What's New in 7.3
 See [release notes](https://github.com/forcedotcom/SalesforceMobileSDK-Android/releases/tag/v7.3.0).
 
-**Deprecations**
-- See [Android Current Deprecations](https://developer.salesforce.com/docs/atlas.en-us.mobile_sdk.meta/mobile_sdk/reference_current_deprecations_android.htm).
-Check http://developer.force.com/mobilesdk for additional articles and tutorials.
-
 ### Native Applications
 The Salesforce Mobile SDK provides essential libraries for quickly building native mobile apps that seamlessly integrate with the Salesforce cloud architecture.  Out of the box, we provide an implementation of OAuth2, abstracting away the complexity of securely storing refresh tokens or fetching a new session ID when a session expires. The SDK also provides Java wrappers for the Salesforce REST API, making it easy to retrieve, store, and manipulate data.
 
