@@ -116,6 +116,14 @@ update_react_package_json ()
     gsed -i "s/SalesforceMobileSDK-ReactNative.git\#[^\"]*\"/SalesforceMobileSDK-ReactNative.git\#${sdkTag}\"/g" ${file}
 }
 
+update_readme ()
+{
+    local file=$1
+    local version=$2
+    gsed -i "s/\#\#\# What's New.*/### What's New in ${version}/g" ${file}
+    gsed -i "s/releases\/tag\/.*[)]/releases\/tag\/v${version}\)/g" ${file}
+}
+
 parse_opts "$@"
 
 VERSION_SUFFIXED=""
@@ -164,3 +172,6 @@ update_salesforcesdkmanager_java "./libs/SalesforceSDK/src/com/salesforce/androi
 
 echo "*** Updating generate_doc.sh ***"
 update_generate_doc "./tools/generate_doc.sh" "${SHORT_VERSION}"
+
+echo "*** Updating README.md ***"
+update_readme "./README.md" "${OPT_VERSION}"
