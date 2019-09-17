@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.security;
 import android.os.Build;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
-import android.security.keystore.StrongBoxUnavailableException;
 import android.util.Base64;
 
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
@@ -227,33 +226,17 @@ public class KeyStoreWrapper {
                  * TODO: Remove this check once minVersion > 28.
                  */
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    try {
 
-                        /*
-                         * Disabling StrongBox for now, since it's too slow on Pixel 3
-                         * and Pixel 3 XL.
-                         *
-                         * TODO: Re-enable in Mobile SDK 7.2.
-                         */
-                        //keyGenParameterSpecBuilder.setIsStrongBoxBacked(true);
-                        keyGenParameterSpecBuilder.setIsStrongBoxBacked(false);
-                        kpg.initialize(keyGenParameterSpecBuilder.build());
-                        kpg.generateKeyPair();
-                    } catch (StrongBoxUnavailableException sb) {
-                        SalesforceSDKLogger.e(TAG, "StrongBox Keymaster unavailable", sb);
-                        keyGenParameterSpecBuilder.setIsStrongBoxBacked(false);
-
-                        /*
-                         * This code is repeated because it's the code that generates the
-                         * exception and we need to call it again if StrongBox is unavailable.
-                         */
-                        kpg.initialize(keyGenParameterSpecBuilder.build());
-                        kpg.generateKeyPair();
-                    }
-                } else {
-                    kpg.initialize(keyGenParameterSpecBuilder.build());
-                    kpg.generateKeyPair();
+                    /*
+                     * Disabling StrongBox based on Google's recommendation - it's not a good
+                     * fit for this use case, since the key will need to be retrieved multiple
+                     * times. Besides, StrongBox Keymaster is available only on a few devices,
+                     * such as the Pixel 3 and Pixel 3 XL at this time.
+                     */
+                    keyGenParameterSpecBuilder.setIsStrongBoxBacked(false);
                 }
+                kpg.initialize(keyGenParameterSpecBuilder.build());
+                kpg.generateKeyPair();
             }
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Could not generate key pair", e);
