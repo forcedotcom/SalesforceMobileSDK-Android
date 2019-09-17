@@ -383,6 +383,7 @@ workflows:
   # Monday 8 PM  - API 28
   # Monday 9 PM  - API 26
   # Monday 10 PM - API 24
+  # Monday 11 PM - API 29
   # Friday 8 PM  - API 27
   # Friday 9 PM  - API 25
   # Friday 10 PM - API 23
@@ -515,6 +516,49 @@ workflows:
           lib: "SalesforceReact"
           test_apk: *salesforceReact-apk-path
           api_level: 24
+
+test-api-29:
+    triggers:
+      - schedule:
+          cron: "0 7 * * 2"
+          filters:
+            branches:
+              only:
+                - dev
+    jobs:
+      - run-tests:
+          name: "SalesforceAnalytics API 29"
+          api_level: 29
+      - run-tests:
+          name: "SalesforceSDK API 29"
+          lib: "SalesforceSDK"
+          test_apk: *coresdk-apk-path
+          api_level: 29
+      - run-tests:
+          name: "SmartStore API 29"
+          lib: "SmartStore"
+          test_apk: *smartStore-apk-path
+          api_level: 29
+      - run-tests:
+          name: "SmartSync API 29"
+          lib: "SmartSync"
+          test_apk: *smartSync-apk-path
+          api_level: 29
+      - run-tests:
+          name: "SalesforceHybrid API 29"
+          lib: "SalesforceHybrid"
+          test_apk: *salesforceHybrid-apk-path
+          api_level: 29
+      - run-tests:
+          name: "RestExplorer API 29"
+          lib: "RestExplorer"
+          test_apk: *restExplorer-apk-path
+          api_level: 29
+      - run-tests:
+          name: "SalesforceReact API 29"
+          lib: "SalesforceReact"
+          test_apk: *salesforceReact-apk-path
+          api_level: 29
 
   test-api-27:
     triggers:
