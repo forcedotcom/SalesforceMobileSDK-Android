@@ -259,9 +259,6 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		 * manage locking at our level anyway.
 		 */
 		db.setLockingEnabled(false);
-		if (oldVersion == 1) {
-			SmartStore.createLongOperationsStatusTable(db);
-		}
 	}
 
 	@Override
