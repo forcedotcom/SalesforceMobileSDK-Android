@@ -17,7 +17,7 @@ dependencies {
     api project(':libs:SalesforceAnalytics')
     api 'com.squareup.okhttp3:okhttp:3.12.1'
     api 'com.google.firebase:firebase-messaging:20.0.0'
-    api 'androidx.core:core:1.0.2'
+    api 'androidx.core:core:1.1.0'
     api 'androidx.browser:browser:1.0.0'
     api 'junit:junit:4.12'
     androidTestImplementation 'androidx.test:runner:1.2.0'
@@ -28,7 +28,6 @@ dependencies {
 
 android {
     compileSdkVersion 29
-    buildToolsVersion '29.0.2'
 
     defaultConfig {
         targetSdkVersion 29
