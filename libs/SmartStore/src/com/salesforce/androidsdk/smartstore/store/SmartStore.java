@@ -207,6 +207,15 @@ public class SmartStore  {
         this.encryptionKey = encryptionKey;
     }
 
+	/**
+	 * Package-level constructor. Should be used in tests only.
+	 *
+	 * @param db Database.
+	 */
+	SmartStore(SQLiteDatabase db) {
+		this.dbLocal = db;
+	}
+
     /**
      * Return db
      */
