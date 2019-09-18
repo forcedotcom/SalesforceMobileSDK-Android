@@ -30,6 +30,8 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
+
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.store.LongOperation.LongOperationType;
@@ -51,8 +53,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import androidx.annotation.NonNull;
-
 /**
  * Smart store
  *
@@ -63,16 +63,7 @@ import androidx.annotation.NonNull;
  */
 public class SmartStore  {
 
-    // Default
-    public static final int DEFAULT_PAGE_SIZE = 10;
 	private static final String TAG = "SmartStore";
-
-	/**
-	 * Table to keep track of soup names.
-	 *
-	 * @deprecated This has been deprecated as table has been renamed to {@link #SOUP_ATTRS_TABLE}
-	 */
-    protected static final String SOUP_NAMES_TABLE = "soup_names";
 
 	// Table to keep track of soup names and attributes.
 	public static final String SOUP_ATTRS_TABLE = "soup_attrs";
@@ -206,14 +197,6 @@ public class SmartStore  {
     }
 
     /**
-     * @param db
-     */
-    @Deprecated
-    public SmartStore(SQLiteDatabase db) {
-        this.dbLocal = db;
-    }
-
-    /**
      * Relies on SQLiteOpenHelper for database handling.
      *
      * @param dbOpenHelper DB open helper.
@@ -223,6 +206,15 @@ public class SmartStore  {
     	this.dbOpenHelper = dbOpenHelper;
         this.encryptionKey = encryptionKey;
     }
+
+	/**
+	 * Package-level constructor. Should be used in tests only.
+	 *
+	 * @param db Database.
+	 */
+	SmartStore(SQLiteDatabase db) {
+		this.dbLocal = db;
+	}
 
     /**
      * Return db

@@ -325,6 +325,7 @@ public class PasscodeActivity extends Activity {
 
         switch (getMode()) {
         case Create:
+        case Change:
             firstPasscode = enteredPasscode;
             setMode(PasscodeMode.CreateConfirm);
             return true;
@@ -373,11 +374,6 @@ public class PasscodeActivity extends Activity {
                 }
             }
             return true;
-
-        case Change:
-            firstPasscode = enteredPasscode;
-            setMode(PasscodeMode.CreateConfirm);
-            return true;
         }
         return false;
     }
@@ -385,112 +381,6 @@ public class PasscodeActivity extends Activity {
     protected void done() {
         setResult(RESULT_OK);
         finish();
-    }
-
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected int getLayoutId() {
-        return R.layout.sf__passcode;
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected TextView getTitleView() {
-        return (TextView) findViewById(R.id.sf__passcode_title);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected TextView getInstructionsView() {
-        return (TextView) findViewById(R.id.sf__passcode_instructions);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getCreateTitle() {
-    	return getString(R.string.sf__passcode_create_title);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getEnterTitle() {
-    	return getString(R.string.sf__passcode_enter_title);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getConfirmTitle() {
-    	return getString(R.string.sf__passcode_confirm_title);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getEnterInstructions() {
-    	return getString(R.string.sf__passcode_enter_instructions);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getCreateInstructions() {
-    	return getString(R.string.sf__passcode_create_instructions);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getChangeInstructions() {
-    	return getString(R.string.sf__passcode_change_instructions);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getConfirmInstructions() {
-    	return getString(R.string.sf__passcode_confirm_instructions);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getPasscodeTryAgainError(int countAttemptsLeft) {
-        return getString(R.string.sf__passcode_try_again, countAttemptsLeft);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getPasscodeFinalAttemptError() {
-        return getString(R.string.sf__passcode_final);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getPasscodesDontMatchError() {
-        return getString(R.string.sf__passcodes_dont_match);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected Button getLogoutButton() {
-        return findViewById(R.id.sf__passcode_logout_button);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected Button getVerifyButton() {
-        return findViewById(R.id.sf__passcode_verify_button);
     }
 
     /**
@@ -595,26 +485,19 @@ public class PasscodeActivity extends Activity {
         }
     }
 
-    @TargetApi(VERSION_CODES.M)
     private boolean isFingerprintEnabled() {
         // Used for tests
         if (forceBiometric) {
             return true;
         }
+        final FingerprintManager fingerprintManager = (FingerprintManager) this.getSystemService(Context.FINGERPRINT_SERVICE);
 
-	    /*
-         * TODO: Remove this check once minAPI >= 23.
-         */
-        if (VERSION.SDK_INT >= VERSION_CODES.M) {
-            final FingerprintManager fingerprintManager = (FingerprintManager) this.getSystemService(Context.FINGERPRINT_SERVICE);
-
-            // Here, this activity is the current activity.
-            if (checkSelfPermission(Manifest.permission.USE_FINGERPRINT) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{ permission.USE_FINGERPRINT}, REQUEST_CODE_ASK_PERMISSIONS);
-            } else {
-                return fingerprintManager != null && fingerprintManager.isHardwareDetected()
-                        && fingerprintManager.hasEnrolledFingerprints();
-            }
+        // Here, this activity is the current activity.
+        if (checkSelfPermission(Manifest.permission.USE_FINGERPRINT) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{ permission.USE_FINGERPRINT}, REQUEST_CODE_ASK_PERMISSIONS);
+        } else {
+            return fingerprintManager != null && fingerprintManager.isHardwareDetected()
+                    && fingerprintManager.hasEnrolledFingerprints();
         }
         return false;
     }

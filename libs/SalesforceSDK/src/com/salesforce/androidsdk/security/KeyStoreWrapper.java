@@ -27,17 +27,13 @@
 package com.salesforce.androidsdk.security;
 
 import android.os.Build;
-import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
-import android.security.keystore.StrongBoxUnavailableException;
 import android.util.Base64;
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -45,9 +41,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
-import java.util.Calendar;
-
-import javax.security.auth.x500.X500Principal;
 
 /**
  * This class provides utilities to interact with the Android KeyStore.
@@ -222,65 +215,28 @@ public class KeyStoreWrapper {
             if (!keyStore.containsAlias(name)) {
 
                 // Generates a new key pair.
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    final KeyPairGenerator kpg = KeyPairGenerator.getInstance(algorithm, ANDROID_KEYSTORE);
-                    final KeyGenParameterSpec.Builder keyGenParameterSpecBuilder = new KeyGenParameterSpec.Builder(
-                            name,
-                            KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
-                            .setKeySize(length)
-                            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1);
+                final KeyPairGenerator kpg = KeyPairGenerator.getInstance(algorithm, ANDROID_KEYSTORE);
+                final KeyGenParameterSpec.Builder keyGenParameterSpecBuilder = new KeyGenParameterSpec.Builder(
+                        name,
+                        KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
+                        .setKeySize(length)
+                        .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1);
+
+                /*
+                 * TODO: Remove this check once minVersion > 28.
+                 */
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
 
                     /*
-                     * TODO: Remove this check once minVersion > 28.
+                     * Disabling StrongBox based on Google's recommendation - it's not a good
+                     * fit for this use case, since the key will need to be retrieved multiple
+                     * times. Besides, StrongBox Keymaster is available only on a few devices,
+                     * such as the Pixel 3 and Pixel 3 XL at this time.
                      */
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                        try {
-
-                            /*
-                             * Disabling StrongBox for now, since it's too slow on Pixel 3
-                             * and Pixel 3 XL.
-                             *
-                             * TODO: Re-enable in Mobile SDK 7.2.
-                             */
-                            //keyGenParameterSpecBuilder.setIsStrongBoxBacked(true);
-                            keyGenParameterSpecBuilder.setIsStrongBoxBacked(false);
-                            kpg.initialize(keyGenParameterSpecBuilder.build());
-                            kpg.generateKeyPair();
-                        } catch (StrongBoxUnavailableException sb) {
-                            SalesforceSDKLogger.e(TAG, "StrongBox Keymaster unavailable", sb);
-                            keyGenParameterSpecBuilder.setIsStrongBoxBacked(false);
-
-                            /*
-                             * This code is repeated because it's the code that generates the
-                             * exception and we need to call it again if StrongBox is unavailable.
-                             */
-                            kpg.initialize(keyGenParameterSpecBuilder.build());
-                            kpg.generateKeyPair();
-                        }
-                    } else {
-                        kpg.initialize(keyGenParameterSpecBuilder.build());
-                        kpg.generateKeyPair();
-                    }
-                } else {
-
-                    /*
-                     * TODO: Remove the 'else' block once minVersion > 23.
-                     */
-                    final Calendar start = Calendar.getInstance();
-                    final Calendar end = Calendar.getInstance();
-                    end.add(Calendar.YEAR, 30);
-                    final KeyPairGeneratorSpec spec = new KeyPairGeneratorSpec.Builder(SalesforceSDKManager.getInstance().getAppContext())
-                            .setAlias(name)
-                            .setSubject(new X500Principal("CN=" + name))
-                            .setSerialNumber(BigInteger.TEN)
-                            .setStartDate(start.getTime())
-                            .setEndDate(end.getTime())
-                            .setKeySize(length)
-                            .build();
-                    final KeyPairGenerator kpg = KeyPairGenerator.getInstance(algorithm, ANDROID_KEYSTORE);
-                    kpg.initialize(spec);
-                    kpg.generateKeyPair();
+                    keyGenParameterSpecBuilder.setIsStrongBoxBacked(false);
                 }
+                kpg.initialize(keyGenParameterSpecBuilder.build());
+                kpg.generateKeyPair();
             }
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Could not generate key pair", e);

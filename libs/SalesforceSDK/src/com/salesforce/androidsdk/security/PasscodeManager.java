@@ -191,20 +191,6 @@ public class PasscodeManager  {
      * @param account UserAccount instance.
      * @param timeout Timeout value, in ms.
      * @param passLen Minimum passcode length.
-     *
-     * @deprecated Will be removed in Mobile SDK 8.0.
-     * Use {@link PasscodeManager#storeMobilePolicyForOrg(UserAccount, int, int, boolean)} instead.
-     */
-    public void storeMobilePolicyForOrg(UserAccount account, int timeout, int passLen) {
-    	storeMobilePolicyForOrg(account, timeout, passLen, true);
-    }
-
-    /**
-     * Stores the mobile policy for the specified account.
-     *
-     * @param account UserAccount instance.
-     * @param timeout Timeout value, in ms.
-     * @param passLen Minimum passcode length.
      * @param bioAllowed If biometric Unlock is Allowed by connected App
      */
     @SuppressLint("ApplySharedPref")
@@ -549,14 +535,6 @@ public class PasscodeManager  {
     }
 
     /**
-     *
-     * @deprecated Will be removed in Mobile SDK 8.0. Use {@link PasscodeManager#getPasscodeLength()}  instead.
-     */
-    public int getMinPasscodeLength() {
-        return passcodeLength;
-    }
-
-    /**
      * The exact length of the passcode if it is known.  It may be unknown on upgrade before first unlock.
      * Use {@link PasscodeManager#getPasscodeLengthKnown()} to check if return is exact length or org minimum.
      *
@@ -604,16 +582,6 @@ public class PasscodeManager  {
 
     /**
      * @param ctx Context.
-     * @param minPasscodeLength The new minimum passcode length to set.
-     *
-     * @deprecated Will be removed in Mobile SDK 8.0. Use {@link PasscodeManager#setPasscodeLength(Context, int)}  instead.
-     */
-    public void setMinPasscodeLength(Context ctx, int minPasscodeLength) {
-        setPasscodeLength(ctx, minPasscodeLength);
-    }
-
-    /**
-     * @param ctx Context.
      * @param passcodeLength The new passcode length to set.
      */
     public void setPasscodeLength(Context ctx, int passcodeLength) {
@@ -621,10 +589,8 @@ public class PasscodeManager  {
             if (hasStoredPasscode(ctx) && passcodeLengthKnown) {
                 this.passcodeChangeRequired = true;
             }
-
             this.passcodeLength = passcodeLength;
     	}
-
         this.passcodeLengthKnown = true;
         storeMobilePolicy(ctx);
     }
