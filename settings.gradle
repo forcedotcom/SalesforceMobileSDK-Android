@@ -1,7 +1,7 @@
 include 'libs:SalesforceAnalytics'
 include 'libs:SalesforceSDK'
 include 'libs:SmartStore'
-include 'libs:SmartSync'
+include 'libs:MobileSync'
 include 'libs:SalesforceHybrid'
 include 'libs:SalesforceReact'
 include 'native:NativeSampleApps:RestExplorer'
