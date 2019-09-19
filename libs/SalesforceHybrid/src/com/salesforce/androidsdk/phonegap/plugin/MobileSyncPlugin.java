@@ -49,7 +49,7 @@ import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.SYNC_NAM
 import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.TARGET;
 
 /**
- * PhoneGap plugin for smart sync.
+ * PhoneGap plugin for mobile sync.
  */
 public class MobileSyncPlugin extends ForcePlugin {
 

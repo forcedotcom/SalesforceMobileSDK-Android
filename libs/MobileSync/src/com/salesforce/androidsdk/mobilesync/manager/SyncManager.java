@@ -165,7 +165,7 @@ public class SyncManager {
             instance = new SyncManager(smartStore, restClient);
             INSTANCES.put(uniqueId, instance);
         }
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_SMART_SYNC);
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_MOBILE_SYNC);
         return instance;
     }
 

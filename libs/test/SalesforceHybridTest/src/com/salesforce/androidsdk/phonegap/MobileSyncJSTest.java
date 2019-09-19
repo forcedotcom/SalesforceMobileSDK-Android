@@ -37,7 +37,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Running javascript tests for smart sync plugin.
+ * Running javascript tests for mobile sync plugin.
  */
 @RunWith(Parameterized.class)
 @LargeTest

@@ -34,6 +34,6 @@ public class Features {
     public static final String FEATURE_LAYOUT_SYNC = "LY";
     public static final String FEATURE_METADATA_SYNC = "MD";
     public static final String FEATURE_RELATED_RECORDS = "RR";
-    public static final String FEATURE_SMART_SYNC = "SY";
+    public static final String FEATURE_MOBILE_SYNC = "SY";
 
 }
