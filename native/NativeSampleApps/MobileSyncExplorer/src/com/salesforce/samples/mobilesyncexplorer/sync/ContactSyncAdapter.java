@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.smartsyncexplorer.sync;
+package com.salesforce.samples.mobilesyncexplorer.sync;
 
 import android.accounts.Account;
 import android.content.AbstractThreadedSyncAdapter;
@@ -36,7 +36,7 @@ import android.os.Bundle;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
+import com.salesforce.samples.mobilesyncexplorer.loaders.ContactListLoader;
 
 /**
  * A simple sync adapter to perform background sync of contacts.

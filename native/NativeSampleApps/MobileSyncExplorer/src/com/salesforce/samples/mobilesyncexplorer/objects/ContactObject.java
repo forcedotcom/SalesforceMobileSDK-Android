@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.smartsyncexplorer.objects;
+package com.salesforce.samples.mobilesyncexplorer.objects;
 
 import android.text.TextUtils;
 

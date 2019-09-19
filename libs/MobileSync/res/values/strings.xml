@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">SmartSync</string>
-    <string name="app_package">com.salesforce.androidsdk.smartsync</string>
+    <string name="app_name">MobileSync</string>
+    <string name="app_package">com.salesforce.androidsdk.mobilesync</string>
 </resources>

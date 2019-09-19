@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.smartsyncexplorer.ui;
+package com.salesforce.samples.mobilesyncexplorer.ui;
 
 import android.accounts.Account;
 import android.app.LoaderManager;
@@ -60,10 +60,10 @@ import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.ui.SalesforceListActivity;
-import com.salesforce.samples.smartsyncexplorer.R;
-import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
-import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
-import com.salesforce.samples.smartsyncexplorer.sync.ContactSyncAdapter;
+import com.salesforce.samples.mobilesyncexplorer.R;
+import com.salesforce.samples.mobilesyncexplorer.loaders.ContactListLoader;
+import com.salesforce.samples.mobilesyncexplorer.objects.ContactObject;
+import com.salesforce.samples.mobilesyncexplorer.sync.ContactSyncAdapter;
 
 import java.util.ArrayList;
 import java.util.List;

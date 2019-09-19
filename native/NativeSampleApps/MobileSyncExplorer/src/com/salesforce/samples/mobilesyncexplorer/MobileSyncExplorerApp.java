@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,53 +24,36 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.smartsyncexplorer.sync;
+package com.salesforce.samples.mobilesyncexplorer;
 
-import android.content.ContentProvider;
-import android.content.ContentValues;
-import android.database.Cursor;
-import android.net.Uri;
+import android.app.Application;
+
+import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
+import com.salesforce.samples.mobilesyncexplorer.ui.MainActivity;
 
 /**
- * A dummy content provider that doesn't really do anything. Sync adapters
- * on Android require a content provider, which indirectly forces us to
- * work with cursors and use a cursor loader. Since we use a custom loader,
- * we simply declare this provider in the manifest, but use the loader
- * for all sync operations.
- *
- * @author bhariharan
+ * Application class for our application.
  */
-public class ContactProvider extends ContentProvider {
+public class MobileSyncExplorerApp extends Application {
 
 	@Override
-	public boolean onCreate() {
-		return false;
-	}
+	public void onCreate() {
+		super.onCreate();
+		MobileSyncSDKManager.initNative(getApplicationContext(), MainActivity.class);
 
-	@Override
-	public Cursor query(Uri uri, String[] projection, String selection,
-			String[] selectionArgs, String sortOrder) {
-		return null;
-	}
+		/*
+         * Uncomment the following line to enable IDP login flow. This will allow the user to
+         * either authenticate using the current app or use a designated IDP app for login.
+         * Replace 'idpAppURIScheme' with the URI scheme of the IDP app meant to be used.
+         */
+        // MobileSyncSDKManager.getInstance().setIDPAppURIScheme(idpAppURIScheme);
 
-	@Override
-	public String getType(Uri uri) {
-		return null;
-	}
-
-	@Override
-	public Uri insert(Uri uri, ContentValues values) {
-		return null;
-	}
-
-	@Override
-	public int delete(Uri uri, String selection, String[] selectionArgs) {
-		return 0;
-	}
-
-	@Override
-	public int update(Uri uri, ContentValues values, String selection,
-			String[] selectionArgs) {
-		return 0;
+		/*
+		 * Un-comment the line below to enable push notifications in this app.
+		 * Replace 'pnInterface' with your implementation of 'PushNotificationInterface'.
+		 * Add your Google package ID in 'bootonfig.xml', as the value
+		 * for the key 'androidPushNotificationClientId'.
+		 */
+		// MobileSyncSDKManager.getInstance().setPushNotificationReceiver(pnInterface);
 	}
 }

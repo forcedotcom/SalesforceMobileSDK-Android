@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.smartsyncexplorer.loaders;
+package com.salesforce.samples.mobilesyncexplorer.loaders;
 
 import android.content.AsyncTaskLoader;
 import android.content.Context;
@@ -42,7 +42,7 @@ import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SmartSyncExcepti
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SyncUpdateCallback;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
 import com.salesforce.androidsdk.mobilesync.util.SyncState.Status;
-import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
+import com.salesforce.samples.mobilesyncexplorer.objects.ContactObject;
 
 import org.json.JSONArray;
 import org.json.JSONException;

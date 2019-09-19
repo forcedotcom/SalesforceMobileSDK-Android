@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.smartsyncexplorer.loaders;
+package com.salesforce.samples.mobilesyncexplorer.loaders;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -40,7 +40,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlExcepti
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
-import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
+import com.salesforce.samples.mobilesyncexplorer.objects.ContactObject;
 
 /**
  * A simple AsyncTaskLoader to load object detail for a Contact object.

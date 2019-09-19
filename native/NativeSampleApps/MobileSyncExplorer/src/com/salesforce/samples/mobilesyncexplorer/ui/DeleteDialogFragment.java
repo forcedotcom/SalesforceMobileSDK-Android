@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.smartsyncexplorer.ui;
+package com.salesforce.samples.mobilesyncexplorer.ui;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -32,7 +32,7 @@ import android.app.DialogFragment;
 import android.content.DialogInterface;
 import android.os.Bundle;
 
-import com.salesforce.samples.smartsyncexplorer.R;
+import com.salesforce.samples.mobilesyncexplorer.R;
 
 /**
  * A simple dialog fragment to provide options for deletion.

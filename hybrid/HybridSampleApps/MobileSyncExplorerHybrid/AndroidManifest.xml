@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.salesforce.samples.smartsyncexplorerhybrid"
+    package="com.salesforce.samples.mobilesyncexplorerhybrid"
     android:versionCode="1"
     android:versionName="1.0"
 	android:installLocation="internalOnly">
@@ -71,9 +71,9 @@
             The URI constructed from this must be unique and will be set in the SP app
             as well. This will be used to launch the IDP app from the SP app.
 
-            In the example given below, 'scheme' is "com.salesforce.samples.smartsyncexplorerhybrid"
+            In the example given below, 'scheme' is "com.salesforce.samples.mobilesyncexplorerhybrid"
             and 'host' is "authenticator". The full URI that needs to be set on the SP app would be
-            "com.salesforce.samples.smartsyncexplorerhybrid://authenticator".
+            "com.salesforce.samples.mobilesyncexplorerhybrid://authenticator".
         -->
         <!--
         <activity android:name="com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity"
@@ -81,7 +81,7 @@
             android:theme="@style/SalesforceSDK.ActionBarTheme">
 
             <intent-filter>
-                <data android:scheme="com.salesforce.samples.smartsyncexplorerhybrid"
+                <data android:scheme="com.salesforce.samples.mobilesyncexplorerhybrid"
                     android:host="authenticator" />
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.BROWSABLE" />
@@ -96,8 +96,8 @@
         receive the messages and registration result. This must be of
         the format <app-package-name>.C2D_MESSAGE for it to work.
     -->
-    <permission android:name="com.salesforce.samples.smartsyncexplorerhybrid.C2D_MESSAGE"
+    <permission android:name="com.salesforce.samples.mobilesyncexplorerhybrid.C2D_MESSAGE"
         android:protectionLevel="signature" />
 
-    <uses-permission android:name="com.salesforce.samples.smartsyncexplorerhybrid.C2D_MESSAGE" />
+    <uses-permission android:name="com.salesforce.samples.mobilesyncexplorerhybrid.C2D_MESSAGE" />
 </manifest>

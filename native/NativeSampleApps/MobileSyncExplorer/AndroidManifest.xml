@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	package="com.salesforce.samples.smartsyncexplorer"
+	package="com.salesforce.samples.mobilesyncexplorer"
 	android:versionCode="1"
 	android:versionName="1.0"
 	android:installLocation="internalOnly">
 
 	<application android:icon="@drawable/sf__icon"
 	    android:label="@string/app_name"
-		android:name=".SmartSyncExplorerApp"
+		android:name="com.salesforce.samples.mobilesyncexplorer.MobileSyncExplorerApp"
 		android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpaceActivity">
 
 		<!-- Launcher screen -->
-		<activity android:name="com.salesforce.samples.smartsyncexplorer.ui.MainActivity"
+		<activity android:name="com.salesforce.samples.mobilesyncexplorer.ui.MainActivity"
 		    android:label="@string/app_name"
 			android:theme="@style/SalesforceSDK.ActionBarTheme">
 
@@ -65,9 +65,9 @@
             The URI constructed from this must be unique and will be set in the SP app
             as well. This will be used to launch the IDP app from the SP app.
 
-            In the example given below, 'scheme' is "com.salesforce.samples.smartsyncexplorer"
+            In the example given below, 'scheme' is "com.salesforce.samples.mobilesyncexplorer"
             and 'host' is "authenticator". The full URI that needs to be set on the SP app
-            would be "com.salesforce.samples.smartsyncexplorer://authenticator".
+            would be "com.salesforce.samples.mobilesyncexplorer://authenticator".
         -->
         <!--
         <activity android:name="com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity"
@@ -75,7 +75,7 @@
             android:theme="@style/SalesforceSDK.ActionBarTheme">
 
             <intent-filter>
-                <data android:scheme="com.salesforce.samples.smartsyncexplorer"
+                <data android:scheme="com.salesforce.samples.mobilesyncexplorer"
                     android:host="authenticator" />
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.BROWSABLE" />
@@ -85,7 +85,7 @@
         -->
 
 		<!-- Detail screen -->
-        <activity android:name="com.salesforce.samples.smartsyncexplorer.ui.DetailActivity"
+        <activity android:name="com.salesforce.samples.mobilesyncexplorer.ui.DetailActivity"
             android:theme="@style/SalesforceSDK.ActionBarTheme">
             <intent-filter>
                 <category android:name="android.intent.category.DEFAULT" />
@@ -93,7 +93,7 @@
         </activity>
 
         <!-- Contact sync service -->
-        <service android:name="com.salesforce.samples.smartsyncexplorer.sync.ContactSyncService"
+        <service android:name="com.salesforce.samples.mobilesyncexplorer.sync.ContactSyncService"
             android:exported="true"
             android:process=":sync">
             <intent-filter>
@@ -104,8 +104,8 @@
         </service>
 
         <!-- Contact data provider -->
-        <provider android:name="com.salesforce.samples.smartsyncexplorer.sync.ContactProvider"
-            android:authorities="com.salesforce.samples.smartsyncexplorer.sync.contactsyncadapter"
+        <provider android:name="com.salesforce.samples.mobilesyncexplorer.sync.ContactProvider"
+            android:authorities="com.salesforce.samples.mobilesyncexplorer.sync.contactsyncadapter"
             android:exported="true"
             android:syncable="true"
             android:enabled="true"
@@ -117,10 +117,10 @@
         receive the messages and registration result. This must be of
         the format <app-package-name>.C2D_MESSAGE for it to work.
     -->
-    <permission android:name="com.salesforce.samples.smartsyncexplorer.C2D_MESSAGE"
+    <permission android:name="com.salesforce.samples.mobilesyncexplorer.C2D_MESSAGE"
         android:protectionLevel="signature" />
 
-    <uses-permission android:name="com.salesforce.samples.smartsyncexplorer.C2D_MESSAGE" />
+    <uses-permission android:name="com.salesforce.samples.mobilesyncexplorer.C2D_MESSAGE" />
     <uses-permission android:name="android.permission.READ_SYNC_SETTINGS" />
     <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS" />
 </manifest>

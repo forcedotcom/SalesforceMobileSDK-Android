@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.smartsyncexplorer.ui;
+package com.salesforce.samples.mobilesyncexplorer.ui;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -50,10 +50,10 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.mobilesync.target.SyncTarget;
 import com.salesforce.androidsdk.ui.SalesforceActivity;
-import com.salesforce.samples.smartsyncexplorer.R;
-import com.salesforce.samples.smartsyncexplorer.loaders.ContactDetailLoader;
-import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
-import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
+import com.salesforce.samples.mobilesyncexplorer.R;
+import com.salesforce.samples.mobilesyncexplorer.loaders.ContactDetailLoader;
+import com.salesforce.samples.mobilesyncexplorer.loaders.ContactListLoader;
+import com.salesforce.samples.mobilesyncexplorer.objects.ContactObject;
 
 /**
  * Object detail activity.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-present, salesforce.com, inc.
+ * Copyright (c) 2015-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,45 +24,35 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.smartsyncexplorer.ui;
+package com.salesforce.samples.mobilesyncexplorer.sync;
 
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.DialogFragment;
-import android.content.DialogInterface;
-import android.os.Bundle;
-
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.samples.smartsyncexplorer.R;
+import android.app.Service;
+import android.content.Intent;
+import android.os.IBinder;
 
 /**
- * A simple dialog fragment to provide options at logout.
+ * A simple service that binds with the correct sync adapter.
+ *
+ * @author bhariharan
  */
-public class LogoutDialogFragment extends DialogFragment {
+public class ContactSyncService extends Service {
 
-	private AlertDialog logoutConfirmationDialog;
+    private static final Object SYNC_ADAPTER_LOCK = new Object();
+    private static ContactSyncAdapter CONTACT_SYNC_ADAPTER = null;
 
-	/**
-	 * Default constructor.
-	 */
-	public LogoutDialogFragment() {
-	}
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        synchronized (SYNC_ADAPTER_LOCK) {
+            if (CONTACT_SYNC_ADAPTER == null) {
+            	CONTACT_SYNC_ADAPTER = new ContactSyncAdapter(getApplicationContext(),
+            			true, false);
+            }
+        }
+    }
 
-	@Override
-	public Dialog onCreateDialog(Bundle savedInstanceState) {
-		logoutConfirmationDialog = new AlertDialog.Builder(getActivity())
-				.setTitle(R.string.logout_title)
-				.setPositiveButton(R.string.yes,
-				new DialogInterface.OnClickListener() {
-
-					@Override
-					public void onClick(DialogInterface dialog,
-							int which) {
-						SalesforceSDKManager.getInstance().logout(getActivity());
-					}
-				})
-				.setNegativeButton(R.string.cancel, null)
-				.create();
-		return logoutConfirmationDialog;
-	}
+    @Override
+    public IBinder onBind(Intent intent) {
+        return CONTACT_SYNC_ADAPTER.getSyncAdapterBinder();
+    }
 }
