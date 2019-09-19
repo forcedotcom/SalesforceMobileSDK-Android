@@ -348,7 +348,7 @@ workflows:
                 - /pull.*/
           name: "MobileSync"
           lib: "MobileSync"
-          test_apk: *mobilesync-apk-path
+          test_apk: *mobileSync-apk-path
           pr: true
       - run-tests:
           filters:
