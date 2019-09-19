@@ -106,7 +106,7 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
     public void syncUpRecords(SyncManager syncManager, List<JSONObject> records, List<String> fieldlist, SyncState.MergeMode mergeMode, String syncSoupName) throws JSONException, IOException {
 
         if (records.size() > getMaxBatchSize()) {
-            throw new SyncManager.SmartSyncException(getClass().getSimpleName() + ":syncUpRecords can handle up to " + getMaxBatchSize() + " records");
+            throw new SyncManager.MobileSyncException(getClass().getSimpleName() + ":syncUpRecords can handle up to " + getMaxBatchSize() + " records");
         }
 
         if (records.isEmpty()) {

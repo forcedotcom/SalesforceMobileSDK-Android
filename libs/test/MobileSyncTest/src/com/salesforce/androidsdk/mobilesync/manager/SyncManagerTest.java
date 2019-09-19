@@ -269,7 +269,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         try {
             syncManager.reSync(syncName, null);
             Assert.fail("Expected exception");
-        } catch (SyncManager.SmartSyncException e) {
+        } catch (SyncManager.MobileSyncException e) {
             Assert.assertTrue(e.getMessage().contains("does not exist"));
         }
     }
@@ -555,7 +555,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         try {
             syncManager.reSync(syncId, null);
             Assert.fail("Re sync should have failed");
-        } catch (SyncManager.SmartSyncException e) {
+        } catch (SyncManager.MobileSyncException e) {
             Assert.assertTrue("Re sync should have failed because sync is already running", e.getMessage().contains("still running"));
         }
 
@@ -568,7 +568,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         // Calling reSync again -- does not expect exception
         try {
             syncManager.reSync(syncId, queue);
-        } catch (SyncManager.SmartSyncException e) {
+        } catch (SyncManager.MobileSyncException e) {
             Assert.fail("Re sync should not have failed");
         }
 
@@ -913,9 +913,9 @@ public class SyncManagerTest extends SyncManagerTestCase {
         // Try to create a sync down with the same name
         try {
             SyncState.createSyncDown(smartStore, new SoqlSyncDownTarget("SELECT Id, Name from Account"), SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED), ACCOUNTS_SOUP, syncName);
-            Assert.fail("SmartSyncException should have been thrown");
+            Assert.fail("MobileSyncException should have been thrown");
         }
-        catch (SyncManager.SmartSyncException e) {
+        catch (SyncManager.MobileSyncException e) {
             Assert.assertTrue(e.getMessage().contains("already a sync with name"));
         }
         // Delete by name
@@ -934,9 +934,9 @@ public class SyncManagerTest extends SyncManagerTestCase {
         // Try to create a sync down with the same name
         try {
             SyncState.createSyncUp(smartStore, new SyncUpTarget(), SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED), ACCOUNTS_SOUP, syncName);
-            Assert.fail("SmartSyncException should have been thrown");
+            Assert.fail("MobileSyncException should have been thrown");
         }
-        catch (SyncManager.SmartSyncException e) {
+        catch (SyncManager.MobileSyncException e) {
             Assert.assertTrue(e.getMessage().contains("already a sync with name"));
         }
         // Delete by name
@@ -1006,7 +1006,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         try {
             syncManager.reSync(syncName, queue);
             Assert.fail("Expected exception");
-        } catch (SyncManager.SmartSyncException e) {
+        } catch (SyncManager.MobileSyncException e) {
             Assert.assertTrue("Wrong exception", e instanceof SyncManager.SyncManagerStoppedException);
         }
 

@@ -103,7 +103,7 @@ public class SyncState {
 				store.alterSoup(SYNCS_SOUP, indexSpecs, true /* reindexing to json1 is quick */);
 			}
 			catch (JSONException e) {
-				throw new SyncManager.SmartSyncException(e);
+				throw new SyncManager.MobileSyncException(e);
 			}
 		}
 		// Syncs soup does not exist
@@ -126,7 +126,7 @@ public class SyncState {
 				sync.save(store);
 			}
 		} catch (JSONException e) {
-			throw new SyncManager.SmartSyncException(e);
+			throw new SyncManager.MobileSyncException(e);
 		}
 	}
 
@@ -176,12 +176,12 @@ public class SyncState {
 		sync.put(SYNC_ERROR, "");
 
 		if (name != null && hasSyncWithName(store, name)) {
-			throw new SyncManager.SmartSyncException("Failed to create sync down: there is already a sync with name:" + name);
+			throw new SyncManager.MobileSyncException("Failed to create sync down: there is already a sync with name:" + name);
 		}
 
     	sync = store.upsert(SYNCS_SOUP, sync);
 		if (sync == null) {
-			throw new SyncManager.SmartSyncException("Failed to create sync down");
+			throw new SyncManager.MobileSyncException("Failed to create sync down");
 		}
 
     	return SyncState.fromJSON(sync);
@@ -216,12 +216,12 @@ public class SyncState {
 		sync.put(SYNC_ERROR, "");
 
 		if (name != null && hasSyncWithName(store, name)) {
-			throw new SyncManager.SmartSyncException("Failed to create sync up: there is already a sync with name:" + name);
+			throw new SyncManager.MobileSyncException("Failed to create sync up: there is already a sync with name:" + name);
 		}
 
     	sync = store.upsert(SYNCS_SOUP, sync);
 		if (sync == null) {
-			throw new SyncManager.SmartSyncException("Failed to create sync up");
+			throw new SyncManager.MobileSyncException("Failed to create sync up");
 		}
     	return SyncState.fromJSON(sync);
 	}
@@ -278,7 +278,7 @@ public class SyncState {
 	 */
 	public static SyncState byName(SmartStore store, String name) throws JSONException {
 		if (name == null) {
-			throw new SyncManager.SmartSyncException("name must not be null");
+			throw new SyncManager.MobileSyncException("name must not be null");
 		}
 
 		long syncId = store.lookupSoupEntryId(SYNCS_SOUP, SYNC_NAME, name);
@@ -305,7 +305,7 @@ public class SyncState {
 	 */
 	public static void deleteSync(SmartStore store, String name) {
 		if (name == null) {
-			throw new SyncManager.SmartSyncException("name must not be null");
+			throw new SyncManager.MobileSyncException("name must not be null");
 		}
 
 		long syncId = store.lookupSoupEntryId(SYNCS_SOUP, SYNC_NAME, name);
@@ -325,7 +325,7 @@ public class SyncState {
 	 */
 	public static boolean hasSyncWithName(SmartStore store, String name) {
 		if (name == null) {
-			throw new SyncManager.SmartSyncException("name must not be null");
+			throw new SyncManager.MobileSyncException("name must not be null");
 		}
 
 		long syncId = store.lookupSoupEntryId(SYNCS_SOUP, SYNC_NAME, name);
@@ -372,7 +372,7 @@ public class SyncState {
 	public void save(SmartStore store) throws JSONException {
 		JSONObject sync = store.update(SYNCS_SOUP, asJSON(), getId());
 		if (sync == null) {
-			throw new SyncManager.SmartSyncException("Failed to save sync state");
+			throw new SyncManager.MobileSyncException("Failed to save sync state");
 		}
 	}
 

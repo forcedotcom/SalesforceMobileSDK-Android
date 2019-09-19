@@ -135,7 +135,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                 sync = syncManager.getSyncStatus(args.getString(SYNC_NAME));
             }
             else {
-                throw new SyncManager.SmartSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
+                throw new SyncManager.MobileSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
             }
             ReactBridgeHelper.invoke(successCallback, sync == null ? null : sync.asJSON());
         } catch (Exception e) {
@@ -162,7 +162,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                 syncManager.deleteSync(args.getString(SYNC_NAME));
             }
             else {
-                throw new SyncManager.SmartSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
+                throw new SyncManager.MobileSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
             }
             successCallback.invoke();
         } catch (Exception e) {
@@ -196,7 +196,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                 syncManager.reSync(args.getString(SYNC_NAME), callback);
             }
             else {
-                throw new SyncManager.SmartSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
+                throw new SyncManager.MobileSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
             }
         } catch (Exception e) {
             SalesforceReactLogger.e(TAG, "reSync call failed", e);

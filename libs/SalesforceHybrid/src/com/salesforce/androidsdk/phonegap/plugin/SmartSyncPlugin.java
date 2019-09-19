@@ -207,7 +207,7 @@ public class SmartSyncPlugin extends ForcePlugin {
             sync = syncManager.getSyncStatus(arg0.getString(SYNC_NAME));
         }
         else {
-            throw new SyncManager.SmartSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
+            throw new SyncManager.MobileSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
         }
 
         // cordova can't return null, so returning {} when sync is not found
@@ -235,7 +235,7 @@ public class SmartSyncPlugin extends ForcePlugin {
             syncManager.deleteSync(arg0.getString(SYNC_NAME));
         }
         else {
-            throw new SyncManager.SmartSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
+            throw new SyncManager.MobileSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
         }
 
         callbackContext.success();
@@ -271,7 +271,7 @@ public class SmartSyncPlugin extends ForcePlugin {
             sync = syncManager.reSync(arg0.getString(SYNC_NAME), callback);
         }
         else {
-            throw new SyncManager.SmartSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
+            throw new SyncManager.MobileSyncException("neither " + SYNC_ID + " nor " + SYNC_NAME + " were specified");
         }
         callbackContext.success(sync.asJSON());
     }

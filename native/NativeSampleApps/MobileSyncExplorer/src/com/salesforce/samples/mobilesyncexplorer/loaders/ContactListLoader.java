@@ -38,7 +38,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
-import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SmartSyncException;
+import com.salesforce.androidsdk.mobilesync.manager.SyncManager.MobileSyncException;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SyncUpdateCallback;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
 import com.salesforce.androidsdk.mobilesync.util.SyncState.Status;
@@ -122,8 +122,8 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 			});
 		} catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while parsing", e);
-		} catch (SmartSyncException e) {
-            Log.e(TAG, "SmartSyncException occurred while attempting to sync up", e);
+		} catch (SyncManager.MobileSyncException e) {
+            Log.e(TAG, "MobileSyncException occurred while attempting to sync up", e);
 		}
 	}
 
@@ -143,8 +143,8 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
             });
         } catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while parsing", e);
-        } catch (SmartSyncException e) {
-            Log.e(TAG, "SmartSyncException occurred while attempting to sync down", e);
+        } catch (MobileSyncException e) {
+            Log.e(TAG, "MobileSyncException occurred while attempting to sync down", e);
 		}
 	}
 

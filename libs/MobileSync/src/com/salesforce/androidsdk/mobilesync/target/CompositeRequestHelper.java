@@ -63,7 +63,7 @@ public class CompositeRequestHelper {
         RestRequest compositeRequest = RestRequest.getCompositeRequest(syncManager.apiVersion, allOrNone, refIdToRequests);
         RestResponse compositeResponse = syncManager.sendSyncWithSmartSyncUserAgent(compositeRequest);
         if (!compositeResponse.isSuccess()) {
-            throw new SyncManager.SmartSyncException("sendCompositeRequest:" + compositeResponse.toString());
+            throw new SyncManager.MobileSyncException("sendCompositeRequest:" + compositeResponse.toString());
         }
         JSONArray responses = compositeResponse.asJSONObject().getJSONArray(COMPOSITE_RESPONSE);
         Map<String, JSONObject> refIdToResponses = new HashMap<>();

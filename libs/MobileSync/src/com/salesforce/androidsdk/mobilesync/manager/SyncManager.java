@@ -548,7 +548,7 @@ public class SyncManager {
         checkAcceptingSyncs();
 
         if (sync.getType() != SyncState.Type.syncDown) {
-            throw new SmartSyncException("Cannot run cleanResyncGhosts:" + sync.getId() + ": wrong type:" + sync.getType());
+            throw new MobileSyncException("Cannot run cleanResyncGhosts:" + sync.getId() + ": wrong type:" + sync.getType());
         }
 
         // Ask target to clean up ghosts
@@ -582,7 +582,7 @@ public class SyncManager {
      */
     private void checkNotRunning(String operation, long syncId) {
         if (activeSyncs.containsKey(syncId)) {
-            throw new SmartSyncException("Cannot run " + operation + " " + syncId + " - sync is still running");
+            throw new MobileSyncException("Cannot run " + operation + " " + syncId + " - sync is still running");
         }
     }
 
@@ -594,7 +594,7 @@ public class SyncManager {
     private SyncState checkExistsById(long syncId) throws JSONException {
         SyncState sync = getSyncStatus(syncId);
         if (sync == null) {
-            throw new SmartSyncException("Sync " + syncId + " does not exist");
+            throw new MobileSyncException("Sync " + syncId + " does not exist");
         }
         return sync;
     }
@@ -607,22 +607,22 @@ public class SyncManager {
     private SyncState checkExistsByName(String syncName) throws JSONException {
         SyncState sync = getSyncStatus(syncName);
         if (sync == null) {
-            throw new SmartSyncException("Sync " + syncName + " does not exist");
+            throw new MobileSyncException("Sync " + syncName + " does not exist");
         }
         return sync;
     }
 
 
     /**
-     * Exception thrown by smart sync manager
+     * Exception thrown by mobile sync manager
      */
-    public static class SmartSyncException extends RuntimeException {
+    public static class MobileSyncException extends RuntimeException {
 
-    	public SmartSyncException(String message) {
+    	public MobileSyncException(String message) {
             super(message);
         }
 
-        public SmartSyncException(Throwable e) {
+        public MobileSyncException(Throwable e) {
             super(e);
         }
 
@@ -632,7 +632,7 @@ public class SyncManager {
     /**
      * Exception thrown when sync manager is stopped
      */
-    public static class SyncManagerStoppedException extends SmartSyncException {
+    public static class SyncManagerStoppedException extends MobileSyncException {
 
         public SyncManagerStoppedException(String message) {
             super(message);

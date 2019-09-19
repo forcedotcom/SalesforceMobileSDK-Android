@@ -156,7 +156,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         }
         catch (JSONException e) {
             // Rest API errors are returned as JSON array
-            throw new SyncManager.SmartSyncException(response.asString());
+            throw new SyncManager.MobileSyncException(response.asString());
         }
         return responseJson;
     }
