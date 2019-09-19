@@ -47,7 +47,7 @@ usage ()
     echo "        SalesforceAnalytics"
     echo "        SalesforceSDK"
     echo "        SmartStore"
-    echo "        SmartSync"
+    echo "        MobileSync"
     echo "        SalesforceHybrid"
     echo "        SalesforceReact"
     echo "        Cordova"
@@ -56,8 +56,8 @@ usage ()
     echo "        ConfiguredApp"
     echo "        RestExplorer"
     echo "        NoteSync"
-    echo "        SmartSyncExplorerHybrid"
-    echo "        SmartSyncExplorer"
+    echo "        MobileSyncExplorerHybrid"
+    echo "        MobileSyncExplorer"
     echo "        SalesforceHybridTest"
     echo "    <test_target> can be "
     echo "        all"
@@ -65,7 +65,7 @@ usage ()
     echo "        SalesforceAnalyticsTest"
     echo "        SalesforceSDKTest"
     echo "        SmartStoreTest"
-    echo "        SmartSyncTest"
+    echo "        MobileSyncTest"
     echo "        SalesforceHybridTest"
     echo "        SalesforceReactTest"
 }
@@ -166,16 +166,16 @@ else
         build_project_if_requested    "SalesforceAnalytics"           :libs:SalesforceAnalytics
         build_project_if_requested    "SalesforceSDK"                 :libs:SalesforceSDK
         build_project_if_requested    "SmartStore"                    :libs:SmartStore
-        build_project_if_requested    "SmartSync"                     :libs:SmartSync
+        build_project_if_requested    "MobileSync"                    :libs:MobileSync
         build_project_if_requested    "SalesforceHybrid"              :libs:SalesforceHybrid
         build_project_if_requested    "SalesforceReact"               :libs:SalesforceReact
         build_project_if_requested    "RestExplorer"                  :native:NativeSampleApps:RestExplorer 
         build_project_if_requested    "AppConfigurator"               :native:NativeSampleApps:AppConfigurator
         build_project_if_requested    "ConfiguredApp"                 :native:NativeSampleApps:ConfiguredApp
-        build_project_if_requested    "SmartSyncExplorer"             :native:NativeSampleApps:SmartSyncExplorer
+        build_project_if_requested    "MobileSyncExplorer"            :native:NativeSampleApps:MobileSyncExplorer
         build_project_if_requested    "AccountEditor"                 :hybrid:HybridSampleApps:AccountEditor
         build_project_if_requested    "NoteSync"                      :hybrid:HybridSampleApps:NoteSync
-        build_project_if_requested    "SmartSyncExplorerHybrid"       :hybrid:HybridSampleApps:SmartSyncExplorerHybrid
+        build_project_if_requested    "MobileSyncExplorerHybrid"      :hybrid:HybridSampleApps:MobileSyncExplorerHybrid
     fi
 
     if ( should_do "test{all}" )
@@ -186,7 +186,7 @@ else
         run_test_project_if_requested "SalesforceAnalyticsTest" :libs:SalesforceAnalytics
         run_test_project_if_requested "SalesforceSDKTest"       :libs:SalesforceSDK
         run_test_project_if_requested "SmartStoreTest"          :libs:SmartStore
-        run_test_project_if_requested "SmartSyncTest"           :libs:SmartSync
+        run_test_project_if_requested "MobileSyncTest"          :libs:MobileSync
         run_test_project_if_requested "SalesforceHybridTest"    :libs:SalesforceHybrid
         run_test_project_if_requested "SalesforceReactTest"     :libs:SalesforceReact
         run_test_project_if_requested "RestExplorerTest"        :native:NativeSampleApps:RestExplorer

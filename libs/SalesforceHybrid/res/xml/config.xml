@@ -32,6 +32,6 @@
     <feature name="com.salesforce.sfaccountmanager"><param name="android-package" value="com.salesforce.androidsdk.phonegap.plugin.SFAccountManagerPlugin"/></feature>
     <feature name="com.salesforce.sdkinfo"><param name="android-package" value="com.salesforce.androidsdk.phonegap.plugin.SDKInfoPlugin"/></feature>
     <feature name="com.salesforce.smartstore"><param name="android-package" value="com.salesforce.androidsdk.phonegap.plugin.SmartStorePlugin"/></feature>
-    <feature name="com.salesforce.smartsync"><param name="android-package" value="com.salesforce.androidsdk.phonegap.plugin.SmartSyncPlugin"/></feature>
+    <feature name="com.salesforce.mobilesync"><param name="android-package" value="com.salesforce.androidsdk.phonegap.plugin.MobileSyncPlugin"/></feature>
     <feature name="com.salesforce.network"><param name="android-package" value="com.salesforce.androidsdk.phonegap.plugin.SalesforceNetworkPlugin"/></feature>
 </widget>

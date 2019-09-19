@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <string name="account_type">com.salesforce.samples.mobilesyncexplorer.login</string>
+	<string name="app_name"><b>MobileSyncExplorer</b></string>
+	<string name="app_package">com.salesforce.samples.mobilesyncexplorer</string>
+	<string name="logout_button">Logout</string>
+	<string name="switch_user_button">Switch User</string>
+    <string name="inspect_db_button">Inspect DB</string>
+	<string name="action_search">Search</string>
+	<string name="action_refresh">Synchronize</string>
+	<string name="action_add">Add Contact</string>
+    <string name="no_results_found">No results found</string>
+    <string name="main_activity_title">Contact List</string>
+    <string name="first_name">First Name: </string>
+    <string name="last_name">Last Name: </string>
+    <string name="title">Title: </string>
+    <string name="phone">Mobile: </string>
+    <string name="email">Email: </string>
+    <string name="department">Department: </string>
+    <string name="home_phone">Home Phone: </string>
+    <string name="logout_title">Log out?</string>
+    <string name="yes">Yes</string>
+    <string name="cancel">No</string>
+    <string name="delete">Delete</string>
+    <string name="undelete">Undelete</string>
+    <string name="delete_title">Are you sure?</string>
+</resources>

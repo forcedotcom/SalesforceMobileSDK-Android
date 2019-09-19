@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.salesforce.androidsdk.mobilesync"
+    android:versionCode="67"
+    android:versionName="8.0.0.dev">
+
+    <application />
+
+</manifest>

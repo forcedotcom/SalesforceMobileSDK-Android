@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <string name="remoteAccessConsumerKey">__CONSUMER_KEY__</string>
+    <string name="oauthRedirectURI">__REDIRECT_URI__</string>
+    <string-array name="oauthScopes">
+        <item>api</item>
+        <item>web</item>
+    </string-array>
+    <string name="androidPushNotificationClientId"></string>
+    <string name="account_type">com.salesforce.androidsdk.mobilesynctest.login</string>
+    <string name="encoding">UTF-8</string>
+</resources>
