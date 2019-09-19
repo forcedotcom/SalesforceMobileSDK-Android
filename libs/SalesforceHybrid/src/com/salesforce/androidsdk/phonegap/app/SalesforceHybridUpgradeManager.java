@@ -26,7 +26,7 @@
  */
 package com.salesforce.androidsdk.phonegap.app;
 
-import com.salesforce.androidsdk.smartsync.app.SmartSyncUpgradeManager;
+import com.salesforce.androidsdk.mobilesync.app.SmartSyncUpgradeManager;
 
 /**
  * This class handles upgrades from one version to another.

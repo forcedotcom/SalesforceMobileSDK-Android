@@ -45,15 +45,15 @@ android {
       assets.srcDirs = ['assets']
     }
 
-    androidTest.setRoot('../test/SmartSyncTest')
+    androidTest.setRoot('../test/MobileSyncTest')
     androidTest {
-      java.srcDirs = ['../test/SmartSyncTest/src']
-      resources.srcDirs = ['../test/SmartSyncTest/src']
-      res.srcDirs = ['../test/SmartSyncTest/res']
+      java.srcDirs = ['../test/MobileSyncTest/src']
+      resources.srcDirs = ['../test/MobileSyncTest/src']
+      res.srcDirs = ['../test/MobileSyncTest/res']
     }
   }
   defaultConfig {
-    testApplicationId "com.salesforce.androidsdk.smartsync.tests"
+    testApplicationId "com.salesforce.androidsdk.mobilesync.tests"
     testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
   }
   packagingOptions {
@@ -115,7 +115,7 @@ bintray {
     configurations = ['archives']
     pkg {
         repo = 'salesforcemobilesdk'
-        name = 'smart-sync'
+        name = 'mobile-sync'
         userOrg = 'forcedotcom'
         licenses = ['Apache-2.0']
         vcsUrl = 'https://github.com/forcedotcom/SalesforceMobileSDK-Android.git'

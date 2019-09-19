@@ -28,12 +28,12 @@ package com.salesforce.androidsdk.phonegap.plugin;
 
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.smartsync.manager.SyncManager;
-import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
-import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
-import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
-import com.salesforce.androidsdk.smartsync.util.SyncOptions;
-import com.salesforce.androidsdk.smartsync.util.SyncState;
+import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
+import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SyncUpdateCallback;
+import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget;
+import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget;
+import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
+import com.salesforce.androidsdk.mobilesync.util.SyncState;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.apache.cordova.CallbackContext;

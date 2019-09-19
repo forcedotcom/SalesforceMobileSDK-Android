@@ -27,7 +27,7 @@
 package com.salesforce.androidsdk.phonegap.plugin;
 
 import com.salesforce.androidsdk.smartstore.config.StoreConfig;
-import com.salesforce.androidsdk.smartsync.config.SyncsConfig;
+import com.salesforce.androidsdk.mobilesync.config.SyncsConfig;
 
 public final class PluginConstants {
 

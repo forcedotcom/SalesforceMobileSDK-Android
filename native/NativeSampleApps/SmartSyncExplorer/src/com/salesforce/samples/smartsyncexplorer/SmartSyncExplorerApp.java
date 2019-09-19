@@ -28,7 +28,7 @@ package com.salesforce.samples.smartsyncexplorer;
 
 import android.app.Application;
 
-import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.mobilesync.app.SmartSyncSDKManager;
 import com.salesforce.samples.smartsyncexplorer.ui.MainActivity;
 
 /**

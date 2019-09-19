@@ -28,9 +28,9 @@ package com.salesforce.samples.smartsyncexplorer.objects;
 
 import android.text.TextUtils;
 
-import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
-import com.salesforce.androidsdk.smartsync.target.SyncTarget;
-import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.mobilesync.model.SalesforceObject;
+import com.salesforce.androidsdk.mobilesync.target.SyncTarget;
+import com.salesforce.androidsdk.mobilesync.util.Constants;
 
 import org.json.JSONObject;
 

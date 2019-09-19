@@ -31,7 +31,7 @@ package com.salesforce.androidsdk.reactnative;
 import androidx.test.filters.SmallTest;
 
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
-import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 
 import org.junit.After;
 import org.junit.Test;

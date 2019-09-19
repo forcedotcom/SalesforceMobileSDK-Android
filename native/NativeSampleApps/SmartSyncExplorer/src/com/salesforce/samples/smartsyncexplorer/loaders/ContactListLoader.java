@@ -36,12 +36,12 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
-import com.salesforce.androidsdk.smartsync.manager.SyncManager;
-import com.salesforce.androidsdk.smartsync.manager.SyncManager.SmartSyncException;
-import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
-import com.salesforce.androidsdk.smartsync.util.SyncState;
-import com.salesforce.androidsdk.smartsync.util.SyncState.Status;
+import com.salesforce.androidsdk.mobilesync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
+import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SmartSyncException;
+import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SyncUpdateCallback;
+import com.salesforce.androidsdk.mobilesync.util.SyncState;
+import com.salesforce.androidsdk.mobilesync.util.SyncState.Status;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 
 import org.json.JSONArray;
