@@ -31,17 +31,17 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
-import com.salesforce.androidsdk.reactnative.util.SalesforceReactLogger;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget;
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
+import com.salesforce.androidsdk.reactnative.util.SalesforceReactLogger;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 
 import org.json.JSONObject;
 
-public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
+public class MobileSyncReactBridge extends ReactContextBaseJavaModule {
 
     // Keys in json from/to javascript
     static final String TARGET = "target";
@@ -49,9 +49,9 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
     static final String OPTIONS = "options";
     static final String SYNC_ID = "syncId";
     static final String SYNC_NAME = "syncName";
-    public static final String TAG = "SmartSyncReactBridge";
+    public static final String TAG = "MobileSyncReactBridge";
 
-    public SmartSyncReactBridge(ReactApplicationContext reactContext) {
+    public MobileSyncReactBridge(ReactApplicationContext reactContext) {
         super(reactContext);
     }
 
@@ -270,4 +270,3 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         return syncManager;
     }
 }
-

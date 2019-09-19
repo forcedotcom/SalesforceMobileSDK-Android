@@ -59,7 +59,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 
 	public static final String CONTACT_SOUP = "contacts";
 	public static final Integer LIMIT = 10000;
-	public static final String LOAD_COMPLETE_INTENT_ACTION = "com.salesforce.samples.smartsyncexplorer.loaders.LIST_LOAD_COMPLETE";
+	public static final String LOAD_COMPLETE_INTENT_ACTION = "com.salesforce.samples.mobilesyncexplorer.loaders.LIST_LOAD_COMPLETE";
 	private static final String TAG = "ContactListLoader";
 	public static final String SYNC_DOWN_NAME = "syncDownContacts";
 	public static final String SYNC_UP_NAME = "syncUpContacts";

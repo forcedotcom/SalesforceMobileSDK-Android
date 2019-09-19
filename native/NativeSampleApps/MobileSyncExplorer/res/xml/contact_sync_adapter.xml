@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <sync-adapter xmlns:android="http://schemas.android.com/apk/res/android"
-    android:contentAuthority="com.salesforce.samples.smartsyncexplorer.sync.contactsyncadapter"
-    android:accountType="com.salesforce.samples.smartsyncexplorer.login"
+    android:contentAuthority="com.salesforce.samples.mobilesyncexplorer.sync.contactsyncadapter"
+    android:accountType="com.salesforce.samples.mobilesyncexplorer.login"
     android:userVisible="true"
     android:supportsUploading="true"
     android:allowParallelSyncs="true"

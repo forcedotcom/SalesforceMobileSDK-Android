@@ -38,7 +38,7 @@ import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.reactnative.bridge.SalesforceNetReactBridge;
 import com.salesforce.androidsdk.reactnative.bridge.SalesforceOauthReactBridge;
 import com.salesforce.androidsdk.reactnative.bridge.SmartStoreReactBridge;
-import com.salesforce.androidsdk.reactnative.bridge.SmartSyncReactBridge;
+import com.salesforce.androidsdk.reactnative.bridge.MobileSyncReactBridge;
 import com.salesforce.androidsdk.reactnative.ui.SalesforceReactActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
@@ -132,12 +132,10 @@ public class SalesforceReactSDKManager extends MobileSyncSDKManager {
 			public List<NativeModule> createNativeModules(
 					ReactApplicationContext reactContext) {
 				List<NativeModule> modules = new ArrayList<>();
-
 				modules.add(new SalesforceOauthReactBridge(reactContext));
 				modules.add(new SalesforceNetReactBridge(reactContext));
 				modules.add(new SmartStoreReactBridge(reactContext));
-				modules.add(new SmartSyncReactBridge(reactContext));
-
+				modules.add(new MobileSyncReactBridge(reactContext));
 				return modules;
 			}
 

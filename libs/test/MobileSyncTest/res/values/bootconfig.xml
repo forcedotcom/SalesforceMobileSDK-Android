@@ -8,6 +8,6 @@
         <item>web</item>
     </string-array>
     <string name="androidPushNotificationClientId"></string>
-    <string name="account_type">com.salesforce.androidsdk.smartsynctest.login</string>
+    <string name="account_type">com.salesforce.androidsdk.mobilesynctest.login</string>
     <string name="encoding">UTF-8</string>
 </resources>

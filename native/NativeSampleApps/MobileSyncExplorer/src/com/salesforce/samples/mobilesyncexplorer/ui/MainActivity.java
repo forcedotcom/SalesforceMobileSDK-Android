@@ -81,7 +81,7 @@ public class MainActivity extends SalesforceListActivity implements
 	public static final String OBJECT_ID_KEY = "object_id";
 	public static final String OBJECT_TITLE_KEY = "object_title";
 	public static final String OBJECT_NAME_KEY = "object_name";
-	private static final String SYNC_CONTENT_AUTHORITY = "com.salesforce.samples.smartsyncexplorer.sync.contactsyncadapter";
+	private static final String SYNC_CONTENT_AUTHORITY = "com.salesforce.samples.mobilesyncexplorer.sync.contactsyncadapter";
 	private static final long SYNC_FREQUENCY_ONE_HOUR = 1 * 60 * 60;
 	private static final int CONTACT_LOADER_ID = 1;
 	private static final int CONTACT_COLORS[] = {

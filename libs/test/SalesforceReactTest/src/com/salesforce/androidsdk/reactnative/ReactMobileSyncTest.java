@@ -24,14 +24,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
 package com.salesforce.androidsdk.reactnative;
-
 
 import androidx.test.filters.SmallTest;
 
-import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 
 import org.junit.After;
 import org.junit.Test;
@@ -41,14 +39,12 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.List;
 
-
 /**
  * Running javascript tests for SmartSync react module.
  */
-
 @RunWith(Parameterized.class)
 @SmallTest
-public class ReactSmartSyncTest extends ReactTestCase {
+public class ReactMobileSyncTest extends ReactTestCase {
 
     @Parameterized.Parameter
     public String testName;
