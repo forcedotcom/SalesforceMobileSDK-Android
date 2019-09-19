@@ -57,7 +57,7 @@ import android.widget.Toast;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
-import com.salesforce.androidsdk.mobilesync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.ui.SalesforceListActivity;
 import com.salesforce.samples.smartsyncexplorer.R;
@@ -157,7 +157,7 @@ public class MainActivity extends SalesforceListActivity implements
 	 * Setup periodic sync
 	 */
 	private void setupPeriodicSync() {
-		Account account = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentAccount();
+		Account account = MobileSyncSDKManager.getInstance().getUserAccountManager().getCurrentAccount();
 		/*
 		 * Enables sync automatically for this provider. To enable almost
 		 * instantaneous sync when records are modified locally, a call needs
@@ -175,7 +175,7 @@ public class MainActivity extends SalesforceListActivity implements
 	 * @param syncDownOnly if true, only a sync down is done, if false a sync up followed by a sync down is done
 	 */
 	private void requestSync(boolean syncDownOnly) {
-		Account account = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentAccount();
+		Account account = MobileSyncSDKManager.getInstance().getUserAccountManager().getCurrentAccount();
 		Bundle extras = new Bundle();
 		extras.putBoolean(ContactSyncAdapter.SYNC_DOWN_ONLY, syncDownOnly);
 		ContentResolver.requestSync(account, SYNC_CONTENT_AUTHORITY, extras);
@@ -247,7 +247,7 @@ public class MainActivity extends SalesforceListActivity implements
 
 	@Override
 	public Loader<List<ContactObject>> onCreateLoader(int id, Bundle args) {
-		contactLoader = new ContactListLoader(this, SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser());
+		contactLoader = new ContactListLoader(this, MobileSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser());
 		return contactLoader;
 	}
 

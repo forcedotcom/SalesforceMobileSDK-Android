@@ -42,9 +42,9 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 /**
  * SDK Manager for all native applications that use SmartSync
  */
-public class SmartSyncSDKManager extends SmartStoreSDKManager {
+public class MobileSyncSDKManager extends SmartStoreSDKManager {
 
-	private static final String TAG = "SmartSyncSDKManager";
+	private static final String TAG = "MobileSyncSDKManager";
 
 	/**
 	 * Protected constructor.
@@ -53,19 +53,19 @@ public class SmartSyncSDKManager extends SmartStoreSDKManager {
 	 * @param mainActivity Activity that should be launched after the login flow.
 	 * @param loginActivity Login activity.
 	 */
-	protected SmartSyncSDKManager(Context context, Class<? extends Activity> mainActivity,
-                                  Class<? extends Activity> loginActivity) {
+	protected MobileSyncSDKManager(Context context, Class<? extends Activity> mainActivity,
+								   Class<? extends Activity> loginActivity) {
 		super(context, mainActivity, loginActivity);
 	}
 
 	private static void init(Context context, Class<? extends Activity> mainActivity,
 							 Class<? extends Activity> loginActivity) {
 		if (INSTANCE == null) {
-    		INSTANCE = new SmartSyncSDKManager(context, mainActivity, loginActivity);
+    		INSTANCE = new MobileSyncSDKManager(context, mainActivity, loginActivity);
     	}
 
 		// Upgrade to the latest version.
-		SmartSyncUpgradeManager.getInstance().upgrade();
+		MobileSyncUpgradeManager.getInstance().upgrade();
 		initInternal(context);
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
 	}
@@ -79,7 +79,7 @@ public class SmartSyncSDKManager extends SmartStoreSDKManager {
      * @param mainActivity Activity that should be launched after the login flow.
      */
     public static void initNative(Context context, Class<? extends Activity> mainActivity) {
-        SmartSyncSDKManager.init(context, mainActivity, LoginActivity.class);
+        MobileSyncSDKManager.init(context, mainActivity, LoginActivity.class);
     }
 
     /**
@@ -93,19 +93,19 @@ public class SmartSyncSDKManager extends SmartStoreSDKManager {
      */
     public static void initNative(Context context, Class<? extends Activity> mainActivity,
                                   Class<? extends Activity> loginActivity) {
-        SmartSyncSDKManager.init(context, mainActivity, loginActivity);
+        MobileSyncSDKManager.init(context, mainActivity, loginActivity);
     }
 
     /**
      * Returns a singleton instance of this class.
      *
-     * @return Singleton instance of SmartSyncSDKManager.
+     * @return Singleton instance of MobileSyncSDKManager.
      */
-    public static SmartSyncSDKManager getInstance() {
+    public static MobileSyncSDKManager getInstance() {
     	if (INSTANCE != null) {
-    		return (SmartSyncSDKManager) INSTANCE;
+    		return (MobileSyncSDKManager) INSTANCE;
     	} else {
-            throw new RuntimeException("Applications need to call SmartSyncSDKManager.init() first.");
+            throw new RuntimeException("Applications need to call MobileSyncSDKManager.init() first.");
     	}
     }
 

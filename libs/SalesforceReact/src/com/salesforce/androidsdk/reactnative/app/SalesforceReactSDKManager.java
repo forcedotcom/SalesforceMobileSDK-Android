@@ -34,12 +34,12 @@ import com.facebook.react.bridge.JavaScriptModule;
 import com.facebook.react.bridge.NativeModule;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.uimanager.ViewManager;
+import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.reactnative.bridge.SalesforceNetReactBridge;
 import com.salesforce.androidsdk.reactnative.bridge.SalesforceOauthReactBridge;
 import com.salesforce.androidsdk.reactnative.bridge.SmartStoreReactBridge;
 import com.salesforce.androidsdk.reactnative.bridge.SmartSyncReactBridge;
 import com.salesforce.androidsdk.reactnative.ui.SalesforceReactActivity;
-import com.salesforce.androidsdk.mobilesync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -52,7 +52,7 @@ import java.util.List;
 /**
  * SDK Manager for all react native applications
  */
-public class SalesforceReactSDKManager extends SmartSyncSDKManager {
+public class SalesforceReactSDKManager extends MobileSyncSDKManager {
 
 	/**
 	 * Protected constructor.

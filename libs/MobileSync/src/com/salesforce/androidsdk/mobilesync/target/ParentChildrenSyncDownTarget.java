@@ -29,7 +29,7 @@ package com.salesforce.androidsdk.mobilesync.target;
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.mobilesync.app.Features;
-import com.salesforce.androidsdk.mobilesync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 import com.salesforce.androidsdk.mobilesync.target.ParentChildrenSyncTargetHelper.RelationshipType;
 import com.salesforce.androidsdk.mobilesync.util.ChildrenInfo;
@@ -93,7 +93,7 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
         this.childrenInfo = childrenInfo;
         this.childrenFieldlist = childrenFieldlist;
         this.relationshipType = relationshipType;
-        SmartSyncSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_RELATED_RECORDS);
+        MobileSyncSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_RELATED_RECORDS);
     }
 
     /**

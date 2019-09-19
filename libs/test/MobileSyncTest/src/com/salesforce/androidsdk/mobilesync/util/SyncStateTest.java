@@ -28,7 +28,7 @@ package com.salesforce.androidsdk.mobilesync.util;
 
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.mobilesync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.target.SoqlSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget;
 import com.salesforce.androidsdk.mobilesync.util.SyncState.MergeMode;
@@ -57,12 +57,12 @@ public class SyncStateTest {
 
     @Before
     public void setUp() {
-        store = SmartSyncSDKManager.getInstance().getGlobalSmartStore(DB_NAME);
+        store = MobileSyncSDKManager.getInstance().getGlobalSmartStore(DB_NAME);
     }
 
     @After
     public void tearDown() {
-        SmartSyncSDKManager.getInstance().removeGlobalSmartStore(DB_NAME);
+        MobileSyncSDKManager.getInstance().removeGlobalSmartStore(DB_NAME);
     }
 
 

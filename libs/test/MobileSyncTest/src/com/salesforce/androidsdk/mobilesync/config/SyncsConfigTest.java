@@ -27,7 +27,7 @@
 
 package com.salesforce.androidsdk.mobilesync.config;
 
-import com.salesforce.androidsdk.mobilesync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManagerTestCase;
 import com.salesforce.androidsdk.mobilesync.target.BatchSyncUpTarget;
 import com.salesforce.androidsdk.mobilesync.target.SoqlSyncDownTarget;
@@ -66,7 +66,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
         Assert.assertFalse(globalSyncManager.hasSyncWithName("globalSync2"));
 
         // Setting up syncs
-        SmartSyncSDKManager.getInstance().setupGlobalSyncsFromDefaultConfig();
+        MobileSyncSDKManager.getInstance().setupGlobalSyncsFromDefaultConfig();
 
         // Checking smartstore
         Assert.assertTrue(globalSyncManager.hasSyncWithName("globalSync1"));
@@ -92,7 +92,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
         Assert.assertFalse(syncManager.hasSyncWithName("userSync2"));
 
         // Setting up syncs
-        SmartSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
+        MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         // Checking smartstore
         Assert.assertTrue(syncManager.hasSyncWithName("userSync1"));

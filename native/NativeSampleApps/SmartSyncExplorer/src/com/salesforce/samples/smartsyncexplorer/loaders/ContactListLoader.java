@@ -33,10 +33,10 @@ import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.mobilesync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SmartSyncException;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SyncUpdateCallback;
@@ -75,7 +75,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	 */
 	public ContactListLoader(Context context, UserAccount account) {
 		super(context);
-		SmartSyncSDKManager sdkManager = SmartSyncSDKManager.getInstance();
+		MobileSyncSDKManager sdkManager = MobileSyncSDKManager.getInstance();
 		smartStore = sdkManager.getSmartStore(account);
 		syncMgr = SyncManager.getInstance(account);
 		// Setup schema if needed

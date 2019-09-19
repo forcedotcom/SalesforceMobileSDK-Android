@@ -38,7 +38,7 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.mobilesync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 
@@ -65,7 +65,7 @@ public class ContactDetailLoader extends AsyncTaskLoader<ContactObject> {
 			String objId) {
 		super(context);
 		objectId = objId;
-		smartStore = SmartSyncSDKManager.getInstance().getSmartStore(account);
+		smartStore = MobileSyncSDKManager.getInstance().getSmartStore(account);
 	}
 
 	@Override

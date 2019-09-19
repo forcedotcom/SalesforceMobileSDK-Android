@@ -32,7 +32,7 @@ import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.mobilesync.app.Features;
-import com.salesforce.androidsdk.mobilesync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.model.Layout;
 import com.salesforce.androidsdk.mobilesync.target.LayoutSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget;
@@ -111,10 +111,10 @@ public class LayoutSyncManager {
     public static synchronized LayoutSyncManager getInstance(UserAccount account, String communityId,
                                                              SmartStore smartStore) {
         if (account == null) {
-            account = SmartSyncSDKManager.getInstance().getUserAccountManager().getCachedCurrentUser();
+            account = MobileSyncSDKManager.getInstance().getUserAccountManager().getCachedCurrentUser();
         }
         if (smartStore == null) {
-            smartStore = SmartSyncSDKManager.getInstance().getSmartStore(account, communityId);
+            smartStore = MobileSyncSDKManager.getInstance().getSmartStore(account, communityId);
         }
         final SyncManager syncManager = SyncManager.getInstance(account, communityId, smartStore);
         final String uniqueId = (account != null ? account.getUserId() : "") + ":"

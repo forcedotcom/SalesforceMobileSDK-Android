@@ -44,9 +44,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.mobilesync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.mobilesync.target.SyncTarget;
 import com.salesforce.androidsdk.ui.SalesforceActivity;
@@ -89,7 +89,7 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 
 	@Override
 	public void onResume(RestClient client) {
-		curAccount = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+		curAccount = MobileSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser();
 		getLoaderManager().initLoader(CONTACT_DETAIL_LOADER_ID, null, this).forceLoad();
 	}
 
@@ -168,7 +168,7 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 	 * Performs the underlying delete or undelete of a record.
 	 */
 	public void deleteOrUndelete() {
-		final SmartStore smartStore = SmartSyncSDKManager.getInstance().getSmartStore(curAccount);
+		final SmartStore smartStore = MobileSyncSDKManager.getInstance().getSmartStore(curAccount);
 		JSONObject contact;
 		try {
 			contact = smartStore.retrieve(ContactListLoader.CONTACT_SOUP,
@@ -240,7 +240,7 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 		final String email = ((EditText) findViewById(R.id.email_field)).getText().toString();
 		final String department = ((EditText) findViewById(R.id.department_field)).getText().toString();
 		final String homePhone = ((EditText) findViewById(R.id.home_phone_field)).getText().toString();
-		final SmartStore smartStore = SmartSyncSDKManager.getInstance().getSmartStore(curAccount);
+		final SmartStore smartStore = MobileSyncSDKManager.getInstance().getSmartStore(curAccount);
 		JSONObject contact;
 		try {
 			boolean isCreate = TextUtils.isEmpty(objectId);

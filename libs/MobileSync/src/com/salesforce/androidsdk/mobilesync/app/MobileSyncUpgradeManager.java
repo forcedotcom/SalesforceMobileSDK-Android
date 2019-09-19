@@ -33,23 +33,23 @@ import com.salesforce.androidsdk.smartstore.app.SmartStoreUpgradeManager;
  *
  * @author bhariharan
  */
-public class SmartSyncUpgradeManager extends SmartStoreUpgradeManager {
+public class MobileSyncUpgradeManager extends SmartStoreUpgradeManager {
 
     /**
      * Key in shared preference file for smart sync version.
      */
     private static final String SMART_SYNC_KEY = "smart_sync_version";
 
-    private static SmartSyncUpgradeManager INSTANCE = null;
+    private static MobileSyncUpgradeManager INSTANCE = null;
 
     /**
      * Returns an instance of this class.
      *
      * @return Instance of this class.
      */
-    public static synchronized SmartSyncUpgradeManager getInstance() {
+    public static synchronized MobileSyncUpgradeManager getInstance() {
         if (INSTANCE == null) {
-            INSTANCE = new SmartSyncUpgradeManager();
+            INSTANCE = new MobileSyncUpgradeManager();
         }
         return INSTANCE;
     }
@@ -65,12 +65,12 @@ public class SmartSyncUpgradeManager extends SmartStoreUpgradeManager {
      */
     protected synchronized void upgradeSObject() {
         String installedVersion = getInstalledSobjectVersion();
-        if (installedVersion.equals(SmartSyncSDKManager.SDK_VERSION)) {
+        if (installedVersion.equals(MobileSyncSDKManager.SDK_VERSION)) {
             return;
         }
 
         // Update shared preference file to reflect the latest version.
-        writeCurVersion(SMART_SYNC_KEY, SmartSyncSDKManager.SDK_VERSION);
+        writeCurVersion(SMART_SYNC_KEY, MobileSyncSDKManager.SDK_VERSION);
     }
 
     /**

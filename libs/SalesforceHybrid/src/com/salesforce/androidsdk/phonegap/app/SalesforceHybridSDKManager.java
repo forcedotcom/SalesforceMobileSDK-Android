@@ -34,7 +34,7 @@ import com.salesforce.androidsdk.phonegap.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.smartstore.config.StoreConfig;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
-import com.salesforce.androidsdk.mobilesync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.config.SyncsConfig;
 import com.salesforce.androidsdk.mobilesync.util.SmartSyncLogger;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -44,7 +44,7 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 /**
  * SDK Manager for all hybrid applications
  */
-public class SalesforceHybridSDKManager extends SmartSyncSDKManager {
+public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
 
     private static final String TAG = "SalesforceHybridSDKManager";
 

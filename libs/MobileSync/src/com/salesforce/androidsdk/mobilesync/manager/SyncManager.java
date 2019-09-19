@@ -35,7 +35,7 @@ import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.mobilesync.app.Features;
-import com.salesforce.androidsdk.mobilesync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.target.AdvancedSyncUpTarget;
 import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget;
@@ -142,10 +142,10 @@ public class SyncManager {
      */
     public static synchronized SyncManager getInstance(UserAccount account, String communityId, SmartStore smartStore) {
         if (account == null) {
-            account = SmartSyncSDKManager.getInstance().getUserAccountManager().getCachedCurrentUser();
+            account = MobileSyncSDKManager.getInstance().getUserAccountManager().getCachedCurrentUser();
         }
         if (smartStore == null) {
-            smartStore = SmartSyncSDKManager.getInstance().getSmartStore(account, communityId);
+            smartStore = MobileSyncSDKManager.getInstance().getSmartStore(account, communityId);
         }
         String uniqueId = (account != null ? account.getUserId() : "") + ":"
                 + smartStore.getDatabase().getPath();

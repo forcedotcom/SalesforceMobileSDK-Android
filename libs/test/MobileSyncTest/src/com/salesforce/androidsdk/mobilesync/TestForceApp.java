@@ -28,10 +28,10 @@ package com.salesforce.androidsdk.mobilesync;
 
 import android.app.Application;
 
-import com.salesforce.androidsdk.mobilesync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 
 /**
- * Test implementation of Application class that uses SmartSyncSDKManager.
+ * Test implementation of Application class that uses MobileSyncSDKManager.
  *
  * @author bhariharan
  */
@@ -39,8 +39,8 @@ public class TestForceApp extends Application {
 
     @Override
     public void onCreate() {
-    	SmartSyncSDKManager.initNative(getApplicationContext(), MainActivity.class);
+    	MobileSyncSDKManager.initNative(getApplicationContext(), MainActivity.class);
     	super.onCreate();
-    	SmartSyncSDKManager.getInstance().setIsTestRun(true);
+    	MobileSyncSDKManager.getInstance().setIsTestRun(true);
     }
 }

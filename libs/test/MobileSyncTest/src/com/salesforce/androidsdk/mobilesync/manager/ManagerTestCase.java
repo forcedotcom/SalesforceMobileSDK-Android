@@ -35,6 +35,7 @@ import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
+import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
@@ -44,7 +45,6 @@ import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.mobilesync.TestForceApp;
-import com.salesforce.androidsdk.mobilesync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.mobilesync.util.SmartSyncLogger;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -79,7 +79,7 @@ abstract public class ManagerTestCase {
 
     protected Context targetContext;
     protected EventsListenerQueue eq;
-    protected SmartSyncSDKManager sdkManager;
+    protected MobileSyncSDKManager sdkManager;
     protected SyncManager syncManager;
     protected SyncManager globalSyncManager;
     protected RestClient restClient;
@@ -96,7 +96,7 @@ abstract public class ManagerTestCase {
         InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
         TestCredentials.init(InstrumentationRegistry.getInstrumentation().getContext());
         eq = new EventsListenerQueue();
-        if (SmartSyncSDKManager.getInstance() == null) {
+        if (MobileSyncSDKManager.getInstance() == null) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
         final LoginOptions loginOptions = new LoginOptions(TestCredentials.LOGIN_URL,
@@ -111,7 +111,7 @@ abstract public class ManagerTestCase {
         		TestCredentials.USER_ID, null, null, null,
                 null, null, null, TestCredentials.PHOTO_URL, null, null);
     	SyncManager.reset();
-    	sdkManager = SmartSyncSDKManager.getInstance();
+    	sdkManager = MobileSyncSDKManager.getInstance();
         smartStore = sdkManager.getSmartStore();
         globalSmartStore = sdkManager.getGlobalSmartStore();
         syncManager = SyncManager.getInstance();
