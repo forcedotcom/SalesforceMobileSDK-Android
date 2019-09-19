@@ -25,10 +25,10 @@ coverage:
         target: auto
         paths: "libs/SmartStore/src/"
         flags: SmartStore
-      SmartSync:
+      MobileSync:
         target: auto
-        paths: "libs/SmartSync/src/"
-        flags: SmartSync
+        paths: "libs/MobileSync/src/"
+        flags: MobileSync
       SalesforceReact:
         target: auto
         paths: "libs/SalesforceReact/src/"

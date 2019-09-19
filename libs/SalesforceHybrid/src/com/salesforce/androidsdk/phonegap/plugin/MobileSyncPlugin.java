@@ -26,14 +26,14 @@
  */
 package com.salesforce.androidsdk.phonegap.plugin;
 
-import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SyncUpdateCallback;
 import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget;
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
+import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.apache.cordova.CallbackContext;
@@ -51,11 +51,11 @@ import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.TARGET;
 /**
  * PhoneGap plugin for smart sync.
  */
-public class SmartSyncPlugin extends ForcePlugin {
+public class MobileSyncPlugin extends ForcePlugin {
 
     // Keys in json from/to javascript
     private static final String SYNC_ID = "syncId";
-    private static final String TAG = "SmartSyncPlugin";
+    private static final String TAG = "MobileSyncPlugin";
 
     // Event
     private static final String SYNC_EVENT_TYPE = "sync";
@@ -94,7 +94,7 @@ public class SmartSyncPlugin extends ForcePlugin {
             public void run() {
 
                 // All smart store actions need to be serialized.
-                synchronized(SmartSyncPlugin.class) {
+                synchronized(MobileSyncPlugin.class) {
                     try {
                         switch(action) {
                           case syncUp:

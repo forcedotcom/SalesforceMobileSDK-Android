@@ -198,7 +198,7 @@ public class SyncUpTarget extends SyncTarget {
      */
     protected String createOnServer(SyncManager syncManager, String objectType, Map<String, Object> fields) throws IOException, JSONException {
         RestRequest request = RestRequest.getRequestForCreate(syncManager.apiVersion, objectType, fields);
-        RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+        RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
 
         if (!response.isSuccess()) {
             lastError = response.asString();
@@ -234,7 +234,7 @@ public class SyncUpTarget extends SyncTarget {
      */
     protected int deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws IOException {
         RestRequest request = RestRequest.getRequestForDelete(syncManager.apiVersion, objectType, objectId);
-        RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+        RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
 
         if (!response.isSuccess()) {
             lastError = response.asString();
@@ -272,7 +272,7 @@ public class SyncUpTarget extends SyncTarget {
      */
     protected int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws IOException {
         RestRequest request = RestRequest.getRequestForUpdate(syncManager.apiVersion, objectType, objectId, fields);
-        RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+        RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
 
         if (!response.isSuccess()) {
             lastError = response.asString();
@@ -291,7 +291,7 @@ public class SyncUpTarget extends SyncTarget {
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
         final String objectId = record.getString(getIdFieldName());
         RestRequest lastModRequest = RestRequest.getRequestForRetrieve(syncManager.apiVersion, objectType, objectId, Arrays.asList(getModificationDateFieldName()));
-        RestResponse lastModResponse = syncManager.sendSyncWithSmartSyncUserAgent(lastModRequest);
+        RestResponse lastModResponse = syncManager.sendSyncWithMobileSyncUserAgent(lastModRequest);
         return new RecordModDate(
                 lastModResponse.isSuccess() ? lastModResponse.asJSONObject().getString(getModificationDateFieldName()) : null,
                 lastModResponse.getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND

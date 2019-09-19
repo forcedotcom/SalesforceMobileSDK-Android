@@ -40,7 +40,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Running javascript tests for SmartSync react module.
+ * Running javascript tests for MobileSync react module.
  */
 @RunWith(Parameterized.class)
 @SmallTest

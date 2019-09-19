@@ -1,7 +1,7 @@
 require 'json'
 require 'set'
 
-libsTopoSorted = ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "SmartSync", "SalesforceHybrid", "SalesforceReact", "RestExplorer"]
+libsTopoSorted = ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "SalesforceReact", "RestExplorer"]
 
 $GITPRAPI = "https://api.github.com/repos/%s/SalesforceMobileSDK-android/pulls/%s/files"
 

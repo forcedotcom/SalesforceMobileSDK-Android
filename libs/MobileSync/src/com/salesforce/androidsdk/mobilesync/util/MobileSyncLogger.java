@@ -39,14 +39,14 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 /**
- * A simple logger util class for the SmartSync library. This class simply acts
- * as a wrapper around SalesforceLogger specific to the SmartSync library.
+ * A simple logger util class for the MobileSync library. This class simply acts
+ * as a wrapper around SalesforceLogger specific to the MobileSync library.
  *
  * @author bhariharan
  */
 public class MobileSyncLogger {
 
-    private static final String COMPONENT_NAME = "SmartSync";
+    private static final String COMPONENT_NAME = "MobileSync";
 
     /**
      * Logs an error log line.

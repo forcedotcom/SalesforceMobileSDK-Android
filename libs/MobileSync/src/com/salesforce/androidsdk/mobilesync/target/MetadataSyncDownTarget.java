@@ -86,7 +86,7 @@ public class MetadataSyncDownTarget extends SyncDownTarget {
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
         final RestRequest request = RestRequest.getRequestForDescribe(syncManager.apiVersion, objectType);
-        final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+        final RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
         final JSONObject responseJSON = response.asJSONObject();
         if (responseJSON != null) {
             responseJSON.put(Constants.ID, objectType);

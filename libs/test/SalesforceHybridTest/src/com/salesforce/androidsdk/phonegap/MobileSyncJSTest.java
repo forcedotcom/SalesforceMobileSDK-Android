@@ -41,9 +41,9 @@ import java.util.List;
  */
 @RunWith(Parameterized.class)
 @LargeTest
-public class SmartSyncJSTest extends JSTestCase {
+public class MobileSyncJSTest extends JSTestCase {
 
-    private static final String JS_SUITE = "SmartSyncTestSuite";
+    private static final String JS_SUITE = "MobileSyncTestSuite";
 
     @Parameterized.Parameter
     public String testName;

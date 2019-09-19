@@ -61,7 +61,7 @@ public class CompositeRequestHelper {
      */
      public static Map<String, JSONObject> sendCompositeRequest(SyncManager syncManager, boolean allOrNone, LinkedHashMap<String, RestRequest> refIdToRequests) throws JSONException, IOException {
         RestRequest compositeRequest = RestRequest.getCompositeRequest(syncManager.apiVersion, allOrNone, refIdToRequests);
-        RestResponse compositeResponse = syncManager.sendSyncWithSmartSyncUserAgent(compositeRequest);
+        RestResponse compositeResponse = syncManager.sendSyncWithMobileSyncUserAgent(compositeRequest);
         if (!compositeResponse.isSuccess()) {
             throw new SyncManager.MobileSyncException("sendCompositeRequest:" + compositeResponse.toString());
         }

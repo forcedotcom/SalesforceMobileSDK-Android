@@ -95,7 +95,7 @@ public class LayoutSyncDownTarget extends SyncDownTarget {
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
         final RestRequest request = RestRequest.getRequestForObjectLayout(syncManager.apiVersion,
                 objectType, layoutType);
-        final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+        final RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
         final JSONObject responseJSON = response.asJSONObject();
         if (responseJSON != null) {
             responseJSON.put(Constants.ID, String.format(ID_FIELD_VALUE, objectType, layoutType));

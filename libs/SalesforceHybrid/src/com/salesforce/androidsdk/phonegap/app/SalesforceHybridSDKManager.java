@@ -42,14 +42,14 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
- * SDK Manager for all hybrid applications
+ * SDK Manager for all hybrid applications.
  */
 public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
 
     private static final String TAG = "SalesforceHybridSDKManager";
 
     /**
-     * Paths to the assets files containing configs for SmartStore/SmartSync in hybrid apps.
+     * Paths to the assets files containing configs for SmartStore/MobileSync in hybrid apps.
      */
     private enum ConfigAssetPath {
 

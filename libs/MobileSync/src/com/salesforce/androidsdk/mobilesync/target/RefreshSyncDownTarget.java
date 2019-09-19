@@ -202,7 +202,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
                 : "");
         final String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(objectType).where(whereClause).build();
         final RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, soql);
-        final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+        final RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
         JSONObject responseJson = response.asJSONObject();
         return responseJson.getJSONArray(Constants.RECORDS);
     }

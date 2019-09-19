@@ -5,7 +5,7 @@ aliases:
       checksum "libs/SalesforceAnalytics/build.gradle" }}-{{
       checksum "libs/SalesforceSDK/build.gradle" }}-{{
       checksum "libs/SmartStore/build.gradle" }}-{{
-      checksum "libs/SmartSync/build.gradle" }}-{{
+      checksum "libs/MobileSync/build.gradle" }}-{{
       checksum "libs/SalesforceHybrid/build.gradle" }}-{{
       checksum "libs/SalesforceReact/build.gradle" }}
 
@@ -60,8 +60,8 @@ aliases:
       "libs/SalesforceSDK/build/outputs/apk/androidTest/debug/SalesforceSDK-debug-androidTest.apk"
   - &smartStore-apk-path
       "libs/SmartStore/build/outputs/apk/androidTest/debug/SmartStore-debug-androidTest.apk"
-  - &smartSync-apk-path
-      "libs/SmartSync/build/outputs/apk/androidTest/debug/SmartSync-debug-androidTest.apk"
+  - &mobileSync-apk-path
+      "libs/MobileSync/build/outputs/apk/androidTest/debug/MobileSync-debug-androidTest.apk"
   - &salesforceHybrid-apk-path
       "libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk"
   - &restExplorer-apk-path
@@ -124,7 +124,7 @@ jobs:
     parameters:
       lib:
         type: enum
-        enum: ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "SmartSync", "SalesforceHybrid", "RestExplorer", "SalesforceReact"]
+        enum: ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "RestExplorer", "SalesforceReact"]
         default: "SalesforceAnalytics"
       test_apk:
         type: string
@@ -165,7 +165,7 @@ jobs:
             ./gradlew libs:SalesforceAnalytics:assembleAndroidTest
             ./gradlew libs:SalesforceSDK:assembleAndroidTest
             ./gradlew libs:SmartStore:assembleAndroidTest
-            ./gradlew libs:SmartSync:assembleAndroidTest
+            ./gradlew libs:MobileSync:assembleAndroidTest
             ./gradlew libs:SalesforceHybrid:assembleAndroidTest
             ./gradlew libs:SalesforceReact:assembleAndroidTest
             ./gradlew native:NativeSampleApps:RestExplorer:assembleAndroidTest
@@ -244,7 +244,7 @@ jobs:
             ./gradlew :libs:SalesforceAnalytics:assemble
             ./gradlew :libs:SalesforceSDK:assemble
             ./gradlew :libs:SmartStore:assemble
-            ./gradlew :libs:SmartSync:assemble
+            ./gradlew :libs:MobileSync:assemble
             ./gradlew :libs:SalesforceHybrid:assemble
             ./gradlew :libs:SalesforceReact:assemble
           when: always
@@ -258,7 +258,7 @@ jobs:
           path: libs/SmartStore/build/outputs/aar/
           destination: libraries
       - store_artifacts:
-          path: libs/SmartSync/build/outputs/aar/
+          path: libs/MobileSync/build/outputs/aar/
           destination: libraries
       - store_artifacts:
           path: libs/SalesforceHybrid/build/outputs/aar/
@@ -273,7 +273,7 @@ jobs:
             ./gradlew :native:NativeSampleApps:AppConfigurator:assemble
             ./gradlew :native:NativeSampleApps:ConfiguredApp:assemble
             ./gradlew :native:NativeSampleApps:RestExplorer:assemble
-            ./gradlew :native:NativeSampleApps:SmartSyncExplorer:assemble
+            ./gradlew :native:NativeSampleApps:MobileSyncExplorer:assemble
       - store_artifacts:
           path: native/NativeSampleApps/AppConfigurator/build/outputs/apk/
           destination: native-apps
@@ -284,7 +284,7 @@ jobs:
           path: native/NativeSampleApps/RestExplorer/build/outputs/apk/
           destination: native-apps
       - store_artifacts:
-          path: native/NativeSampleApps/SmartSyncExplorer/build/outputs/apk/
+          path: native/NativeSampleApps/MobileSyncExplorer/build/outputs/apk/
           destination: native-apps
       - run:
           name: Build Hybrid Sample Apps
@@ -292,7 +292,7 @@ jobs:
           command:  |
             ./gradlew :hybrid:HybridSampleApps:AccountEditor:assemble
             ./gradlew :hybrid:HybridSampleApps:NoteSync:assemble
-            ./gradlew :hybrid:HybridSampleApps:SmartSyncExplorerHybrid:assemble
+            ./gradlew :hybrid:HybridSampleApps:MobileSyncExplorerHybrid:assemble
       - store_artifacts:
           path: hybrid/HybridSampleApps/AccountEditor/build/outputs/apk/
           destination: hybrid-apps
@@ -300,7 +300,7 @@ jobs:
           path: hybrid/HybridSampleApps/NoteSync/build/outputs/apk/
           destination: hybrid-apps
       - store_artifacts:
-          path: hybrid/HybridSampleApps/SmartSyncExplorerHybrid/build/outputs/apk/
+          path: hybrid/HybridSampleApps/MobileSyncExplorerHybrid/build/outputs/apk/
           destination: hybrid-apps
       - save_cache: *save-gradle-cache
 
@@ -346,9 +346,9 @@ workflows:
             branches:
               only:
                 - /pull.*/
-          name: "SmartSync"
-          lib: "SmartSync"
-          test_apk: *smartSync-apk-path
+          name: "MobileSync"
+          lib: "MobileSync"
+          test_apk: *mobilesync-apk-path
           pr: true
       - run-tests:
           filters:
@@ -411,9 +411,9 @@ workflows:
           test_apk: *smartStore-apk-path
           api_level: 28
       - run-tests:
-          name: "SmartSync API 28"
-          lib: "SmartSync"
-          test_apk: *smartSync-apk-path
+          name: "MobileSync API 28"
+          lib: "MobileSync"
+          test_apk: *mobileSync-apk-path
           api_level: 28
       - run-tests:
           name: "SalesforceHybrid API 28"
@@ -454,9 +454,9 @@ workflows:
           test_apk: *smartStore-apk-path
           api_level: 26
       - run-tests:
-          name: "SmartSync API 26"
-          lib: "SmartSync"
-          test_apk: *smartSync-apk-path
+          name: "MobileSync API 26"
+          lib: "MobileSync"
+          test_apk: *mobileSync-apk-path
           api_level: 26
       - run-tests:
           name: "SalesforceHybrid API 26"
@@ -497,9 +497,9 @@ workflows:
           test_apk: *smartStore-apk-path
           api_level: 24
       - run-tests:
-          name: "SmartSync API 24"
-          lib: "SmartSync"
-          test_apk: *smartSync-apk-path
+          name: "MobileSync API 24"
+          lib: "MobileSync"
+          test_apk: *mobileSync-apk-path
           api_level: 24
       - run-tests:
           name: "SalesforceHybrid API 24"
@@ -540,9 +540,9 @@ workflows:
           test_apk: *smartStore-apk-path
           api_level: 27
       - run-tests:
-          name: "SmartSync API 27"
-          lib: "SmartSync"
-          test_apk: *smartSync-apk-path
+          name: "MobileSync API 27"
+          lib: "MobileSync"
+          test_apk: *mobileSync-apk-path
           api_level: 27
       - run-tests:
           name: "SalesforceHybrid API 27"
@@ -583,9 +583,9 @@ workflows:
           test_apk: *smartStore-apk-path
           api_level: 25
       - run-tests:
-          name: "SmartSync API 25"
-          lib: "SmartSync"
-          test_apk: *smartSync-apk-path
+          name: "MobileSync API 25"
+          lib: "MobileSync"
+          test_apk: *mobileSync-apk-path
           api_level: 25
       - run-tests:
           name: "SalesforceHybrid API 25"
@@ -626,9 +626,9 @@ workflows:
           test_apk: *smartStore-apk-path
           api_level: 23
       - run-tests:
-          name: "SmartSync API 23"
-          lib: "SmartSync"
-          test_apk: *smartSync-apk-path
+          name: "MobileSync API 23"
+          lib: "MobileSync"
+          test_apk: *mobileSync-apk-path
           api_level: 23
       - run-tests:
           name: "SalesforceHybrid API 23"
@@ -669,9 +669,9 @@ workflows:
           test_apk: *smartStore-apk-path
           api_level: 29
       - run-tests:
-          name: "SmartSync API 29"
-          lib: "SmartSync"
-          test_apk: *smartSync-apk-path
+          name: "MobileSync API 29"
+          lib: "MobileSync"
+          test_apk: *mobileSync-apk-path
           api_level: 29
       - run-tests:
           name: "SalesforceHybrid API 29"

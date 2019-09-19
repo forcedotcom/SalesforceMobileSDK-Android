@@ -70,7 +70,7 @@ public class SDKInfoPluginTest {
         Assert.assertTrue("sdkinfo plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.sdkinfo"));
         Assert.assertTrue("sfaccountmanager plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.sfaccountmanager"));
         Assert.assertTrue("smartstore plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.smartstore"));
-        Assert.assertTrue("smartsync plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.smartsync"));
+        Assert.assertTrue("mobilesync plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.mobilesync"));
         Assert.assertTrue("testrunner plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.testrunner"));
         Assert.assertEquals("Wrong version", SalesforceSDKManager.SDK_VERSION, sdkInfo.getString("sdkVersion"));
 		JSONObject sdkInfoBootConfig = sdkInfo.getJSONObject("bootConfig");
@@ -106,7 +106,7 @@ public class SDKInfoPluginTest {
         Assert.assertTrue("sdkinfo plugin should have been returned", plugins.contains("com.salesforce.sdkinfo"));
         Assert.assertTrue("sfaccountmanager plugin should have been returned", plugins.contains("com.salesforce.sfaccountmanager"));
         Assert.assertTrue("smartstore plugin should have been returned", plugins.contains("com.salesforce.smartstore"));
-        Assert.assertTrue("smartsync plugin should have been returned", plugins.contains("com.salesforce.smartsync"));
+        Assert.assertTrue("mobilesync plugin should have been returned", plugins.contains("com.salesforce.mobilesync"));
         Assert.assertTrue("testrunner plugin should have been returned", plugins.contains("com.salesforce.testrunner"));
 	}
 

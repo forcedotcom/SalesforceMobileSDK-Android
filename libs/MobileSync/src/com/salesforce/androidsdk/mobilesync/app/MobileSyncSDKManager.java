@@ -40,7 +40,7 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
- * SDK Manager for all native applications that use SmartSync
+ * SDK Manager for all native applications that use MobileSync.
  */
 public class MobileSyncSDKManager extends SmartStoreSDKManager {
 

@@ -485,7 +485,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
         if (!isLocallyCreated(record)) {
             String parentId = record.getString(getIdFieldName());
             RestRequest lastModRequest = getRequestForTimestamps(syncManager.apiVersion, parentId);
-            RestResponse lastModResponse = syncManager.sendSyncWithSmartSyncUserAgent(lastModRequest);
+            RestResponse lastModResponse = syncManager.sendSyncWithMobileSyncUserAgent(lastModRequest);
             JSONArray rows = lastModResponse.isSuccess() ? lastModResponse.asJSONObject().getJSONArray(Constants.RECORDS) : null;
             if (rows != null && rows.length() > 0) {
                 JSONObject row = rows.getJSONObject(0);

@@ -29,11 +29,6 @@ package com.salesforce.androidsdk.mobilesync.manager;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
-import com.salesforce.androidsdk.rest.ApiVersionStrings;
-import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.rest.RestRequest;
-import com.salesforce.androidsdk.rest.RestResponse;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.mobilesync.app.Features;
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.target.AdvancedSyncUpTarget;
@@ -43,6 +38,11 @@ import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
 import com.salesforce.androidsdk.mobilesync.util.SyncState.MergeMode;
+import com.salesforce.androidsdk.rest.ApiVersionStrings;
+import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 
 import org.json.JSONException;
 
@@ -64,7 +64,7 @@ public class SyncManager {
     private static final String TAG = "SyncManager";
 
     // For user agent
-    private static final String SMART_SYNC = "SmartSync";
+    private static final String MOBILE_SYNC = "MobileSync";
 
     // Static member
     private static Map<String, SyncManager> INSTANCES = new HashMap<String, SyncManager>();
@@ -557,14 +557,14 @@ public class SyncManager {
     }
 
     /**
-     * Send request after adding user-agent header that says SmartSync
+     * Send request after adding user-agent header that says MobileSync.
 	 * @param restRequest
 	 * @return
 	 * @throws IOException
 	 */
-	public RestResponse sendSyncWithSmartSyncUserAgent(RestRequest restRequest) throws IOException {
-        MobileSyncLogger.d(TAG, "sendSyncWithSmartSyncUserAgent called with request: ", restRequest);
-        RestResponse restResponse = restClient.sendSync(restRequest, new HttpAccess.UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(SMART_SYNC)));
+	public RestResponse sendSyncWithMobileSyncUserAgent(RestRequest restRequest) throws IOException {
+        MobileSyncLogger.d(TAG, "sendSyncWithMobileSyncUserAgent called with request: ", restRequest);
+        RestResponse restResponse = restClient.sendSync(restRequest, new HttpAccess.UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(MOBILE_SYNC)));
         return restResponse;
     }
 

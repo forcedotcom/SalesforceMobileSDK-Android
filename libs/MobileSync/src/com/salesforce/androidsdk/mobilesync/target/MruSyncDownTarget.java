@@ -91,7 +91,7 @@ public class MruSyncDownTarget extends SyncDownTarget {
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
         final RestRequest request = RestRequest.getRequestForMetadata(syncManager.apiVersion, objectType);
-        final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+        final RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
         final List<String> recentItems = JSONObjectHelper.pluck(response.asJSONObject().getJSONArray(Constants.RECENT_ITEMS), Constants.ID);
 
         // Building SOQL query to get requested at.
@@ -102,7 +102,7 @@ public class MruSyncDownTarget extends SyncDownTarget {
 
     private JSONArray startFetch(SyncManager syncManager, long maxTimeStamp, String queryRun) throws IOException, JSONException {
         final RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, queryRun);
-        final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+        final RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
         final JSONObject responseJson = response.asJSONObject();
         final JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
 
