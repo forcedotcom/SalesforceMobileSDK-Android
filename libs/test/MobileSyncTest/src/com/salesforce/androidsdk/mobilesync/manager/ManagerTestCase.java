@@ -46,7 +46,7 @@ import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.mobilesync.TestForceApp;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
-import com.salesforce.androidsdk.mobilesync.util.SmartSyncLogger;
+import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 import com.salesforce.androidsdk.util.test.TestCredentials;
@@ -118,7 +118,7 @@ abstract public class ManagerTestCase {
         globalSyncManager = SyncManager.getInstance(null, null, globalSmartStore);
         restClient = initRestClient();
         syncManager.setRestClient(restClient);
-        SmartSyncLogger.setLogLevel(SalesforceLogger.Level.DEBUG);
+        MobileSyncLogger.setLogLevel(SalesforceLogger.Level.DEBUG);
     }
 
     public void tearDown() throws Exception {

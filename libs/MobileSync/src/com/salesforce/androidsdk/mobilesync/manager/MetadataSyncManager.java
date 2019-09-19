@@ -37,7 +37,7 @@ import com.salesforce.androidsdk.mobilesync.model.Metadata;
 import com.salesforce.androidsdk.mobilesync.target.MetadataSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
-import com.salesforce.androidsdk.mobilesync.util.SmartSyncLogger;
+import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
 
@@ -213,7 +213,7 @@ public class MetadataSyncManager {
                 }
             });
         } catch (Exception e) {
-            SmartSyncLogger.e(TAG, "Exception occurred while reading metadata from the server", e);
+            MobileSyncLogger.e(TAG, "Exception occurred while reading metadata from the server", e);
         }
     }
 
@@ -233,7 +233,7 @@ public class MetadataSyncManager {
                 onSyncComplete(syncCallback, Metadata.fromJSON(results.optJSONArray(0).optJSONObject(0)));
             }
         } catch (Exception e) {
-            SmartSyncLogger.e(TAG, "Exception occurred while reading metadata from the cache", e);
+            MobileSyncLogger.e(TAG, "Exception occurred while reading metadata from the cache", e);
         }
     }
 

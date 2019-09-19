@@ -28,7 +28,7 @@ package com.salesforce.androidsdk.mobilesync.manager;
 
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget;
-import com.salesforce.androidsdk.mobilesync.util.SmartSyncLogger;
+import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
 
 import org.json.JSONException;
@@ -72,7 +72,7 @@ public class CleanSyncGhostsTask extends SyncTask {
                     attributes.put("syncTarget", target.getClass().getName());
                     EventBuilderHelper.createAndStoreEventSync("cleanResyncGhosts", null, TAG, attributes);
                 } catch (JSONException e) {
-                    SmartSyncLogger.e(TAG, "Unexpected JSON error for cleanResyncGhosts sync tag: " + sync.getId(), e);
+                    MobileSyncLogger.e(TAG, "Unexpected JSON error for cleanResyncGhosts sync tag: " + sync.getId(), e);
                 }
             }
 
@@ -82,7 +82,7 @@ public class CleanSyncGhostsTask extends SyncTask {
 
         } catch (Exception e) {
 
-            SmartSyncLogger.e(TAG, "Exception thrown cleaning resync ghosts", e);
+            MobileSyncLogger.e(TAG, "Exception thrown cleaning resync ghosts", e);
 
             if (cleanSyncCallback != null) {
                 cleanSyncCallback.onError(e);

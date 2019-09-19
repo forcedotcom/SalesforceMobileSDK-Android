@@ -32,7 +32,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget;
-import com.salesforce.androidsdk.mobilesync.util.SmartSyncLogger;
+import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
 import com.salesforce.androidsdk.util.ResourceReaderHelper;
@@ -99,7 +99,7 @@ public class SyncsConfig {
                 syncConfigs = config.getJSONArray(SYNCS);
             }
         } catch (JSONException e) {
-            SmartSyncLogger.e(TAG, "Unhandled exception parsing json", e);
+            MobileSyncLogger.e(TAG, "Unhandled exception parsing json", e);
         }
     }
 
@@ -118,7 +118,7 @@ public class SyncsConfig {
      */
     public void createSyncs(SmartStore store) {
         if (syncConfigs == null) {
-            SmartSyncLogger.d(TAG, "No syncs config available");
+            MobileSyncLogger.d(TAG, "No syncs config available");
             return;
         }
         SyncManager syncManager = SyncManager.getInstance(null, null, store);
@@ -129,13 +129,13 @@ public class SyncsConfig {
 
                 // Leaving sync alone if it already exists
                 if (syncManager.hasSyncWithName(syncName)) {
-                    SmartSyncLogger.d(TAG, "Sync already exists:" + syncName + " - skipping");
+                    MobileSyncLogger.d(TAG, "Sync already exists:" + syncName + " - skipping");
                     continue;
                 }
                 SyncState.Type syncType = SyncState.Type.valueOf(syncConfig.getString(SYNC_TYPE));
                 SyncOptions options = SyncOptions.fromJSON(syncConfig.getJSONObject(OPTIONS));
                 String soupName = syncConfig.getString(SOUP_NAME);
-                SmartSyncLogger.d(TAG, "Creating sync:" + syncName);
+                MobileSyncLogger.d(TAG, "Creating sync:" + syncName);
                 switch (syncType) {
                     case syncDown:
                         syncManager.createSyncDown(SyncDownTarget.fromJSON(syncConfig.getJSONObject(TARGET)), options, soupName, syncName);
@@ -145,7 +145,7 @@ public class SyncsConfig {
                         break;
                 }
             } catch (JSONException e) {
-                SmartSyncLogger.e(TAG, "Unhandled exception parsing json", e);
+                MobileSyncLogger.e(TAG, "Unhandled exception parsing json", e);
             }
         }
     }

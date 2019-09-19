@@ -32,7 +32,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
-import com.salesforce.androidsdk.mobilesync.util.SmartSyncLogger;
+import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
@@ -166,7 +166,7 @@ public abstract class SyncTarget {
      */
     public void cleanAndSaveInLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
         cleanAndSaveInSmartStore(syncManager.getSmartStore(), soupName, record, getIdFieldName(), true);
-        SmartSyncLogger.d(TAG, "cleanAndSaveInLocalStore", record);
+        MobileSyncLogger.d(TAG, "cleanAndSaveInLocalStore", record);
     }
 
     /**
@@ -177,7 +177,7 @@ public abstract class SyncTarget {
      */
     protected void saveInLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
         saveInSmartStore(syncManager.getSmartStore(), soupName, record, getIdFieldName(), true);
-        SmartSyncLogger.d(TAG, "saveInLocalStore", record);
+        MobileSyncLogger.d(TAG, "saveInLocalStore", record);
     }
 
     protected void cleanAndSaveInSmartStore(SmartStore smartStore, String soupName, JSONObject record, String idFieldName, boolean handleTx) throws JSONException {
@@ -315,7 +315,7 @@ public abstract class SyncTarget {
      * @param record
      */
     public void deleteFromLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
-        SmartSyncLogger.d(TAG, "deleteFromLocalStore", record);
+        MobileSyncLogger.d(TAG, "deleteFromLocalStore", record);
         syncManager.getSmartStore().delete(soupName, record.getLong(SmartStore.SOUP_ENTRY_ID));
     }
 }

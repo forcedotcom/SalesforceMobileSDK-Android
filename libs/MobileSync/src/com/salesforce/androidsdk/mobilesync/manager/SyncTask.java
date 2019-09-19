@@ -30,7 +30,7 @@ package com.salesforce.androidsdk.mobilesync.manager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.mobilesync.util.SmartSyncLogger;
+import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
 
 import org.json.JSONException;
@@ -80,14 +80,14 @@ public abstract class SyncTask implements Runnable {
             runSync();
             updateSync(sync, SyncState.Status.DONE, 100, callback);
         } catch (SyncManager.SyncManagerStoppedException se) {
-            SmartSyncLogger.d(TAG, "Sync stopped", se);
+            MobileSyncLogger.d(TAG, "Sync stopped", se);
             // Update status to failed
             updateSync(sync, SyncState.Status.STOPPED, UNCHANGED, callback);
         } catch (RestClient.RefreshTokenRevokedException re) {
-            SmartSyncLogger.e(TAG, "Exception thrown running sync", re);
+            MobileSyncLogger.e(TAG, "Exception thrown running sync", re);
             // Do not do anything - let the logout go through!
         } catch (Exception e) {
-            SmartSyncLogger.e(TAG, "Exception thrown running sync", e);
+            MobileSyncLogger.e(TAG, "Exception thrown running sync", e);
 
             //Set error message to sync state
             sync.setError(e.getMessage());
@@ -130,16 +130,16 @@ public abstract class SyncTask implements Runnable {
                         attributes.put(EventBuilderHelper.START_TIME, sync.getStartTime());
                         attributes.put(EventBuilderHelper.END_TIME, sync.getEndTime());
                     } catch (JSONException e) {
-                        SmartSyncLogger.e(TAG, "Exception thrown while building attributes", e);
+                        MobileSyncLogger.e(TAG, "Exception thrown while building attributes", e);
                     }
                     EventBuilderHelper.createAndStoreEvent(sync.getType().name(), null, TAG, attributes);
                     break;
             }
             sync.save(syncManager.getSmartStore());
         } catch (JSONException e) {
-            SmartSyncLogger.e(TAG, "Unexpected JSON error for sync: " + sync.getId(), e);
+            MobileSyncLogger.e(TAG, "Unexpected JSON error for sync: " + sync.getId(), e);
         } catch (SmartStore.SmartStoreException e) {
-            SmartSyncLogger.e(TAG, "Unexpected smart store error for sync: " + sync.getId(), e);
+            MobileSyncLogger.e(TAG, "Unexpected smart store error for sync: " + sync.getId(), e);
         } finally {
             if (callback != null) {
                 callback.onUpdate(sync);

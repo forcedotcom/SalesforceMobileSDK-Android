@@ -44,7 +44,7 @@ import java.io.StringWriter;
  *
  * @author bhariharan
  */
-public class SmartSyncLogger {
+public class MobileSyncLogger {
 
     private static final String COMPONENT_NAME = "SmartSync";
 

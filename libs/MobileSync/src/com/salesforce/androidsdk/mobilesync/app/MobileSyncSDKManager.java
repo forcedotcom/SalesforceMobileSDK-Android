@@ -34,7 +34,7 @@ import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.mobilesync.R;
 import com.salesforce.androidsdk.mobilesync.config.SyncsConfig;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
-import com.salesforce.androidsdk.mobilesync.util.SmartSyncLogger;
+import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -119,7 +119,7 @@ public class MobileSyncSDKManager extends SmartStoreSDKManager {
 	 * Setup global syncs using config found in res/raw/globalsyncs.json
 	 */
 	public void setupGlobalSyncsFromDefaultConfig() {
-		SmartSyncLogger.d(TAG, "Setting up global syncs using config found in res/raw/globalsyncs.json");
+		MobileSyncLogger.d(TAG, "Setting up global syncs using config found in res/raw/globalsyncs.json");
 		SyncsConfig config = new SyncsConfig(context, R.raw.globalsyncs);
 		if (config.hasSyncs()) {
 			config.createSyncs(getGlobalSmartStore());
@@ -130,7 +130,7 @@ public class MobileSyncSDKManager extends SmartStoreSDKManager {
 	 * Setup user syncs using config found in res/raw/usersyncs.json
 	 */
 	public void setupUserSyncsFromDefaultConfig() {
-		SmartSyncLogger.d(TAG, "Setting up user syncs using config found in res/raw/usersyncs.json");
+		MobileSyncLogger.d(TAG, "Setting up user syncs using config found in res/raw/usersyncs.json");
 		SyncsConfig config = new SyncsConfig(context, R.raw.usersyncs);
 		if (config.hasSyncs()) {
 			config.createSyncs(getSmartStore());

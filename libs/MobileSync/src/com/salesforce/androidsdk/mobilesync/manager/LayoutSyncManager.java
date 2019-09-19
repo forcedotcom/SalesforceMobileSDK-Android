@@ -37,7 +37,7 @@ import com.salesforce.androidsdk.mobilesync.model.Layout;
 import com.salesforce.androidsdk.mobilesync.target.LayoutSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
-import com.salesforce.androidsdk.mobilesync.util.SmartSyncLogger;
+import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
 
@@ -215,7 +215,7 @@ public class LayoutSyncManager {
                 }
             });
         } catch (Exception e) {
-            SmartSyncLogger.e(TAG, "Exception occurred while reading layout data from the server", e);
+            MobileSyncLogger.e(TAG, "Exception occurred while reading layout data from the server", e);
         }
     }
 
@@ -236,7 +236,7 @@ public class LayoutSyncManager {
                         Layout.fromJSON(results.optJSONArray(0).optJSONObject(0)));
             }
         } catch (Exception e) {
-            SmartSyncLogger.e(TAG, "Exception occurred while reading layout data from the cache", e);
+            MobileSyncLogger.e(TAG, "Exception occurred while reading layout data from the cache", e);
         }
     }
 

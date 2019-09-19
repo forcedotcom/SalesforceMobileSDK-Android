@@ -39,7 +39,7 @@ import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.target.AdvancedSyncUpTarget;
 import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget;
-import com.salesforce.androidsdk.mobilesync.util.SmartSyncLogger;
+import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
 import com.salesforce.androidsdk.mobilesync.util.SyncState.MergeMode;
@@ -253,12 +253,12 @@ public class SyncManager {
             if (restartStoppedSyncs) {
                 List<SyncState> stoppedSyncs = SyncState.getSyncsWithStatus(this.smartStore, SyncState.Status.STOPPED);
                 for (SyncState sync : stoppedSyncs) {
-                    SmartSyncLogger.d(TAG, "restarting", sync);
+                    MobileSyncLogger.d(TAG, "restarting", sync);
                     reSync(sync.getId(), callback);
                 }
             }
         } else {
-            SmartSyncLogger.d(TAG, "restart() called on a sync manager that has state:" + state.name());
+            MobileSyncLogger.d(TAG, "restart() called on a sync manager that has state:" + state.name());
         }
     }
 
@@ -374,7 +374,7 @@ public class SyncManager {
      */
     public SyncState syncDown(SyncDownTarget target, SyncOptions options, String soupName, String syncName, SyncUpdateCallback callback) throws JSONException {
         SyncState sync = createSyncDown(target, options, soupName, syncName);
-        SmartSyncLogger.d(TAG, "syncDown called", sync);
+        MobileSyncLogger.d(TAG, "syncDown called", sync);
         runSync(sync, callback);
         return sync;
     }
@@ -425,7 +425,7 @@ public class SyncManager {
             long maxTimeStamp = sync.getMaxTimeStamp();
             sync.setMaxTimeStamp(Math.max(maxTimeStamp - 1, -1L));
         }
-        SmartSyncLogger.d(TAG, "reSync called", sync);
+        MobileSyncLogger.d(TAG, "reSync called", sync);
         runSync(sync, callback);
         return sync;
     }
@@ -483,7 +483,7 @@ public class SyncManager {
      */
     public SyncState syncUp(SyncUpTarget target, SyncOptions options, String soupName, String syncName, SyncUpdateCallback callback) throws JSONException {
         SyncState sync = createSyncUp(target, options, soupName, syncName);
-        SmartSyncLogger.d(TAG, "syncUp called", sync);
+        MobileSyncLogger.d(TAG, "syncUp called", sync);
         runSync(sync, callback);
         return sync;
     }
@@ -552,7 +552,7 @@ public class SyncManager {
         }
 
         // Ask target to clean up ghosts
-        SmartSyncLogger.d(TAG, "cleanResyncGhosts called", sync);
+        MobileSyncLogger.d(TAG, "cleanResyncGhosts called", sync);
         threadPool.execute(new CleanSyncGhostsTask(this, sync, callback));
     }
 
@@ -563,7 +563,7 @@ public class SyncManager {
 	 * @throws IOException
 	 */
 	public RestResponse sendSyncWithSmartSyncUserAgent(RestRequest restRequest) throws IOException {
-        SmartSyncLogger.d(TAG, "sendSyncWithSmartSyncUserAgent called with request: ", restRequest);
+        MobileSyncLogger.d(TAG, "sendSyncWithSmartSyncUserAgent called with request: ", restRequest);
         RestResponse restResponse = restClient.sendSync(restRequest, new HttpAccess.UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(SMART_SYNC)));
         return restResponse;
     }

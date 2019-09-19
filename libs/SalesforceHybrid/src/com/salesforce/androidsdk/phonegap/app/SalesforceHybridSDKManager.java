@@ -36,7 +36,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.config.SyncsConfig;
-import com.salesforce.androidsdk.mobilesync.util.SmartSyncLogger;
+import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -195,7 +195,7 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
      * Setup global syncs using config found in assets/www/globalsyncs.json
      */
     public void setupGlobalSyncsFromDefaultConfig() {
-        SmartSyncLogger.d(TAG, "Setting up global syncs using config found in " + ConfigAssetPath.globalSyncs.path);
+        MobileSyncLogger.d(TAG, "Setting up global syncs using config found in " + ConfigAssetPath.globalSyncs.path);
         setupSyncsFromConfig(getGlobalSmartStore(), ConfigAssetPath.globalSyncs.path);
     }
 
@@ -203,7 +203,7 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
      * Setup user syncs using config found in assets/www/usersyncs.json
      */
     public void setupUserSyncsFromDefaultConfig() {
-        SmartSyncLogger.d(TAG, "Setting up user syncs using config found in " + ConfigAssetPath.userSyncs.path);
+        MobileSyncLogger.d(TAG, "Setting up user syncs using config found in " + ConfigAssetPath.userSyncs.path);
         setupSyncsFromConfig(getSmartStore(), ConfigAssetPath.userSyncs.path);
     }
 

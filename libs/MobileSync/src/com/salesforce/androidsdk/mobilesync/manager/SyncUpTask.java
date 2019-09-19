@@ -29,7 +29,7 @@ package com.salesforce.androidsdk.mobilesync.manager;
 
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget;
-import com.salesforce.androidsdk.mobilesync.util.SmartSyncLogger;
+import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
 
@@ -99,7 +99,7 @@ public class SyncUpTask extends SyncTask {
                 !target.isNewerThanServer(syncManager, record)) {
 
             // Nothing to do for this record
-            SmartSyncLogger.d(TAG, "syncUpOneRecord: Record not synched since client does not have the latest from server", record);
+            MobileSyncLogger.d(TAG, "syncUpOneRecord: Record not synched since client does not have the latest from server", record);
             return false;
         }
         else {
@@ -109,7 +109,7 @@ public class SyncUpTask extends SyncTask {
 
     private void syncUpOneRecord(SyncUpTarget target, String soupName,
                                  JSONObject record, SyncOptions options) throws JSONException, IOException {
-        SmartSyncLogger.d(TAG, "syncUpOneRecord called", record);
+        MobileSyncLogger.d(TAG, "syncUpOneRecord called", record);
 
 
         // Do we need to do a create, update or delete
