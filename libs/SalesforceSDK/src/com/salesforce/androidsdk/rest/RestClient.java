@@ -673,6 +673,7 @@ public class RestClient {
 							request = adjustHostInRequest(request, currentInstanceUrl.host());
 						}
 					}
+                    response.close();
                     response = chain.proceed(request);
                 }
             }
