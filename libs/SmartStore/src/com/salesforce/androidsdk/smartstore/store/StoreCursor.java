@@ -83,7 +83,7 @@ public class StoreCursor {
 	 * NB: json data is never deserialized
 	 * @param smartStore
 	 */
-	public FakeJSONObject getData(SmartStore smartStore) {
+	public FakeJSONObject getDataSerialized(SmartStore smartStore) {
 		StringBuilder resultBuilder = new StringBuilder();
 		resultBuilder.append("{")
 			.append("\"").append(CURSOR_ID).append("\":").append(cursorId).append(", ")
@@ -95,6 +95,21 @@ public class StoreCursor {
 		smartStore.queryAsString(resultBuilder, querySpec, currentPageIndex);
 		resultBuilder.append("}");
 		return new FakeJSONObject(resultBuilder.toString());
+	}
+
+	/**
+	 * Returns cursor meta data (page index, size etc) and data (entries in page) as a JSONObject
+	 * @param smartStore
+	 */
+	public JSONObject getDataDeserialized(SmartStore smartStore) throws JSONException {
+		JSONObject result = new JSONObject();
+		result.put(CURSOR_ID, cursorId);
+		result.put(CURRENT_PAGE_INDEX, currentPageIndex);
+		result.put(PAGE_SIZE, querySpec.pageSize);
+		result.put(TOTAL_ENTRIES, totalEntries);
+		result.put(TOTAL_PAGES, totalPages);
+		result.put(CURRENT_PAGE_ORDERED_ENTRIES, smartStore.query(querySpec, currentPageIndex));
+		return result;
 	}
 }
 
