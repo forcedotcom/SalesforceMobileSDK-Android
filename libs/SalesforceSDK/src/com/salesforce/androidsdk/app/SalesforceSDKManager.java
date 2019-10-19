@@ -28,8 +28,6 @@ package com.salesforce.androidsdk.app;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
-import android.accounts.AccountManagerCallback;
-import android.accounts.AccountManagerFuture;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
@@ -938,14 +936,8 @@ public class SalesforceSDKManager {
     				for (int i = 0; i < accounts.length - 1; i++) {
     					clientMgr.removeAccounts(accounts);
     				}
-    				clientMgr.removeAccountAsync(accounts[accounts.length - 1],
-    						new AccountManagerCallback<Boolean>() {
-
-    	    			@Override
-    	    			public void run(AccountManagerFuture<Boolean> arg0) {
-    	    				notifyLogoutComplete(showLoginPage);
-    	    			}
-    	    		});
+    				clientMgr.removeAccount(accounts[accounts.length - 1]);
+                    notifyLogoutComplete(showLoginPage);
     			} else {
     				notifyLogoutComplete(showLoginPage);
     			}
@@ -953,13 +945,8 @@ public class SalesforceSDKManager {
     			notifyLogoutComplete(showLoginPage);
     		}
     	} else {
-    		clientMgr.removeAccountAsync(account, new AccountManagerCallback<Boolean>() {
-
-    			@Override
-    			public void run(AccountManagerFuture<Boolean> arg0) {
-    				notifyLogoutComplete(showLoginPage);
-    			}
-    		});
+    	    clientMgr.removeAccount(account);
+            notifyLogoutComplete(showLoginPage);
     	}
     	isLoggingOut = false;
 
