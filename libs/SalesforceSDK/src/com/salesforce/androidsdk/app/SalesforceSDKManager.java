@@ -937,17 +937,12 @@ public class SalesforceSDKManager {
     					clientMgr.removeAccounts(accounts);
     				}
     				clientMgr.removeAccount(accounts[accounts.length - 1]);
-                    notifyLogoutComplete(showLoginPage);
-    			} else {
-    				notifyLogoutComplete(showLoginPage);
     			}
-    		} else {
-    			notifyLogoutComplete(showLoginPage);
     		}
     	} else {
     	    clientMgr.removeAccount(account);
-            notifyLogoutComplete(showLoginPage);
     	}
+        notifyLogoutComplete(showLoginPage);
     	isLoggingOut = false;
 
     	// Revokes the existing refresh token.
