@@ -49,10 +49,13 @@ public class PushNotificationDecryptor {
     }
 
     void onPushMessageReceived(RemoteMessage message) {
+        if (!SalesforceSDKManager.getInstance().isPushNotificationEncryptionEnabled()) {
+            passMessageToApp(message);
+        } else {
 
-
-        // TODO: Replace with processed message.
-        passMessageToApp(message);
+            // TODO: Replace with processed message.
+            passMessageToApp(message);
+        }
     }
 
     private void passMessageToApp(RemoteMessage message) {
