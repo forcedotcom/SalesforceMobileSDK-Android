@@ -942,8 +942,8 @@ public class SalesforceSDKManager {
     	} else {
     	    clientMgr.removeAccount(account);
     	}
+        isLoggingOut = false;
         notifyLogoutComplete(showLoginPage);
-    	isLoggingOut = false;
 
     	// Revokes the existing refresh token.
         if (shouldLogoutWhenTokenRevoked() && refreshToken != null) {
