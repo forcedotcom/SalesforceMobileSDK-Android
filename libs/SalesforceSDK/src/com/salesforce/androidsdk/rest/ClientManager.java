@@ -50,7 +50,6 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -284,15 +283,9 @@ public class ClientManager {
      * @param accounts The array of accounts to remove.
      */
     public void removeAccounts(Account[] accounts) {
-        List<AccountManagerFuture<Boolean>> removalFutures = new ArrayList<AccountManagerFuture<Boolean>>();
-        for (Account a : accounts) {
-            removalFutures.add(accountManager.removeAccount(a, null, null));
-        }
-        for (AccountManagerFuture<Boolean> f : removalFutures) {
-            try {
-                f.getResult();
-            } catch (Exception ex) {
-                SalesforceSDKLogger.w(TAG, "Exception removing old account", ex);
+        if (accounts != null && accounts.length > 0) {
+            for (final Account account : accounts) {
+                removeAccount(account);
             }
         }
     }
@@ -412,16 +405,13 @@ public class ClientManager {
     }
 
     /**
-     * Removes the user account from the account manager. This is an
-     * asynchronous process, the callback will be called on completion, if
-     * specified.
+     * Removes the user account from the account manager. This is safe to call from main thread.
      *
      * @param acc Account to be removed.
-     * @param callback The callback to call when the account removal completes.
      */
-    public void removeAccountAsync(Account acc, AccountManagerCallback<Boolean> callback) {
+    public void removeAccount(Account acc) {
         if (acc != null) {
-            accountManager.removeAccount(acc, callback, null);
+            accountManager.removeAccountExplicitly(acc);
         }
     }
 
