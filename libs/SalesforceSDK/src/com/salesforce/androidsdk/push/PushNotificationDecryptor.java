@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-present, salesforce.com, inc.
+ * Copyright (c) 2019-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,27 +26,41 @@
  */
 package com.salesforce.androidsdk.push;
 
-import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
- * This class is called when a message is received or the token changes.
+ * This class processes incoming push notifications and passes them along to the app.
+ * It decrypts the incoming notification if encryption of push notifications is enabled.
  *
  * @author bhariharan
  */
-public class SFDCFcmListenerService extends FirebaseMessagingService {
+public class PushNotificationDecryptor {
+
+    private static PushNotificationDecryptor INSTANCE = new PushNotificationDecryptor();
 
     /**
-     * Called when message is received.
+     * Returns a singleton instance of this class.
      *
-     * @param message Remote message received.
+     * @return Singleton instance of this class.
      */
-    @Override
-    public void onMessageReceived(RemoteMessage message) {
+    static synchronized PushNotificationDecryptor getInstance() {
+        return INSTANCE;
+    }
+
+    void onPushMessageReceived(RemoteMessage message) {
+
+
+        // TODO: Replace with processed message.
+        passMessageToApp(message);
+    }
+
+    private void passMessageToApp(RemoteMessage message) {
         if (message != null && SalesforceSDKManager.hasInstance()) {
-            final PushNotificationDecryptor pnDecryptor = PushNotificationDecryptor.getInstance();
-            pnDecryptor.onPushMessageReceived(message);
+            final PushNotificationInterface pnInterface = SalesforceSDKManager.getInstance().getPushNotificationReceiver();
+            if (pnInterface != null) {
+                pnInterface.onPushMessageReceived(message);
+            }
         }
     }
 }
