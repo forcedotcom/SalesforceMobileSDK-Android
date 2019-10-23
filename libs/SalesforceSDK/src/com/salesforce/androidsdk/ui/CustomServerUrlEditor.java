@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import android.app.Activity;
 import android.app.DialogFragment;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -68,15 +69,10 @@ public class CustomServerUrlEditor extends DialogFragment {
 	@Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
+		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme((Activity) getContext());
         rootView = inflater.inflate(R.layout.sf__custom_server_url, container);
-        final String label = getEditDefaultValue(R.id.sf__picker_custom_label);
-		final String urlValue = getEditDefaultValue(R.id.sf__picker_custom_url);
-		isDefault = urlValue.equals(getString(R.string.sf__server_url_default_custom_url));
-		if (isDefault) {
-			getDialog().setTitle(R.string.sf__server_url_add_title);
-		} else {
-			getDialog().setTitle(R.string.sf__server_url_edit_title);
-		}
+		rootView.getContext().setTheme(isDarkTheme ? R.style.SalesforceSDK_ServerPicker_EditText_Dark : R.style.SalesforceSDK_ServerPicker_EditText);
+		getDialog().setTitle(R.string.sf__server_url_add_title);
 
 		/*
 		 * Sets handlers in the code for the dialog. 

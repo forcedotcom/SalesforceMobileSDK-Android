@@ -29,7 +29,6 @@
 	<string name="sf__auth_login_production">Production</string>
 	<string name="sf__auth_login_sandbox">Sandbox</string>
 	<string name="sf__custom_url_button">Add Connection</string>
-	<string name="sf__server_url_edit_title">Edit Connection</string>
 	<string name="sf__server_url_add_title">Add Connection</string>
 	<string name="sf__server_url_default_custom_label">Name</string>
 	<string name="sf__server_url_default_custom_url">URL</string>
@@ -69,7 +68,7 @@
 
 	<!-- Account switcher screen -->
 	<string name="sf__add_new_account">Add new account</string>
-    <string name="sf__account_selector_text">Select your account to log into</string>
+    <string name="sf__account_selector_text">Select an account to use</string>
 
     <!-- Managed app restrictions -->
     <string name="sf__app_service_hosts_description">Used to specify login hosts for the application.</string>

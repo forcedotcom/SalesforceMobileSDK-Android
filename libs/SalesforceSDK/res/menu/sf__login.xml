@@ -1,7 +1,11 @@
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/sf__login_menu"
+    android:colorBackground="?android:colorBackground"
+    android:textColor="?android:textColor" >
 
     <item android:id="@+id/sf__menu_pick_server"
-        android:title="@string/sf__pick_server" />
+        android:title="@string/sf__pick_server"
+        android:colorBackground="?android:colorBackground" />
 
     <item android:id="@+id/sf__menu_clear_cookies"
         android:title="@string/sf__clear_cookies" />

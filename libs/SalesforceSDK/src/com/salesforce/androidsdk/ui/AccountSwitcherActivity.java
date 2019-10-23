@@ -54,6 +54,7 @@ public class AccountSwitcherActivity extends Activity {
 	public void onCreate(Bundle savedInstance) {
 		super.onCreate(savedInstance);
 		userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
+		setTheme(SalesforceSDKManager.getInstance().isDarkTheme(this) ? R.style.SalesforceSDK_Dark_AccountSwitcher_Dark_List_Dark : R.style.SalesforceSDK_AccountSwitcher_List);
 		setContentView(R.layout.sf__account_switcher);
 	}
 
@@ -114,7 +115,11 @@ public class AccountSwitcherActivity extends Activity {
     }
 
 	private void buildAccountList() {
+		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(this);
+		setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark_AccountSwitcher_Dark_List_Dark : R.style.SalesforceSDK_AccountSwitcher_List);
+
 	    final ListView listView = findViewById(R.id.sf__accounts_group);
+		listView.setBackgroundColor(getColor(isDarkTheme ? R.color.sf__passcode_bg_dark : R.color.sf__passcode_bg));
 	    final List<UserAccount> accounts = getAccounts();
 		if (accounts == null || accounts.size() == 0) {
 			return;

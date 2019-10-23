@@ -117,6 +117,8 @@ public class MainActivity extends SalesforceListActivity implements
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(this);
+		setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark_ActionBarTheme_Dark : R.style.SalesforceSDK_ActionBarTheme);
 		setContentView(R.layout.main);
 		getActionBar().setTitle(R.string.main_activity_title);
 		listAdapter = new ContactListAdapter(this, R.layout.list_item);
@@ -375,7 +377,7 @@ public class MainActivity extends SalesforceListActivity implements
 			        if (syncImage != null && sObject.isLocallyModified()) {
 			        	syncImage.setImageResource(R.drawable.sync_local);
 			        } else {
-			        	syncImage.setImageResource(R.drawable.sync_success);
+			        	syncImage.setImageResource(R.drawable.sync_save);
 			        }
 				}
 			}

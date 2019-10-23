@@ -44,6 +44,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -74,9 +75,9 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(this);
+		setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark : R.style.SalesforceSDK);
 		setContentView(R.layout.detail);
-		getActionBar().setHomeButtonEnabled(true);
-		getActionBar().setIcon(R.drawable.ic_action_back);
 		final Intent launchIntent = getIntent();
 		if (launchIntent != null) {
 			objectId = launchIntent.getStringExtra(MainActivity.OBJECT_ID_KEY);

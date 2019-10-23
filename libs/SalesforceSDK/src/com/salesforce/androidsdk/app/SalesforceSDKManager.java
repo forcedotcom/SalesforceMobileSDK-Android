@@ -42,6 +42,7 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -164,6 +165,8 @@ public class SalesforceSDKManager {
     private boolean browserLoginEnabled;
     private String idpAppURIScheme;
     private boolean idpAppLoginFlowActive;
+    private boolean darkThemeDisabled;
+    private boolean forceDarkTheme;
 
     /**
      * PasscodeManager object lock.
@@ -1411,5 +1414,34 @@ public class SalesforceSDKManager {
             SalesforceSDKLogger.e(TAG, "getBuildConfigValue failed", e);
         }
         return BuildConfig.DEBUG; // we don't want to return a null value; return this value at minimum
+    }
+
+    /**
+     * Returns if dark theme should be displayed.  This takes the Android system state and the options
+     * to disable for force dark theme into account.
+     * @param activity     Activity used to check the system dark theme state.
+     * @return             True if dark theme should be displayed, toherwise false.
+     */
+    public boolean isDarkTheme(Activity activity) {
+        int currentNightMode = activity.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        boolean systemDarkTheme = currentNightMode == Configuration.UI_MODE_NIGHT_YES;
+
+        return !darkThemeDisabled && (systemDarkTheme || forceDarkTheme);
+    }
+
+    /**
+     * Disables dark theme for the SDK.
+     * @param disabled     True if dark theme should be disabled.
+     */
+    public void disableDarkTheme(boolean disabled) {
+        darkThemeDisabled = disabled;
+    }
+
+    /**
+     * Forces dark theme for all supported API levels
+     * @param forced     True if dark theme should be force enabled.
+     */
+    public void forceDarkTheme(boolean forced) {
+        forceDarkTheme = forced;
     }
 }
