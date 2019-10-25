@@ -91,7 +91,7 @@
             android:layout_height="80dp"
             android:layout_marginTop="64.5dp"
             android:layout_gravity="center"
-            android:background="@drawable/sf__fingerprint_icon" />
+            android:background="@drawable/sf__fingerprint_icon_layout" />
 
         <LinearLayout
             style="@style/SalesforceSDK.Passcode.Box"
@@ -170,7 +170,7 @@
                     android:layout_marginEnd="10dp"
                     android:background="@drawable/sf__passcode_secondary_color_button"
                     android:text="@string/sf__biometric_not_now_button"
-                    android:textColor="?android:attr/colorPrimary"
+                    android:textColor="?attr/sfNegativeButtonTextColor"
                     android:textAllCaps="false"
                     android:textSize="14sp"
                     android:textStyle="bold"

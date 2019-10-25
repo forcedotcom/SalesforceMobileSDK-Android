@@ -29,8 +29,7 @@ package com.salesforce.androidsdk.ui;
 import android.app.Activity;
 import android.app.FragmentManager;
 import android.content.Intent;
-import android.graphics.Color;
-import android.graphics.PorterDuff;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -117,7 +116,18 @@ public class ServerPickerActivity extends Activity implements
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
         boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(this);
-        setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark_ServerPicker_Dark_List_Dark : R.style.SalesforceSDK_ServerPicker_List);
+        setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark : R.style.SalesforceSDK);
+        // This makes the navigation bar visible on light themes.
+        if (!isDarkTheme) {
+            // This covers the case where OS dark theme is true, but app has disabled.
+            // TODO: Remove SalesforceSDK_AccessibleNav style when min API becomes 26.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                View view = getWindow().getDecorView();
+                view.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+            } else {
+                setTheme(R.style.SalesforceSDK_AccessibleNav);
+            }
+        }
         loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
         setContentView(R.layout.sf__server_picker);
 
@@ -200,8 +210,7 @@ public class ServerPickerActivity extends Activity implements
     	final SalesforceServerRadioButton rb = new SalesforceServerRadioButton(this,
     			server.name, server.url, server.isCustom);
         boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(this);
-        int textColor = getResources().getColor(isDarkTheme ? R.color.sf__passcode_text_color_dark : R.color.sf__passcode_text_color);
-    	rb.setTextColor(textColor);
+        int textColor = getResources().getColor(isDarkTheme ? R.color.sf__text_color_dark : R.color.sf__text_color);
     	rb.setTextColor(textColor);
     	radioGroup.addView(rb);
     }

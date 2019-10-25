@@ -3,20 +3,20 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
-	xmlns:app="http://schemas.android.com/apk/res-auto"
-	android:background="?android:colorBackground">
+	android:background="?android:colorBackground" >
 
 	<ScrollView android:id="@+id/sf__server_picker_scroll_view"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
+		android:layout_marginStart="10dp"
+		android:layout_marginEnd="10dp"
+		android:layout_marginTop="10dp"
 		android:background="?android:colorBackground" >
 
 		<RadioGroup android:id="@+id/sf__server_list_group"
 			android:orientation="vertical"
 			android:layout_height="wrap_content"
-			android:layout_width="match_parent"
-			android:colorBackground="?android:colorBackground"
-			app:buttonTint="?android:textColor"/>
+			android:layout_width="match_parent" />
 
 	</ScrollView>
 
@@ -34,6 +34,6 @@
 		android:textColor="?attr/sfPasscodeColorSecondary"
 		android:textAllCaps="false"
 		android:textSize="14sp"
-		android:textStyle="bold"/>
+		android:textStyle="bold" />
 
 </RelativeLayout>

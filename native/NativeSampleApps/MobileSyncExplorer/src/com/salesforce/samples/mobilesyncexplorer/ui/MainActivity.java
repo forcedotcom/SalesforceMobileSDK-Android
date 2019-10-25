@@ -36,6 +36,7 @@ import android.content.IntentFilter;
 import android.content.Loader;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -118,7 +119,19 @@ public class MainActivity extends SalesforceListActivity implements
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(this);
-		setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark_ActionBarTheme_Dark : R.style.SalesforceSDK_ActionBarTheme);
+		setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark : R.style.SalesforceSDK);
+		// This makes the navigation bar visible on light themes.
+		if (!isDarkTheme) {
+			// This covers the case where OS dark theme is true, but app has disabled.
+			// TODO: Remove SalesforceSDK_AccessibleNav style when min API becomes 26.
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+				View view = getWindow().getDecorView();
+				view.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+			} else {
+				setTheme(com.salesforce.androidsdk.R.style.SalesforceSDK_AccessibleNav);
+			}
+		}
+
 		setContentView(R.layout.main);
 		getActionBar().setTitle(R.string.main_activity_title);
 		listAdapter = new ContactListAdapter(this, R.layout.list_item);

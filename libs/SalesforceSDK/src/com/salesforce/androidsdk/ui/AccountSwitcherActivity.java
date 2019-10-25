@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.ui;
 
 import android.app.Activity;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
@@ -54,7 +55,19 @@ public class AccountSwitcherActivity extends Activity {
 	public void onCreate(Bundle savedInstance) {
 		super.onCreate(savedInstance);
 		userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
-		setTheme(SalesforceSDKManager.getInstance().isDarkTheme(this) ? R.style.SalesforceSDK_Dark_AccountSwitcher_Dark_List_Dark : R.style.SalesforceSDK_AccountSwitcher_List);
+		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(this);
+		setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark : R.style.SalesforceSDK);
+		// This makes the navigation bar visible on light themes.
+		if (!isDarkTheme) {
+			// This covers the case where OS dark theme is true, but app has disabled.
+			// TODO: Remove SalesforceSDK_AccessibleNav style when min API becomes 26.
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+				View view = getWindow().getDecorView();
+				view.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+			} else {
+				setTheme(R.style.SalesforceSDK_AccessibleNav);
+			}
+		}
 		setContentView(R.layout.sf__account_switcher);
 	}
 
@@ -116,10 +129,9 @@ public class AccountSwitcherActivity extends Activity {
 
 	private void buildAccountList() {
 		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(this);
-		setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark_AccountSwitcher_Dark_List_Dark : R.style.SalesforceSDK_AccountSwitcher_List);
+		setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark : R.style.SalesforceSDK);
 
 	    final ListView listView = findViewById(R.id.sf__accounts_group);
-		listView.setBackgroundColor(getColor(isDarkTheme ? R.color.sf__passcode_bg_dark : R.color.sf__passcode_bg));
 	    final List<UserAccount> accounts = getAccounts();
 		if (accounts == null || accounts.size() == 0) {
 			return;

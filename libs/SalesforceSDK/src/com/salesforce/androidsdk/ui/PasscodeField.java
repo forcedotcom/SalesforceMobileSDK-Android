@@ -123,7 +123,7 @@ public class PasscodeField extends EditText {
         Paint openCirclePaint = new Paint();
         Paint typedCirclePaint = new Paint();
 
-        int circleColor = getResources().getColor(R.color.sf__passcode_primary_color);
+        int circleColor = getResources().getColor(R.color.sf__primary_color);
         openCirclePaint.setColor(circleColor);
         openCirclePaint.setStyle(Paint.Style.STROKE);
         openCirclePaint.setStrokeWidth(lineWidth);

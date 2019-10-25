@@ -34,6 +34,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:showDividers="middle"
+        android:dividerHeight="@dimen/sf__list_divider_height"
         android:divider="@android:color/transparent"
         android:background="?android:colorBackground"
         android:textColor="?android:textColor" />

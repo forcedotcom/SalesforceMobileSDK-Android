@@ -4,5 +4,8 @@
         <attr name="sfPasscodeLayoutBackground" format="color"/>
         <attr name="sfPasscodeBoarderColor" format="color"/>
         <attr name="sfPasscodeColorSecondary" format="color"/>
+        <attr name="sfFingerprintIcon" format="integer"/>
+        <attr name="sfNegativeButtonTextColor" format="color"/>
+        <attr name="sfNegativeButtonBoarderColor" format="color"/>
     </declare-styleable>
 </resources>

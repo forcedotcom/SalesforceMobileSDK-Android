@@ -11,7 +11,7 @@
         android:layout_height="wrap_content"
         android:layout_width="match_parent"
         android:scrollbarStyle="insideInset"
-        android:divider="@color/sf__passcode_border_color"/>
+        android:divider="@color/sf__border_color"/>
 
     <TextView android:id="@android:id/empty"
         android:layout_width="match_parent"

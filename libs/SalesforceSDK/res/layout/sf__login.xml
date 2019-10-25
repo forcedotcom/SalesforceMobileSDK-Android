@@ -19,7 +19,6 @@
         android:textStyle="bold"
         android:layout_alignParentBottom="true"
         android:gravity="center"
-        android:background="@drawable/sf__header_bg"
         android:visibility="gone"
         android:onClick="onIDPLoginClick" />
 </RelativeLayout>

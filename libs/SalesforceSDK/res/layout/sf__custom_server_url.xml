@@ -15,26 +15,38 @@
 	android:filterTouchesWhenObscured="true"
 	android:focusable="true"
 	android:focusableInTouchMode="true"
-	android:background="?attr/sfPasscodeLayoutBackground"
-	android:textColor="?android:attr/textColorPrimary" >
+	android:background="?attr/sfPasscodeLayoutBackground">
 
 	<EditText android:id="@+id/sf__picker_custom_label"
-	    style="@style/SalesforceSDK.ServerPicker.EditText"
+		android:layout_marginTop="10dp"
+		android:layout_marginStart="10dp"
+		android:layout_marginEnd="10dp"
+		android:layout_marginBottom="10dp"
+		android:inputType="text"
 		android:hint="@string/sf__server_url_default_custom_label"
 		android:textColorHint="?android:textColorHint"
 		android:imeOptions="actionNext"
 		android:textColor="?android:attr/textColorPrimary"
-		android:background="?attr/sfPasscodeLayoutBackground" />
+		android:layout_height="wrap_content"
+		android:layout_width="match_parent"/>
 
 	<EditText android:id="@+id/sf__picker_custom_url"
-	    style="@style/SalesforceSDK.ServerPicker.EditText"
+		android:layout_marginTop="10dp"
+		android:layout_marginStart="10dp"
+		android:layout_marginEnd="10dp"
+		android:layout_marginBottom="10dp"
+		android:inputType="textUri"
 		android:hint="@string/sf__server_url_default_custom_url"
 		android:textColorHint="?android:textColorHint"
 		android:imeOptions="actionDone"
 		android:textColor="?android:attr/textColorPrimary"
-		android:background="?attr/sfPasscodeLayoutBackground" />
+		android:layout_height="wrap_content"
+		android:layout_width="match_parent"	/>
 
-	<LinearLayout style="@style/SalesforceSDK.ServerPicker.ButtonContainer"
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:padding="@dimen/sf__custom_url_layout_padding"
 		android:orientation="horizontal"
 		android:layout_marginTop="20dp" >
 
@@ -44,8 +56,10 @@
 			android:layout_weight="1"
 			android:layout_height="47dp"
 			android:layout_gravity="center"
+			android:layout_marginTop="10dp"
 			android:layout_marginStart="20dp"
 			android:layout_marginEnd="10dp"
+			android:layout_marginBottom="10dp"
 			android:background="@drawable/sf__passcode_secondary_color_button"
 			android:textColor="?android:attr/colorPrimary"
 			android:textAllCaps="false"
@@ -59,8 +73,10 @@
 			android:layout_weight="1"
 			android:layout_height="47dp"
 			android:layout_gravity="center"
+			android:layout_marginTop="10dp"
 			android:layout_marginStart="10dp"
 			android:layout_marginEnd="20dp"
+			android:layout_marginBottom="10dp"
 			android:background="@drawable/sf__passcode_primary_color_button"
 			android:textColor="?attr/sfPasscodeColorSecondary"
 			android:textAllCaps="false"
