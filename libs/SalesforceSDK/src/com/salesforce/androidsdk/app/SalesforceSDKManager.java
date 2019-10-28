@@ -1416,7 +1416,7 @@ public class SalesforceSDKManager {
      * Disables dark theme for the SDK.
      * @param disabled     True if dark theme should be disabled.
      */
-    public void disableDarkTheme(boolean disabled) {
+    public synchronized void disableDarkTheme(boolean disabled) {
         darkThemeDisabled = disabled;
     }
 
@@ -1424,7 +1424,7 @@ public class SalesforceSDKManager {
      * Forces dark theme for all supported API levels
      * @param forced     True if dark theme should be force enabled.
      */
-    public void forceDarkTheme(boolean forced) {
+    public synchronized void forceDarkTheme(boolean forced) {
         forceDarkTheme = forced;
     }
 
