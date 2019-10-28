@@ -376,7 +376,7 @@ public class MainActivity extends SalesforceListActivity implements
 			        	objImage.setText(initials);
 			        	setBubbleColor(objImage, firstName);
 			        }
-			        final ImageView syncImage = (ImageView) convertView.findViewById(R.id.sync_status_view);
+			        final ImageView syncImage = convertView.findViewById(R.id.sync_status_view);
 			        if (syncImage != null && sObject.isLocallyModified()) {
 			        	syncImage.setImageResource(R.drawable.sync_local);
 			        } else {
