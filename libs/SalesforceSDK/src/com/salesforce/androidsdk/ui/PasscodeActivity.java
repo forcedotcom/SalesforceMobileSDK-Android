@@ -35,7 +35,6 @@ import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.fingerprint.FingerprintManager;
-import android.os.Build;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
@@ -100,16 +99,7 @@ public class PasscodeActivity extends Activity {
         setTheme(isDarkTheme ? R.style.SalesforceSDK_Passcode_Dark : R.style.SalesforceSDK_Passcode);
 
         // This makes the navigation bar visible on light themes.
-        if (!isDarkTheme) {
-            // This covers the case where OS dark theme is true, but app has disabled.
-            // TODO: Remove SalesforceSDK_Passcode_AccessibleNav style when min API becomes 26.
-            if (Build.VERSION.SDK_INT >= VERSION_CODES.O) {
-                View view = getWindow().getDecorView();
-                view.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
-            } else {
-                setTheme(R.style.SalesforceSDK_Passcode_AccessibleNav);
-            }
-        }
+        SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
 
         // Protect against screenshots.
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,

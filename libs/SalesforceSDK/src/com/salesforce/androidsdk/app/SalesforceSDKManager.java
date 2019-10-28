@@ -46,6 +46,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.provider.Settings;
 import android.text.TextUtils;
+import android.view.View;
 import android.webkit.CookieManager;
 
 import com.salesforce.androidsdk.BuildConfig;
@@ -1402,7 +1403,7 @@ public class SalesforceSDKManager {
      * Returns if dark theme should be displayed.  This takes the Android system state and the options
      * to disable for force dark theme into account.
      * @param activity     Activity used to check the system dark theme state.
-     * @return             True if dark theme should be displayed, toherwise false.
+     * @return             True if dark theme should be displayed, otherwise false.
      */
     public boolean isDarkTheme(Activity activity) {
         int currentNightMode = activity.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
@@ -1425,5 +1426,22 @@ public class SalesforceSDKManager {
      */
     public void forceDarkTheme(boolean forced) {
         forceDarkTheme = forced;
+    }
+
+    /**
+     * Makes the status and navigation bars visible regardless of style and OS dark theme states.
+     *
+     * @param activity     Activity used to set style attributes.
+     */
+    public void setViewNavigationVisibility(Activity activity) {
+        if (!isDarkTheme(activity) || activity.getClass().getName().equals(getLoginActivityClass().getName())) {
+            // This covers the case where OS dark theme is true, but app has disabled.
+            // TODO: Remove SalesforceSDK_AccessibleNav style when min API becomes 26.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+            } else {
+                activity.setTheme(R.style.SalesforceSDK_AccessibleNav);
+            }
+        }
     }
 }

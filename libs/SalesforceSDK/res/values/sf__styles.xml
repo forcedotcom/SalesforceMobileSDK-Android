@@ -6,13 +6,12 @@
         <item name="android:actionBarStyle">@style/SalesforceSDKActionBar</item>
         <item name="android:colorPrimary">@color/sf__primary_color</item>
         <item name="android:colorPrimaryDark">@color/sf__primary_color</item>
-        <item name="sfPasscodeColorSecondary">@color/sf__secondary_color</item>-->
-        <item name="sfPasscodeLayoutBackground">@color/sf__layout_background</item>
+        <item name="sfColorSecondary">@color/sf__secondary_color</item>
+        <item name="sfLayoutBackground">@color/sf__layout_background</item>
         <item name="android:colorBackground">@color/sf__background</item>
         <item name="android:textColor">@color/sf__text_color</item>
         <item name="android:textColorPrimary">@color/sf__text_color</item>
         <item name="android:textColorHint">@color/sf__hint_color</item>
-        <item name="sfPasscodeBoarderColor">@color/sf__border_color</item>
         <item name="android:itemBackground">@color/sf__background</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:navigationBarColor">@color/sf__background</item>
@@ -26,13 +25,12 @@
         <item name="android:actionBarStyle">@style/SalesforceSDKActionBar_Dark</item>
         <item name="android:colorPrimary">@color/sf__primary_color</item>
         <item name="android:colorPrimaryDark">@color/sf__primary_color</item>
-        <item name="sfPasscodeColorSecondary">@color/sf__secondary_color_dark</item>
-        <item name="sfPasscodeLayoutBackground">@color/sf__layout_background_dark</item>
+        <item name="sfColorSecondary">@color/sf__secondary_color_dark</item>
+        <item name="sfLayoutBackground">@color/sf__layout_background_dark</item>
         <item name="android:colorBackground">@color/sf__background_dark</item>
         <item name="android:textColor">@color/sf__text_color_dark</item>
         <item name="android:textColorPrimary">@color/sf__text_color_dark</item>
         <item name="android:textColorHint">@color/sf__hint_color_dark</item>
-        <item name="sfPasscodeBoarderColor">@color/sf__border_color_dark</item>
         <item name="android:itemBackground">@color/sf__background_dark</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:navigationBarColor">@color/sf__background_dark</item>
@@ -87,10 +85,10 @@
     </style>
 
     <style name="SalesforceSDK.Passcode" parent="@style/Theme.Design.NoActionBar">
-        <item name="sfPasscodeBoarderColor">@color/sf__border_color</item>
+        <item name="sfPasscodeBorderColor">@color/sf__border_color</item>
         <item name="android:colorPrimary">@color/sf__primary_color</item>
-        <item name="sfPasscodeColorSecondary">@color/sf__secondary_color</item>
-        <item name="sfPasscodeLayoutBackground">@color/sf__layout_background</item>
+        <item name="sfColorSecondary">@color/sf__secondary_color</item>
+        <item name="sfLayoutBackground">@color/sf__layout_background</item>
         <item name="android:colorBackground">@color/sf__background</item>
         <item name="android:textColor">@color/sf__text_color</item>
         <item name="android:textColorPrimary">@color/sf__text_color</item>
@@ -100,17 +98,13 @@
         <item name="android:navigationBarColor">@color/sf__background</item>
         <item name="sfFingerprintIcon">@drawable/sf__fingerprint_icon</item>
         <item name="sfNegativeButtonTextColor">@color/sf__primary_color</item>
-        <item name="sfNegativeButtonBoarderColor">@color/sf__border_color</item>
-    </style>
-
-    <style name="SalesforceSDK.Passcode.AccessibleNav">
-        <item name="android:navigationBarColor">@color/sf__accessibility_nav_color</item>
+        <item name="sfNegativeButtonBorderColor">@color/sf__border_color</item>
     </style>
 
     <style name="SalesforceSDK.Passcode.Dark">
-        <item name="sfPasscodeBoarderColor">@color/sf__border_color_dark</item>
-        <item name="sfPasscodeColorSecondary">@color/sf__secondary_color_dark</item>
-        <item name="sfPasscodeLayoutBackground">@color/sf__layout_background_dark</item>
+        <item name="sfPasscodeBorderColor">@color/sf__border_color_dark</item>
+        <item name="sfColorSecondary">@color/sf__secondary_color_dark</item>
+        <item name="sfLayoutBackground">@color/sf__layout_background_dark</item>
         <item name="android:colorBackground">@color/sf__background_dark</item>
         <item name="android:textColor">@color/sf__text_color_dark</item>
         <item name="android:textColorPrimary">@color/sf__text_color_dark</item>
@@ -118,7 +112,7 @@
         <item name="android:navigationBarColor">@color/sf__background_dark</item>
         <item name="sfFingerprintIcon">@drawable/sf__fingerprint_icon_dark</item>
         <item name="sfNegativeButtonTextColor">@color/sf__secondary_color_dark</item>
-        <item name="sfNegativeButtonBoarderColor">@color/sf__secondary_color_dark</item>
+        <item name="sfNegativeButtonBorderColor">@color/sf__secondary_color_dark</item>
     </style>
 
     <style name="SalesforceSDK.Passcode.Box">

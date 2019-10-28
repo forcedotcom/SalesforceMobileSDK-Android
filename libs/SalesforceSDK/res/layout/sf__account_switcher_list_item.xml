@@ -3,11 +3,11 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="horizontal"
     android:layout_width="match_parent"
-    android:background="?attr/sfPasscodeLayoutBackground"
+    android:background="?attr/sfLayoutBackground"
     android:layout_height="@dimen/sf__list_item_height">
 
     <ImageView android:id="@+id/sf__user_icon"
-        android:background="?attr/sfPasscodeLayoutBackground"
+        android:background="?attr/sfLayoutBackground"
         android:src="@drawable/sf__android_astro"
         android:contentDescription="@string/sf__account_selector_text"
         android:layout_width="@dimen/sf__list_item_user_icon_length"
@@ -20,10 +20,10 @@
     <LinearLayout android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="?attr/sfPasscodeLayoutBackground" >
+        android:background="?attr/sfLayoutBackground" >
 
         <TextView android:id="@+id/sf__user_name"
-            android:background="?attr/sfPasscodeLayoutBackground"
+            android:background="?attr/sfLayoutBackground"
             android:layout_width="match_parent"
             android:layout_height="@dimen/sf__list_item_user_name_height"
             android:textSize="@dimen/sf__list_item_user_name_text_size"
@@ -35,7 +35,7 @@
             android:layout_marginBottom="@dimen/sf__list_item_user_name_margin_bottom" />
 
         <TextView android:id="@+id/sf__server_name"
-            android:background="?attr/sfPasscodeLayoutBackground"
+            android:background="?attr/sfLayoutBackground"
             android:layout_width="match_parent"
             android:layout_height="@dimen/sf__list_item_server_name_height"
             android:textSize="@dimen/sf__list_item_server_name_text_size"

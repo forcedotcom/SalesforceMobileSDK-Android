@@ -146,7 +146,7 @@
                     android:background="@drawable/sf__passcode_primary_color_button"
                     android:text="@string/sf__passcode_verify_button"
                     android:textAllCaps="false"
-                    android:textColor="?attr/sfPasscodeColorSecondary"
+                    android:textColor="?attr/sfColorSecondary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
@@ -186,7 +186,7 @@
                     android:layout_marginEnd="20dp"
                     android:background="@drawable/sf__passcode_primary_color_button"
                     android:text="@string/sf__biometric_enable_button"
-                    android:textColor="?attr/sfPasscodeColorSecondary"
+                    android:textColor="?attr/sfColorSecondary"
                     android:textAllCaps="false"
                     android:textSize="14sp"
                     android:textStyle="bold"

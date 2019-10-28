@@ -3,7 +3,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="horizontal"
     android:layout_width="match_parent"
-    android:background="?attr/sfPasscodeLayoutBackground"
+    android:background="?attr/sfLayoutBackground"
     android:layout_height="@dimen/sf__list_item_height">
 
     <ImageView android:src="@drawable/sf__add"
@@ -14,7 +14,7 @@
         android:gravity="center"
         android:layout_marginStart="@dimen/sf__list_item_add_icon_padding_horizontal"
         android:layout_marginEnd="@dimen/sf__list_item_add_icon_padding_horizontal"
-        android:background="?attr/sfPasscodeLayoutBackground"
+        android:background="?attr/sfLayoutBackground"
         android:layout_marginTop="@dimen/sf__list_item_add_icon_padding_top" />
 
     <TextView android:layout_width="match_parent"
@@ -24,7 +24,7 @@
         android:textColor="?android:textColor"
         android:fontFamily="sans-serif"
         android:textStyle="normal"
-        android:background="?attr/sfPasscodeLayoutBackground"
+        android:background="?attr/sfLayoutBackground"
         android:lineSpacingExtra="@dimen/sf__list_item_user_name_line_spacing"
         android:layout_marginTop="@dimen/sf__list_item_new_user_margin_vertical"
         android:layout_marginBottom="@dimen/sf__list_item_new_user_margin_vertical"/>

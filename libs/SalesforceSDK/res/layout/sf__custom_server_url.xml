@@ -15,7 +15,7 @@
 	android:filterTouchesWhenObscured="true"
 	android:focusable="true"
 	android:focusableInTouchMode="true"
-	android:background="?attr/sfPasscodeLayoutBackground">
+	android:background="?attr/sfLayoutBackground">
 
 	<EditText android:id="@+id/sf__picker_custom_label"
 		android:layout_marginTop="10dp"
@@ -78,7 +78,7 @@
 			android:layout_marginEnd="20dp"
 			android:layout_marginBottom="10dp"
 			android:background="@drawable/sf__passcode_primary_color_button"
-			android:textColor="?attr/sfPasscodeColorSecondary"
+			android:textColor="?attr/sfColorSecondary"
 			android:textAllCaps="false"
 			android:textSize="14sp"
 			android:textStyle="bold"

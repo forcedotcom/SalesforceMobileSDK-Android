@@ -32,7 +32,6 @@ import org.json.JSONObject;
 import android.app.LoaderManager;
 import android.content.Intent;
 import android.content.Loader;
-import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -79,16 +78,7 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(this);
 		setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark : R.style.SalesforceSDK);
 		// This makes the navigation bar visible on light themes.
-		if (!isDarkTheme) {
-			// This covers the case where OS dark theme is true, but app has disabled.
-			// TODO: Remove SalesforceSDK_AccessibleNav style when min API becomes 26.
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-				View view = getWindow().getDecorView();
-				view.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
-			} else {
-				setTheme(com.salesforce.androidsdk.R.style.SalesforceSDK_AccessibleNav);
-			}
-		}
+		SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
 
 		setContentView(R.layout.detail);
 		final Intent launchIntent = getIntent();

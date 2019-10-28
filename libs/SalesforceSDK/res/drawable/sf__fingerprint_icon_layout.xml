@@ -4,8 +4,8 @@
     <item>
         <shape android:shape="oval" >
 
-            <solid android:color="?attr/sfPasscodeLayoutBackground"/>
-            <stroke android:color="?attr/sfPasscodeBoarderColor"
+            <solid android:color="?attr/sfLayoutBackground"/>
+            <stroke android:color="?attr/sfPasscodeBorderColor"
                 android:width="1dp"/>
             <size
                 android:height="80dp"
