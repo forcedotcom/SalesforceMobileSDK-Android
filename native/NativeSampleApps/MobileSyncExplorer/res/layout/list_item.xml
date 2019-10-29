@@ -3,7 +3,8 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="horizontal">
+    android:orientation="horizontal"
+    android:background="?android:colorBackground" >
 
     <TextView android:id="@+id/obj_image"
         android:layout_width="42dp"
@@ -13,7 +14,7 @@
         android:paddingRight="10dp"
         android:paddingTop="10dp"
         android:paddingBottom="10dp"
-        android:textColor="@android:color/white" />
+        android:textColor="?android:textColor" />
 
     <LinearLayout android:id="@+id/obj_layout"
         android:layout_width="wrap_content"
@@ -26,7 +27,7 @@
             android:layout_height="wrap_content"
             android:layout_width="230dp"
             android:textSize="14sp"
-            android:textColor="@android:color/black"
+            android:textColor="?android:textColor"
             android:singleLine="true"
             android:ellipsize="end" />
 
@@ -34,7 +35,7 @@
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:textSize="10sp"
-            android:textColor="@android:color/black"
+            android:textColor="?android:textColor"
             android:singleLine="true"
             android:ellipsize="end"
             android:paddingBottom="10dp" />
@@ -45,5 +46,5 @@
         android:layout_width="42dp"
         android:layout_height="42dp"
         android:layout_margin="4dp"
-        android:src="@drawable/sync_success" />
+        android:src="@drawable/sync_save" />
 </RelativeLayout>

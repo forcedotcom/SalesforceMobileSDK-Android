@@ -28,44 +28,44 @@
             required for the Chrome custom tab auth flow to work correctly.
         -->
         <activity android:name="com.salesforce.androidsdk.ui.LoginActivity"
-            android:theme="@style/SalesforceSDK.ActionBarTheme"
+            android:theme="@style/SalesforceSDK"
             android:launchMode="singleInstance"
             android:screenOrientation="portrait" />
 
         <!-- Passcode activity -->
         <activity android:name="com.salesforce.androidsdk.ui.PasscodeActivity"
-            android:theme="@style/Theme.Design.NoActionBar"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustResize|stateAlwaysVisible" />
+            android:windowSoftInputMode="adjustResize|stateAlwaysVisible"
+            android:theme="@style/SalesforceSDK.Passcode" />
 
         <!-- Manage space activity -->
         <activity android:name="com.salesforce.androidsdk.ui.ManageSpaceActivity"
             android:excludeFromRecents="true"
-            android:theme="@style/SalesforceSDK.ActionBarTheme" />
+            android:theme="@style/SalesforceSDK" />
 
         <!-- Choose server activity -->
         <activity android:name="com.salesforce.androidsdk.ui.ServerPickerActivity"
             android:excludeFromRecents="true"
-            android:theme="@style/SalesforceSDK.ActionBarTheme"
+            android:theme="@style/SalesforceSDK"
             android:screenOrientation="portrait" />
 
         <!-- Account switcher activity -->
         <activity android:name="com.salesforce.androidsdk.ui.AccountSwitcherActivity"
             android:excludeFromRecents="true"
-            android:theme="@style/SalesforceSDK.ActionBarTheme"
+            android:theme="@style/SalesforceSDK"
             android:screenOrientation="portrait" />
 
         <!-- IDP webview activity -->
         <activity android:name="com.salesforce.androidsdk.auth.idp.IDPCodeGeneratorActivity"
             android:excludeFromRecents="true"
-            android:theme="@style/SalesforceSDK.ActionBarTheme"
+            android:theme="@style/SalesforceSDK"
             android:exported="false"
             android:screenOrientation="portrait" />
 
         <!--  Dev info activity -->
         <activity android:name="com.salesforce.androidsdk.ui.DevInfoActivity"
-            android:theme="@style/SalesforceSDK.ActionBarTheme"
+            android:theme="@style/SalesforceSDK"
             android:exported="false" />
 
         <!-- Receiver for IDP initiated login flow -->

@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/fingerprint_container"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
     android:gravity="center"
     android:paddingStart="24dp"
     android:paddingEnd="0dp"
-    android:paddingTop="16dp">
+    android:paddingTop="16dp"
+    android:background="?android:colorBackground">
 
     <TextView
         android:id="@+id/sf__fingerprint_title"
@@ -16,7 +17,7 @@
         android:layout_alignParentTop="true"
         android:text="@string/sf__fingerprint_title"
         android:textStyle="bold"
-        android:textColor="@color/sf__passcode_text_color"
+        android:textColor="?android:textColor"
         android:textSize="20sp"/>
 
     <TextView
@@ -28,7 +29,7 @@
         android:paddingStart="0dp"
         android:paddingEnd="20dp"
         android:text="@string/sf__fingerprint_description"
-        android:textColor="@color/sf__passcode_text_color"
+        android:textColor="?android:textColor"
         android:textSize="16sp"/>
 
     <ImageView
@@ -51,7 +52,7 @@
         android:layout_toEndOf="@+id/sf__fingerprint_icon"
         android:gravity="center_vertical"
         android:text="@string/sf__fingerprint_hint"
-        android:textColor="@color/sf__hint_color" />
+        android:textColor="?android:textColorHint" />
 
     <Button
         android:id="@+id/sf__use_password_button"
@@ -64,6 +65,6 @@
         android:layout_marginEnd="0dp"
         android:layout_marginBottom="0dp"
         android:text="@string/sf__fingerprint_cancel"
-        android:textColor="@color/sf__passcode_primary_color"
+        android:textColor="?android:colorPrimary"
         android:textStyle="bold" />
 </RelativeLayout>

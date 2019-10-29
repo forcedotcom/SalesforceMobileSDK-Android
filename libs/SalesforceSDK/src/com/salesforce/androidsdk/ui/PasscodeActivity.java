@@ -95,6 +95,11 @@ public class PasscodeActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
+        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(this);
+        setTheme(isDarkTheme ? R.style.SalesforceSDK_Passcode_Dark : R.style.SalesforceSDK_Passcode);
+
+        // This makes the navigation bar visible on light themes.
+        SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
 
         // Protect against screenshots.
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
@@ -148,6 +153,7 @@ public class PasscodeActivity extends Activity {
         bioInstr.setText(getString(R.string.sf__biometric_allow_instructions, SalesforceSDKManager.getInstance().provideAppName()));
         biometricBox = findViewById(R.id.sf__biometric_box);
         notNowButton = findViewById(R.id.sf__biometric_not_now_button);
+        notNowButton.setTextColor(getResources().getColor(isDarkTheme ? R.color.sf__secondary_color_dark : R.color.sf__primary_color));
         notNowButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
