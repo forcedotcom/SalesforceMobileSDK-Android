@@ -5,7 +5,7 @@
         <shape android:shape="oval" >
 
             <solid android:color="?attr/sfLayoutBackground"/>
-            <stroke android:color="?attr/sfPasscodeBorderColor"
+            <stroke android:color="?attr/sfBorderColor"
                 android:width="1dp"/>
             <size
                 android:height="80dp"

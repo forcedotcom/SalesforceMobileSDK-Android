@@ -50,7 +50,9 @@ public class LogoutDialogFragment extends DialogFragment {
 
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
-		logoutConfirmationDialog = new AlertDialog.Builder(getActivity())
+		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(getActivity());
+		logoutConfirmationDialog = new AlertDialog.Builder(getActivity(), isDarkTheme ?
+				R.style.SalesforceSDK_Dialog_Dark : R.style.SalesforceSDK_Dialog)
 				.setTitle(R.string.logout_title)
 				.setPositiveButton(R.string.yes,
 				new DialogInterface.OnClickListener() {
