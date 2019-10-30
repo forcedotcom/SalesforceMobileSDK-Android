@@ -202,6 +202,7 @@ public class ServerPickerActivity extends Activity implements
         boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(this);
         int textColor = getResources().getColor(isDarkTheme ? R.color.sf__text_color_dark : R.color.sf__text_color);
     	rb.setTextColor(textColor);
+    	rb.getButtonDrawable().setTint(getResources().getColor(R.color.sf__primary_color));
     	radioGroup.addView(rb);
     }
 

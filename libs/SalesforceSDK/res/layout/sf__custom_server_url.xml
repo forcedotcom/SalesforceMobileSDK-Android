@@ -50,19 +50,20 @@
 		android:orientation="horizontal"
 		android:layout_marginTop="20dp" >
 
-		<Button android:id="@+id/sf__cancel_button"
-			android:text="@string/sf__server_url_default_cancel"
+		<Button
+			android:id="@+id/sf__cancel_button"
 			android:layout_width="0dp"
-			android:layout_weight="1"
-			android:layout_height="47dp"
+			android:layout_height="wrap_content"
 			android:layout_gravity="center"
-			android:layout_marginTop="10dp"
 			android:layout_marginStart="20dp"
+			android:layout_marginTop="10dp"
 			android:layout_marginEnd="10dp"
 			android:layout_marginBottom="10dp"
+			android:layout_weight="1"
 			android:background="@drawable/sf__passcode_secondary_color_button"
-			android:textColor="?android:attr/colorPrimary"
+			android:text="@string/sf__server_url_default_cancel"
 			android:textAllCaps="false"
+			android:textColor="?attr/sfNegativeButtonTextColor"
 			android:textSize="14sp"
 			android:textStyle="bold"
 			tools:ignore="ButtonStyle" />
