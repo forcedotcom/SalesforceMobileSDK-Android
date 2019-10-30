@@ -117,6 +117,11 @@ public class MainActivity extends SalesforceListActivity implements
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(this);
+		setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark : R.style.SalesforceSDK);
+		// This makes the navigation bar visible on light themes.
+		SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
+
 		setContentView(R.layout.main);
 		getActionBar().setTitle(R.string.main_activity_title);
 		listAdapter = new ContactListAdapter(this, R.layout.list_item);
@@ -371,11 +376,11 @@ public class MainActivity extends SalesforceListActivity implements
 			        	objImage.setText(initials);
 			        	setBubbleColor(objImage, firstName);
 			        }
-			        final ImageView syncImage = (ImageView) convertView.findViewById(R.id.sync_status_view);
+			        final ImageView syncImage = convertView.findViewById(R.id.sync_status_view);
 			        if (syncImage != null && sObject.isLocallyModified()) {
 			        	syncImage.setImageResource(R.drawable.sync_local);
 			        } else {
-			        	syncImage.setImageResource(R.drawable.sync_success);
+			        	syncImage.setImageResource(R.drawable.sync_save);
 			        }
 				}
 			}

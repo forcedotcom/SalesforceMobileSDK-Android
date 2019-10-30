@@ -1,22 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="sf__passcode_layout_bg">#F5F6FA</color>
-    <color name="sf__passcode_bg">#FFFFFF</color>
-    <color name="sf__passcode_text_color">#16325C</color>
-    <color name="sf__passcode_border_color">#D9DDE6</color>
-    <color name="sf__passcode_primary_color">#0070D2</color>
-    <color name="sf__passcode_secondary_color">#FFFF</color>
-    <color name="sf__forgot_passcode_text">#000</color>
-    <color name="sf__passcode_error_text">#F00</color>
-    <color name="sf__chrome_nav_bar_azure">#1589ee</color>
-
-    <!-- Fingerprint text -->
+    <color name="sf__background">#F5F6FA</color>
+    <color name="sf__background_dark">#080707</color> <!-- SLDS grey 13 -->
+    <color name="sf__layout_background">#FFFFFF</color>
+    <color name="sf__layout_background_status_bar">#cccccc</color>
+    <color name="sf__layout_background_dark">#2b2826</color> <!-- SLDS grey 12 -->
+    <color name="sf__layout_background_dark_status_bar">#000000</color>
+    <color name="sf__text_color">#16325C</color>
+    <color name="sf__text_color_dark">#f0f0f0</color>
+    <color name="sf__border_color">#D9DDE6</color>
+    <color name="sf__border_color_dark">#3e3e3c</color> <!-- SLDS grey 11 -->
+    <color name="sf__primary_color">#0070D2</color> <!-- Salesforce Blue -->
+    <color name="sf__primary_color_dark">#0046a0</color>
+    <color name="sf__secondary_color">#FFFF</color>
+    <color name="sf__secondary_color_dark">#FFFF</color>
     <color name="sf__hint_color">#42000000</color>
-
-    <!-- User switcher screen -->
-    <color name="sf__color_background_alt">#e0e5ee</color>
-    <color name="sf__color_background_alt_2">#ffffff</color>
-    <color name="sf__color_text_default">#16325c</color>
-    <color name="sf__list_item_user_name_color">#18345f</color>
-    <color name="sf__list_item_server_name_color">#54698d</color>
+    <color name="sf__hint_color_dark">#42D5B0B0</color>
+    <color name="sf__accessibility_nav_color">#3e3e3c</color> <!-- SLDS grey 11 -->
 </resources>
