@@ -38,4 +38,6 @@ import com.google.firebase.messaging.RemoteMessage;
 public interface PushNotificationInterface {
 
 	void onPushMessageReceived(RemoteMessage message);
+
+	void onEncryptedPushMessageReceived();
 }
