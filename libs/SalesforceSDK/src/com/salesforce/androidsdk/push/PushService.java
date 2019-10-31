@@ -284,7 +284,7 @@ public class PushService extends JobIntentService {
             if (SalesforceSDKManager.getInstance().isPushNotificationEncryptionEnabled()) {
             	final String rsaPublicKey = getRSAPublicKey();
             	if (!TextUtils.isEmpty(rsaPublicKey)) {
-					fields.put(RSA_PUBLIC_KEY, getRSAPublicKey());
+					fields.put(RSA_PUBLIC_KEY, rsaPublicKey);
 				}
 			}
             final RestClient client = getRestClient(account);
