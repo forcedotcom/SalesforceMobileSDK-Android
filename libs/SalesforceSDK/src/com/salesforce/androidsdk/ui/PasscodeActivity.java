@@ -161,7 +161,8 @@ public class PasscodeActivity extends Activity {
         passcodeField.announceForAccessibility(bioInstrTitle.getText());
         biometricBox = findViewById(R.id.sf__biometric_box);
         notNowButton = findViewById(R.id.sf__biometric_not_now_button);
-        notNowButton.setTextColor(getResources().getColor(isDarkTheme ? R.color.sf__secondary_color_dark : R.color.sf__primary_color));
+        notNowButton.setTextColor(getResources().getColor(isDarkTheme ? R.color.sf__secondary_color_dark
+                : R.color.sf__primary_color, null));
         notNowButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -476,10 +477,7 @@ public class PasscodeActivity extends Activity {
      */
     @TargetApi(VERSION_CODES.P)
     protected void showBiometricDialog() {
-
-        /*
-         * TODO: Remove this check once minAPI >= 28.
-         */
+        // TODO: Remove this check once minAPI >= 28.
         if (VERSION.SDK_INT >= VERSION_CODES.P) {
             switch(biometricType) {
                 case FaceUnlock:
@@ -540,10 +538,6 @@ public class PasscodeActivity extends Activity {
 
     @TargetApi(VERSION_CODES.Q)
     private boolean isBiometricEnabled() {
-        // Used for tests
-        if (forceBiometric) {
-            return true;
-        }
         final BiometricManager biometricManager = (BiometricManager) this.getSystemService(Context.BIOMETRIC_SERVICE);
 
         if (checkSelfPermission(permission.USE_BIOMETRIC) != PackageManager.PERMISSION_GRANTED) {
@@ -551,7 +545,6 @@ public class PasscodeActivity extends Activity {
         } else {
             return biometricManager != null && biometricManager.canAuthenticate() == BiometricManager.BIOMETRIC_SUCCESS;
         }
-
         return false;
     }
 
@@ -590,15 +583,13 @@ public class PasscodeActivity extends Activity {
     }
 
     private boolean canShowBiometric() {
-        boolean biometricEnabled = false;
-        if (VERSION.SDK_INT >= VERSION_CODES.Q) {
-            biometricEnabled = isBiometricEnabled();
-        }
-        return passcodeManager.biometricAllowed() && (isFingerprintEnabled() || biometricEnabled);
+        boolean bioEnabled = (VERSION.SDK_INT >= VERSION_CODES.Q ? isBiometricEnabled() : isFingerprintEnabled());
+        return passcodeManager.biometricAllowed() && bioEnabled;
     }
 
     private void launchBiometricAuth() {
         if (passcodeManager != null && canShowBiometric()) {
+            // TODO: Remove this check once minAPI >= 28.
             if (VERSION.SDK_INT >= VERSION_CODES.P) {
                 showBiometricDialog();
             } else if (VERSION.SDK_INT >= VERSION_CODES.M) {
@@ -624,14 +615,14 @@ public class PasscodeActivity extends Activity {
 
     private void hideKeyboard() {
         InputMethodManager imm = (InputMethodManager) this.getSystemService(Activity.INPUT_METHOD_SERVICE);
-        if (this.passcodeField != null) {
+        if (imm != null && this.passcodeField != null) {
             imm.hideSoftInputFromWindow(this.passcodeField.getWindowToken(), 0);
         }
     }
 
     private void showKeyboard() {
         AccessibilityManager am = (AccessibilityManager) this.getSystemService(Context.ACCESSIBILITY_SERVICE);
-        if (am.isEnabled()) {
+        if (am != null && am.isEnabled()) {
             // Check if keyboard is shown based on verify button, which is oriented to the bottom of
             // the layout.  Checking window instead of screen even works for split screen.
             int[] location = new int[2];
@@ -646,7 +637,7 @@ public class PasscodeActivity extends Activity {
 
     private void sendAccessibilityEvent(String text) {
         AccessibilityManager am = (AccessibilityManager) this.getSystemService(Context.ACCESSIBILITY_SERVICE);
-        if (am.isEnabled()) {
+        if (am != null && am.isEnabled()) {
             AccessibilityEvent event = AccessibilityEvent.obtain();
             event.setEventType(AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED);
             event.setClassName(getClass().getName());

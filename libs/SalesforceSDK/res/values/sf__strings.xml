@@ -55,11 +55,10 @@
 	<string name="sf__biometric_fingerprint_title">Fingerprint Unlock</string>
 	<string name="sf__biometric_face_title">Face Unlock</string>
 	<string name="sf__biometric_iris_title">Iris Scanner Unlock</string>
-	<string name="sf__biometric_fingerprint_allow_instructions_title">Set up fingerprint unlock</string>
+	<string name="sf__biometric_fingerprint_allow_instructions_title">Set up Fingerprint Unlock</string>
 	<string name="sf__biometric_face_allow_instructions_title">Set up Face Unlock</string>
 	<string name="sf__biometric_iris_allow_instructions_title">Set up Iris Scanner Unlock</string>
 	<string name="sf__biometric_allow_instructions">You can now unlock %s using biometric for extra security and convenience.</string>
-
 	<string name="sf__biometric_not_now_button">Not Now</string>
 	<string name="sf__biometric_enable_button">Enable</string>
 	<string name="sf__accessibility_passcode_field_label">Passcode field</string>
