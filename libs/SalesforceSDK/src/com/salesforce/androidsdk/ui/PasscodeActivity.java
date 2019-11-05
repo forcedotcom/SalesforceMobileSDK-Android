@@ -199,6 +199,7 @@ public class PasscodeActivity extends Activity {
         }
 
         // Determine biometric hardware, default is fingerprint.
+        // TODO: Remove check when min API >= 29
         if (VERSION.SDK_INT >= VERSION_CODES.Q) {
             if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_FACE)) {
                 biometricType = BiometricType.FaceUnlock;
@@ -538,12 +539,20 @@ public class PasscodeActivity extends Activity {
 
     @TargetApi(VERSION_CODES.Q)
     private boolean isBiometricEnabled() {
-        final BiometricManager biometricManager = (BiometricManager) this.getSystemService(Context.BIOMETRIC_SERVICE);
+        // Used for tests
+        if (forceBiometric) {
+            return true;
+        }
 
-        if (checkSelfPermission(permission.USE_BIOMETRIC) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[] {permission.USE_BIOMETRIC}, REQUEST_CODE_ASK_PERMISSIONS);
-        } else {
-            return biometricManager != null && biometricManager.canAuthenticate() == BiometricManager.BIOMETRIC_SUCCESS;
+        // TODO: Remove this check once minAPI >= 29.
+        if (VERSION.SDK_INT >= VERSION_CODES.Q) {
+            final BiometricManager biometricManager = (BiometricManager) this.getSystemService(Context.BIOMETRIC_SERVICE);
+
+            if (checkSelfPermission(permission.USE_BIOMETRIC) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{permission.USE_BIOMETRIC}, REQUEST_CODE_ASK_PERMISSIONS);
+            } else {
+                return biometricManager != null && biometricManager.canAuthenticate() == BiometricManager.BIOMETRIC_SUCCESS;
+            }
         }
         return false;
     }
