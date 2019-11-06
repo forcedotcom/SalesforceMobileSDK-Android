@@ -26,50 +26,45 @@
  */
 package com.salesforce.androidsdk.mobilesync.target;
 
-import com.salesforce.androidsdk.rest.RestRequest;
-import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
+import com.salesforce.androidsdk.rest.CompositeResponse;
+import com.salesforce.androidsdk.rest.CompositeResponse.CompositeSubResponse;
+import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class CompositeRequestHelper {
 
-    // Constants
-    public static final String COMPOSITE_RESPONSE = "compositeResponse";
-    public static final String REFERENCE_ID = "referenceId";
-    public static final String HTTP_STATUS_CODE = "httpStatusCode";
-    public static final String BODY = "body";
-
     /**
      * Build and send composite request
      * @param syncManager
      * @param allOrNone
      * @param refIdToRequests
-     * @return
+     * @return map of ref id to composite sub response
      * @throws JSONException
      * @throws IOException
      */
-     public static Map<String, JSONObject> sendCompositeRequest(SyncManager syncManager, boolean allOrNone, LinkedHashMap<String, RestRequest> refIdToRequests) throws JSONException, IOException {
+     public static Map<String, CompositeSubResponse> sendCompositeRequest(SyncManager syncManager, boolean allOrNone, LinkedHashMap<String, RestRequest> refIdToRequests) throws JSONException, IOException {
         RestRequest compositeRequest = RestRequest.getCompositeRequest(syncManager.apiVersion, allOrNone, refIdToRequests);
-        RestResponse compositeResponse = syncManager.sendSyncWithMobileSyncUserAgent(compositeRequest);
-        if (!compositeResponse.isSuccess()) {
-            throw new SyncManager.MobileSyncException("sendCompositeRequest:" + compositeResponse.toString());
+        RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(compositeRequest);
+        if (!response.isSuccess()) {
+            throw new SyncManager.MobileSyncException("sendCompositeRequest:" + response.toString());
         }
-        JSONArray responses = compositeResponse.asJSONObject().getJSONArray(COMPOSITE_RESPONSE);
-        Map<String, JSONObject> refIdToResponses = new HashMap<>();
-        for (int i = 0; i < responses.length(); i++) {
-            JSONObject response = responses.getJSONObject(i);
-            refIdToResponses.put(response.getString(REFERENCE_ID), response);
+        CompositeResponse compositeResponse = new CompositeResponse(response.asJSONObject());
+        Map<String, CompositeSubResponse> refIdToResponses = new HashMap<>();
+        for (CompositeSubResponse subResponse : compositeResponse.subResponses) {
+            refIdToResponses.put(subResponse.referenceId, subResponse);
         }
         return refIdToResponses;
     }
@@ -77,13 +72,12 @@ public class CompositeRequestHelper {
     /**
      * @return ref id to server id map if successful
      */
-    public static Map<String, String> parseIdsFromResponse(Map<String, JSONObject> refIdToResponses) throws JSONException {
+    public static Map<String, String> parseIdsFromResponses(Collection<CompositeSubResponse> responses) throws JSONException {
         Map<String, String> refIdtoId = new HashMap<>();
-        for (String refId : refIdToResponses.keySet()) {
-            JSONObject response = refIdToResponses.get(refId);
-            if (response.getInt(HTTP_STATUS_CODE) == HttpURLConnection.HTTP_CREATED) {
-                String serverId = response.getJSONObject(BODY).getString(Constants.LID);
-                refIdtoId.put(refId, serverId);
+        for (CompositeSubResponse response : responses) {
+            if (response.httpStatusCode == HttpURLConnection.HTTP_CREATED) {
+                String serverId = response.bodyAsJSONObject().getString(Constants.LID);
+                refIdtoId.put(response.referenceId, serverId);
             }
         }
         return refIdtoId;

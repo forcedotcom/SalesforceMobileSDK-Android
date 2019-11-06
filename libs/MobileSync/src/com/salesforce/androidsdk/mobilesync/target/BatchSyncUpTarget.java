@@ -26,12 +26,13 @@
  */
 package com.salesforce.androidsdk.mobilesync.target;
 
-import com.salesforce.androidsdk.rest.RestRequest;
-import com.salesforce.androidsdk.rest.RestResponse;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
+import com.salesforce.androidsdk.rest.CompositeResponse.CompositeSubResponse;
+import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONException;
@@ -129,10 +130,10 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
         }
 
         // Sending composite request
-        Map<String, JSONObject> refIdToResponses = CompositeRequestHelper.sendCompositeRequest(syncManager, false, refIdToRequests);
+        Map<String, CompositeSubResponse> refIdToResponses = CompositeRequestHelper.sendCompositeRequest(syncManager, false, refIdToRequests);
 
         // Build refId to server id / status code / time stamp maps
-        Map<String, String> refIdToServerId = CompositeRequestHelper.parseIdsFromResponse(refIdToResponses);
+        Map<String, String> refIdToServerId = CompositeRequestHelper.parseIdsFromResponses(refIdToResponses.values());
 
         // Will a re-run be required?
         boolean needReRun = false;
@@ -193,10 +194,10 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
     }
 
 
-    protected boolean updateRecordInLocalStore(SyncManager syncManager, String soupName, JSONObject record, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, JSONObject response) throws JSONException, IOException {
+    protected boolean updateRecordInLocalStore(SyncManager syncManager, String soupName, JSONObject record, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, CompositeSubResponse response) throws JSONException, IOException {
 
         boolean needReRun = false;
-        final Integer statusCode = response != null ? response.getInt(CompositeRequestHelper.HTTP_STATUS_CODE) : -1;
+        final Integer statusCode = response != null ? response.httpStatusCode : -1;
 
         // Delete case
         if (isLocallyDeleted(record)) {
