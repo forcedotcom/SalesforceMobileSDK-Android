@@ -77,7 +77,7 @@ public class PasscodeActivity extends Activity {
     private PasscodeField passcodeField;
     private LinearLayout passcodeBox, biometricBox;
     private Button logoutButton, notNowButton, enableButton, verifyButton;
-    private View fingerImage;
+    private View fingerImage, faceImage;
     private PasscodeManager passcodeManager;
     private String firstPasscode, biometricTitle, biometricDescription;
     private boolean logoutEnabled;
@@ -155,6 +155,7 @@ public class PasscodeActivity extends Activity {
         });
 
         fingerImage = findViewById(R.id.sf__fingerprint_icon);
+        faceImage = findViewById(R.id.sf__face_unlock_icon);
         bioInstrTitle = findViewById(R.id.sf__biometric_instructions_title);
         bioInstr = findViewById(R.id.sf__biometric_instructions);
         bioInstr.setText(getString(R.string.sf__biometric_allow_instructions, SalesforceSDKManager.getInstance().provideAppName()));
@@ -308,14 +309,17 @@ public class PasscodeActivity extends Activity {
                 case FaceUnlock:
                     title.setText(getString(R.string.sf__biometric_face_title));
                     bioInstrTitle.setText(getString(R.string.sf__biometric_face_allow_instructions_title));
+                    faceImage.setVisibility(View.VISIBLE);
                     break;
                 case Iris:
                     title.setText(getString(R.string.sf__biometric_iris_title));
                     bioInstrTitle.setText(getString(R.string.sf__biometric_iris_allow_instructions_title));
+                    faceImage.setVisibility(View.VISIBLE);
                     break;
                 case Fingerprint:
                     title.setText(getString(R.string.sf__biometric_fingerprint_title));
                     bioInstrTitle.setText(getString(R.string.sf__biometric_fingerprint_allow_instructions_title));
+                    fingerImage.setVisibility(View.VISIBLE);
             }
 
             hideKeyboard();
@@ -326,7 +330,6 @@ public class PasscodeActivity extends Activity {
             bioInstr.setVisibility(View.VISIBLE);
             notNowButton.setVisibility(View.VISIBLE);
             enableButton.setVisibility(View.VISIBLE);
-            fingerImage.setVisibility(View.VISIBLE);
             passcodeManager.setBiometricEnrollmentShown(this, true);
             break;
         case BiometricCheck:
@@ -620,6 +623,7 @@ public class PasscodeActivity extends Activity {
         enableButton.setVisibility(View.GONE);
         biometricBox.setVisibility(View.GONE);
         fingerImage.setVisibility(View.GONE);
+        faceImage.setVisibility(View.GONE);
     }
 
     private void hideKeyboard() {

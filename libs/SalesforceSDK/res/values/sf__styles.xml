@@ -103,6 +103,7 @@
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:navigationBarColor">@color/sf__background</item>
         <item name="sfFingerprintIcon">@drawable/sf__fingerprint_icon</item>
+        <item name="sfFaceUnlockIcon">@drawable/sf__face_unlock_icon</item>
         <item name="sfNegativeButtonTextColor">@color/sf__primary_color</item>
         <item name="sfNegativeButtonBorderColor">@color/sf__border_color</item>
     </style>
@@ -117,6 +118,7 @@
         <item name="android:colorPrimaryDark">@color/sf__layout_background_dark</item>
         <item name="android:navigationBarColor">@color/sf__background_dark</item>
         <item name="sfFingerprintIcon">@drawable/sf__fingerprint_icon_dark</item>
+        <item name="sfFaceUnlockIcon">@drawable/sf__face_unlock_icon_dark</item>
         <item name="sfNegativeButtonTextColor">@color/sf__secondary_color_dark</item>
         <item name="sfNegativeButtonBorderColor">@color/sf__secondary_color_dark</item>
     </style>

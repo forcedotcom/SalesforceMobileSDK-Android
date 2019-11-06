@@ -93,6 +93,14 @@
             android:layout_gravity="center"
             android:background="@drawable/sf__fingerprint_icon_layout" />
 
+        <View
+            android:id="@+id/sf__face_unlock_icon"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginTop="80dp"
+            android:layout_gravity="center"
+            android:background="@drawable/sf__face_unlock_icon_layout" />
+
         <LinearLayout
             style="@style/SalesforceSDK.Passcode.Box"
             android:id="@+id/sf__biometric_box"
@@ -110,6 +118,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="start"
+                android:layout_marginTop="20dp"
                 android:textColor="?android:attr/textColorPrimary"
                 android:textSize="18sp"
                 android:textStyle="bold"/>
