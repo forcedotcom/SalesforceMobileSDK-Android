@@ -88,7 +88,7 @@ public class FingerprintAuthDialogFragment extends DialogFragment {
             public void onAuthenticationSucceeded(AuthenticationResult result) {
                 super.onAuthenticationSucceeded(result);
                 if (mStatusText != null) {
-                    mStatusText.setText(R.string.sf__fingerprint_success);
+                    mStatusText.setText(R.string.sf__biometric_success);
                     mStatusText.setTextColor(Color.GREEN);
                 }
                 if (FingerprintAuthDialogFragment.this.getFragmentManager() != null) {
