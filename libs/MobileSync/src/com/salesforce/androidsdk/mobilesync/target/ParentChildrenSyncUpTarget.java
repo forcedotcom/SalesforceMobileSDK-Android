@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.mobilesync.target;
 
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
+import com.salesforce.androidsdk.rest.CompositeResponse.CompositeSubResponse;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.mobilesync.app.Features;
@@ -198,10 +199,10 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
             refIdToRequests.put(parentId, parentRequest);
 
         // Sending composite request
-        Map<String, JSONObject> refIdToResponses = CompositeRequestHelper.sendCompositeRequest(syncManager, false, refIdToRequests);
+        Map<String, CompositeSubResponse> refIdToResponses = CompositeRequestHelper.sendCompositeRequest(syncManager, false, refIdToRequests);
 
         // Build refId to server id / status code / time stamp maps
-        Map<String, String> refIdToServerId = CompositeRequestHelper.parseIdsFromResponse(refIdToResponses);
+        Map<String, String> refIdToServerId = CompositeRequestHelper.parseIdsFromResponses(refIdToResponses.values());
 
         // Will a re-run be required?
         boolean needReRun = false;
@@ -229,10 +230,10 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
         }
     }
 
-    protected boolean updateParentRecordInLocalStore(SyncManager syncManager, JSONObject record, JSONArray children, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, JSONObject response) throws JSONException, IOException {
+    protected boolean updateParentRecordInLocalStore(SyncManager syncManager, JSONObject record, JSONArray children, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, CompositeSubResponse response) throws JSONException, IOException {
         boolean needReRun = false;
         final String soupName = parentInfo.soupName;
-        final Integer statusCode = response != null ? response.getInt(HTTP_STATUS_CODE) : -1;
+        final Integer statusCode = response != null ? response.httpStatusCode : -1;
 
         // Delete case
         if (isLocallyDeleted(record)) {
@@ -287,10 +288,10 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
         return needReRun;
     }
 
-    protected boolean updateChildRecordInLocalStore(SyncManager syncManager, JSONObject record, JSONObject parentRecord, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, JSONObject response) throws JSONException {
+    protected boolean updateChildRecordInLocalStore(SyncManager syncManager, JSONObject record, JSONObject parentRecord, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, CompositeSubResponse response) throws JSONException {
         boolean needReRun = false;
         final String soupName = childrenInfo.soupName;
-        final Integer statusCode = response != null ? response.getInt(HTTP_STATUS_CODE) : -1;
+        final Integer statusCode = response != null ? response.httpStatusCode : -1;
 
         // Delete case
         if (isLocallyDeleted(record)) {
@@ -519,9 +520,9 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
         return RestRequest.getRequestForQuery(apiVersion, builder.build());
     }
 
-    protected boolean isEntityDeleted(JSONObject response) {
+    protected boolean isEntityDeleted(CompositeSubResponse response) {
         try {
-            return response != null && "ENTITY_IS_DELETED".equals(response.getJSONArray("body").getJSONObject(0).getString("errorCode"));
+            return response != null && "ENTITY_IS_DELETED".equals(response.bodyAsJSONArray().getJSONObject(0).getString("errorCode"));
         } catch (JSONException e) {
             return false;
         }
