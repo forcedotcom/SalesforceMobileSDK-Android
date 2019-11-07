@@ -93,6 +93,14 @@
             android:layout_gravity="center"
             android:background="@drawable/sf__fingerprint_icon_layout" />
 
+        <View
+            android:id="@+id/sf__face_unlock_icon"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginTop="80dp"
+            android:layout_gravity="center"
+            android:background="@drawable/sf__face_unlock_icon_layout" />
+
         <LinearLayout
             style="@style/SalesforceSDK.Passcode.Box"
             android:id="@+id/sf__biometric_box"
@@ -111,8 +119,6 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="start"
                 android:layout_marginTop="20dp"
-                android:layout_marginStart="20dp"
-                android:text="@string/sf__biometric_allow_instructions_title"
                 android:textColor="?android:attr/textColorPrimary"
                 android:textSize="18sp"
                 android:textStyle="bold"/>
@@ -124,33 +130,9 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="start"
                 android:gravity="start"
-                android:layout_marginTop="10dp"
-                android:layout_marginStart="20dp"
                 android:text="@string/sf__biometric_allow_instructions"
                 android:textColor="?android:attr/textColorPrimary"
                 android:textSize="14sp"/>
-
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
-
-                <Button
-                    android:id="@+id/sf__passcode_verify_button"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_alignParentBottom="true"
-                    android:layout_marginLeft="20dp"
-                    android:layout_marginRight="20dp"
-                    android:layout_marginBottom="20dp"
-                    android:background="@drawable/sf__passcode_primary_color_button"
-                    android:text="@string/sf__passcode_verify_button"
-                    android:textAllCaps="false"
-                    android:textColor="?attr/sfColorSecondary"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-            </RelativeLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -192,9 +174,29 @@
                     android:textStyle="bold"
                     tools:ignore="ButtonStyle" />
             </LinearLayout>
-
         </LinearLayout>
-
     </LinearLayout>
 
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <Button
+            android:id="@+id/sf__passcode_verify_button"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/sf__passcode_primary_color_button"
+            android:text="@string/sf__passcode_verify_button"
+            android:textAllCaps="false"
+            android:textColor="?attr/sfColorSecondary"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            tools:ignore="ButtonStyle" />
+
+    </RelativeLayout>
 </RelativeLayout>
