@@ -162,7 +162,6 @@ public class SalesforceSDKManager {
     private List<String> additionalOauthKeys;
     private String loginBrand;
     private boolean browserLoginEnabled;
-    private boolean isPushNotificationEncryptionEnabled;
     private String idpAppURIScheme;
     private boolean idpAppLoginFlowActive;
     private boolean darkThemeDisabled;
@@ -663,26 +662,6 @@ public class SalesforceSDKManager {
      */
     public synchronized void setIDPAppURIScheme(String idpAppURIScheme) {
         this.idpAppURIScheme = idpAppURIScheme;
-    }
-
-    /**
-     * Returns whether encryption is enabled on push notifications. Default value is 'false'.
-     * Make sure this value is 'false' for Apex push notifications.
-     *
-     * @return True - if encryption is enabled, False - otherwise.
-     */
-    public boolean isPushNotificationEncryptionEnabled() {
-        return isPushNotificationEncryptionEnabled;
-    }
-
-    /**
-     * Sets whether encryption should be applied to push notifications. Default value is 'false'.
-     * Make sure this value is 'false' for Apex push notifications.
-     *
-     * @param encryptPushNotifications True - if encryption should be enabled, False - otherwise.
-     */
-    public synchronized void enablePushNotificationEncryption(boolean encryptPushNotifications) {
-        isPushNotificationEncryptionEnabled = encryptPushNotifications;
     }
 
     /**

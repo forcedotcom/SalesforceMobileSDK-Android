@@ -280,12 +280,10 @@ public class PushService extends JobIntentService {
             	fields.put(NETWORK_ID, communityId);
 			}
 
-            // Adds an RSA public key to the registration payload if encryption is enabled.
-            if (SalesforceSDKManager.getInstance().isPushNotificationEncryptionEnabled()) {
-            	final String rsaPublicKey = getRSAPublicKey();
-            	if (!TextUtils.isEmpty(rsaPublicKey)) {
-					fields.put(RSA_PUBLIC_KEY, rsaPublicKey);
-				}
+            // Adds an RSA public key to the registration payload if available.
+            final String rsaPublicKey = getRSAPublicKey();
+            if (!TextUtils.isEmpty(rsaPublicKey)) {
+				fields.put(RSA_PUBLIC_KEY, rsaPublicKey);
 			}
             final RestClient client = getRestClient(account);
         	if (client != null) {
