@@ -26,10 +26,15 @@
  */
 package com.salesforce.androidsdk.push;
 
+import android.text.TextUtils;
+
 import com.google.firebase.messaging.RemoteMessage;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.security.KeyStoreWrapper;
+import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 
+import java.security.PrivateKey;
 import java.util.Map;
 
 /**
@@ -55,31 +60,28 @@ class PushNotificationDecryptor {
     }
 
     void onPushMessageReceived(RemoteMessage message) {
-        if (!SalesforceSDKManager.getInstance().isPushNotificationEncryptionEnabled()) {
+        final Map<String, String> data = message.getData();
+        decryptNotificationPayload(data);
+        if (!data.containsKey(CONTENT_KEY)) {
             passMessageToApp(message);
         } else {
-            final Map<String, String> data = message.getData();
-            decryptNotificationPayload(data);
-            if (!data.containsKey(CONTENT_KEY)) {
+            final String content = data.get(CONTENT_KEY);
+            if (content == null) {
                 passMessageToApp(message);
             } else {
-                final String content = data.get(CONTENT_KEY);
-                if (content == null) {
-                    passMessageToApp(message);
-                } else {
 
-                }
-
-                // TODO: Replace with processed message.
-                passMessageToApp(message);
             }
+
+            // TODO: Replace with processed message.
+            passMessageToApp(message);
         }
     }
 
     private void decryptNotificationPayload(Map<String, String> data) {
 
         // Checks if the payload is encrypted.
-        final boolean encrypted = data.containsKey(IS_ENCRYPTED_KEY) && Boolean.parseBoolean(data.get(IS_ENCRYPTED_KEY));
+        final boolean encrypted = data.containsKey(IS_ENCRYPTED_KEY)
+                && Boolean.parseBoolean(data.get(IS_ENCRYPTED_KEY));
         if (!encrypted) {
             return;
         }
@@ -107,9 +109,16 @@ class PushNotificationDecryptor {
     }
 
     private String decrypt(String key, String data) {
-        final String symmetricKey = Encryptor.decryptWithRSABytes(key.getBytes(), )
+        final PrivateKey privateKey = getRSAPrivateKey();
+        if (privateKey != null) {
+            final String symmetricKey = Encryptor.decryptWithRSA(privateKey, data);
+            if (symmetricKey != null) {
 
-        val symmetricKey: ByteArray? = Encryptor.decryptWithRSABytes(privateKey!!.data, secretKey)
+            }
+        }
+        //final String symmetricKey = Encryptor.decryptWithRSABytes(key.getBytes(), )
+
+        /*val symmetricKey: ByteArray? = Encryptor.decryptWithRSABytes(privateKey!!.data, secretKey)
         return when (symmetricKey) {
             null -> null
             else -> {
@@ -121,7 +130,18 @@ class PushNotificationDecryptor {
                 // Decrypts the content using the extracted symmetric key and IV.
                 Decrypted(Encryptor.decryptBytes(Base64.decode(encrypted, Base64.DEFAULT), key, iv))
             }
+        }*/
+        return null;
+    }
+
+    private synchronized PrivateKey getRSAPrivateKey() {
+        PrivateKey rsaPrivateKey = null;
+        final String name = SalesforceKeyGenerator.getUniqueId(PushService.PUSH_NOTIFICATION_KEY_NAME);
+        final String sanitizedName = name.replaceAll("[^A-Za-z0-9]", "");
+        if (!TextUtils.isEmpty(sanitizedName)) {
+            rsaPrivateKey = KeyStoreWrapper.getInstance().getRSAPrivateKey(sanitizedName);
         }
+        return rsaPrivateKey;
     }
 
     private void passMessageToApp(RemoteMessage message) {

@@ -96,7 +96,7 @@ public class PushService extends JobIntentService {
     private static final String APPLICATION_BUNDLE = "ApplicationBundle";
     private static final String FIELD_ID = "id";
     private static final String NOT_ENABLED = "not_enabled";
-	private static final String PUSH_NOTIFICATION_KEY_NAME = "PushNotificationKey";
+	static final String PUSH_NOTIFICATION_KEY_NAME = "PushNotificationKey";
 	protected static final int REGISTRATION_STATUS_SUCCEEDED = 0;
 	protected static final int REGISTRATION_STATUS_FAILED = 1;
 	protected static final int UNREGISTRATION_STATUS_SUCCEEDED = 2;
