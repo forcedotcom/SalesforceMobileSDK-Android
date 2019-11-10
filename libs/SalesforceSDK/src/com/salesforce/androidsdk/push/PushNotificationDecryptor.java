@@ -63,7 +63,7 @@ class PushNotificationDecryptor {
         if (data != null && SalesforceSDKManager.hasInstance()) {
             final PushNotificationInterface pnInterface = SalesforceSDKManager.getInstance().getPushNotificationReceiver();
             if (pnInterface != null) {
-                pnInterface.onEncryptedPushMessageReceived(data);
+                pnInterface.onPushMessageReceived(data);
             }
         }
     }

@@ -37,5 +37,5 @@ import java.util.Map;
  */
 public interface PushNotificationInterface {
 
-	void onEncryptedPushMessageReceived(Map<String, String> data);
+	void onPushMessageReceived(Map<String, String> data);
 }
