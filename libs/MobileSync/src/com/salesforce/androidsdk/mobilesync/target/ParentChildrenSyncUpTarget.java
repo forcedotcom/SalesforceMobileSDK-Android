@@ -26,19 +26,19 @@
  */
 package com.salesforce.androidsdk.mobilesync.target;
 
-import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
-import com.salesforce.androidsdk.rest.CompositeResponse.CompositeSubResponse;
-import com.salesforce.androidsdk.rest.RestRequest;
-import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.mobilesync.app.Features;
+import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 import com.salesforce.androidsdk.mobilesync.target.ParentChildrenSyncTargetHelper.RelationshipType;
 import com.salesforce.androidsdk.mobilesync.util.ChildrenInfo;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
+import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.mobilesync.util.ParentInfo;
 import com.salesforce.androidsdk.mobilesync.util.SOQLBuilder;
-import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
+import com.salesforce.androidsdk.rest.CompositeResponse.CompositeSubResponse;
+import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;

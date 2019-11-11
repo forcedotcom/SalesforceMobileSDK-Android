@@ -204,17 +204,17 @@ public class SyncsConfigTest extends SyncManagerTestCase {
     public void testParentChildrenSyncDownFromConfig()  throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
-        SyncState sync = syncManager.getSyncStatus("parentChildrenSyncDownTarget");
+        SyncState sync = syncManager.getSyncStatus("parentChildrenSyncDown");
         Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, sync.getSoupName());
-        checkStatus(sync, SyncState.Type.syncUp, sync.getId(),
+        checkStatus(sync, SyncState.Type.syncDown, sync.getId(),
                 new ParentChildrenSyncDownTarget(
-                        new ParentInfo("Account", "accounts", "IdX", "LastModifedDateX"),
+                        new ParentInfo("Account", "accounts", "IdX", "LastModifiedDateX"),
                         Arrays.asList(new String[] {"IdX", "Name", "Description"}),
-                        "Name like 'Jame%'",
+                        "NameX like 'James%'",
                         new ChildrenInfo("Contact", "Contacts", "contacts", "AccountId", "IdY", "LastModifiedDateY"),
                         Arrays.asList(new String[] {"LastName", "AccountId"}),
                         ParentChildrenSyncTargetHelper.RelationshipType.MASTER_DETAIL),
-                SyncOptions.optionsForSyncUp(Arrays.asList(new String[]{"Name", "Description"}), MergeMode.OVERWRITE),
+                SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE),
                 SyncState.Status.NEW, 0);
 
     }
@@ -247,18 +247,18 @@ public class SyncsConfigTest extends SyncManagerTestCase {
     public void testParentChildrenSyncUpFromConfig()  throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
-        SyncState sync = syncManager.getSyncStatus("parentChildrenSyncUpTarget");
+        SyncState sync = syncManager.getSyncStatus("parentChildrenSyncUp");
         Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, sync.getSoupName());
         checkStatus(sync, SyncState.Type.syncUp, sync.getId(),
                 new ParentChildrenSyncUpTarget(
-                        new ParentInfo("Account", "accounts", "IdX", "LastModifedDateX"),
-                        Arrays.asList(new String[] {"Id", "Name", "Description"}),
+                        new ParentInfo("Account", "accounts", "IdX", "LastModifiedDateX"),
+                        Arrays.asList(new String[] {"IdX", "Name", "Description"}),
                         Arrays.asList(new String[] {"Name", "Description"}),
                         new ChildrenInfo("Contact", "Contacts", "contacts", "AccountId", "IdY", "LastModifiedDateY"),
                         Arrays.asList(new String[] {"LastName", "AccountId"}),
                         Arrays.asList(new String[] {"FirstName", "AccountId"}),
                         ParentChildrenSyncTargetHelper.RelationshipType.MASTER_DETAIL),
-                SyncOptions.optionsForSyncUp(Arrays.asList(new String[]{"Name", "Description"}), MergeMode.OVERWRITE),
+                SyncOptions.optionsForSyncUp(Arrays.asList(new String[]{}), MergeMode.LEAVE_IF_CHANGED),
                 SyncState.Status.NEW, 0);
     }
 }
