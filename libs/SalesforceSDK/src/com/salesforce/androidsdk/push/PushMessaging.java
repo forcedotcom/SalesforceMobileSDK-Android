@@ -35,6 +35,8 @@ import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.os.Bundle;
 
+import androidx.core.app.JobIntentService;
+
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.firebase.FirebaseApp;
@@ -47,8 +49,6 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import androidx.core.app.JobIntentService;
 
 /**
  * This class provides utility functions related to push notifications,
@@ -154,6 +154,7 @@ public class PushMessaging {
         final String pushClientId = BootConfig.getBootConfig(context).getPushNotificationClientId();
         final FirebaseOptions firebaseOptions = new FirebaseOptions.Builder().
                 setGcmSenderId(pushClientId).setApplicationId(context.getPackageName()).build();
+
         /*
          * Ensures that Firebase initialization occurs only once for this app. If an exception
          * isn't thrown, this means that the initialization has already been completed.
