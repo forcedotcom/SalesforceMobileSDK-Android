@@ -54,7 +54,7 @@ public class AccountSwitcherActivity extends Activity {
 	public void onCreate(Bundle savedInstance) {
 		super.onCreate(savedInstance);
 		userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
-		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(this);
+		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
 		setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark : R.style.SalesforceSDK);
 		// This makes the navigation bar visible on light themes.
 		SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
@@ -118,7 +118,7 @@ public class AccountSwitcherActivity extends Activity {
     }
 
 	private void buildAccountList() {
-		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(this);
+		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
 		setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark : R.style.SalesforceSDK);
 
 	    final ListView listView = findViewById(R.id.sf__accounts_group);

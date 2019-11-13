@@ -114,7 +114,7 @@ public class ServerPickerActivity extends Activity implements
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
-        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(this);
+        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark : R.style.SalesforceSDK);
         // This makes the navigation bar visible on light themes.
         SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
@@ -199,7 +199,7 @@ public class ServerPickerActivity extends Activity implements
     private void setRadioState(RadioGroup radioGroup, LoginServer server) {
     	final SalesforceServerRadioButton rb = new SalesforceServerRadioButton(this,
     			server.name, server.url, server.isCustom);
-        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(this);
+        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         int textColor = getResources().getColor(isDarkTheme ? R.color.sf__text_color_dark : R.color.sf__text_color);
     	rb.setTextColor(textColor);
     	rb.getButtonDrawable().setTint(getResources().getColor(R.color.sf__primary_color));

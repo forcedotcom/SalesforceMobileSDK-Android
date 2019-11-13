@@ -98,7 +98,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(this);
+		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark_Login : R.style.SalesforceSDK);
         SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
 

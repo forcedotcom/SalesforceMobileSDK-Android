@@ -103,7 +103,7 @@ public class PasscodeActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
-        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(this);
+        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         setTheme(isDarkTheme ? R.style.SalesforceSDK_Passcode_Dark : R.style.SalesforceSDK_Passcode);
 
         // This makes the navigation bar visible on light themes.

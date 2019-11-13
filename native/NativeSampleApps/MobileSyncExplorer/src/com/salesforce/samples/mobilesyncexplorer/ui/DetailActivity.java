@@ -75,7 +75,7 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(this);
+		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
 		setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark : R.style.SalesforceSDK);
 		// This makes the navigation bar visible on light themes.
 		SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);

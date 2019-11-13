@@ -31,10 +31,11 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import androidx.test.platform.app.InstrumentationRegistry;
+import android.util.Log;
+
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 import androidx.test.filters.SmallTest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import android.util.Log;
 
 import com.salesforce.androidsdk.MainActivity;
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -69,7 +70,7 @@ public class SalesforceSDKManagerTest {
     @Test
     public void testOverrideAiltnAppNameBeforeSDKManagerInit() {
         SalesforceSDKTestManager.setAiltnAppName(TEST_APP_NAME);
-        SalesforceSDKTestManager.init(InstrumentationRegistry.getInstrumentation().getTargetContext(), MainActivity.class);
+        SalesforceSDKTestManager.init(getInstrumentation().getTargetContext(), MainActivity.class);
         SalesforceSDKTestManager.getInstance().setIsTestRun(true);
         compareAiltnAppNames(TEST_APP_NAME);
     }
@@ -80,7 +81,7 @@ public class SalesforceSDKManagerTest {
      */
     @Test
     public void testOverrideAiltnAppNameAfterSDKManagerInit() {
-        SalesforceSDKTestManager.init(InstrumentationRegistry.getInstrumentation().getTargetContext(), MainActivity.class);
+        SalesforceSDKTestManager.init(getInstrumentation().getTargetContext(), MainActivity.class);
         SalesforceSDKTestManager.setAiltnAppName(TEST_APP_NAME);
         SalesforceSDKTestManager.getInstance().setIsTestRun(true);
         compareAiltnAppNames(TEST_APP_NAME);
@@ -91,7 +92,7 @@ public class SalesforceSDKManagerTest {
      */
     @Test
     public void testDefaultAiltnAppName() {
-        SalesforceSDKTestManager.init(InstrumentationRegistry.getInstrumentation().getTargetContext(), MainActivity.class);
+        SalesforceSDKTestManager.init(getInstrumentation().getTargetContext(), MainActivity.class);
         SalesforceSDKTestManager.getInstance().setIsTestRun(true);
         compareAiltnAppNames(getDefaultAppName());
     }
@@ -101,15 +102,45 @@ public class SalesforceSDKManagerTest {
      */
     @Test
     public void testOverrideInvalidAiltnAppName() {
-        SalesforceSDKTestManager.init(InstrumentationRegistry.getInstrumentation().getTargetContext(), MainActivity.class);
+        SalesforceSDKTestManager.init(getInstrumentation().getTargetContext(), MainActivity.class);
         SalesforceSDKTestManager.setAiltnAppName(null);
         SalesforceSDKTestManager.getInstance().setIsTestRun(true);
         compareAiltnAppNames(getDefaultAppName());
     }
 
+    /**
+     * Test the default theme value.
+     */
+    @Test
+    public void testDefaultTheme() {
+        SalesforceSDKTestManager.init(getInstrumentation().getTargetContext(), MainActivity.class);
+        Assert.assertFalse(SalesforceSDKTestManager.getInstance().isDarkTheme());
+    }
+
+    /**
+     * Test setting dark theme.
+     */
+    @Test
+    public void testSetDarkTheme() {
+        SalesforceSDKTestManager.init(getInstrumentation().getTargetContext(), MainActivity.class);
+        SalesforceSDKTestManager.getInstance().setTheme(SalesforceSDKManager.Theme.DARK);
+        Assert.assertTrue(SalesforceSDKTestManager.getInstance().isDarkTheme());
+    }
+
+    /**
+     * Test changing theme multiple times.
+     */
+    @Test
+    public void testChangingTheme() {
+        SalesforceSDKTestManager.init(getInstrumentation().getTargetContext(), MainActivity.class);
+        SalesforceSDKTestManager.getInstance().setTheme(SalesforceSDKManager.Theme.DARK);
+        SalesforceSDKTestManager.getInstance().setTheme(SalesforceSDKManager.Theme.LIGHT);
+        Assert.assertFalse(SalesforceSDKTestManager.getInstance().isDarkTheme());
+    }
+
     private void compareAiltnAppNames(String expectedAppName) {
         final UserAccountManager userAccMgr = SalesforceSDKTestManager.getInstance().getUserAccountManager();
-        final Context targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        final Context targetContext = getInstrumentation().getTargetContext();
         final ClientManager clientManager = new ClientManager(targetContext,
                 ClientManagerTest.TEST_ACCOUNT_TYPE, null, true);
         clientManager.createNewAccount(ClientManagerTest.TEST_ACCOUNT_NAME, ClientManagerTest.TEST_USERNAME,
@@ -140,7 +171,7 @@ public class SalesforceSDKManagerTest {
     private String getDefaultAppName() {
         String ailtnAppName = null;
         try {
-            final Context targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+            final Context targetContext = getInstrumentation().getTargetContext();
             final PackageInfo packageInfo = targetContext.getPackageManager().getPackageInfo(targetContext.getPackageName(), 0);
             ailtnAppName = targetContext.getString(packageInfo.applicationInfo.labelRes);
         } catch (PackageManager.NameNotFoundException e) {

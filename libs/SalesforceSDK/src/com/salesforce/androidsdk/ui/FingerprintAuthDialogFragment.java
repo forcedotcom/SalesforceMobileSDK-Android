@@ -61,7 +61,7 @@ public class FingerprintAuthDialogFragment extends DialogFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(getActivity());
+        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
 
         // Do not create a new Fragment when the Activity is re-created such as orientation changes.
         setRetainInstance(true);
