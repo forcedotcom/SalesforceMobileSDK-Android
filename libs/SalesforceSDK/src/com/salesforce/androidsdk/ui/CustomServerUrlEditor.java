@@ -69,7 +69,7 @@ public class CustomServerUrlEditor extends DialogFragment {
 	@Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
-		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme((Activity) getContext());
+		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         rootView = inflater.inflate(R.layout.sf__custom_server_url, container);
 		rootView.getContext().setTheme(isDarkTheme ? R.style.SalesforceSDK_Dialog_Dark : R.style.SalesforceSDK_Dialog);
 		getDialog().setTitle(R.string.sf__server_url_add_title);

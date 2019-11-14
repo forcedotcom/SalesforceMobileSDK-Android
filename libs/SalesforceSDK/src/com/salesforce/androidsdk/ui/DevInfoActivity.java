@@ -50,7 +50,7 @@ public class DevInfoActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme(this);
+        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark : R.style.SalesforceSDK);
 
         // Title / layout

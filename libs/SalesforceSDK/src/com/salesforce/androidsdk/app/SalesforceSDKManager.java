@@ -164,8 +164,16 @@ public class SalesforceSDKManager {
     private boolean browserLoginEnabled;
     private String idpAppURIScheme;
     private boolean idpAppLoginFlowActive;
-    private boolean darkThemeDisabled;
-    private boolean forceDarkTheme;
+    private Theme theme =  Theme.SYSTEM_DEFAULT;
+
+    /**
+     * Available Mobile SDK style themes.
+     */
+    public enum Theme {
+        LIGHT,
+        DARK,
+        SYSTEM_DEFAULT
+    }
 
     /**
      * PasscodeManager object lock.
@@ -1400,32 +1408,28 @@ public class SalesforceSDKManager {
     }
 
     /**
-     * Returns if dark theme should be displayed.  This takes the Android system state and the options
-     * to disable for force dark theme into account.
-     * @param activity     Activity used to check the system dark theme state.
+     * Indicates whether dark theme should be displayed.  The value is retrieved from the OS, if no value is set.
+     * @see SalesforceSDKManager#setTheme
+     *
      * @return             True if dark theme should be displayed, otherwise false.
      */
-    public boolean isDarkTheme(Activity activity) {
-        int currentNightMode = activity.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-        boolean systemDarkTheme = currentNightMode == Configuration.UI_MODE_NIGHT_YES;
-
-        return !darkThemeDisabled && (systemDarkTheme || forceDarkTheme);
+    public boolean isDarkTheme() {
+        if (theme == Theme.SYSTEM_DEFAULT) {
+            int currentNightMode = context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+            return currentNightMode == Configuration.UI_MODE_NIGHT_YES;
+        } else {
+            return theme == Theme.DARK;
+        }
     }
 
     /**
-     * Disables dark theme for the SDK.
-     * @param disabled     True if dark theme should be disabled.
+     * Sets the theme for the SDK.  This value only persists as long as the instance of SalesforceSDKManager.
+     * @see Theme
+     *
+     * @param theme     The theme to use.
      */
-    public synchronized void disableDarkTheme(boolean disabled) {
-        darkThemeDisabled = disabled;
-    }
-
-    /**
-     * Forces dark theme for all supported API levels
-     * @param forced     True if dark theme should be force enabled.
-     */
-    public synchronized void forceDarkTheme(boolean forced) {
-        forceDarkTheme = forced;
+    public synchronized void setTheme(Theme theme) {
+        this.theme = theme;
     }
 
     /**
@@ -1434,7 +1438,7 @@ public class SalesforceSDKManager {
      * @param activity     Activity used to set style attributes.
      */
     public void setViewNavigationVisibility(Activity activity) {
-        if (!isDarkTheme(activity) || activity.getClass().getName().equals(getLoginActivityClass().getName())) {
+        if (!isDarkTheme() || activity.getClass().getName().equals(getLoginActivityClass().getName())) {
             // This covers the case where OS dark theme is true, but app has disabled.
             // TODO: Remove SalesforceSDK_AccessibleNav style when min API becomes 26.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

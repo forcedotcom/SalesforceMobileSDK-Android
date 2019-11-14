@@ -78,7 +78,7 @@ public class SalesforceServerRadioButton extends RadioButton {
 		final SpannableStringBuilder result = new SpannableStringBuilder();
 		if (name != null && url != null) {
 	        final SpannableString titleSpan = new SpannableString(name);
-	        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme((Activity) getContext());
+	        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
 	        int titleStyle = isDarkTheme ? R.style.SalesforceSDK_RadialButtonTitle_Dark : R.style.SalesforceSDK_RadialButtonTitle;
 	        int urlStyle = isDarkTheme ? R.style.SalesforceSDK_RadialButtonUrl_Dark : R.style.SalesforceSDK_RadialButtonUrl;
 	        titleSpan.setSpan(new TextAppearanceSpan(context, titleStyle), 0, name.length(),
