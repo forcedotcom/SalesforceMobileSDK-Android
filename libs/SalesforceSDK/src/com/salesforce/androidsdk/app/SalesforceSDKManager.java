@@ -167,7 +167,7 @@ public class SalesforceSDKManager {
     private Theme theme =  Theme.SYSTEM_DEFAULT;
 
     /**
-     * The theme to be used to style the SDK.
+     * Available Mobile SDK style themes.
      */
     public enum Theme {
         LIGHT,
@@ -1408,7 +1408,7 @@ public class SalesforceSDKManager {
     }
 
     /**
-     * Returns if dark theme should be displayed.  The value is retrieved from the OS, is no value is set.
+     * Indicates whether dark theme should be displayed.  The value is retrieved from the OS, if no value is set.
      * @see SalesforceSDKManager#setTheme
      *
      * @return             True if dark theme should be displayed, otherwise false.
@@ -1424,6 +1424,8 @@ public class SalesforceSDKManager {
 
     /**
      * Sets the theme for the SDK.  This value only persists as long as the instance of SalesforceSDKManager.
+     * @see Theme
+     *
      * @param theme     The theme to use.
      */
     public synchronized void setTheme(Theme theme) {
