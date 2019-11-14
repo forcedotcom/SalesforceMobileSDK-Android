@@ -31,6 +31,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.util.Log;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -113,8 +114,13 @@ public class SalesforceSDKManagerTest {
      */
     @Test
     public void testDefaultTheme() {
+        int currentNightMode = getInstrumentation().getContext().getResources().getConfiguration().uiMode
+                & Configuration.UI_MODE_NIGHT_MASK;
+        Boolean isDarkTheme = currentNightMode == Configuration.UI_MODE_NIGHT_YES;
+
         SalesforceSDKTestManager.init(getInstrumentation().getTargetContext(), MainActivity.class);
-        Assert.assertFalse(SalesforceSDKTestManager.getInstance().isDarkTheme());
+        Assert.assertEquals("Default theme does not match OS value.", isDarkTheme,
+                SalesforceSDKTestManager.getInstance().isDarkTheme());
     }
 
     /**
@@ -124,7 +130,8 @@ public class SalesforceSDKManagerTest {
     public void testSetDarkTheme() {
         SalesforceSDKTestManager.init(getInstrumentation().getTargetContext(), MainActivity.class);
         SalesforceSDKTestManager.getInstance().setTheme(SalesforceSDKManager.Theme.DARK);
-        Assert.assertTrue(SalesforceSDKTestManager.getInstance().isDarkTheme());
+        Assert.assertTrue("Dark theme not successfully set.",
+                SalesforceSDKTestManager.getInstance().isDarkTheme());
     }
 
     /**
@@ -135,7 +142,8 @@ public class SalesforceSDKManagerTest {
         SalesforceSDKTestManager.init(getInstrumentation().getTargetContext(), MainActivity.class);
         SalesforceSDKTestManager.getInstance().setTheme(SalesforceSDKManager.Theme.DARK);
         SalesforceSDKTestManager.getInstance().setTheme(SalesforceSDKManager.Theme.LIGHT);
-        Assert.assertFalse(SalesforceSDKTestManager.getInstance().isDarkTheme());
+        Assert.assertFalse("Latest theme value not returned.",
+                SalesforceSDKTestManager.getInstance().isDarkTheme());
     }
 
     private void compareAiltnAppNames(String expectedAppName) {
