@@ -79,10 +79,12 @@ public class SyncUpTarget extends SyncTarget {
     public static final String TAG = "SyncUpTarget";
     public static final String CREATE_FIELDLIST = "createFieldlist";
     public static final String UPDATE_FIELDLIST = "updateFieldlist";
+    public static final String EXTERNAL_ID_FIELD_NAME = "externalIdFieldName";
 
     // Fields
     protected List<String> createFieldlist;
     protected List<String> updateFieldlist;
+    protected String externalIdFieldName;
 
     // Last sync error
     protected String lastError;
@@ -122,9 +124,17 @@ public class SyncUpTarget extends SyncTarget {
      * Construct SyncUpTarget
      */
     public SyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist) {
-        super();
+        this(createFieldlist, updateFieldlist, null, null, null);
+    }
+
+    /**
+     * Construct SyncUpTarget
+     */
+    public SyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist, String idFieldName, String modificationDateFieldName, String externalIdFieldName) {
+        super(idFieldName, modificationDateFieldName);
         this.createFieldlist = createFieldlist;
         this.updateFieldlist = updateFieldlist;
+        this.externalIdFieldName = externalIdFieldName;
     }
 
     /**
@@ -136,6 +146,7 @@ public class SyncUpTarget extends SyncTarget {
         super(target);
         this.createFieldlist = JSONObjectHelper.toList(target.optJSONArray(CREATE_FIELDLIST));
         this.updateFieldlist = JSONObjectHelper.toList(target.optJSONArray(UPDATE_FIELDLIST));
+        this.externalIdFieldName = JSONObjectHelper.optString(target, EXTERNAL_ID_FIELD_NAME);
     }
 
     /**
@@ -146,6 +157,7 @@ public class SyncUpTarget extends SyncTarget {
         JSONObject target = super.asJSON();
         if (createFieldlist != null) target.put(CREATE_FIELDLIST, new JSONArray(createFieldlist));
         if (updateFieldlist != null) target.put(UPDATE_FIELDLIST, new JSONArray(updateFieldlist));
+        if (externalIdFieldName != null) target.put(EXTERNAL_ID_FIELD_NAME, externalIdFieldName);
         return target;
     }
 
@@ -197,7 +209,19 @@ public class SyncUpTarget extends SyncTarget {
      * @throws JSONException
      */
     protected String createOnServer(SyncManager syncManager, String objectType, Map<String, Object> fields) throws IOException, JSONException {
-        RestRequest request = RestRequest.getRequestForCreate(syncManager.apiVersion, objectType, fields);
+        RestRequest request;
+
+        // Do an upsert if external id specified
+        if (externalIdFieldName != null && fields.get(externalIdFieldName) != null) {
+            String externalId = (String) fields.get(externalIdFieldName);
+            request = RestRequest.getRequestForUpsert(syncManager.apiVersion, objectType, externalIdFieldName, externalId, fields);
+        }
+        // Do a create otherwise
+        else {
+            request = RestRequest.getRequestForCreate(syncManager.apiVersion, objectType, fields);
+        }
+
+
         RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
 
         if (!response.isSuccess()) {
