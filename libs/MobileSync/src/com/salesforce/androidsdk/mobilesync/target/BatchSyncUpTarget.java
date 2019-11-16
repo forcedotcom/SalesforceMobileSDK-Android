@@ -74,7 +74,14 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
      * Construct SyncUpTarget with a different maxBatchSize (NB: cannot exceed MAX_SUB_REQUESTS_COMPOSITE_API)
      */
     public BatchSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist, int maxBatchSize) {
-        super(createFieldlist, updateFieldlist);
+        this(createFieldlist, updateFieldlist, maxBatchSize, null, null, null);
+    }
+
+    /**
+     * Construct BatchSyncUpTarget with a different maxBatchSize and id/modifiedDate/externalId fields
+     */
+    public BatchSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist, int maxBatchSize, String idFieldName, String modificationDateFieldName, String externalIdFieldName) {
+        super(createFieldlist, updateFieldlist, idFieldName, modificationDateFieldName, externalIdFieldName);
         this.maxBatchSize = Math.min(maxBatchSize, MAX_SUB_REQUESTS_COMPOSITE_API); // composite api allows up to 25 subrequests
     }
 
@@ -157,7 +164,7 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
 
     protected RestRequest buildRequestForRecord(String apiVersion,
                                                 JSONObject record,
-                                                List<String> fieldlist) throws IOException, JSONException {
+                                                List<String> fieldlist) throws JSONException {
 
         if (!isDirty(record)) {
             return null; // nothing to do
@@ -183,7 +190,15 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
             if (isCreate) {
                 fieldlist = this.createFieldlist != null ? this.createFieldlist : fieldlist;
                 fields = buildFieldsMap(record, fieldlist, getIdFieldName(), getModificationDateFieldName());
-                return RestRequest.getRequestForCreate(apiVersion, objectType, fields);
+
+                if (getExternalIdFieldName() != null && fields.get(getExternalIdFieldName()) != null) {
+                    String externalId = (String) fields.get(getExternalIdFieldName());
+                    return RestRequest.getRequestForUpsert(apiVersion, objectType, getExternalIdFieldName(), externalId, fields);
+                }
+                // Do a create otherwise
+                else {
+                    return RestRequest.getRequestForCreate(apiVersion, objectType, fields);
+                }
             }
             else {
                 fieldlist = this.updateFieldlist != null ? this.updateFieldlist : fieldlist;

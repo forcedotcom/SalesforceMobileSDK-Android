@@ -162,6 +162,13 @@ public class SyncUpTarget extends SyncTarget {
     }
 
     /**
+     * @return The field name of an external id field of the record.  Default to null.
+     */
+    public String getExternalIdFieldName() {
+        return externalIdFieldName;
+    }
+
+    /**
      * Save record with last error if any
      * @param syncManager
      * @param soupName
