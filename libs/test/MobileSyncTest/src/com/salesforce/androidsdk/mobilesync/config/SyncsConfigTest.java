@@ -238,7 +238,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
         SyncState sync = syncManager.getSyncStatus("batchSyncUp");
         Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, sync.getSoupName());
         checkStatus(sync, SyncState.Type.syncUp, sync.getId(),
-                new BatchSyncUpTarget(null, null, BatchSyncUpTarget.MAX_SUB_REQUESTS_COMPOSITE_API, "IdX", "LastModifiedDateX", "ExternalIdX"),
+                new BatchSyncUpTarget(null, null, "IdX", "LastModifiedDateX", "ExternalIdX", BatchSyncUpTarget.MAX_SUB_REQUESTS_COMPOSITE_API),
                 SyncOptions.optionsForSyncUp(Arrays.asList(new String[]{"Name", "Description"}), MergeMode.OVERWRITE),
                 SyncState.Status.NEW, 0);
     }

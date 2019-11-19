@@ -67,20 +67,27 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
      * Construct SyncUpTarget
      */
     public BatchSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist) {
-        this(createFieldlist, updateFieldlist, MAX_SUB_REQUESTS_COMPOSITE_API);
+        this(createFieldlist, updateFieldlist, null, null, null, MAX_SUB_REQUESTS_COMPOSITE_API);
+    }
+
+    /**
+     * Construct SyncUpTarget with given id/modifiedDate/externalId fields
+     */
+    public BatchSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist, String idFieldName, String modificationDateFieldName, String externalIdFieldName) {
+        this(createFieldlist, updateFieldlist, idFieldName, modificationDateFieldName, externalIdFieldName, MAX_SUB_REQUESTS_COMPOSITE_API);
     }
 
     /**
      * Construct SyncUpTarget with a different maxBatchSize (NB: cannot exceed MAX_SUB_REQUESTS_COMPOSITE_API)
      */
     public BatchSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist, int maxBatchSize) {
-        this(createFieldlist, updateFieldlist, maxBatchSize, null, null, null);
+        this(createFieldlist, updateFieldlist, null, null, null, maxBatchSize);
     }
 
     /**
      * Construct BatchSyncUpTarget with a different maxBatchSize and id/modifiedDate/externalId fields
      */
-    public BatchSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist, int maxBatchSize, String idFieldName, String modificationDateFieldName, String externalIdFieldName) {
+    public BatchSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist, String idFieldName, String modificationDateFieldName, String externalIdFieldName, int maxBatchSize) {
         super(createFieldlist, updateFieldlist, idFieldName, modificationDateFieldName, externalIdFieldName);
         this.maxBatchSize = Math.min(maxBatchSize, MAX_SUB_REQUESTS_COMPOSITE_API); // composite api allows up to 25 subrequests
     }

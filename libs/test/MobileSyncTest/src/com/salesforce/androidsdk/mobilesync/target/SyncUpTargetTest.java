@@ -27,11 +27,16 @@
 
 package com.salesforce.androidsdk.mobilesync.target;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+
 import com.salesforce.androidsdk.mobilesync.manager.SyncManagerTestCase;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
+import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -44,9 +49,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.SmallTest;
 
 /**
  * Test class for SyncUpTarget.
@@ -271,6 +273,65 @@ public class SyncUpTargetTest extends SyncManagerTestCase {
     @Test
     public void testSyncUpWithLocallyCreatedRecords() throws Exception {
         trySyncUpWithLocallyCreatedRecords(SyncState.MergeMode.OVERWRITE);
+    }
+
+    /**
+     * Create accounts locally but with external id field populated, sync up with external id field name provided, check smartstore and server afterwards
+     * @throws Exception
+     */
+    @Test
+    public void testSyncUpWithExternalId() throws Exception {
+        // Creating 3 new names
+        String name1 = createRecordName(Constants.ACCOUNT);
+        String name2 = createRecordName(Constants.ACCOUNT);
+        String name3 = createRecordName(Constants.ACCOUNT);
+
+        // Get id of two records on the server
+        String[] allIds = idToFields.keySet().toArray(new String[0]);
+        Arrays.sort(allIds);
+        String id1 = allIds[0];
+        String id2 = allIds[1];
+
+        // Create accounts locally
+        JSONObject[] localAccounts = createAccountsLocally(new String[] { name1, name2, name3});
+        JSONObject localRecord1 = localAccounts[0];
+        JSONObject localRecord2 = localAccounts[1];
+        JSONObject localRecord3 = localAccounts[2];
+
+        // Update Id field to match and existing id for record 1 and 2
+        localRecord1.put(Constants.ID, id1);
+        smartStore.upsert(ACCOUNTS_SOUP, localRecord1);
+        localRecord1.put(Constants.ID, id2);
+        smartStore.upsert(ACCOUNTS_SOUP, localRecord2);
+
+        // Sync up with external id field name - NB: only syncing up name field not description
+        SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(new String[]{Constants.NAME}));
+        trySyncUp(3, options, null, null, Constants.ID);
+
+        // Getting id for third record upserted - the one without an valid external id
+        String id3 = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{}, Constants.NAME, new String[] { name3 }).keySet().toArray(new String[0])[0];
+
+        // Expected records locally
+        Map<String, Map<String, Object>> expectedDbIdToFields = new HashMap<>();
+        expectedDbIdToFields.put(id1, createFieldsMapFromNameDescription(name1, localRecord1.getString(Constants.DESCRIPTION)));
+        expectedDbIdToFields.put(id2, createFieldsMapFromNameDescription(name2, localRecord2.getString(Constants.DESCRIPTION)));
+        expectedDbIdToFields.put(id3, createFieldsMapFromNameDescription(name3, localRecord3.getString(Constants.DESCRIPTION)));
+
+        // Check db
+        checkDbStateFlags(expectedDbIdToFields.keySet(), false, false, false, ACCOUNTS_SOUP);
+        checkDb(expectedDbIdToFields, ACCOUNTS_SOUP);
+
+        // Expected records on server
+        Map<String, Map<String, Object>> expectedServerIdToFields = new HashMap();
+        expectedServerIdToFields.put(id1, createFieldsMapFromNameDescription(name1, (String) idToFields.get(id1).get(Constants.DESCRIPTION)));
+        expectedServerIdToFields.put(id2, createFieldsMapFromNameDescription(name2, (String) idToFields.get(id2).get(Constants.DESCRIPTION)));
+        expectedServerIdToFields.put(id3, createFieldsMapFromNameDescription(name3, null));
+
+        // Check server
+        checkServer(expectedServerIdToFields, Constants.ACCOUNT);
+
+        // Adding to idToFields so that they get deleted in tearDown
+        idToFields.putAll(expectedServerIdToFields);
     }
 
     /**
@@ -582,7 +643,21 @@ public class SyncUpTargetTest extends SyncManagerTestCase {
      * @throws JSONException
      */
     protected void trySyncUp(int numberChanges, SyncState.MergeMode mergeMode, List<String> createFieldlist, List<String> updateFieldlist) throws JSONException {
-        trySyncUp(new SyncUpTarget(createFieldlist, updateFieldlist), numberChanges, mergeMode);
+        SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(new String[] { Constants.NAME, Constants.DESCRIPTION }), mergeMode);
+        trySyncUp(numberChanges, options, createFieldlist, updateFieldlist, null);
+    }
+
+    /**
+     * Sync up helper
+     * @param numberChanges
+     * @param options
+     * @param createFieldlist
+     * @param updateFieldlist
+     * @param externalIdFieldName
+     * @throws JSONException
+     */
+    protected void trySyncUp(int numberChanges, SyncOptions options, List<String> createFieldlist, List<String> updateFieldlist, String externalIdFieldName) throws JSONException {
+        trySyncUp(new SyncUpTarget(createFieldlist, updateFieldlist, null, null, externalIdFieldName), numberChanges, options, false);
     }
 
     /**
@@ -605,4 +680,16 @@ public class SyncUpTargetTest extends SyncManagerTestCase {
 
     }
 
+    /**
+     * Helper for building fields map
+     * @param name
+     * @param description
+     * @return
+     */
+    protected Map<String, Object> createFieldsMapFromNameDescription(String name, String description) {
+        final Map<String, Object> fields = new HashMap<>();
+        if (name != null) fields.put(Constants.NAME, name);
+        if (description != null) fields.put(Constants.DESCRIPTION, description);
+        return fields;
+    }
 }
