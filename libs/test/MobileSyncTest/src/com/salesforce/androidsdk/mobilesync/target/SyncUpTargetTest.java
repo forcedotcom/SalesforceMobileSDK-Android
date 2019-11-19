@@ -301,7 +301,7 @@ public class SyncUpTargetTest extends SyncManagerTestCase {
         // Update Id field to match and existing id for record 1 and 2
         localRecord1.put(Constants.ID, id1);
         smartStore.upsert(ACCOUNTS_SOUP, localRecord1);
-        localRecord1.put(Constants.ID, id2);
+        localRecord2.put(Constants.ID, id2);
         smartStore.upsert(ACCOUNTS_SOUP, localRecord2);
 
         // Sync up with external id field name - NB: only syncing up name field not description
