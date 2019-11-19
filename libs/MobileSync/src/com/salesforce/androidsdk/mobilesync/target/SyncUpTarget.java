@@ -201,8 +201,12 @@ public class SyncUpTarget extends SyncTarget {
         fieldlist = this.createFieldlist != null ? this.createFieldlist : fieldlist;
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
         final Map<String,Object> fields = buildFieldsMap(record, fieldlist, getIdFieldName(), getModificationDateFieldName());
-
-        return createOnServer(syncManager, objectType, fields);
+        final String externalId = externalIdFieldName != null ? record.getString(externalIdFieldName) : null;
+        if (externalId != null) {
+            return upsertOnServer(syncManager, objectType, fields, externalId);
+        } else {
+            return createOnServer(syncManager, objectType, fields);
+        }
     }
 
     /**
@@ -216,19 +220,34 @@ public class SyncUpTarget extends SyncTarget {
      * @throws JSONException
      */
     protected String createOnServer(SyncManager syncManager, String objectType, Map<String, Object> fields) throws IOException, JSONException {
-        RestRequest request;
+        RestRequest request = RestRequest.getRequestForCreate(syncManager.apiVersion, objectType, fields);
+        return sendCreateOrUpsertRequest(syncManager, request);
+    }
 
-        // Do an upsert if external id specified
-        if (externalIdFieldName != null && fields.get(externalIdFieldName) != null) {
-            String externalId = (String) fields.get(externalIdFieldName);
-            request = RestRequest.getRequestForUpsert(syncManager.apiVersion, objectType, externalIdFieldName, externalId, fields);
-        }
-        // Do a create otherwise
-        else {
-            request = RestRequest.getRequestForCreate(syncManager.apiVersion, objectType, fields);
-        }
+    /**
+     * Save locally created record back to server doing an upsert
+     * Called by createOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist)
+     * @param syncManager
+     * @param objectType
+     * @param fields
+     * @param externalId
+     * @return server record id or null if creation failed
+     * @throws IOException
+     * @throws JSONException
+     */
 
+    protected String upsertOnServer(SyncManager syncManager, String objectType, Map<String, Object> fields, String externalId) throws IOException, JSONException {
+        RestRequest request = RestRequest.getRequestForUpsert(syncManager.apiVersion, objectType, externalIdFieldName, externalId, fields);
+        return sendCreateOrUpsertRequest(syncManager, request);
+    }
 
+    /**
+     * Send create or upsert request
+     * @param syncManager
+     * @param request
+     * @return server record id or null if creation or upsert failed
+     */
+    protected String sendCreateOrUpsertRequest(SyncManager syncManager, RestRequest request) throws IOException, JSONException {
         RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
 
         if (!response.isSuccess()) {

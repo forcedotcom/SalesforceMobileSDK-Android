@@ -197,9 +197,10 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
             if (isCreate) {
                 fieldlist = this.createFieldlist != null ? this.createFieldlist : fieldlist;
                 fields = buildFieldsMap(record, fieldlist, getIdFieldName(), getModificationDateFieldName());
+                String externalId = getExternalIdFieldName() != null ? record.getString(getExternalIdFieldName()) : null;
 
-                if (getExternalIdFieldName() != null && fields.get(getExternalIdFieldName()) != null) {
-                    String externalId = (String) fields.get(getExternalIdFieldName());
+                // Do upsert if externalId specified
+                if (externalId != null) {
                     return RestRequest.getRequestForUpsert(apiVersion, objectType, getExternalIdFieldName(), externalId, fields);
                 }
                 // Do a create otherwise
