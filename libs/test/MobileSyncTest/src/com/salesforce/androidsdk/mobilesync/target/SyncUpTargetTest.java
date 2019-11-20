@@ -281,6 +281,8 @@ public class SyncUpTargetTest extends SyncManagerTestCase {
      */
     @Test
     public void testSyncUpWithExternalId() throws Exception {
+        String externalIdFieldName = "Id";
+
         // Creating 3 new names
         String name1 = createRecordName(Constants.ACCOUNT);
         String name2 = createRecordName(Constants.ACCOUNT);
@@ -299,14 +301,16 @@ public class SyncUpTargetTest extends SyncManagerTestCase {
         JSONObject localRecord3 = localAccounts[2];
 
         // Update Id field to match and existing id for record 1 and 2
-        localRecord1.put(Constants.ID, id1);
+        localRecord1.put(externalIdFieldName, id1);
         smartStore.upsert(ACCOUNTS_SOUP, localRecord1);
-        localRecord2.put(Constants.ID, id2);
+        localRecord2.put(externalIdFieldName, id2);
         smartStore.upsert(ACCOUNTS_SOUP, localRecord2);
+        localRecord3.put(externalIdFieldName, null);
+        smartStore.upsert(ACCOUNTS_SOUP, localRecord3);
 
         // Sync up with external id field name - NB: only syncing up name field not description
         SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(new String[]{Constants.NAME}));
-        trySyncUp(3, options, null, null, Constants.ID);
+        trySyncUp(3, options, null, null, externalIdFieldName);
 
         // Getting id for third record upserted - the one without an valid external id
         String id3 = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{}, Constants.NAME, new String[] { name3 }).keySet().toArray(new String[0])[0];

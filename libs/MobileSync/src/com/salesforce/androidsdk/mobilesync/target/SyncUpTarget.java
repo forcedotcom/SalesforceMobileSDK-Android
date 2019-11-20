@@ -26,11 +26,11 @@
  */
 package com.salesforce.androidsdk.mobilesync.target;
 
+import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
+import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
-import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
@@ -201,7 +201,7 @@ public class SyncUpTarget extends SyncTarget {
         fieldlist = this.createFieldlist != null ? this.createFieldlist : fieldlist;
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
         final Map<String,Object> fields = buildFieldsMap(record, fieldlist, getIdFieldName(), getModificationDateFieldName());
-        final String externalId = externalIdFieldName != null ? record.getString(externalIdFieldName) : null;
+        final String externalId = externalIdFieldName != null ? JSONObjectHelper.optString(record, externalIdFieldName) : null;
         if (externalId != null) {
             return upsertOnServer(syncManager, objectType, fields, externalId);
         } else {
