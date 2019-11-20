@@ -170,6 +170,7 @@ public class ServerPickerActivityTest {
         String entry = label + "\n" + url;
         for (int serverNum = 0; serverNum < 3; serverNum++) {
             addCustomUrl(String.format(label, serverNum), String.format(url, serverNum));
+            Thread.sleep(1000);
         }
         tapResetButton();
         for (int serverNum = 0; serverNum < 3; serverNum++) {
