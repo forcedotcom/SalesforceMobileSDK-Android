@@ -94,6 +94,7 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
 
     /**
      * Construct SyncUpTarget from json
+     *
      * @param target
      * @throws JSONException
      */
@@ -135,7 +136,7 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
 
             if (id == null) {
                 // create local id - needed for refId
-                id = String.format("local_%ld", record.getLong(SmartStore.SOUP_ENTRY_ID));
+                id = createLocalId(record);
                 record.put(getIdFieldName(), id);
             }
 
@@ -200,7 +201,11 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
                 String externalId = getExternalIdFieldName() != null ? JSONObjectHelper.optString(record, getExternalIdFieldName()) : null;
 
                 // Do upsert if externalId specified
-                if (externalId != null) {
+                if (externalId != null
+                        // the following check is there for the case
+                        // where the the external id field is the id field
+                        // and the empty id field was populated by BatchSyncUpTarget using createLocalId()
+                        && !externalId.equals(createLocalId(record))) {
                     return RestRequest.getRequestForUpsert(apiVersion, objectType, getExternalIdFieldName(), externalId, fields);
                 }
                 // Do a create otherwise
@@ -238,8 +243,7 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
         // Create / update case
         else {
             // Success case
-            if (RestResponse.isSuccess(statusCode))
-            {
+            if (RestResponse.isSuccess(statusCode)) {
                 // Plugging server id in id field
                 CompositeRequestHelper.updateReferences(record, getIdFieldName(), refIdToServerId);
 
@@ -263,5 +267,8 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
         return needReRun;
     }
 
-
+    // Create a local id (based on the internal soup entry id)
+    private String createLocalId(JSONObject record) throws JSONException {
+        return "local_" + record.getLong(SmartStore.SOUP_ENTRY_ID);
+    }
 }
