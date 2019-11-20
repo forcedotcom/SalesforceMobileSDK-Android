@@ -71,17 +71,17 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
     }
 
     /**
-     * Construct SyncUpTarget with given id/modifiedDate/externalId fields
-     */
-    public BatchSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist, String idFieldName, String modificationDateFieldName, String externalIdFieldName) {
-        this(createFieldlist, updateFieldlist, idFieldName, modificationDateFieldName, externalIdFieldName, MAX_SUB_REQUESTS_COMPOSITE_API);
-    }
-
-    /**
      * Construct SyncUpTarget with a different maxBatchSize (NB: cannot exceed MAX_SUB_REQUESTS_COMPOSITE_API)
      */
     public BatchSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist, int maxBatchSize) {
         this(createFieldlist, updateFieldlist, null, null, null, maxBatchSize);
+    }
+
+    /**
+     * Construct SyncUpTarget with given id/modifiedDate/externalId fields
+     */
+    public BatchSyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist, String idFieldName, String modificationDateFieldName, String externalIdFieldName) {
+        this(createFieldlist, updateFieldlist, idFieldName, modificationDateFieldName, externalIdFieldName, MAX_SUB_REQUESTS_COMPOSITE_API);
     }
 
     /**
