@@ -275,68 +275,6 @@ public class SyncUpTargetTest extends SyncManagerTestCase {
         trySyncUpWithLocallyCreatedRecords(SyncState.MergeMode.OVERWRITE);
     }
 
-    /**
-     * Create accounts locally but with external id field populated, sync up with external id field name provided, check smartstore and server afterwards
-     * @throws Exception
-     */
-    @Test
-    public void testSyncUpWithExternalId() throws Exception {
-        String externalIdFieldName = "Id";
-
-        // Creating 3 new names
-        String name1 = createRecordName(Constants.ACCOUNT);
-        String name2 = createRecordName(Constants.ACCOUNT);
-        String name3 = createRecordName(Constants.ACCOUNT);
-
-        // Get id of two records on the server
-        String[] allIds = idToFields.keySet().toArray(new String[0]);
-        Arrays.sort(allIds);
-        String id1 = allIds[0];
-        String id2 = allIds[1];
-
-        // Create accounts locally
-        JSONObject[] localAccounts = createAccountsLocally(new String[] { name1, name2, name3});
-        JSONObject localRecord1 = localAccounts[0];
-        JSONObject localRecord2 = localAccounts[1];
-        JSONObject localRecord3 = localAccounts[2];
-
-        // Update Id field to match and existing id for record 1 and 2
-        localRecord1.put(externalIdFieldName, id1);
-        smartStore.upsert(ACCOUNTS_SOUP, localRecord1);
-        localRecord2.put(externalIdFieldName, id2);
-        smartStore.upsert(ACCOUNTS_SOUP, localRecord2);
-        localRecord3.put(externalIdFieldName, null);
-        smartStore.upsert(ACCOUNTS_SOUP, localRecord3);
-
-        // Sync up with external id field name - NB: only syncing up name field not description
-        SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(new String[]{Constants.NAME}));
-        trySyncUp(3, options, null, null, externalIdFieldName);
-
-        // Getting id for third record upserted - the one without an valid external id
-        String id3 = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{}, Constants.NAME, new String[] { name3 }).keySet().toArray(new String[0])[0];
-
-        // Expected records locally
-        Map<String, Map<String, Object>> expectedDbIdToFields = new HashMap<>();
-        expectedDbIdToFields.put(id1, createFieldsMapFromNameDescription(name1, localRecord1.getString(Constants.DESCRIPTION)));
-        expectedDbIdToFields.put(id2, createFieldsMapFromNameDescription(name2, localRecord2.getString(Constants.DESCRIPTION)));
-        expectedDbIdToFields.put(id3, createFieldsMapFromNameDescription(name3, localRecord3.getString(Constants.DESCRIPTION)));
-
-        // Check db
-        checkDbStateFlags(expectedDbIdToFields.keySet(), false, false, false, ACCOUNTS_SOUP);
-        checkDb(expectedDbIdToFields, ACCOUNTS_SOUP);
-
-        // Expected records on server
-        Map<String, Map<String, Object>> expectedServerIdToFields = new HashMap();
-        expectedServerIdToFields.put(id1, createFieldsMapFromNameDescription(name1, (String) idToFields.get(id1).get(Constants.DESCRIPTION)));
-        expectedServerIdToFields.put(id2, createFieldsMapFromNameDescription(name2, (String) idToFields.get(id2).get(Constants.DESCRIPTION)));
-        expectedServerIdToFields.put(id3, createFieldsMapFromNameDescription(name3, null));
-
-        // Check server
-        checkServer(expectedServerIdToFields, Constants.ACCOUNT);
-
-        // Adding to idToFields so that they get deleted in tearDown
-        idToFields.putAll(expectedServerIdToFields);
-    }
 
     /**
      * Create accounts locally, sync up with mege mode LEAVE_IF_CHANGED, check smartstore and server afterwards
@@ -628,6 +566,69 @@ public class SyncUpTargetTest extends SyncManagerTestCase {
 
         // Adding to idToFields so that they get deleted in tearDown.
         idToFields.putAll(idToFieldsCreated);
+    }
+
+    /**
+     * Create accounts locally but with external id field populated, sync up with external id field name provided, check smartstore and server afterwards
+     * @throws Exception
+     */
+    @Test
+    public void testSyncUpWithExternalId() throws Exception {
+        String externalIdFieldName = "Id";
+
+        // Creating 3 new names
+        String name1 = createRecordName(Constants.ACCOUNT);
+        String name2 = createRecordName(Constants.ACCOUNT);
+        String name3 = createRecordName(Constants.ACCOUNT);
+
+        // Get id of two records on the server
+        String[] allIds = idToFields.keySet().toArray(new String[0]);
+        Arrays.sort(allIds);
+        String id1 = allIds[0];
+        String id2 = allIds[1];
+
+        // Create accounts locally
+        JSONObject[] localAccounts = createAccountsLocally(new String[] { name1, name2, name3});
+        JSONObject localRecord1 = localAccounts[0];
+        JSONObject localRecord2 = localAccounts[1];
+        JSONObject localRecord3 = localAccounts[2];
+
+        // Update Id field to match and existing id for record 1 and 2
+        localRecord1.put(externalIdFieldName, id1);
+        smartStore.upsert(ACCOUNTS_SOUP, localRecord1);
+        localRecord2.put(externalIdFieldName, id2);
+        smartStore.upsert(ACCOUNTS_SOUP, localRecord2);
+        localRecord3.put(externalIdFieldName, null);
+        smartStore.upsert(ACCOUNTS_SOUP, localRecord3);
+
+        // Sync up with external id field name - NB: only syncing up name field not description
+        SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(new String[]{Constants.NAME}));
+        trySyncUp(3, options, null, null, externalIdFieldName);
+
+        // Getting id for third record upserted - the one without an valid external id
+        String id3 = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{}, Constants.NAME, new String[] { name3 }).keySet().toArray(new String[0])[0];
+
+        // Expected records locally
+        Map<String, Map<String, Object>> expectedDbIdToFields = new HashMap<>();
+        expectedDbIdToFields.put(id1, createFieldsMapFromNameDescription(name1, localRecord1.getString(Constants.DESCRIPTION)));
+        expectedDbIdToFields.put(id2, createFieldsMapFromNameDescription(name2, localRecord2.getString(Constants.DESCRIPTION)));
+        expectedDbIdToFields.put(id3, createFieldsMapFromNameDescription(name3, localRecord3.getString(Constants.DESCRIPTION)));
+
+        // Check db
+        checkDbStateFlags(expectedDbIdToFields.keySet(), false, false, false, ACCOUNTS_SOUP);
+        checkDb(expectedDbIdToFields, ACCOUNTS_SOUP);
+
+        // Expected records on server
+        Map<String, Map<String, Object>> expectedServerIdToFields = new HashMap();
+        expectedServerIdToFields.put(id1, createFieldsMapFromNameDescription(name1, (String) idToFields.get(id1).get(Constants.DESCRIPTION)));
+        expectedServerIdToFields.put(id2, createFieldsMapFromNameDescription(name2, (String) idToFields.get(id2).get(Constants.DESCRIPTION)));
+        expectedServerIdToFields.put(id3, createFieldsMapFromNameDescription(name3, null));
+
+        // Check server
+        checkServer(expectedServerIdToFields, Constants.ACCOUNT);
+
+        // Adding to idToFields so that they get deleted in tearDown
+        idToFields.putAll(expectedServerIdToFields);
     }
 
     /**
