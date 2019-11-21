@@ -28,7 +28,7 @@
 package com.salesforce.androidsdk.mobilesync.target;
 
 import com.salesforce.androidsdk.mobilesync.util.Constants;
-import com.salesforce.androidsdk.mobilesync.util.SyncState;
+import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 import org.json.JSONArray;
@@ -53,8 +53,8 @@ import androidx.test.filters.SmallTest;
 public class BatchSyncUpTargetTest extends SyncUpTargetTest {
 
     @Override
-    protected void trySyncUp(int numberChanges, SyncState.MergeMode mergeMode, List<String> createFieldlist, List<String> updateFieldlist) throws JSONException {
-        trySyncUp(new BatchSyncUpTarget(createFieldlist, updateFieldlist, 2), numberChanges, mergeMode);
+    protected void trySyncUp(int numberChanges, SyncOptions options, List<String> createFieldlist, List<String> updateFieldlist, String externalIdFieldName) throws JSONException {
+        trySyncUp(new BatchSyncUpTarget(createFieldlist, updateFieldlist, null, null, externalIdFieldName), numberChanges, options, false);
     }
 
     @Test

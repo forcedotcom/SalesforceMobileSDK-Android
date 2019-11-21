@@ -26,11 +26,11 @@
  */
 package com.salesforce.androidsdk.mobilesync.target;
 
+import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
+import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
-import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
@@ -79,10 +79,12 @@ public class SyncUpTarget extends SyncTarget {
     public static final String TAG = "SyncUpTarget";
     public static final String CREATE_FIELDLIST = "createFieldlist";
     public static final String UPDATE_FIELDLIST = "updateFieldlist";
+    public static final String EXTERNAL_ID_FIELD_NAME = "externalIdFieldName";
 
     // Fields
     protected List<String> createFieldlist;
     protected List<String> updateFieldlist;
+    protected String externalIdFieldName;
 
     // Last sync error
     protected String lastError;
@@ -122,9 +124,17 @@ public class SyncUpTarget extends SyncTarget {
      * Construct SyncUpTarget
      */
     public SyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist) {
-        super();
+        this(createFieldlist, updateFieldlist, null, null, null);
+    }
+
+    /**
+     * Construct SyncUpTarget
+     */
+    public SyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist, String idFieldName, String modificationDateFieldName, String externalIdFieldName) {
+        super(idFieldName, modificationDateFieldName);
         this.createFieldlist = createFieldlist;
         this.updateFieldlist = updateFieldlist;
+        this.externalIdFieldName = externalIdFieldName;
     }
 
     /**
@@ -136,6 +146,7 @@ public class SyncUpTarget extends SyncTarget {
         super(target);
         this.createFieldlist = JSONObjectHelper.toList(target.optJSONArray(CREATE_FIELDLIST));
         this.updateFieldlist = JSONObjectHelper.toList(target.optJSONArray(UPDATE_FIELDLIST));
+        this.externalIdFieldName = JSONObjectHelper.optString(target, EXTERNAL_ID_FIELD_NAME);
     }
 
     /**
@@ -146,7 +157,15 @@ public class SyncUpTarget extends SyncTarget {
         JSONObject target = super.asJSON();
         if (createFieldlist != null) target.put(CREATE_FIELDLIST, new JSONArray(createFieldlist));
         if (updateFieldlist != null) target.put(UPDATE_FIELDLIST, new JSONArray(updateFieldlist));
+        if (externalIdFieldName != null) target.put(EXTERNAL_ID_FIELD_NAME, externalIdFieldName);
         return target;
+    }
+
+    /**
+     * @return The field name of an external id field of the record.  Default to null.
+     */
+    public String getExternalIdFieldName() {
+        return externalIdFieldName;
     }
 
     /**
@@ -182,8 +201,12 @@ public class SyncUpTarget extends SyncTarget {
         fieldlist = this.createFieldlist != null ? this.createFieldlist : fieldlist;
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
         final Map<String,Object> fields = buildFieldsMap(record, fieldlist, getIdFieldName(), getModificationDateFieldName());
-
-        return createOnServer(syncManager, objectType, fields);
+        final String externalId = externalIdFieldName != null ? JSONObjectHelper.optString(record, externalIdFieldName) : null;
+        if (externalId != null) {
+            return upsertOnServer(syncManager, objectType, fields, externalId);
+        } else {
+            return createOnServer(syncManager, objectType, fields);
+        }
     }
 
     /**
@@ -198,6 +221,33 @@ public class SyncUpTarget extends SyncTarget {
      */
     protected String createOnServer(SyncManager syncManager, String objectType, Map<String, Object> fields) throws IOException, JSONException {
         RestRequest request = RestRequest.getRequestForCreate(syncManager.apiVersion, objectType, fields);
+        return sendCreateOrUpsertRequest(syncManager, request);
+    }
+
+    /**
+     * Save locally created record back to server doing an upsert
+     * Called by createOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist)
+     * @param syncManager
+     * @param objectType
+     * @param fields
+     * @param externalId
+     * @return server record id or null if creation failed
+     * @throws IOException
+     * @throws JSONException
+     */
+
+    protected String upsertOnServer(SyncManager syncManager, String objectType, Map<String, Object> fields, String externalId) throws IOException, JSONException {
+        RestRequest request = RestRequest.getRequestForUpsert(syncManager.apiVersion, objectType, externalIdFieldName, externalId, fields);
+        return sendCreateOrUpsertRequest(syncManager, request);
+    }
+
+    /**
+     * Send create or upsert request
+     * @param syncManager
+     * @param request
+     * @return server record id or null if creation or upsert failed
+     */
+    protected String sendCreateOrUpsertRequest(SyncManager syncManager, RestRequest request) throws IOException, JSONException {
         RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
 
         if (!response.isSuccess()) {
