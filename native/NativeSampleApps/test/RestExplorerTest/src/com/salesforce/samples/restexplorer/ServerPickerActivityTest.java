@@ -131,6 +131,25 @@ public class ServerPickerActivityTest {
     }
 
     /**
+     * Test an invalid valid URL is not entered or saved.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testInvalidUrl() throws Throwable {
+        String label = "Invalid URL";
+        String url = "";
+        addCustomUrl(label, url);
+        Assert.assertTrue("Custom URL dialog should not be closed",
+                activity.getCustomServerUrlEditor().getDialog().isShowing());
+        try {
+            onView(allOf(withText(label + "\n" + url), findUiElement())).check(doesNotExist());
+        } catch (Throwable t) {
+            Assert.fail("Invalid Url should not be added to the server list.  Error: " + t.getLocalizedMessage());
+        }
+    }
+
+    /**
      * Test that https is used if http is added.
      *
      * @throws Throwable
