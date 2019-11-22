@@ -115,9 +115,13 @@ task buildReactTestBundleIfNotExists {
 }
 
 afterEvaluate {
+    try {
 
-  // Generate react tests bundle first.
-  preDebugAndroidTestBuild.dependsOn(buildReactTestBundleIfNotExists)
+        // Generate react tests bundle first.
+        preDebugAndroidTestBuild.dependsOn(buildReactTestBundleIfNotExists)
+    } catch(Throwable t) {
+        println("The preDebugAndroidTestBuild task was not found.")
+    }
 }
 
 install {
