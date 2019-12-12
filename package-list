@@ -11,6 +11,12 @@ com.salesforce.androidsdk.app
 com.salesforce.androidsdk.auth
 com.salesforce.androidsdk.auth.idp
 com.salesforce.androidsdk.config
+com.salesforce.androidsdk.mobilesync.app
+com.salesforce.androidsdk.mobilesync.config
+com.salesforce.androidsdk.mobilesync.manager
+com.salesforce.androidsdk.mobilesync.model
+com.salesforce.androidsdk.mobilesync.target
+com.salesforce.androidsdk.mobilesync.util
 com.salesforce.androidsdk.phonegap.app
 com.salesforce.androidsdk.phonegap.plugin
 com.salesforce.androidsdk.phonegap.ui
@@ -28,12 +34,6 @@ com.salesforce.androidsdk.smartstore.config
 com.salesforce.androidsdk.smartstore.store
 com.salesforce.androidsdk.smartstore.ui
 com.salesforce.androidsdk.smartstore.util
-com.salesforce.androidsdk.smartsync.app
-com.salesforce.androidsdk.smartsync.config
-com.salesforce.androidsdk.smartsync.manager
-com.salesforce.androidsdk.smartsync.model
-com.salesforce.androidsdk.smartsync.target
-com.salesforce.androidsdk.smartsync.util
 com.salesforce.androidsdk.ui
 com.salesforce.androidsdk.util
 com.salesforce.androidsdk.util.test
