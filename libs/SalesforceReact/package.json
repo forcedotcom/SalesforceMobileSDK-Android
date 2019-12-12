@@ -12,7 +12,7 @@
         "@react-native-community/cli": "^2.6.0",
         "react": "16.9.0",
         "react-native": "0.61.3",
-        "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#dev"
+        "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#v8.0.0"
     },
     "devDependencies": {
         "@babel/core": "^7.3.3",
