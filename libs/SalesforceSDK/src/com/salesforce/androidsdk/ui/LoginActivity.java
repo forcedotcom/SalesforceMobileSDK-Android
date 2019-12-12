@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.ui;
 
 import android.accounts.AccountAuthenticatorActivity;
 import android.app.ActionBar;
-import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -62,7 +61,6 @@ import com.salesforce.androidsdk.auth.idp.SPRequestHandler;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
-import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents;
 import com.salesforce.androidsdk.util.AuthConfigTask;
 import com.salesforce.androidsdk.util.EventsObservable;
@@ -100,6 +98,9 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
+        setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark_Login : R.style.SalesforceSDK);
+        SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
 
         // Getting login options from intent's extras.
         final LoginOptions loginOptions = LoginOptions.fromBundle(getIntent().getExtras());

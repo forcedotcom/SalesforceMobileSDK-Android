@@ -26,9 +26,11 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import android.app.Activity;
 import android.app.DialogFragment;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.view.LayoutInflater;
@@ -50,7 +52,6 @@ import okhttp3.HttpUrl;
  */
 public class CustomServerUrlEditor extends DialogFragment {
 
-	boolean isDefault;
 	private LoginServerManager loginServerManager;
 	private Context context;
 	private View rootView;
@@ -68,14 +69,19 @@ public class CustomServerUrlEditor extends DialogFragment {
 	@Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
+		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         rootView = inflater.inflate(R.layout.sf__custom_server_url, container);
-        final String label = getEditDefaultValue(R.id.sf__picker_custom_label);
-		final String urlValue = getEditDefaultValue(R.id.sf__picker_custom_url);
-		isDefault = urlValue.equals(getString(R.string.sf__server_url_default_custom_url));
-		if (isDefault) {
-			getDialog().setTitle(R.string.sf__server_url_add_title);
-		} else {
-			getDialog().setTitle(R.string.sf__server_url_edit_title);
+		rootView.getContext().setTheme(isDarkTheme ? R.style.SalesforceSDK_Dialog_Dark : R.style.SalesforceSDK_Dialog);
+		getDialog().setTitle(R.string.sf__server_url_add_title);
+
+		// TODO: Remove this when min API becomes 24.
+		if (!isDarkTheme && Build.VERSION.SDK_INT <= Build.VERSION_CODES.M) {
+			EditText label = getRootView().findViewById(R.id.sf__picker_custom_label);
+			label.setTextColor(getResources().getColor(R.color.sf__text_color));
+			label.setHintTextColor(getResources().getColor(R.color.sf__hint_color));
+			EditText url = getRootView().findViewById(R.id.sf__picker_custom_url);
+			url.setTextColor(getResources().getColor(R.color.sf__text_color));
+			url.setHintTextColor(getResources().getColor(R.color.sf__hint_color));
 		}
 
 		/*
@@ -139,12 +145,22 @@ public class CustomServerUrlEditor extends DialogFragment {
 		 */
 		if (editId == R.id.sf__picker_custom_url) {
 			String url = etVal.toString();
-			isInvalidValue = !URLUtil.isHttpsUrl(url) || HttpUrl.parse(url) == null;
-			if (isInvalidValue) {
-				Toast.makeText(context, getString(R.string.sf__invalid_server_url),
-						Toast.LENGTH_SHORT).show();
+			if (!isInvalidValue) {
+				if (!URLUtil.isHttpsUrl(url)) {
+					if (URLUtil.isHttpUrl(url)) {
+						url = url.replace("http://", "https://");
+					} else {
+						url = "https://".concat(url);
+					}
+				}
+				// Check if string is a valid url
+				if (HttpUrl.parse(url) != null) {
+					return url;
+				}
 			}
+			Toast.makeText(context, getString(R.string.sf__invalid_server_url), Toast.LENGTH_SHORT).show();
 		}
+
 		if (isInvalidValue) {
 			et.selectAll();
 			et.requestFocus();

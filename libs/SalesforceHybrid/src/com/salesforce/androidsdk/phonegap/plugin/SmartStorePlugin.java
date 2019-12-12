@@ -91,6 +91,12 @@ public class SmartStorePlugin extends ForcePlugin {
 		return STORE_CURSORS.get(db);
 	}
 
+	private static boolean useQueryAsString = true;
+
+	protected static void setUseQueryAsString(boolean b) {
+		useQueryAsString = b;
+	}
+
 	/**
 	 * Supported plugin actions that the client can take.
 	 */
@@ -282,7 +288,7 @@ public class SmartStorePlugin extends ForcePlugin {
 		storeCursor.moveToPageIndex(index);
 
 		// Build json result
-		JSONObject result = storeCursor.getData(smartStore);
+		JSONObject result = useQueryAsString ? storeCursor.getDataSerialized(smartStore) : storeCursor.getDataDeserialized(smartStore);
 
 		// Done
 		callbackContext.success(result);
@@ -519,7 +525,7 @@ public class SmartStorePlugin extends ForcePlugin {
 		getSmartStoreCursors(smartStore).put(storeCursor.cursorId, storeCursor);
 
 		// Build json result
-		JSONObject result = storeCursor.getData(smartStore);
+		JSONObject result = useQueryAsString ? storeCursor.getDataSerialized(smartStore) : storeCursor.getDataDeserialized(smartStore);
 
 		// Done
 		callbackContext.success(result);

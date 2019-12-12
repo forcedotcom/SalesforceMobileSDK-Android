@@ -29,7 +29,6 @@
 	<string name="sf__auth_login_production">Production</string>
 	<string name="sf__auth_login_sandbox">Sandbox</string>
 	<string name="sf__custom_url_button">Add Connection</string>
-	<string name="sf__server_url_edit_title">Edit Connection</string>
 	<string name="sf__server_url_add_title">Add Connection</string>
 	<string name="sf__server_url_default_custom_label">Name</string>
 	<string name="sf__server_url_default_custom_url">URL</string>
@@ -52,8 +51,13 @@
 	<string name="sf__passcode_logout">Log out</string>
 	<string name="sf__passcode_verify_button">Verify Passcode</string>
 	<string name="sf__passcode_fingerprint_icon_description">Fingerprint icon</string>
-	<string name="sf__biometric_title">Fingerprint Unlock</string>
-	<string name="sf__biometric_allow_instructions_title">Set up fingerprint unlock</string>
+	<string name="sf__passcode_face_icon_description">Face Unlock icon</string>
+	<string name="sf__biometric_fingerprint_title">Fingerprint Unlock</string>
+	<string name="sf__biometric_face_title">Face Unlock</string>
+	<string name="sf__biometric_iris_title">Iris Scanner Unlock</string>
+	<string name="sf__biometric_fingerprint_allow_instructions_title">Set up Fingerprint Unlock</string>
+	<string name="sf__biometric_face_allow_instructions_title">Set up Face Unlock</string>
+	<string name="sf__biometric_iris_allow_instructions_title">Set up Iris Scanner Unlock</string>
 	<string name="sf__biometric_allow_instructions">You can now unlock %s using biometric for extra security and convenience.</string>
 	<string name="sf__biometric_not_now_button">Not Now</string>
 	<string name="sf__biometric_enable_button">Enable</string>
@@ -69,7 +73,7 @@
 
 	<!-- Account switcher screen -->
 	<string name="sf__add_new_account">Add new account</string>
-    <string name="sf__account_selector_text">Select your account to log into</string>
+    <string name="sf__account_selector_text">Select an account to use</string>
 
     <!-- Managed app restrictions -->
     <string name="sf__app_service_hosts_description">Used to specify login hosts for the application.</string>
@@ -85,9 +89,21 @@
 	<string name="sf__fingerprint_title">Fingerprint Unlock</string>
 	<string name="sf__fingerprint_description">Unlock using your fingerprint to access your %s account.</string>
 	<string name="sf__fingerprint_hint">Touch sensor</string>
-	<string name="sf__fingerprint_cancel">Cancel</string>
-	<string name="sf__fingerprint_success">Success</string>
 	<string name="sf__fingerprint_failed">Fingerprint authentication failed</string>
+
+	<!-- Face Unlock auth resources-->
+	<string name="sf__face_unlock_title">Face Unlock</string>
+	<string name="sf__face_unlock_description">Use Face Unlock to access your %s account.</string>
+	<string name="sf__face_unlock_failed">Face Unlock failed</string>
+
+	<!-- Iris auth resources-->
+	<string name="sf__iris_title">Iris Scanner Unlock</string>
+	<string name="sf__iris_description">Use the Iris Scanner to access your %s account.</string>
+	<string name="sf__iris_failed">Iris authentication failed</string>
+
+	<!-- Generic biometric authentication resources-->
+	<string name="sf__biometric_cancel">Cancel</string>
+	<string name="sf__biometric_success">Success</string>
 
 	<!-- Dev support -->
 	<string name="sf__dev_support_title">Mobile SDK Dev Support</string>

@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.reactnative.ui;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.KeyEvent;
@@ -280,18 +279,12 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
     }
 
     private boolean shouldAskOverlayPermission() {
-
-        /*
-         * TODO: Remove this check once minAPI > 23.
-         */
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().getDevSupportManager().getDevSupportEnabled()) {
-                if (!Settings.canDrawOverlays(this)) {
-                    showPermissionWarning();
-                    return true;
-                } else {
-                    hidePermissionWarning();
-                }
+        if (SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().getDevSupportManager().getDevSupportEnabled()) {
+            if (!Settings.canDrawOverlays(this)) {
+                showPermissionWarning();
+                return true;
+            } else {
+                hidePermissionWarning();
             }
         }
         return false;

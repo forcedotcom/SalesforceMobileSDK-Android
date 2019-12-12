@@ -28,12 +28,14 @@ package com.salesforce.androidsdk.rest;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
-import android.accounts.AccountManagerCallback;
-import android.accounts.AccountManagerFuture;
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.os.Bundle;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.MediumTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -62,10 +64,6 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.MediumTest;
-import androidx.test.platform.app.InstrumentationRegistry;
 
 @RunWith(AndroidJUnit4.class)
 @MediumTest
@@ -462,10 +460,10 @@ public class ClientManagerTest {
     }
 
     /**
-     * Test removeAccountAsync
+     * Test removeAccount
      */
     @Test
-    public void testRemoveAccountAsync() throws Exception {
+    public void testRemoveAccount() throws Exception {
 
         // Make sure we have no accounts initially
         assertNoAccounts();
@@ -477,28 +475,11 @@ public class ClientManagerTest {
         Account[] accounts = clientManager.getAccounts();
         Assert.assertEquals("Two accounts should have been returned", 1, accounts.length);
 
-        // Call removeAccountAsync
-        final BlockingQueue<AccountManagerFuture<Boolean>> q = new ArrayBlockingQueue<AccountManagerFuture<Boolean>>(1);
-        clientManager.removeAccountAsync(clientManager.getAccount(), new AccountManagerCallback<Boolean>() {
+        // Call removeAccount
+        clientManager.removeAccount(clientManager.getAccount());
 
-            @Override
-            public void run(AccountManagerFuture<Boolean> future) {
-                q.add(future);
-            }
-        });
-
-        // Wait for removeAccountAsync to complete
-        try {
-            AccountManagerFuture<Boolean> f = q.poll(10L, TimeUnit.SECONDS);
-            Assert.assertNotNull("AccountManagerFuture expected", f);
-            Assert.assertTrue("Removal should have returned true", f.getResult());
-
-            // Make sure there are no accounts left
-            assertNoAccounts();
-
-        } catch (InterruptedException e) {
-            Assert.fail("removeAccountAsync did not return after 5s");
-        }
+        // Make sure there are no accounts left
+        assertNoAccounts();
     }
 
     /**

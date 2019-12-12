@@ -34,22 +34,22 @@ import com.salesforce.androidsdk.phonegap.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.smartstore.config.StoreConfig;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
-import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
-import com.salesforce.androidsdk.smartsync.config.SyncsConfig;
-import com.salesforce.androidsdk.smartsync.util.SmartSyncLogger;
+import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
+import com.salesforce.androidsdk.mobilesync.config.SyncsConfig;
+import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
- * SDK Manager for all hybrid applications
+ * SDK Manager for all hybrid applications.
  */
-public class SalesforceHybridSDKManager extends SmartSyncSDKManager {
+public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
 
     private static final String TAG = "SalesforceHybridSDKManager";
 
     /**
-     * Paths to the assets files containing configs for SmartStore/SmartSync in hybrid apps.
+     * Paths to the assets files containing configs for SmartStore/MobileSync in hybrid apps.
      */
     private enum ConfigAssetPath {
 
@@ -195,7 +195,7 @@ public class SalesforceHybridSDKManager extends SmartSyncSDKManager {
      * Setup global syncs using config found in assets/www/globalsyncs.json
      */
     public void setupGlobalSyncsFromDefaultConfig() {
-        SmartSyncLogger.d(TAG, "Setting up global syncs using config found in " + ConfigAssetPath.globalSyncs.path);
+        MobileSyncLogger.d(TAG, "Setting up global syncs using config found in " + ConfigAssetPath.globalSyncs.path);
         setupSyncsFromConfig(getGlobalSmartStore(), ConfigAssetPath.globalSyncs.path);
     }
 
@@ -203,7 +203,7 @@ public class SalesforceHybridSDKManager extends SmartSyncSDKManager {
      * Setup user syncs using config found in assets/www/usersyncs.json
      */
     public void setupUserSyncsFromDefaultConfig() {
-        SmartSyncLogger.d(TAG, "Setting up user syncs using config found in " + ConfigAssetPath.userSyncs.path);
+        MobileSyncLogger.d(TAG, "Setting up user syncs using config found in " + ConfigAssetPath.userSyncs.path);
         setupSyncsFromConfig(getSmartStore(), ConfigAssetPath.userSyncs.path);
     }
 

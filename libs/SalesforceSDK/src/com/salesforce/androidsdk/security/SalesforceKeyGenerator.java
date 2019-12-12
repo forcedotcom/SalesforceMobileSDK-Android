@@ -142,42 +142,6 @@ public class SalesforceKeyGenerator {
     }
 
     /**
-     * Generates an RSA keypair and returns the public key.
-     *
-     * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
-     * @param length Key length.
-     * @return RSA public key.
-     * @deprecated Will be removed in Mobile SDK 8.0. Use {@link KeyStoreWrapper#getRSAPublicKey(String, int)} instead.
-     */
-    public static PublicKey getRSAPublicKey(String name, int length) {
-        return KeyStoreWrapper.getInstance().getRSAPublicKey(name, length);
-    }
-
-    /**
-     * Generates an RSA keypair and returns the encoded public key string.
-     *
-     * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
-     * @param length Key length.
-     * @return RSA public key string.
-     * @deprecated Will be removed in Mobile SDK 8.0. Use {@link KeyStoreWrapper#getRSAPublicString(String, int)} instead.
-     */
-    public static String getRSAPublicString(String name, int length) {
-        return KeyStoreWrapper.getInstance().getRSAPublicString(name, length);
-    }
-
-    /**
-     * Generates an RSA keypair and returns the private key.
-     *
-     * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
-     * @param length Key length.
-     * @return RSA private key.
-     * @deprecated Will be removed in Mobile SDK 8.0. Use {@link KeyStoreWrapper#getRSAPrivateKey(String, int)} instead.
-     */
-    public static PrivateKey getRSAPrivateKey(String name, int length) {
-        return KeyStoreWrapper.getInstance().getRSAPrivateKey(name, length);
-    }
-
-    /**
      * Upgrades the keys stored in SharedPrefs to encrypted keys. This is a one-time
      * migration step that's run while upgrading to Mobile SDK 7.1.
      */

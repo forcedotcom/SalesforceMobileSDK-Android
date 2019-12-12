@@ -26,14 +26,14 @@
  */
 package com.salesforce.androidsdk.reactnative.app;
 
-import com.salesforce.androidsdk.smartsync.app.SmartSyncUpgradeManager;
+import com.salesforce.androidsdk.mobilesync.app.MobileSyncUpgradeManager;
 
 /**
  * This class handles upgrades from one version to another.
  *
  * @author bhariharan
  */
-public class SalesforceReactUpgradeManager extends SmartSyncUpgradeManager {
+public class SalesforceReactUpgradeManager extends MobileSyncUpgradeManager {
 
     private static SalesforceReactUpgradeManager INSTANCE = null;
 

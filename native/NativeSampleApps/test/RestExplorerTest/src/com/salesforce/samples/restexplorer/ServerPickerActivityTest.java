@@ -29,11 +29,14 @@ package com.salesforce.samples.restexplorer;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewParent;
+
+import androidx.test.espresso.ViewInteraction;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.rule.ActivityTestRule;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import android.view.View;
-import android.widget.EditText;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.ui.CustomServerUrlEditor;
@@ -41,6 +44,9 @@ import com.salesforce.androidsdk.ui.ServerPickerActivity;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -48,11 +54,19 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import static androidx.test.InstrumentationRegistry.getInstrumentation;
 import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.Espresso.openActionBarOverflowOrOptionsMenu;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.closeSoftKeyboard;
 import static androidx.test.espresso.action.ViewActions.replaceText;
+import static androidx.test.espresso.assertion.ViewAssertions.doesNotExist;
+import static androidx.test.espresso.assertion.ViewAssertions.matches;
+import static androidx.test.espresso.matcher.ViewMatchers.isChecked;
+import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
+import static androidx.test.espresso.matcher.ViewMatchers.withText;
+import static org.hamcrest.Matchers.allOf;
 
 /**
  * Tests for ServerPickerActivity.
@@ -113,39 +127,79 @@ public class ServerPickerActivityTest {
         String label = "My Custom URL";
         String url = "https://valid.url.com";
         addCustomUrl(label, url);
-        clickView(com.salesforce.androidsdk.R.id.sf__apply_button);
-        openCustomEditDialog();
-        final CustomServerUrlEditor dialog = activity.getCustomServerUrlEditor();
-        Thread.sleep(3000);
-        final View rootView = dialog.getRootView();
-        final EditText txtLabel = rootView.findViewById(com.salesforce.androidsdk.R.id.sf__picker_custom_label);
-        final EditText txtUrl = rootView.findViewById(com.salesforce.androidsdk.R.id.sf__picker_custom_url);
-        Assert.assertTrue("Custom Label does not match Expected: " + label
-                + " Actual: " + txtLabel.getEditableText().toString(), label
-                .equalsIgnoreCase(txtLabel.getEditableText().toString()));
-        Assert.assertTrue("Custom URL does not match Expected: " + url + " Actual: "
-                + txtUrl.getEditableText().toString(), url
-                .equalsIgnoreCase(txtUrl.getEditableText().toString()));
+        checkServerAdded(label, url);
     }
 
     /**
-     * Test that "https" is required.
+     * Test an invalid valid URL is not entered or saved.
      *
      * @throws Throwable
      */
     @Test
-    public void testAddInvalidUrl() throws Throwable {
-        String label = "My URL";
-        String url = "http://invalid.url.com";
+    public void testInvalidUrl() throws Throwable {
+        String label = "Invalid URL";
+        String url = "";
         addCustomUrl(label, url);
-        clickView(com.salesforce.androidsdk.R.id.sf__apply_button);
-        Assert.assertTrue("Custom URL dialog should still be open",
+        Assert.assertTrue("Custom URL dialog should not be closed",
                 activity.getCustomServerUrlEditor().getDialog().isShowing());
-        url = "https://valid.url.com";
+        try {
+            onView(allOf(withText(label + "\n" + url), findUiElement())).check(doesNotExist());
+        } catch (Throwable t) {
+            Assert.fail("Invalid Url should not be added to the server list.  Error: " + t.getLocalizedMessage());
+        }
+    }
+
+    /**
+     * Test that https is used if http is added.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testAddHttpUrl() throws Throwable {
+        String label = "My http URL";
+        String httpUrl = "http://invalid.url.com";
+        String httpsUrl = "https://invalid.url.com";
+        addCustomUrl(label, httpUrl);
+        checkServerAdded(label, httpsUrl);
+    }
+
+    /**
+     * Test that https is added is added on a url without it.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testAddNoProtocolUrl() throws Throwable {
+        String label = "No Protocol URL";
+        String url = "basic.url.com";
+        String httpsUrl = "https://" + url;
         addCustomUrl(label, url);
-        clickView(com.salesforce.androidsdk.R.id.sf__apply_button);
-        Assert.assertNull("Custom URL dialog should be closed",
-                activity.getCustomServerUrlEditor().getDialog());
+        checkServerAdded(label, httpsUrl);
+    }
+
+    /**
+     * Test the reset button works.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testRestButton() throws Throwable {
+        String label = "Server%d";
+        String url = "https://login.test.com/%d";
+        String entry = label + "\n" + url;
+        for (int serverNum = 0; serverNum < 3; serverNum++) {
+            addCustomUrl(String.format(label, serverNum), String.format(url, serverNum));
+            Thread.sleep(1000);
+        }
+        tapResetButton();
+        for (int serverNum = 0; serverNum < 3; serverNum++) {
+            try {
+                onView(allOf(withText(String.format(entry, serverNum, serverNum)), findUiElement()))
+                        .check(doesNotExist());
+            } catch (Throwable t) {
+                Assert.fail("Server entry found. Error: " + t.getLocalizedMessage());
+            }
+        }
     }
 
     private void openCustomEditDialog() throws Throwable {
@@ -163,6 +217,7 @@ public class ServerPickerActivityTest {
         }
         setText(com.salesforce.androidsdk.R.id.sf__picker_custom_label, label);
         setText(com.salesforce.androidsdk.R.id.sf__picker_custom_url, url);
+        clickView(com.salesforce.androidsdk.R.id.sf__apply_button);
     }
 
     private void removeFragmentIfRequired() {
@@ -189,5 +244,52 @@ public class ServerPickerActivityTest {
         } catch (Throwable t) {
             Assert.fail("Failed to click view " + resId);
         }
+    }
+
+    private void checkServerAdded(String name, String url) {
+        Assert.assertNull("Custom URL dialog should be closed",
+                activity.getCustomServerUrlEditor().getDialog());
+        try {
+            ViewInteraction salesforceServerRadioButton = onView(allOf(withText(name + "\n" + url),
+                    findUiElement()));
+            salesforceServerRadioButton.check(matches(isDisplayed()));
+            salesforceServerRadioButton.check(matches(isChecked()));
+        } catch (Throwable t) {
+            Assert.fail("Server with name: " + name + ", and server: " + url +
+                    " is not displayed. Error: " + t.getLocalizedMessage());
+        }
+    }
+
+    private static Matcher<View> findUiElement() {
+
+        return new TypeSafeMatcher<View>() {
+            @Override
+            public void describeTo(Description description) {}
+
+            @Override
+            public boolean matchesSafely(View view) {
+                ViewParent parent = view.getParent();
+                int childCount = ((ViewGroup) parent).getChildCount();
+
+                for (int childNum = 0; childNum < childCount; childNum++) {
+                    if (view.equals(((ViewGroup) parent).getChildAt(childNum))) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        };
+    }
+
+    private static void tapResetButton() {
+        openActionBarOverflowOrOptionsMenu(getInstrumentation().getTargetContext());
+        try {
+            onView(allOf(withId(android.R.id.title), withText("Reset"), findUiElement()))
+                    .perform(click());
+        } catch (Throwable t) {
+            Assert.fail("Unable to tap reset button.  Error: " + t.getLocalizedMessage());
+        }
+
     }
 }

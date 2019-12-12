@@ -2,25 +2,24 @@ apply plugin: 'com.android.application'
 
 dependencies {
   api project(':libs:SalesforceSDK')
-  androidTestImplementation ('androidx.test:runner:1.1.1') {
+  androidTestImplementation ('androidx.test:runner:1.2.0') {
     exclude module: 'support-annotations'
   }
-  androidTestImplementation ('androidx.test:rules:1.1.1') {
+  androidTestImplementation ('androidx.test:rules:1.2.0') {
     exclude module: 'support-annotations'
   }
-  androidTestImplementation ('androidx.test.espresso:espresso-core:3.1.1') {
+  androidTestImplementation ('androidx.test.espresso:espresso-core:3.2.0') {
     exclude module: 'support-annotations'
   }
-  androidTestImplementation 'androidx.test.ext:junit:1.1.0'
+  androidTestImplementation 'androidx.test.ext:junit:1.1.1'
 }
 
 android {
-  compileSdkVersion 28
-  buildToolsVersion '28.0.3'
+  compileSdkVersion 29
 
   defaultConfig {
-    targetSdkVersion 28
-    minSdkVersion 21
+    targetSdkVersion 29
+    minSdkVersion 23
   }
   
   buildTypes {

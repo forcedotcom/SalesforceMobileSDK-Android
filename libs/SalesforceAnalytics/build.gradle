@@ -21,12 +21,11 @@ dependencies {
 }
 
 android {
-    compileSdkVersion 28
-    buildToolsVersion '28.0.3'
+    compileSdkVersion 29
 
     defaultConfig {
-        targetSdkVersion 28
-        minSdkVersion 21
+        targetSdkVersion 29
+        minSdkVersion 23
     }
 
   buildTypes {
@@ -127,9 +126,9 @@ bintray {
         licenses = ['Apache-2.0']
         labels = ['android', 'salesforce', 'mobilesdk']
         version {
-            name = '7.3.0'
+            name = '8.0.0'
             released  = new Date()
-            vcsTag = 'v7.3.0'
+            vcsTag = 'v8.0.0'
         }
     }
 }

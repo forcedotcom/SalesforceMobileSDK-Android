@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="PasscodeAttributes">
+        <attr name="sfLayoutBackground" format="color"/>
+        <attr name="sfColorSecondary" format="color"/>
+        <attr name="sfNegativeButtonTextColor" format="color"/>
+        <attr name="sfNegativeButtonBorderColor" format="color"/>
+        <attr name="sfBorderColor" format="color"/>
+        <attr name="sfFingerprintIcon" format="integer"/>
+        <attr name="sfFaceUnlockIcon" format="integer"/>
+    </declare-styleable>
+</resources>

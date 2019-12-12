@@ -26,12 +26,17 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.style.TextAppearanceSpan;
 import android.widget.RadioButton;
+
+import com.salesforce.androidsdk.R;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
  * Custom radio button implementation to represent a Salesforce
@@ -40,6 +45,7 @@ import android.widget.RadioButton;
  *
  * @author bhariharan
  */
+@SuppressLint("AppCompatCustomView")
 public class SalesforceServerRadioButton extends RadioButton {
 
 	private Context context;
@@ -72,12 +78,13 @@ public class SalesforceServerRadioButton extends RadioButton {
 		final SpannableStringBuilder result = new SpannableStringBuilder();
 		if (name != null && url != null) {
 	        final SpannableString titleSpan = new SpannableString(name);
-	        titleSpan.setSpan(new TextAppearanceSpan(context,
-	                android.R.style.TextAppearance_Medium), 0, name.length(),
+	        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
+	        int titleStyle = isDarkTheme ? R.style.SalesforceSDK_RadialButtonTitle_Dark : R.style.SalesforceSDK_RadialButtonTitle;
+	        int urlStyle = isDarkTheme ? R.style.SalesforceSDK_RadialButtonUrl_Dark : R.style.SalesforceSDK_RadialButtonUrl;
+	        titleSpan.setSpan(new TextAppearanceSpan(context, titleStyle), 0, name.length(),
 	                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 	        final SpannableString urlSpan = new SpannableString(url);
-	        urlSpan.setSpan(new TextAppearanceSpan(context,
-	                android.R.style.TextAppearance_Small), 0, url.length(),
+	        urlSpan.setSpan(new TextAppearanceSpan(context, urlStyle), 0, url.length(),
 	                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 	        result.append(titleSpan);
 	        result.append(System.getProperty("line.separator"));

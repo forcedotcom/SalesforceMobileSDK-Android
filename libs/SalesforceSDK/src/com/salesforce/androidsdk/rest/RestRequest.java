@@ -28,6 +28,8 @@ package com.salesforce.androidsdk.rest;
 
 import android.text.TextUtils;
 
+import com.salesforce.androidsdk.rest.BatchRequest.BatchRequestBuilder;
+import com.salesforce.androidsdk.rest.CompositeRequest.CompositeRequestBuilder;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
@@ -133,7 +135,7 @@ public class RestRequest {
 		LOGIN, INSTANCE
 	}
 
-	private enum RestAction {
+	enum RestAction {
 
 		USERINFO("/services/oauth2/userinfo"),
 		VERSIONS(SERVICES_DATA),
@@ -606,19 +608,13 @@ public class RestRequest {
      * @return RestRequest object that requests execution of the given composite request.
      * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_composite.htm">https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_composite.htm</a>
 	 */
-	public static RestRequest getCompositeRequest(String apiVersion, boolean allOrNone, LinkedHashMap<String, RestRequest> refIdToRequests) throws JSONException {
-		JSONArray requestsArrayJson = new JSONArray();
+	public static CompositeRequest getCompositeRequest(String apiVersion, boolean allOrNone, LinkedHashMap<String, RestRequest> refIdToRequests) throws JSONException {
+		CompositeRequestBuilder builder = new CompositeRequestBuilder();
         for (Map.Entry<String,RestRequest> entry : refIdToRequests.entrySet()) {
-            String referenceId = entry.getKey();
-            RestRequest request = entry.getValue();
-            JSONObject requestJson = request.asJSON();
-            requestJson.put(REFERENCE_ID, referenceId);
-			requestsArrayJson.put(requestJson);
+			builder.addRequest(entry.getKey(), entry.getValue());
 		}
-		JSONObject compositeRequestJson =  new JSONObject();
-		compositeRequestJson.put(COMPOSITE_REQUEST, requestsArrayJson);
-        compositeRequestJson.put(ALL_OR_NONE, allOrNone);
-		return new RestRequest(RestMethod.POST, RestAction.COMPOSITE.getPath(apiVersion), compositeRequestJson);
+		builder.setAllOrNone(allOrNone);
+        return builder.build(apiVersion);
 	}
 
     @Override
@@ -647,23 +643,13 @@ public class RestRequest {
      * @return              RestRequest object that requests execution of the given batch of requests.
      * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_batch.htm">https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_batch.htm</a>
      */
-    public static RestRequest getBatchRequest(String apiVersion, boolean haltOnError, List<RestRequest> requests) throws JSONException {
-        JSONArray requestsArrayJson = new JSONArray();
+    public static BatchRequest getBatchRequest(String apiVersion, boolean haltOnError, List<RestRequest> requests) throws JSONException {
+    	BatchRequestBuilder builder = new BatchRequestBuilder();
         for (RestRequest request : requests) {
-            // Note: unfortunately batch sub request and composite sub request differ
-            if (!request.getPath().startsWith(SERVICES_DATA)) {
-                throw new RuntimeException("Request not supported in batch: " + request.toString());
-            }
-            JSONObject requestJson = new JSONObject();
-            requestJson.put(METHOD, request.getMethod().toString());
-            requestJson.put(URL, request.getPath().substring(SERVICES_DATA.length()));
-            requestJson.put(RICH_INPUT, request.getRequestBodyAsJson());
-            requestsArrayJson.put(requestJson);
-        }
-        JSONObject batchRequestJson =  new JSONObject();
-        batchRequestJson.put(BATCH_REQUESTS, requestsArrayJson);
-        batchRequestJson.put(HALT_ON_ERROR, haltOnError);
-        return new RestRequest(RestMethod.POST, RestAction.BATCH.getPath(apiVersion), batchRequestJson);
+			builder.addRequest(request);
+		}
+        builder.setHaltOnError(haltOnError);
+        return builder.build(apiVersion);
     }
 
     /**

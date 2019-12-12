@@ -3,25 +3,28 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="horizontal"
     android:layout_width="match_parent"
-    android:background="@color/sf__color_background_alt_2"
+    android:background="?attr/sfLayoutBackground"
     android:layout_height="@dimen/sf__list_item_height">
 
     <ImageView android:src="@drawable/sf__add"
         android:contentDescription="@string/sf__add_new_account"
+        android:textColor="?android:textColor"
         android:layout_width="@dimen/sf__list_item_add_icon_length"
         android:layout_height="@dimen/sf__list_item_add_icon_length"
         android:gravity="center"
         android:layout_marginStart="@dimen/sf__list_item_add_icon_padding_horizontal"
         android:layout_marginEnd="@dimen/sf__list_item_add_icon_padding_horizontal"
+        android:background="?attr/sfLayoutBackground"
         android:layout_marginTop="@dimen/sf__list_item_add_icon_padding_top" />
 
     <TextView android:layout_width="match_parent"
         android:layout_height="@dimen/sf__list_item_user_name_height"
         android:text="@string/sf__add_new_account"
         android:textSize="@dimen/sf__list_item_user_name_text_size"
-        android:textColor="@color/sf__list_item_user_name_color"
+        android:textColor="?android:textColor"
         android:fontFamily="sans-serif"
         android:textStyle="normal"
+        android:background="?attr/sfLayoutBackground"
         android:lineSpacingExtra="@dimen/sf__list_item_user_name_line_spacing"
         android:layout_marginTop="@dimen/sf__list_item_new_user_margin_vertical"
         android:layout_marginBottom="@dimen/sf__list_item_new_user_margin_vertical"/>

@@ -26,14 +26,14 @@
  */
 package com.salesforce.androidsdk.phonegap.app;
 
-import com.salesforce.androidsdk.smartsync.app.SmartSyncUpgradeManager;
+import com.salesforce.androidsdk.mobilesync.app.MobileSyncUpgradeManager;
 
 /**
  * This class handles upgrades from one version to another.
  *
  * @author bhariharan
  */
-public class SalesforceHybridUpgradeManager extends SmartSyncUpgradeManager {
+public class SalesforceHybridUpgradeManager extends MobileSyncUpgradeManager {
 
     private static SalesforceHybridUpgradeManager INSTANCE = null;
 

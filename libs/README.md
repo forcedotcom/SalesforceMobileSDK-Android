@@ -21,13 +21,13 @@ Inside the $NATIVE_DIR, you will find several projects:
 1. **SalesforceAnalytics**: The SalesforceAnalytics library project which provides instrumentation and analytics functionality
 2. **SalesforceSDK**: The SalesforceSDK library project which provides support for OAuth2, REST API calls, pin screen (driven by mobile policy)
 3. **SmartStore**: Library project which provides the SmartStore functionality
-4. **SmartSync**: The SmartSync library project which provides support for Salesforce object metadata API calls, layout API calls, MRU API calls, caching
+4. **MobileSync**: The MobileSync library project which provides support for Salesforce object metadata API calls, layout API calls, MRU API calls, caching
 5. **SalesforceHybrid**: The SalesforceHybrid library project which provides support for Cordova based hybrid apps
 6. **SalesforceReact**: The SalesforceReact library project which provides support for React based native apps
 7. **test/SalesforceAnalyticsTest**: Test project for SalesforceAnalytics
 8. **test/SalesforceSDKTest**: Test project for SalesforceSDK
 9. **test/SmartStoreTest**: Test project for SmartStore
-10. **test/SmartSyncTest**: Test project for SmartSync
+10. **test/MobileSyncTest**: Test project for MobileSync
 11. **test/SalesforceHybridTest**: Test project for SalesforceHybrid
 12. **test/SalesforceReactTest**: Test project for SalesforceReact
 

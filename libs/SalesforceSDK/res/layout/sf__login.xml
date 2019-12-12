@@ -3,21 +3,29 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/sf__auth_container_phone"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:windowDrawsSystemBarBackgrounds="true">
 
     <WebView android:id="@+id/sf__oauth_webview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scrollbars="none" />
+        android:scrollbars="none"
+        android:windowDrawsSystemBarBackgrounds="true"/>
 
     <Button android:id="@+id/sf__idp_login_button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
         android:text="@string/sf__launch_idp"
-        android:textStyle="bold"
-        android:layout_alignParentBottom="true"
-        android:gravity="center"
-        android:background="@drawable/sf__header_bg"
         android:visibility="gone"
-        android:onClick="onIDPLoginClick" />
+        android:onClick="onIDPLoginClick"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginBottom="20dp"
+        android:background="@drawable/sf__passcode_primary_color_button"
+        android:textColor="?attr/sfColorSecondary"
+        android:textAllCaps="false"
+        android:textSize="14sp"
+        android:textStyle="bold"/>
 </RelativeLayout>

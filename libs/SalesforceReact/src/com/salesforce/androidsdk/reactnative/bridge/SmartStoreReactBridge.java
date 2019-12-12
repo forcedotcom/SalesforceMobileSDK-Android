@@ -223,7 +223,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 		storeCursor.moveToPageIndex(index);
 
 		// Build json result
-		JSONObject result = storeCursor.getData(smartStore);
+		JSONObject result = storeCursor.getDataSerialized(smartStore);
 		ReactBridgeHelper.invoke(successCallback, result);
 	}
 
@@ -395,7 +395,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 		getSmartStoreCursors(smartStore).put(storeCursor.cursorId, storeCursor);
 
 		// Build json result
-		JSONObject result = storeCursor.getData(smartStore);
+		JSONObject result = storeCursor.getDataSerialized(smartStore);
 
 		// Done
         ReactBridgeHelper.invoke(successCallback, result);

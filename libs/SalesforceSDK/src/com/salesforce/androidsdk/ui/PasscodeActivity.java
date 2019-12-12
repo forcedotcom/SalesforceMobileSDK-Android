@@ -33,6 +33,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.hardware.biometrics.BiometricManager;
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.fingerprint.FingerprintManager;
 import android.os.Build.VERSION;
@@ -76,11 +77,12 @@ public class PasscodeActivity extends Activity {
     private PasscodeField passcodeField;
     private LinearLayout passcodeBox, biometricBox;
     private Button logoutButton, notNowButton, enableButton, verifyButton;
-    private View fingerImage;
+    private View fingerImage, faceImage;
     private PasscodeManager passcodeManager;
-    private String firstPasscode;
+    private String firstPasscode, biometricTitle, biometricDescription;
     private boolean logoutEnabled;
     private boolean forceBiometric;
+    private BiometricType biometricType = BiometricType.Fingerprint;
 
     public enum PasscodeMode {
         Create,
@@ -91,10 +93,21 @@ public class PasscodeActivity extends Activity {
         BiometricCheck
     }
 
+    private enum BiometricType {
+        Fingerprint,
+        FaceUnlock,
+        Iris
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
+        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
+        setTheme(isDarkTheme ? R.style.SalesforceSDK_Passcode_Dark : R.style.SalesforceSDK_Passcode);
+
+        // This makes the navigation bar visible on light themes.
+        SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
 
         // Protect against screenshots.
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
@@ -142,12 +155,15 @@ public class PasscodeActivity extends Activity {
         });
 
         fingerImage = findViewById(R.id.sf__fingerprint_icon);
+        faceImage = findViewById(R.id.sf__face_unlock_icon);
         bioInstrTitle = findViewById(R.id.sf__biometric_instructions_title);
-        passcodeField.announceForAccessibility(bioInstrTitle.getText());
         bioInstr = findViewById(R.id.sf__biometric_instructions);
         bioInstr.setText(getString(R.string.sf__biometric_allow_instructions, SalesforceSDKManager.getInstance().provideAppName()));
+        passcodeField.announceForAccessibility(bioInstrTitle.getText());
         biometricBox = findViewById(R.id.sf__biometric_box);
         notNowButton = findViewById(R.id.sf__biometric_not_now_button);
+        notNowButton.setTextColor(getResources().getColor(isDarkTheme ? R.color.sf__secondary_color_dark
+                : R.color.sf__primary_color, null));
         notNowButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -180,6 +196,16 @@ public class PasscodeActivity extends Activity {
             final String inputText = savedInstanceState.getString(EXTRA_KEY);
             if (passcodeField != null && inputText != null) {
                 passcodeField.setText(inputText.trim());
+            }
+        }
+
+        // Determine biometric hardware, default is fingerprint.
+        // TODO: Remove check when min API >= 29
+        if (VERSION.SDK_INT >= VERSION_CODES.Q) {
+            if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_FACE)) {
+                biometricType = BiometricType.FaceUnlock;
+            } else if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_IRIS)) {
+                biometricType = BiometricType.Iris;
             }
         }
     }
@@ -279,8 +305,24 @@ public class PasscodeActivity extends Activity {
             sendAccessibilityEvent(instr.getText().toString());
         	break;
         case EnableBiometric:
+            switch(biometricType) {
+                case FaceUnlock:
+                    title.setText(getString(R.string.sf__biometric_face_title));
+                    bioInstrTitle.setText(getString(R.string.sf__biometric_face_allow_instructions_title));
+                    faceImage.setVisibility(View.VISIBLE);
+                    break;
+                case Iris:
+                    title.setText(getString(R.string.sf__biometric_iris_title));
+                    bioInstrTitle.setText(getString(R.string.sf__biometric_iris_allow_instructions_title));
+                    faceImage.setVisibility(View.VISIBLE);
+                    break;
+                case Fingerprint:
+                    title.setText(getString(R.string.sf__biometric_fingerprint_title));
+                    bioInstrTitle.setText(getString(R.string.sf__biometric_fingerprint_allow_instructions_title));
+                    fingerImage.setVisibility(View.VISIBLE);
+            }
+
             hideKeyboard();
-            title.setText(getString(R.string.sf__biometric_title));
             title.setVisibility(View.VISIBLE);
             biometricBox.setVisibility(View.VISIBLE);
             bioInstrTitle.setVisibility(View.VISIBLE);
@@ -288,7 +330,6 @@ public class PasscodeActivity extends Activity {
             bioInstr.setVisibility(View.VISIBLE);
             notNowButton.setVisibility(View.VISIBLE);
             enableButton.setVisibility(View.VISIBLE);
-            fingerImage.setVisibility(View.VISIBLE);
             passcodeManager.setBiometricEnrollmentShown(this, true);
             break;
         case BiometricCheck:
@@ -325,6 +366,7 @@ public class PasscodeActivity extends Activity {
 
         switch (getMode()) {
         case Create:
+        case Change:
             firstPasscode = enteredPasscode;
             setMode(PasscodeMode.CreateConfirm);
             return true;
@@ -373,11 +415,6 @@ public class PasscodeActivity extends Activity {
                 }
             }
             return true;
-
-        case Change:
-            firstPasscode = enteredPasscode;
-            setMode(PasscodeMode.CreateConfirm);
-            return true;
         }
         return false;
     }
@@ -385,112 +422,6 @@ public class PasscodeActivity extends Activity {
     protected void done() {
         setResult(RESULT_OK);
         finish();
-    }
-
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected int getLayoutId() {
-        return R.layout.sf__passcode;
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected TextView getTitleView() {
-        return (TextView) findViewById(R.id.sf__passcode_title);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected TextView getInstructionsView() {
-        return (TextView) findViewById(R.id.sf__passcode_instructions);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getCreateTitle() {
-    	return getString(R.string.sf__passcode_create_title);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getEnterTitle() {
-    	return getString(R.string.sf__passcode_enter_title);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getConfirmTitle() {
-    	return getString(R.string.sf__passcode_confirm_title);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getEnterInstructions() {
-    	return getString(R.string.sf__passcode_enter_instructions);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getCreateInstructions() {
-    	return getString(R.string.sf__passcode_create_instructions);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getChangeInstructions() {
-    	return getString(R.string.sf__passcode_change_instructions);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getConfirmInstructions() {
-    	return getString(R.string.sf__passcode_confirm_instructions);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getPasscodeTryAgainError(int countAttemptsLeft) {
-        return getString(R.string.sf__passcode_try_again, countAttemptsLeft);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getPasscodeFinalAttemptError() {
-        return getString(R.string.sf__passcode_final);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected String getPasscodesDontMatchError() {
-        return getString(R.string.sf__passcodes_dont_match);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected Button getLogoutButton() {
-        return findViewById(R.id.sf__passcode_logout_button);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 8.0.  Override in XML instead.
-     */
-    protected Button getVerifyButton() {
-        return findViewById(R.id.sf__passcode_verify_button);
     }
 
     /**
@@ -550,15 +481,29 @@ public class PasscodeActivity extends Activity {
      */
     @TargetApi(VERSION_CODES.P)
     protected void showBiometricDialog() {
-
-        /*
-         * TODO: Remove this check once minAPI >= 28.
-         */
+        // TODO: Remove this check once minAPI >= 28.
         if (VERSION.SDK_INT >= VERSION_CODES.P) {
+            switch(biometricType) {
+                case FaceUnlock:
+                    biometricTitle = getString(R.string.sf__face_unlock_title);
+                    biometricDescription = getString(R.string.sf__face_unlock_description,
+                            SalesforceSDKManager.getInstance().provideAppName());
+                    break;
+                case Iris:
+                    biometricTitle = getString(R.string.sf__iris_title);
+                    biometricDescription = getString(R.string.sf__iris_description,
+                            SalesforceSDKManager.getInstance().provideAppName());
+                    break;
+                case Fingerprint:
+                    biometricTitle = getString(R.string.sf__fingerprint_title);
+                    biometricDescription = getString(R.string.sf__fingerprint_description,
+                            SalesforceSDKManager.getInstance().provideAppName());
+            }
+
             final BiometricPrompt.Builder bioBuilder = new BiometricPrompt.Builder(this);
-            bioBuilder.setDescription(getString(R.string.sf__fingerprint_description, SalesforceSDKManager.getInstance().provideAppName()));
-            bioBuilder.setTitle(getString(R.string.sf__fingerprint_title));
-            bioBuilder.setNegativeButton(getString(R.string.sf__fingerprint_cancel), getMainExecutor(),
+            bioBuilder.setDescription(biometricDescription);
+            bioBuilder.setTitle(biometricTitle);
+            bioBuilder.setNegativeButton(getString(R.string.sf__biometric_cancel), getMainExecutor(),
                     new DialogInterface.OnClickListener() {
 
                 @Override
@@ -595,26 +540,39 @@ public class PasscodeActivity extends Activity {
         }
     }
 
-    @TargetApi(VERSION_CODES.M)
-    private boolean isFingerprintEnabled() {
+    @TargetApi(VERSION_CODES.Q)
+    private boolean isBiometricEnabled() {
         // Used for tests
         if (forceBiometric) {
             return true;
         }
 
-	    /*
-         * TODO: Remove this check once minAPI >= 23.
-         */
-        if (VERSION.SDK_INT >= VERSION_CODES.M) {
-            final FingerprintManager fingerprintManager = (FingerprintManager) this.getSystemService(Context.FINGERPRINT_SERVICE);
+        // TODO: Remove this check once minAPI >= 29.
+        if (VERSION.SDK_INT >= VERSION_CODES.Q) {
+            final BiometricManager biometricManager = (BiometricManager) this.getSystemService(Context.BIOMETRIC_SERVICE);
 
-            // Here, this activity is the current activity.
-            if (checkSelfPermission(Manifest.permission.USE_FINGERPRINT) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{ permission.USE_FINGERPRINT}, REQUEST_CODE_ASK_PERMISSIONS);
+            if (checkSelfPermission(permission.USE_BIOMETRIC) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{permission.USE_BIOMETRIC}, REQUEST_CODE_ASK_PERMISSIONS);
             } else {
-                return fingerprintManager != null && fingerprintManager.isHardwareDetected()
-                        && fingerprintManager.hasEnrolledFingerprints();
+                return biometricManager != null && biometricManager.canAuthenticate() == BiometricManager.BIOMETRIC_SUCCESS;
             }
+        }
+        return false;
+    }
+
+    private boolean isFingerprintEnabled() {
+        // Used for tests
+        if (forceBiometric) {
+            return true;
+        }
+        final FingerprintManager fingerprintManager = (FingerprintManager) this.getSystemService(Context.FINGERPRINT_SERVICE);
+
+        // Here, this activity is the current activity.
+        if (checkSelfPermission(Manifest.permission.USE_FINGERPRINT) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{ permission.USE_FINGERPRINT}, REQUEST_CODE_ASK_PERMISSIONS);
+        } else {
+            return fingerprintManager != null && fingerprintManager.isHardwareDetected()
+                    && fingerprintManager.hasEnrolledFingerprints();
         }
         return false;
     }
@@ -637,11 +595,13 @@ public class PasscodeActivity extends Activity {
     }
 
     private boolean canShowBiometric() {
-        return passcodeManager.biometricAllowed() && isFingerprintEnabled();
+        boolean bioEnabled = (VERSION.SDK_INT >= VERSION_CODES.Q ? isBiometricEnabled() : isFingerprintEnabled());
+        return passcodeManager.biometricAllowed() && bioEnabled;
     }
 
     private void launchBiometricAuth() {
         if (passcodeManager != null && canShowBiometric()) {
+            // TODO: Remove this check once minAPI >= 28.
             if (VERSION.SDK_INT >= VERSION_CODES.P) {
                 showBiometricDialog();
             } else if (VERSION.SDK_INT >= VERSION_CODES.M) {
@@ -663,18 +623,19 @@ public class PasscodeActivity extends Activity {
         enableButton.setVisibility(View.GONE);
         biometricBox.setVisibility(View.GONE);
         fingerImage.setVisibility(View.GONE);
+        faceImage.setVisibility(View.GONE);
     }
 
     private void hideKeyboard() {
         InputMethodManager imm = (InputMethodManager) this.getSystemService(Activity.INPUT_METHOD_SERVICE);
-        if (this.passcodeField != null) {
+        if (imm != null && this.passcodeField != null) {
             imm.hideSoftInputFromWindow(this.passcodeField.getWindowToken(), 0);
         }
     }
 
     private void showKeyboard() {
         AccessibilityManager am = (AccessibilityManager) this.getSystemService(Context.ACCESSIBILITY_SERVICE);
-        if (am.isEnabled()) {
+        if (am != null && am.isEnabled()) {
             // Check if keyboard is shown based on verify button, which is oriented to the bottom of
             // the layout.  Checking window instead of screen even works for split screen.
             int[] location = new int[2];
@@ -689,7 +650,7 @@ public class PasscodeActivity extends Activity {
 
     private void sendAccessibilityEvent(String text) {
         AccessibilityManager am = (AccessibilityManager) this.getSystemService(Context.ACCESSIBILITY_SERVICE);
-        if (am.isEnabled()) {
+        if (am != null && am.isEnabled()) {
             AccessibilityEvent event = AccessibilityEvent.obtain();
             event.setEventType(AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED);
             event.setClassName(getClass().getName());

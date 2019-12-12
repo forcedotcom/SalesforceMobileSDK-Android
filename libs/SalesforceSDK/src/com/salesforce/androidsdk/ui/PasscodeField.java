@@ -27,11 +27,9 @@
 package com.salesforce.androidsdk.ui;
 
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.os.Build;
 import android.util.AttributeSet;
 import android.view.ActionMode;
 import android.view.Menu;
@@ -44,6 +42,7 @@ import com.salesforce.androidsdk.security.PasscodeManager;
 
 @SuppressLint("AppCompatCustomView")
 public class PasscodeField extends EditText {
+
     private static final int MAX_PASSCODE_LENGTH = 8;
     private static final int CIRCLE_DIAMETER = 22;
     private static final int LINE_WIDTH = 2;
@@ -109,6 +108,7 @@ public class PasscodeField extends EditText {
      * @param canvas the provided canvas
      */
     @Override
+    @SuppressLint("DrawAllocation") // For Paint
     protected void onDraw(Canvas canvas) {
         PasscodeManager passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
         boolean passcodeLengthKnown = passcodeManager.getPasscodeLengthKnown();
@@ -123,10 +123,11 @@ public class PasscodeField extends EditText {
         Paint openCirclePaint = new Paint();
         Paint typedCirclePaint = new Paint();
 
-        openCirclePaint.setColor(getResources().getColor(R.color.sf__passcode_primary_color));
+        int circleColor = getResources().getColor(R.color.sf__primary_color);
+        openCirclePaint.setColor(circleColor);
         openCirclePaint.setStyle(Paint.Style.STROKE);
         openCirclePaint.setStrokeWidth(lineWidth);
-        typedCirclePaint.setColor(getResources().getColor(R.color.sf__passcode_primary_color));
+        typedCirclePaint.setColor(circleColor);
 
         int circleSpacing = 0;
         int lengthForSpacing = passcodeLengthKnown ? passcodeLength : MAX_PASSCODE_LENGTH;
@@ -153,33 +154,27 @@ public class PasscodeField extends EditText {
     /**
      * Overrides the Custom Insert Action callbacks to disable all actions, such as select and paste.
      */
-    @TargetApi(Build.VERSION_CODES.M)
     private void disableActions() {
-        /*
-         * TODO: Remove this check once minAPI >= 23.
-         */
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            this.setCustomInsertionActionModeCallback(new ActionMode.Callback() {
-                @Override
-                public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-                    return false;
-                }
+        this.setCustomInsertionActionModeCallback(new ActionMode.Callback() {
+            @Override
+            public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+                return false;
+            }
 
-                @Override
-                public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-                    return false;
-                }
+            @Override
+            public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+                return false;
+            }
 
-                @Override
-                public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-                    return false;
-                }
+            @Override
+            public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                return false;
+            }
 
-                @Override
-                public void onDestroyActionMode(ActionMode mode) {
+            @Override
+            public void onDestroyActionMode(ActionMode mode) {
 
-                }
-            });
-        }
+            }
+        });
     }
 }

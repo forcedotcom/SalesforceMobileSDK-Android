@@ -1,27 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/sf__account_select_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/sf__color_background_alt"
-    android:orientation="vertical">
-
-    <LinearLayout android:layout_width="match_parent"
-        android:layout_height="@dimen/sf__title_bar_height"
-        android:background="@color/sf__color_background_alt_2"
-        android:orientation="vertical">
-
-        <TextView android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:textSize="@dimen/sf__title_text_size"
-            android:textColor="@color/sf__color_text_default"
-            android:fontFamily="sans-serif"
-            android:layout_marginStart="@dimen/sf__title_bar_padding_left"
-            android:layout_marginTop="@dimen/sf__title_bar_padding_top"
-            android:layout_marginBottom="@dimen/sf__title_bar_padding_bottom"
-            android:text="@string/sf__login_title"
-            android:textStyle="bold" />
-    </LinearLayout>
+    android:orientation="vertical"
+    android:background="?android:colorBackground" >
 
     <ImageView android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -29,7 +13,9 @@
         android:src="@drawable/sf__salesforce_logo"
         android:paddingTop="@dimen/sf__sf_logo_padding_vertical"
         android:paddingBottom="@dimen/sf__sf_logo_padding_vertical"
-        android:layout_gravity="center_horizontal" />
+        android:layout_gravity="center_horizontal"
+        android:background="@android:color/transparent"
+        android:dividerHeight="0dp" />
 
     <TextView android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -38,10 +24,18 @@
         android:textStyle="normal"
         android:layout_gravity="center_horizontal"
         android:text="@string/sf__account_selector_text"
-        android:layout_marginBottom="@dimen/sf__sf_logo_padding_vertical" />
+        android:textColor="?android:textColor"
+        android:layout_marginBottom="@dimen/sf__sf_logo_padding_vertical"
+        android:background="@android:color/transparent"
+        android:dividerHeight="0dp" />
 
-    <ListView android:id="@+id/sf__accounts_group"
+    <ListView
+        android:id="@+id/sf__accounts_group"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        style="@style/SalesforceSDK.AccountSwitcher.List" />
+        android:showDividers="middle"
+        android:dividerHeight="@dimen/sf__list_divider_height"
+        android:divider="@android:color/transparent"
+        android:background="?android:colorBackground"
+        android:textColor="?android:textColor" />
 </LinearLayout>
