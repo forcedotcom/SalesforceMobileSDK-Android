@@ -29,9 +29,6 @@ package com.salesforce.androidsdk.util;
 import android.content.Context;
 import android.content.res.Resources;
 
-import com.salesforce.androidsdk.config.BootConfig;
-import com.salesforce.androidsdk.util.SalesforceSDKLogger;
-
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -39,7 +36,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.util.Scanner;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Helper class for reading resource files
@@ -94,9 +91,8 @@ public class ResourceReaderHelper {
 
     protected static String readStream(InputStream inputStream) throws IOException {
         Writer writer = new StringWriter();
-
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
             String line = reader.readLine();
             while (line != null) {
                 writer.write(line);
@@ -110,9 +106,6 @@ public class ResourceReaderHelper {
                 SalesforceSDKLogger.e(TAG, "Unhandled exception closing stream", e);
             }
         }
-
         return writer.toString();
     }
-
-
 }

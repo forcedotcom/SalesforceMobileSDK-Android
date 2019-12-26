@@ -26,10 +26,8 @@
  */
 package com.salesforce.androidsdk.util;
 
-import androidx.test.filters.SmallTest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-
-import com.salesforce.androidsdk.util.test.JSONTestHelper;
+import androidx.test.filters.SmallTest;
 
 import org.json.JSONArray;
 import org.json.JSONException;
