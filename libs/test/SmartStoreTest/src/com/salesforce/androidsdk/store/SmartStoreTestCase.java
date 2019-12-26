@@ -35,7 +35,7 @@ import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.util.test.JSONTestHelper;
+import com.salesforce.androidsdk.util.JSONTestHelper;
 
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteOpenHelper;

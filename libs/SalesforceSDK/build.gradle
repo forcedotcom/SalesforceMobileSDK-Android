@@ -19,11 +19,10 @@ dependencies {
     api 'com.google.firebase:firebase-messaging:20.1.0'
     api 'androidx.core:core:1.1.0'
     api 'androidx.browser:browser:1.2.0'
-    api 'junit:junit:4.12'
+    implementation 'com.google.android.material:material:1.0.0'
     androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation 'androidx.test:rules:1.2.0'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
-    implementation 'com.google.android.material:material:1.0.0'
 }
 
 android {

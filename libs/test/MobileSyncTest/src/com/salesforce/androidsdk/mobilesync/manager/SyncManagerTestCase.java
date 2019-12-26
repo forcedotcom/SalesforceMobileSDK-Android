@@ -42,7 +42,7 @@ import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
 import com.salesforce.androidsdk.mobilesync.util.SyncUpdateCallbackQueue;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
-import com.salesforce.androidsdk.util.test.JSONTestHelper;
+import com.salesforce.androidsdk.util.JSONTestHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;

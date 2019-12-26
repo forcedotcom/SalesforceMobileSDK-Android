@@ -34,7 +34,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
-import com.salesforce.androidsdk.util.test.JSONTestHelper;
+import com.salesforce.androidsdk.util.JSONTestHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;

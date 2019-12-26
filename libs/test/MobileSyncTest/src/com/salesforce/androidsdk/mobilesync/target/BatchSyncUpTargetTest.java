@@ -29,7 +29,7 @@ package com.salesforce.androidsdk.mobilesync.target;
 
 import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
-import com.salesforce.androidsdk.util.test.JSONTestHelper;
+import com.salesforce.androidsdk.util.JSONTestHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
