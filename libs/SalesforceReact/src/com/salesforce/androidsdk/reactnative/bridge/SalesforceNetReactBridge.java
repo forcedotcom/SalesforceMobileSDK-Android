@@ -197,14 +197,13 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
     }
 
     private static RequestBody buildRequestBody(Map<String, Object> params, Map<String, Map<String, String>> fileParams) throws URISyntaxException {
+        final RequestBody paramsRequestBody = RequestBody.create(RestRequest.MEDIA_TYPE_JSON, new JSONObject(params).toString());
         if (fileParams.isEmpty()) {
-            return RequestBody.create(RestRequest.MEDIA_TYPE_JSON, new JSONObject(params).toString());
+            return paramsRequestBody;
         } else {
             MultipartBody.Builder builder = new MultipartBody.Builder().setType(MultipartBody.FORM);
-            for (Map.Entry<String, Object> entry : params.entrySet()) {
-                builder.addFormDataPart(entry.getKey(), entry.getValue().toString());
-            }
-
+            builder.addFormDataPart("", null, paramsRequestBody);
+            
             // File params expected to be of the form:
             // {<fileParamNameInPost>: {fileMimeType:<someMimeType>, fileUrl:<fileUrl>, fileName:<fileNameForPost>}}
             for(Map.Entry<String, Map<String, String>> fileParamEntry : fileParams.entrySet()) {
