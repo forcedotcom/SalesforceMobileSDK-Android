@@ -176,7 +176,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @return SmartStore instance.
      */
     public SmartStore getSmartStore(UserAccount account) {
-        return getSmartStore(account, null);
+        return getSmartStore(account, account.getCommunityId());
     }
 
     /**
