@@ -179,19 +179,17 @@ jobs:
       - run:
           name: Run << parameters.lib >> Tests with API << parameters.api_level >>
           command: |
-            [[ << parameters.api_level >> < 23 ]] && device="Nexus6" || device="NexusLowRes"
-
             gcloud firebase test android run \
                 --project mobile-apps-firebase-test \
                 --type instrumentation \
                 --app "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk" \
                 --test << parameters.test_apk >>  \
-                --device model=$device,version=<< parameters.api_level >>,locale=en,orientation=portrait  \
+                --device model="NexusLowRes",version=<< parameters.api_level >>,locale=en,orientation=portrait  \
                 --environment-variables coverage=true,coverageFile="/sdcard/coverage.ec"  \
                 --directories-to-pull=/sdcard  \
                 --results-dir=<< parameters.lib >>-${CIRCLE_BUILD_NUM}  \
                 --results-history-name=<< parameters.lib >>  \
-                --timeout 10m --no-auto-google-login --no-record-video --no-performance-metrics
+                --timeout 15m --no-auto-google-login --no-record-video --no-performance-metrics
           no_output_timeout: 600
       - run:
           name: Copy test results data
