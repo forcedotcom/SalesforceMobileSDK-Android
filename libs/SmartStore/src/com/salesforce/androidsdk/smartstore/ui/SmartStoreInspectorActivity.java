@@ -163,7 +163,7 @@ public class SmartStoreInspectorActivity extends Activity implements AdapterView
 	}
 
 	private String getDisplayNameForStore(boolean isGlobal, String dbName) {
-		return (dbName.equals(DBOpenHelper.DEFAULT_DB_NAME) ? DEFAULT_STORE : dbName) + (isGlobal ? GLOBAL_STORE : USER_STORE);
+		return (DBOpenHelper.DEFAULT_DB_NAME.equals(dbName) ? DEFAULT_STORE : dbName) + (isGlobal ? GLOBAL_STORE : USER_STORE);
 	}
 
 	private Pair<Boolean, String> getStoreFromDisplayName(String storeDisplayName) {
