@@ -34,14 +34,14 @@ import android.util.Log;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
-import com.salesforce.androidsdk.smartstore.store.QuerySpec;
-import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager.MobileSyncException;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SyncUpdateCallback;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
 import com.salesforce.androidsdk.mobilesync.util.SyncState.Status;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.samples.mobilesyncexplorer.objects.ContactObject;
 
 import org.json.JSONArray;
@@ -58,11 +58,11 @@ import java.util.List;
 public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 
 	public static final String CONTACT_SOUP = "contacts";
-	public static final Integer LIMIT = 10000;
 	public static final String LOAD_COMPLETE_INTENT_ACTION = "com.salesforce.samples.mobilesyncexplorer.loaders.LIST_LOAD_COMPLETE";
 	private static final String TAG = "ContactListLoader";
-	public static final String SYNC_DOWN_NAME = "syncDownContacts";
-	public static final String SYNC_UP_NAME = "syncUpContacts";
+	private static final String SYNC_DOWN_NAME = "syncDownContacts";
+	private static final String SYNC_UP_NAME = "syncUpContacts";
+	private static final Integer LIMIT = 10000;
 
 	private SmartStore smartStore;
     private SyncManager syncMgr;
@@ -91,8 +91,8 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 		}
 		final QuerySpec querySpec = QuerySpec.buildAllQuerySpec(CONTACT_SOUP,
 				ContactObject.LAST_NAME, QuerySpec.Order.ascending, LIMIT);
-		JSONArray results = null;
-		List<ContactObject> contacts = new ArrayList<ContactObject>();
+		JSONArray results;
+		List<ContactObject> contacts = new ArrayList<>();
 		try {
 			results = smartStore.query(querySpec, 0);
 			for (int i = 0; i < results.length(); i++) {
