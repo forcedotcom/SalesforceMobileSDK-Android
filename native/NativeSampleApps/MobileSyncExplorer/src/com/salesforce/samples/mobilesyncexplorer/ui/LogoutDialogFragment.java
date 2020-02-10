@@ -40,8 +40,6 @@ import com.salesforce.samples.mobilesyncexplorer.R;
  */
 public class LogoutDialogFragment extends DialogFragment {
 
-	private AlertDialog logoutConfirmationDialog;
-
 	/**
 	 * Default constructor.
 	 */
@@ -51,7 +49,7 @@ public class LogoutDialogFragment extends DialogFragment {
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
 		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
-		logoutConfirmationDialog = new AlertDialog.Builder(getActivity(), isDarkTheme ?
+		return new AlertDialog.Builder(getActivity(), isDarkTheme ?
 				R.style.SalesforceSDK_Dialog_Dark : R.style.SalesforceSDK_Dialog)
 				.setTitle(R.string.logout_title)
 				.setPositiveButton(R.string.yes,
@@ -65,6 +63,5 @@ public class LogoutDialogFragment extends DialogFragment {
 				})
 				.setNegativeButton(R.string.cancel, null)
 				.create();
-		return logoutConfirmationDialog;
 	}
 }

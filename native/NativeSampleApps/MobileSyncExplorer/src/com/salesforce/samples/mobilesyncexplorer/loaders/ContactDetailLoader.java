@@ -26,21 +26,21 @@
  */
 package com.salesforce.samples.mobilesyncexplorer.loaders;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-
 import android.content.AsyncTaskLoader;
 import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
+import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
-import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.samples.mobilesyncexplorer.objects.ContactObject;
+
+import org.json.JSONArray;
+import org.json.JSONException;
 
 /**
  * A simple AsyncTaskLoader to load object detail for a Contact object.

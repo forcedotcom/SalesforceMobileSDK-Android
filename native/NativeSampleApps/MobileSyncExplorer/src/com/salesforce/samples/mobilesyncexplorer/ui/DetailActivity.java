@@ -26,9 +26,6 @@
  */
 package com.salesforce.samples.mobilesyncexplorer.ui;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.app.LoaderManager;
 import android.content.Intent;
 import android.content.Loader;
@@ -46,15 +43,18 @@ import android.widget.Toast;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
+import com.salesforce.androidsdk.mobilesync.target.SyncTarget;
+import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.mobilesync.util.Constants;
-import com.salesforce.androidsdk.mobilesync.target.SyncTarget;
 import com.salesforce.androidsdk.ui.SalesforceActivity;
 import com.salesforce.samples.mobilesyncexplorer.R;
 import com.salesforce.samples.mobilesyncexplorer.loaders.ContactDetailLoader;
 import com.salesforce.samples.mobilesyncexplorer.loaders.ContactListLoader;
 import com.salesforce.samples.mobilesyncexplorer.objects.ContactObject;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * Object detail activity.
@@ -68,7 +68,6 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 
     private UserAccount curAccount;
     private String objectId;
-    private String objectTitle;
     private ContactObject sObject;
     private DeleteDialogFragment deleteConfirmationDialog;
 
@@ -84,9 +83,8 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 		final Intent launchIntent = getIntent();
 		if (launchIntent != null) {
 			objectId = launchIntent.getStringExtra(MainActivity.OBJECT_ID_KEY);
-			objectTitle = launchIntent.getStringExtra(MainActivity.OBJECT_TITLE_KEY);
 			getActionBar().setTitle(launchIntent.getStringExtra(MainActivity.OBJECT_NAME_KEY));
-			getActionBar().setSubtitle(objectTitle);
+			getActionBar().setSubtitle(launchIntent.getStringExtra(MainActivity.OBJECT_TITLE_KEY));
 		}
 		deleteConfirmationDialog = new DeleteDialogFragment();
 	}

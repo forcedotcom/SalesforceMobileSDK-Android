@@ -55,10 +55,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
+import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
 import com.salesforce.androidsdk.ui.SalesforceListActivity;
 import com.salesforce.samples.mobilesyncexplorer.R;
 import com.salesforce.samples.mobilesyncexplorer.loaders.ContactListLoader;
@@ -82,7 +82,7 @@ public class MainActivity extends SalesforceListActivity implements
 	public static final String OBJECT_TITLE_KEY = "object_title";
 	public static final String OBJECT_NAME_KEY = "object_name";
 	private static final String SYNC_CONTENT_AUTHORITY = "com.salesforce.samples.mobilesyncexplorer.sync.contactsyncadapter";
-	private static final long SYNC_FREQUENCY_ONE_HOUR = 1 * 60 * 60;
+	private static final long SYNC_FREQUENCY_ONE_HOUR = 60 * 60;
 	private static final int CONTACT_LOADER_ID = 1;
 	private static final int CONTACT_COLORS[] = {
 		Color.rgb(26, 188, 156),
@@ -105,8 +105,7 @@ public class MainActivity extends SalesforceListActivity implements
 		Color.rgb(189, 195, 199),
 		Color.rgb(127, 140, 141)
 	};
-	
-    private SearchView searchView;
+
     private ContactListAdapter listAdapter;
 	private NameFieldFilter nameFilter;
     private LogoutDialogFragment logoutConfirmationDialog;
@@ -208,7 +207,7 @@ public class MainActivity extends SalesforceListActivity implements
 	    final MenuInflater inflater = getMenuInflater();
 	    inflater.inflate(R.menu.action_bar_menu, menu);
 	    final MenuItem searchItem = menu.findItem(R.id.action_search);
-	    searchView = new SearchView(this);
+		final SearchView searchView = new SearchView(this);
 	    searchView.setOnQueryTextListener(this);
         searchView.setOnCloseListener(this);
         searchItem.setActionView(searchView);
