@@ -148,7 +148,7 @@ public class SmartStoreInspectorActivity extends Activity implements AdapterView
 		isGlobal = bundle == null || !bundle.containsKey(IS_GLOBAL_STORE) || bundle.getBoolean(IS_GLOBAL_STORE) || !hasUser;
 		// dbName is set to DBOpenHelper.DEFAULT_DB_NAME
 		//   if no bundle, or no value for dbName in bundle
-		dbName = bundle == null || !bundle.containsKey(DB_NAME) ? DBOpenHelper.DEFAULT_DB_NAME : bundle.getString(DB_NAME);
+		dbName = bundle == null || !bundle.containsKey(DB_NAME) ? DBOpenHelper.DEFAULT_DB_NAME : bundle.getString(DB_NAME, DBOpenHelper.DEFAULT_DB_NAME);
 	}
 
 	private void setupSpinner() {
