@@ -50,9 +50,7 @@ public class ContactObject extends SalesforceObject {
 	public static final String HOME_PHONE = "HomePhone";
 
 	private final boolean isLocallyCreated;
-	private final boolean isLocallyUpdated;
 	private final boolean isLocallyDeleted;
-
 	private final boolean isLocallyModified;
 
 	/**
@@ -67,7 +65,7 @@ public class ContactObject extends SalesforceObject {
 		name = data.optString(FIRST_NAME) + " " + data.optString(LAST_NAME);
 		isLocallyCreated = data.optBoolean(SyncTarget.LOCALLY_CREATED);
 		isLocallyDeleted = data.optBoolean(SyncTarget.LOCALLY_DELETED);
-		isLocallyUpdated = data.optBoolean(SyncTarget.LOCALLY_UPDATED);
+		final boolean isLocallyUpdated = data.optBoolean(SyncTarget.LOCALLY_UPDATED);
 		isLocallyModified = isLocallyCreated || isLocallyUpdated || isLocallyDeleted;
 	}
 

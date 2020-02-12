@@ -24,12 +24,14 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
 package com.salesforce.androidsdk.mobilesync.target;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+
 import com.salesforce.androidsdk.mobilesync.util.Constants;
+import com.salesforce.androidsdk.mobilesync.util.JSONTestHelper;
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
-import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -40,9 +42,6 @@ import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 import java.util.List;
-
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.SmallTest;
 
 /**
  * Test class for BatchSyncUpTarget.

@@ -39,8 +39,6 @@ import com.salesforce.samples.mobilesyncexplorer.R;
  */
 public class DeleteDialogFragment extends DialogFragment {
 
-	private AlertDialog deleteConfirmationDialog;
-
 	/**
 	 * Default constructor.
 	 */
@@ -49,7 +47,7 @@ public class DeleteDialogFragment extends DialogFragment {
 
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
-		deleteConfirmationDialog = new AlertDialog.Builder(getActivity())
+		return new AlertDialog.Builder(getActivity())
 				.setTitle(R.string.delete_title)
 				.setPositiveButton(R.string.yes,
 				new DialogInterface.OnClickListener() {
@@ -62,6 +60,5 @@ public class DeleteDialogFragment extends DialogFragment {
 				})
 				.setNegativeButton(R.string.cancel, null)
 				.create();
-		return deleteConfirmationDialog;
 	}
 }
