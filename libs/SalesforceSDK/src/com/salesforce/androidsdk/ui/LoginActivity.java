@@ -242,7 +242,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
      * @return True - if the page should be reloaded, False - otherwise.
      */
 	protected boolean shouldReloadPage() {
-        return false;
+        return true;
     }
 
 	@Override
