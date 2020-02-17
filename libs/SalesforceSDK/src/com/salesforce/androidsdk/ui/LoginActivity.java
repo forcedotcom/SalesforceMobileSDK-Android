@@ -168,7 +168,9 @@ public class LoginActivity extends AccountAuthenticatorActivity
         }
 
         // Reloads login page for every new intent to ensure the correct login server is selected.
-        webviewHelper.loadLoginPage();
+        if (shouldReloadPage()) {
+            webviewHelper.loadLoginPage();
+        }
 
         // Launches IDP login flow directly for IDP initiated login flow.
         if (intent != null) {
@@ -231,12 +233,26 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		return new OAuthWebviewHelper(this, callback, loginOptions, webView, savedInstanceState);
 	}
 
+    /**
+     * Returns whether the login page should be reloaded when the app is backgrounded and
+     * foregrounded. By default, this is set to 'true' in the SDK, in order to support various
+     * supported OAuth flows. Subclasses may override this for cases where they need to
+     * display the page as-is, such as TBID or social login pages where a code is typed in.
+     *
+     * @return True - if the page should be reloaded, False - otherwise.
+     */
+	protected boolean shouldReloadPage() {
+        return false;
+    }
+
 	@Override
 	protected void onResume() {
 		super.onResume();
 		if (wasBackgrounded) {
-			webviewHelper.clearView();
-			webviewHelper.loadLoginPage();
+		    if (shouldReloadPage()) {
+                webviewHelper.clearView();
+                webviewHelper.loadLoginPage();
+            }
 			wasBackgrounded = false;
 		}
 	}
