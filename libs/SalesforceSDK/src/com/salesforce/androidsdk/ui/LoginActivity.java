@@ -201,10 +201,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
             return false;
         }
         final Uri uri = intent.getData();
-        if (uri == null) {
-            return false;
-        }
-        return true;
+        return (uri != null);
     }
 
     private void completeAuthFlow(Intent intent) {
@@ -276,15 +273,13 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		     * the back button should take the user back to the previous screen.
 		     */
 			final UserAccountManager accMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
+			wasBackgrounded = true;
 			if (accMgr.getAuthenticatedUsers() == null) {
-				wasBackgrounded = true;
 				moveTaskToBack(true);
-				return true;
 			} else {
-				wasBackgrounded = true;
 				finish();
-				return true;
 			}
+			return true;
 		}
 		return false;
 	}
