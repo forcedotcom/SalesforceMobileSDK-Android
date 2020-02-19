@@ -31,6 +31,8 @@ import android.content.Context;
 import com.salesforce.androidsdk.analytics.model.DeviceAppAttributes;
 import com.salesforce.androidsdk.analytics.store.EventStoreManager;
 
+import io.paperdb.Paper;
+
 /**
  * This class serves as an interface to the various
  * functions of the SalesforceAnalytics library.
@@ -53,6 +55,7 @@ public class AnalyticsManager {
      */
     public AnalyticsManager(String uniqueId, Context context, String encryptionKey,
                              DeviceAppAttributes deviceAppAttributes) {
+        Paper.init(context);
         storeManager = new EventStoreManager(uniqueId, context, encryptionKey);
         this.deviceAppAttributes = deviceAppAttributes;
         globalSequenceId = 0;

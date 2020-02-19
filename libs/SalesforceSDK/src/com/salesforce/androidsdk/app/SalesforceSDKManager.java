@@ -95,8 +95,6 @@ import java.util.SortedSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
 
-import io.paperdb.Paper;
-
 /**
  * This class serves as an interface to the various
  * functions of the Salesforce SDK. In order to use the SDK,
@@ -358,7 +356,6 @@ public class SalesforceSDKManager {
 	 * @param context Application context.
 	 */
     public static void initInternal(Context context) {
-        Paper.init(context);
 
         // Upgrades to the latest version.
         SalesforceSDKUpgradeManager.getInstance().upgrade();
