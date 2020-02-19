@@ -50,7 +50,7 @@ import io.paperdb.Paper;
  */
 public class EventStoreManager {
 
-    private static final String FILENAME = "Event_Store";
+    private static final String FILENAME = "event_store";
     private static final String TAG = "EventStoreManager";
 
     private Context context;
