@@ -156,9 +156,11 @@ public class EventStoreManager {
      * Deletes a specific event stored on the filesystem.
      *
      * @param eventId Unique identifier for the event.
+     * @return True - if successful, False - otherwise.
      */
-    public void deleteEvent(String eventId) {
+    public boolean deleteEvent(String eventId) {
         book.delete(eventId);
+        return !book.contains(eventId);
     }
 
     /**
