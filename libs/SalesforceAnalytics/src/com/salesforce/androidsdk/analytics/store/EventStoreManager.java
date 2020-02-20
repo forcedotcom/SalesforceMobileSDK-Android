@@ -57,7 +57,7 @@ public class EventStoreManager {
     private String encryptionKey;
     private Book book;
     private boolean isLoggingEnabled = true;
-    private int maxEvents = 1000;
+    private int maxEvents = 10000;
 
     /**
      * Parameterized constructor.
