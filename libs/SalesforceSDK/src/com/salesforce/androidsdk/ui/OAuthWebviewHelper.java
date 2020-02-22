@@ -214,7 +214,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
      * @return True - if the page should be reloaded, False - otherwise.
      */
     protected boolean shouldReloadPage() {
-        return true;
+        return shouldReloadPage;
     }
 
     public void clearCookies() {
