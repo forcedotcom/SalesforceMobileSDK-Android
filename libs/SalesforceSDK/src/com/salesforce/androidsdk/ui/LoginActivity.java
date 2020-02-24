@@ -168,7 +168,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
         }
 
         // Reloads login page for every new intent to ensure the correct login server is selected.
-        if (shouldReloadPage()) {
+        if (webviewHelper.shouldReloadPage()) {
             webviewHelper.loadLoginPage();
         }
 
@@ -233,23 +233,11 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		return new OAuthWebviewHelper(this, callback, loginOptions, webView, savedInstanceState);
 	}
 
-    /**
-     * Returns whether the login page should be reloaded when the app is backgrounded and
-     * foregrounded. By default, this is set to 'true' in the SDK, in order to support various
-     * supported OAuth flows. Subclasses may override this for cases where they need to
-     * display the page as-is, such as TBID or social login pages where a code is typed in.
-     *
-     * @return True - if the page should be reloaded, False - otherwise.
-     */
-	protected boolean shouldReloadPage() {
-        return true;
-    }
-
 	@Override
 	protected void onResume() {
 		super.onResume();
 		if (wasBackgrounded) {
-		    if (shouldReloadPage()) {
+		    if (webviewHelper.shouldReloadPage()) {
                 webviewHelper.clearView();
                 webviewHelper.loadLoginPage();
             }

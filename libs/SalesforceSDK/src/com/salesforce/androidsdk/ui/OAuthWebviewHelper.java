@@ -51,6 +51,8 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import androidx.browser.customtabs.CustomTabsIntent;
+
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountBuilder;
@@ -87,8 +89,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import androidx.browser.customtabs.CustomTabsIntent;
 
 /**
  * Helper class to manage a WebView instance that is going through the OAuth login process.
@@ -134,15 +134,37 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     }
 
     /**
-     * Construct a new OAuthWebviewHelper and perform the initial configuration of the Webview.
+     * Constructs a new OAuthWebviewHelper and perform the initial configuration of the web view.
+     *
+     * @param activity Activity that's using this.
+     * @param callback Callback to be triggered.
+     * @param options Login options.
+     * @param webview Webview instance.
+     * @param savedInstanceState Bundle of saved instance.
      */
 	public OAuthWebviewHelper(Activity activity, OAuthWebviewHelperEvents callback,
 			LoginOptions options, WebView webview, Bundle savedInstanceState) {
+        this(activity, callback, options, webview, savedInstanceState, true);
+	}
+
+    /**
+     * Constructs a new OAuthWebviewHelper and perform the initial configuration of the web view.
+     *
+     * @param activity Activity that's using this.
+     * @param callback Callback to be triggered.
+     * @param options Login options.
+     * @param webview Webview instance.
+     * @param savedInstanceState Bundle of saved instance.
+     * @param shouldReloadPage True - if page should be reloaded on relaunch, False - otherwise.
+     */
+    public OAuthWebviewHelper(Activity activity, OAuthWebviewHelperEvents callback, LoginOptions options,
+                              WebView webview, Bundle savedInstanceState, boolean shouldReloadPage) {
         assert options != null && callback != null && webview != null && activity != null;
         this.activity = activity;
         this.callback = callback;
         this.loginOptions = options;
         this.webview = webview;
+        this.shouldReloadPage = shouldReloadPage;
         final WebSettings webSettings = webview.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setUserAgentString(SalesforceSDKManager.getInstance().getUserAgent());
@@ -160,7 +182,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         } else {
             clearCookies();
         }
-	}
+    }
 
     private final OAuthWebviewHelperEvents callback;
     protected final LoginOptions loginOptions;
@@ -169,6 +191,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     private Activity activity;
     private PrivateKey key;
     private X509Certificate[] certChain;
+    private boolean shouldReloadPage;
 
     public void saveState(Bundle outState) {
         webview.saveState(outState);
@@ -180,6 +203,18 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
     public WebView getWebView() {
         return webview;
+    }
+
+    /**
+     * Returns whether the login page should be reloaded when the app is backgrounded and
+     * foregrounded. By default, this is set to 'true' in the SDK, in order to support various
+     * supported OAuth flows. Subclasses may override this for cases where they need to
+     * display the page as-is, such as TBID or social login pages where a code is typed in.
+     *
+     * @return True - if the page should be reloaded, False - otherwise.
+     */
+    protected boolean shouldReloadPage() {
+        return shouldReloadPage;
     }
 
     public void clearCookies() {
@@ -328,7 +363,9 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
          * Prevents Chrome custom tab from staying in the activity history stack. This flag
          * ensures that Chrome custom tab is dismissed once the login process is complete.
          */
-        customTabsIntent.intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+        if (shouldReloadPage) {
+            customTabsIntent.intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+        }
         try {
             customTabsIntent.launchUrl(activity, url);
         } catch (ActivityNotFoundException e) {
