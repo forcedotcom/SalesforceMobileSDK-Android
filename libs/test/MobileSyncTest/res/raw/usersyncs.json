@@ -58,7 +58,10 @@
       "target": {
         "type":"layout",
         "sobjectType": "Account",
-        "layoutType": "Compact"
+        "formFactor": "Medium",
+        "layoutType": "Compact",
+        "mode": "Edit",
+        "recordTypeId": null
       },
       "options": {
         "mergeMode":"OVERWRITE"

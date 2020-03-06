@@ -182,7 +182,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
         SyncState sync = syncManager.getSyncStatus("layoutSyncDown");
         Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, sync.getSoupName());
         checkStatus(sync, SyncState.Type.syncDown, sync.getId(),
-                new LayoutSyncDownTarget("Account", null, "Compact", null, null),
+                new LayoutSyncDownTarget("Account", "Medium", "Compact", "Edit", null),
                 SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE),
                 SyncState.Status.NEW, 0);
     }
