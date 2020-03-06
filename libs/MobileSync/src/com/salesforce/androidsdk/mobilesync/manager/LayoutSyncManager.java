@@ -263,7 +263,6 @@ public class LayoutSyncManager {
     private void onSyncComplete(String objectAPIName, String formFactor, String layoutType, String mode,
                                 String recordTypeId, LayoutSyncCallback syncCallback, Layout layout) {
         if (syncCallback != null) {
-            syncCallback.onSyncComplete(objectAPIName, layout);
             syncCallback.onSyncComplete(objectAPIName, formFactor, layoutType, mode, recordTypeId, layout);
         }
     }
@@ -280,15 +279,6 @@ public class LayoutSyncManager {
      * @author bhariharan
      */
     public interface LayoutSyncCallback {
-
-        /**
-         * Callback triggered when layout sync completes.
-         *
-         * @param objectType Object type.
-         * @param layout Layout.
-         * @deprecated Will be removed in Mobile SDK 9.0. Use {@link #onSyncComplete(String, String, String, String, String, Layout)} instead.
-         */
-        void onSyncComplete(String objectType, Layout layout);
 
         /**
          * Callback triggered when layout sync completes.
