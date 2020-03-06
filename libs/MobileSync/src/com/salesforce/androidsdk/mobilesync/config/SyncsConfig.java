@@ -28,13 +28,13 @@ package com.salesforce.androidsdk.mobilesync.config;
 
 import android.content.Context;
 
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget;
 import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.util.ResourceReaderHelper;
 
 import org.json.JSONArray;
@@ -122,7 +122,7 @@ public class SyncsConfig {
             return;
         }
         SyncManager syncManager = SyncManager.getInstance(null, null, store);
-        for (int i = 0; i< syncConfigs.length(); i++) {
+        for (int i = 0; i < syncConfigs.length(); i++) {
             try {
                 JSONObject syncConfig = syncConfigs.getJSONObject(i);
                 String syncName = syncConfig.getString(SYNC_NAME);
