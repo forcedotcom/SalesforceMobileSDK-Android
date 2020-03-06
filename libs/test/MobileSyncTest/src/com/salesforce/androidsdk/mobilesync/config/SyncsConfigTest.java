@@ -99,7 +99,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
     }
 
     @Test
-    public void testSetupUserSyncsFromDefaultConfig() throws JSONException {
+    public void testSetupUserSyncsFromDefaultConfig() {
         Assert.assertFalse(syncManager.hasSyncWithName("soqlSyncDown"));
         Assert.assertFalse(syncManager.hasSyncWithName("soslSyncDown"));
         Assert.assertFalse(syncManager.hasSyncWithName("mruSyncDown"));
@@ -125,11 +125,10 @@ public class SyncsConfigTest extends SyncManagerTestCase {
         Assert.assertTrue(syncManager.hasSyncWithName("noBatchSyncUp"));
         Assert.assertTrue(syncManager.hasSyncWithName("batchSyncUp"));
         Assert.assertTrue(syncManager.hasSyncWithName("parentChildrenSyncUp"));
-
     }
 
     @Test
-    public void testSoqlSyncDownFromConfig()  throws JSONException {
+    public void testSoqlSyncDownFromConfig() throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         SyncState sync = syncManager.getSyncStatus("soqlSyncDown");
@@ -141,7 +140,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
     }
 
     @Test
-    public void testSoslSyncDownFromConfig()  throws JSONException {
+    public void testSoslSyncDownFromConfig() throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         SyncState sync = syncManager.getSyncStatus("soslSyncDown");
@@ -153,7 +152,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
     }
 
     @Test
-    public void testMruSyncDownFromConfig()  throws JSONException {
+    public void testMruSyncDownFromConfig() throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         SyncState sync = syncManager.getSyncStatus("mruSyncDown");
@@ -165,7 +164,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
     }
 
     @Test
-    public void testRefreshSyncDownFromConfig()  throws JSONException {
+    public void testRefreshSyncDownFromConfig() throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         SyncState sync = syncManager.getSyncStatus("refreshSyncDown");
@@ -177,19 +176,19 @@ public class SyncsConfigTest extends SyncManagerTestCase {
     }
 
     @Test
-    public void testLayoutSyncDownFromConfig()  throws JSONException {
+    public void testLayoutSyncDownFromConfig() throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         SyncState sync = syncManager.getSyncStatus("layoutSyncDown");
         Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, sync.getSoupName());
         checkStatus(sync, SyncState.Type.syncDown, sync.getId(),
-                new LayoutSyncDownTarget("Account", "Compact"),
+                new LayoutSyncDownTarget("Account", null, "Compact", null, null),
                 SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE),
                 SyncState.Status.NEW, 0);
     }
 
     @Test
-    public void testMetadataSyncDownFromConfig()  throws JSONException {
+    public void testMetadataSyncDownFromConfig() throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         SyncState sync = syncManager.getSyncStatus("metadataSyncDown");
@@ -201,7 +200,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
     }
 
     @Test
-    public void testParentChildrenSyncDownFromConfig()  throws JSONException {
+    public void testParentChildrenSyncDownFromConfig() throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         SyncState sync = syncManager.getSyncStatus("parentChildrenSyncDown");
@@ -220,7 +219,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
     }
 
     @Test
-    public void testNoBatchSyncUpFromConfig()  throws JSONException {
+    public void testNoBatchSyncUpFromConfig() throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         SyncState sync = syncManager.getSyncStatus("noBatchSyncUp");
@@ -232,7 +231,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
     }
 
     @Test
-    public void testBatchSyncUpFromConfig()  throws JSONException {
+    public void testBatchSyncUpFromConfig() throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         SyncState sync = syncManager.getSyncStatus("batchSyncUp");
@@ -244,7 +243,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
     }
 
     @Test
-    public void testParentChildrenSyncUpFromConfig()  throws JSONException {
+    public void testParentChildrenSyncUpFromConfig() throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         SyncState sync = syncManager.getSyncStatus("parentChildrenSyncUp");
