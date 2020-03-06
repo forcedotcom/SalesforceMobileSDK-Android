@@ -82,10 +82,7 @@ public class LayoutSyncDownTarget extends SyncDownTarget {
      * @deprecated Will be removed in Mobile SDK 9.0. Use {@link #LayoutSyncDownTarget(String, String, String, String, String)} instead.
      */
     public LayoutSyncDownTarget(String objectType, String layoutType) {
-        super();
-        this.queryType = QueryType.layout;
-        this.objectAPIName = objectType;
-        this.layoutType = layoutType;
+        this(objectType, null, layoutType, null, null);
     }
 
     /**
