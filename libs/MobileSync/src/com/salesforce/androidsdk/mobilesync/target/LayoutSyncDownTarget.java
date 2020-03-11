@@ -68,10 +68,10 @@ public class LayoutSyncDownTarget extends SyncDownTarget {
     public LayoutSyncDownTarget(JSONObject target) throws JSONException {
         super(target);
         this.objectAPIName = target.getString(SOBJECT_TYPE);
-        this.formFactor = target.optString(FORM_FACTOR);
-        this.layoutType = target.optString(LAYOUT_TYPE);
-        this.mode = target.optString(MODE);
-        this.recordTypeId = target.optString(RECORD_TYPE_ID);
+        this.formFactor = target.optString(FORM_FACTOR, null);
+        this.layoutType = target.optString(LAYOUT_TYPE, null);
+        this.mode = target.optString(MODE, null);
+        this.recordTypeId = target.optString(RECORD_TYPE_ID, null);
     }
 
     /**
