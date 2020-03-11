@@ -28,9 +28,6 @@ package com.salesforce.androidsdk.mobilesync.manager;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.smartstore.store.IndexSpec;
-import com.salesforce.androidsdk.smartstore.store.QuerySpec;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.mobilesync.app.Features;
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.model.Layout;
@@ -40,6 +37,9 @@ import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
+import com.salesforce.androidsdk.smartstore.store.IndexSpec;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 
 import org.json.JSONArray;
 
@@ -59,7 +59,7 @@ public class LayoutSyncManager {
 
     static final String SOUP_NAME = "sfdcLayouts";
     static final String QUERY = "SELECT {" + SOUP_NAME + ":_soup} FROM {" + SOUP_NAME +
-            "} WHERE {" + SOUP_NAME + ":" + Constants.ID + "} = '%s-%s'";
+            "} WHERE {" + SOUP_NAME + ":" + Constants.ID + "} = '%s-%s-%s-%s-%s'";
     private static final String TAG = "LayoutSyncManager";
     private static final IndexSpec[] INDEX_SPECS = new IndexSpec[] {
         new IndexSpec(Constants.ID, SmartStore.Type.json1)
@@ -178,18 +178,36 @@ public class LayoutSyncManager {
      * @param layoutType Layout type. Defaults to "Full" if null is passed in.
      * @param mode Fetch mode. See {@link com.salesforce.androidsdk.mobilesync.util.Constants.Mode} for available modes.
      * @param syncCallback Layout sync callback.
+     * @deprecated Will be removed in Mobile SDK 9.0. Use {@link #fetchLayout(String, String, String, String, String, Constants.Mode, LayoutSyncCallback)} instead.
      */
     public void fetchLayout(String objectType, String layoutType, Constants.Mode mode,
                             LayoutSyncCallback syncCallback) {
-        switch (mode) {
+        fetchLayout(objectType, null, layoutType, null, null, mode, syncCallback);
+    }
+
+    /**
+     * Fetches layout data for the specified parameters using the specified sync mode
+     * and triggers the supplied callback once complete.
+     *
+     * @param objectAPIName Object API name.
+     * @param formFactor Form factor. Could be "Large", "Medium" or "Small". Default value is "Large".
+     * @param layoutType Layout type. Could be "Compact" or "Full". Default value is "Full".
+     * @param mode Mode. Could be "Create", "Edit" or "View". Default value is "View".
+     * @param recordTypeId Record type ID. Default will be used if not supplied.
+     * @param syncMode Sync fetch mode. See {@link com.salesforce.androidsdk.mobilesync.util.Constants.Mode} for available modes.
+     * @param syncCallback Layout sync callback.
+     */
+    public void fetchLayout(String objectAPIName, String formFactor, String layoutType, String mode,
+                            String recordTypeId, Constants.Mode syncMode, LayoutSyncCallback syncCallback) {
+        switch (syncMode) {
             case CACHE_ONLY:
-                fetchFromCache(objectType, layoutType, syncCallback, false);
+                fetchFromCache(objectAPIName, formFactor, layoutType, mode, recordTypeId, syncCallback, false);
                 break;
             case CACHE_FIRST:
-                fetchFromCache(objectType, layoutType, syncCallback, true);
+                fetchFromCache(objectAPIName, formFactor, layoutType, mode, recordTypeId, syncCallback, true);
                 break;
             case SERVER_FIRST:
-                fetchFromServer(objectType, layoutType, syncCallback);
+                fetchFromServer(objectAPIName, formFactor, layoutType, mode, recordTypeId, syncCallback);
                 break;
         }
     }
@@ -200,9 +218,10 @@ public class LayoutSyncManager {
         initializeSoup();
     }
 
-    private void fetchFromServer(final String objectType, final String layoutType,
-                                 final LayoutSyncCallback syncCallback) {
-        final SyncDownTarget target = new LayoutSyncDownTarget(objectType, layoutType);
+    private void fetchFromServer(final String objectAPIName, final String formFactor,
+                                 final String layoutType, final String mode,
+                                 final String recordTypeId, final LayoutSyncCallback syncCallback) {
+        final SyncDownTarget target = new LayoutSyncDownTarget(objectAPIName, formFactor, layoutType, mode, recordTypeId);
         final SyncOptions options = SyncOptions.optionsForSyncDown(SyncState.MergeMode.OVERWRITE);
         try {
             syncManager.syncDown(target, options, SOUP_NAME, new SyncManager.SyncUpdateCallback() {
@@ -210,7 +229,8 @@ public class LayoutSyncManager {
                 @Override
                 public void onUpdate(SyncState sync) {
                     if (SyncState.Status.DONE.equals(sync.getStatus())) {
-                        fetchFromCache(objectType, layoutType, syncCallback, false);
+                        fetchFromCache(objectAPIName, formFactor, layoutType, mode, recordTypeId,
+                                syncCallback, false);
                     }
                 }
             });
@@ -219,20 +239,20 @@ public class LayoutSyncManager {
         }
     }
 
-    private void fetchFromCache(String objectType, String layoutType,
-                                LayoutSyncCallback syncCallback, boolean fallbackOnServer) {
+    private void fetchFromCache(String objectAPIName, String formFactor, String layoutType, String mode,
+                                String recordTypeId, LayoutSyncCallback syncCallback, boolean fallbackOnServer) {
         final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(String.format(QUERY,
-                objectType, layoutType), 1);
+                objectAPIName, formFactor, layoutType, mode, recordTypeId), 1);
         try {
             final JSONArray results = smartStore.query(querySpec, 0);
             if (results == null || results.length() == 0) {
                 if (fallbackOnServer) {
-                    fetchFromServer(objectType, layoutType, syncCallback);
+                    fetchFromServer(objectAPIName, formFactor, layoutType, mode, recordTypeId, syncCallback);
                 } else {
-                    onSyncComplete(objectType, syncCallback, null);
+                    onSyncComplete(objectAPIName, formFactor, layoutType, mode, recordTypeId, syncCallback, null);
                 }
             } else {
-                onSyncComplete(objectType, syncCallback,
+                onSyncComplete(objectAPIName, formFactor, layoutType, mode, recordTypeId, syncCallback,
                         Layout.fromJSON(results.optJSONArray(0).optJSONObject(0)));
             }
         } catch (Exception e) {
@@ -240,9 +260,10 @@ public class LayoutSyncManager {
         }
     }
 
-    private void onSyncComplete(String objectType, LayoutSyncCallback syncCallback, Layout layout) {
+    private void onSyncComplete(String objectAPIName, String formFactor, String layoutType, String mode,
+                                String recordTypeId, LayoutSyncCallback syncCallback, Layout layout) {
         if (syncCallback != null) {
-            syncCallback.onSyncComplete(objectType, layout);
+            syncCallback.onSyncComplete(objectAPIName, formFactor, layoutType, mode, recordTypeId, layout);
         }
     }
 
@@ -262,9 +283,14 @@ public class LayoutSyncManager {
         /**
          * Callback triggered when layout sync completes.
          *
-         * @param objectType Object type.
+         * @param objectAPIName Object API name.
+         * @param formFactor Form factor.
+         * @param layoutType Layout type.
+         * @param mode Mode.
+         * @param recordTypeId Record type ID.
          * @param layout Layout.
          */
-        void onSyncComplete(String objectType, Layout layout);
+        void onSyncComplete(String objectAPIName, String formFactor, String layoutType,
+                            String mode, String recordTypeId, Layout layout);
     }
 }

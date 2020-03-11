@@ -75,6 +75,8 @@ public class Constants {
      * Salesforce object layout column field constants.
      */
     public static final String LAYOUT_TYPE_COMPACT = "Compact";
+    public static final String FORM_FACTOR_MEDIUM = "Medium";
+    public static final String MODE_EDIT = "Edit";
 
     /**
      * Salesforce timestamp format.

@@ -437,7 +437,7 @@ public class RestRequest {
 	 * @throws UnsupportedEncodingException
      * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm</a>
 	 */
-	public static RestRequest getRequestForRetrieve(String apiVersion, String objectType, String objectId, List<String> fieldList) throws UnsupportedEncodingException  {
+	public static RestRequest getRequestForRetrieve(String apiVersion, String objectType, String objectId, List<String> fieldList) throws UnsupportedEncodingException {
 		StringBuilder path = new StringBuilder(RestAction.RETRIEVE.getPath(apiVersion, objectType, objectId));
 		if (fieldList != null && fieldList.size() > 0) { 
 			path.append("?fields=");
@@ -518,7 +518,7 @@ public class RestRequest {
      * @return              RestRequest object that requests a record deletion.
      * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm</a>
 	 */
-	public static RestRequest getRequestForDelete(String apiVersion, String objectType, String objectId)  {
+	public static RestRequest getRequestForDelete(String apiVersion, String objectType, String objectId) {
         return new RestRequest(RestMethod.DELETE, RestAction.DELETE.getPath(apiVersion, objectType, objectId));
 	}
 
@@ -531,7 +531,7 @@ public class RestRequest {
 	 * @throws UnsupportedEncodingException
      * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search.htm</a>
 	 */
-	public static RestRequest getRequestForSearch(String apiVersion, String q) throws UnsupportedEncodingException  {
+	public static RestRequest getRequestForSearch(String apiVersion, String q) throws UnsupportedEncodingException {
 		StringBuilder path = new StringBuilder(RestAction.SEARCH.getPath(apiVersion));
 		path.append("?q=");
 		path.append(URLEncoder.encode(q, UTF_8));
@@ -547,7 +547,7 @@ public class RestRequest {
 	 * @throws UnsupportedEncodingException
      * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_query.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_query.htm</a>
 	 */
-	public static RestRequest getRequestForQuery(String apiVersion, String q) throws UnsupportedEncodingException  {
+	public static RestRequest getRequestForQuery(String apiVersion, String q) throws UnsupportedEncodingException {
 		StringBuilder path = new StringBuilder(RestAction.QUERY.getPath(apiVersion));
 		path.append("?q=");
 		path.append(URLEncoder.encode(q, UTF_8));
@@ -561,7 +561,7 @@ public class RestRequest {
      * @return              RestRequest object that requests the search scope and order for the given API version.
 	 * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_scope_order.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_scope_order.htm</a>
 	 */
-	public static RestRequest getRequestForSearchScopeAndOrder(String apiVersion)  {
+	public static RestRequest getRequestForSearchScopeAndOrder(String apiVersion) {
         return new RestRequest(RestMethod.GET, new StringBuilder(RestAction.SEARCH_SCOPE_AND_ORDER.getPath(apiVersion)).toString());
 	}	
 	
@@ -574,7 +574,7 @@ public class RestRequest {
 	 * @throws UnsupportedEncodingException
      * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_layouts.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_layouts.htm</a>
 	 */
-	public static RestRequest getRequestForSearchResultLayout(String apiVersion, List<String> objectList) throws UnsupportedEncodingException  {
+	public static RestRequest getRequestForSearchResultLayout(String apiVersion, List<String> objectList) throws UnsupportedEncodingException {
 		StringBuilder path = new StringBuilder(RestAction.SEARCH_RESULT_LAYOUT.getPath(apiVersion));
 		path.append("?q=");
 		path.append(URLEncoder.encode(toCsv(objectList).toString(), UTF_8));
@@ -589,13 +589,51 @@ public class RestRequest {
      * @param layoutType Layout type. Could be "Compact" or "Full".
 	 * @return RestRequest object that requests the object layout for the given object and layout types.
 	 * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_resources_record_layout.htm">https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_resources_record_layout.htm</a>
+	 * @deprecated Will be removed in Mobile SDK 9.0. Use {@link #getRequestForObjectLayout(String, String, String, String, String, String)} instead.
 	 */
-	public static RestRequest getRequestForObjectLayout(String apiVersion, String objectType, String layoutType)  {
-		final StringBuilder path = new StringBuilder(RestAction.OBJECT_LAYOUT.getPath(apiVersion, objectType));
+	public static RestRequest getRequestForObjectLayout(String apiVersion, String objectType, String layoutType) {
+		return getRequestForObjectLayout(apiVersion, objectType, null, layoutType, null, null);
+	}
+
+	/**
+	 * Request to get object layout data.
+	 *
+	 * @param apiVersion Salesforce API version.
+	 * @param objectAPIName Object API name.
+	 * @param formFactor Form factor. Could be "Large", "Medium" or "Small". Default value is "Large".
+	 * @param layoutType Layout type. Could be "Compact" or "Full". Default value is "Full".
+	 * @param mode Mode. Could be "Create", "Edit" or "View". Default value is "View".
+	 * @param recordTypeId Record type ID. Default will be used if not supplied.
+	 * @return RestRequest object that requests the object layout for the given parameters.
+	 * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_resources_record_layout.htm">https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_resources_record_layout.htm</a>
+	 */
+	public static RestRequest getRequestForObjectLayout(String apiVersion, String objectAPIName,
+														String formFactor, String layoutType,
+														String mode, String recordTypeId) {
+		final StringBuilder path = new StringBuilder(RestAction.OBJECT_LAYOUT.getPath(apiVersion, objectAPIName));
+		path.append("?");
+		if (!TextUtils.isEmpty(formFactor)) {
+			path.append("formFactor=");
+			path.append(formFactor);
+			path.append("&");
+		}
 		if (!TextUtils.isEmpty(layoutType)) {
-            path.append("?layoutType=");
-            path.append(layoutType);
-        }
+			path.append("layoutType=");
+			path.append(layoutType);
+			path.append("&");
+		}
+		if (!TextUtils.isEmpty(mode)) {
+			path.append("mode=");
+			path.append(mode);
+			path.append("&");
+		}
+		if (!TextUtils.isEmpty(recordTypeId)) {
+			path.append("recordTypeId=");
+			path.append(recordTypeId);
+		}
+		if (path.charAt(path.length() - 1) == '?' || path.charAt(path.length() - 1) == '&') {
+			path.deleteCharAt(path.length() - 1);
+		}
 		return new RestRequest(RestMethod.GET, path.toString());
 	}
 

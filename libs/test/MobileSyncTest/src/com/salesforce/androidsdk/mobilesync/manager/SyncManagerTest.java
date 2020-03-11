@@ -26,7 +26,9 @@
  */
 package com.salesforce.androidsdk.mobilesync.manager;
 
-import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.LargeTest;
+
 import com.salesforce.androidsdk.mobilesync.target.LayoutSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.MetadataSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.MruSyncDownTarget;
@@ -39,13 +41,14 @@ import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget;
 import com.salesforce.androidsdk.mobilesync.target.TestSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.TestSyncUpTarget;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
+import com.salesforce.androidsdk.mobilesync.util.JSONTestHelper;
 import com.salesforce.androidsdk.mobilesync.util.SOSLBuilder;
 import com.salesforce.androidsdk.mobilesync.util.SOSLReturningBuilder;
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
 import com.salesforce.androidsdk.mobilesync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.mobilesync.util.SyncUpdateCallbackQueue;
-import com.salesforce.androidsdk.mobilesync.util.JSONTestHelper;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -65,9 +68,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.LargeTest;
 
 import static java.util.Collections.singletonList;
 
@@ -177,8 +177,8 @@ public class SyncManagerTest extends SyncManagerTestCase {
     public void testSyncDownForLayoutTarget() throws Exception {
 
         // Builds layout sync down target and performs sync.
-        trySyncDown(MergeMode.LEAVE_IF_CHANGED, new LayoutSyncDownTarget(Constants.ACCOUNT,
-                Constants.LAYOUT_TYPE_COMPACT), ACCOUNTS_SOUP);
+        trySyncDown(MergeMode.LEAVE_IF_CHANGED, new LayoutSyncDownTarget(Constants.ACCOUNT, Constants.FORM_FACTOR_MEDIUM,
+                Constants.LAYOUT_TYPE_COMPACT, Constants.MODE_EDIT, null), ACCOUNTS_SOUP);
         final QuerySpec smartStoreQuery = QuerySpec.buildAllQuerySpec(ACCOUNTS_SOUP,
                 SyncTarget.SYNC_ID, QuerySpec.Order.ascending, 1);
         final JSONArray rows = smartStore.query(smartStoreQuery, 0);
@@ -188,6 +188,8 @@ public class SyncManagerTest extends SyncManagerTestCase {
         final String layoutType = layout.optString(LayoutSyncDownTarget.LAYOUT_TYPE);
         Assert.assertEquals("Layout type should be " + Constants.LAYOUT_TYPE_COMPACT,
                 Constants.LAYOUT_TYPE_COMPACT, layoutType);
+        final String mode = layout.optString(LayoutSyncDownTarget.MODE);
+        Assert.assertEquals("Mode should be " + Constants.MODE_EDIT, Constants.MODE_EDIT, mode);
     }
 
     /**

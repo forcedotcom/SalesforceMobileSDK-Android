@@ -189,8 +189,8 @@ jobs:
                 --directories-to-pull=/sdcard  \
                 --results-dir=<< parameters.lib >>-${CIRCLE_BUILD_NUM}  \
                 --results-history-name=<< parameters.lib >>  \
-                --timeout 15m --no-auto-google-login --no-record-video --no-performance-metrics
-          no_output_timeout: 600
+                --timeout=15m --no-auto-google-login --no-record-video --no-performance-metrics
+          no_output_timeout: 900
       - run:
           name: Copy test results data
           command: |
