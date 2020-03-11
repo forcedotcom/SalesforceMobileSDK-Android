@@ -188,9 +188,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
         final String layoutType = layout.optString(LayoutSyncDownTarget.LAYOUT_TYPE);
         Assert.assertEquals("Layout type should be " + Constants.LAYOUT_TYPE_COMPACT,
                 Constants.LAYOUT_TYPE_COMPACT, layoutType);
-        final String formFactor = layout.optString(LayoutSyncDownTarget.FORM_FACTOR);
-        Assert.assertEquals("Form factor should be " + Constants.FORM_FACTOR_MEDIUM,
-                Constants.FORM_FACTOR_MEDIUM, formFactor);
         final String mode = layout.optString(LayoutSyncDownTarget.MODE);
         Assert.assertEquals("Mode should be " + Constants.MODE_EDIT, Constants.MODE_EDIT, mode);
     }
