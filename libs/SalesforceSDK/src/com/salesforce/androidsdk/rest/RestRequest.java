@@ -611,21 +611,28 @@ public class RestRequest {
 														String formFactor, String layoutType,
 														String mode, String recordTypeId) {
 		final StringBuilder path = new StringBuilder(RestAction.OBJECT_LAYOUT.getPath(apiVersion, objectAPIName));
+		path.append("?");
 		if (!TextUtils.isEmpty(formFactor)) {
-			path.append("?formFactor=");
+			path.append("formFactor=");
 			path.append(formFactor);
+			path.append("&");
 		}
 		if (!TextUtils.isEmpty(layoutType)) {
-			path.append("?layoutType=");
+			path.append("layoutType=");
 			path.append(layoutType);
+			path.append("&");
 		}
 		if (!TextUtils.isEmpty(mode)) {
-			path.append("?mode=");
+			path.append("mode=");
 			path.append(mode);
+			path.append("&");
 		}
 		if (!TextUtils.isEmpty(recordTypeId)) {
-			path.append("?recordTypeId=");
+			path.append("recordTypeId=");
 			path.append(recordTypeId);
+		}
+		if (path.charAt(path.length() - 1) == '?' || path.charAt(path.length() - 1) == '&') {
+			path.deleteCharAt(path.length() - 1);
 		}
 		return new RestRequest(RestMethod.GET, path.toString());
 	}
