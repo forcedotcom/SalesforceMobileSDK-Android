@@ -60,8 +60,7 @@
         "sobjectType": "Account",
         "formFactor": "Medium",
         "layoutType": "Compact",
-        "mode": "Edit",
-        "recordTypeId": null
+        "mode": "Edit"
       },
       "options": {
         "mergeMode":"OVERWRITE"
