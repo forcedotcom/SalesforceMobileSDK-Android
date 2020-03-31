@@ -29,28 +29,26 @@ package com.salesforce.androidsdk.smartstore.app;
 import android.app.Activity;
 import android.content.Context;
 import android.text.TextUtils;
-
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.R;
 import com.salesforce.androidsdk.smartstore.config.StoreConfig;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
+import com.salesforce.androidsdk.smartstore.store.KeyValueEncryptedFileStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
-
-import net.sqlcipher.database.SQLiteOpenHelper;
-
-import org.json.JSONException;
-
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+import net.sqlcipher.database.SQLiteOpenHelper;
+import org.json.JSONException;
 
 /**
  * SDK Manager for all native applications that use SmartStore
@@ -423,5 +421,40 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
                 "Global Stores", TextUtils.join(", ", getGlobalStoresPrefixList())
         ));
         return devSupportInfos;
+    }
+
+    /**
+     * Get key value store with given name for current user
+     * @param storeName store name
+     * @return a KeyValueEncryptedFileStore
+     */
+    public KeyValueEncryptedFileStore getKeyValueStore(String storeName) {
+        return getKeyValueStore(storeName, getUserAccountManager().getCachedCurrentUser(), null);
+    }
+
+    /**
+     * Get key value store with given name for given user
+     * @param storeName store name
+     * @param account user account
+     * @return a KeyValueEncryptedFileStore
+     */
+    public KeyValueEncryptedFileStore getKeyValueStore(String storeName, UserAccount account) {
+        return getKeyValueStore(storeName, account, null);
+    }
+
+    /**
+     * Get key value store with given name for given user / community
+     * @param storeName store name
+     * @param account user account
+     * @param communityId community id
+     * @return a KeyValueEncryptedFileStore
+     */
+    public KeyValueEncryptedFileStore getKeyValueStore(String storeName, UserAccount account, String communityId) {
+        String suffix = account.getCommunityLevelFilenameSuffix(communityId);
+
+        return new KeyValueEncryptedFileStore(
+            new File(getAppContext().getApplicationInfo().dataDir + "/kvstores"),
+            storeName + suffix,
+            getEncryptionKey());
     }
 }

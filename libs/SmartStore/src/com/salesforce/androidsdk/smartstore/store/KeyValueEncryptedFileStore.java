@@ -1,0 +1,195 @@
+/*
+ * Copyright (c) 2020-present, salesforce.com, inc.
+ * All rights reserved.
+ * Redistribution and use of this software in source and binary forms, with or
+ * without modification, are permitted provided that the following conditions
+ * are met:
+ * - Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * - Neither the name of salesforce.com, inc. nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission of salesforce.com, inc.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package com.salesforce.androidsdk.smartstore.store;
+
+import android.text.TextUtils;
+import com.salesforce.androidsdk.analytics.security.DecrypterInputStream;
+import com.salesforce.androidsdk.analytics.security.EncrypterOutputStream;
+import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
+import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+
+/** Key-value store backed by file system */
+public class KeyValueEncryptedFileStore  {
+
+    private static final String TAG = KeyValueEncryptedFileStore.class.getSimpleName();
+    private final String encryptionKey;
+    private final File storeDir;
+
+    /**
+     * Constructor
+     *
+     * @param parentDir parent directory for key value store
+     * @param storeName name for key value store
+     * @param encryptionKey encryption key for key value store
+     */
+    public KeyValueEncryptedFileStore(File parentDir, String storeName, String encryptionKey) {
+        storeDir = new File(parentDir, storeName);
+        if (!storeDir.exists()) {
+            storeDir.mkdirs();
+        }
+        this.encryptionKey = encryptionKey;
+    }
+
+    /**
+     * Save value for the given key.
+     *
+     * @param key Unique identifier.
+     * @param value Value to be persisted.
+     * @return True - if successful, False - otherwise.
+     */
+    public boolean saveValue(String key, String value) {
+        if (!isKeyValid(key, "saveValue")) {
+            return false;
+        }
+        if (value == null) {
+            SmartStoreLogger.w(TAG, "saveValue: Invalid value supplied: " + key);
+            return false;
+        }
+
+        long startNanoTime = System.nanoTime();
+        try (FileOutputStream f = new FileOutputStream(getFileForKey(key));
+                EncrypterOutputStream outputStream = new EncrypterOutputStream(f, encryptionKey)) {
+            outputStream.write(value.getBytes(StandardCharsets.UTF_8));
+            return true;
+        } catch (Exception e) {
+            SmartStoreLogger.e(TAG, "IOException occurred while saving value to filesystem", e);
+            return false;
+        }
+    }
+
+    /**
+     * Returns value stored for given key.
+     *
+     * @param key Unique identifier.
+     * @return value for given key or null if key not found.
+     */
+    public String getValue(String key) {
+        try (InputStream inputStream = getStream(key)) {
+            if (inputStream == null) {
+                return null;
+            }
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+            StringBuilder out = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                out.append(line);
+            }
+            String result = out.toString();
+
+            return result;
+        } catch (Exception e) {
+            SmartStoreLogger.e(TAG, "getValue(): Threw exception for key: " + key, e);
+            return null;
+        }
+    }
+
+    /**
+     * Returns stream for value of given key.
+     *
+     * @param key Unique identifier.
+     * @return stream to value for given key or null if key not found.
+     */
+    public InputStream getStream(String key) {
+        long startNanoTime = System.nanoTime();
+
+        if (!isKeyValid(key, "getValue")) {
+            return null;
+        }
+
+        final File file = getFileForKey(key);
+
+        if (file == null || !file.exists()) {
+            SmartStoreLogger.w(TAG, "getStream: File does not exist");
+            return null;
+        }
+
+        try {
+            FileInputStream f = new FileInputStream(file);
+            DecrypterInputStream inputStream = new DecrypterInputStream(f, encryptionKey);
+            return inputStream;
+        } catch (Exception e) {
+            SmartStoreLogger.e(TAG, "getStream: Threw exception for key: " + key, e);
+            return null;
+        }
+    }
+
+    /**
+     * Deletes stored value for given key.
+     *
+     * @param key Unique identifier.
+     * @return True - if successful, False - otherwise.
+     */
+    public synchronized boolean deleteValue(String key) {
+        if (!isKeyValid(key, "deleteValue")) {
+            return false;
+        }
+        return getFileForKey(key).delete();
+    }
+
+    /** Deletes all stored values. */
+    public void deleteAll() {
+        for (File file : storeDir.listFiles()) {
+            SmartStoreLogger.i(TAG, "deleting file :" + file.getName());
+            file.delete();
+        }
+    }
+
+    /** @return number of entries in the store. */
+    public int count() {
+        return storeDir.list().length;
+    }
+
+    /** @return True if store is empty. */
+    public boolean isEmpty() {
+        return storeDir.list().length == 0;
+    }
+
+    private String encodeKey(String key) {
+        return SalesforceKeyGenerator.getSHA256Hash(key);
+    }
+
+    private File getFileForKey(String key) {
+        return new File(storeDir, encodeKey(key));
+    }
+
+    private boolean isKeyValid(String key, String operation) {
+        if (TextUtils.isEmpty(key)) {
+            SmartStoreLogger.w(TAG, operation + ": Invalid key supplied: " + key);
+            return false;
+        }
+        return true;
+    }
+}
