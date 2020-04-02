@@ -30,6 +30,7 @@ import android.content.Context;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.KeyValueEncryptedFileStore;
 import java.io.BufferedReader;
 import java.io.File;
@@ -57,10 +58,10 @@ public class KeyValueEncryptedFileStoreTest {
                 InstrumentationRegistry.getInstrumentation()
                         .getTargetContext()
                         .getApplicationContext();
-        SalesforceSDKManager.initNative(context, null);
+        SmartStoreSDKManager.initNative(context, null);
         keyValueStore =
                 new KeyValueEncryptedFileStore(
-                        context.getFilesDir(), TEST_STORE, SalesforceSDKManager.getEncryptionKey());
+                        context, TEST_STORE, SalesforceSDKManager.getEncryptionKey());
         Assert.assertTrue("Store directory should exist", getStoreDir(TEST_STORE).exists());
         Assert.assertTrue("Store should be empty", keyValueStore.isEmpty());
     }
@@ -192,7 +193,7 @@ public class KeyValueEncryptedFileStoreTest {
     // Helper methods
     //
     private File getStoreDir(String storeName) {
-        return new File(context.getFilesDir(), storeName);
+        return new File(context.getApplicationInfo().dataDir + "/keyvaluestores", storeName);
     }
 
     private String streamToString(InputStream inputStream) {

@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.smartstore.app;
 
+import static com.salesforce.androidsdk.smartstore.store.KeyValueEncryptedFileStore.KEY_VALUE_STORES;
+
 import android.app.Activity;
 import android.content.Context;
 import android.text.TextUtils;
@@ -42,7 +44,7 @@ import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import java.io.File;
+import com.salesforce.androidsdk.util.ManagedFilesHelper;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -344,9 +346,13 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      */
     public List<String> getUserStoresPrefixList() {
         UserAccount userAccount = getUserAccountManager().getCachedCurrentUser();
-        String communityId = userAccount!=null?userAccount.getCommunityId():null;
-        List<String> userDBName = DBOpenHelper.getUserDatabasePrefixList(context,getUserAccountManager().getCachedCurrentUser(),communityId);
-        return userDBName;
+        if (userAccount != null) {
+            return DBOpenHelper
+                .getUserDatabasePrefixList(context, getUserAccountManager().getCachedCurrentUser(),
+                    userAccount.getCommunityId());
+        } else {
+            return new ArrayList<>();
+        }
     }
 
     /**
@@ -453,8 +459,36 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         String suffix = account.getCommunityLevelFilenameSuffix(communityId);
 
         return new KeyValueEncryptedFileStore(
-            new File(getAppContext().getApplicationInfo().dataDir + "/kvstores"),
+            getAppContext(),
             storeName + suffix,
             getEncryptionKey());
+    }
+
+    /**
+     * Returns a list of key value store names for current user.
+     * @return
+     * @throws JSONException
+     */
+    public List<String> getKeyValueStoresPrefixList() {
+        UserAccount userAccount = getUserAccountManager().getCachedCurrentUser();
+        String communityId = userAccount!=null?userAccount.getCommunityId():null;
+        if (userAccount == null) {
+            return new ArrayList<>();
+        } else {
+            return ManagedFilesHelper.getPrefixList(getAppContext(), KEY_VALUE_STORES, userAccount.getCommunityLevelFilenameSuffix(communityId), "", null);
+        }
+    }
+
+    /**
+     * Removes all the key value stores for current user.
+     */
+    public void removeAllKeyValueStores() {
+        UserAccount userAccount = getUserAccountManager().getCachedCurrentUser();
+        String communityId = userAccount!=null?userAccount.getCommunityId():null;
+        if (userAccount == null) {
+            return;
+        } else {
+            ManagedFilesHelper.deleteFiles(ManagedFilesHelper.getFiles(getAppContext(), KEY_VALUE_STORES, userAccount.getCommunityLevelFilenameSuffix(communityId), "", null));
+        }
     }
 }

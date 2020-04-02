@@ -27,7 +27,9 @@
 
 package com.salesforce.androidsdk.smartstore.store;
 
+import android.content.Context;
 import android.text.TextUtils;
+import androidx.annotation.VisibleForTesting;
 import com.salesforce.androidsdk.analytics.security.DecrypterInputStream;
 import com.salesforce.androidsdk.analytics.security.EncrypterOutputStream;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
@@ -47,6 +49,18 @@ public class KeyValueEncryptedFileStore  {
     private final String encryptionKey;
     private final File storeDir;
 
+    public static final String KEY_VALUE_STORES = "keyvaluestores";
+
+    /**
+     * Constructor
+     *
+     * @param storeName name for key value store
+     * @param encryptionKey encryption key for key value store
+     */
+    public KeyValueEncryptedFileStore(Context ctx,  String storeName, String encryptionKey) {
+        this(new File(ctx.getApplicationInfo().dataDir, KEY_VALUE_STORES), storeName, encryptionKey);
+    }
+
     /**
      * Constructor
      *
@@ -54,7 +68,7 @@ public class KeyValueEncryptedFileStore  {
      * @param storeName name for key value store
      * @param encryptionKey encryption key for key value store
      */
-    public KeyValueEncryptedFileStore(File parentDir, String storeName, String encryptionKey) {
+    KeyValueEncryptedFileStore(File parentDir, String storeName, String encryptionKey) {
         storeDir = new File(parentDir, storeName);
         if (!storeDir.exists()) {
             storeDir.mkdirs();
