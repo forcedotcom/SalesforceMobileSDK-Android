@@ -127,6 +127,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         if (userAccount != null) {
             // NB if database file was already deleted, we still need to call DBOpenHelper.deleteDatabase to clean up the DBOpenHelper cache
             DBOpenHelper.deleteAllDatabases(getAppContext(), userAccount);
+            removeAllKeyValueStores(userAccount);
         } else {
             DBOpenHelper.deleteAllUserDatabases(getAppContext());
         }
