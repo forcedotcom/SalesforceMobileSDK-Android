@@ -465,17 +465,71 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
     }
 
     /**
+     * Return whether there is a key value store with given name for current user
+     */
+    public boolean hasKeyValueStore(String storeName) {
+        return hasKeyValueStore(storeName, getUserAccountManager().getCachedCurrentUser(), null);
+    }
+
+    /**
+     * Return whether there is a key value store with given name for given user
+     */
+    public boolean hasKeyValueStore(String storeName, UserAccount account) {
+        return hasKeyValueStore(storeName, account, null);
+
+    }
+
+    /**
+     * Return whether there is a key value store with given name for given user / community id
+     */
+    public boolean hasKeyValueStore(String storeName, UserAccount account, String communityId) {
+        String suffix = account.getCommunityLevelFilenameSuffix(communityId);
+        return KeyValueEncryptedFileStore.hasKeyValueStore(getAppContext(), storeName + suffix);
+    }
+
+    /**
+     * Remove key value store with given name for current user
+     */
+    public void removeKeyValueStore(String storeName) {
+        removeKeyValueStore(storeName, getUserAccountManager().getCachedCurrentUser(), null);
+    }
+
+    /**
+     * Remove key value store with given name for given user
+     */
+    public void removeKeyValueStore(String storeName, UserAccount account) {
+        removeKeyValueStore(storeName, account, null);
+    }
+
+    /**
+     * Remove key value store with given name for given user / community id
+     */
+    public void removeKeyValueStore(String storeName, UserAccount account, String communityId) {
+        String suffix = account.getCommunityLevelFilenameSuffix(communityId);
+        KeyValueEncryptedFileStore.removeKeyValueStore(getAppContext(), storeName + suffix);
+    }
+
+  /**
      * Returns a list of key value store names for current user.
-     * @return
-     * @throws JSONException
+     *
+     * @return list of store names
      */
     public List<String> getKeyValueStoresPrefixList() {
-        UserAccount userAccount = getUserAccountManager().getCachedCurrentUser();
-        String communityId = userAccount!=null?userAccount.getCommunityId():null;
-        if (userAccount == null) {
+        return getKeyValueStoresPrefix(getUserAccountManager().getCachedCurrentUser());
+    }
+
+    /**
+     * Returns a list of key value store names for given user.
+     *
+     * @param account user account
+     * @return list of store names
+     */
+    public List<String> getKeyValueStoresPrefix(UserAccount account) {
+        if (account == null) {
             return new ArrayList<>();
         } else {
-            return ManagedFilesHelper.getPrefixList(getAppContext(), KEY_VALUE_STORES, userAccount.getCommunityLevelFilenameSuffix(communityId), "", null);
+            return ManagedFilesHelper.getPrefixList(getAppContext(), KEY_VALUE_STORES,
+                account.getCommunityLevelFilenameSuffix(), "", null);
         }
     }
 
@@ -483,12 +537,22 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * Removes all the key value stores for current user.
      */
     public void removeAllKeyValueStores() {
-        UserAccount userAccount = getUserAccountManager().getCachedCurrentUser();
-        String communityId = userAccount!=null?userAccount.getCommunityId():null;
-        if (userAccount == null) {
+        removeAllKeyValueStores(getUserAccountManager().getCachedCurrentUser());
+    }
+
+    /**
+     * Removes all the key value stores for given user.
+     *
+     * @param account user account
+     */
+    public void removeAllKeyValueStores(UserAccount account) {
+        if (account == null) {
             return;
+
         } else {
-            ManagedFilesHelper.deleteFiles(ManagedFilesHelper.getFiles(getAppContext(), KEY_VALUE_STORES, userAccount.getCommunityLevelFilenameSuffix(communityId), "", null));
+            ManagedFilesHelper.deleteFiles(ManagedFilesHelper
+                .getFiles(getAppContext(), KEY_VALUE_STORES,
+                    account.getUserLevelFilenameSuffix(), "", null));
         }
     }
 }
