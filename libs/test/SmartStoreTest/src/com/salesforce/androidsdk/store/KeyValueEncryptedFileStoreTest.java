@@ -27,16 +27,19 @@
 package com.salesforce.androidsdk.store;
 
 import android.content.Context;
+import androidx.core.widget.TextViewCompat.AutoSizeTextType;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.KeyValueEncryptedFileStore;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -72,6 +75,44 @@ public class KeyValueEncryptedFileStoreTest {
         getStoreDir(TEST_STORE).delete();
     }
 
+    /** Test computeParentDir() */
+    @Test
+    public void testComputeParentDir() {
+        Assert.assertEquals("Wrong value returned by computeParentDir()", getStoreDir("").getAbsolutePath(), KeyValueEncryptedFileStore.computeParentDir(context).getAbsolutePath());
+    }
+
+    /** Test getStoreDir() */
+    @Test
+    public void testGetStoreDir() {
+        Assert.assertEquals("Wrong value returned by getStoreDir()", getStoreDir(TEST_STORE).getAbsolutePath(), keyValueStore.getStoreDir().getAbsolutePath());
+
+    }
+
+    /**
+     * Test hasKeyValueStore()
+     * Call hasKeyValueStore for existing store and non-existent store
+     */
+    @Test
+    public void testHasKeyValueStore() {
+        Assert.assertTrue("Store should have been found", KeyValueEncryptedFileStore.hasKeyValueStore(context, TEST_STORE));
+        Assert.assertFalse("No store should have been found", KeyValueEncryptedFileStore.hasKeyValueStore(context, "non_existent_store"));
+    }
+
+    /**
+     * Test remove key value store
+     * Check new store does not exist, add new store, check it now exists, then remove it, check it no longer exists
+     */
+    @Test
+    public void testRemoveKeyValueStore() {
+        Assert.assertFalse("No store should have been found", KeyValueEncryptedFileStore.hasKeyValueStore(context, "new_store"));
+        KeyValueEncryptedFileStore store = new KeyValueEncryptedFileStore(context, "new_store", "");
+        Assert.assertTrue("Store should have been found", KeyValueEncryptedFileStore.hasKeyValueStore(context, "new_store"));
+        Assert.assertTrue("Store dir should exist", getStoreDir("new_store").exists());
+        KeyValueEncryptedFileStore.removeKeyValueStore(context, "new_store");
+        Assert.assertFalse("No store should have been found", KeyValueEncryptedFileStore.hasKeyValueStore(context, "new_store"));
+        Assert.assertFalse("Store dir should be gone", getStoreDir("new_store").exists());
+    }
+
     /** Test saving values and counting them */
     @Test
     public void testSaveValueCount() {
@@ -80,6 +121,18 @@ public class KeyValueEncryptedFileStoreTest {
             String value = "value" + i;
             Assert.assertEquals("Wrong count before save", i, keyValueStore.count());
             keyValueStore.saveValue(key, value);
+            Assert.assertEquals("Wrong count after save", i + 1, keyValueStore.count());
+        }
+    }
+
+    /** Test saving from streams and counting them */
+    @Test
+    public void testSaveStreamCount() {
+        for (int i = 0; i < NUM_ENTRIES; i++) {
+            String key = "key" + i;
+            InputStream stream = stringToStream("value" + i);
+            Assert.assertEquals("Wrong count before save", i, keyValueStore.count());
+            keyValueStore.saveStream(key, stream);
             Assert.assertEquals("Wrong count after save", i + 1, keyValueStore.count());
         }
     }
@@ -101,6 +154,23 @@ public class KeyValueEncryptedFileStoreTest {
         }
     }
 
+    /** Test saving from streams and getting them back as values */
+    @Test
+    public void testSaveStreamGetValue() {
+        for (int i = 0; i < NUM_ENTRIES; i++) {
+            String key = "key" + i;
+            InputStream stream = stringToStream("value" + i);
+            keyValueStore.saveStream(key, stream);
+        }
+
+        for (int i = 0; i < NUM_ENTRIES; i++) {
+            String key = "key" + i;
+            String expectedValue = "value" + i;
+            Assert.assertEquals(
+                "Wrong value for key: " + key, expectedValue, keyValueStore.getValue(key));
+        }
+    }
+
     /** Test saving values and getting them back as streams */
     @Test
     public void testSaveValueGetStream() {
@@ -117,6 +187,25 @@ public class KeyValueEncryptedFileStoreTest {
                     "Wrong value (from stream) for key: " + key,
                     expectedValue,
                     streamToString(keyValueStore.getStream(key)));
+        }
+    }
+
+    /** Test saving from streams and getting them back as streams */
+    @Test
+    public void testSaveStreamGetStream() {
+        for (int i = 0; i < NUM_ENTRIES; i++) {
+            String key = "key" + i;
+            InputStream stream = stringToStream("value" + i);
+            keyValueStore.saveStream(key, stream);
+        }
+
+        for (int i = 0; i < NUM_ENTRIES; i++) {
+            String key = "key" + i;
+            String expectedValue = "value" + i;
+            Assert.assertEquals(
+                "Wrong value (from stream) for key: " + key,
+                expectedValue,
+                streamToString(keyValueStore.getStream(key)));
         }
     }
 
@@ -196,6 +285,10 @@ public class KeyValueEncryptedFileStoreTest {
         return new File(context.getApplicationInfo().dataDir + "/keyvaluestores", storeName);
     }
 
+    private InputStream stringToStream(String value) {
+        return new ByteArrayInputStream(value.getBytes(StandardCharsets.UTF_8));
+    }
+
     private String streamToString(InputStream inputStream) {
         if (inputStream == null) {
             return null;
@@ -224,4 +317,5 @@ public class KeyValueEncryptedFileStoreTest {
             }
         }
     }
+
 }

@@ -34,6 +34,7 @@ import com.salesforce.androidsdk.analytics.security.DecrypterInputStream;
 import com.salesforce.androidsdk.analytics.security.EncrypterOutputStream;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
+import com.salesforce.androidsdk.util.ManagedFilesHelper;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -58,7 +59,7 @@ public class KeyValueEncryptedFileStore  {
      * @param encryptionKey encryption key for key value store
      */
     public KeyValueEncryptedFileStore(Context ctx,  String storeName, String encryptionKey) {
-        this(new File(ctx.getApplicationInfo().dataDir, KEY_VALUE_STORES), storeName, encryptionKey);
+        this(computeParentDir(ctx), storeName, encryptionKey);
     }
 
     /**
@@ -76,6 +77,35 @@ public class KeyValueEncryptedFileStore  {
         this.encryptionKey = encryptionKey;
     }
 
+
+    /**
+     * Return boolean indicating if a key value store with the given (full) name already exists
+     * @param ctx
+     * @param storeName full store name
+     * @return True - if store was found
+     */
+    public static boolean hasKeyValueStore(Context ctx, String storeName) {
+        return new File(computeParentDir(ctx), storeName).exists();
+    }
+
+    /**
+     * Remove key value store with given (full) name
+     * @param ctx
+     * @param storeName full store name
+     */
+    public static void removeKeyValueStore(Context ctx, String storeName) {
+        ManagedFilesHelper.deleteFile(new File(computeParentDir(ctx), storeName));
+    }
+
+    /**
+     * Return parent directory for all key stores
+     * @param ctx
+     * @return File for parent directory
+     */
+    public static File computeParentDir(Context ctx) {
+        return new File(ctx.getApplicationInfo().dataDir, KEY_VALUE_STORES);
+    }
+
     /**
      * Save value for the given key.
      *
@@ -88,7 +118,7 @@ public class KeyValueEncryptedFileStore  {
             return false;
         }
         if (value == null) {
-            SmartStoreLogger.w(TAG, "saveValue: Invalid value supplied: " + key);
+            SmartStoreLogger.w(TAG, "saveValue: Invalid value supplied: " + value);
             return false;
         }
 
@@ -102,6 +132,39 @@ public class KeyValueEncryptedFileStore  {
             return false;
         }
     }
+
+    /**
+     * Save value given as an input stream for the given key.
+     * NB: does not close provided input stream
+     *
+     * @param key Unique identifier.
+     * @param stream Stream to be persisted.
+     * @return True - if successful, False - otherwise.
+     */
+    public boolean saveStream(String key, InputStream stream) {
+        if (!isKeyValid(key, "saveStream")) {
+            return false;
+        }
+        if (stream == null) {
+            SmartStoreLogger.w(TAG, "saveStream: Invalid value supplied: " + stream);
+            return false;
+        }
+
+        try (FileOutputStream f = new FileOutputStream(getFileForKey(key));
+            EncrypterOutputStream outputStream = new EncrypterOutputStream(f, encryptionKey)) {
+
+            byte[] buffer = new byte[1024];
+            int len;
+            while((len=stream.read(buffer))>0){
+                outputStream.write(buffer,0,len);
+            }
+            return true;
+        } catch (Exception e) {
+            SmartStoreLogger.e(TAG, "IOException occurred while saving value from stream to filesystem", e);
+            return false;
+        }
+    }
+
 
     /**
      * Returns value stored for given key.
@@ -189,6 +252,13 @@ public class KeyValueEncryptedFileStore  {
     /** @return True if store is empty. */
     public boolean isEmpty() {
         return storeDir.list().length == 0;
+    }
+
+    /**
+     * @return store directory
+     */
+    public File getStoreDir() {
+        return storeDir;
     }
 
     private String encodeKey(String key) {
