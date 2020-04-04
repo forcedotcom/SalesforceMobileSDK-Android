@@ -325,6 +325,25 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	}
 
 	/**
+	 * Deletes all databases of given user.
+	 *
+	 * @param ctx Context.
+	 * @param userAccount User account.
+	 */
+	public static synchronized void deleteAllDatabases(Context ctx, UserAccount userAccount) {
+		if (userAccount != null) {
+			File[] files = ManagedFilesHelper
+				.getFiles(ctx, DATABASES, userAccount.getUserLevelFilenameSuffix(), DB_NAME_SUFFIX,
+					null);
+			for (File file : files) {
+				openHelpers.remove(file.getName());
+			}
+			ManagedFilesHelper.deleteFiles(files);
+		}
+	}
+
+
+	/**
 	 * Determines if a smart store currently exists for the given account and/or community id.
 	 *
 	 * @param ctx Context.
