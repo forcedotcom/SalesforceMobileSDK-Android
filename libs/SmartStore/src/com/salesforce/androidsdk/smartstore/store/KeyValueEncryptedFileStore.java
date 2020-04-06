@@ -47,6 +47,7 @@ import java.nio.charset.StandardCharsets;
 public class KeyValueEncryptedFileStore  {
 
     private static final String TAG = KeyValueEncryptedFileStore.class.getSimpleName();
+    public static final int MAX_STORE_NAME_LENGTH = 96;
     private final String encryptionKey;
     private final File storeDir;
 
@@ -70,9 +71,15 @@ public class KeyValueEncryptedFileStore  {
      * @param encryptionKey encryption key for key value store
      */
     KeyValueEncryptedFileStore(File parentDir, String storeName, String encryptionKey) {
+        if (!isValidStoreName(storeName)) {
+            throw new IllegalArgumentException("Invalid store name: " + storeName);
+        }
         storeDir = new File(parentDir, storeName);
         if (!storeDir.exists()) {
             storeDir.mkdirs();
+        }
+        if (!storeDir.isDirectory()) {
+            throw new IllegalArgumentException("Failed to create directory for: " + storeName);
         }
         this.encryptionKey = encryptionKey;
     }
@@ -104,6 +111,16 @@ public class KeyValueEncryptedFileStore  {
      */
     public static File computeParentDir(Context ctx) {
         return new File(ctx.getApplicationInfo().dataDir, KEY_VALUE_STORES);
+    }
+
+    /**
+     * Store name can only contain letters, digits and _ and cannot exceed 96 characters
+     * @param storeName
+     * @return True if the name provided is valid for a store
+     */
+    public static boolean isValidStoreName(String storeName) {
+        return storeName != null && storeName.length() > 0 && storeName.length() <= MAX_STORE_NAME_LENGTH
+            && storeName.matches("^[a-zA-Z0-9_]*$");
     }
 
     /**

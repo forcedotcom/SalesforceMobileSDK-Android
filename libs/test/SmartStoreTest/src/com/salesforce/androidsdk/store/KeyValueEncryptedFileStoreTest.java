@@ -75,6 +75,34 @@ public class KeyValueEncryptedFileStoreTest {
         getStoreDir(TEST_STORE).delete();
     }
 
+    /** Test isValidStoreName() */
+    @Test
+    public void isValidStoreName() {
+        // Basic tests
+        Assert.assertFalse("Store name is invalid", KeyValueEncryptedFileStore.isValidStoreName(null));
+        Assert.assertFalse("Store name is invalid", KeyValueEncryptedFileStore.isValidStoreName(""));
+        Assert.assertFalse("Store name is invalid", KeyValueEncryptedFileStore.isValidStoreName("abc!def"));
+        Assert.assertFalse("Store name is invalid", KeyValueEncryptedFileStore.isValidStoreName("abc def"));
+        Assert.assertFalse("Store name is invalid", KeyValueEncryptedFileStore.isValidStoreName("abc/def"));
+        Assert.assertTrue("Store name is valid", KeyValueEncryptedFileStore.isValidStoreName("abc_def"));
+        Assert.assertTrue("Store name is valid", KeyValueEncryptedFileStore.isValidStoreName("abc_def_ABC_DEF_012"));
+        String generateStoreName = "";
+        // Trying various lengths
+        for (int i=0; i<KeyValueEncryptedFileStore.MAX_STORE_NAME_LENGTH*2; i++) {
+            generateStoreName += "x";
+            Assert.assertEquals("Wrong value returned by isValidStoreName(\"" + generateStoreName + "\")",
+                generateStoreName.length() <= KeyValueEncryptedFileStore.MAX_STORE_NAME_LENGTH,
+                KeyValueEncryptedFileStore.isValidStoreName(generateStoreName));
+        }
+        // Trying various characters
+        for (int i=0; i<256; i++) {
+            generateStoreName = Character.toString((char) i);
+            Assert.assertEquals("Wrong value returned by isValidStoreName(\"" + generateStoreName + "\")",
+                (i >= 'a' && i <= 'z') || (i >= 'A' && i <= 'Z') || (i >= '0' && i <= '9') || i == '_',
+                KeyValueEncryptedFileStore.isValidStoreName(generateStoreName));
+        }
+    }
+
     /** Test computeParentDir() */
     @Test
     public void testComputeParentDir() {
@@ -87,6 +115,32 @@ public class KeyValueEncryptedFileStoreTest {
         Assert.assertEquals("Wrong value returned by getStoreDir()", getStoreDir(TEST_STORE).getAbsolutePath(), keyValueStore.getStoreDir().getAbsolutePath());
 
     }
+
+    /** Test that constructor fails if store name provided is invalid */
+    @Test
+    public void testFailedCreateBadName() {
+        try {
+            new KeyValueEncryptedFileStore(context, "", "");
+            Assert.fail("An exception should have been thrown");
+        } catch (IllegalArgumentException e) {
+            Assert.assertTrue("Wrong exception", e.getMessage().contains("Invalid store name"));
+        }
+    }
+
+    /** Test that constructor fails if a file exists where the store dir should be created */
+    @Test
+    public void testFailedCreateFileExist() throws IOException {
+        File file = getStoreDir("file");
+        Assert.assertTrue("Test file creation failed", file.createNewFile());
+        try {
+            new KeyValueEncryptedFileStore(context, "file", "");
+            Assert.fail("An exception should have been thrown");
+        } catch (IllegalArgumentException e) {
+            Assert.assertTrue("Wrong exception", e.getMessage().contains("Failed to create directory"));
+        }
+        file.delete();
+    }
+
 
     /**
      * Test hasKeyValueStore()
