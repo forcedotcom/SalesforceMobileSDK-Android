@@ -87,6 +87,28 @@ public class SmartStoreSDKManagerTest {
         Assert.assertEquals("Wrong value", "value3", storeSecondInstance.getValue("key3"));
     }
 
+    /**
+     * Create a global store by calling getGlobalKeyValueStore
+     * Populate that store
+     * Get that store by calling getGlobalKeyValueStore
+     * Make sure we find values stored through the first instance
+     */
+    @Test
+    public void testGlobalGetKeyValueStoreReturnsSameStore() throws JSONException {
+        KeyValueEncryptedFileStore store = manager.getGlobalKeyValueStore("store");
+        Assert.assertTrue("Store should be empty", store.isEmpty());
+        store.saveValue("key1", "value1");
+        store.saveValue("key2", "value2");
+        store.saveValue("key3", "value3");
+        Assert.assertTrue("Store should not be empty", !store.isEmpty());
+        Assert.assertEquals("Store should have 3 values", 3, store.count());
+        KeyValueEncryptedFileStore storeSecondInstance = manager.getGlobalKeyValueStore("store");
+        Assert.assertTrue("Store should not be empty", !storeSecondInstance.isEmpty());
+        Assert.assertEquals("Store should have 3 values", 3, storeSecondInstance.count());
+        Assert.assertEquals("Wrong value", "value1", storeSecondInstance.getValue("key1"));
+        Assert.assertEquals("Wrong value", "value2", storeSecondInstance.getValue("key2"));
+        Assert.assertEquals("Wrong value", "value3", storeSecondInstance.getValue("key3"));
+    }
 
     /**
      * Using getKeyValueStore / hasKeyValueStore / getKeyValueStoresPrefix / removeKeyValueStore
@@ -98,19 +120,19 @@ public class SmartStoreSDKManagerTest {
 
         // No store initially
         Assert.assertFalse("Store should not be found", manager.hasKeyValueStore("store", user));
-        Assert.assertEquals("No stores should be found", 0, manager.getKeyValueStoresPrefix(user).size());
+        Assert.assertEquals("No stores should be found", 0, manager.getKeyValueStoresPrefixList(user).size());
 
         // Create store
         KeyValueEncryptedFileStore store = createAndPopulateStore("store", user);
         Assert.assertEquals("Wrong store dir", computeExpectedStorePath("store", user), store.getStoreDir().getAbsolutePath());
         Assert.assertTrue("Store should be found", manager.hasKeyValueStore("store", user));
-        Assert.assertEquals("Wrong store names", 1, manager.getKeyValueStoresPrefix(user).size());
-        Assert.assertEquals("Wrong store names", "store", manager.getKeyValueStoresPrefix(user).get(0));
+        Assert.assertEquals("Wrong store names", 1, manager.getKeyValueStoresPrefixList(user).size());
+        Assert.assertEquals("Wrong store names", "store", manager.getKeyValueStoresPrefixList(user).get(0));
 
         // Remove store
         manager.removeKeyValueStore("store", user);
         Assert.assertFalse("Store should no longer be found", manager.hasKeyValueStore("store", user));
-        Assert.assertEquals("No stores should be found", 0, manager.getKeyValueStoresPrefix(user).size());
+        Assert.assertEquals("No stores should be found", 0, manager.getKeyValueStoresPrefixList(user).size());
     }
 
     /**
@@ -125,7 +147,7 @@ public class SmartStoreSDKManagerTest {
         Assert.assertFalse("Store1 should not be found", manager.hasKeyValueStore("store1", user));
         Assert.assertFalse("Store2 should not be found", manager.hasKeyValueStore("store2", user));
         Assert.assertFalse("Store3 should not be found", manager.hasKeyValueStore("store3", user));
-        Assert.assertEquals("No stores should be found", 0, manager.getKeyValueStoresPrefix(user).size());
+        Assert.assertEquals("No stores should be found", 0, manager.getKeyValueStoresPrefixList(user).size());
 
         // Create stores
         KeyValueEncryptedFileStore store1 = createAndPopulateStore("store1", user);
@@ -139,10 +161,10 @@ public class SmartStoreSDKManagerTest {
         Assert.assertTrue("Store should be found", manager.hasKeyValueStore("store2", user));
         Assert.assertTrue("Store should be found", manager.hasKeyValueStore("store3", user));
 
-        Assert.assertEquals("Wrong store names", 3, manager.getKeyValueStoresPrefix(user).size());
-        Assert.assertTrue("Wrong store names", manager.getKeyValueStoresPrefix(user).contains("store1"));
-        Assert.assertTrue("Wrong store names", manager.getKeyValueStoresPrefix(user).contains("store2"));
-        Assert.assertTrue("Wrong store names", manager.getKeyValueStoresPrefix(user).contains("store3"));
+        Assert.assertEquals("Wrong store names", 3, manager.getKeyValueStoresPrefixList(user).size());
+        Assert.assertTrue("Wrong store names", manager.getKeyValueStoresPrefixList(user).contains("store1"));
+        Assert.assertTrue("Wrong store names", manager.getKeyValueStoresPrefixList(user).contains("store2"));
+        Assert.assertTrue("Wrong store names", manager.getKeyValueStoresPrefixList(user).contains("store3"));
 
         // Remove one store with removeKeyValueStore
         manager.removeKeyValueStore("store1", user);
@@ -152,7 +174,47 @@ public class SmartStoreSDKManagerTest {
         manager.removeAllKeyValueStores(user);
         Assert.assertFalse("Store should no longer be found", manager.hasKeyValueStore("store2", user));
         Assert.assertFalse("Store should no longer be found", manager.hasKeyValueStore("store3", user));
-        Assert.assertEquals("No stores should be found", 0, manager.getKeyValueStoresPrefix(user).size());
+        Assert.assertEquals("No stores should be found", 0, manager.getKeyValueStoresPrefixList(user).size());
+    }
+
+    /**
+     * Using getGlobalKeyValueStore / hasGlobalKeyValueStore / getGlobalKeyValueStoresPrefix / removeGlobalKeyValueStore / removeAllGlobalKeyValueStores
+     * with multiple global stores
+     */
+    @Test
+    public void testGlobalKeyValueStoreOperationsWithMultipleStores() throws JSONException {
+        // No store initially
+        Assert.assertFalse("Store1 should not be found", manager.hasGlobalKeyValueStore("store1"));
+        Assert.assertFalse("Store2 should not be found", manager.hasGlobalKeyValueStore("store2"));
+        Assert.assertFalse("Store3 should not be found", manager.hasGlobalKeyValueStore("store3"));
+        Assert.assertEquals("No stores should be found", 0, manager.getGlobalKeyValueStoresPrefixList().size());
+
+        // Create stores
+        KeyValueEncryptedFileStore store1 = createAndPopulateGlobalStore("store1");
+        Assert.assertEquals("Wrong store dir", computeExpectedGlobalStorePath("store1"), store1.getStoreDir().getAbsolutePath());
+        KeyValueEncryptedFileStore store2 = createAndPopulateGlobalStore("store2");
+        Assert.assertEquals("Wrong store dir", computeExpectedGlobalStorePath("store2"), store2.getStoreDir().getAbsolutePath());
+        KeyValueEncryptedFileStore store3 = createAndPopulateGlobalStore("store3");
+        Assert.assertEquals("Wrong store dir", computeExpectedGlobalStorePath("store3"), store3.getStoreDir().getAbsolutePath());
+
+        Assert.assertTrue("Store should be found", manager.hasGlobalKeyValueStore("store1"));
+        Assert.assertTrue("Store should be found", manager.hasGlobalKeyValueStore("store2"));
+        Assert.assertTrue("Store should be found", manager.hasGlobalKeyValueStore("store3"));
+
+        Assert.assertEquals("Wrong store names", 3, manager.getGlobalKeyValueStoresPrefixList().size());
+        Assert.assertTrue("Wrong store names", manager.getGlobalKeyValueStoresPrefixList().contains("store1"));
+        Assert.assertTrue("Wrong store names", manager.getGlobalKeyValueStoresPrefixList().contains("store2"));
+        Assert.assertTrue("Wrong store names", manager.getGlobalKeyValueStoresPrefixList().contains("store3"));
+
+        // Remove one store with removeGlobalKeyValueStore
+        manager.removeGlobalKeyValueStore("store1");
+        Assert.assertFalse("Store should no longer be found", manager.hasGlobalKeyValueStore("store1"));
+
+        // Remove all remaining stores with removeAllGlobalKeyValueStores
+        manager.removeAllGlobalKeyValueStores();
+        Assert.assertFalse("Store should no longer be found", manager.hasGlobalKeyValueStore("store2"));
+        Assert.assertFalse("Store should no longer be found", manager.hasGlobalKeyValueStore("store3"));
+        Assert.assertEquals("No stores should be found", 0, manager.getGlobalKeyValueStoresPrefixList().size());
     }
 
     /**
@@ -164,7 +226,7 @@ public class SmartStoreSDKManagerTest {
         UserAccount user = createTestAccount("org", "user", null,"first@test.com");
 
         // No store initially
-        Assert.assertEquals("No stores should be found", 0, manager.getKeyValueStoresPrefix(user).size());
+        Assert.assertEquals("No stores should be found", 0, manager.getKeyValueStoresPrefixList(user).size());
 
         // Create stores
         KeyValueEncryptedFileStore store1comm1 = createAndPopulateStore("store1", user, "c1");
@@ -181,8 +243,8 @@ public class SmartStoreSDKManagerTest {
         Assert.assertTrue("Store should be found", manager.hasKeyValueStore("store1", user, "c2"));
         Assert.assertTrue("Store should be found", manager.hasKeyValueStore("store2", user, "c2"));
 
-// FIXME getKeyValueStoresPrefix does not see commmunity scoped stores
-//        Assert.assertEquals("Wrong store names", 2, manager.getKeyValueStoresPrefix(user).size());
+        // NB: getKeyValueStoresPrefix only returns stores of the user (for the user's community if any)
+        Assert.assertEquals("Wrong store names", 0, manager.getKeyValueStoresPrefixList(user).size());
 
         // Remove one store with removeKeyValueStore
         manager.removeKeyValueStore("store1", user, "c1");
@@ -190,8 +252,6 @@ public class SmartStoreSDKManagerTest {
         Assert.assertTrue("Store should be found", manager.hasKeyValueStore("store2", user, "c1"));
         Assert.assertTrue("Store should be found", manager.hasKeyValueStore("store1", user, "c2"));
         Assert.assertTrue("Store should be found", manager.hasKeyValueStore("store2", user, "c2"));
-//        Assert.assertEquals("Wrong store names", 1, manager.getKeyValueStoresPrefix(user1).size());
-//        Assert.assertEquals("Wrong store names", 2, manager.getKeyValueStoresPrefix(user2).size());
 
         // Remove all remaining stores with removeAllKeyValueStores
         manager.removeAllKeyValueStores(user);
@@ -199,7 +259,7 @@ public class SmartStoreSDKManagerTest {
         Assert.assertFalse("Store should no longer be found", manager.hasKeyValueStore("store2", user, "c1"));
         Assert.assertFalse("Store should no longer be found", manager.hasKeyValueStore("store1", user, "c2"));
         Assert.assertFalse("Store should no longer be found", manager.hasKeyValueStore("store2", user, "c2"));
-        Assert.assertEquals("Wrong store names", 0, manager.getKeyValueStoresPrefix(user).size());
+        Assert.assertEquals("Wrong store names", 0, manager.getKeyValueStoresPrefixList(user).size());
     }
 
     /**
@@ -212,8 +272,8 @@ public class SmartStoreSDKManagerTest {
         UserAccount user2 = createTestAccount("org2", "user2", null,"second@test.com");
 
         // No store initially
-        Assert.assertEquals("No stores should be found", 0, manager.getKeyValueStoresPrefix(user1).size());
-        Assert.assertEquals("No stores should be found", 0, manager.getKeyValueStoresPrefix(user2).size());
+        Assert.assertEquals("No stores should be found", 0, manager.getKeyValueStoresPrefixList(user1).size());
+        Assert.assertEquals("No stores should be found", 0, manager.getKeyValueStoresPrefixList(user2).size());
 
         // Create stores
         KeyValueEncryptedFileStore store1user1 = createAndPopulateStore("store1", user1);
@@ -225,8 +285,8 @@ public class SmartStoreSDKManagerTest {
         Assert.assertTrue("Store should be found", manager.hasKeyValueStore("store2", user1));
         Assert.assertTrue("Store should be found", manager.hasKeyValueStore("store1", user2));
         Assert.assertTrue("Store should be found", manager.hasKeyValueStore("store2", user2));
-        Assert.assertEquals("Wrong store names", 2, manager.getKeyValueStoresPrefix(user1).size());
-        Assert.assertEquals("Wrong store names", 2, manager.getKeyValueStoresPrefix(user2).size());
+        Assert.assertEquals("Wrong store names", 2, manager.getKeyValueStoresPrefixList(user1).size());
+        Assert.assertEquals("Wrong store names", 2, manager.getKeyValueStoresPrefixList(user2).size());
 
         // Remove one store of user1 with removeKeyValueStore
         manager.removeKeyValueStore("store1", user1);
@@ -234,8 +294,8 @@ public class SmartStoreSDKManagerTest {
         Assert.assertTrue("Store should be found", manager.hasKeyValueStore("store2", user1));
         Assert.assertTrue("Store should be found", manager.hasKeyValueStore("store1", user2));
         Assert.assertTrue("Store should be found", manager.hasKeyValueStore("store2", user2));
-        Assert.assertEquals("Wrong store names", 1, manager.getKeyValueStoresPrefix(user1).size());
-        Assert.assertEquals("Wrong store names", 2, manager.getKeyValueStoresPrefix(user2).size());
+        Assert.assertEquals("Wrong store names", 1, manager.getKeyValueStoresPrefixList(user1).size());
+        Assert.assertEquals("Wrong store names", 2, manager.getKeyValueStoresPrefixList(user2).size());
 
         // Remove all stores of user2 with removeAllKeyValueStores
         manager.removeAllKeyValueStores(user2);
@@ -243,8 +303,8 @@ public class SmartStoreSDKManagerTest {
         Assert.assertTrue("Store should be found", manager.hasKeyValueStore("store2", user1));
         Assert.assertFalse("Store should no longer be found", manager.hasKeyValueStore("store1", user2));
         Assert.assertFalse("Store should no longer be found", manager.hasKeyValueStore("store2", user2));
-        Assert.assertEquals("Wrong store names", 1, manager.getKeyValueStoresPrefix(user1).size());
-        Assert.assertEquals("Wrong store names", 0, manager.getKeyValueStoresPrefix(user2).size());
+        Assert.assertEquals("Wrong store names", 1, manager.getKeyValueStoresPrefixList(user1).size());
+        Assert.assertEquals("Wrong store names", 0, manager.getKeyValueStoresPrefixList(user2).size());
 
         // Remove all remaining stores of user1 with removeAllKeyValueStores
         manager.removeAllKeyValueStores(user1);
@@ -252,10 +312,62 @@ public class SmartStoreSDKManagerTest {
         Assert.assertFalse("Store should no longer be found", manager.hasKeyValueStore("store2", user1));
         Assert.assertFalse("Store should no longer be found", manager.hasKeyValueStore("store1", user2));
         Assert.assertFalse("Store should no longer be found", manager.hasKeyValueStore("store2", user2));
-        Assert.assertEquals("Wrong store names", 0, manager.getKeyValueStoresPrefix(user1).size());
-        Assert.assertEquals("Wrong store names", 0, manager.getKeyValueStoresPrefix(user2).size());
+        Assert.assertEquals("Wrong store names", 0, manager.getKeyValueStoresPrefixList(user1).size());
+        Assert.assertEquals("Wrong store names", 0, manager.getKeyValueStoresPrefixList(user2).size());
     }
 
+
+    /**
+     * Using key value stores operations with a mix of global stores and user stores
+     */
+    @Test
+    public void testKeyValueStoreOperationsUserAndGlobalStores() throws JSONException {
+        UserAccount user = createTestAccount("org", "user", null,"first@test.com");
+
+        // No store initially
+        Assert.assertEquals("No stores should be found", 0, manager.getKeyValueStoresPrefixList(user).size());
+        Assert.assertEquals("No global stores should be found", 0, manager.getGlobalKeyValueStoresPrefixList().size());
+
+        // Create stores
+        KeyValueEncryptedFileStore store1user1 = createAndPopulateStore("store1", user);
+        KeyValueEncryptedFileStore store2user1 = createAndPopulateStore("store2", user);
+        KeyValueEncryptedFileStore store1user2 = createAndPopulateGlobalStore("store1");
+        KeyValueEncryptedFileStore store2user2 = createAndPopulateGlobalStore("store2");
+
+        Assert.assertTrue("Store should be found", manager.hasKeyValueStore("store1", user));
+        Assert.assertTrue("Store should be found", manager.hasKeyValueStore("store2", user));
+        Assert.assertTrue("Store should be found", manager.hasGlobalKeyValueStore("store1"));
+        Assert.assertTrue("Store should be found", manager.hasGlobalKeyValueStore("store2"));
+        Assert.assertEquals("Wrong store names", 2, manager.getKeyValueStoresPrefixList(user).size());
+        Assert.assertEquals("Wrong store names", 2, manager.getGlobalKeyValueStoresPrefixList().size());
+
+        // Remove one store of user with removeKeyValueStore
+        manager.removeKeyValueStore("store1", user);
+        Assert.assertFalse("Store should no longer be found", manager.hasKeyValueStore("store1", user));
+        Assert.assertTrue("Store should be found", manager.hasKeyValueStore("store2", user));
+        Assert.assertTrue("Store should be found", manager.hasGlobalKeyValueStore("store1"));
+        Assert.assertTrue("Store should be found", manager.hasGlobalKeyValueStore("store2"));
+        Assert.assertEquals("Wrong store names", 1, manager.getKeyValueStoresPrefixList(user).size());
+        Assert.assertEquals("Wrong store names", 2, manager.getGlobalKeyValueStoresPrefixList().size());
+
+        // Remove all global stores with removeAllGlobalKeyValueStores
+        manager.removeAllGlobalKeyValueStores();
+        Assert.assertFalse("Store should no longer be found", manager.hasKeyValueStore("store1", user));
+        Assert.assertTrue("Store should be found", manager.hasKeyValueStore("store2", user));
+        Assert.assertFalse("Store should no longer be found", manager.hasGlobalKeyValueStore("store1"));
+        Assert.assertFalse("Store should no longer be found", manager.hasGlobalKeyValueStore("store2"));
+        Assert.assertEquals("Wrong store names", 1, manager.getKeyValueStoresPrefixList(user).size());
+        Assert.assertEquals("Wrong store names", 0, manager.getGlobalKeyValueStoresPrefixList().size());
+
+        // Remove all remaining stores of user with removeAllKeyValueStores
+        manager.removeAllKeyValueStores(user);
+        Assert.assertFalse("Store should no longer be found", manager.hasKeyValueStore("store1", user));
+        Assert.assertFalse("Store should no longer be found", manager.hasKeyValueStore("store2", user));
+        Assert.assertFalse("Store should no longer be found", manager.hasGlobalKeyValueStore("store1"));
+        Assert.assertFalse("Store should no longer be found", manager.hasGlobalKeyValueStore("store2"));
+        Assert.assertEquals("Wrong store names", 0, manager.getKeyValueStoresPrefixList(user).size());
+        Assert.assertEquals("Wrong store names", 0, manager.getGlobalKeyValueStoresPrefixList().size());
+    }
 
     //
     // Helper methods
@@ -266,6 +378,10 @@ public class SmartStoreSDKManagerTest {
 
     private String computeExpectedStorePath(String storeName, UserAccount account, String communityId) {
         return context.getApplicationInfo().dataDir + "/" + KeyValueEncryptedFileStore.KEY_VALUE_STORES + "/" + storeName + account.getCommunityLevelFilenameSuffix(communityId);
+    }
+
+    private String computeExpectedGlobalStorePath(String storeName) {
+        return context.getApplicationInfo().dataDir + "/" + KeyValueEncryptedFileStore.KEY_VALUE_STORES + "/" + storeName + SmartStoreSDKManager.GLOBAL_SUFFIX;
     }
 
     private UserAccount createTestAccount(String orgId, String userId, String communityId, String username) throws JSONException {
@@ -308,4 +424,12 @@ public class SmartStoreSDKManagerTest {
         return store;
     }
 
+    private KeyValueEncryptedFileStore createAndPopulateGlobalStore(String storeName) {
+        KeyValueEncryptedFileStore store = manager.getGlobalKeyValueStore(storeName);
+        // Storing some values
+        store.saveValue("key1", "value1");
+        store.saveValue("key2", "value2");
+        store.saveValue("key3", "value3");
+        return store;
+    }
 }

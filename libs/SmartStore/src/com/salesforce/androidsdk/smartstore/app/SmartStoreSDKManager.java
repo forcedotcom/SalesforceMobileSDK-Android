@@ -50,7 +50,6 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import net.sqlcipher.database.SQLiteOpenHelper;
-import org.json.JSONException;
 
 /**
  * SDK Manager for all native applications that use SmartStore
@@ -58,6 +57,7 @@ import org.json.JSONException;
 public class SmartStoreSDKManager extends SalesforceSDKManager {
 
     private static final String TAG = "SmartStoreSDKManager";
+    public static final String GLOBAL_SUFFIX = "_global";
 
     /**
      * Protected constructor.
@@ -331,7 +331,6 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
     /**
      * Returns a list of global store names.
      * @return
-     * @throws JSONException
      */
     public List<String> getGlobalStoresPrefixList(){
         UserAccount userAccount = getUserAccountManager().getCachedCurrentUser();
@@ -343,7 +342,6 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
     /**
      * Returns a list of store names for current user.
      * @return
-     * @throws JSONException
      */
     public List<String> getUserStoresPrefixList() {
         UserAccount userAccount = getUserAccountManager().getCachedCurrentUser();
@@ -516,7 +514,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @return list of store names
      */
     public List<String> getKeyValueStoresPrefixList() {
-        return getKeyValueStoresPrefix(getUserAccountManager().getCachedCurrentUser());
+        return getKeyValueStoresPrefixList(getUserAccountManager().getCachedCurrentUser());
     }
 
     /**
@@ -525,7 +523,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @param account user account
      * @return list of store names
      */
-    public List<String> getKeyValueStoresPrefix(UserAccount account) {
+    public List<String> getKeyValueStoresPrefixList(UserAccount account) {
         if (account == null) {
             return new ArrayList<>();
         } else {
@@ -556,4 +554,49 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
                     account.getUserLevelFilenameSuffix(), "", null));
         }
     }
+
+    /**
+     * Get global key value store with given name
+     * @param storeName store name
+     * @return a KeyValueEncryptedFileStore
+     */
+    public KeyValueEncryptedFileStore getGlobalKeyValueStore(String storeName) {
+        return new KeyValueEncryptedFileStore(
+            getAppContext(),
+            storeName + GLOBAL_SUFFIX,
+            getEncryptionKey());
+    }
+
+    /**
+     * Return whether there is a global key value store with given name
+     */
+    public boolean hasGlobalKeyValueStore(String storeName) {
+        return KeyValueEncryptedFileStore.hasKeyValueStore(getAppContext(), storeName + GLOBAL_SUFFIX);
+    }
+
+    /**
+     * Remove global key value store with given name
+     */
+    public void removeGlobalKeyValueStore(String storeName) {
+        KeyValueEncryptedFileStore.removeKeyValueStore(getAppContext(), storeName + GLOBAL_SUFFIX);
+    }
+
+    /**
+     * Returns a list of global key value store names.
+     * @return
+     */
+    public List<String> getGlobalKeyValueStoresPrefixList(){
+        return ManagedFilesHelper.getPrefixList(getAppContext(), KEY_VALUE_STORES,
+            GLOBAL_SUFFIX, "", null);
+    }
+
+    /**
+     * Removes all the global key value stores.
+     *
+     */
+    public void removeAllGlobalKeyValueStores() {
+        ManagedFilesHelper.deleteFiles(ManagedFilesHelper
+            .getFiles(getAppContext(), KEY_VALUE_STORES, GLOBAL_SUFFIX,"", null));
+    }
+
 }
