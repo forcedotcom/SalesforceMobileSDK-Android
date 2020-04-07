@@ -34,6 +34,7 @@ import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 
+import com.salesforce.androidsdk.util.ManagedFilesHelper;
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteDatabaseHook;
 import net.sqlcipher.database.SQLiteOpenHelper;
@@ -70,6 +71,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	private static final String ORG_KEY_PREFIX = "00D";
 	private static final String EXTERNAL_BLOBS_SUFFIX = "_external_soup_blobs/";
 	private static final String UTF8 = "UTF-8";
+	public static final String DATABASES = "databases";
 	private static String dataDir;
 	private String dbName;
 
@@ -95,23 +97,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 */
 	public static synchronized List<String> getUserDatabasePrefixList(Context ctx,
 			UserAccount account, String communityId) {
-		List<String> result = new ArrayList<>();
-		if(account==null) return  result;
-
-		final String accountSuffix = account.getCommunityLevelFilenameSuffix(communityId);
-		SmartStoreFileFilter userFileFilter = new SmartStoreFileFilter(accountSuffix);
-		final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
-		final File dir = new File(dbPath);
-		String[] fileNames = dir.list(userFileFilter);
-		if (fileNames != null && fileNames.length > 0) {
-			for (String fileName : fileNames) {
-				int dbFileIndx = fileName.indexOf(".db");
-				if (dbFileIndx >- 1) {
-					result.add(fileName.substring(0, fileName.indexOf(accountSuffix)));
-				}
-			}
-		}
-		return result;
+		return ManagedFilesHelper.getPrefixList(ctx, DATABASES, account.getCommunityLevelFilenameSuffix(communityId), DB_NAME_SUFFIX, null);
 	}
 
 	/**
@@ -121,26 +107,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 */
 	public static synchronized List<String> getGlobalDatabasePrefixList(Context ctx,
 			UserAccount account, String communityId) {
-		List<String> result = new ArrayList<>();
-		String accountSuffix = null;
-		String orgId = null;
-		if (account != null) {
-			accountSuffix = account.getCommunityLevelFilenameSuffix(communityId);
-			orgId = account.getOrgId();
-		}
-		SmartStoreGlobalFileFilter globalFileFilter = new SmartStoreGlobalFileFilter(accountSuffix,
-																					 orgId);
-		final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
-		final File dir = new File(dbPath);
-		String[] fileNames = dir.list(globalFileFilter);
-		if (fileNames != null && fileNames.length > 0) {
-			for (String fileName : fileNames) {
-				int dbFileIndx = fileName.indexOf(".db");
-				if (dbFileIndx > -1)
-					result.add(fileName.substring(0, dbFileIndx));
-			}
-		}
-		return result;
+		return ManagedFilesHelper.getPrefixList(ctx, DATABASES, "", DB_NAME_SUFFIX, ORG_KEY_PREFIX);
 	}
 
 	/**
@@ -323,10 +290,13 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 			// If community id was not passed in, then we remove ALL databases for the account.
 			if (account != null && TextUtils.isEmpty(communityId)) {
-				StringBuffer communityDBNamePrefix = new StringBuffer(dbNamePrefix);
 				String accountSuffix = account.getUserLevelFilenameSuffix();
-				communityDBNamePrefix.append(accountSuffix);
-				deleteFiles(ctx, communityDBNamePrefix.toString());
+				File[] files = ManagedFilesHelper
+						.getFiles(ctx, DATABASES, dbNamePrefix + accountSuffix, DB_NAME_SUFFIX, null);
+				for (File file : files) {
+					openHelpers.remove(file.getName());
+				}
+				ManagedFilesHelper.deleteFiles(files);
 			}
 
 			// Delete external blobs directory
@@ -347,8 +317,31 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @param ctx Context.
 	 */
 	public static synchronized void deleteAllUserDatabases(Context ctx) {
-		deleteFiles(ctx, ORG_KEY_PREFIX);
+		File[] files = ManagedFilesHelper.getFiles(ctx, DATABASES, ORG_KEY_PREFIX, DB_NAME_SUFFIX, null);
+		for (File file : files) {
+			openHelpers.remove(file.getName());
+		}
+		ManagedFilesHelper.deleteFiles(files);
 	}
+
+	/**
+	 * Deletes all databases of given user.
+	 *
+	 * @param ctx Context.
+	 * @param userAccount User account.
+	 */
+	public static synchronized void deleteAllDatabases(Context ctx, UserAccount userAccount) {
+		if (userAccount != null) {
+			File[] files = ManagedFilesHelper
+				.getFiles(ctx, DATABASES, userAccount.getUserLevelFilenameSuffix(), DB_NAME_SUFFIX,
+					null);
+			for (File file : files) {
+				openHelpers.remove(file.getName());
+			}
+			ManagedFilesHelper.deleteFiles(files);
+		}
+	}
+
 
 	/**
 	 * Determines if a smart store currently exists for the given account and/or community id.
@@ -400,72 +393,6 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 			database.rawExecSQL("PRAGMA cipher_migrate");
 		}
 	};
-
-	private static void deleteFiles(Context ctx, String prefix) {
-		final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
-		final File dir = new File(dbPath);
-		if (dir != null) {
-			final SmartStoreFileFilter fileFilter = new SmartStoreFileFilter(prefix);
-			final File[] fileList = dir.listFiles();
-			if (fileList != null) {
-				for (final File file : fileList) {
-					if (file != null && fileFilter.accept(dir, file.getName())) {
-						file.delete();
-						openHelpers.remove(file.getName());
-					}
-				}
-			}
-		}
-	}
-
-	/**
-	 * This class acts as a filter to identify only the relevant SmartStore files.
-	 *
-	 * @author bhariharan
-	 */
-	private static class SmartStoreFileFilter implements FilenameFilter {
-
-		private String dbNamePrefix;
-
-		/**
-		 * Parameterized constructor.
-		 *
-		 * @param dbNamePrefix Database name prefix pattern.
-		 */
-		public SmartStoreFileFilter(String dbNamePrefix) {
-			this.dbNamePrefix = dbNamePrefix;
-		}
-
-		@Override
-		public boolean accept(File dir, String filename) {
-			if (filename != null && filename.contains(dbNamePrefix)) {
-				return true;
-			}
-			return false;
-		}
-
-		String getDbNamePrefix(){
-			return  dbNamePrefix;
-		}
-	}
-
-	private static class SmartStoreGlobalFileFilter extends SmartStoreFileFilter {
-
-		String orgId;
-
-		public SmartStoreGlobalFileFilter(String dbNamePrefix, String orgId) {
-			super(dbNamePrefix);
-			this.orgId = orgId;
-		}
-
-		@Override
-		public boolean accept(File dir, String filename) {
-			// if there isn't a prefix   OR
-			// ( IS NOT A USER's DB)  AND does not have an orgid (belong to  another user)
-			// then it is a global file
-			return (this.getDbNamePrefix()==null) || (!super.accept(dir, filename) && !filename.contains(this.orgId));
-		}
-	}
 
 	/**
 	 * Returns the path to external blobs folder for the given soup in this db. If no soup is provided, the db folder is returned.
