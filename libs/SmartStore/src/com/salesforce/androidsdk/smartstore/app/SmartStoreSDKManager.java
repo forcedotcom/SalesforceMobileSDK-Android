@@ -344,11 +344,17 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @return
      */
     public List<String> getUserStoresPrefixList() {
-        UserAccount userAccount = getUserAccountManager().getCachedCurrentUser();
-        if (userAccount != null) {
-            return DBOpenHelper
-                .getUserDatabasePrefixList(context, getUserAccountManager().getCachedCurrentUser(),
-                    userAccount.getCommunityId());
+        return getUserStoresPrefixList(getUserAccountManager().getCachedCurrentUser());
+    }
+
+    /**
+     * Returns a list of store names for given user.
+     * @param account user account
+     * @return
+     */
+    public List<String> getUserStoresPrefixList(UserAccount account) {
+        if (account != null) {
+            return DBOpenHelper.getUserDatabasePrefixList(context, account, account.getCommunityId());
         } else {
             return new ArrayList<>();
         }
@@ -370,11 +376,17 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      *
      */
     public void removeAllUserStores() {
-        List<String> globalDBNames = this.getUserStoresPrefixList();
-        for(String storeName : globalDBNames) {
-            removeSmartStore(storeName,
-                    UserAccountManager.getInstance().getCachedCurrentUser(),
-                    UserAccountManager.getInstance().getCachedCurrentUser().getCommunityId());
+        removeAllUserStores(getUserAccountManager().getCachedCurrentUser());
+    }
+
+    /**
+     * Removes all the stores for current user.
+     * @param account user account
+     */
+    public void removeAllUserStores(UserAccount account) {
+        List<String> storeNames = this.getUserStoresPrefixList(account);
+        for(String storeName : storeNames) {
+            removeSmartStore(storeName, account, account.getCommunityId());
         }
     }
 
