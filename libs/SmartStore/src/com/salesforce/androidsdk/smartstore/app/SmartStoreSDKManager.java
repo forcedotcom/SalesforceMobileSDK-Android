@@ -384,10 +384,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @param account user account
      */
     public void removeAllUserStores(UserAccount account) {
-        List<String> storeNames = this.getUserStoresPrefixList(account);
-        for(String storeName : storeNames) {
-            removeSmartStore(storeName, account, account.getCommunityId());
-        }
+        DBOpenHelper.deleteAllDatabases(getAppContext(), account);
     }
 
     /**
