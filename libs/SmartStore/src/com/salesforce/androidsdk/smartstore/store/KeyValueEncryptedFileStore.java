@@ -219,14 +219,14 @@ public class KeyValueEncryptedFileStore  {
     public InputStream getStream(String key) {
         long startNanoTime = System.nanoTime();
 
-        if (!isKeyValid(key, "getValue")) {
+        if (!isKeyValid(key, "getStream")) {
             return null;
         }
 
         final File file = getFileForKey(key);
 
         if (file == null || !file.exists()) {
-            SmartStoreLogger.w(TAG, "getStream: File does not exist");
+            SmartStoreLogger.w(TAG, "getStream: File does not exist for key: " + key);
             return null;
         }
 
@@ -276,6 +276,13 @@ public class KeyValueEncryptedFileStore  {
      */
     public File getStoreDir() {
         return storeDir;
+    }
+
+    /**
+     * @return store name
+     */
+    public String getStoreName() {
+        return storeDir.getName();
     }
 
     private String encodeKey(String key) {
