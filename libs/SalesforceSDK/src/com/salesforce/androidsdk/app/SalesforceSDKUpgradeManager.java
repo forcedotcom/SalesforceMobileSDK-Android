@@ -88,6 +88,9 @@ public class SalesforceSDKUpgradeManager {
             if (installedVerDouble < 7.1) {
                 upgradeTo7Dot1();
             }
+            if (installedVerDouble < 8.2) {
+                upgradeTo8Dot2();
+            }
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Failed to parse installed version.");
         }
@@ -126,5 +129,9 @@ public class SalesforceSDKUpgradeManager {
 
     private void upgradeTo7Dot1() {
         SalesforceKeyGenerator.upgradeTo7Dot1();
+    }
+
+    private void upgradeTo8Dot2() {
+        SalesforceKeyGenerator.upgradeTo8Dot2();
     }
 }
