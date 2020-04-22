@@ -112,8 +112,16 @@ public class KeyValueEncryptedFileStoreTest {
     /** Test getStoreDir() */
     @Test
     public void testGetStoreDir() {
-        Assert.assertEquals("Wrong value returned by getStoreDir()", getStoreDir(TEST_STORE).getAbsolutePath(), keyValueStore.getStoreDir().getAbsolutePath());
+        Assert.assertEquals("Wrong value returned by getStoreDir()",
+            getStoreDir(TEST_STORE).getAbsolutePath(),
+            keyValueStore.getStoreDir().getAbsolutePath());
+    }
 
+    /** Test getStoreName() */
+    @Test
+    public void testGetStoreName() {
+        Assert.assertEquals(
+                "Wrong value returned by getStoreDir()", TEST_STORE, keyValueStore.getStoreName());
     }
 
     /** Test that constructor fails if store name provided is invalid */
