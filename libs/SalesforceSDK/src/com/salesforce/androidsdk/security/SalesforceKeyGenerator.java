@@ -246,7 +246,7 @@ public class SalesforceKeyGenerator {
             try {
 
                 // Uses SecureRandom to generate an AES-256 key.
-                final SecureRandom secureRandom = SecureRandom.getInstance(SHA256);
+                final SecureRandom secureRandom = SecureRandom.getInstance(SHA1PRNG);
 
                 // SecureRandom does not require seeding. It's automatically seeded from system entropy.
                 final KeyGenerator keyGenerator = KeyGenerator.getInstance(AES);
