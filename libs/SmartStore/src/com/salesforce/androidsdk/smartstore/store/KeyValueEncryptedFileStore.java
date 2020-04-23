@@ -38,17 +38,20 @@ import com.salesforce.androidsdk.util.ManagedFilesHelper;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 
 /** Key-value store backed by file system */
 public class KeyValueEncryptedFileStore  {
 
     private static final String TAG = KeyValueEncryptedFileStore.class.getSimpleName();
     public static final int MAX_STORE_NAME_LENGTH = 96;
-    private final String encryptionKey;
+    private String encryptionKey;
     private final File storeDir;
 
     public static final String KEY_VALUE_STORES = "keyvaluestores";
@@ -167,21 +170,14 @@ public class KeyValueEncryptedFileStore  {
             return false;
         }
 
-        try (FileOutputStream f = new FileOutputStream(getFileForKey(key));
-            EncrypterOutputStream outputStream = new EncrypterOutputStream(f, encryptionKey)) {
-
-            byte[] buffer = new byte[1024];
-            int len;
-            while((len=stream.read(buffer))>0){
-                outputStream.write(buffer,0,len);
-            }
+        try {
+            saveStream(getFileForKey(key), stream, encryptionKey);
             return true;
         } catch (Exception e) {
-            SmartStoreLogger.e(TAG, "IOException occurred while saving value from stream to filesystem", e);
+            SmartStoreLogger.e(TAG, "Exception occurred while saving value from stream to filesystem", e);
             return false;
         }
     }
-
 
     /**
      * Returns value stored for given key.
@@ -231,9 +227,7 @@ public class KeyValueEncryptedFileStore  {
         }
 
         try {
-            FileInputStream f = new FileInputStream(file);
-            DecrypterInputStream inputStream = new DecrypterInputStream(f, encryptionKey);
-            return inputStream;
+            return getStream(file, encryptionKey);
         } catch (Exception e) {
             SmartStoreLogger.e(TAG, "getStream: Threw exception for key: " + key, e);
             return null;
@@ -285,6 +279,47 @@ public class KeyValueEncryptedFileStore  {
         return storeDir.getName();
     }
 
+    /**
+     * Change encryption key
+     * All files are read/decrypted with old key and encrypted/written back with new key
+     * @param newEncryptionKey
+     * @return true if successful
+     */
+    public boolean changeEncryptionKey(String newEncryptionKey) {
+        File originalStoreDir = storeDir;
+        String storeName = getStoreName();
+        File tmpDir = new File(storeDir.getParent(), storeName + "-tmp");
+        tmpDir.mkdirs();
+        if (!tmpDir.isDirectory()) {
+            SmartStoreLogger.e(TAG, "changeKey: Failed to create tmp directory: " + tmpDir);
+            return false;
+        }
+        // NB: - not allowed for store name so no chances of hitting colliding with existing store
+        File[] originalFiles = originalStoreDir.listFiles();
+        for (File originalFile : originalFiles) {
+            try {
+                saveStream(
+                    new File(tmpDir, originalFile.getName()), // tmp file
+                    getStream(originalFile, encryptionKey),   // reading original file
+                    newEncryptionKey);                        // encrypting with new encryption key
+            } catch (Exception e) {
+                SmartStoreLogger.e(TAG, "changeKey: Threw exception for file: " + originalFile, e);
+                //Failed
+                return false;
+            }
+        }
+        // Removing old store dir - renaming tmp dir
+        ManagedFilesHelper.deleteFile(originalStoreDir);
+        tmpDir.renameTo(originalStoreDir);
+
+        // Updating encryption key
+        encryptionKey = newEncryptionKey;
+
+        // Successful
+        return true;
+    }
+
+
     private String encodeKey(String key) {
         return SalesforceKeyGenerator.getSHA256Hash(key);
     }
@@ -299,5 +334,23 @@ public class KeyValueEncryptedFileStore  {
             return false;
         }
         return true;
+    }
+
+    InputStream getStream(File file, String encryptionKey) throws IOException, GeneralSecurityException {
+        FileInputStream f = new FileInputStream(file);
+        DecrypterInputStream inputStream = new DecrypterInputStream(f, encryptionKey);
+        return inputStream;
+    }
+
+    void saveStream(File file, InputStream stream, String encryptionKey)
+        throws IOException, GeneralSecurityException {
+        try (FileOutputStream f = new FileOutputStream(file);
+            EncrypterOutputStream outputStream = new EncrypterOutputStream(f, encryptionKey)) {
+            byte[] buffer = new byte[1024];
+            int len;
+            while((len=stream.read(buffer))>0){
+                outputStream.write(buffer,0,len);
+            }
+        }
     }
 }
