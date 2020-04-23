@@ -29,6 +29,13 @@ package com.salesforce.androidsdk.analytics.security;
 import androidx.test.filters.SmallTest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import java.io.UnsupportedEncodingException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -138,6 +145,53 @@ public class EncryptorTest {
 			}
 		}
 	}
+
+	/**
+	 * Check cipher returned by Encryptor.getEncryptingCipher
+	 */
+	@Test
+	public void testGetEncryptingCipher()
+		throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, InvalidKeyException {
+    	Cipher cipher = Encryptor.getEncryptingCipher(makeKey("my-key"));
+    	Assert.assertEquals("Wrong algorithm", "AES/CBC/PKCS5Padding", cipher.getAlgorithm());
+		Assert.assertEquals("Wrong iv length", 16, cipher.getIV().length);
+		Assert.assertEquals("Wrong mode", 16, cipher.getBlockSize());
+	}
+
+	/**
+	 * Check cipher returned by Encryptor.getDecryptingCipher
+	 */
+	@Test
+	public void testGetDecryptingCipher()
+		throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, InvalidKeyException {
+		Cipher cipher = Encryptor.getDecryptingCipher(makeKey("my-key"), new byte[16]);
+		Assert.assertEquals("Wrong algorithm", "AES/CBC/PKCS5Padding", cipher.getAlgorithm());
+		Assert.assertEquals("Wrong iv length", 16, cipher.getIV().length);
+		Assert.assertEquals("Wrong mode", 16, cipher.getBlockSize());
+	}
+
+	/**
+	 * Encrypting/decrypting data with ciphers returned by Encryptor.getEncryptingCipher and
+	 * Encryptor.getDecryptingCipher.
+	 */
+	@Test
+	public void testEncryptDecryptWithCipher()
+		throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, InvalidKeyException, UnsupportedEncodingException, BadPaddingException, IllegalBlockSizeException {
+    	String key = makeKey("test-key");
+    	String originalText = "abcdefghijklmnopqrstuvwxyz";
+		Cipher encryptingCipher = Encryptor.getEncryptingCipher(key);
+		Cipher decryptingCipher = Encryptor.getDecryptingCipher(key, encryptingCipher.getIV());
+
+		byte[] originalBytes = originalText.getBytes("UTF-8");
+		byte[] encryptedBytes = encryptingCipher.doFinal(originalBytes);
+		byte[] decryptedBytes = decryptingCipher.doFinal(encryptedBytes);
+		String recoveredText = new String(decryptedBytes, "UTF-8");
+
+		Assert.assertNotEquals("Bytes should have encrypted", encryptedBytes, originalBytes);
+		Assert.assertNotEquals("Bytes should have been decrypted", decryptedBytes, encryptedBytes);
+		Assert.assertEquals("Recovered text should match original", originalText, recoveredText);
+	}
+
 
 	private static String makeKey(String passcode) {
         return Encryptor.hash(passcode, "hashing-key");
