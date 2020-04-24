@@ -32,8 +32,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.security.GeneralSecurityException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import javax.crypto.Cipher;
@@ -42,26 +40,19 @@ import javax.crypto.CipherOutputStream;
 /** Output stream that encrypts content - can be read back with a DecrypterInputStream */
 public class EncrypterOutputStream extends OutputStream implements WatchableStream {
 
-    private static final String SHA1PRNG = "SHA1PRNG";
-
     private OutputStream cipherOutputStream;
     private List<Watcher> watchers;
 
     public EncrypterOutputStream(FileOutputStream outputStream, String encryptionKey)
             throws GeneralSecurityException, IOException {
-        final Cipher cipher =
-                DecrypterInputStream.getCipher(
-                        encryptionKey, Cipher.ENCRYPT_MODE, generateInitVector());
+        final Cipher cipher = Encryptor.getEncryptingCipher(encryptionKey);
+        final byte[] iv = cipher.getIV();
+        // First byte should be iv length
+        outputStream.write(iv.length);
+        // Next bytes should be iv
         outputStream.write(cipher.getIV());
         cipherOutputStream = new CipherOutputStream(outputStream, cipher);
         watchers = new ArrayList<>();
-    }
-
-    private static byte[] generateInitVector() throws NoSuchAlgorithmException {
-        final SecureRandom random = SecureRandom.getInstance(SHA1PRNG);
-        byte[] iv = new byte[16];
-        random.nextBytes(iv);
-        return iv;
     }
 
     @Override

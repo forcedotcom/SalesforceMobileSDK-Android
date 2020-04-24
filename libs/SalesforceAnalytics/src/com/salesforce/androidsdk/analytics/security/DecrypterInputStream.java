@@ -27,7 +27,6 @@
 
 package com.salesforce.androidsdk.analytics.security;
 
-import android.util.Base64;
 import com.salesforce.androidsdk.analytics.util.WatchableStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -37,35 +36,26 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 
 /** Input stream that decrypts content written with a EncrypterOutputStream */
 public class DecrypterInputStream extends InputStream implements WatchableStream {
-
-    private static final String PREFER_CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding";
 
     private InputStream cipherInputStream;
     private List<Watcher> watchers;
 
     public DecrypterInputStream(FileInputStream inputStream, String encryptionKey)
             throws GeneralSecurityException, IOException {
-
-        byte[] iv = new byte[16];
+        // First byte should be iv length
+        int ivLength = inputStream.read();
+        if (ivLength != 16 && ivLength != 32) {
+            throw new IOException("Can't decrypt file: incorrect iv length found in file: " + ivLength);
+        }
+        // Next bytes should be iv
+        byte[] iv = new byte[ivLength];
         inputStream.read(iv);
-        Cipher cipher = getCipher(encryptionKey, Cipher.DECRYPT_MODE, iv);
+        Cipher cipher = Encryptor.getDecryptingCipher(encryptionKey, iv);
         cipherInputStream = new CipherInputStream(inputStream, cipher);
         watchers = new ArrayList<>();
-    }
-
-    public static Cipher getCipher(String encryptionKey, int mode, byte[] iv)
-            throws GeneralSecurityException {
-        final Cipher cipher = Cipher.getInstance(PREFER_CIPHER_TRANSFORMATION);
-        final byte[] keyBytes = Base64.decode(encryptionKey, Base64.DEFAULT);
-        final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, cipher.getAlgorithm());
-        final IvParameterSpec ivSpec = new IvParameterSpec(iv);
-        cipher.init(mode, keySpec, ivSpec);
-        return cipher;
     }
 
     public DecrypterInputStream() {

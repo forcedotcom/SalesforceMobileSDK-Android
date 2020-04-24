@@ -34,6 +34,8 @@ import com.salesforce.androidsdk.analytics.util.SalesforceAnalyticsLogger;
 
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -55,6 +57,48 @@ public class Encryptor {
     private static final String SHA1PRNG = "SHA1PRNG";
     private static final String RSA_PKCS1 = "RSA/ECB/PKCS1Padding";
     private static final String BOUNCY_CASTLE = "BC";
+
+    /**
+     * Return initialized cipher for encryption
+     * NB: an IV is generated
+     * @param encryptionKey encryption key
+     * @return initialized cipher
+     */
+    public static Cipher getEncryptingCipher(String encryptionKey)
+        throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
+        final byte[] keyBytes = Base64.decode(encryptionKey, Base64.DEFAULT);
+        return getEncryptingCipher(keyBytes, generateInitVector());
+    }
+
+    private static Cipher getEncryptingCipher(byte[] keyBytes, byte[] iv)
+        throws InvalidAlgorithmParameterException, InvalidKeyException, NoSuchAlgorithmException {
+        final Cipher cipher = getBestCipher();
+        final SecretKeySpec skeySpec = new SecretKeySpec(keyBytes, cipher.getAlgorithm());
+        final IvParameterSpec ivSpec = new IvParameterSpec(iv);
+        cipher.init(Cipher.ENCRYPT_MODE, skeySpec, ivSpec);
+        return cipher;
+    }
+
+    /**
+     * Return initialized cipher for decryption
+     * @param encryptionKey encryption key
+     * @param iv bytes of iv
+     * @return inialized cipher
+     */
+    public static Cipher getDecryptingCipher(String encryptionKey, byte[] iv)
+        throws InvalidAlgorithmParameterException, InvalidKeyException {
+        final byte[] keyBytes = Base64.decode(encryptionKey, Base64.DEFAULT);
+        return getDecryptingCipher(keyBytes, iv);
+    }
+
+    private static Cipher getDecryptingCipher(byte[] keyBytes, byte[] iv)
+        throws InvalidAlgorithmParameterException, InvalidKeyException {
+        final Cipher cipher = getBestCipher();
+        final SecretKeySpec skeySpec = new SecretKeySpec(keyBytes, cipher.getAlgorithm());
+        final IvParameterSpec ivSpec = new IvParameterSpec(iv);
+        cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec);
+        return cipher;
+    }
 
     /**
      * Decrypts data with key using AES-128.
@@ -328,10 +372,7 @@ public class Encryptor {
      */
     public static String decryptBytes(byte[] data, byte[] key, byte[] iv) {
         try {
-            final Cipher cipher = getBestCipher();
-            final SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
-            final IvParameterSpec ivSpec = new IvParameterSpec(iv);
-            cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec);
+            final Cipher cipher = getDecryptingCipher(key, iv);
             byte[] result = cipher.doFinal(data, 0, data.length);
             return new String(result, 0, result.length, StandardCharsets.UTF_8);
         } catch (Exception e) {
@@ -377,10 +418,7 @@ public class Encryptor {
     }
 
     private static byte[] encrypt(byte[] data, byte[] key, byte[] iv) throws GeneralSecurityException {
-        final Cipher cipher = getBestCipher();
-        final SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
-        final IvParameterSpec ivSpec = new IvParameterSpec(iv);
-        cipher.init(Cipher.ENCRYPT_MODE, skeySpec, ivSpec);
+        final Cipher cipher = getEncryptingCipher(key, iv);
         byte[] meat = cipher.doFinal(data);
 
         // Prepends the IV to the encoded data (first 16 bytes / 128 bits).
@@ -400,10 +438,7 @@ public class Encryptor {
         int meatOffset = iv.length;
         byte[] meat = new byte[meatLen];
         System.arraycopy(data, meatOffset, meat, 0, meatLen);
-        final Cipher cipher = getBestCipher();
-        final SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
-        final IvParameterSpec ivSpec = new IvParameterSpec(iv);
-        cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec);
+        final Cipher cipher = getDecryptingCipher(key, iv);
         return cipher.doFinal(meat, 0, meatLen);
     }
 
