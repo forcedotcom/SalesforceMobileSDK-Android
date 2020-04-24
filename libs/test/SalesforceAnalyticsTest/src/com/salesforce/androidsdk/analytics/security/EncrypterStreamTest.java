@@ -119,6 +119,29 @@ public class EncrypterStreamTest {
     }
 
     /**
+     * Test that using a DecrypterInputStream on a file with incorrect iv length fails fast
+     */
+    @Test
+    public void testDecrypterStreamWithBadIVLength() {
+        try (FileOutputStream outputStream =
+            context.openFileOutput(TEST_FILE, Context.MODE_PRIVATE)) {
+            outputStream.write(255); // iv length expected here
+            outputStream.write("hello world".getBytes(StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            Assert.fail(e.getMessage());
+        }
+
+        try (FileInputStream f = context.openFileInput(TEST_FILE);
+            DecrypterInputStream i = new DecrypterInputStream(f, encryptionKey); ) {
+            Assert.fail("Should have failed to create a DecrypterInputStream");
+
+        } catch (Exception e) {
+
+            Assert.assertEquals("Wrong exception", "Can't decrypt file: incorrect iv length found in file: 255", e.getMessage());
+        }
+    }
+
+    /**
      * Helper method to write an encrypted file using EncrypterOutputStream
      *
      * @param content

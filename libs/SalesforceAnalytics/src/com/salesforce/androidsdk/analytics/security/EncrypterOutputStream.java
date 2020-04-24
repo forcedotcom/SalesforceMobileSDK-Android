@@ -47,7 +47,9 @@ public class EncrypterOutputStream extends OutputStream implements WatchableStre
             throws GeneralSecurityException, IOException {
         final Cipher cipher = Encryptor.getEncryptingCipher(encryptionKey);
         final byte[] iv = cipher.getIV();
+        // First byte should be iv length
         outputStream.write(iv.length);
+        // Next bytes should be iv
         outputStream.write(cipher.getIV());
         cipherOutputStream = new CipherOutputStream(outputStream, cipher);
         watchers = new ArrayList<>();
