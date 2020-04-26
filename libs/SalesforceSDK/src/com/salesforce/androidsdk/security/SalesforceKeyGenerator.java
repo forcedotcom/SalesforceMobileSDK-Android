@@ -116,7 +116,7 @@ public class SalesforceKeyGenerator {
      *
      * @param name Unique name associated with this legacy encryption key.
      * @return Legacy encryption key.
-     * @deprecated Will be removed in Mobile SDK 9.0.
+     * @deprecated Will be removed in Mobile SDK 10.0.
      */
     public static String getLegacyEncryptionKey(String name) {
         if (TextUtils.isEmpty(name)) {
@@ -199,7 +199,7 @@ public class SalesforceKeyGenerator {
      * Upgrades the keys stored in SharedPrefs to encrypted keys. This is a one-time
      * migration step that's run while upgrading to Mobile SDK 8.2.
      *
-     * @deprecated Will be removed in Mobile SDK 9.0.
+     * @deprecated Will be removed in Mobile SDK 10.0.
      */
     public synchronized static void upgradeTo8Dot2() {
         final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_FILE, 0);
