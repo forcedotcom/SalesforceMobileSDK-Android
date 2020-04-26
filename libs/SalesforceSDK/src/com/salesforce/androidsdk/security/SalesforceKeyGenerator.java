@@ -60,7 +60,6 @@ public class SalesforceKeyGenerator {
     private static final String SHARED_PREF_FILE = "identifier.xml";
     private static final String ENCRYPTED_ID_SHARED_PREF_KEY = "encrypted_%s";
     private static final String ID_PREFIX = "id_";
-    private static final String LEGACY_PREFIX = "legacy_";
     private static final String ADDENDUM = "addendum_%s";
     private static final String KEYSTORE_ALIAS = "com.salesforce.androidsdk.security.KEYPAIR";
     private static final String SHA1 = "SHA-1";
@@ -190,29 +189,6 @@ public class SalesforceKeyGenerator {
                         storeInSharedPrefs(key, encryptedValue);
                         prefs.edit().remove(key).commit();
                     }
-                }
-            }
-        }
-    }
-
-    /**
-     * Upgrades the keys stored in SharedPrefs to encrypted keys. This is a one-time
-     * migration step that's run while upgrading to Mobile SDK 8.2.
-     *
-     * @deprecated Will be removed in Mobile SDK 10.0.
-     */
-    public synchronized static void upgradeTo8Dot2() {
-        final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_FILE, 0);
-        final Map<String, ?> prefContents = prefs.getAll();
-        if (prefContents != null) {
-            final Set<String> keys = prefContents.keySet();
-            for (final String oldKey : keys) {
-                if (oldKey != null) {
-                    final String value = prefs.getString(oldKey, null);
-                    final String newKey = LEGACY_PREFIX + oldKey;
-                    storeInSharedPrefs(newKey, value);
-                    prefs.edit().remove(oldKey).commit();
-                    // TODO: Generate new key and store that as well.
                 }
             }
         }

@@ -82,4 +82,9 @@ public class SmartStoreUpgradeManager extends SalesforceSDKUpgradeManager {
     public String getInstalledSmartStoreVersion() {
         return getInstalledVersion(SMART_STORE_KEY);
     }
+
+    @Override
+    protected void upgradeTo8Dot2() {
+        // TODO: Add upgrade steps for SmartStore.
+    }
 }

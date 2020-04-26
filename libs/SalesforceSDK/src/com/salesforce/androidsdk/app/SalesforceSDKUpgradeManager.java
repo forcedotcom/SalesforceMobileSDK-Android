@@ -131,7 +131,12 @@ public class SalesforceSDKUpgradeManager {
         SalesforceKeyGenerator.upgradeTo7Dot1();
     }
 
-    private void upgradeTo8Dot2() {
-        SalesforceKeyGenerator.upgradeTo8Dot2();
+    /**
+     * One time upgrade steps from older versions to Mobile SDK 8.2.
+     *
+     * @deprecated Will be removed in Mobile SDK 10.0.
+     */
+    protected void upgradeTo8Dot2() {
+        // TODO: Add upgrade steps for encrypted AccountManager and Analytics data.
     }
 }
