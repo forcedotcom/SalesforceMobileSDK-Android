@@ -187,7 +187,7 @@ public class FileLogger {
      */
     public List<String> readAndRemoveLogLinesAsList(int numLines) {
         List<String> logLines = new ArrayList<>();
-        int linesToRead = (getSize() < numLines) ? getSize() : numLines;
+        int linesToRead = Math.min(getSize(), numLines);
         for (int i = 0; i < linesToRead; i++) {
             final String logLine = readLogLine();
             removeLogLine();
@@ -252,7 +252,7 @@ public class FileLogger {
      * @param numLines Number of log lines.
      */
     public void removeLogLines(int numLines) {
-        int linesToRemove = (getSize() < numLines) ? getSize() : numLines;
+        int linesToRemove = Math.min(getSize(), numLines);
         for (int i = 0; i < linesToRemove; i++) {
             removeLogLine();
         }

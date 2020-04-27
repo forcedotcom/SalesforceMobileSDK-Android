@@ -1100,6 +1100,16 @@ public class SalesforceSDKManager {
     }
 
     /**
+     * Returns the legacy encryption key. This should be called only as a means to migrate to the new key.
+     *
+     * @return Legacy encryption key.
+     * @deprecated Will be removed in Mobile SDK 10.0.
+     */
+    public static String getLegacyEncryptionKey() {
+        return SalesforceKeyGenerator.getLegacyEncryptionKey(INTERNAL_ENTROPY);
+    }
+
+    /**
      * Returns the encryption key being used.
      *
      * @return Encryption key.
