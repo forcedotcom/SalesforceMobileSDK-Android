@@ -128,7 +128,7 @@ public class SmartStore  {
     public static synchronized void changeKey(SQLiteDatabase db, String oldKey, String newKey) {
     	synchronized(db) {
 	        if (newKey != null && !newKey.trim().equals("")) {
-	            db.execSQL("PRAGMA rekey = '" + newKey + "'");
+	            db.query("PRAGMA rekey = '" + newKey + "'");
 	            DBOpenHelper.reEncryptAllFiles(db, oldKey, newKey);
 	        }
     	}
@@ -1412,10 +1412,10 @@ public class SmartStore  {
 	            db.beginTransaction();
 	        }
 	        try {
-	            db.delete(soupTableName, getSoupEntryIdsPredicate(soupEntryIds), (String []) null);
+	            db.delete(soupTableName, getSoupEntryIdsPredicate(soupEntryIds), new String[0]);
 
 				if (hasFTS(soupName)) {
-					db.delete(soupTableName + FTS_SUFFIX, getRowIdsPredicate(soupEntryIds), (String[]) null);
+					db.delete(soupTableName + FTS_SUFFIX, getRowIdsPredicate(soupEntryIds), new String[0]);
 				}
 
 				if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
