@@ -71,7 +71,7 @@ public class Encryptor {
     }
 
     private static Cipher getEncryptingCipher(byte[] keyBytes, byte[] iv)
-        throws InvalidAlgorithmParameterException, InvalidKeyException, NoSuchAlgorithmException {
+        throws InvalidAlgorithmParameterException, InvalidKeyException {
         final Cipher cipher = getBestCipher();
         final SecretKeySpec skeySpec = new SecretKeySpec(keyBytes, cipher.getAlgorithm());
         final IvParameterSpec ivSpec = new IvParameterSpec(iv);
