@@ -66,17 +66,18 @@ public class Encryptor {
      * @return Initialized cipher.
      */
     public static Cipher getEncryptingCipher(String encryptionKey)
-        throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
+            throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
         final byte[] keyBytes = Base64.decode(encryptionKey, Base64.DEFAULT);
         return getEncryptingCipher(keyBytes, generateInitVector());
     }
 
     private static Cipher getEncryptingCipher(byte[] keyBytes, byte[] iv)
-        throws InvalidAlgorithmParameterException, InvalidKeyException {
+            throws InvalidAlgorithmParameterException, InvalidKeyException {
         final Cipher cipher = getBestCipher(AES_GCM_CIPHER);
         final SecretKeySpec skeySpec = new SecretKeySpec(keyBytes, cipher.getAlgorithm());
         final IvParameterSpec ivSpec = new IvParameterSpec(iv);
         cipher.init(Cipher.ENCRYPT_MODE, skeySpec, ivSpec);
+        cipher.updateAAD(ivSpec.getIV());
         return cipher;
     }
 
@@ -88,7 +89,7 @@ public class Encryptor {
      * @return Initialized cipher.
      */
     public static Cipher getDecryptingCipher(String encryptionKey, byte[] iv)
-        throws InvalidAlgorithmParameterException, InvalidKeyException {
+            throws InvalidAlgorithmParameterException, InvalidKeyException {
         final byte[] keyBytes = Base64.decode(encryptionKey, Base64.DEFAULT);
         return getDecryptingCipher(keyBytes, iv);
     }
@@ -99,6 +100,7 @@ public class Encryptor {
         final SecretKeySpec skeySpec = new SecretKeySpec(keyBytes, cipher.getAlgorithm());
         final IvParameterSpec ivSpec = new IvParameterSpec(iv);
         cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec);
+        cipher.updateAAD(ivSpec.getIV());
         return cipher;
     }
 
