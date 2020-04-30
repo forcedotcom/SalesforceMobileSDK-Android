@@ -420,7 +420,7 @@ public class DBHelper {
 	 * @param whereArgs
 	 */
 	public void delete(SQLiteDatabase db, String table, String whereClause, String... whereArgs) {
-		db.delete(table, whereClause, whereArgs);
+		db.delete(table, whereClause, whereArgs == null ? new String[0] : whereArgs);
 	}
 
 	/**
