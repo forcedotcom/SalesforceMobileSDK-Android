@@ -1483,10 +1483,10 @@ public class SmartStore  {
 					}
                 }
 
-                db.delete(soupTableName, buildInStatement(ID_COL, subQuerySql), args);
+                db.delete(soupTableName, buildInStatement(ID_COL, subQuerySql), args == null ? new String[0] : args);
 
 				if (hasFTS(soupName)) {
-                    db.delete(soupTableName + FTS_SUFFIX, buildInStatement(ROWID_COL, subQuerySql), args);
+                    db.delete(soupTableName + FTS_SUFFIX, buildInStatement(ROWID_COL, subQuerySql), args == null ? new String[0] : args);
 				}
 
 				if (handleTx) {
