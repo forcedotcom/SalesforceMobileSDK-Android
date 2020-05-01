@@ -1,26 +1,30 @@
 {
-    "name": "SalesforceReact",
-    "version": "8.1.0",
-    "private": true,
-    "scripts": {
-        "start": "node node_modules/react-native/local-cli/cli.js start"
-    },
-    "dependencies": {
-        "chai": "4.1.2",
-        "eslint": "^5.0.0",
-        "acorn": "^6.0.0",
-        "@react-native-community/cli": "^2.6.0",
-        "react": "16.9.0",
-        "react-native": "0.61.3",
-        "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#v8.1.0"
-    },
-    "devDependencies": {
-        "@babel/core": "^7.3.3",
-        "@babel/runtime": "^7.3.1",
-        "@react-native-community/eslint-config": "^0.0.3",
-        "babel-jest": "^24.1.0",
-        "jest": "^24.1.0",
-        "metro-react-native-babel-preset": "^0.54.1",
-        "react-test-renderer": "16.9.0"
-    }
+  "name": "SalesforceReact",
+  "version": "8.1.0",
+  "private": true,
+  "scripts": {
+    "start": "node node_modules/react-native/local-cli/cli.js start",
+    "snyk-protect": "snyk protect",
+    "prepublish": "npm run snyk-protect"
+  },
+  "dependencies": {
+    "chai": "4.1.2",
+    "eslint": "^5.0.0",
+    "acorn": "^6.0.0",
+    "@react-native-community/cli": "^2.6.0",
+    "react": "16.9.0",
+    "react-native": "0.61.3",
+    "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#v8.1.0",
+    "snyk": "^1.316.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.3.3",
+    "@babel/runtime": "^7.3.1",
+    "@react-native-community/eslint-config": "^0.0.3",
+    "babel-jest": "^24.1.0",
+    "jest": "^24.1.0",
+    "metro-react-native-babel-preset": "^0.54.1",
+    "react-test-renderer": "16.9.0"
+  },
+  "snyk": true
 }
