@@ -1412,10 +1412,10 @@ public class SmartStore  {
 	            db.beginTransaction();
 	        }
 	        try {
-	            db.delete(soupTableName, getSoupEntryIdsPredicate(soupEntryIds), new String[0]);
+				DBHelper.getInstance(db).delete(db, soupTableName, getSoupEntryIdsPredicate(soupEntryIds));
 
 				if (hasFTS(soupName)) {
-					db.delete(soupTableName + FTS_SUFFIX, getRowIdsPredicate(soupEntryIds), new String[0]);
+					DBHelper.getInstance(db).delete(db, soupTableName + FTS_SUFFIX, getRowIdsPredicate(soupEntryIds));
 				}
 
 				if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
@@ -1483,10 +1483,10 @@ public class SmartStore  {
 					}
                 }
 
-                db.delete(soupTableName, buildInStatement(ID_COL, subQuerySql), args);
+				DBHelper.getInstance(db).delete(db, soupTableName, buildInStatement(ID_COL, subQuerySql), args);
 
 				if (hasFTS(soupName)) {
-                    db.delete(soupTableName + FTS_SUFFIX, buildInStatement(ROWID_COL, subQuerySql), args);
+					DBHelper.getInstance(db).delete(db, soupTableName + FTS_SUFFIX, buildInStatement(ROWID_COL, subQuerySql), args);
 				}
 
 				if (handleTx) {
