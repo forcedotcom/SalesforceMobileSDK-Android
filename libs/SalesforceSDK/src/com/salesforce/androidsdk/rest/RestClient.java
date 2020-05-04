@@ -107,8 +107,26 @@ public class RestClient {
 		 *     });
 		 * @param request
 		 * @param response
+		 *
+		 * @deprecated Will be removed in Mobile SDK 9.0.
+		 * Use {@link AsyncRequestCallback#onResponse(RestRequest request, RestResponse response)} instead.
 		 */
 		void onSuccess(RestRequest request, RestResponse response);
+
+		/**
+		 * NB: onResponse runs on a network thread
+		 *     If you are making your call from an activity and need to make UI changes
+		 *     make sure to first consume the response and then call runOnUiThread
+		 *
+		 *     result.consumeQuietly(); // consume before going back to main thread
+		 *     runOnUiThread(new Runnable() {
+		 *         @Override
+		 *         public void run() { ... }
+		 *     });
+		 * @param request
+		 * @param response
+		 */
+		void onResponse(RestRequest request, RestResponse response);
 
 		/**
 		 * NB: onError runs on a network thread
@@ -351,8 +369,10 @@ public class RestClient {
 
 			@Override
 			public void onResponse(Call call, Response response) throws IOException {
+            	// TODO: Remove onSuccess in 9.0.
 			    callback.onSuccess(restRequest, new RestResponse(response));
-            }
+				callback.onResponse(restRequest, new RestResponse(response));
+			}
 		});
 		return call;
 	}

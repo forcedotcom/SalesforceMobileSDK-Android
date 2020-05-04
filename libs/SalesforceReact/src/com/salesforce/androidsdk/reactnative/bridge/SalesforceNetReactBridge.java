@@ -96,8 +96,12 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
             }
             restClient.sendAsync(request, new RestClient.AsyncRequestCallback() {
 
+                // TODO: Remove onSuccess for 9.0 Release.
                 @Override
-                public void onSuccess(RestRequest request, RestResponse response) {
+                public void onSuccess(RestRequest request, RestResponse response) {}
+
+                @Override
+                public void onResponse(RestRequest request, RestResponse response) {
                     try {
 
                         // Sending a string over and letting javascript do a JSON.parse(result)

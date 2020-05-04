@@ -355,8 +355,12 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
                      */
                     SalesforceDroidGapActivity.this.client.sendAsync(RestRequest.getRequestForUserInfo(), new AsyncRequestCallback() {
 
+                        // TODO: Remove onSuccess for 9.0 Release.
                         @Override
-                        public void onSuccess(RestRequest request, RestResponse response) {
+                        public void onSuccess(RestRequest request, RestResponse response) {}
+
+                        @Override
+                        public void onResponse(RestRequest request, RestResponse response) {
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
@@ -430,8 +434,12 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
         }
         client.sendAsync(RestRequest.getRequestForUserInfo(), new AsyncRequestCallback() {
 
+            // TODO: Remove onSuccess for 9.0 Release.
             @Override
-            public void onSuccess(RestRequest request, RestResponse response) {
+            public void onSuccess(RestRequest request, RestResponse response) {}
+
+            @Override
+            public void onResponse(RestRequest request, RestResponse response) {
                 SalesforceHybridLogger.i(TAG, "refresh callback - refresh succeeded");
                 runOnUiThread(new Runnable() {
 

@@ -120,8 +120,12 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
             }
             restClient.sendAsync(request, new RestClient.AsyncRequestCallback() {
 
+                // TODO: Remove onSuccess for 9.0 Release.
                 @Override
-                public void onSuccess(RestRequest request, RestResponse response) {
+                public void onSuccess(RestRequest request, RestResponse response) {}
+
+                @Override
+                public void onResponse(RestRequest request, RestResponse response) {
                     try {
                         // Not a 2xx status
                         if (!response.isSuccess()) {

@@ -1030,8 +1030,12 @@ public class RestClientTest {
     private RestResponse sendAsync(RestClient client, RestRequest request) throws InterruptedException {
         final BlockingQueue<RestResponse> responseBlockingQueue = new ArrayBlockingQueue<>(1);
         client.sendAsync(request, new RestClient.AsyncRequestCallback() {
+            // TODO: Remove onSuccess for 9.0 Release.
             @Override
-            public void onSuccess(RestRequest request, RestResponse response) {
+            public void onSuccess(RestRequest request, RestResponse response) {}
+
+            @Override
+            public void onResponse(RestRequest request, RestResponse response) {
                 responseBlockingQueue.add(response);
             }
 

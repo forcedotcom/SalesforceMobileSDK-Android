@@ -653,28 +653,32 @@ public class ExplorerActivity extends SalesforceActivity {
 		client.sendAsync(restRequest, new AsyncRequestCallback() {
 			private long start = System.nanoTime();
 
+			// TODO: Remove onSuccess for 9.0 Release.
 			@Override
-			public void onSuccess(RestRequest request, final RestResponse result) {
-                result.consumeQuietly(); // consume before going back to main thread
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            long duration = System.nanoTime() - start;
-                            println(result);
-                            int size = result.asString().length();
-                            int statusCode = result.getStatusCode();
-                            printRequestInfo(duration, size, statusCode);
-                            extractIdsFromResponse(result.asString());
-                        } catch (Exception e) {
-                            printException(e);
-                        }
+			public void onSuccess(RestRequest request, final RestResponse result) {}
 
-                        EventsObservable.get().notifyEvent(EventType.RenditionComplete);
-                    }
-                });
+			@Override
+			public void onResponse(RestRequest request, final RestResponse response) {
+				response.consumeQuietly(); // consume before going back to main thread
+				runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							long duration = System.nanoTime() - start;
+							println(response);
+							int size = response.asString().length();
+							int statusCode = response.getStatusCode();
+							printRequestInfo(duration, size, statusCode);
+							extractIdsFromResponse(response.asString());
+						} catch (Exception e) {
+							printException(e);
+						}
+
+						EventsObservable.get().notifyEvent(EventType.RenditionComplete);
+					}
+				});
 			}
-			
+
 			@Override
 			public void onError(final Exception exception) {
                 runOnUiThread(new Runnable() {
