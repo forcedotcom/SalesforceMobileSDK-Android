@@ -26,10 +26,12 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import android.net.Uri;
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.rest.BatchRequest.BatchRequestBuilder;
 import com.salesforce.androidsdk.rest.CompositeRequest.CompositeRequestBuilder;
+import com.salesforce.androidsdk.rest.files.ConnectUriBuilder;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
@@ -121,6 +123,8 @@ public class RestRequest {
         HTTP_DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
     }
 
+	public static final DateFormat ISO8601_DATE_FORMAT = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.US);
+
     /**
 	 * Enumeration for all HTTP methods.
 	 */
@@ -155,7 +159,8 @@ public class RestRequest {
         OBJECT_LAYOUT(SERVICES_DATA + "%s/ui-api/layout/%s"),
 		COMPOSITE(SERVICES_DATA + "%s/composite"),
         BATCH(SERVICES_DATA + "%s/composite/batch"),
-        SOBJECT_TREE(SERVICES_DATA + "%s/composite/tree/%s");
+        SOBJECT_TREE(SERVICES_DATA + "%s/composite/tree/%s"),
+        NOTIFICATIONS(SERVICES_DATA +"%s/connect/notifications/%s");
 
 		private final String pathTemplate;
 
@@ -707,6 +712,99 @@ public class RestRequest {
         }
         RequestBody body = RequestBody.create(MEDIA_TYPE_JSON, JSONObjectHelper.makeJSONObject(RECORDS, jsonTrees).toString());
         return new RestRequest(RestMethod.POST, RestAction.SOBJECT_TREE.getPath(apiVersion, objectType), body);
+    }
+
+    /**
+     * Request to get status of notifications for the user.
+     *
+     * @param apiVersion   Salesforce API version.
+     */
+    public static RestRequest getRequestForNotificationsStatus(String apiVersion) {
+        return new RestRequest(RestMethod.GET, RestAction.NOTIFICATIONS.getPath(apiVersion, "status"));
+    }
+
+    /**
+     * Request to get a notification.
+     *
+     * @param apiVersion      Salesforce API version.
+     * @param notificationId  ID of notification.
+     */
+    public static RestRequest getRequestForNotification(String apiVersion, String notificationId) {
+        return new RestRequest(RestMethod.GET, RestAction.NOTIFICATIONS.getPath(apiVersion, notificationId));
+    }
+
+    /**
+     * Request for updating a notification.
+     *
+     * @param apiVersion      Salesforce API version.
+     * @param notificationId  ID of notification.
+     * @param read            Marks notification as read (true) or unread (false).
+     * @param seen            Marks notification as seen (true) or unseen (false).
+     */
+    public static RestRequest getRequestForNotificationUpdate(String apiVersion, String notificationId, Boolean read, Boolean seen) {
+        Map<String, Object> parameters = new HashMap<>();
+        if (read != null) {
+            parameters.put("read", read);
+        }
+        if (seen != null) {
+            parameters.put("seen", seen);
+        }
+        String path = RestAction.NOTIFICATIONS.getPath(apiVersion, notificationId);
+        return new RestRequest(RestMethod.PATCH, path, new JSONObject(parameters));
+    }
+
+    /**
+     * Request for getting notifications.
+     * @param apiVersion   Salesforce API version.
+     * @param size         Number of notifications to get.
+     * @param before       Get notifications occurring before the provided date. Shouldn't be used with `after`.
+     * @param after        Get notifications occurring after the provided date. Shouldn't be used with `before`.
+     */
+    public static RestRequest getRequestForNotifications(String apiVersion, Integer size, Date before, Date after) {
+        Map<String, String> parameters = new HashMap<>();
+        if (size != null) {
+            parameters.put("size", size.toString());
+        }
+        if (before != null) {
+            String beforeDate = ISO8601_DATE_FORMAT.format(before);
+            parameters.put("before", beforeDate);
+        }
+        if (after != null) {
+            String afterDate = ISO8601_DATE_FORMAT.format(after);
+            parameters.put("after", afterDate);
+        }
+
+        ConnectUriBuilder builder = new ConnectUriBuilder(Uri.parse(RestAction.NOTIFICATIONS.getPath(apiVersion, "")).buildUpon());
+        for (Map.Entry<String, String> parameter : parameters.entrySet()) {
+            builder.appendQueryParam(parameter.getKey(), parameter.getValue());
+        }
+        return new RestRequest(RestMethod.GET, builder.toString());
+    }
+
+    /**
+     * Request for updating notifications.
+     * @param apiVersion       Salesforce API version.
+     * @param notificationIds  IDs of notifications to get. Shouldn't be used with `before`.
+     * @param before           Get notifications before the provided date. Shouldn't be used with `notificationIds`.
+     * @param read             Marks notifications as read (true) or unread (false).
+     * @param seen             Marks notifications as seen (true) or unseen (false).
+     */
+    public static RestRequest getRequestForNotificationsUpdate(String apiVersion, List<String> notificationIds, Date before, Boolean read, Boolean seen) {
+        Map<String, Object> parameters = new HashMap<>();
+        if (notificationIds != null) {
+            parameters.put("notificationIds", notificationIds);
+        }
+        if (before != null) {
+            parameters.put("before", ISO8601_DATE_FORMAT.format(before));
+        }
+        if (read != null) {
+            parameters.put("read", read);
+        }
+        if (seen != null) {
+            parameters.put("seen", seen);
+        }
+        String path =  RestAction.NOTIFICATIONS.getPath(apiVersion, "");
+        return new RestRequest(RestMethod.PATCH, path, new JSONObject(parameters));
     }
 
     /**
