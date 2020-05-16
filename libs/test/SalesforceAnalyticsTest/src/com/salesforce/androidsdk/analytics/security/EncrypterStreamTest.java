@@ -28,8 +28,16 @@
 package com.salesforce.androidsdk.analytics.security;
 
 import android.content.Context;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
@@ -37,11 +45,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
 /**
  * Test for {@link EncrypterOutputStream} and {@link DecrypterInputStream}
@@ -130,13 +133,10 @@ public class EncrypterStreamTest {
         } catch (Exception e) {
             Assert.fail(e.getMessage());
         }
-
         try (FileInputStream f = context.openFileInput(TEST_FILE);
             DecrypterInputStream i = new DecrypterInputStream(f, encryptionKey); ) {
             Assert.fail("Should have failed to create a DecrypterInputStream");
-
         } catch (Exception e) {
-
             Assert.assertEquals("Wrong exception", "Can't decrypt file: incorrect iv length found in file: 255", e.getMessage());
         }
     }
@@ -149,10 +149,8 @@ public class EncrypterStreamTest {
     private void writeThroughStream(String content) {
         try (FileOutputStream f = context.openFileOutput(TEST_FILE, Context.MODE_PRIVATE);
                 EncrypterOutputStream outputStream =
-                        new EncrypterOutputStream(f, encryptionKey); ) {
-
+                        new EncrypterOutputStream(f, encryptionKey)) {
             outputStream.write(content.getBytes(StandardCharsets.UTF_8));
-
         } catch (Exception e) {
             Assert.fail(e.getMessage());
         }
@@ -166,7 +164,6 @@ public class EncrypterStreamTest {
     private String readThroughStream() {
         try (FileInputStream f = context.openFileInput(TEST_FILE);
                 DecrypterInputStream i = new DecrypterInputStream(f, encryptionKey); ) {
-
             BufferedReader reader = new BufferedReader(new InputStreamReader(i));
             StringBuilder out = new StringBuilder();
             String line;
@@ -174,7 +171,6 @@ public class EncrypterStreamTest {
                 out.append(line);
             }
             return out.toString();
-
         } catch (Exception e) {
             Assert.fail(e.getMessage());
             return null;
@@ -191,7 +187,6 @@ public class EncrypterStreamTest {
                 context.openFileOutput(TEST_FILE, Context.MODE_PRIVATE)) {
             String encryptedString = Encryptor.encrypt(content, encryptionKey);
             outputStream.write(encryptedString.getBytes(StandardCharsets.UTF_8));
-
         } catch (Exception e) {
             Assert.fail(e.getMessage());
         }
@@ -206,7 +201,6 @@ public class EncrypterStreamTest {
         File file = new File(context.getFilesDir(), TEST_FILE);
         try (FileInputStream f = new FileInputStream(file);
                 DataInputStream dataInputStream = new DataInputStream(f); ) {
-
             byte[] bytes = new byte[(int) file.length()];
             dataInputStream.readFully(bytes);
             return Encryptor.decrypt(bytes, encryptionKey);

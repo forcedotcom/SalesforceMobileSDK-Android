@@ -47,7 +47,7 @@ public class DecrypterInputStream extends InputStream implements WatchableStream
             throws GeneralSecurityException, IOException {
         // First byte should be iv length
         int ivLength = inputStream.read();
-        if (ivLength != 16 && ivLength != 32) {
+        if (ivLength != 12 && ivLength != 32) {
             throw new IOException("Can't decrypt file: incorrect iv length found in file: " + ivLength);
         }
         // Next bytes should be iv
