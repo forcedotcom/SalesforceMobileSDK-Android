@@ -133,7 +133,7 @@ public class Encryptor {
      * Decrypts data with key using AES/GCM/NoPadding.
      *
      * @param data Data.
-     * @param key Base64 encoded 128 bit key or null (to leave data unchanged).
+     * @param key Base64 encoded 256 bit key or null (to leave data unchanged).
      * @return Decrypted data.
      */
     public static String decrypt(String data, String key) {
@@ -168,7 +168,7 @@ public class Encryptor {
      * Decrypts data with key using AES/GCM/NoPadding.
      *
      * @param data Data.
-     * @param key Base64 encoded 128 bit key or null (to leave data unchanged).
+     * @param key Base64 encoded 256 bit key or null (to leave data unchanged).
      * @param iv Initialization vector.
      * @return Decrypted data.
      */
@@ -214,7 +214,7 @@ public class Encryptor {
      * Encrypts data with key using AES/GCM/NoPadding.
      *
      * @param data Data.
-     * @param key Base64 encoded 128 bit key or null (to leave data unchanged).
+     * @param key Base64 encoded 256 bit key or null (to leave data unchanged).
      * @return Encrypted data.
      */
     public static String encrypt(String data, String key) {
@@ -230,7 +230,7 @@ public class Encryptor {
      * Encrypts data with key using AES/GCM/NoPadding.
      *
      * @param data Data.
-     * @param key Base64 encoded 128 bit key or null (to leave data unchanged).
+     * @param key Base64 encoded 256 bit key or null (to leave data unchanged).
      * @param iv Initialization vector.
      * @return Encrypted data.
      */
