@@ -494,7 +494,11 @@ public class Encryptor {
     private static Cipher getBestCipher(String cipherMode) {
         Cipher cipher = null;
         try {
-            cipher = Cipher.getInstance(cipherMode, getLegacyEncryptionProvider());
+            if (AES_GCM_CIPHER.equals(cipherMode)) {
+                cipher = Cipher.getInstance(cipherMode);
+            } else {
+                cipher = Cipher.getInstance(cipherMode, getLegacyEncryptionProvider());
+            }
         } catch (Exception e) {
             SalesforceAnalyticsLogger.e(null, TAG,
                     "No cipher transformation available", e);
