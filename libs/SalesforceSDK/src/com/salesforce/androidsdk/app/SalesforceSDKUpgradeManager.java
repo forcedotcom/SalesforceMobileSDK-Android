@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.app;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
@@ -137,6 +138,7 @@ public class SalesforceSDKUpgradeManager {
      * @deprecated Will be removed in Mobile SDK 10.0.
      */
     protected void upgradeTo8Dot2() {
-        // TODO: Add upgrade steps for encrypted AccountManager and Analytics data.
+        ClientManager.upgradeTo8Dot2();
+        // TODO: Add upgrade steps for encrypted Analytics data.
     }
 }
