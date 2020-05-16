@@ -31,11 +31,14 @@ import androidx.core.widget.TextViewCompat.AutoSizeTextType;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.KeyValueEncryptedFileStore;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -338,6 +341,54 @@ public class KeyValueEncryptedFileStoreTest {
                 keyValueStore.saveValue("key", null));
         Assert.assertNull("Value found for key when not expected", keyValueStore.getValue("key"));
         Assert.assertEquals("Wrong count for store", 0, keyValueStore.count());
+    }
+
+    /** Test that data is indeed stored encrypted */
+    @Test
+    public void testStoreIsEncrypted() throws FileNotFoundException {
+        // Populate store
+        keyValueStore.saveValue("key1", "value1");
+        keyValueStore.saveValue("key2", "value2");
+        // Look at the raw content of files
+        File[] files = keyValueStore.getStoreDir().listFiles();
+        Assert.assertEquals("Wrong number of files", 2, files.length);
+        String file1raw = streamToString(new FileInputStream(files[0]));
+        String file2raw = streamToString(new FileInputStream(files[1]));
+        // Make sure the actual value can't be found
+        Assert.assertFalse("File should have been encrypted", file1raw.contains("value"));
+        Assert.assertFalse("File should have been encrypted", file2raw.contains("value"));
+    }
+
+    /** Test changing encryption key */
+    @Test
+    public void testChangeEncryptionKey() throws FileNotFoundException {
+        // Populate store
+        keyValueStore.saveValue("key1", "value1");
+        keyValueStore.saveValue("key2", "value2");
+        // Check store
+        Assert.assertEquals("Wrong count", 2, keyValueStore.count());
+        Assert.assertEquals("Wrong value for key1", "value1", keyValueStore.getValue("key1"));
+        Assert.assertEquals("Wrong value for key1", "value2", keyValueStore.getValue("key2"));
+        // Getting raw content of files
+        File[] files = keyValueStore.getStoreDir().listFiles();
+        Assert.assertEquals("Wrong number of files", 2, files.length);
+        String file1raw = streamToString(new FileInputStream(files[0]));
+        String file2raw = streamToString(new FileInputStream(files[1]));
+        // Generate new key
+        String newEncryptionKey = SalesforceKeyGenerator.getEncryptionKey("new");
+        // Make sure it's a different key
+        Assert.assertNotEquals("New encryption key should be different", newEncryptionKey, SalesforceSDKManager.getEncryptionKey());
+        // Change encryption key
+        Assert.assertTrue("Changing key should have succeeded", keyValueStore.changeEncryptionKey(newEncryptionKey));
+        // Make sure we can still read all the values from the store
+        Assert.assertEquals("Wrong count", 2, keyValueStore.count());
+        Assert.assertEquals("Wrong value for key1", "value1", keyValueStore.getValue("key1"));
+        Assert.assertEquals("Wrong value for key1", "value2", keyValueStore.getValue("key2"));
+        // Getting raw content of files
+        String file1rawAfter = streamToString(new FileInputStream(files[0]));
+        String file2rawAfter = streamToString(new FileInputStream(files[1]));
+        Assert.assertNotEquals("Raw content should have changed", file1rawAfter, file1raw);
+        Assert.assertNotEquals("Raw content should have changed", file2rawAfter, file2raw);
     }
 
     //
