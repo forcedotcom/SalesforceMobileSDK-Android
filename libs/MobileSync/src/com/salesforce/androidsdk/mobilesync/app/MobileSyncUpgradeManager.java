@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.mobilesync.app;
 
 import com.salesforce.androidsdk.mobilesync.manager.LayoutSyncManager;
+import com.salesforce.androidsdk.mobilesync.manager.MetadataSyncManager;
 import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreUpgradeManager;
 
@@ -101,7 +102,7 @@ public class MobileSyncUpgradeManager extends SmartStoreUpgradeManager {
         super.upgradeTo8Dot2();
         LayoutSyncManager.getInstance().getSmartStore().dropSoup("sfdcLayouts");
         LayoutSyncManager.reset();
-
-        // TODO: Add upgrade steps for MobileSync.
+        MetadataSyncManager.getInstance().getSmartStore().dropSoup("sfdcMetadata");
+        MetadataSyncManager.reset();
     }
 }
