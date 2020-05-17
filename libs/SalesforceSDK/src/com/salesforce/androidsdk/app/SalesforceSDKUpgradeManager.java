@@ -29,9 +29,14 @@ package com.salesforce.androidsdk.app;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
+
+import java.util.List;
 
 /**
  * This class handles upgrades from one version to another.
@@ -139,6 +144,23 @@ public class SalesforceSDKUpgradeManager {
      */
     protected void upgradeTo8Dot2() {
         ClientManager.upgradeTo8Dot2();
-        // TODO: Add upgrade steps for encrypted Analytics data.
+        migrateAnalyticsData();
+    }
+
+    private void migrateAnalyticsData() {
+        final List<UserAccount> userAccounts = UserAccountManager.getInstance().getAuthenticatedUsers();
+
+        // Migrating an unauthenticated user's analytics data.
+        SalesforceAnalyticsManager.upgradeTo8Dot2(null, SalesforceSDKManager.getInstance().getAppContext());
+
+        // Migrating each individual user's analytics data.
+        if (userAccounts != null) {
+            for (final UserAccount userAccount : userAccounts) {
+                if (userAccount != null) {
+                    SalesforceAnalyticsManager.upgradeTo8Dot2(userAccount,
+                            SalesforceSDKManager.getInstance().getAppContext());
+                }
+            }
+        }
     }
 }

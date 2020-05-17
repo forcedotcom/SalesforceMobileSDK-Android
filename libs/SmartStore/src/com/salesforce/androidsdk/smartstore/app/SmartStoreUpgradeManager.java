@@ -85,6 +85,7 @@ public class SmartStoreUpgradeManager extends SalesforceSDKUpgradeManager {
 
     @Override
     protected void upgradeTo8Dot2() {
+        super.upgradeTo8Dot2();
         // TODO: Add upgrade steps for SmartStore.
     }
 }

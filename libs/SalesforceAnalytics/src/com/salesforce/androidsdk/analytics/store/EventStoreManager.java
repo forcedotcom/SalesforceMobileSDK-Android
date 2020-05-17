@@ -58,6 +58,7 @@ public class EventStoreManager {
     private Book book;
     private boolean isLoggingEnabled = true;
     private int maxEvents = 10000;
+    private boolean oneTimeMigration;
 
     /**
      * Parameterized constructor.
@@ -229,6 +230,15 @@ public class EventStoreManager {
         return book.getAllKeys().size();
     }
 
+    /**
+     * One time upgrade steps from older versions to Mobile SDK 8.2. Only for internal use!
+     *
+     * @deprecated Will be removed in Mobile SDK 10.0.
+     */
+    public synchronized void enableOneTimeMigration() {
+        oneTimeMigration = true;
+    }
+
     private boolean shouldStoreEvent() {
         return (isLoggingEnabled && (getNumStoredEvents() < maxEvents));
     }
@@ -238,6 +248,9 @@ public class EventStoreManager {
     }
 
     private String decrypt(String data) {
+        if (oneTimeMigration) {
+            return Encryptor.legacyDecrypt(data, encryptionKey);
+        }
         return Encryptor.decrypt(data, encryptionKey);
     }
 }

@@ -96,10 +96,9 @@ public class MobileSyncUpgradeManager extends SmartStoreUpgradeManager {
         return getInstalledVersion(MOBILE_SYNC_KEY);
     }
 
-    /*
-     * TODO: Remove this in Mobile SDK 10.0.
-     */
+    @Override
     protected void upgradeTo8Dot2() {
+        super.upgradeTo8Dot2();
         LayoutSyncManager.getInstance().getSmartStore().dropSoup("sfdcLayouts");
         LayoutSyncManager.reset();
 
