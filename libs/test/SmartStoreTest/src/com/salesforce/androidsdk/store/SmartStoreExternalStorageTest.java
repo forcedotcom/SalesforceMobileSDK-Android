@@ -27,8 +27,9 @@
 package com.salesforce.androidsdk.store;
 
 import android.database.Cursor;
-import androidx.test.filters.MediumTest;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.MediumTest;
 
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
@@ -40,9 +41,6 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 import com.salesforce.androidsdk.util.JSONTestHelper;
 
-import net.sqlcipher.database.SQLiteDatabase;
-
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Assert;
@@ -89,28 +87,6 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
             Assert.assertEquals("Wrong exception", "Can't have JSON1 index specs in externally stored soup:" + OTHER_TEST_SOUP, e.getMessage());
 		}
         Assert.assertFalse("Register soup call should have failed", store.hasSoup(OTHER_TEST_SOUP));
-	}
-
-	/**
-	 * Ensure data is still accessible after changing key
-	 */
-    @Test
-	public void testChangeKey() throws JSONException {
-		JSONObject soupElt = new JSONObject("{'key':'ka2', 'value':'testValue'}");
-		String newPasscode = Encryptor.hash("123test", "hashing-key");
-
-		// Use normal key to place files on external storage
-		store.create(TEST_SOUP, soupElt);
-
-		// Act
-		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
-		SmartStore.changeKey(db, getEncryptionKey(), newPasscode);
-		store = new SmartStore(dbOpenHelper, newPasscode);
-
-		// Verify that data is still accessible
-		JSONArray result = store.query(QuerySpec.buildExactQuerySpec(TEST_SOUP, "key", "ka2", null, null, 10), 0);
-        Assert.assertEquals("One result expected", 1, result.length());
-		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt, result.getJSONObject(0));
 	}
 
 	/**
