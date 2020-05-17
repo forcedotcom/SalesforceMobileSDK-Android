@@ -401,7 +401,7 @@ public class SalesforceAnalyticsManager {
         oldEventStoreManager.enableOneTimeMigration();
         final EventStoreManager newEventStoreManager = newAnalyticsManager.getEventStoreManager();
 
-        // Reads
+        // Reads analytics data using the old key, clears the store, and writes it back with the new key.
         final List<InstrumentationEvent> events = oldEventStoreManager.fetchAllEvents();
         oldEventStoreManager.deleteAllEvents();
         newEventStoreManager.storeEvents(events);
