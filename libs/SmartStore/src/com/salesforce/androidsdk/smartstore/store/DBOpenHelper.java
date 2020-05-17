@@ -33,8 +33,8 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
-
 import com.salesforce.androidsdk.util.ManagedFilesHelper;
+
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteDatabaseHook;
 import net.sqlcipher.database.SQLiteOpenHelper;
@@ -48,9 +48,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FilenameFilter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -492,34 +490,35 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	}
 
 	/**
-	 * Re-encrypts the files on external storage with the new key. If external storage is not enabled for any table in the db, this operation is ignored.
+	 * Re-encrypts the files on external storage with the new key. If external storage is not
+	 * enabled for any table in the db, this operation is ignored.
 	 *
-	 * @param db DB containing external storage (if applicable).
+	 * @param db DB containing external storage (if applicable).O
 	 * @param oldKey Old key with which to decrypt the existing data.
 	 * @param newKey New key with which to encrypt the existing data.
 	 */
 	public static void reEncryptAllFiles(SQLiteDatabase db, String oldKey, String newKey) {
-		StringBuilder path = new StringBuilder(db.getPath()).append(EXTERNAL_BLOBS_SUFFIX);
-		File dir = new File(path.toString());
+		final StringBuilder path = new StringBuilder(db.getPath()).append(EXTERNAL_BLOBS_SUFFIX);
+		final File dir = new File(path.toString());
 		if (dir.exists()) {
-			File[] tables = dir.listFiles();
+			final File[] tables = dir.listFiles();
 			if (tables != null) {
-				for (File table : tables) {
-					File[] blobs = table.listFiles();
+				for (final File table : tables) {
+					final File[] blobs = table.listFiles();
 					if (blobs != null) {
-						for (File blob : blobs) {
-							StringBuilder json = new StringBuilder();
-							String result = null;
+						for (final File blob : blobs) {
+							final StringBuilder json = new StringBuilder();
+							String result;
 							try {
-								BufferedReader br = new BufferedReader(new FileReader(blob));
+								final BufferedReader br = new BufferedReader(new FileReader(blob));
 								String line;
 								while ((line = br.readLine()) != null) {
 									json.append(line).append('\n');
 								}
 								br.close();
-								result = Encryptor.decrypt(json.toString(), oldKey);
+								result = Encryptor.legacyDecrypt(json.toString(), oldKey);
 								blob.delete();
-								FileOutputStream outputStream = new FileOutputStream(blob, false);
+								final FileOutputStream outputStream = new FileOutputStream(blob, false);
 								outputStream.write(Encryptor.encrypt(result, newKey).getBytes());
 								outputStream.close();
 							} catch (IOException ex) {

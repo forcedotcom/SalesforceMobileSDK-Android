@@ -127,7 +127,7 @@ public class SmartStore  {
      */
     public static synchronized void changeKey(SQLiteDatabase db, String oldKey, String newKey) {
     	synchronized(db) {
-	        if (newKey != null && !newKey.trim().equals("")) {
+	        if (!TextUtils.isEmpty(newKey)) {
 	            db.query("PRAGMA rekey = '" + newKey + "'");
 	            DBOpenHelper.reEncryptAllFiles(db, oldKey, newKey);
 	        }
