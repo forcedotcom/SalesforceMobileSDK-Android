@@ -390,7 +390,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		public void postKey(SQLiteDatabase database) {
 			database.rawExecSQL("PRAGMA cipher_migrate");
 		}
-	};
+	}
 
 	/**
 	 * Returns the path to external blobs folder for the given soup in this db. If no soup is provided, the db folder is returned.
@@ -498,8 +498,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @param newKey New key with which to encrypt the existing data.
 	 */
 	public static void reEncryptAllFiles(SQLiteDatabase db, String oldKey, String newKey) {
-		final StringBuilder path = new StringBuilder(db.getPath()).append(EXTERNAL_BLOBS_SUFFIX);
-		final File dir = new File(path.toString());
+		final File dir = new File(db.getPath() + EXTERNAL_BLOBS_SUFFIX);
 		if (dir.exists()) {
 			final File[] tables = dir.listFiles();
 			if (tables != null) {
