@@ -493,7 +493,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * Re-encrypts the files on external storage with the new key. If external storage is not
 	 * enabled for any table in the db, this operation is ignored.
 	 *
-	 * @param db DB containing external storage (if applicable).O
+	 * @param db DB containing external storage (if applicable).
 	 * @param oldKey Old key with which to decrypt the existing data.
 	 * @param newKey New key with which to encrypt the existing data.
 	 */
