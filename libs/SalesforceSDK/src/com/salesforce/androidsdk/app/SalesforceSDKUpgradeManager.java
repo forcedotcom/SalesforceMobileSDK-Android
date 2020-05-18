@@ -137,12 +137,7 @@ public class SalesforceSDKUpgradeManager {
         SalesforceKeyGenerator.upgradeTo7Dot1();
     }
 
-    /**
-     * One time upgrade steps from older versions to Mobile SDK 8.2.
-     *
-     * @deprecated Will be removed in Mobile SDK 10.0.
-     */
-    protected void upgradeTo8Dot2() {
+    private void upgradeTo8Dot2() {
         ClientManager.upgradeTo8Dot2();
         migrateAnalyticsData();
     }

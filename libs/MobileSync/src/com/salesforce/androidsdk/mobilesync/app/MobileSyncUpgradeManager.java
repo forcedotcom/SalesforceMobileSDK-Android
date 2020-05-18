@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.mobilesync.app;
 
 import com.salesforce.androidsdk.mobilesync.manager.LayoutSyncManager;
 import com.salesforce.androidsdk.mobilesync.manager.MetadataSyncManager;
+import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreUpgradeManager;
 
 /**
@@ -67,13 +68,24 @@ public class MobileSyncUpgradeManager extends SmartStoreUpgradeManager {
      * Upgrades mobile sync data from existing client version to the current version.
      */
     protected synchronized void upgradeSObject() {
-        String installedVersion = getInstalledSobjectVersion();
+        final String installedVersion = getInstalledSobjectVersion();
         if (installedVersion.equals(MobileSyncSDKManager.SDK_VERSION)) {
             return;
         }
 
         // Update shared preference file to reflect the latest version.
         writeCurVersion(MOBILE_SYNC_KEY, MobileSyncSDKManager.SDK_VERSION);
+
+        // If the installed version < v8.2.0, we need to delete the old layout SmartStore file.
+        try {
+            final String majorVersionNum = installedVersion.substring(0, 3);
+            double installedVerDouble = Double.parseDouble(majorVersionNum);
+            if (installedVerDouble < 8.2) {
+                upgradeTo8Dot2();
+            }
+        } catch (Exception e) {
+            MobileSyncLogger.e(TAG, "Failed to parse installed version.");
+        }
     }
 
     /**
@@ -85,9 +97,7 @@ public class MobileSyncUpgradeManager extends SmartStoreUpgradeManager {
         return getInstalledVersion(MOBILE_SYNC_KEY);
     }
 
-    @Override
-    protected void upgradeTo8Dot2() {
-        super.upgradeTo8Dot2();
+    private void upgradeTo8Dot2() {
         LayoutSyncManager.getInstance().getSmartStore().dropSoup("sfdcLayouts");
         LayoutSyncManager.reset();
         MetadataSyncManager.getInstance().getSmartStore().dropSoup("sfdcMetadata");
