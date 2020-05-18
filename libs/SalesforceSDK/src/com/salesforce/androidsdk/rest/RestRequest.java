@@ -124,6 +124,11 @@ public class RestRequest {
         HTTP_DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
     }
 
+	/**
+	 * Salesforce timestamp format.
+	 */
+	public static final DateFormat ISO8601_DATE_FORMAT = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.US);
+
     /**
 	 * Enumeration for all HTTP methods.
 	 */
@@ -172,7 +177,6 @@ public class RestRequest {
 		}
 	}
 
-	private static final DateFormat ISO8601_DATE_FORMAT = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.US);
 	private final RestMethod method;
 	private final RestEndpoint endpoint;
 	private final String path;
