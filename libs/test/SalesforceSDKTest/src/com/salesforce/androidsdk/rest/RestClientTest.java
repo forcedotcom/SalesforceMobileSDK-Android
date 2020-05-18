@@ -983,6 +983,38 @@ public class RestClientTest {
         Assert.assertEquals("Contact id not returned by query", otherContactId, otherQueryRecords.getJSONObject(0).getString("Id"));
     }
 
+    @Test
+    public void testGetNotificationsStatus() throws Exception {
+        // TODO move notification tests to TestCredentials.API_VERSION when it's >= 49
+        RestRequest request = RestRequest.getRequestForNotificationsStatus("v49.0");
+        RestResponse response = restClient.sendSync(request);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
+        checkKeys(response.asJSONObject(), "lastActivity", "oldestUnread", "oldestUnseen", "unreadCount", "unseenCount");
+    }
+
+    @Test
+    public void testGetNotifications() throws Exception {
+        Date yesterday =  new Date(new Date().getTime() - 24*60*60*1000);
+        RestRequest request = RestRequest.getRequestForNotifications("v49.0", 10, null, yesterday);
+        RestResponse response = restClient.sendSync(request);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
+        checkKeys(response.asJSONObject(), "notifications");
+    }
+
+    @Test
+    public void testUpdateReadNotifications() throws Exception {
+        RestRequest request = RestRequest.getRequestForNotificationsUpdate("v49.0", null, new Date(), true, null);
+        RestResponse response = restClient.sendSync(request);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
+    }
+
+    @Test
+    public void testUpdateSeenNotifications() throws Exception {
+        RestRequest request = RestRequest.getRequestForNotificationsUpdate("v49.0", null, new Date(), null, true);
+        RestResponse response = restClient.sendSync(request);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
+    }
+
     //
     // Helper methods
     //

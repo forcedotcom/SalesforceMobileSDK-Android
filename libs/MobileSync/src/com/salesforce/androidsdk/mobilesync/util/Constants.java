@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.mobilesync.util;
 
+import com.salesforce.androidsdk.rest.RestRequest;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
@@ -81,7 +83,7 @@ public class Constants {
     /**
      * Salesforce timestamp format.
      */
-    public static final DateFormat TIMESTAMP_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.US);
+    public static final DateFormat TIMESTAMP_FORMAT = RestRequest.ISO8601_DATE_FORMAT;
 
     /**
      * Enum for available data fetch modes.
