@@ -44,7 +44,6 @@ import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -984,17 +983,15 @@ public class RestClientTest {
         Assert.assertEquals("Contact id not returned by query", otherContactId, otherQueryRecords.getJSONObject(0).getString("Id"));
     }
 
-    // TODO Reenable tests when v49.0 is available on test org
-    // TODO move to TestCredentials.API_VERSION when it's >= 49
-    @Ignore
     @Test
     public void testGetNotificationsStatus() throws Exception {
+        // TODO move notification tests to TestCredentials.API_VERSION when it's >= 49
         RestRequest request = RestRequest.getRequestForNotificationsStatus("v49.0");
         RestResponse response = restClient.sendSync(request);
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
         checkKeys(response.asJSONObject(), "lastActivity", "oldestUnread", "oldestUnseen", "unreadCount", "unseenCount");
     }
-    @Ignore
+
     @Test
     public void testGetNotifications() throws Exception {
         Date yesterday =  new Date(new Date().getTime() - 24*60*60*1000);
@@ -1004,7 +1001,6 @@ public class RestClientTest {
         checkKeys(response.asJSONObject(), "notifications");
     }
 
-    @Ignore
     @Test
     public void testUpdateReadNotifications() throws Exception {
         RestRequest request = RestRequest.getRequestForNotificationsUpdate("v49.0", null, new Date(), true, null);
@@ -1012,7 +1008,6 @@ public class RestClientTest {
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
     }
 
-    @Ignore
     @Test
     public void testUpdateSeenNotifications() throws Exception {
         RestRequest request = RestRequest.getRequestForNotificationsUpdate("v49.0", null, new Date(), null, true);
