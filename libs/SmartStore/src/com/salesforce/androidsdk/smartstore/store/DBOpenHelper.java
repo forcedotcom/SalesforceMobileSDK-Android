@@ -68,7 +68,6 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	private static final String DB_NAME_SUFFIX = ".db";
 	private static final String ORG_KEY_PREFIX = "00D";
 	private static final String EXTERNAL_BLOBS_SUFFIX = "_external_soup_blobs/";
-	private static final String UTF8 = "UTF-8";
 	public static final String DATABASES = "databases";
 	private static String dataDir;
 	private String dbName;
@@ -76,7 +75,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	/*
 	 * Cache for the helper instances
 	 */
-	private static Map<String, DBOpenHelper> openHelpers = new HashMap<String, DBOpenHelper>();
+	private static Map<String, DBOpenHelper> openHelpers = new HashMap<>();
 
 	/**
 	 * Returns a map of all DBOpenHelper instances created. The key is the
@@ -148,7 +147,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 */
 	public static DBOpenHelper getOpenHelper(Context ctx, String dbNamePrefix,
 			UserAccount account, String communityId) {
-		final StringBuffer dbName = new StringBuffer(dbNamePrefix);
+		final StringBuilder dbName = new StringBuilder(dbNamePrefix);
 
 		// If we have account information, we will use it to create a database suffix for the user.
 		if (account != null) {
@@ -165,13 +164,13 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 			String key = "numGlobalStores";
 			String eventName = "globalSmartStoreInit";
 			if (account == null) {
-				numDbs = getGlobalDatabasePrefixList(ctx, account, communityId);
+				numDbs = getGlobalDatabasePrefixList(ctx, null, communityId);
 			} else {
 				key = "numUserStores";
 				eventName = "userSmartStoreInit";
 				numDbs = getUserDatabasePrefixList(ctx, account, communityId);
 			}
-			int numStores = (numDbs == null) ? 0 : numDbs.size();
+			int numStores = numDbs.size();
 			final JSONObject storeAttributes = new JSONObject();
 			try {
 				storeAttributes.put(key, numStores);
