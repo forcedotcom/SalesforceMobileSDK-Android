@@ -26,13 +26,11 @@
  */
 package com.salesforce.androidsdk.smartstore.app;
 
-import static com.salesforce.androidsdk.smartstore.store.KeyValueEncryptedFileStore.KEY_VALUE_STORES;
-
 import android.app.Activity;
 import android.content.Context;
 import android.text.TextUtils;
+
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.R;
 import com.salesforce.androidsdk.smartstore.config.StoreConfig;
@@ -45,11 +43,15 @@ import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.ManagedFilesHelper;
+
+import net.sqlcipher.database.SQLiteOpenHelper;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
-import net.sqlcipher.database.SQLiteOpenHelper;
+
+import static com.salesforce.androidsdk.smartstore.store.KeyValueEncryptedFileStore.KEY_VALUE_STORES;
 
 /**
  * SDK Manager for all native applications that use SmartStore
@@ -465,7 +467,6 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      */
     public KeyValueEncryptedFileStore getKeyValueStore(String storeName, UserAccount account, String communityId) {
         String suffix = account.getCommunityLevelFilenameSuffix(communityId);
-
         return new KeyValueEncryptedFileStore(
             getAppContext(),
             storeName + suffix,
@@ -554,10 +555,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @param account user account
      */
     public void removeAllKeyValueStores(UserAccount account) {
-        if (account == null) {
-            return;
-
-        } else {
+        if (account != null) {
             ManagedFilesHelper.deleteFiles(ManagedFilesHelper
                 .getFiles(getAppContext(), KEY_VALUE_STORES,
                     account.getUserLevelFilenameSuffix(), "", null));
