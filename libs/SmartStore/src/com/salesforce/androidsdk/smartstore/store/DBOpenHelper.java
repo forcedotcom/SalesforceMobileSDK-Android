@@ -555,7 +555,17 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 									json.append(line).append('\n');
 								}
 								br.close();
-								result = Encryptor.legacyDecrypt(json.toString(), oldKey);
+
+								/*
+								 * If the key length is 24, then it's the old key (16 bytes for the
+								 * key and 8 bytes for the IV. If the key length is 44, then it's the
+								 * new key (32 bytes for the key and 12 bytes for the IV).
+								 */
+								if (oldKey.getBytes().length == 24) {
+									result = Encryptor.legacyDecrypt(json.toString(), oldKey);
+								} else {
+									result = Encryptor.decrypt(json.toString(), oldKey);
+								}
 								blob.delete();
 								final FileOutputStream outputStream = new FileOutputStream(blob, false);
 								outputStream.write(Encryptor.encrypt(result, newKey).getBytes());
