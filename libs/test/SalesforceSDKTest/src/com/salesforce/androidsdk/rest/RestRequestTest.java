@@ -531,6 +531,35 @@ public class RestRequestTest {
         JSONTestHelper.assertSameJSON("Wrong request entity", expectedBodyJson, actualBodyJson);
     }
 
+    @Test
+    public void testGetNotificationRequest() throws Exception {
+        String notificationId = "testID";
+        RestRequest request = RestRequest.getRequestForNotification(TEST_API_VERSION, notificationId);
+        Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/connect/notifications/" + notificationId, request.getPath());
+    }
+
+    @Test
+    public void testUpdateNotificationRequest() throws Exception {
+        String notificationId = "testID";
+        RestRequest request = RestRequest.getRequestForNotificationUpdate(TEST_API_VERSION, notificationId, true, null);
+        Assert.assertEquals("Wrong method", RestMethod.PATCH, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/connect/notifications/" + notificationId, request.getPath());
+    }
+
+    @Test
+    public void testUpdateNotificationsRequest() throws Exception {
+        List<String> notificationIds = Arrays.asList("testID1", "testID2");
+        RestRequest request =  RestRequest.getRequestForNotificationsUpdate(TEST_API_VERSION, notificationIds, null, true, null);
+        Assert.assertEquals("Wrong method", RestMethod.PATCH, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/connect/notifications/", request.getPath());
+        JSONObject expectedBodyJson = new JSONObject();
+        expectedBodyJson.put("notificationIds", new JSONArray(notificationIds));
+        expectedBodyJson.put("read", true);
+        JSONObject actualBodyJson = new JSONObject(bodyToString(request));
+        JSONTestHelper.assertSameJSON("Wrong request entity", expectedBodyJson, actualBodyJson);
+    }
+
     private static String bodyToString(final RestRequest request) throws IOException {
 		final Buffer buffer = new Buffer();
 		request.getRequestBody().writeTo(buffer);

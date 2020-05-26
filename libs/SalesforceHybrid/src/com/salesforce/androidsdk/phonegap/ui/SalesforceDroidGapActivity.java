@@ -225,7 +225,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
                 // Remote
                 else {
                     SalesforceHybridLogger.w(TAG, "onResumeNotLoggedIn - should not authenticate/remote start page - loading web app");
-                    loadRemoteStartPage(bootconfig.getUnauthenticatedStartPage(), false);
+                    loadRemoteStartPage(getUnauthenticatedStartPage(), false);
                 }
             }
         } catch (BootConfig.BootConfigException e) {
@@ -306,6 +306,15 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
      */
     public BootConfig getBootConfig() {
         return bootconfig;
+    }
+
+    /**
+     * Returns the unauthenticated start page from BootConfig.
+     *
+     * @return The unauthenticated start page
+     */
+    protected String getUnauthenticatedStartPage() {
+        return bootconfig.getUnauthenticatedStartPage();
     }
 
     /**
