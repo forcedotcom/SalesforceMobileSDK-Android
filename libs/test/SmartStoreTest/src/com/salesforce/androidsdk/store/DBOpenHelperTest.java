@@ -29,6 +29,10 @@ package com.salesforce.androidsdk.store;
 import android.content.Context;
 import android.os.Bundle;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
+
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
@@ -47,10 +51,6 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.util.Map;
 import java.util.Set;
-
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.SmallTest;
-import androidx.test.platform.app.InstrumentationRegistry;
 
 /**
  * Tests for obtaining and deleting databases via the DBOpenHelper.
@@ -351,26 +351,27 @@ public class DBOpenHelperTest {
 	 */
     @Test
 	public void testGetSizeOfDir() throws JSONException {
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
-		String contents = "{size:9}";
-		String encryptedContents = Encryptor.hash(contents, PASSCODE);
+		final DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
+		final String contents = "{size:9}";
+		final String encryptedContents = Encryptor.encrypt(contents, PASSCODE);
 
-		// Create first subdirectory
+		// Create first subdirectory.
 		helper.createExternalBlobsDirectory(TEST_SOUP);
 		long soupEntryId = 0;
 		for (int i = 0; i < 100; i++) {
 			helper.saveSoupBlob(TEST_SOUP, soupEntryId++, new JSONObject(contents), PASSCODE);
 		}
 
-		// Create second subdirectory
+		// Create second subdirectory.
 		helper.createExternalBlobsDirectory(TEST_SOUP_2);
 		soupEntryId = 0;
 		for (int i = 0; i < 100; i++) {
 			helper.saveSoupBlob(TEST_SOUP_2, soupEntryId++, new JSONObject(contents), PASSCODE);
 		}
 
-		// Total size of all files should be 2 (since two subdirs) * 100 (since 100 files each) * filesize of each file after encryption
-        Assert.assertEquals("Total file sizes of both subdirectories is not correct.", 2 * 100 * (encryptedContents.length() + 1), helper.getSizeOfDir(null));
+		// Total size of all files should be 2 (since two subdirs) * 100 (since 100 files each) * filesize of each file after encryption.
+        Assert.assertEquals("Total file sizes of both subdirectories is not correct.",
+				2 * 100 * (encryptedContents.length() + 1), helper.getSizeOfDir(null));
 	}
 
 	/**
