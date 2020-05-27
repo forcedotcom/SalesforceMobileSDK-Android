@@ -29,8 +29,14 @@ package com.salesforce.androidsdk.app;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
+import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
+
+import java.util.List;
 
 /**
  * This class handles upgrades from one version to another.
@@ -88,6 +94,9 @@ public class SalesforceSDKUpgradeManager {
             if (installedVerDouble < 7.1) {
                 upgradeTo7Dot1();
             }
+            if (installedVerDouble < 8.2) {
+                upgradeTo8Dot2();
+            }
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Failed to parse installed version.");
         }
@@ -126,5 +135,27 @@ public class SalesforceSDKUpgradeManager {
 
     private void upgradeTo7Dot1() {
         SalesforceKeyGenerator.upgradeTo7Dot1();
+    }
+
+    private void upgradeTo8Dot2() {
+        ClientManager.upgradeTo8Dot2();
+        migrateAnalyticsData();
+    }
+
+    private void migrateAnalyticsData() {
+        final List<UserAccount> userAccounts = UserAccountManager.getInstance().getAuthenticatedUsers();
+
+        // Migrating an unauthenticated user's analytics data.
+        SalesforceAnalyticsManager.upgradeTo8Dot2(null, SalesforceSDKManager.getInstance().getAppContext());
+
+        // Migrating each individual user's analytics data.
+        if (userAccounts != null) {
+            for (final UserAccount userAccount : userAccounts) {
+                if (userAccount != null) {
+                    SalesforceAnalyticsManager.upgradeTo8Dot2(userAccount,
+                            SalesforceSDKManager.getInstance().getAppContext());
+                }
+            }
+        }
     }
 }

@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.mobilesync.app;
 
 import com.salesforce.androidsdk.mobilesync.manager.LayoutSyncManager;
+import com.salesforce.androidsdk.mobilesync.manager.MetadataSyncManager;
 import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreUpgradeManager;
 
@@ -67,7 +68,7 @@ public class MobileSyncUpgradeManager extends SmartStoreUpgradeManager {
      * Upgrades mobile sync data from existing client version to the current version.
      */
     protected synchronized void upgradeSObject() {
-        String installedVersion = getInstalledSobjectVersion();
+        final String installedVersion = getInstalledSobjectVersion();
         if (installedVersion.equals(MobileSyncSDKManager.SDK_VERSION)) {
             return;
         }
@@ -96,11 +97,10 @@ public class MobileSyncUpgradeManager extends SmartStoreUpgradeManager {
         return getInstalledVersion(MOBILE_SYNC_KEY);
     }
 
-    /*
-     * TODO: Remove this in Mobile SDK 9.0.
-     */
     private void upgradeTo8Dot2() {
         LayoutSyncManager.getInstance().getSmartStore().dropSoup("sfdcLayouts");
         LayoutSyncManager.reset();
+        MetadataSyncManager.getInstance().getSmartStore().dropSoup("sfdcMetadata");
+        MetadataSyncManager.reset();
     }
 }

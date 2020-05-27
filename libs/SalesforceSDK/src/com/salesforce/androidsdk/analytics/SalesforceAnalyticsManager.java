@@ -384,6 +384,34 @@ public class SalesforceAnalyticsManager {
     }
 
     /**
+     * One time upgrade steps from older versions to Mobile SDK 8.2. Only for internal use!
+     *
+     * @param account User account.
+     * @param context Context.
+     * @deprecated Will be removed in Mobile SDK 10.0.
+     */
+    public static synchronized void upgradeTo8Dot2(UserAccount account, Context context) {
+        final String filenameSuffix = (account != null) ? account.getCommunityLevelFilenameSuffix()
+                : UNAUTH_INSTANCE_KEY;
+        final SalesforceAnalyticsManager sfAnalyticsManager = new SalesforceAnalyticsManager(account);
+        sfAnalyticsManager.enableLogging(false);
+        final AnalyticsManager newAnalyticsManager = sfAnalyticsManager.analyticsManager;
+        final EventStoreManager newEventStoreManager = newAnalyticsManager.getEventStoreManager();
+        final AnalyticsManager oldAnalyticsManager = new AnalyticsManager(filenameSuffix, context,
+                SalesforceSDKManager.getLegacyEncryptionKey(), getDeviceAppAttributes());
+        final EventStoreManager oldEventStoreManager = oldAnalyticsManager.getEventStoreManager();
+        sfAnalyticsManager.analyticsManager = oldAnalyticsManager;
+        sfAnalyticsManager.eventStoreManager = oldEventStoreManager;
+        sfAnalyticsManager.enableLogging(false);
+        final List<InstrumentationEvent> events = oldEventStoreManager.fetchAllEvents();
+        oldEventStoreManager.deleteAllEvents();
+        sfAnalyticsManager.analyticsManager = newAnalyticsManager;
+        sfAnalyticsManager.eventStoreManager = newEventStoreManager;
+        sfAnalyticsManager.enableLogging(true);
+        newEventStoreManager.storeEvents(events);
+    }
+
+    /**
      * Returns the device app attributes associated with this device.
      *
      * @return Device app attributes.
