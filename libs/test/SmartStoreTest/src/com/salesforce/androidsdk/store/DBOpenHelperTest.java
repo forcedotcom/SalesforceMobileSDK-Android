@@ -378,7 +378,7 @@ public class DBOpenHelperTest {
 	 * Test size of entire blobs directory if it doesnt exist
 	 */
     @Test
-	public void testGetSizeOfDirDoesntExist() throws JSONException {
+	public void testGetSizeOfDirDoesntExist() {
 		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
 		DBOpenHelper.deleteDatabase(targetContext, TEST_DB, null, null);
 

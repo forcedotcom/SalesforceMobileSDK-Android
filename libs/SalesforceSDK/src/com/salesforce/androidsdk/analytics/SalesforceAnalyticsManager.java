@@ -396,7 +396,7 @@ public class SalesforceAnalyticsManager {
         final AnalyticsManager oldAnalyticsManager = new AnalyticsManager(filenameSuffix, context,
                 SalesforceSDKManager.getLegacyEncryptionKey(), getDeviceAppAttributes());
         final AnalyticsManager newAnalyticsManager = new AnalyticsManager(filenameSuffix, context,
-                SalesforceSDKManager.getLegacyEncryptionKey(), getDeviceAppAttributes());
+                SalesforceSDKManager.getEncryptionKey(), getDeviceAppAttributes());
         final EventStoreManager oldEventStoreManager = oldAnalyticsManager.getEventStoreManager();
         oldEventStoreManager.enableOneTimeMigration();
         final EventStoreManager newEventStoreManager = newAnalyticsManager.getEventStoreManager();
