@@ -402,6 +402,7 @@ public class SalesforceAnalyticsManager {
         final EventStoreManager oldEventStoreManager = oldAnalyticsManager.getEventStoreManager();
         sfAnalyticsManager.analyticsManager = oldAnalyticsManager;
         sfAnalyticsManager.eventStoreManager = oldEventStoreManager;
+        sfAnalyticsManager.enableLogging(false);
         final List<InstrumentationEvent> events = oldEventStoreManager.fetchAllEvents();
         oldEventStoreManager.deleteAllEvents();
         sfAnalyticsManager.analyticsManager = newAnalyticsManager;
