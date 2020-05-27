@@ -393,17 +393,18 @@ public class SalesforceAnalyticsManager {
     public static synchronized void upgradeTo8Dot2(UserAccount account, Context context) {
         final String filenameSuffix = (account != null) ? account.getCommunityLevelFilenameSuffix()
                 : UNAUTH_INSTANCE_KEY;
-        final AnalyticsManager oldAnalyticsManager = new AnalyticsManager(filenameSuffix, context,
+        final SalesforceAnalyticsManager oldAnalyticsManager = new SalesforceAnalyticsManager(account);
+        oldAnalyticsManager.analyticsManager = new AnalyticsManager(filenameSuffix, context,
                 SalesforceSDKManager.getLegacyEncryptionKey(), getDeviceAppAttributes());
-        final AnalyticsManager newAnalyticsManager = new AnalyticsManager(filenameSuffix, context,
-                SalesforceSDKManager.getEncryptionKey(), getDeviceAppAttributes());
-        final EventStoreManager oldEventStoreManager = oldAnalyticsManager.getEventStoreManager();
-        oldEventStoreManager.enableOneTimeMigration();
-        final EventStoreManager newEventStoreManager = newAnalyticsManager.getEventStoreManager();
+        oldAnalyticsManager.enableLogging(false);
+        final SalesforceAnalyticsManager newAnalyticsManager = new SalesforceAnalyticsManager(account);
+        final EventStoreManager oldEventStoreManager = oldAnalyticsManager.analyticsManager.getEventStoreManager();
+        final EventStoreManager newEventStoreManager = newAnalyticsManager.analyticsManager.getEventStoreManager();
 
         // Reads analytics data using the old key, clears the store, and writes it back with the new key.
         final List<InstrumentationEvent> events = oldEventStoreManager.fetchAllEvents();
         oldEventStoreManager.deleteAllEvents();
+        newAnalyticsManager.enableLogging(true);
         newEventStoreManager.storeEvents(events);
     }
 
