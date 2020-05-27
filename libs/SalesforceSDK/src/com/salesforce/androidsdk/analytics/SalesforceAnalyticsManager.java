@@ -393,18 +393,20 @@ public class SalesforceAnalyticsManager {
     public static synchronized void upgradeTo8Dot2(UserAccount account, Context context) {
         final String filenameSuffix = (account != null) ? account.getCommunityLevelFilenameSuffix()
                 : UNAUTH_INSTANCE_KEY;
-        final SalesforceAnalyticsManager oldAnalyticsManager = new SalesforceAnalyticsManager(account);
-        oldAnalyticsManager.analyticsManager = new AnalyticsManager(filenameSuffix, context,
+        final SalesforceAnalyticsManager sfAnalyticsManager = new SalesforceAnalyticsManager(account);
+        sfAnalyticsManager.enableLogging(false);
+        final AnalyticsManager newAnalyticsManager = sfAnalyticsManager.analyticsManager;
+        final EventStoreManager newEventStoreManager = newAnalyticsManager.getEventStoreManager();
+        final AnalyticsManager oldAnalyticsManager = new AnalyticsManager(filenameSuffix, context,
                 SalesforceSDKManager.getLegacyEncryptionKey(), getDeviceAppAttributes());
-        oldAnalyticsManager.enableLogging(false);
-        final SalesforceAnalyticsManager newAnalyticsManager = new SalesforceAnalyticsManager(account);
-        final EventStoreManager oldEventStoreManager = oldAnalyticsManager.analyticsManager.getEventStoreManager();
-        final EventStoreManager newEventStoreManager = newAnalyticsManager.analyticsManager.getEventStoreManager();
-
-        // Reads analytics data using the old key, clears the store, and writes it back with the new key.
+        final EventStoreManager oldEventStoreManager = oldAnalyticsManager.getEventStoreManager();
+        sfAnalyticsManager.analyticsManager = oldAnalyticsManager;
+        sfAnalyticsManager.eventStoreManager = oldEventStoreManager;
         final List<InstrumentationEvent> events = oldEventStoreManager.fetchAllEvents();
         oldEventStoreManager.deleteAllEvents();
-        newAnalyticsManager.enableLogging(true);
+        sfAnalyticsManager.analyticsManager = newAnalyticsManager;
+        sfAnalyticsManager.eventStoreManager = newEventStoreManager;
+        sfAnalyticsManager.enableLogging(true);
         newEventStoreManager.storeEvents(events);
     }
 
