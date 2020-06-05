@@ -9,9 +9,9 @@
         "chai": "4.1.2",
         "eslint": "^5.0.0",
         "acorn": "^6.0.0",
-        "@react-native-community/cli": "^2.6.0",
+        "@react-native-community/cli": "^3.0.0",
         "react": "16.9.0",
-        "react-native": "0.61.3",
+        "react-native": "0.62.0",
         "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#v8.1.0"
     },
     "devDependencies": {
