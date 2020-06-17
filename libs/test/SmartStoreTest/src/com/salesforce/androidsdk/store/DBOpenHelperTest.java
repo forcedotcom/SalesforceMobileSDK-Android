@@ -371,7 +371,7 @@ public class DBOpenHelperTest {
 
 		// Total size of all files should be 2 (since two subdirs) * 100 (since 100 files each) * filesize of each file after encryption.
         Assert.assertEquals("Total file sizes of both subdirectories is not correct.",
-				2 * 100 * (encryptedContents.length() + 1), helper.getSizeOfDir(null));
+				2 * 100 * (encryptedContents.length() + 4), helper.getSizeOfDir(null));
 	}
 
 	/**
