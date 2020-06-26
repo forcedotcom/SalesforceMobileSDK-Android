@@ -985,8 +985,7 @@ public class RestClientTest {
 
     @Test
     public void testGetNotificationsStatus() throws Exception {
-        // TODO move notification tests to TestCredentials.API_VERSION when it's >= 49
-        RestRequest request = RestRequest.getRequestForNotificationsStatus("v49.0");
+        RestRequest request = RestRequest.getRequestForNotificationsStatus(TestCredentials.API_VERSION);
         RestResponse response = restClient.sendSync(request);
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
         checkKeys(response.asJSONObject(), "lastActivity", "oldestUnread", "oldestUnseen", "unreadCount", "unseenCount");
@@ -995,7 +994,7 @@ public class RestClientTest {
     @Test
     public void testGetNotifications() throws Exception {
         Date yesterday =  new Date(new Date().getTime() - 24*60*60*1000);
-        RestRequest request = RestRequest.getRequestForNotifications("v49.0", 10, null, yesterday);
+        RestRequest request = RestRequest.getRequestForNotifications(TestCredentials.API_VERSION, 10, null, yesterday);
         RestResponse response = restClient.sendSync(request);
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
         checkKeys(response.asJSONObject(), "notifications");
@@ -1003,14 +1002,14 @@ public class RestClientTest {
 
     @Test
     public void testUpdateReadNotifications() throws Exception {
-        RestRequest request = RestRequest.getRequestForNotificationsUpdate("v49.0", null, new Date(), true, null);
+        RestRequest request = RestRequest.getRequestForNotificationsUpdate(TestCredentials.API_VERSION, null, new Date(), true, null);
         RestResponse response = restClient.sendSync(request);
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
     }
 
     @Test
     public void testUpdateSeenNotifications() throws Exception {
-        RestRequest request = RestRequest.getRequestForNotificationsUpdate("v49.0", null, new Date(), null, true);
+        RestRequest request = RestRequest.getRequestForNotificationsUpdate(TestCredentials.API_VERSION, null, new Date(), null, true);
         RestResponse response = restClient.sendSync(request);
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
     }
