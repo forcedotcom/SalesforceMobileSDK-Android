@@ -238,9 +238,6 @@ public class EventStoreManager {
     }
 
     private String decrypt(String data) {
-        if (encryptionKey.getBytes().length == 24) {
-            return Encryptor.legacyDecrypt(data, encryptionKey);
-        }
         return Encryptor.decrypt(data, encryptionKey);
     }
 }
