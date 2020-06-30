@@ -33,6 +33,7 @@ import com.salesforce.androidsdk.mobilesync.model.Layout;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -130,7 +131,7 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
      * Test for fetching layout in CACHE_ONLY mode.
      */
     @Test
-    public void testFetchLayoutInCacheOnlyMode() {
+    public void testFetchLayoutInCacheOnlyMode() throws Exception {
         layoutSyncManager.fetchLayout(Constants.ACCOUNT, Constants.FORM_FACTOR_MEDIUM,
                 Constants.LAYOUT_TYPE_COMPACT, Constants.MODE_EDIT, null,
                 Constants.Mode.SERVER_FIRST, layoutSyncCallbackQueue);
@@ -146,7 +147,7 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
      * Test for fetching layout in CACHE_FIRST mode with a hydrated cache.
      */
     @Test
-    public void testFetchLayoutInCacheFirstModeWithCacheData() {
+    public void testFetchLayoutInCacheFirstModeWithCacheData() throws Exception {
         layoutSyncManager.fetchLayout(Constants.ACCOUNT, Constants.FORM_FACTOR_MEDIUM,
                 Constants.LAYOUT_TYPE_COMPACT, Constants.MODE_EDIT, null,
                 Constants.Mode.SERVER_FIRST, layoutSyncCallbackQueue);
@@ -162,7 +163,7 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
      * Test for fetching layout in CACHE_FIRST mode with an empty cache.
      */
     @Test
-    public void testFetchLayoutInCacheFirstModeWithoutCacheData() {
+    public void testFetchLayoutInCacheFirstModeWithoutCacheData() throws Exception  {
         layoutSyncManager.fetchLayout(Constants.ACCOUNT, Constants.FORM_FACTOR_MEDIUM,
                 Constants.LAYOUT_TYPE_COMPACT, Constants.MODE_EDIT, null,
                 Constants.Mode.CACHE_FIRST, layoutSyncCallbackQueue);
@@ -173,7 +174,7 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
      * Test for fetching layout in SERVER_FIRST mode.
      */
     @Test
-    public void testFetchLayoutInServerFirstMode() {
+    public void testFetchLayoutInServerFirstMode() throws Exception {
         layoutSyncManager.fetchLayout(Constants.ACCOUNT, Constants.FORM_FACTOR_MEDIUM,
                 Constants.LAYOUT_TYPE_COMPACT, Constants.MODE_EDIT, null,
                 Constants.Mode.SERVER_FIRST, layoutSyncCallbackQueue);
@@ -184,7 +185,7 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
      * Test for fetching layout multiple times and ensuring only 1 row is created.
      */
     @Test
-    public void testFetchLayoutMultipleTimes() {
+    public void testFetchLayoutMultipleTimes() throws Exception {
         layoutSyncManager.fetchLayout(Constants.ACCOUNT, Constants.FORM_FACTOR_MEDIUM,
                 Constants.LAYOUT_TYPE_COMPACT, Constants.MODE_EDIT, null,
                 Constants.Mode.SERVER_FIRST, layoutSyncCallbackQueue);
@@ -200,7 +201,7 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
         Assert.assertEquals("Number of rows should be 1", 1, numRows);
     }
 
-    private void validateResult(LayoutSyncCallbackQueue.Result result) {
+    private void validateResult(LayoutSyncCallbackQueue.Result result) throws Exception {
         final String objectAPIName = result.objectAPIName;
         final Layout layout = result.layout;
         Assert.assertEquals("Object types should match", Constants.ACCOUNT, objectAPIName);
@@ -220,5 +221,9 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
                 layout.getSections().get(0).getLayoutRows().get(0).getLayoutItems());
         Assert.assertTrue("Number of layout items for a row should be 1 or more",
                 layout.getSections().get(0).getLayoutRows().get(0).getLayoutItems().size() > 0);
+        Assert.assertTrue("Number of layout components for an item should be 1 or more",
+                layout.getSections().get(0).getLayoutRows().get(0).getLayoutItems().get(0).getLayoutComponents().length() > 0);
+        Assert.assertTrue("Number of layout component fields should be 2 or more",
+                layout.getSections().get(0).getLayoutRows().get(0).getLayoutItems().get(0).getLayoutComponents().getJSONObject(0).length() > 1);
     }
 }
