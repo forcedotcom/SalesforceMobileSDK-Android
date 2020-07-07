@@ -248,31 +248,9 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
      * @param e Exception.
      */
     protected void onAuthFlowError(String error, String errorDesc, Exception e) {
-        SalesforceSDKLogger.w(TAG, error + ": " + errorDesc, e);
+        SalesforceSDKLogger.e(TAG, error + ": " + errorDesc, e);
 
-        // look for deny. kick them back to login, so clear cookies and repoint browser
-        if ("access_denied".equals(error)
-                && "end-user denied authorization".equals(errorDesc)) {
-            webview.post(new Runnable() {
-
-                @Override
-                public void run() {
-                    clearCookies();
-                    loadLoginPage();
-                }
-            });
-        } else {
-            Toast t = Toast.makeText(webview.getContext(), error + " : " + errorDesc,
-                    Toast.LENGTH_LONG);
-            webview.postDelayed(new Runnable() {
-
-                @Override
-                public void run() {
-                    callback.finish(null);
-                }
-            }, t.getDuration());
-            t.show();
-        }
+        // Broadcast a notification that the auth flow failed.
         final Intent intent = new Intent(AUTHENTICATION_FAILED_INTENT);
         if (e instanceof OAuth2.OAuthFailedException) {
             final OAuth2.OAuthFailedException exception = (OAuth2.OAuthFailedException) e;
@@ -287,6 +265,19 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             }
         }
         SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
+
+        // Displays the error in a Toast and reloads the login page after clearing cookies.
+        final Toast t = Toast.makeText(webview.getContext(), error + " : " + errorDesc,
+                Toast.LENGTH_LONG);
+        webview.postDelayed(new Runnable() {
+
+            @Override
+            public void run() {
+                clearCookies();
+                loadLoginPage();
+            }
+        }, t.getDuration());
+        t.show();
     }
 
     protected void showError(Exception exception) {
