@@ -230,6 +230,20 @@ public class RestResponse {
 		}
 	}
 
+	/**
+	 * Method to get the "raw" response (i.e. the underlying OkHttp3.Response object).
+	 * null is return if the response was already consumed.
+	 * It is the responsibility of the application to close the response after consuming it.
+	 * @return raw response as {@link Response}
+	 */
+	public Response getRawResponse() {
+		if (!consumed) {
+			return response;
+		} else {
+			return null;
+		}
+	}
+
 	@Override
 	public String toString() {
 		try {

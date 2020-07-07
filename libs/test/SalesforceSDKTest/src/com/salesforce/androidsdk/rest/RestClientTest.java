@@ -38,6 +38,7 @@ import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 import com.salesforce.androidsdk.util.test.TestCredentials;
 
+import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -314,6 +315,20 @@ public class RestClientTest {
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
     }
 
+
+    /**
+     * Testing RestResponse:getRawResponse
+     */
+    @Test
+    public void testGetRawResponse() throws Exception {
+        RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, null);
+        RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForVersions());
+        Response rawResponse = response.getRawResponse();
+        Assert.assertEquals(200, rawResponse.code());
+        Assert.assertEquals("application/json;charset=UTF-8", rawResponse.header("Content-Type"));
+        checkKeys(new JSONArray(rawResponse.body().string()).getJSONObject(0), "label", "url", "version");
+        rawResponse.close();
+    }
 
     /**
      * Testing a get versions call to the server - check response
