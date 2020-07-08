@@ -60,7 +60,8 @@ public class ForceJSTest extends JSTestCase {
                 "testFileShares",
                 "testAddFileShare",
                 "testDeleteFileShare",
-                "testRestEndpoint"
+                "testRestEndpoint",
+                "testRestEndpointError"
         });
     }
 
