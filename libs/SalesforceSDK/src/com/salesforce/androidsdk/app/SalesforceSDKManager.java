@@ -1371,7 +1371,7 @@ public class SalesforceSDKManager {
         public void onReceive(Context context, Intent intent) {
             if (intent != null
                     && SalesforceSDKManager.CLEANUP_INTENT_ACTION.equals(intent.getAction())
-                    && !intent.getStringExtra(PROCESS_ID_KEY).equals(PROCESS_ID)) {
+                    && !PROCESS_ID.equals(intent.getStringExtra(PROCESS_ID_KEY))) {
                 UserAccount userAccount = null;
                 if (intent.hasExtra(USER_ACCOUNT)) {
                     userAccount = new UserAccount(intent.getBundleExtra(USER_ACCOUNT));
