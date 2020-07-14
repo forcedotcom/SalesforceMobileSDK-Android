@@ -1039,7 +1039,7 @@ public class RestClientTest {
      */
     private RestResponse getStreamTestResponse() throws IOException {
         final RestResponse response = restClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
-        Assert.assertEquals("Response code should be HTTP OK", response.getStatusCode(), HttpURLConnection.HTTP_OK);
+        Assert.assertEquals("Response code should be HTTP OK", HttpURLConnection.HTTP_OK, response.getStatusCode());
         return response;
     }
 
