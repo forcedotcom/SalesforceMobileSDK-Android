@@ -30,7 +30,8 @@
         <activity android:name="com.salesforce.androidsdk.ui.LoginActivity"
             android:theme="@style/SalesforceSDK"
             android:launchMode="singleInstance"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
 
         <!-- Passcode activity -->
         <activity android:name="com.salesforce.androidsdk.ui.PasscodeActivity"
