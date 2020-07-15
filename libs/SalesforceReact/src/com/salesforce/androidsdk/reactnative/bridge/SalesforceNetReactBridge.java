@@ -110,12 +110,12 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
                         // Not a 2xx status
                         if (!response.isSuccess()) {
-                            JSONObject responseObject = new JSONObject();
-                            responseObject.put("allHeaders", new JSONObject(response.getAllHeaders()));
+                            final JSONObject responseObject = new JSONObject();
+                            responseObject.put("headers", new JSONObject(response.getAllHeaders()));
                             responseObject.put("statusCode", response.getStatusCode());
                             responseObject.put("body", response.asString());
 
-                            JSONObject errorObject = new JSONObject();
+                            final JSONObject errorObject = new JSONObject();
                             errorObject.put("response", responseObject);
                             errorCallback.invoke(errorObject.toString());
                         }
@@ -140,7 +140,7 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
                 @Override
                 public void onError(Exception exception) {
-                    JSONObject errorObject = new JSONObject();
+                    final JSONObject errorObject = new JSONObject();
                     try {
                         errorObject.put("error", exception.getMessage());
                     } catch (JSONException jsonException) {
@@ -150,7 +150,7 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
                 }
             });
         } catch (Exception exception) {
-            JSONObject errorObject = new JSONObject();
+            final JSONObject errorObject = new JSONObject();
             try {
                 errorObject.put("error", exception.getMessage());
             } catch (JSONException jsonException) {
