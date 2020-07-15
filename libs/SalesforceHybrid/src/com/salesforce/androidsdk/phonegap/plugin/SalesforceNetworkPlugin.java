@@ -125,9 +125,14 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                     try {
                         // Not a 2xx status
                         if (!response.isSuccess()) {
-                            JSONObject errorObj = new JSONObject();
-                            errorObj.putOpt("response", response.fullResponseAsJSONObject());
-                            callbackContext.error(errorObj.toString());
+                            JSONObject responseObject = new JSONObject();
+                            responseObject.put("allHeaders", new JSONObject(response.getAllHeaders()));
+                            responseObject.put("statusCode", response.getStatusCode());
+                            responseObject.put("body", response.asString());
+
+                            JSONObject errorObject = new JSONObject();
+                            errorObject.put("response", responseObject);
+                            callbackContext.error(errorObject.toString());
                         }
                         // Binary response
                         else if (returnBinary) {
@@ -167,13 +172,23 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
 
                 @Override
                 public void onError(Exception exception) {
-                    String jsonString = "{error: \"" + exception.getMessage() + "\"}";
-                    callbackContext.error(jsonString);
+                    JSONObject errorObject = new JSONObject();
+                    try {
+                        errorObject.put("error", exception.getMessage());
+                    } catch (JSONException jsonException) {
+                        SalesforceHybridLogger.e(TAG, "Error creating error object", jsonException);
+                    }
+                    callbackContext.error(errorObject.toString());
                 }
             });
         } catch (Exception exception) {
-            String jsonString = "{error: \"" + exception.getMessage() + "\"}";
-            callbackContext.error(jsonString);
+            JSONObject errorObject = new JSONObject();
+            try {
+                errorObject.put("error", exception.getMessage());
+            } catch (JSONException jsonException) {
+                SalesforceHybridLogger.e(TAG, "Error creating error object", jsonException);
+            }
+            callbackContext.error(errorObject.toString());
         }
     }
 

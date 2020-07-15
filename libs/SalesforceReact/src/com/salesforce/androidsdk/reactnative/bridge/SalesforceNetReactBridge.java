@@ -40,6 +40,7 @@ import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
@@ -109,9 +110,14 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
                         // Not a 2xx status
                         if (!response.isSuccess()) {
-                            JSONObject errorObj = new JSONObject();
-                            errorObj.putOpt("response", response.fullResponseAsJSONObject());
-                            errorCallback.invoke(errorObj.toString());
+                            JSONObject responseObject = new JSONObject();
+                            responseObject.put("allHeaders", new JSONObject(response.getAllHeaders()));
+                            responseObject.put("statusCode", response.getStatusCode());
+                            responseObject.put("body", response.asString());
+
+                            JSONObject errorObject = new JSONObject();
+                            errorObject.put("response", responseObject);
+                            errorCallback.invoke(errorObject.toString());
                         }
 
                         // Binary response
@@ -134,13 +140,23 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
                 @Override
                 public void onError(Exception exception) {
-                    String jsonString = "{error: \"" + exception.getMessage() + "\"}";
-                    errorCallback.invoke(jsonString);
+                    JSONObject errorObject = new JSONObject();
+                    try {
+                        errorObject.put("error", exception.getMessage());
+                    } catch (JSONException jsonException) {
+                        SalesforceReactLogger.e(TAG, "Error creating error object", jsonException);
+                    }
+                    errorCallback.invoke(errorObject.toString());
                 }
             });
         } catch (Exception exception) {
-            String jsonString = "{error: \"" + exception.getMessage() + "\"}";
-            errorCallback.invoke(jsonString);
+            JSONObject errorObject = new JSONObject();
+            try {
+                errorObject.put("error", exception.getMessage());
+            } catch (JSONException jsonException) {
+                SalesforceReactLogger.e(TAG, "Error creating error object", jsonException);
+            }
+            errorCallback.invoke(errorObject.toString());
         }
     }
 
