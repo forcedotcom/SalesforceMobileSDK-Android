@@ -109,7 +109,9 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
                         // Not a 2xx status
                         if (!response.isSuccess()) {
-                            errorCallback.invoke(response.asString());
+                            JSONObject errorObj = new JSONObject();
+                            errorObj.putOpt("response", response.fullResponseAsJSONObject());
+                            errorCallback.invoke(errorObj.toString());
                         }
 
                         // Binary response
@@ -132,11 +134,13 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
                 @Override
                 public void onError(Exception exception) {
-                    errorCallback.invoke(exception.getMessage());
+                    String jsonString = "{error: \"" + exception.getMessage() + "\"}";
+                    errorCallback.invoke(jsonString);
                 }
             });
         } catch (Exception exception) {
-            errorCallback.invoke(exception.getMessage());
+            String jsonString = "{error: \"" + exception.getMessage() + "\"}";
+            errorCallback.invoke(jsonString);
         }
     }
 

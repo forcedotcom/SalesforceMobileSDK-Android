@@ -63,6 +63,7 @@ public class RestResponse {
 	private String responseAsString;
 	private JSONObject responseAsJSONObject;
 	private JSONArray responseAsJSONArray;
+	private JSONObject fullResponseAsJSONObject;
 
 	/**
 	 * Constructor
@@ -187,6 +188,24 @@ public class RestResponse {
 			responseAsJSONObject = new JSONObject(asString());
 		}
 		return responseAsJSONObject;
+	}
+
+	/**
+	 * JSONObject including the response body, status code and headers.
+	 *
+	 * @return JSONObject for full response
+	 * @throws JSONException
+	 * @throws IOException
+	 */
+	public JSONObject fullResponseAsJSONObject() throws JSONException, IOException {
+		if (fullResponseAsJSONObject == null) {
+			JSONObject jsonObject = new JSONObject();
+			jsonObject.put("headers", new JSONObject(getAllHeaders()));
+			jsonObject.put("statusCode", getStatusCode());
+			jsonObject.put("body", asString());
+			fullResponseAsJSONObject = jsonObject;
+		}
+		return fullResponseAsJSONObject;
 	}
 
 	/**

@@ -125,7 +125,9 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                     try {
                         // Not a 2xx status
                         if (!response.isSuccess()) {
-                            callbackContext.error(response.asString());
+                            JSONObject errorObj = new JSONObject();
+                            errorObj.putOpt("response", response.fullResponseAsJSONObject());
+                            callbackContext.error(errorObj.toString());
                         }
                         // Binary response
                         else if (returnBinary) {
@@ -165,11 +167,13 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
 
                 @Override
                 public void onError(Exception exception) {
-                    callbackContext.error(exception.getMessage());
+                    String jsonString = "{error: \"" + exception.getMessage() + "\"}";
+                    callbackContext.error(jsonString);
                 }
             });
         } catch (Exception exception) {
-            callbackContext.error(exception.getMessage());
+            String jsonString = "{error: \"" + exception.getMessage() + "\"}";
+            callbackContext.error(jsonString);
         }
     }
 
