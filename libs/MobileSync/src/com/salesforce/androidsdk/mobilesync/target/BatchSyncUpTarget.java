@@ -120,6 +120,10 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
 
     @Override
     public void syncUpRecords(SyncManager syncManager, List<JSONObject> records, List<String> fieldlist, SyncState.MergeMode mergeMode, String syncSoupName) throws JSONException, IOException {
+        syncUpRecords(syncManager, records, fieldlist, mergeMode, syncSoupName, false);
+    }
+
+    private void syncUpRecords(SyncManager syncManager, List<JSONObject> records, List<String> fieldlist, SyncState.MergeMode mergeMode, String syncSoupName, boolean isReRun) throws JSONException, IOException {
 
         if (records.size() > getMaxBatchSize()) {
             throw new SyncManager.MobileSyncException(getClass().getSimpleName() + ":syncUpRecords can handle up to " + getMaxBatchSize() + " records");
@@ -159,13 +163,13 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
             String id = record.getString(getIdFieldName());
 
             if (isDirty(record)) {
-                needReRun = needReRun || updateRecordInLocalStore(syncManager, syncSoupName, record, mergeMode, refIdToServerId, refIdToResponses.get(id));
+                needReRun = needReRun || updateRecordInLocalStore(syncManager, syncSoupName, record, mergeMode, refIdToServerId, refIdToResponses.get(id), isReRun);
             }
         }
 
         // Re-run if required
-        if (needReRun) {
-            syncUpRecords(syncManager, records, fieldlist, mergeMode, syncSoupName);
+        if (needReRun && !isReRun) {
+            syncUpRecords(syncManager, records, fieldlist, mergeMode, syncSoupName, true);
         }
 
     }
@@ -222,7 +226,7 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
     }
 
 
-    protected boolean updateRecordInLocalStore(SyncManager syncManager, String soupName, JSONObject record, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, CompositeSubResponse response) throws JSONException, IOException {
+    protected boolean updateRecordInLocalStore(SyncManager syncManager, String soupName, JSONObject record, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, CompositeSubResponse response, boolean isReRun) throws JSONException, IOException {
 
         boolean needReRun = false;
         final Integer statusCode = response != null ? response.httpStatusCode : -1;
@@ -232,6 +236,7 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
             if (isLocallyCreated(record)  // we didn't go to the sever
                     || RestResponse.isSuccess(statusCode) // or we successfully deleted on the server
                     || statusCode == HttpURLConnection.HTTP_NOT_FOUND) // or the record was already deleted on the server
+
             {
                 deleteFromLocalStore(syncManager, soupName, record);
             }
@@ -251,13 +256,12 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
                 cleanAndSaveInLocalStore(syncManager, soupName, record);
             }
             // Handling remotely deleted records
-            else if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
-                // Record needs to be recreated
-                if (mergeMode == SyncState.MergeMode.OVERWRITE) {
-                    record.put(LOCAL, true);
-                    record.put(LOCALLY_CREATED, true);
-                    needReRun = true;
-                }
+            else if (statusCode == HttpURLConnection.HTTP_NOT_FOUND
+                    && mergeMode == SyncState.MergeMode.OVERWRITE // Record needs to be recreated
+                    && !isReRun) {
+                record.put(LOCAL, true);
+                record.put(LOCALLY_CREATED, true);
+                needReRun = true;
             }
             // Failure
             else {

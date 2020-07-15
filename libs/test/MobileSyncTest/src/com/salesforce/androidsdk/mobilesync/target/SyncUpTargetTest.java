@@ -198,6 +198,86 @@ public class SyncUpTargetTest extends SyncManagerTestCase {
     }
 
     /**
+     * Create a few records - some with no sobject type
+     * Sync up
+     * Make sure the records with no sobject type fail to sync and that last error reflects the problem
+     * @throws Exception
+     */
+    @Test
+    public void testSyncUpWithNoType() throws Exception {
+        trySyncUpBadTypeOrNoType(true);
+    }
+
+
+    /**
+     * Create a few records - some with invalid sobject type
+     * Sync up
+     * Make sure the records with invalid types fail to sync and that last error reflects the problem
+     * @throws Exception
+     */
+    @Test
+    public void testSyncUpWithBadType() throws Exception {
+        trySyncUpBadTypeOrNoType(false);
+    }
+
+    private void trySyncUpBadTypeOrNoType(final boolean noType) throws Exception {
+        // Create a few entries locally
+        String[] namesGoodRecords = new String[]{
+            createRecordName(Constants.ACCOUNT),
+            createRecordName(Constants.ACCOUNT),
+            createRecordName(Constants.ACCOUNT)
+        };
+        String[] namesBadRecords = new String[]{
+            createRecordName(Constants.ACCOUNT),
+            createRecordName(Constants.ACCOUNT)
+        };
+        Set<String> setNamesBadRecords = new HashSet<>(Arrays.asList(namesBadRecords));
+        createAccountsLocally(namesGoodRecords);
+        createAccountsLocally(namesBadRecords, new SyncManagerTestCase.Mutator() {
+            @Override
+            public JSONObject mutate(JSONObject record) throws JSONException {
+                if (noType) {
+                    record.remove(Constants.ATTRIBUTES);
+                } else {
+                    JSONObject attributes = new JSONObject();
+                    attributes.put(TYPE, "badType");
+                    record.put(Constants.ATTRIBUTES, attributes);
+                }
+                return record;
+            }
+        });
+
+        // Sync up
+        trySyncUp(5, SyncState.MergeMode.OVERWRITE);
+
+        // Check db for records with good names
+        Map<String, Map<String, Object>> idToFieldsGoodNames = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{Constants.NAME, Constants.DESCRIPTION}, Constants.NAME, namesGoodRecords);
+        checkDbStateFlags(idToFieldsGoodNames.keySet(), false, false, false, ACCOUNTS_SOUP);
+
+        // Check db for records with bad names
+        Map<String, Map<String, Object>> idToFieldsBadNames = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{Constants.NAME, Constants.DESCRIPTION, SyncTarget.LAST_ERROR}, Constants.NAME, namesBadRecords);
+        checkDbStateFlags(idToFieldsBadNames.keySet(), true, false, false, ACCOUNTS_SOUP);
+
+        Assert.assertEquals("Wrong number of bad records found", namesBadRecords.length, idToFieldsBadNames.size());
+        for (Map<String, Object> fields : idToFieldsBadNames.values()) {
+            String name = (String) fields.get(Constants.NAME);
+            String lastError = (String) fields.get(SyncTarget.LAST_ERROR);
+            if (setNamesBadRecords.contains(name)) {
+                Assert.assertTrue("Wrong error: " + lastError, lastError.contains("The requested resource does not exist"));
+            }
+            else {
+                Assert.fail("Unexpected record found: " + name);
+            }
+        }
+
+        // Check server for records with good names
+        checkServer(idToFieldsGoodNames, Constants.ACCOUNT);
+
+        // Adding to idToFields so that they get deleted in tearDown
+        idToFields.putAll(idToFieldsGoodNames);
+    }
+
+    /**
      * Sync down the test accounts, modify a few, sync up, check smartstore and server afterwards
      */
     @Test
