@@ -40,9 +40,12 @@ import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -109,7 +112,13 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
                         // Not a 2xx status
                         if (!response.isSuccess()) {
-                            errorCallback.invoke(response.asString());
+                            final JSONObject responseObject = new JSONObject();
+                            responseObject.put("headers", new JSONObject(response.getAllHeaders()));
+                            responseObject.put("statusCode", response.getStatusCode());
+                            responseObject.put("body", parsedResponse(response));
+                            final JSONObject errorObject = new JSONObject();
+                            errorObject.put("response", responseObject);
+                            errorCallback.invoke(errorObject.toString());
                         }
 
                         // Binary response
@@ -132,11 +141,60 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
                 @Override
                 public void onError(Exception exception) {
-                    errorCallback.invoke(exception.getMessage());
+                    final JSONObject errorObject = new JSONObject();
+                    try {
+                        errorObject.put("error", exception.getMessage());
+                    } catch (JSONException jsonException) {
+                        SalesforceReactLogger.e(TAG, "Error creating error object", jsonException);
+                    }
+                    errorCallback.invoke(errorObject.toString());
                 }
             });
         } catch (Exception exception) {
-            errorCallback.invoke(exception.getMessage());
+            final JSONObject errorObject = new JSONObject();
+            try {
+                errorObject.put("error", exception.getMessage());
+            } catch (JSONException jsonException) {
+                SalesforceReactLogger.e(TAG, "Error creating error object", jsonException);
+            }
+            errorCallback.invoke(errorObject.toString());
+        }
+    }
+
+    private Object parsedResponse(RestResponse response) throws IOException {
+        // Is it a JSONObject?
+        final JSONObject responseAsJSONObject = parseResponseAsJSONObject(response);
+        if (responseAsJSONObject != null) {
+            return responseAsJSONObject;
+        }
+
+        // Is it a JSONArray?
+        final JSONArray responseAsJSONArray = parseResponseAsJSONArray(response);
+        if (responseAsJSONArray != null) {
+            return responseAsJSONArray;
+        }
+
+        // Otherwise return as string
+        return response.asString();
+    }
+
+    private JSONObject parseResponseAsJSONObject(RestResponse response) throws IOException {
+        try {
+            return response.asJSONObject();
+        }
+        catch (JSONException e) {
+            // Not a JSON object
+            return null;
+        }
+    }
+
+    private JSONArray parseResponseAsJSONArray(RestResponse response) throws IOException {
+        try {
+            return response.asJSONArray();
+        }
+        catch (JSONException e) {
+            // Not a JSON array
+            return null;
         }
     }
 
