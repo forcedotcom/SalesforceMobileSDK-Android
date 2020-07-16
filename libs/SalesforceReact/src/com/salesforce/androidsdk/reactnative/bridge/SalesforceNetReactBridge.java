@@ -178,7 +178,6 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
         return response.asString();
     }
 
-
     private JSONObject parseResponseAsJSONObject(RestResponse response) throws IOException {
         try {
             return response.asJSONObject();
