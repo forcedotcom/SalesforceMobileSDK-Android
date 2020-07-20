@@ -168,7 +168,9 @@ public class LoginActivity extends AccountAuthenticatorActivity
         }
 
         // Reloads login page for every new intent to ensure the correct login server is selected.
-        webviewHelper.loadLoginPage();
+        if (webviewHelper.shouldReloadPage()) {
+            webviewHelper.loadLoginPage();
+        }
 
         // Launches IDP login flow directly for IDP initiated login flow.
         if (intent != null) {
@@ -201,10 +203,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
             return false;
         }
         final Uri uri = intent.getData();
-        if (uri == null) {
-            return false;
-        }
-        return true;
+        return (uri != null);
     }
 
     private void completeAuthFlow(Intent intent) {
@@ -238,8 +237,10 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	protected void onResume() {
 		super.onResume();
 		if (wasBackgrounded) {
-			webviewHelper.clearView();
-			webviewHelper.loadLoginPage();
+		    if (webviewHelper.shouldReloadPage()) {
+                webviewHelper.clearView();
+                webviewHelper.loadLoginPage();
+            }
 			wasBackgrounded = false;
 		}
 	}
@@ -276,15 +277,13 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		     * the back button should take the user back to the previous screen.
 		     */
 			final UserAccountManager accMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
+			wasBackgrounded = true;
 			if (accMgr.getAuthenticatedUsers() == null) {
-				wasBackgrounded = true;
 				moveTaskToBack(true);
-				return true;
 			} else {
-				wasBackgrounded = true;
 				finish();
-				return true;
 			}
+			return true;
 		}
 		return false;
 	}

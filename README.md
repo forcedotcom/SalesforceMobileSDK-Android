@@ -1,7 +1,9 @@
+# Salesforce.com Mobile SDK for Android
 [![CircleCI](https://circleci.com/gh/forcedotcom/SalesforceMobileSDK-Android/tree/dev.svg?style=svg)](https://circleci.com/gh/forcedotcom/workflows/SalesforceMobileSDK-Android/tree/dev)
 [![codecov](https://codecov.io/gh/forcedotcom/SalesforceMobileSDK-Android/branch/dev/graph/badge.svg)](https://codecov.io/gh/forcedotcom/SalesforceMobileSDK-Android/branch/dev)
+[![Known Vulnerabilities](https://snyk.io/test/github/forcedotcom/SalesforceMobileSDK-Android/badge.svg)](https://snyk.io/test/github/forcedotcom/SalesforceMobileSDK-Android)
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/forcedotcom/SalesforceMobileSDK-Android?sort=semver)
 
-# Salesforce.com Mobile SDK for Android
 
 You have arrived at the source repository for the Salesforce Mobile SDK for Android. Welcome! Starting with our 2.0 release, there are now two ways you can choose to work with the Mobile SDK:
 
@@ -23,8 +25,8 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 8.1.0
-See [release notes](https://github.com/forcedotcom/SalesforceMobileSDK-Android/releases/tag/v8.1.0).
+### What's New in 8.2.0
+See [release notes](https://github.com/forcedotcom/SalesforceMobileSDK-Android/releases/tag/v8.2.0).
 
 ### Native Applications
 The Salesforce Mobile SDK provides essential libraries for quickly building native mobile apps that seamlessly integrate with the Salesforce cloud architecture.  Out of the box, we provide an implementation of OAuth2, abstracting away the complexity of securely storing refresh tokens or fetching a new session ID when a session expires. The SDK also provides Java wrappers for the Salesforce REST API, making it easy to retrieve, store, and manipulate data.

@@ -26,13 +26,14 @@
  */
 package com.salesforce.androidsdk.mobilesync.manager;
 
-import androidx.test.filters.MediumTest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.MediumTest;
 
-import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.mobilesync.model.Layout;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -52,9 +53,6 @@ import java.util.concurrent.TimeUnit;
 @MediumTest
 public class LayoutSyncManagerTest extends ManagerTestCase {
 
-    private static final String COMPACT = "Compact";
-    private static final String ACCOUNT = "Account";
-
     private LayoutSyncManager layoutSyncManager;
     private LayoutSyncCallbackQueue layoutSyncCallbackQueue;
 
@@ -62,11 +60,20 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
 
         private static class Result {
 
-            public String objectType;
+            public String objectAPIName;
+            public String formFactor;
+            public String layoutType;
+            public String mode;
+            public String recordTypeId;
             public Layout layout;
 
-            public Result(String objectType, Layout layout) {
-                this.objectType = objectType;
+            public Result(String objectAPIName, String formFactor, String layoutType,
+                          String mode, String recordTypeId, Layout layout) {
+                this.objectAPIName = objectAPIName;
+                this.formFactor = formFactor;
+                this.layoutType = layoutType;
+                this.mode = mode;
+                this.recordTypeId = recordTypeId;
                 this.layout = layout;
             }
         }
@@ -78,9 +85,11 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
         }
 
         @Override
-        public void onSyncComplete(String objectType, Layout layout) {
-            if (objectType != null) {
-                results.offer(new Result(objectType, layout));
+        public void onSyncComplete(String objectAPIName, String formFactor, String layoutType,
+                            String mode, String recordTypeId, Layout layout) {
+            if (objectAPIName != null) {
+                results.offer(new Result(objectAPIName, formFactor, layoutType, mode,
+                        recordTypeId, layout));
             }
         }
 
@@ -122,13 +131,15 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
      * Test for fetching layout in CACHE_ONLY mode.
      */
     @Test
-    public void testFetchLayoutInCacheOnlyMode() {
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.SERVER_FIRST,
-                layoutSyncCallbackQueue);
+    public void testFetchLayoutInCacheOnlyMode() throws Exception {
+        layoutSyncManager.fetchLayout(Constants.ACCOUNT, Constants.FORM_FACTOR_MEDIUM,
+                Constants.LAYOUT_TYPE_COMPACT, Constants.MODE_EDIT, null,
+                Constants.Mode.SERVER_FIRST, layoutSyncCallbackQueue);
         layoutSyncCallbackQueue.getResult();
         layoutSyncCallbackQueue.clearQueue();
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.CACHE_ONLY,
-                layoutSyncCallbackQueue);
+        layoutSyncManager.fetchLayout(Constants.ACCOUNT, Constants.FORM_FACTOR_MEDIUM,
+                Constants.LAYOUT_TYPE_COMPACT, Constants.MODE_EDIT, null,
+                Constants.Mode.CACHE_ONLY, layoutSyncCallbackQueue);
         validateResult(layoutSyncCallbackQueue.getResult());
     }
 
@@ -136,13 +147,15 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
      * Test for fetching layout in CACHE_FIRST mode with a hydrated cache.
      */
     @Test
-    public void testFetchLayoutInCacheFirstModeWithCacheData() {
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.SERVER_FIRST,
-                layoutSyncCallbackQueue);
+    public void testFetchLayoutInCacheFirstModeWithCacheData() throws Exception {
+        layoutSyncManager.fetchLayout(Constants.ACCOUNT, Constants.FORM_FACTOR_MEDIUM,
+                Constants.LAYOUT_TYPE_COMPACT, Constants.MODE_EDIT, null,
+                Constants.Mode.SERVER_FIRST, layoutSyncCallbackQueue);
         layoutSyncCallbackQueue.getResult();
         layoutSyncCallbackQueue.clearQueue();
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.CACHE_FIRST,
-                layoutSyncCallbackQueue);
+        layoutSyncManager.fetchLayout(Constants.ACCOUNT, Constants.FORM_FACTOR_MEDIUM,
+                Constants.LAYOUT_TYPE_COMPACT, Constants.MODE_EDIT, null,
+                Constants.Mode.CACHE_FIRST, layoutSyncCallbackQueue);
         validateResult(layoutSyncCallbackQueue.getResult());
     }
 
@@ -150,9 +163,10 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
      * Test for fetching layout in CACHE_FIRST mode with an empty cache.
      */
     @Test
-    public void testFetchLayoutInCacheFirstModeWithoutCacheData() {
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.CACHE_FIRST,
-                layoutSyncCallbackQueue);
+    public void testFetchLayoutInCacheFirstModeWithoutCacheData() throws Exception  {
+        layoutSyncManager.fetchLayout(Constants.ACCOUNT, Constants.FORM_FACTOR_MEDIUM,
+                Constants.LAYOUT_TYPE_COMPACT, Constants.MODE_EDIT, null,
+                Constants.Mode.CACHE_FIRST, layoutSyncCallbackQueue);
         validateResult(layoutSyncCallbackQueue.getResult());
     }
 
@@ -160,9 +174,10 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
      * Test for fetching layout in SERVER_FIRST mode.
      */
     @Test
-    public void testFetchLayoutInServerFirstMode() {
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.SERVER_FIRST,
-                layoutSyncCallbackQueue);
+    public void testFetchLayoutInServerFirstMode() throws Exception {
+        layoutSyncManager.fetchLayout(Constants.ACCOUNT, Constants.FORM_FACTOR_MEDIUM,
+                Constants.LAYOUT_TYPE_COMPACT, Constants.MODE_EDIT, null,
+                Constants.Mode.SERVER_FIRST, layoutSyncCallbackQueue);
         validateResult(layoutSyncCallbackQueue.getResult());
     }
 
@@ -170,25 +185,30 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
      * Test for fetching layout multiple times and ensuring only 1 row is created.
      */
     @Test
-    public void testFetchLayoutMultipleTimes() {
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.SERVER_FIRST,
-                layoutSyncCallbackQueue);
+    public void testFetchLayoutMultipleTimes() throws Exception {
+        layoutSyncManager.fetchLayout(Constants.ACCOUNT, Constants.FORM_FACTOR_MEDIUM,
+                Constants.LAYOUT_TYPE_COMPACT, Constants.MODE_EDIT, null,
+                Constants.Mode.SERVER_FIRST, layoutSyncCallbackQueue);
         validateResult(layoutSyncCallbackQueue.getResult());
-        layoutSyncManager.fetchLayout(ACCOUNT, COMPACT, Constants.Mode.SERVER_FIRST,
-                layoutSyncCallbackQueue);
+        layoutSyncManager.fetchLayout(Constants.ACCOUNT, Constants.FORM_FACTOR_MEDIUM,
+                Constants.LAYOUT_TYPE_COMPACT, Constants.MODE_EDIT, null,
+                Constants.Mode.SERVER_FIRST, layoutSyncCallbackQueue);
         validateResult(layoutSyncCallbackQueue.getResult());
         final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(String.format(LayoutSyncManager.QUERY,
-                ACCOUNT, COMPACT), 2);
+                Constants.ACCOUNT, Constants.FORM_FACTOR_MEDIUM,
+                Constants.LAYOUT_TYPE_COMPACT, Constants.MODE_EDIT, null), 2);
         int numRows = layoutSyncManager.getSmartStore().countQuery(querySpec);
         Assert.assertEquals("Number of rows should be 1", 1, numRows);
     }
 
-    private void validateResult(LayoutSyncCallbackQueue.Result result) {
-        final String objectType = result.objectType;
+    private void validateResult(LayoutSyncCallbackQueue.Result result) throws Exception {
+        final String objectAPIName = result.objectAPIName;
         final Layout layout = result.layout;
-        Assert.assertEquals("Object types should match", ACCOUNT, objectType);
+        Assert.assertEquals("Object types should match", Constants.ACCOUNT, objectAPIName);
         Assert.assertNotNull("Layout data should not be null", layout);
-        Assert.assertEquals("Layout types should match", COMPACT, layout.getLayoutType());
+        Assert.assertEquals("Form factors should match", Constants.FORM_FACTOR_MEDIUM, result.formFactor);
+        Assert.assertEquals("Layout types should match", Constants.LAYOUT_TYPE_COMPACT, layout.getLayoutType());
+        Assert.assertEquals("Modes should match", Constants.MODE_EDIT, result.mode);
         Assert.assertNotNull("Layout raw data should not be null", layout.getRawData());
         Assert.assertNotNull("Layout sections should not be null", layout.getSections());
         Assert.assertTrue("Number of layout sections should be 1 or more",
@@ -201,5 +221,9 @@ public class LayoutSyncManagerTest extends ManagerTestCase {
                 layout.getSections().get(0).getLayoutRows().get(0).getLayoutItems());
         Assert.assertTrue("Number of layout items for a row should be 1 or more",
                 layout.getSections().get(0).getLayoutRows().get(0).getLayoutItems().size() > 0);
+        Assert.assertTrue("Number of layout components for an item should be 1 or more",
+                layout.getSections().get(0).getLayoutRows().get(0).getLayoutItems().get(0).getLayoutComponents().length() > 0);
+        Assert.assertTrue("Number of layout component fields should be 2 or more",
+                layout.getSections().get(0).getLayoutRows().get(0).getLayoutItems().get(0).getLayoutComponents().getJSONObject(0).length() > 1);
     }
 }

@@ -26,12 +26,21 @@
  */
 package com.salesforce.androidsdk.analytics.security;
 
-import androidx.test.filters.SmallTest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
 
 /**
  * Tests for Encryptor.
@@ -58,7 +67,8 @@ public class EncryptorTest {
     @Test
 	public void testEncryptWithNullKey() {
 		for (final String data : TEST_DATA) {
-            Assert.assertEquals("Encrypt should have left the string unchanged", data, Encryptor.encrypt(data, null));
+            Assert.assertEquals("Encrypt should have left the string unchanged", data,
+					Encryptor.encrypt(data, null));
 		}
 	}
 	
@@ -68,7 +78,8 @@ public class EncryptorTest {
     @Test
 	public void testDecryptWithNullKey() {
 		for (final String data : TEST_DATA) {
-            Assert.assertEquals("Decrypt should have left the string unchanged", data, Encryptor.decrypt(data, null));
+            Assert.assertEquals("Decrypt should have left the string unchanged", data,
+					Encryptor.decrypt(data, null));
 		}
 	}
 
@@ -94,8 +105,10 @@ public class EncryptorTest {
 	public void testEncryptDecryptWithDifferentData() {
 		final String key = makeKey("123456");
 		for (final String data : TEST_DATA) {
-            Assert.assertFalse("Encrypted string should be different from original", data.equals(Encryptor.encrypt(data, key)));
-            Assert.assertEquals("Decrypt should restore original", data, Encryptor.decrypt(Encryptor.encrypt(data, key), key));
+            Assert.assertFalse("Encrypted string should be different from original",
+					data.equals(Encryptor.encrypt(data, key)));
+            Assert.assertEquals("Decrypt should restore original", data,
+					Encryptor.decrypt(Encryptor.encrypt(data, key), key));
 			for (final String otherData : TEST_DATA) {
                 final String encryptedA = Encryptor.encrypt(data, key);
                 final String decryptedA = Encryptor.decrypt(encryptedA, key);
@@ -119,7 +132,8 @@ public class EncryptorTest {
 	public void testEncryptDecryptWithDifferentKeys() {
 		final String data = "fake-token";
 		for (final String key : TEST_KEYS) {
-            Assert.assertEquals("Decrypt should restore original", data, Encryptor.decrypt(Encryptor.encrypt(data, key), key));
+            Assert.assertEquals("Decrypt should restore original", data,
+					Encryptor.decrypt(Encryptor.encrypt(data, key), key));
 			for (final String otherKey : TEST_KEYS) {
 				boolean sameKey = (key == null && otherKey == null) || (key != null && key.equals(otherKey));
 				if (!sameKey) {
@@ -138,6 +152,52 @@ public class EncryptorTest {
 			}
 		}
 	}
+
+	/**
+	 * Check cipher returned by Encryptor.getEncryptingCipher
+	 */
+	@Test
+	public void testGetEncryptingCipher()
+		throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, InvalidKeyException {
+    	Cipher cipher = Encryptor.getEncryptingCipher(makeKey("my-key"));
+    	Assert.assertEquals("Wrong algorithm", "AES/GCM/NoPadding", cipher.getAlgorithm());
+		Assert.assertEquals("Wrong iv length", 12, cipher.getIV().length);
+		Assert.assertEquals("Wrong mode", 16, cipher.getBlockSize());
+	}
+
+	/**
+	 * Check cipher returned by Encryptor.getDecryptingCipher
+	 */
+	@Test
+	public void testGetDecryptingCipher()
+		throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, InvalidKeyException {
+		Cipher cipher = Encryptor.getDecryptingCipher(makeKey("my-key"), new byte[12]);
+		Assert.assertEquals("Wrong algorithm", "AES/GCM/NoPadding", cipher.getAlgorithm());
+		Assert.assertEquals("Wrong iv length", 12, cipher.getIV().length);
+		Assert.assertEquals("Wrong mode", 16, cipher.getBlockSize());
+	}
+
+	/**
+	 * Encrypting/decrypting data with ciphers returned by Encryptor.getEncryptingCipher and
+	 * Encryptor.getDecryptingCipher.
+	 */
+	@Test
+	public void testEncryptDecryptWithCipher()
+		throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, InvalidKeyException,
+			BadPaddingException, IllegalBlockSizeException {
+    	String key = makeKey("test-key");
+    	String originalText = "abcdefghijklmnopqrstuvwxyz";
+		Cipher encryptingCipher = Encryptor.getEncryptingCipher(key);
+		Cipher decryptingCipher = Encryptor.getDecryptingCipher(key, encryptingCipher.getIV());
+		byte[] originalBytes = originalText.getBytes(StandardCharsets.UTF_8);
+		byte[] encryptedBytes = encryptingCipher.doFinal(originalBytes);
+		byte[] decryptedBytes = decryptingCipher.doFinal(encryptedBytes);
+		String recoveredText = new String(decryptedBytes, StandardCharsets.UTF_8);
+		Assert.assertNotEquals("Bytes should have encrypted", encryptedBytes, originalBytes);
+		Assert.assertNotEquals("Bytes should have been decrypted", decryptedBytes, encryptedBytes);
+		Assert.assertEquals("Recovered text should match original", originalText, recoveredText);
+	}
+
 
 	private static String makeKey(String passcode) {
         return Encryptor.hash(passcode, "hashing-key");

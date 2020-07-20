@@ -111,6 +111,32 @@ public class SalesforceKeyGenerator {
     }
 
     /**
+     * Returns the legacy encryption key. This should be called only as a means to migrate to the new key.
+     *
+     * @param name Unique name associated with this legacy encryption key.
+     * @return Legacy encryption key.
+     * @deprecated Will be removed in Mobile SDK 10.0.
+     */
+    public static String getLegacyEncryptionKey(String name) {
+        if (TextUtils.isEmpty(name)) {
+            return null;
+        }
+        String encryptionKey = null;
+        try {
+            final String keyString = getUniqueId(name);
+            byte[] secretKey = keyString.getBytes(StandardCharsets.UTF_8);
+            final MessageDigest md = MessageDigest.getInstance(SHA1);
+            secretKey = md.digest(secretKey);
+            byte[] dest = new byte[16];
+            System.arraycopy(secretKey, 0, dest, 0, 16);
+            encryptionKey = Base64.encodeToString(dest, Base64.NO_WRAP);
+        } catch (Exception ex) {
+            SalesforceSDKLogger.e(TAG, "Exception thrown while getting legacy encryption key", ex);
+        }
+        return encryptionKey;
+    }
+
+    /**
      * Returns a randomly generated 128-byte key that's URL safe.
      *
      * @return Random 128-byte key.
@@ -144,6 +170,8 @@ public class SalesforceKeyGenerator {
     /**
      * Upgrades the keys stored in SharedPrefs to encrypted keys. This is a one-time
      * migration step that's run while upgrading to Mobile SDK 7.1.
+     *
+     * @deprecated Will be removed in Mobile SDK 9.0.
      */
     public synchronized static void upgradeTo7Dot1() {
         final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_FILE, 0);
@@ -171,10 +199,10 @@ public class SalesforceKeyGenerator {
         try {
             final String keyString = getUniqueId(name);
             byte[] secretKey = keyString.getBytes(StandardCharsets.UTF_8);
-            final MessageDigest md = MessageDigest.getInstance(SHA1);
+            final MessageDigest md = MessageDigest.getInstance(SHA256);
             secretKey = md.digest(secretKey);
-            byte[] dest = new byte[16];
-            System.arraycopy(secretKey, 0, dest, 0, 16);
+            byte[] dest = new byte[32];
+            System.arraycopy(secretKey, 0, dest, 0, 32);
             encryptionKey = Base64.encodeToString(dest, Base64.NO_WRAP);
         } catch (Exception ex) {
             SalesforceSDKLogger.e(TAG, "Exception thrown while getting encryption key", ex);

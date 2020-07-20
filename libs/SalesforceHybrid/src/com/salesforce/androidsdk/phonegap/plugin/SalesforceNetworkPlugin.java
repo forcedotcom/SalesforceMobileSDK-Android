@@ -125,7 +125,13 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                     try {
                         // Not a 2xx status
                         if (!response.isSuccess()) {
-                            callbackContext.error(response.asString());
+                            final JSONObject responseObject = new JSONObject();
+                            responseObject.put("headers", new JSONObject(response.getAllHeaders()));
+                            responseObject.put("statusCode", response.getStatusCode());
+                            responseObject.put("body", parsedResponse(response));
+                            final JSONObject errorObject = new JSONObject();
+                            errorObject.put("response", responseObject);
+                            callbackContext.error(errorObject.toString());
                         }
                         // Binary response
                         else if (returnBinary) {
@@ -136,22 +142,14 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                         }
                         // Some response
                         else if (response.asBytes().length > 0) {
-                            // Is it a JSONObject?
-                            final JSONObject responseAsJSONObject = parseResponseAsJSONObject(response);
-                            if (responseAsJSONObject != null) {
-                                callbackContext.success(responseAsJSONObject);
-                                return;
+                            final Object parsedResponse = parsedResponse(response);
+                            if (parsedResponse instanceof JSONObject) {
+                                callbackContext.success((JSONObject) parsedResponse);
+                            } else if (parsedResponse instanceof JSONArray) {
+                                callbackContext.success((JSONArray) parsedResponse);
+                            } else {
+                                callbackContext.success((String) parsedResponse);
                             }
-
-                            // Is it a JSONArray?
-                            final JSONArray responseAsJSONArray = parseResponseAsJSONArray(response);
-                            if (responseAsJSONArray != null) {
-                                callbackContext.success(responseAsJSONArray);
-                                return;
-                            }
-
-                            // Otherwise return as string
-                            callbackContext.success(response.asString());
                         }
                         // No response
                         else {
@@ -165,12 +163,41 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
 
                 @Override
                 public void onError(Exception exception) {
-                    callbackContext.error(exception.getMessage());
+                    final JSONObject errorObject = new JSONObject();
+                    try {
+                        errorObject.put("error", exception.getMessage());
+                    } catch (JSONException jsonException) {
+                        SalesforceHybridLogger.e(TAG, "Error creating error object", jsonException);
+                    }
+                    callbackContext.error(errorObject.toString());
                 }
             });
         } catch (Exception exception) {
-            callbackContext.error(exception.getMessage());
+            final JSONObject errorObject = new JSONObject();
+            try {
+                errorObject.put("error", exception.getMessage());
+            } catch (JSONException jsonException) {
+                SalesforceHybridLogger.e(TAG, "Error creating error object", jsonException);
+            }
+            callbackContext.error(errorObject.toString());
         }
+    }
+
+    private Object parsedResponse(RestResponse response) throws IOException {
+        // Is it a JSONObject?
+        final JSONObject responseAsJSONObject = parseResponseAsJSONObject(response);
+        if (responseAsJSONObject != null) {
+            return responseAsJSONObject;
+        }
+
+        // Is it a JSONArray?
+        final JSONArray responseAsJSONArray = parseResponseAsJSONArray(response);
+        if (responseAsJSONArray != null) {
+            return responseAsJSONArray;
+        }
+
+        // Otherwise return as string
+        return response.asString();
     }
 
     private JSONObject parseResponseAsJSONObject(RestResponse response) throws IOException {

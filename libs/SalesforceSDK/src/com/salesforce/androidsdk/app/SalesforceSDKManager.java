@@ -108,7 +108,7 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "8.1.0";
+    public static final String SDK_VERSION = "8.2.0.dev";
 
     /**
      * Intent action meant for instances of SalesforceSDKManager residing in other processes
@@ -1100,6 +1100,16 @@ public class SalesforceSDKManager {
     }
 
     /**
+     * Returns the legacy encryption key. This should be called only as a means to migrate to the new key.
+     *
+     * @return Legacy encryption key.
+     * @deprecated Will be removed in Mobile SDK 10.0.
+     */
+    public static String getLegacyEncryptionKey() {
+        return SalesforceKeyGenerator.getLegacyEncryptionKey(INTERNAL_ENTROPY);
+    }
+
+    /**
      * Returns the encryption key being used.
      *
      * @return Encryption key.
@@ -1361,7 +1371,7 @@ public class SalesforceSDKManager {
         public void onReceive(Context context, Intent intent) {
             if (intent != null
                     && SalesforceSDKManager.CLEANUP_INTENT_ACTION.equals(intent.getAction())
-                    && !intent.getStringExtra(PROCESS_ID_KEY).equals(PROCESS_ID)) {
+                    && !PROCESS_ID.equals(intent.getStringExtra(PROCESS_ID_KEY))) {
                 UserAccount userAccount = null;
                 if (intent.hasExtra(USER_ACCOUNT)) {
                     userAccount = new UserAccount(intent.getBundleExtra(USER_ACCOUNT));

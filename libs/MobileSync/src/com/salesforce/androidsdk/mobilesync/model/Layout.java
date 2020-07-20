@@ -304,7 +304,7 @@ public class Layout {
                 private boolean editableForNew;
                 private boolean editableForUpdate;
                 private String label;
-                private JSONObject layoutComponents;
+                private JSONArray layoutComponents;
                 private String lookupIdApiName;
                 private boolean required;
                 private boolean sortable;
@@ -322,7 +322,7 @@ public class Layout {
                         item.editableForNew = object.optBoolean(EDITABLE_FOR_NEW);
                         item.editableForUpdate = object.optBoolean(EDITABLE_FOR_UPDATE);
                         item.label = object.optString(LABEL);
-                        item.layoutComponents = object.optJSONObject(LAYOUT_COMPONENTS);
+                        item.layoutComponents = object.optJSONArray(LAYOUT_COMPONENTS);
                         item.lookupIdApiName = object.optString(LOOKUP_ID_API_NAME);
                         item.required = object.optBoolean(REQUIRED);
                         item.sortable = object.optBoolean(SORTABLE);
@@ -362,7 +362,7 @@ public class Layout {
                  *
                  * @return Layout components associated with this row.
                  */
-                public JSONObject getLayoutComponents() {
+                public JSONArray getLayoutComponents() {
                     return layoutComponents;
                 }
 

@@ -27,8 +27,9 @@
 package com.salesforce.androidsdk.store;
 
 import android.database.Cursor;
-import androidx.test.filters.MediumTest;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.MediumTest;
 
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
@@ -92,28 +93,6 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
 	}
 
 	/**
-	 * Ensure data is still accessible after changing key
-	 */
-    @Test
-	public void testChangeKey() throws JSONException {
-		JSONObject soupElt = new JSONObject("{'key':'ka2', 'value':'testValue'}");
-		String newPasscode = Encryptor.hash("123test", "hashing-key");
-
-		// Use normal key to place files on external storage
-		store.create(TEST_SOUP, soupElt);
-
-		// Act
-		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
-		SmartStore.changeKey(db, getEncryptionKey(), newPasscode);
-		store = new SmartStore(dbOpenHelper, newPasscode);
-
-		// Verify that data is still accessible
-		JSONArray result = store.query(QuerySpec.buildExactQuerySpec(TEST_SOUP, "key", "ka2", null, null, 10), 0);
-        Assert.assertEquals("One result expected", 1, result.length());
-		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt, result.getJSONObject(0));
-	}
-
-	/**
 	 * Test for getDatabaseSize
 	 *
 	 * @throws JSONException
@@ -140,6 +119,28 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
         Assert.assertTrue("Database file should be larger", dbFileSizeAfter > dBFileSizeBefore);
         Assert.assertTrue("Soup blobs directory should be larger", dbBlobsDirSizeAfter > dbBlobsDirSizeBefore);
         Assert.assertTrue("Total database size should be larger than just db file", totalSizeAfter > totalSizeBefore);
+	}
+
+	/**
+	 * Ensure data is still accessible after changing key
+	 */
+	@Test
+	public void testChangeKey() throws JSONException {
+		JSONObject soupElt = new JSONObject("{'key':'ka2', 'value':'testValue'}");
+		String newPasscode = Encryptor.hash("123test", "hashing-key");
+
+		// Use normal key to place files on external storage
+		store.create(TEST_SOUP, soupElt);
+
+		// Act
+		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
+		SmartStore.changeKey(db, getEncryptionKey(), newPasscode);
+		store = new SmartStore(dbOpenHelper, newPasscode);
+
+		// Verify that data is still accessible
+		JSONArray result = store.query(QuerySpec.buildExactQuerySpec(TEST_SOUP, "key", "ka2", null, null, 10), 0);
+		Assert.assertEquals("One result expected", 1, result.length());
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt, result.getJSONObject(0));
 	}
 
 	@Override

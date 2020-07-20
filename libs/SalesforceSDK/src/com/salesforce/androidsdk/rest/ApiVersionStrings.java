@@ -37,7 +37,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
  */
 public class ApiVersionStrings {
 
-    public static final String VERSION_NUMBER = "v46.0";
+    public static final String VERSION_NUMBER = "v49.0";
     public static final String API_PREFIX = "/services/data/";
 
     public static String getBasePath() {

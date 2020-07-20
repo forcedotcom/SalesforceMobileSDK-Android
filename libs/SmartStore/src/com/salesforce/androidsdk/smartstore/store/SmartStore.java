@@ -127,8 +127,8 @@ public class SmartStore  {
      */
     public static synchronized void changeKey(SQLiteDatabase db, String oldKey, String newKey) {
     	synchronized(db) {
-	        if (newKey != null && !newKey.trim().equals("")) {
-	            db.execSQL("PRAGMA rekey = '" + newKey + "'");
+	        if (!TextUtils.isEmpty(newKey)) {
+	            DBOpenHelper.changeKey(db, oldKey, newKey);
 	            DBOpenHelper.reEncryptAllFiles(db, oldKey, newKey);
 	        }
     	}
@@ -1412,10 +1412,10 @@ public class SmartStore  {
 	            db.beginTransaction();
 	        }
 	        try {
-	            db.delete(soupTableName, getSoupEntryIdsPredicate(soupEntryIds), (String []) null);
+				DBHelper.getInstance(db).delete(db, soupTableName, getSoupEntryIdsPredicate(soupEntryIds));
 
 				if (hasFTS(soupName)) {
-					db.delete(soupTableName + FTS_SUFFIX, getRowIdsPredicate(soupEntryIds), (String[]) null);
+					DBHelper.getInstance(db).delete(db, soupTableName + FTS_SUFFIX, getRowIdsPredicate(soupEntryIds));
 				}
 
 				if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
@@ -1483,10 +1483,10 @@ public class SmartStore  {
 					}
                 }
 
-                db.delete(soupTableName, buildInStatement(ID_COL, subQuerySql), args);
+				DBHelper.getInstance(db).delete(db, soupTableName, buildInStatement(ID_COL, subQuerySql), args);
 
 				if (hasFTS(soupName)) {
-                    db.delete(soupTableName + FTS_SUFFIX, buildInStatement(ROWID_COL, subQuerySql), args);
+					DBHelper.getInstance(db).delete(db, soupTableName + FTS_SUFFIX, buildInStatement(ROWID_COL, subQuerySql), args);
 				}
 
 				if (handleTx) {

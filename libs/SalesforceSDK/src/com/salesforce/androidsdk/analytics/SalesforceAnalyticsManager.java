@@ -35,6 +35,7 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.manager.AnalyticsManager;
 import com.salesforce.androidsdk.analytics.model.DeviceAppAttributes;
 import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.analytics.store.EventStoreManager;
 import com.salesforce.androidsdk.analytics.transform.AILTNTransform;
 import com.salesforce.androidsdk.analytics.transform.Transform;
@@ -45,8 +46,13 @@ import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -448,5 +454,96 @@ public class SalesforceAnalyticsManager {
             }
         };
         return scheduler.scheduleAtFixedRate(publishRunnable, 0, sPublishFrequencyInHours, TimeUnit.HOURS);
+    }
+
+    /**
+     * One time upgrade steps from older versions to Mobile SDK 8.2. Only for internal use!
+     *
+     * @param account User account.
+     * @param context Context.
+     * @deprecated Will be removed in Mobile SDK 10.0.
+     */
+    public static synchronized void upgradeTo8Dot2(UserAccount account, Context context) {
+        final String filenameSuffix = (account != null) ? account.getCommunityLevelFilenameSuffix()
+                : UNAUTH_INSTANCE_KEY;
+        final File rootDir = context.getFilesDir();
+        final List<File> oldEventFiles = getAllEventFiles(rootDir, filenameSuffix);
+        final List<InstrumentationEvent> oldEvents = new ArrayList<>();
+        for (final File file : oldEventFiles) {
+            final InstrumentationEvent event = fetchEvent(file);
+            if (event != null) {
+                oldEvents.add(event);
+                file.delete();
+            }
+        }
+        final SalesforceAnalyticsManager sfAnalyticsManager = new SalesforceAnalyticsManager(account);
+        sfAnalyticsManager.getEventStoreManager().storeEvents(oldEvents);
+    }
+
+    /*
+     * TODO: Exists only for upgrade steps to 8.2. Remove this in Mobile SDK 10.0.
+     */
+    private static InstrumentationEvent fetchEvent(File file) {
+        if (file == null || !file.exists()) {
+            return null;
+        }
+        InstrumentationEvent event = null;
+        String eventString = null;
+        final StringBuilder json = new StringBuilder();
+        try {
+            final BufferedReader br = new BufferedReader(new FileReader(file));
+            String line;
+            while ((line = br.readLine()) != null) {
+                json.append(line).append('\n');
+            }
+            br.close();
+            eventString = Encryptor.legacyDecrypt(json.toString(),
+                    SalesforceSDKManager.getLegacyEncryptionKey());
+        } catch (Exception ex) {
+            SalesforceSDKLogger.e(TAG, "Exception occurred while attempting to read file contents", ex);
+        }
+        if (!TextUtils.isEmpty(eventString)) {
+            try {
+                final JSONObject jsonObject = new JSONObject(eventString);
+                event = new InstrumentationEvent(jsonObject);
+            } catch (JSONException e) {
+                SalesforceSDKLogger.e(TAG, "Exception occurred while attempting to convert to JSON", e);
+            }
+        }
+        return event;
+    }
+
+    /*
+     * TODO: Exists only for upgrade steps to 8.2. Remove this in Mobile SDK 10.0.
+     */
+    private static List<File> getAllEventFiles(File rootDir, String fileSuffix) {
+        final EventFileFilter fileFilter = new EventFileFilter(fileSuffix);
+        final List<File> files = new ArrayList<>();
+        final File[] listOfFiles = rootDir.listFiles();
+        if (listOfFiles != null) {
+            for (final File file : listOfFiles) {
+                if (file != null && fileFilter.accept(rootDir, file.getName())) {
+                    files.add(file);
+                }
+            }
+        }
+        return files;
+    }
+
+    /*
+     * TODO: Exists only for upgrade steps to 8.2. Remove this in Mobile SDK 10.0.
+     */
+    private static class EventFileFilter implements FilenameFilter {
+
+        private String fileSuffix;
+
+        EventFileFilter(String fileSuffix) {
+            this.fileSuffix = fileSuffix;
+        }
+
+        @Override
+        public boolean accept(File dir, String filename) {
+            return (filename != null && filename.endsWith(fileSuffix));
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-present, salesforce.com, inc.
+ * Copyright (c) 2020-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,54 +24,15 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.phonegap;
 
-import androidx.test.filters.SmallTest;
+package com.salesforce.androidsdk.analytics.util;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+/** Interface for stream that can be watched (on close etc) */
+public interface WatchableStream {
 
-import java.util.Arrays;
+    void addWatcher(Watcher watcher);
 
-/**
- * Running javascript tests for force.js.
- */
-@RunWith(Parameterized.class)
-@SmallTest
-public class ForceJSTest extends JSTestCase {
-
-    private static final String JS_SUITE = "ForceJSTestSuite";
-
-    @Parameterized.Parameter
-	public String testName;
-
-    @Parameterized.Parameters(name = "{0}")
-    public static Iterable<String> data() {
-        return Arrays.asList(new String[]{
-                "testParseUrl",
-                "testComputeEndPointIfMissing",
-                "testOwnedFilesList",
-                "testFilesInUsersGroups",
-                "testFilesSharedWithUser",
-                "testFileDetails",
-                "testBatchFileDetails",
-                "testFileShares",
-                "testAddFileShare",
-                "testDeleteFileShare",
-                "testRestEndpoint",
-                "testRestEndpointError"
-        });
-    }
-
-    @BeforeClass
-    public static void runJSTestSuite() throws InterruptedException {
-        JSTestCase.runJSTestSuite(JS_SUITE, data(), 5);
-    }
-
-    @Test
-    public void test() {
-        runTest(JS_SUITE, testName);
+    interface Watcher {
+        void onClose();
     }
 }

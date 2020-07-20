@@ -142,6 +142,17 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
      * @throws JSONException
      */
     protected JSONObject[] createAccountsLocally(String[] names) throws JSONException {
+        return createAccountsLocally(names, null);
+    }
+
+    /**
+     * Create accounts locally
+     * @param names
+     * @param mutator
+     * @return created accounts records
+     * @throws JSONException
+     */
+    protected JSONObject[] createAccountsLocally(String[] names, Mutator mutator) throws JSONException {
         JSONObject[] createdAccounts = new JSONObject[names.length];
         JSONObject attributes = new JSONObject();
         attributes.put(TYPE, Constants.ACCOUNT);
@@ -156,6 +167,9 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
             account.put(SyncTarget.LOCALLY_CREATED, true);
             account.put(SyncTarget.LOCALLY_DELETED, false);
             account.put(SyncTarget.LOCALLY_UPDATED, false);
+            if (mutator != null) {
+                account = mutator.mutate(account);
+            }
             createdAccounts[i] = smartStore.create(ACCOUNTS_SOUP, account);
         }
         return createdAccounts;
@@ -710,5 +724,12 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         idToFieldsLocallyUpdated.put(id, updatedFields);
         updateRecordsLocally(idToFieldsLocallyUpdated, soupName);
         return idToFieldsLocallyUpdated;
+    }
+
+    /**
+     * Class use to customize json object
+     */
+    public interface Mutator {
+        JSONObject mutate(JSONObject record) throws JSONException;
     }
 }

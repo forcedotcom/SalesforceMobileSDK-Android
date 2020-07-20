@@ -26,10 +26,10 @@
  */
 package com.salesforce.androidsdk.mobilesync.target;
 
-import com.salesforce.androidsdk.rest.RestRequest;
-import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
+import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.rest.RestResponse;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -47,11 +47,17 @@ import java.util.Set;
 public class LayoutSyncDownTarget extends SyncDownTarget {
 
     public static final String SOBJECT_TYPE = "sobjectType";
+    public static final String FORM_FACTOR = "formFactor";
     public static final String LAYOUT_TYPE = "layoutType";
-    public static final String ID_FIELD_VALUE = "%s-%s";
+    public static final String MODE = "mode";
+    public static final String RECORD_TYPE_ID = "recordTypeId";
+    public static final String ID_FIELD_VALUE = "%s-%s-%s-%s-%s";
 
-    private String objectType;
+    private String objectAPIName;
+    private String formFactor;
     private String layoutType;
+    private String mode;
+    private String recordTypeId;
 
     /**
      * Parameterized constructor.
@@ -61,8 +67,11 @@ public class LayoutSyncDownTarget extends SyncDownTarget {
      */
     public LayoutSyncDownTarget(JSONObject target) throws JSONException {
         super(target);
-        this.objectType = target.getString(SOBJECT_TYPE);
-        this.layoutType = target.getString(LAYOUT_TYPE);
+        this.objectAPIName = target.getString(SOBJECT_TYPE);
+        this.formFactor = target.optString(FORM_FACTOR, null);
+        this.layoutType = target.optString(LAYOUT_TYPE, null);
+        this.mode = target.optString(MODE, null);
+        this.recordTypeId = target.optString(RECORD_TYPE_ID, null);
     }
 
     /**
@@ -70,12 +79,30 @@ public class LayoutSyncDownTarget extends SyncDownTarget {
      *
      * @param objectType Object type.
      * @param layoutType Layout type.
+     * @deprecated Will be removed in Mobile SDK 9.0. Use {@link #LayoutSyncDownTarget(String, String, String, String, String)} instead.
      */
     public LayoutSyncDownTarget(String objectType, String layoutType) {
+        this(objectType, null, layoutType, null, null);
+    }
+
+    /**
+     * Parameterized constructor.
+     *
+     * @param objectAPIName Object API name.
+     * @param formFactor Form factor.
+     * @param layoutType Layout type.
+     * @param mode Mode.
+     * @param recordTypeId Record type ID.
+     */
+    public LayoutSyncDownTarget(String objectAPIName, String formFactor, String layoutType,
+                                String mode, String recordTypeId) {
         super();
         this.queryType = QueryType.layout;
-        this.objectType = objectType;
+        this.objectAPIName = objectAPIName;
+        this.formFactor = formFactor;
         this.layoutType = layoutType;
+        this.mode = mode;
+        this.recordTypeId = recordTypeId;
     }
 
     /**
@@ -86,19 +113,23 @@ public class LayoutSyncDownTarget extends SyncDownTarget {
      */
     public JSONObject asJSON() throws JSONException {
         final JSONObject target = super.asJSON();
-        target.put(SOBJECT_TYPE, objectType);
+        target.put(SOBJECT_TYPE, objectAPIName);
+        target.put(FORM_FACTOR, formFactor);
         target.put(LAYOUT_TYPE, layoutType);
+        target.put(MODE, mode);
+        target.put(RECORD_TYPE_ID, recordTypeId);
         return target;
     }
 
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
         final RestRequest request = RestRequest.getRequestForObjectLayout(syncManager.apiVersion,
-                objectType, layoutType);
+                objectAPIName, formFactor, layoutType, mode, recordTypeId);
         final RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
         final JSONObject responseJSON = response.asJSONObject();
         if (responseJSON != null) {
-            responseJSON.put(Constants.ID, String.format(ID_FIELD_VALUE, objectType, layoutType));
+            responseJSON.put(Constants.ID, String.format(ID_FIELD_VALUE, objectAPIName,
+                    formFactor, layoutType, mode, recordTypeId));
         }
         final JSONArray records = new JSONArray();
         records.put(response.asJSONObject());
@@ -127,9 +158,28 @@ public class LayoutSyncDownTarget extends SyncDownTarget {
      * Returns the object type associated with this target.
      *
      * @return Object type.
+     * @deprecated Will be removed in Mobile SDK 9.0. Use {@link #getObjectAPIName()} instead.
      */
     public String getObjectType() {
-        return objectType;
+        return objectAPIName;
+    }
+
+    /**
+     * Returns the object API name associated with this target.
+     *
+     * @return Object API name.
+     */
+    public String getObjectAPIName() {
+        return objectAPIName;
+    }
+
+    /**
+     * Returns the form factor associated with this target.
+     *
+     * @return Form factor.
+     */
+    public String getFormFactor() {
+        return formFactor;
     }
 
     /**
@@ -139,5 +189,23 @@ public class LayoutSyncDownTarget extends SyncDownTarget {
      */
     public String getLayoutType() {
         return layoutType;
+    }
+
+    /**
+     * Returns the mode associated with this target.
+     *
+     * @return Mode.
+     */
+    public String getMode() {
+        return mode;
+    }
+
+    /**
+     * Returns the record type ID associated with this target.
+     *
+     * @return Record type ID.
+     */
+    public String getRecordTypeId() {
+        return recordTypeId;
     }
 }

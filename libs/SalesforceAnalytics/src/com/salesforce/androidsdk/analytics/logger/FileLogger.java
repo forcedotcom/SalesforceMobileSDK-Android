@@ -35,6 +35,7 @@ import com.squareup.tape.QueueFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,8 +47,6 @@ import java.util.List;
 public class FileLogger {
 
     private static final String LOG_SUFFIX = "_log";
-    private static final String UTF8 = "UTF-8";
-    private static final String ASCII = "US-ASCII";
     private static final String FILE_LOGGER_PREFS = "sf_file_logger_prefs";
     private static final String TAG = "FileLogger";
     private static final int MAX_SIZE = 10000;
@@ -74,10 +73,8 @@ public class FileLogger {
 
     /**
      * Flushes the log file and resets it to its original state.
-     *
-     * @throws IOException If the operation failed.
      */
-    public void flushLog() throws IOException {
+    public void flushLog() {
         try {
             file.clear();
         } catch (IOException e) {
@@ -129,7 +126,7 @@ public class FileLogger {
                 file.remove();
             }
             if (maxSize > 0) {
-                file.add(logLine.getBytes(UTF8));
+                file.add(logLine.getBytes(StandardCharsets.UTF_8));
             }
         } catch (Exception e) {
             Log.e(TAG, "Failed to write log line", e);
@@ -174,7 +171,7 @@ public class FileLogger {
         try {
             byte[] logLineBytes = file.peek();
             if (logLineBytes != null && logLineBytes.length > 0) {
-                logLine = new String(logLineBytes, ASCII);
+                logLine = new String(logLineBytes, StandardCharsets.US_ASCII);
             }
         } catch (IOException e) {
             Log.e(TAG, "Failed to read log line", e);
@@ -190,7 +187,7 @@ public class FileLogger {
      */
     public List<String> readAndRemoveLogLinesAsList(int numLines) {
         List<String> logLines = new ArrayList<>();
-        int linesToRead = (getSize() < numLines) ? getSize() : numLines;
+        int linesToRead = Math.min(getSize(), numLines);
         for (int i = 0; i < linesToRead; i++) {
             final String logLine = readLogLine();
             removeLogLine();
@@ -255,7 +252,7 @@ public class FileLogger {
      * @param numLines Number of log lines.
      */
     public void removeLogLines(int numLines) {
-        int linesToRemove = (getSize() < numLines) ? getSize() : numLines;
+        int linesToRemove = Math.min(getSize(), numLines);
         for (int i = 0; i < linesToRemove; i++) {
             removeLogLine();
         }

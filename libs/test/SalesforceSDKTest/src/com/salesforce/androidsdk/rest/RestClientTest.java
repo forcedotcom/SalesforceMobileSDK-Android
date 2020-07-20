@@ -38,6 +38,7 @@ import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 import com.salesforce.androidsdk.util.test.TestCredentials;
 
+import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -314,6 +315,20 @@ public class RestClientTest {
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
     }
 
+
+    /**
+     * Testing RestResponse:getRawResponse
+     */
+    @Test
+    public void testGetRawResponse() throws Exception {
+        RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, null);
+        RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForVersions());
+        Response rawResponse = response.getRawResponse();
+        Assert.assertEquals(200, rawResponse.code());
+        Assert.assertEquals("application/json;charset=UTF-8", rawResponse.header("Content-Type"));
+        checkKeys(new JSONArray(rawResponse.body().string()).getJSONObject(0), "label", "url", "version");
+        rawResponse.close();
+    }
 
     /**
      * Testing a get versions call to the server - check response
@@ -983,6 +998,37 @@ public class RestClientTest {
         Assert.assertEquals("Contact id not returned by query", otherContactId, otherQueryRecords.getJSONObject(0).getString("Id"));
     }
 
+    @Test
+    public void testGetNotificationsStatus() throws Exception {
+        RestRequest request = RestRequest.getRequestForNotificationsStatus(TestCredentials.API_VERSION);
+        RestResponse response = restClient.sendSync(request);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
+        checkKeys(response.asJSONObject(), "lastActivity", "oldestUnread", "oldestUnseen", "unreadCount", "unseenCount");
+    }
+
+    @Test
+    public void testGetNotifications() throws Exception {
+        Date yesterday =  new Date(new Date().getTime() - 24*60*60*1000);
+        RestRequest request = RestRequest.getRequestForNotifications(TestCredentials.API_VERSION, 10, null, yesterday);
+        RestResponse response = restClient.sendSync(request);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
+        checkKeys(response.asJSONObject(), "notifications");
+    }
+
+    @Test
+    public void testUpdateReadNotifications() throws Exception {
+        RestRequest request = RestRequest.getRequestForNotificationsUpdate(TestCredentials.API_VERSION, null, new Date(), true, null);
+        RestResponse response = restClient.sendSync(request);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
+    }
+
+    @Test
+    public void testUpdateSeenNotifications() throws Exception {
+        RestRequest request = RestRequest.getRequestForNotificationsUpdate(TestCredentials.API_VERSION, null, new Date(), null, true);
+        RestResponse response = restClient.sendSync(request);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
+    }
+
     //
     // Helper methods
     //
@@ -993,7 +1039,7 @@ public class RestClientTest {
      */
     private RestResponse getStreamTestResponse() throws IOException {
         final RestResponse response = restClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
-        Assert.assertEquals("Response code should be HTTP OK", response.getStatusCode(), HttpURLConnection.HTTP_OK);
+        Assert.assertEquals("Response code should be HTTP OK", HttpURLConnection.HTTP_OK, response.getStatusCode());
         return response;
     }
 

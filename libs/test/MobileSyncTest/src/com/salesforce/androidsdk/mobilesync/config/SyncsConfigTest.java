@@ -93,13 +93,13 @@ public class SyncsConfigTest extends SyncManagerTestCase {
         SyncState actualSync2 = globalSyncManager.getSyncStatus("globalSync2");
         Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, actualSync2.getSoupName());
         checkStatus(actualSync2, SyncState.Type.syncUp, actualSync2.getId(),
-                new BatchSyncUpTarget(Arrays.asList(new String[]{"Name"}), null),
-                SyncOptions.optionsForSyncUp(Arrays.asList(new String[]{"Id", "Name", "LastModifiedDate"}), MergeMode.LEAVE_IF_CHANGED),
+                new BatchSyncUpTarget(Arrays.asList("Name"), null),
+                SyncOptions.optionsForSyncUp(Arrays.asList("Id", "Name", "LastModifiedDate"), MergeMode.LEAVE_IF_CHANGED),
                 SyncState.Status.NEW, 0);
     }
 
     @Test
-    public void testSetupUserSyncsFromDefaultConfig() throws JSONException {
+    public void testSetupUserSyncsFromDefaultConfig() {
         Assert.assertFalse(syncManager.hasSyncWithName("soqlSyncDown"));
         Assert.assertFalse(syncManager.hasSyncWithName("soslSyncDown"));
         Assert.assertFalse(syncManager.hasSyncWithName("mruSyncDown"));
@@ -125,11 +125,10 @@ public class SyncsConfigTest extends SyncManagerTestCase {
         Assert.assertTrue(syncManager.hasSyncWithName("noBatchSyncUp"));
         Assert.assertTrue(syncManager.hasSyncWithName("batchSyncUp"));
         Assert.assertTrue(syncManager.hasSyncWithName("parentChildrenSyncUp"));
-
     }
 
     @Test
-    public void testSoqlSyncDownFromConfig()  throws JSONException {
+    public void testSoqlSyncDownFromConfig() throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         SyncState sync = syncManager.getSyncStatus("soqlSyncDown");
@@ -141,7 +140,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
     }
 
     @Test
-    public void testSoslSyncDownFromConfig()  throws JSONException {
+    public void testSoslSyncDownFromConfig() throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         SyncState sync = syncManager.getSyncStatus("soslSyncDown");
@@ -153,43 +152,43 @@ public class SyncsConfigTest extends SyncManagerTestCase {
     }
 
     @Test
-    public void testMruSyncDownFromConfig()  throws JSONException {
+    public void testMruSyncDownFromConfig() throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         SyncState sync = syncManager.getSyncStatus("mruSyncDown");
         Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, sync.getSoupName());
         checkStatus(sync, SyncState.Type.syncDown, sync.getId(),
-                new MruSyncDownTarget(Arrays.asList(new String[] {"Name", "Description"}), "Account"),
+                new MruSyncDownTarget(Arrays.asList("Name", "Description"), "Account"),
                 SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE),
                 SyncState.Status.NEW, 0);
     }
 
     @Test
-    public void testRefreshSyncDownFromConfig()  throws JSONException {
+    public void testRefreshSyncDownFromConfig() throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         SyncState sync = syncManager.getSyncStatus("refreshSyncDown");
         Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, sync.getSoupName());
         checkStatus(sync, SyncState.Type.syncDown, sync.getId(),
-                new RefreshSyncDownTarget(Arrays.asList(new String[] {"Name", "Description"}), "Account", "accounts"),
+                new RefreshSyncDownTarget(Arrays.asList("Name", "Description"), "Account", "accounts"),
                 SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED),
                 SyncState.Status.NEW, 0);
     }
 
     @Test
-    public void testLayoutSyncDownFromConfig()  throws JSONException {
+    public void testLayoutSyncDownFromConfig() throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         SyncState sync = syncManager.getSyncStatus("layoutSyncDown");
         Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, sync.getSoupName());
         checkStatus(sync, SyncState.Type.syncDown, sync.getId(),
-                new LayoutSyncDownTarget("Account", "Compact"),
+                new LayoutSyncDownTarget("Account", "Medium", "Compact", "Edit", null),
                 SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE),
                 SyncState.Status.NEW, 0);
     }
 
     @Test
-    public void testMetadataSyncDownFromConfig()  throws JSONException {
+    public void testMetadataSyncDownFromConfig() throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         SyncState sync = syncManager.getSyncStatus("metadataSyncDown");
@@ -201,7 +200,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
     }
 
     @Test
-    public void testParentChildrenSyncDownFromConfig()  throws JSONException {
+    public void testParentChildrenSyncDownFromConfig() throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         SyncState sync = syncManager.getSyncStatus("parentChildrenSyncDown");
@@ -209,10 +208,10 @@ public class SyncsConfigTest extends SyncManagerTestCase {
         checkStatus(sync, SyncState.Type.syncDown, sync.getId(),
                 new ParentChildrenSyncDownTarget(
                         new ParentInfo("Account", "accounts", "IdX", "LastModifiedDateX"),
-                        Arrays.asList(new String[] {"IdX", "Name", "Description"}),
+                        Arrays.asList("IdX", "Name", "Description"),
                         "NameX like 'James%'",
                         new ChildrenInfo("Contact", "Contacts", "contacts", "AccountId", "IdY", "LastModifiedDateY"),
-                        Arrays.asList(new String[] {"LastName", "AccountId"}),
+                        Arrays.asList("LastName", "AccountId"),
                         ParentChildrenSyncTargetHelper.RelationshipType.MASTER_DETAIL),
                 SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE),
                 SyncState.Status.NEW, 0);
@@ -220,31 +219,31 @@ public class SyncsConfigTest extends SyncManagerTestCase {
     }
 
     @Test
-    public void testNoBatchSyncUpFromConfig()  throws JSONException {
+    public void testNoBatchSyncUpFromConfig() throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         SyncState sync = syncManager.getSyncStatus("noBatchSyncUp");
         Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, sync.getSoupName());
         checkStatus(sync, SyncState.Type.syncUp, sync.getId(),
-                new SyncUpTarget(Arrays.asList(new String[] {"Name"}), Arrays.asList(new String[] {"Description"})),
+                new SyncUpTarget(Arrays.asList("Name"), Arrays.asList("Description")),
                 SyncOptions.optionsForSyncUp(Arrays.asList(new String[]{}), MergeMode.LEAVE_IF_CHANGED),
                 SyncState.Status.NEW, 0);
     }
 
     @Test
-    public void testBatchSyncUpFromConfig()  throws JSONException {
+    public void testBatchSyncUpFromConfig() throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         SyncState sync = syncManager.getSyncStatus("batchSyncUp");
         Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, sync.getSoupName());
         checkStatus(sync, SyncState.Type.syncUp, sync.getId(),
                 new BatchSyncUpTarget(null, null, "IdX", "LastModifiedDateX", "ExternalIdX", BatchSyncUpTarget.MAX_SUB_REQUESTS_COMPOSITE_API),
-                SyncOptions.optionsForSyncUp(Arrays.asList(new String[]{"Name", "Description"}), MergeMode.OVERWRITE),
+                SyncOptions.optionsForSyncUp(Arrays.asList("Name", "Description"), MergeMode.OVERWRITE),
                 SyncState.Status.NEW, 0);
     }
 
     @Test
-    public void testParentChildrenSyncUpFromConfig()  throws JSONException {
+    public void testParentChildrenSyncUpFromConfig() throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
         SyncState sync = syncManager.getSyncStatus("parentChildrenSyncUp");
@@ -252,11 +251,11 @@ public class SyncsConfigTest extends SyncManagerTestCase {
         checkStatus(sync, SyncState.Type.syncUp, sync.getId(),
                 new ParentChildrenSyncUpTarget(
                         new ParentInfo("Account", "accounts", "IdX", "LastModifiedDateX"),
-                        Arrays.asList(new String[] {"IdX", "Name", "Description"}),
-                        Arrays.asList(new String[] {"Name", "Description"}),
+                        Arrays.asList("IdX", "Name", "Description"),
+                        Arrays.asList("Name", "Description"),
                         new ChildrenInfo("Contact", "Contacts", "contacts", "AccountId", "IdY", "LastModifiedDateY"),
-                        Arrays.asList(new String[] {"LastName", "AccountId"}),
-                        Arrays.asList(new String[] {"FirstName", "AccountId"}),
+                        Arrays.asList("LastName", "AccountId"),
+                        Arrays.asList("FirstName", "AccountId"),
                         ParentChildrenSyncTargetHelper.RelationshipType.MASTER_DETAIL),
                 SyncOptions.optionsForSyncUp(Arrays.asList(new String[]{}), MergeMode.LEAVE_IF_CHANGED),
                 SyncState.Status.NEW, 0);

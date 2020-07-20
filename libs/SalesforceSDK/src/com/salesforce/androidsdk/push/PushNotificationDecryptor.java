@@ -60,7 +60,7 @@ class PushNotificationDecryptor {
 
     void onPushMessageReceived(RemoteMessage message) {
         final Map<String, String> data = processNotificationPayload(message.getData());
-        if (data != null && SalesforceSDKManager.hasInstance()) {
+        if (SalesforceSDKManager.hasInstance()) {
             final PushNotificationInterface pnInterface = SalesforceSDKManager.getInstance().getPushNotificationReceiver();
             if (pnInterface != null) {
                 pnInterface.onPushMessageReceived(data);

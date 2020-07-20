@@ -26,7 +26,7 @@ apply plugin: 'com.jfrog.bintray'
 
 dependencies {
   api project(':libs:MobileSync')
-  api 'com.facebook.react:react-native:0.61.3'
+  api 'com.facebook.react:react-native:0.62.2'
   androidTestImplementation 'androidx.test:runner:1.2.0'
   androidTestImplementation 'androidx.test:rules:1.2.0'
   androidTestImplementation 'androidx.test.ext:junit:1.1.1'
@@ -182,9 +182,9 @@ bintray {
         licenses = ['Apache-2.0']
         labels = ['android', 'salesforce', 'mobilesdk']
         version {
-            name = '8.1.0'
+            name = '8.2.0'
             released  = new Date()
-            vcsTag = 'v8.1.0'
+            vcsTag = 'v8.2.0'
         }
     }
 }

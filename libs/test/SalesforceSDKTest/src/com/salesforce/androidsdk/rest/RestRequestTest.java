@@ -26,8 +26,8 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import androidx.test.filters.LargeTest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.LargeTest;
 
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 import com.salesforce.androidsdk.util.JSONTestHelper;
@@ -57,7 +57,10 @@ public class RestRequestTest {
 	
 	private static final String TEST_API_VERSION = "v99.0";
 	private static final String TEST_OBJECT_TYPE = "testObjectType";
-	private static final String LAYOUT_TYPE_COMPACT = "Compact";
+	private static final String TEST_LAYOUT_TYPE_COMPACT = "Compact";
+	private static final String TEST_FORM_FACTOR_MEDIUM = "Medium";
+	private static final String TEST_MODE_EDIT = "Edit";
+	private static final String TEST_RECORD_TYPE_ID = "test_record_type_id";
     private static final String TEST_OTHER_OBJECT_TYPE = "testOtherObjectType";
 	private static final String TEST_OBJECT_ID = "testObjectId";
 	private static final String TEST_EXTERNAL_ID_FIELD = "testExternalIdField";
@@ -163,12 +166,40 @@ public class RestRequestTest {
 	}
 
 	/**
+	 * Test for getRequestForObjectLayout without formFactor.
+	 */
+	@Test
+	public void testGetRequestForObjectLayoutWithoutFormFactor() {
+		RestRequest request = RestRequest.getRequestForObjectLayout(TEST_API_VERSION,
+				TEST_OBJECT_TYPE, null, null, null, null);
+		Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+		Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION +
+				"/ui-api/layout/" + TEST_OBJECT_TYPE, request.getPath());
+		Assert.assertNull("Wrong request entity", request.getRequestBody());
+		Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+	}
+
+	/**
+	 * Test for getRequestForObjectLayout with formFactor.
+	 */
+	@Test
+	public void testGetRequestForObjectLayoutWithFormFactor() {
+		RestRequest request = RestRequest.getRequestForObjectLayout(TEST_API_VERSION,
+				TEST_OBJECT_TYPE, TEST_FORM_FACTOR_MEDIUM, null, null, null);
+		Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+		Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION +
+				"/ui-api/layout/" + TEST_OBJECT_TYPE + "?formFactor=" + TEST_FORM_FACTOR_MEDIUM, request.getPath());
+		Assert.assertNull("Wrong request entity", request.getRequestBody());
+		Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+	}
+
+	/**
 	 * Test for getRequestForObjectLayout without layoutType.
 	 */
 	@Test
 	public void testGetRequestForObjectLayoutWithoutLayoutType() {
 		RestRequest request = RestRequest.getRequestForObjectLayout(TEST_API_VERSION,
-                TEST_OBJECT_TYPE, null);
+				TEST_OBJECT_TYPE, null, null, null, null);
 		Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
 		Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION +
                 "/ui-api/layout/" + TEST_OBJECT_TYPE, request.getPath());
@@ -181,15 +212,71 @@ public class RestRequestTest {
      */
     @Test
     public void testGetRequestForObjectLayoutWithLayoutType() {
-        RestRequest request = RestRequest.getRequestForObjectLayout(TEST_API_VERSION,
-                TEST_OBJECT_TYPE, LAYOUT_TYPE_COMPACT);
+		RestRequest request = RestRequest.getRequestForObjectLayout(TEST_API_VERSION,
+				TEST_OBJECT_TYPE, null, TEST_LAYOUT_TYPE_COMPACT, null, null);
         Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
         Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION +
-                "/ui-api/layout/" + TEST_OBJECT_TYPE + "?layoutType=" + LAYOUT_TYPE_COMPACT, request.getPath());
+                "/ui-api/layout/" + TEST_OBJECT_TYPE + "?layoutType=" + TEST_LAYOUT_TYPE_COMPACT, request.getPath());
         Assert.assertNull("Wrong request entity", request.getRequestBody());
         Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
     }
-	
+
+	/**
+	 * Test for getRequestForObjectLayout without mode.
+	 */
+	@Test
+	public void testGetRequestForObjectLayoutWithoutMode() {
+		RestRequest request = RestRequest.getRequestForObjectLayout(TEST_API_VERSION,
+				TEST_OBJECT_TYPE, null, null, null, null);
+		Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+		Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION +
+				"/ui-api/layout/" + TEST_OBJECT_TYPE, request.getPath());
+		Assert.assertNull("Wrong request entity", request.getRequestBody());
+		Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+	}
+
+	/**
+	 * Test for getRequestForObjectLayout with mode.
+	 */
+	@Test
+	public void testGetRequestForObjectLayoutWithMode() {
+		RestRequest request = RestRequest.getRequestForObjectLayout(TEST_API_VERSION,
+				TEST_OBJECT_TYPE, null, null, TEST_MODE_EDIT, null);
+		Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+		Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION +
+				"/ui-api/layout/" + TEST_OBJECT_TYPE + "?mode=" + TEST_MODE_EDIT, request.getPath());
+		Assert.assertNull("Wrong request entity", request.getRequestBody());
+		Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+	}
+
+	/**
+	 * Test for getRequestForObjectLayout without recordTypeId.
+	 */
+	@Test
+	public void testGetRequestForObjectLayoutWithoutRecordTypeId() {
+		RestRequest request = RestRequest.getRequestForObjectLayout(TEST_API_VERSION,
+				TEST_OBJECT_TYPE, null, null, null, null);
+		Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+		Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION +
+				"/ui-api/layout/" + TEST_OBJECT_TYPE, request.getPath());
+		Assert.assertNull("Wrong request entity", request.getRequestBody());
+		Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+	}
+
+	/**
+	 * Test for getRequestForObjectLayout with recordTypeId.
+	 */
+	@Test
+	public void testGetRequestForObjectLayoutWithRecordTypeId() {
+		RestRequest request = RestRequest.getRequestForObjectLayout(TEST_API_VERSION,
+				TEST_OBJECT_TYPE, null, null, null, TEST_RECORD_TYPE_ID);
+		Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+		Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION +
+				"/ui-api/layout/" + TEST_OBJECT_TYPE + "?recordTypeId=" + TEST_RECORD_TYPE_ID, request.getPath());
+		Assert.assertNull("Wrong request entity", request.getRequestBody());
+		Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+	}
+
 	/**
 	 * Test for getRequestForCreate
 	 * @throws IOException 
@@ -441,6 +528,35 @@ public class RestRequestTest {
 
         JSONObject actualBodyJson = new JSONObject(bodyToString(request));
 
+        JSONTestHelper.assertSameJSON("Wrong request entity", expectedBodyJson, actualBodyJson);
+    }
+
+    @Test
+    public void testGetNotificationRequest() throws Exception {
+        String notificationId = "testID";
+        RestRequest request = RestRequest.getRequestForNotification(TEST_API_VERSION, notificationId);
+        Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/connect/notifications/" + notificationId, request.getPath());
+    }
+
+    @Test
+    public void testUpdateNotificationRequest() throws Exception {
+        String notificationId = "testID";
+        RestRequest request = RestRequest.getRequestForNotificationUpdate(TEST_API_VERSION, notificationId, true, null);
+        Assert.assertEquals("Wrong method", RestMethod.PATCH, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/connect/notifications/" + notificationId, request.getPath());
+    }
+
+    @Test
+    public void testUpdateNotificationsRequest() throws Exception {
+        List<String> notificationIds = Arrays.asList("testID1", "testID2");
+        RestRequest request =  RestRequest.getRequestForNotificationsUpdate(TEST_API_VERSION, notificationIds, null, true, null);
+        Assert.assertEquals("Wrong method", RestMethod.PATCH, request.getMethod());
+        Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/connect/notifications/", request.getPath());
+        JSONObject expectedBodyJson = new JSONObject();
+        expectedBodyJson.put("notificationIds", new JSONArray(notificationIds));
+        expectedBodyJson.put("read", true);
+        JSONObject actualBodyJson = new JSONObject(bodyToString(request));
         JSONTestHelper.assertSameJSON("Wrong request entity", expectedBodyJson, actualBodyJson);
     }
 

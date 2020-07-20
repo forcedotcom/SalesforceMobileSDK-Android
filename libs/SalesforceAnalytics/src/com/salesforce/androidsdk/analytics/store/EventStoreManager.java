@@ -36,13 +36,11 @@ import com.salesforce.androidsdk.analytics.util.SalesforceAnalyticsLogger;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.List;
+
+import io.paperdb.Book;
+import io.paperdb.Paper;
 
 /**
  * Provides APIs to store events in an encrypted store on the filesystem.
@@ -52,15 +50,14 @@ import java.util.List;
  */
 public class EventStoreManager {
 
+    private static final String FILENAME = "event_store";
     private static final String TAG = "EventStoreManager";
 
-    private String filenameSuffix;
-    private File rootDir;
-    private EventFileFilter fileFilter;
     private Context context;
     private String encryptionKey;
+    private Book book;
     private boolean isLoggingEnabled = true;
-    private int maxEvents = 1000;
+    private int maxEvents = 10000;
 
     /**
      * Parameterized constructor.
@@ -71,11 +68,9 @@ public class EventStoreManager {
      * @param encryptionKey Encryption key (must be Base 64 encoded).
      */
     public EventStoreManager(String filenameSuffix, Context context, String encryptionKey) {
-        this.filenameSuffix = filenameSuffix;
         this.context = context;
         this.encryptionKey = encryptionKey;
-        fileFilter = new EventFileFilter(filenameSuffix);
-        rootDir = context.getFilesDir();
+        book = Paper.bookOn(context.getFilesDir().getAbsolutePath(), FILENAME + filenameSuffix);
     }
 
     /**
@@ -92,15 +87,7 @@ public class EventStoreManager {
         if (!shouldStoreEvent()) {
             return;
         }
-        final String filename = event.getEventId() + filenameSuffix;
-        FileOutputStream outputStream;
-        try {
-            outputStream = context.openFileOutput(filename, Context.MODE_PRIVATE);
-            outputStream.write(encrypt(event.toJson().toString()).getBytes());
-            outputStream.close();
-        } catch (Exception e) {
-            SalesforceAnalyticsLogger.e(context, TAG, "Exception occurred while saving event to filesystem", e);
-        }
+        book.write(event.getEventId(), encrypt(event.toJson().toString()));
     }
 
     /**
@@ -132,9 +119,20 @@ public class EventStoreManager {
             SalesforceAnalyticsLogger.e(context, TAG, "Invalid event ID supplied: " + eventId);
             return null;
         }
-        final String filename = eventId + filenameSuffix;
-        final File file = new File(rootDir, filename);
-        return fetchEvent(file);
+        InstrumentationEvent event = null;
+        final String encryptedEvent = book.read(eventId, null);
+        if (!TextUtils.isEmpty(encryptedEvent)) {
+            final String decryptedEvent = decrypt(encryptedEvent);
+            if (!TextUtils.isEmpty(decryptedEvent)) {
+                try {
+                    final JSONObject jsonObject = new JSONObject(decryptedEvent);
+                    event = new InstrumentationEvent(jsonObject);
+                } catch (JSONException e) {
+                    SalesforceAnalyticsLogger.e(context, TAG, "Exception occurred while attempting to convert to JSON", e);
+                }
+            }
+        }
+        return event;
     }
 
     /**
@@ -143,10 +141,10 @@ public class EventStoreManager {
      * @return List of events.
      */
     public List<InstrumentationEvent> fetchAllEvents() {
-        final List<File> files = getAllFiles();
+        final List<String> eventIds = book.getAllKeys();
         final List<InstrumentationEvent> events = new ArrayList<>();
-        for (final File file : files) {
-            final InstrumentationEvent event = fetchEvent(file);
+        for (final String eventId : eventIds) {
+            final InstrumentationEvent event = fetchEvent(eventId);
             if (event != null) {
                 events.add(event);
             }
@@ -161,13 +159,8 @@ public class EventStoreManager {
      * @return True - if successful, False - otherwise.
      */
     public boolean deleteEvent(String eventId) {
-        if (TextUtils.isEmpty(eventId)) {
-            SalesforceAnalyticsLogger.e(context, TAG, "Invalid event ID supplied: " + eventId);
-            return false;
-        }
-        final String filename = eventId + filenameSuffix;
-        final File file = new File(rootDir, filename);
-        return file.delete();
+        book.delete(eventId);
+        return !book.contains(eventId);
     }
 
     /**
@@ -187,10 +180,7 @@ public class EventStoreManager {
      * Deletes all the events stored on the filesystem for that unique identifier.
      */
     public void deleteAllEvents() {
-        final List<File> files = getAllFiles();
-        for (final File file : files) {
-            file.delete();
-        }
+        book.destroy();
     }
 
     /**
@@ -236,64 +226,11 @@ public class EventStoreManager {
      * @return Number of stored events.
      */
     public int getNumStoredEvents() {
-        int numFiles = 0;
-        final File[] listOfFiles = rootDir.listFiles();
-        if (listOfFiles != null) {
-            numFiles = listOfFiles.length;
-        }
-        return numFiles;
+        return book.getAllKeys().size();
     }
 
     private boolean shouldStoreEvent() {
-        final List<File> files = getAllFiles();
-        int fileCount = 0;
-        if (files != null) {
-            fileCount = files.size();
-        }
-        return (isLoggingEnabled && (fileCount < maxEvents));
-    }
-
-    private InstrumentationEvent fetchEvent(File file) {
-        if (file == null || !file.exists()) {
-            SalesforceAnalyticsLogger.e(context, TAG, "File does not exist");
-            return null;
-        }
-        InstrumentationEvent event = null;
-        String eventString = null;
-        final StringBuilder json = new StringBuilder();
-        try {
-            final BufferedReader br = new BufferedReader(new FileReader(file));
-            String line;
-            while ((line = br.readLine()) != null) {
-                json.append(line).append('\n');
-            }
-            br.close();
-            eventString = decrypt(json.toString());
-        } catch (Exception ex) {
-            SalesforceAnalyticsLogger.e(context, TAG, "Exception occurred while attempting to read file contents", ex);
-        }
-        if (!TextUtils.isEmpty(eventString)) {
-            try {
-                final JSONObject jsonObject = new JSONObject(eventString);
-                event = new InstrumentationEvent(jsonObject);
-            } catch (JSONException e) {
-                SalesforceAnalyticsLogger.e(context, TAG, "Exception occurred while attempting to convert to JSON", e);
-            }
-        }
-        return event;
-    }
-
-    private List<File> getAllFiles() {
-        final List<File> files = new ArrayList<>();
-        final File[] listOfFiles = rootDir.listFiles();
-        if (listOfFiles != null) {
-            for (final File file : listOfFiles) {
-                if (file != null && fileFilter.accept(rootDir, file.getName())) {
-                    files.add(file);
-                }
-            }
-        }
-        return files;
+        return (isLoggingEnabled && (getNumStoredEvents() < maxEvents));
     }
 
     private String encrypt(String data) {
@@ -302,29 +239,5 @@ public class EventStoreManager {
 
     private String decrypt(String data) {
         return Encryptor.decrypt(data, encryptionKey);
-    }
-
-    /**
-     * This class acts as a filter to identify only the relevant event files.
-     *
-     * @author bhariharan
-     */
-    private static class EventFileFilter implements FilenameFilter {
-
-        private String fileSuffix;
-
-        /**
-         * Parameterized constructor.
-         *
-         * @param fileSuffix Filename suffix.
-         */
-        EventFileFilter(String fileSuffix) {
-            this.fileSuffix = fileSuffix;
-        }
-
-        @Override
-        public boolean accept(File dir, String filename) {
-            return (filename != null && filename.endsWith(fileSuffix));
-        }
     }
 }
