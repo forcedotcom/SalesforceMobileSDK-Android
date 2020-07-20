@@ -7,7 +7,7 @@
     },
     "dependencies": {
         "chai": "4.1.2",
-        "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#dev",
+        "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#v8.2.0",
         "eslint": "^5.1.0",
         "acorn": "^6.4.1",
         "@react-native-community/cli": "^4.5.1",
