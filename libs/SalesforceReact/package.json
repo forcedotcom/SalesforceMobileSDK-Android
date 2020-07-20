@@ -1,13 +1,13 @@
 {
     "name": "SalesforceReact",
-    "version": "8.2.0",
+    "version": "8.3.0",
     "private": true,
     "scripts": {
         "start": "node node_modules/react-native/local-cli/cli.js start"
     },
     "dependencies": {
         "chai": "4.1.2",
-        "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#v8.2.0",
+        "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#dev",
         "eslint": "^5.1.0",
         "acorn": "^6.4.1",
         "@react-native-community/cli": "^4.5.1",
