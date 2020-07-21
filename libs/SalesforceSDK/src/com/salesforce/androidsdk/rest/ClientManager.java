@@ -261,6 +261,8 @@ public class ClientManager {
                 accountManager.setUserData(account, AuthenticatorService.KEY_LOGIN_URL, Encryptor.encrypt(loginServer, newEncryptionKey));
                 final String idUrl = Encryptor.legacyDecrypt(accountManager.getUserData(account, AuthenticatorService.KEY_ID_URL), legacyEncryptionKey);
                 accountManager.setUserData(account, AuthenticatorService.KEY_ID_URL, Encryptor.encrypt(idUrl, newEncryptionKey));
+                final String clientId = Encryptor.legacyDecrypt(accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), legacyEncryptionKey);
+                accountManager.setUserData(account, AuthenticatorService.KEY_CLIENT_ID, Encryptor.encrypt(clientId, newEncryptionKey));
                 final String instanceServer = Encryptor.legacyDecrypt(accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), legacyEncryptionKey);
                 accountManager.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL, Encryptor.encrypt(instanceServer, newEncryptionKey));
                 final String orgId = Encryptor.legacyDecrypt(accountManager.getUserData(account, AuthenticatorService.KEY_ORG_ID), legacyEncryptionKey);
