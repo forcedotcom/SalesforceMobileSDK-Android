@@ -343,6 +343,7 @@ public class RestRequest {
      * Returns whether the SDK should attempt to refresh tokens if the service returns HTTP 403.
      *
      * @return True - if the SDK should refresh on HTTP 403, False - otherwise.
+	 * @deprecated Will be removed in Mobile SDK 9.0.
      */
 	public boolean getShouldRefreshOn403() {
 	    return shouldRefreshOn403;
@@ -352,6 +353,7 @@ public class RestRequest {
      * Sets whether the SDK should attempt to refresh tokens if the service returns HTTP 403.
      *
      * @param shouldRefreshOn403 True - if the SDK should refresh on HTTP 403, False - otherwise.
+	 * @deprecated Will be removed in Mobile SDK 9.0.
      */
 	public synchronized void setShouldRefreshOn403(boolean shouldRefreshOn403) {
         this.shouldRefreshOn403 = shouldRefreshOn403;
