@@ -661,21 +661,30 @@ public class RestClient {
 			 * return 403 as the error code when an instance split or migration occurs.
 			 */
             if (refreshRequired) {
-                refreshAccessToken();
-                if (getAuthToken() != null) {
-                    request = buildAuthenticatedRequest(request);
-					HttpUrl currentInstanceUrl = HttpUrl.get(clientInfo.getInstanceUrl());
-					if (currentInstanceUrl != null && currentInstanceUrl.host() != null) {
+				final HttpUrl currentInstanceUrl = HttpUrl.get(clientInfo.getInstanceUrl());
+				if (currentInstanceUrl != null) {
 
-						// This happens during instance migration. hosts could change
-						// In that case, the new host should replace the old host in the request object
-						if (!currentInstanceUrl.host().equals(request.url().host())) {
+					// Checks if the host of the request is the same as instance URL.
+					boolean isHostInstanceUrl = currentInstanceUrl.host().equals(request.url().host());
+					refreshAccessToken();
+					if (getAuthToken() != null) {
+						request = buildAuthenticatedRequest(request);
+
+						/*
+						 * During instance migration, the instance URL could change. Hence, the host
+						 * needs to be adjusted to replace the old instance URL with the new instance
+						 * URL before replaying this request. However, this adjustment should be applied
+						 * only if the host of the request was the old instance URL. This avoids
+						 * accidental manipulation of the host for requests where the caller has
+						 * passed in their own fully formed host URL that is not instance URL.
+						 */
+						if (isHostInstanceUrl && !currentInstanceUrl.host().equals(request.url().host())) {
 							request = adjustHostInRequest(request, currentInstanceUrl.host());
 						}
+						response.close();
+						response = chain.proceed(request);
 					}
-                    response.close();
-                    response = chain.proceed(request);
-                }
+				}
             }
             return response;
         }
