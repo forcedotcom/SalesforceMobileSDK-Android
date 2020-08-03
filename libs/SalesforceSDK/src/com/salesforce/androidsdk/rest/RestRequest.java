@@ -203,7 +203,7 @@ public class RestRequest {
      * @param additionalHttpHeaders Additional headers.
      *
      */
-    public RestRequest(RestMethod method, String path,  Map<String, String> additionalHttpHeaders) {
+    public RestRequest(RestMethod method, String path, Map<String, String> additionalHttpHeaders) {
         this(method, path, (RequestBody) null, additionalHttpHeaders);
     }
 
@@ -257,7 +257,7 @@ public class RestRequest {
      *
      * Note: Use this constructor if requestBody is not null and you want to build a batch or composite request.
      */
-    public RestRequest(RestMethod method, String path, JSONObject requestBodyAsJson,  Map<String, String> additionalHttpHeaders) {
+    public RestRequest(RestMethod method, String path, JSONObject requestBodyAsJson, Map<String, String> additionalHttpHeaders) {
         this(method, RestEndpoint.INSTANCE, path, requestBodyAsJson, additionalHttpHeaders);
     }
 
