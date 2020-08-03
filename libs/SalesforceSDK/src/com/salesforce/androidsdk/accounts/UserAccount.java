@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.accounts;
 
 import android.app.DownloadManager;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -398,15 +399,21 @@ public class UserAccount {
         if (srcUri == null || destUri == null) {
         	return;
 		}
-        final DownloadManager.Request downloadReq = new DownloadManager.Request(srcUri);
-        downloadReq.setDestinationUri(destUri);
-        downloadReq.addRequestHeader(AUTHORIZATION, BEARER + authToken);
-        downloadReq.setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN);
-        downloadReq.setVisibleInDownloadsUi(false);
-        final DownloadManager downloadManager = (DownloadManager) SalesforceSDKManager.getInstance().getAppContext().getSystemService(Context.DOWNLOAD_SERVICE);
-        if (downloadManager != null) {
-            downloadManager.enqueue(downloadReq);
-        }
+
+        // Checks if DownloadManager is enabled on the device, to ensure it doesn't crash.
+        final PackageManager pm = SalesforceSDKManager.getInstance().getAppContext().getPackageManager();
+        int state = pm.getApplicationEnabledSetting("com.android.providers.downloads");
+        if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
+			final DownloadManager.Request downloadReq = new DownloadManager.Request(srcUri);
+			downloadReq.setDestinationUri(destUri);
+			downloadReq.addRequestHeader(AUTHORIZATION, BEARER + authToken);
+			downloadReq.setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN);
+			downloadReq.setVisibleInDownloadsUi(false);
+			final DownloadManager downloadManager = (DownloadManager) SalesforceSDKManager.getInstance().getAppContext().getSystemService(Context.DOWNLOAD_SERVICE);
+			if (downloadManager != null) {
+				downloadManager.enqueue(downloadReq);
+			}
+		}
     }
 
 	/**
