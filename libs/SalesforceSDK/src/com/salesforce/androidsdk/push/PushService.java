@@ -81,7 +81,6 @@ public class PushService extends JobIntentService {
 
 	// Retry time constants.
     private static final long MILLISECONDS_IN_SIX_DAYS = 518400000L;
-    private static final long SFDC_REGISTRATION_RETRY = 30000;
 
     // Unique identifier for this job.
 	private static final int JOB_ID = 24;
@@ -199,11 +198,9 @@ public class PushService extends JobIntentService {
             SalesforceSDKLogger.e(TAG, "Account is null, will retry registration later");
             return;
         }
-    	long retryInterval = SFDC_REGISTRATION_RETRY;
     	try {
         	final String id = registerSFDCPushNotification(registrationId, account);
         	if (id != null) {
-        		retryInterval = MILLISECONDS_IN_SIX_DAYS;
         		PushMessaging.setRegistrationInfo(SalesforceSDKManager.getInstance().getAppContext(),
                         registrationId, id, account);
         	} else {
@@ -213,7 +210,7 @@ public class PushService extends JobIntentService {
     	} catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Error occurred during SFDC registration", e);
     	} finally {
-            scheduleSFDCRegistrationRetry(retryInterval, null);
+            scheduleSFDCRegistrationRetry(MILLISECONDS_IN_SIX_DAYS, null);
     	}
     }
 
