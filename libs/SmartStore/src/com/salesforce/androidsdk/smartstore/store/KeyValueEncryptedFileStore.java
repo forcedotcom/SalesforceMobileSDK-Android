@@ -249,7 +249,7 @@ public class KeyValueEncryptedFileStore  {
 
     /** Deletes all stored values. */
     public void deleteAll() {
-        for (File file : storeDir.listFiles()) {
+        for (File file : safeListFiles()) {
             SmartStoreLogger.i(TAG, "deleting file :" + file.getName());
             file.delete();
         }
@@ -257,12 +257,12 @@ public class KeyValueEncryptedFileStore  {
 
     /** @return number of entries in the store. */
     public int count() {
-        return storeDir.list().length;
+        return safeListFiles().length;
     }
 
     /** @return True if store is empty. */
     public boolean isEmpty() {
-        return storeDir.list().length == 0;
+        return safeListFiles().length == 0;
     }
 
     /**
@@ -334,6 +334,14 @@ public class KeyValueEncryptedFileStore  {
             return false;
         }
         return true;
+    }
+
+    /**
+     * @return array of files in storeDir won't return null even if storeDir has been deleted
+     */
+    private File[] safeListFiles() {
+        File[] files = storeDir == null ? null : storeDir.listFiles();
+        return files == null ? new File[0] : files;
     }
 
     InputStream getStream(File file, String encryptionKey) throws IOException, GeneralSecurityException {
