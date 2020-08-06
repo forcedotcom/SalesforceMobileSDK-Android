@@ -317,6 +317,28 @@ public class KeyValueEncryptedFileStoreTest {
         }
     }
 
+    /** Making sure various operations won't NPE if storeDir was deleted */
+    @Test
+    public void testNoNPEIfStoreDirDeleted() {
+        keyValueStore.getStoreDir().delete();
+        Assert.assertNull("Expected null for files in deleted stored dir", keyValueStore.getStoreDir().listFiles());
+        try {
+            Assert.assertEquals(TEST_STORE, keyValueStore.getStoreName());
+            Assert.assertEquals(null, keyValueStore.getValue("xyz"));
+            Assert.assertEquals(false, keyValueStore.saveValue("xyz", "abc"));
+            Assert.assertEquals(null, keyValueStore.getValue("xyz"));
+            Assert.assertEquals(false, keyValueStore.deleteValue("xyz"));
+            Assert.assertEquals(null, keyValueStore.getStream("xyz"));
+            Assert.assertEquals(false, keyValueStore.saveStream("xyz", stringToStream("abc")));
+            Assert.assertEquals(null, keyValueStore.getStream("xyz"));
+            Assert.assertEquals(0, keyValueStore.count());
+            Assert.assertEquals(true, keyValueStore.isEmpty());
+            keyValueStore.deleteAll();
+        } catch (NullPointerException e) {
+            Assert.fail("NPE was not expected");
+        }
+    }
+
     /** Test saving value with invalid key */
     @Test
     public void testSaveValueInvalidKey() {
