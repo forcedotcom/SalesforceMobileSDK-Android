@@ -261,6 +261,7 @@ public class PasscodeActivity extends Activity {
             instr.setVisibility(View.VISIBLE);
             passcodeBox.setVisibility(View.VISIBLE);
             passcodeField.setVisibility(View.VISIBLE);
+            passcodeField.requestFocus();
 
             if (!passcodeManager.getPasscodeLengthKnown()) {
                 verifyButton.setVisibility(View.VISIBLE);
