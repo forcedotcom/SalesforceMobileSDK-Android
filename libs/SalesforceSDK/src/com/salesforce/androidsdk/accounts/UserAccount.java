@@ -35,6 +35,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 
+import androidx.annotation.Nullable;
+
 import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.util.MapUtil;
@@ -379,8 +381,12 @@ public class UserAccount {
      *
      * @return User's profile photo.
      */
+    @Nullable
     public Bitmap getProfilePhoto() {
         final File file = getProfilePhotoFile();
+        if (file == null) {
+            return null;
+        }
         final BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
         bitmapOptions.inPreferredConfig = Bitmap.Config.ARGB_8888;
         return BitmapFactory.decodeFile(file.getAbsolutePath(), bitmapOptions);
@@ -390,10 +396,10 @@ public class UserAccount {
      * Fetches this user's profile photo from the server and stores it in the cache.
      */
     public void downloadProfilePhoto() {
-        if (photoUrl == null) {
+        final File file = getProfilePhotoFile();
+        if (photoUrl == null || file == null) {
             return;
         }
-        final File file = getProfilePhotoFile();
         final Uri srcUri = Uri.parse(photoUrl);
         final Uri destUri = Uri.fromFile(file);
         if (srcUri == null || destUri == null) {
@@ -654,9 +660,10 @@ public class UserAccount {
     	return object;
     }
 
+    @Nullable
     private File getProfilePhotoFile() {
         final String filename = PROFILE_PHOTO_PATH_PREFIX + getUserLevelFilenameSuffix() + JPG;
-        return (new File(SalesforceSDKManager.getInstance().getAppContext().getExternalCacheDir(),
-                filename));
+        File baseDir = SalesforceSDKManager.getInstance().getAppContext().getExternalCacheDir();
+        return baseDir != null ? new File(baseDir, filename) : null;
     }
 }
