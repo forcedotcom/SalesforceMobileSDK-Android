@@ -35,8 +35,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 
-import androidx.annotation.Nullable;
-
 import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.util.MapUtil;
@@ -381,7 +379,6 @@ public class UserAccount {
      *
      * @return User's profile photo.
      */
-    @Nullable
     public Bitmap getProfilePhoto() {
         final File file = getProfilePhotoFile();
         if (file == null) {
@@ -578,7 +575,7 @@ public class UserAccount {
 
     @Override
     public boolean equals(Object object) {
-        if (object == null || !(object instanceof UserAccount)) {
+        if (!(object instanceof UserAccount)) {
             return false;
         }
         final UserAccount userAccount = (UserAccount) object;
@@ -586,11 +583,8 @@ public class UserAccount {
         		|| userAccount.getOrgId() == null) {
         	return false;
         }
-        if (userAccount.getUserId().equals(userId) && userAccount.getOrgId().equals(orgId)) {
-        	return true;
-        }
-        return false;
-    }
+		return (userAccount.getUserId().equals(userId) && userAccount.getOrgId().equals(orgId));
+	}
 
     @Override
     public int hashCode() {
@@ -660,7 +654,6 @@ public class UserAccount {
     	return object;
     }
 
-    @Nullable
     private File getProfilePhotoFile() {
         final String filename = PROFILE_PHOTO_PATH_PREFIX + getUserLevelFilenameSuffix() + JPG;
         File baseDir = SalesforceSDKManager.getInstance().getAppContext().getExternalCacheDir();
