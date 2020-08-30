@@ -26,12 +26,12 @@
  */
 package com.salesforce.androidsdk.util;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.SmallTest;
 
 /**
  * Tests for AuthConfigUtil.
@@ -75,16 +75,7 @@ public class AuthConfigUtilTest {
         Assert.assertNotNull("Auth config should not be null", authConfig);
         Assert.assertNotNull("Auth config JSON should not be null", authConfig.getAuthConfig());
         Assert.assertNotNull("SSO URLs should not be null", authConfig.getSsoUrls());
-        Assert.assertTrue("SSO URLs should have at least 1 valid entry",
-                authConfig.getSsoUrls().size() >= 1);
-    }
-
-    @Test
-    public void testGetNoSSOUrls() {
-        final AuthConfigUtil.MyDomainAuthConfig authConfig = AuthConfigUtil.getMyDomainAuthConfig(MY_DOMAIN_ENDPOINT);
-        Assert.assertNotNull("Auth config should not be null", authConfig);
-        Assert.assertNotNull("Auth config JSON should not be null", authConfig.getAuthConfig());
-        Assert.assertNull("SSO URLs should be null", authConfig.getSsoUrls());
+        Assert.assertEquals("SSO URLs should have 3 valid entries", 3, authConfig.getSsoUrls().size());
     }
 
     @Test

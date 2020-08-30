@@ -70,7 +70,7 @@ public class AuthConfigUtil {
         final Request request = new Request.Builder().url(authConfigUrl).get().build();
         try {
             final Response response = HttpAccess.DEFAULT.getOkHttpClient().newCall(request).execute();
-            if (response != null && response.isSuccessful()) {
+            if (response.isSuccessful()) {
                 authConfig = new MyDomainAuthConfig((new RestResponse(response)).asJSONObject());
             }
         } catch (Exception e) {
@@ -89,6 +89,7 @@ public class AuthConfigUtil {
         private static final String MOBILE_SDK_KEY = "MobileSDK";
         private static final String USE_NATIVE_BROWSER_KEY = "UseAndroidNativeBrowserForAuthentication";
         private static final String SAML_PROVIDERS_KEY = "SamlProviders";
+        private static final String AUTH_PROVIDERS_KEY = "AuthProviders";
         private static final String SSO_URL_KEY = "SsoUrl";
         private static final String LOGIN_PAGE_KEY = "LoginPage";
         private static final String LOGIN_PAGE_URL_KEY = "LoginPageUrl";
@@ -105,14 +106,16 @@ public class AuthConfigUtil {
          */
         public MyDomainAuthConfig(JSONObject authConfig) {
             this.authConfig = authConfig;
+            ssoUrls = new ArrayList<>();
             if (authConfig != null) {
                 final JSONObject mobileSDK = authConfig.optJSONObject(MOBILE_SDK_KEY);
                 if (mobileSDK != null) {
                     browserLoginEnabled = mobileSDK.optBoolean(USE_NATIVE_BROWSER_KEY);
                 }
+
+                // Parses SAML provider list and adds it to the list of SSO URLs.
                 final JSONArray samlProviders = authConfig.optJSONArray(SAML_PROVIDERS_KEY);
                 if (samlProviders != null && samlProviders.length() > 0) {
-                    ssoUrls = new ArrayList<>();
                     for (int i = 0; i < samlProviders.length(); i++) {
                         final JSONObject provider = samlProviders.optJSONObject(i);
                         if (provider != null) {
@@ -123,6 +126,21 @@ public class AuthConfigUtil {
                         }
                     }
                 }
+
+                // Parses auth provider list and adds it to the list of SSO URLs.
+                final JSONArray authProviders = authConfig.optJSONArray(AUTH_PROVIDERS_KEY);
+                if (authProviders != null && authProviders.length() > 0) {
+                    for (int i = 0; i < authProviders.length(); i++) {
+                        final JSONObject provider = authProviders.optJSONObject(i);
+                        if (provider != null) {
+                            final String ssoUrl = provider.optString(SSO_URL_KEY);
+                            if (!TextUtils.isEmpty(ssoUrl)) {
+                                ssoUrls.add(ssoUrl);
+                            }
+                        }
+                    }
+                }
+                ssoUrls = (ssoUrls.size() > 0) ? ssoUrls : null;
                 final JSONObject loginPageConfig = authConfig.optJSONObject(LOGIN_PAGE_KEY);
                 if (loginPageConfig != null) {
                     loginPageUrl = loginPageConfig.optString(LOGIN_PAGE_URL_KEY);
