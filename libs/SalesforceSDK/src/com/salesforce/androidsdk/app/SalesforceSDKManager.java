@@ -1408,7 +1408,7 @@ public class SalesforceSDKManager {
      */
     private Object getBuildConfigValue(Context context, String fieldName) {
         try {
-            Class<?> clazz = Class.forName(context.getPackageName() + ".BuildConfig");
+            Class<?> clazz = Class.forName(context.getClass().getPackage().getName() + ".BuildConfig");
             Field field = clazz.getField(fieldName);
             return field.get(null);
         } catch (Exception e) {
