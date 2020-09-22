@@ -30,13 +30,15 @@ package com.salesforce.androidsdk.smartstore.store;
 import android.content.Context;
 import android.text.TextUtils;
 
-import com.salesforce.androidsdk.analytics.security.DecrypterInputStream;
-import com.salesforce.androidsdk.analytics.security.EncrypterOutputStream;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 import com.salesforce.androidsdk.util.ManagedFilesHelper;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -44,7 +46,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
 
 /** Key-value store backed by file system */
 public class KeyValueEncryptedFileStore  {
@@ -86,7 +87,6 @@ public class KeyValueEncryptedFileStore  {
         }
         this.encryptionKey = encryptionKey;
     }
-
 
     /**
      * Return boolean indicating if a key value store with the given (full) name already exists
@@ -141,10 +141,16 @@ public class KeyValueEncryptedFileStore  {
             SmartStoreLogger.w(TAG, "saveValue: Invalid value supplied: null");
             return false;
         }
-        try (FileOutputStream f = new FileOutputStream(getFileForKey(key));
-                EncrypterOutputStream outputStream = new EncrypterOutputStream(f, encryptionKey)) {
-            outputStream.write(value.getBytes(StandardCharsets.UTF_8));
-            return true;
+        try {
+            final FileOutputStream f = new FileOutputStream(getFileForKey(key));
+            byte[] encryptedContent = Encryptor.encryptBytes(value, encryptionKey);
+            if (encryptedContent != null) {
+                f.write(encryptedContent);
+                f.close();
+                return true;
+            } else {
+                return false;
+            }
         } catch (Exception e) {
             SmartStoreLogger.e(TAG, "IOException occurred while saving value to filesystem", e);
             return false;
@@ -332,20 +338,34 @@ public class KeyValueEncryptedFileStore  {
         return files == null ? new File[0] : files;
     }
 
-    InputStream getStream(File file, String encryptionKey) throws IOException, GeneralSecurityException {
-        FileInputStream f = new FileInputStream(file);
-        return new DecrypterInputStream(f, encryptionKey);
+    InputStream getStream(File file, String encryptionKey) throws IOException {
+        final FileInputStream f = new FileInputStream(file);
+        final DataInputStream data = new DataInputStream(f);
+        byte[] bytes = new byte[(int) file.length()];
+        data.readFully(bytes);
+        final String decryptedString = Encryptor.decrypt(bytes, encryptionKey);
+        if (!TextUtils.isEmpty(decryptedString)) {
+            byte[] decryptedBytes = decryptedString.getBytes();
+            return new ByteArrayInputStream(decryptedBytes);
+        }
+        return null;
     }
 
     void saveStream(File file, InputStream stream, String encryptionKey)
-        throws IOException, GeneralSecurityException {
-        try (FileOutputStream f = new FileOutputStream(file);
-            EncrypterOutputStream outputStream = new EncrypterOutputStream(f, encryptionKey)) {
-            byte[] buffer = new byte[1024];
-            int len;
-            while ((len = stream.read(buffer)) > 0) {
-                outputStream.write(buffer,0,len);
-            }
+        throws IOException {
+        final ByteArrayOutputStream b = new ByteArrayOutputStream();
+        int nextByte = stream.read();
+        while (nextByte != -1) {
+            b.write(nextByte);
+            nextByte = stream.read();
+        }
+        byte[] content = b.toByteArray();
+        byte[] encryptedContent = Encryptor.encryptBytes(new String(content,
+                StandardCharsets.US_ASCII), encryptionKey);
+        final FileOutputStream f = new FileOutputStream(file);
+        if (encryptedContent != null) {
+            f.write(encryptedContent);
+            f.close();
         }
     }
 }
