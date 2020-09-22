@@ -27,13 +27,21 @@
 package com.salesforce.androidsdk.store;
 
 import android.content.Context;
-import androidx.core.widget.TextViewCompat.AutoSizeTextType;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.KeyValueEncryptedFileStore;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -43,11 +51,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 public class KeyValueEncryptedFileStoreTest {
@@ -59,7 +62,7 @@ public class KeyValueEncryptedFileStoreTest {
     private KeyValueEncryptedFileStore keyValueStore;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         context =
                 InstrumentationRegistry.getInstrumentation()
                         .getTargetContext()
@@ -73,7 +76,7 @@ public class KeyValueEncryptedFileStoreTest {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         keyValueStore.deleteAll();
         getStoreDir(TEST_STORE).delete();
     }
@@ -91,7 +94,7 @@ public class KeyValueEncryptedFileStoreTest {
         Assert.assertTrue("Store name is valid", KeyValueEncryptedFileStore.isValidStoreName("abc_def_ABC_DEF_012"));
         String generateStoreName = "";
         // Trying various lengths
-        for (int i=0; i<KeyValueEncryptedFileStore.MAX_STORE_NAME_LENGTH*2; i++) {
+        for (int i=0; i<KeyValueEncryptedFileStore.MAX_STORE_NAME_LENGTH * 2; i++) {
             generateStoreName += "x";
             Assert.assertEquals("Wrong value returned by isValidStoreName(\"" + generateStoreName + "\")",
                 generateStoreName.length() <= KeyValueEncryptedFileStore.MAX_STORE_NAME_LENGTH,
@@ -152,7 +155,6 @@ public class KeyValueEncryptedFileStoreTest {
         file.delete();
     }
 
-
     /**
      * Test hasKeyValueStore()
      * Call hasKeyValueStore for existing store and non-existent store
@@ -210,7 +212,6 @@ public class KeyValueEncryptedFileStoreTest {
             String value = "value" + i;
             keyValueStore.saveValue(key, value);
         }
-
         for (int i = 0; i < NUM_ENTRIES; i++) {
             String key = "key" + i;
             String expectedValue = "value" + i;
@@ -227,7 +228,6 @@ public class KeyValueEncryptedFileStoreTest {
             InputStream stream = stringToStream("value" + i);
             keyValueStore.saveStream(key, stream);
         }
-
         for (int i = 0; i < NUM_ENTRIES; i++) {
             String key = "key" + i;
             String expectedValue = "value" + i;
@@ -244,7 +244,6 @@ public class KeyValueEncryptedFileStoreTest {
             String value = "value" + i;
             keyValueStore.saveValue(key, value);
         }
-
         for (int i = 0; i < NUM_ENTRIES; i++) {
             String key = "key" + i;
             String expectedValue = "value" + i;
@@ -263,7 +262,6 @@ public class KeyValueEncryptedFileStoreTest {
             InputStream stream = stringToStream("value" + i);
             keyValueStore.saveStream(key, stream);
         }
-
         for (int i = 0; i < NUM_ENTRIES; i++) {
             String key = "key" + i;
             String expectedValue = "value" + i;
@@ -282,7 +280,6 @@ public class KeyValueEncryptedFileStoreTest {
             String value = "value" + i;
             keyValueStore.saveValue(key, value);
         }
-
         for (int i = 0; i < NUM_ENTRIES; i++) {
             String key = "key" + i;
             Assert.assertNotNull(
@@ -305,11 +302,9 @@ public class KeyValueEncryptedFileStoreTest {
             String value = "value" + i;
             keyValueStore.saveValue(key, value);
         }
-
         Assert.assertEquals("Wrong count before deleteAll", NUM_ENTRIES, keyValueStore.count());
         keyValueStore.deleteAll();
         Assert.assertEquals("Wrong count after deleteAll", 0, keyValueStore.count());
-
         for (int i = 0; i < NUM_ENTRIES; i++) {
             String key = "key" + i;
             Assert.assertNull(
@@ -428,7 +423,6 @@ public class KeyValueEncryptedFileStoreTest {
         if (inputStream == null) {
             return null;
         }
-
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
             StringBuilder out = new StringBuilder();
@@ -436,9 +430,7 @@ public class KeyValueEncryptedFileStoreTest {
             while ((line = reader.readLine()) != null) {
                 out.append(line);
             }
-
             return out.toString();
-
         } catch (IOException e) {
             Assert.fail("Failed to read from stream");
 
@@ -452,5 +444,4 @@ public class KeyValueEncryptedFileStoreTest {
             }
         }
     }
-
 }
