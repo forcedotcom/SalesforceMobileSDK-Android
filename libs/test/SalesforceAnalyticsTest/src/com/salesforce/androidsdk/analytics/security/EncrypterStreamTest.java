@@ -76,37 +76,33 @@ public class EncrypterStreamTest {
     @Test
     public void testWriteAndReadThroughStream() {
         String contentToWrite = "testWriteAndReadThroughStream";
-        writeThroughStream(contentToWrite);
-        String readContent = readThroughStream();
-        Assert.assertEquals(contentToWrite, readContent);
+        writeThroughStream(contentToWrite.getBytes());
+        byte[] readContent = readThroughStream();
+        Assert.assertArrayEquals(contentToWrite.getBytes(), readContent);
     }
 
     /**
      * Write an encrypted file using Encryptor.encrypt and a FileOutputStream and read it back using
      * DecrypterInputStream
-     *
-     * <p>Note: won't work because Encryptor.encrypt base-64 encodes content
      */
-    // @Test
+    @Test
     public void testWriteWithEncryptorAndReadThroughStream() {
         String contentToWrite = "testWriteWithEncryptorAndReadThroughStream";
-        writeWithEncryptor(contentToWrite);
-        String readContent = readThroughStream();
-        Assert.assertEquals(contentToWrite, readContent);
+        writeWithEncryptor(contentToWrite.getBytes());
+        byte[] readContent = readThroughStream();
+        Assert.assertArrayEquals(contentToWrite.getBytes(), readContent);
     }
 
     /**
      * Test that writes an encrypted file using EncrypterOutputStream and reads it back using
      * FileInputStream and Encryptor.decrypt
-     *
-     * <p>Note: won't work because Encryptor.decrypt expect the encrypted content base 64 encoded
      */
-    // @Test
+    @Test
     public void testWriteThroughStreamAndReadWithEncryptor() {
         String contentToWrite = "testWriteThroughStreamAndReadWithEncryptor";
-        writeThroughStream(contentToWrite);
-        String readContent = readWithEncryptor();
-        Assert.assertEquals(contentToWrite, readContent);
+        writeThroughStream(contentToWrite.getBytes());
+        byte[] readContent = readWithEncryptor();
+        Assert.assertArrayEquals(contentToWrite.getBytes(), readContent);
     }
 
     /**
@@ -116,9 +112,9 @@ public class EncrypterStreamTest {
     @Test
     public void testWriteAndReadWithEncryptor() {
         String contentToWrite = "testWriteAndReadWithEncryptor";
-        writeWithEncryptor(contentToWrite);
-        String readContent = readWithEncryptor();
-        Assert.assertEquals(contentToWrite, readContent);
+        writeWithEncryptor(contentToWrite.getBytes());
+        byte[] readContent = readWithEncryptor();
+        Assert.assertArrayEquals(contentToWrite.getBytes(), readContent);
     }
 
     /**
@@ -146,11 +142,11 @@ public class EncrypterStreamTest {
      *
      * @param content
      */
-    private void writeThroughStream(String content) {
+    private void writeThroughStream(byte[] content) {
         try (FileOutputStream f = context.openFileOutput(TEST_FILE, Context.MODE_PRIVATE);
                 EncrypterOutputStream outputStream =
                         new EncrypterOutputStream(f, encryptionKey)) {
-            outputStream.write(content.getBytes(StandardCharsets.UTF_8));
+            outputStream.write(content);
         } catch (Exception e) {
             Assert.fail(e.getMessage());
         }
@@ -159,18 +155,18 @@ public class EncrypterStreamTest {
     /**
      * Helper method to read an encrypted file using DecrypterInputStream
      *
-     * @return content of file as string
+     * @return content of file as bytes
      */
-    private String readThroughStream() {
+    private byte[] readThroughStream() {
         try (FileInputStream f = context.openFileInput(TEST_FILE);
-                DecrypterInputStream i = new DecrypterInputStream(f, encryptionKey); ) {
+                DecrypterInputStream i = new DecrypterInputStream(f, encryptionKey)) {
             BufferedReader reader = new BufferedReader(new InputStreamReader(i));
             StringBuilder out = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {
                 out.append(line);
             }
-            return out.toString();
+            return out.toString().getBytes();
         } catch (Exception e) {
             Assert.fail(e.getMessage());
             return null;
@@ -182,11 +178,11 @@ public class EncrypterStreamTest {
      *
      * @param content
      */
-    private void writeWithEncryptor(String content) {
+    private void writeWithEncryptor(byte[] content) {
         try (FileOutputStream outputStream =
                 context.openFileOutput(TEST_FILE, Context.MODE_PRIVATE)) {
-            String encryptedString = Encryptor.encrypt(content, encryptionKey);
-            outputStream.write(encryptedString.getBytes(StandardCharsets.UTF_8));
+            byte[] encryptedBytes = Encryptor.encryptWithoutBase64Encoding(content, encryptionKey);
+            outputStream.write(encryptedBytes);
         } catch (Exception e) {
             Assert.fail(e.getMessage());
         }
@@ -197,13 +193,13 @@ public class EncrypterStreamTest {
      *
      * @return content of file as string
      */
-    private String readWithEncryptor() {
+    private byte[] readWithEncryptor() {
         File file = new File(context.getFilesDir(), TEST_FILE);
         try (FileInputStream f = new FileInputStream(file);
                 DataInputStream dataInputStream = new DataInputStream(f); ) {
             byte[] bytes = new byte[(int) file.length()];
             dataInputStream.readFully(bytes);
-            return Encryptor.decrypt(bytes, encryptionKey);
+            return Encryptor.decryptWithoutBase64Encoding(bytes, encryptionKey);
         } catch (Exception e) {
             Assert.fail(e.getMessage());
             return null;

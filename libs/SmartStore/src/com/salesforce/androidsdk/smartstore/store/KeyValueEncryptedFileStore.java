@@ -45,7 +45,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 
 /** Key-value store backed by file system */
 public class KeyValueEncryptedFileStore  {
@@ -143,7 +142,7 @@ public class KeyValueEncryptedFileStore  {
         }
         try {
             final FileOutputStream f = new FileOutputStream(getFileForKey(key));
-            byte[] encryptedContent = Encryptor.encryptBytes(value, encryptionKey);
+            byte[] encryptedContent = Encryptor.encryptWithoutBase64Encoding(value.getBytes(), encryptionKey);
             if (encryptedContent != null) {
                 f.write(encryptedContent);
                 f.close();
@@ -343,9 +342,8 @@ public class KeyValueEncryptedFileStore  {
         final DataInputStream data = new DataInputStream(f);
         byte[] bytes = new byte[(int) file.length()];
         data.readFully(bytes);
-        final String decryptedString = Encryptor.decrypt(bytes, encryptionKey);
-        if (!TextUtils.isEmpty(decryptedString)) {
-            byte[] decryptedBytes = decryptedString.getBytes();
+        final byte[] decryptedBytes = Encryptor.decryptWithoutBase64Encoding(bytes, encryptionKey);
+        if (decryptedBytes != null) {
             return new ByteArrayInputStream(decryptedBytes);
         }
         return null;
@@ -360,8 +358,7 @@ public class KeyValueEncryptedFileStore  {
             nextByte = stream.read();
         }
         byte[] content = b.toByteArray();
-        byte[] encryptedContent = Encryptor.encryptBytes(new String(content,
-                StandardCharsets.US_ASCII), encryptionKey);
+        byte[] encryptedContent = Encryptor.encryptWithoutBase64Encoding(content, encryptionKey);
         final FileOutputStream f = new FileOutputStream(file);
         if (encryptedContent != null) {
             f.write(encryptedContent);
