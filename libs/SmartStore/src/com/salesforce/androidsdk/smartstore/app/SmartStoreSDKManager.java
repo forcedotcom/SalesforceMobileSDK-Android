@@ -37,6 +37,7 @@ import com.salesforce.androidsdk.smartstore.config.StoreConfig;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.KeyValueEncryptedFileStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.ui.KeyValueStoreInspectorActivity;
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -423,6 +424,13 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
                     }
                 });
 
+        devActions.put("Inspect KeyValue Store", new DevActionHandler() {
+            @Override
+            public void onSelected() {
+                frontActivity.startActivity(KeyValueStoreInspectorActivity.getIntent(frontActivity));
+            }
+        });
+
         return devActions;
     }
 
@@ -433,8 +441,10 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
                 "SQLCipher version", getSmartStore().getSQLCipherVersion(),
                 "SQLCipher Compile Options", TextUtils.join(", ", getSmartStore().getCompileOptions()),
                 "SQLCipher Runtime Setting", TextUtils.join(", ", getSmartStore().getRuntimeSettings()),
-                "User Stores", TextUtils.join(", ", getUserStoresPrefixList()),
-                "Global Stores", TextUtils.join(", ", getGlobalStoresPrefixList())
+                "User SmartStores", TextUtils.join(", ", getUserStoresPrefixList()),
+                "Global SmartStores", TextUtils.join(", ", getGlobalStoresPrefixList()),
+                "User Key-Value Stores", TextUtils.join(", ", getKeyValueStoresPrefixList()),
+                "Global Key-Value Stores", TextUtils.join(", ", getGlobalKeyValueStoresPrefixList())
         ));
         return devSupportInfos;
     }

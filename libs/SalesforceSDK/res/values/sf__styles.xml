@@ -90,6 +90,28 @@
         <item name="android:buttonTint">@color/sf__hint_color_dark</item>
     </style>
 
+    <style name="SalesforceSDK.Inspector" parent="Theme.MaterialComponents.Light">
+        <item name="android:colorPrimary">@color/sf__primary_color</item>
+        <item name="android:colorPrimaryDark">@color/sf__primary_color</item>
+        <item name="android:colorBackground">@color/sf__background</item>
+        <item name="android:textColor">@color/sf__text_color</item>
+        <item name="android:textColorPrimary">@color/sf__text_color</item>
+        <item name="android:textColorHint">@color/sf__hint_color</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:navigationBarColor">@color/sf__background</item>
+    </style>
+
+    <style name="ExposedDropdownMenu" parent="Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu">
+        <item name="android:colorPrimary">@color/sf__primary_color</item>
+        <item name="android:colorPrimaryDark">@color/sf__primary_color</item>
+        <item name="android:colorBackground">@color/sf__background</item>
+        <item name="android:textColor">@color/sf__text_color</item>
+        <item name="android:textColorPrimary">@color/sf__text_color</item>
+        <item name="android:textColorHint">@color/sf__hint_color</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:navigationBarColor">@color/sf__background</item>
+    </style>
+
     <style name="SalesforceSDK.Passcode" parent="@style/Theme.Design.NoActionBar">
         <item name="sfBorderColor">@color/sf__border_color</item>
         <item name="android:colorPrimary">@color/sf__primary_color</item>
