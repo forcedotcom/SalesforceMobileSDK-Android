@@ -441,8 +441,10 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
                 "SQLCipher version", getSmartStore().getSQLCipherVersion(),
                 "SQLCipher Compile Options", TextUtils.join(", ", getSmartStore().getCompileOptions()),
                 "SQLCipher Runtime Setting", TextUtils.join(", ", getSmartStore().getRuntimeSettings()),
-                "User Stores", TextUtils.join(", ", getUserStoresPrefixList()),
-                "Global Stores", TextUtils.join(", ", getGlobalStoresPrefixList())
+                "User SmartStores", TextUtils.join(", ", getUserStoresPrefixList()),
+                "Global SmartStores", TextUtils.join(", ", getGlobalStoresPrefixList()),
+                "User Key-Value Stores", TextUtils.join(", ", getKeyValueStoresPrefixList()),
+                "Global Key-Value Stores", TextUtils.join(", ", getGlobalKeyValueStoresPrefixList())
         ));
         return devSupportInfos;
     }
