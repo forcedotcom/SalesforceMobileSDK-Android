@@ -37,6 +37,7 @@ import com.salesforce.androidsdk.smartstore.config.StoreConfig;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.KeyValueEncryptedFileStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.ui.KeyValueStoreInspectorActivity;
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -422,6 +423,13 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
                         frontActivity.startActivity(SmartStoreInspectorActivity.getIntent(frontActivity, false, DBOpenHelper.DEFAULT_DB_NAME));
                     }
                 });
+
+        devActions.put("Inspect KeyValue Store", new DevActionHandler() {
+            @Override
+            public void onSelected() {
+                frontActivity.startActivity(KeyValueStoreInspectorActivity.getIntent(frontActivity));
+            }
+        });
 
         return devActions;
     }

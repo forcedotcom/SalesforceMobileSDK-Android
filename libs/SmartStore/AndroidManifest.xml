@@ -11,5 +11,9 @@
         <activity android:name="com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity"
 			android:theme="@style/SalesforceSDK"
 			android:exported="false"/>
+		<!--  Key Value Store Inspector screen -->
+		<activity android:name="com.salesforce.androidsdk.smartstore.ui.KeyValueStoreInspectorActivity"
+			android:theme="@style/SalesforceSDK"
+			android:exported="false"/>
 	</application>
 </manifest>
