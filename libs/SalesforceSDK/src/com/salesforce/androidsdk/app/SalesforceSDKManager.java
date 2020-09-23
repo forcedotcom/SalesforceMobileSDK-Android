@@ -1005,11 +1005,12 @@ public class SalesforceSDKManager {
      * @return The user agent string to use for all requests.
      */
     public String getUserAgent(String qualifier) {
-        String appName = provideAppName();
-        String appTypeWithQualifier = getAppType() + qualifier;
-        return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s",
+        final String appName = provideAppName();
+        final String appTypeWithQualifier = getAppType() + qualifier;
+        return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s SecurityPatch/%s",
                 SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, getAppVersion(),
-                appTypeWithQualifier, uid, TextUtils.join(".", features));
+                appTypeWithQualifier, uid, TextUtils.join(".", features),
+                Build.VERSION.SECURITY_PATCH);
     }
 
     /**
