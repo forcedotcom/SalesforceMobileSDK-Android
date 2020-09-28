@@ -46,7 +46,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-/** Key-value store backed by file system */
+/**
+ * Key-value store backed by file system. Currently uses an in-memory solution for encryption and
+ * decryption. While this solution is not particularly good from a memory standpoint, we will need
+ * to employ this as a workaround for now, until we figure out how we can achieve acceptable
+ * performance with a streaming solution, since CipherInputStream is a lot slower with AES-GCM.
+ */
 public class KeyValueEncryptedFileStore  {
 
     private static final String TAG = KeyValueEncryptedFileStore.class.getSimpleName();
@@ -140,19 +145,28 @@ public class KeyValueEncryptedFileStore  {
             SmartStoreLogger.w(TAG, "saveValue: Invalid value supplied: null");
             return false;
         }
+        FileOutputStream f = null;
         try {
-            final FileOutputStream f = new FileOutputStream(getFileForKey(key));
+            final File file = getFileForKey(key);
+            f = new FileOutputStream(file);
             byte[] encryptedContent = Encryptor.encryptWithoutBase64Encoding(value.getBytes(), encryptionKey);
             if (encryptedContent != null) {
                 f.write(encryptedContent);
-                f.close();
                 return true;
             } else {
                 return false;
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             SmartStoreLogger.e(TAG, "IOException occurred while saving value to filesystem", e);
             return false;
+        } finally {
+            if (f != null) {
+                try {
+                    f.close();
+                } catch (IOException ex) {
+                    SmartStoreLogger.e(TAG, "IOException occurred while attempting to close file output stream", ex);
+                }
+            }
         }
     }
 
@@ -351,18 +365,24 @@ public class KeyValueEncryptedFileStore  {
 
     void saveStream(File file, InputStream stream, String encryptionKey)
         throws IOException {
-        final ByteArrayOutputStream b = new ByteArrayOutputStream();
-        int nextByte = stream.read();
-        while (nextByte != -1) {
-            b.write(nextByte);
-            nextByte = stream.read();
-        }
-        byte[] content = b.toByteArray();
-        byte[] encryptedContent = Encryptor.encryptWithoutBase64Encoding(content, encryptionKey);
-        final FileOutputStream f = new FileOutputStream(file);
-        if (encryptedContent != null) {
-            f.write(encryptedContent);
-            f.close();
+        FileOutputStream f = null;
+        try {
+            final ByteArrayOutputStream b = new ByteArrayOutputStream();
+            int nextByte = stream.read();
+            while (nextByte != -1) {
+                b.write(nextByte);
+                nextByte = stream.read();
+            }
+            byte[] content = b.toByteArray();
+            byte[] encryptedContent = Encryptor.encryptWithoutBase64Encoding(content, encryptionKey);
+            f = new FileOutputStream(file);
+            if (encryptedContent != null) {
+                f.write(encryptedContent);
+            }
+        } finally {
+            if (f != null) {
+                f.close();
+            }
         }
     }
 }
