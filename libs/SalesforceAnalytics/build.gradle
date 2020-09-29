@@ -15,7 +15,7 @@ apply plugin: 'com.jfrog.bintray'
 
 dependencies {
     api 'com.squareup:tape:1.2.3'
-    api 'io.paperdb:paperdb:2.6'
+    api 'io.paperdb:paperdb:2.7.1'
     androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation 'androidx.test:rules:1.2.0'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
