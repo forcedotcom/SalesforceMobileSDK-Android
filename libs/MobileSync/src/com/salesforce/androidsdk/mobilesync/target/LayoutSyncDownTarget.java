@@ -77,17 +77,6 @@ public class LayoutSyncDownTarget extends SyncDownTarget {
     /**
      * Parameterized constructor.
      *
-     * @param objectType Object type.
-     * @param layoutType Layout type.
-     * @deprecated Will be removed in Mobile SDK 9.0. Use {@link #LayoutSyncDownTarget(String, String, String, String, String)} instead.
-     */
-    public LayoutSyncDownTarget(String objectType, String layoutType) {
-        this(objectType, null, layoutType, null, null);
-    }
-
-    /**
-     * Parameterized constructor.
-     *
      * @param objectAPIName Object API name.
      * @param formFactor Form factor.
      * @param layoutType Layout type.
@@ -152,16 +141,6 @@ public class LayoutSyncDownTarget extends SyncDownTarget {
     @Override
     public int cleanGhosts(SyncManager syncManager, String soupName, long syncId) {
         return 0;
-    }
-
-    /**
-     * Returns the object type associated with this target.
-     *
-     * @return Object type.
-     * @deprecated Will be removed in Mobile SDK 9.0. Use {@link #getObjectAPIName()} instead.
-     */
-    public String getObjectType() {
-        return objectAPIName;
     }
 
     /**
