@@ -575,20 +575,6 @@ public class RestRequest {
 	 * Request to get object layout data.
 	 *
 	 * @param apiVersion Salesforce API version.
-	 * @param objectType Object type.
-     * @param layoutType Layout type. Could be "Compact" or "Full".
-	 * @return RestRequest object that requests the object layout for the given object and layout types.
-	 * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_resources_record_layout.htm">https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_resources_record_layout.htm</a>
-	 * @deprecated Will be removed in Mobile SDK 9.0. Use {@link #getRequestForObjectLayout(String, String, String, String, String, String)} instead.
-	 */
-	public static RestRequest getRequestForObjectLayout(String apiVersion, String objectType, String layoutType) {
-		return getRequestForObjectLayout(apiVersion, objectType, null, layoutType, null, null);
-	}
-
-	/**
-	 * Request to get object layout data.
-	 *
-	 * @param apiVersion Salesforce API version.
 	 * @param objectAPIName Object API name.
 	 * @param formFactor Form factor. Could be "Large", "Medium" or "Small". Default value is "Large".
 	 * @param layoutType Layout type. Could be "Compact" or "Full". Default value is "Full".
