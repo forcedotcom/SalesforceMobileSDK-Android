@@ -544,7 +544,7 @@ public class ClientManager {
 
     /**
      * AuthTokenProvider implementation that calls out to the AccountManager to get a new access token.
-     * The AccountManager calls ForceAuthenticatorService to do the actual refresh.
+     * The AccountManager calls AuthenticatorService to do the actual refresh.
      * @see AuthenticatorService
      */
     public static class AccMgrAuthTokenProvider implements RestClient.AuthTokenProvider {

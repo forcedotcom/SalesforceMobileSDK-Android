@@ -108,7 +108,7 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "8.2.0";
+    public static final String SDK_VERSION = "8.3.0.dev";
 
     /**
      * Intent action meant for instances of SalesforceSDKManager residing in other processes
@@ -1005,11 +1005,12 @@ public class SalesforceSDKManager {
      * @return The user agent string to use for all requests.
      */
     public String getUserAgent(String qualifier) {
-        String appName = provideAppName();
-        String appTypeWithQualifier = getAppType() + qualifier;
-        return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s",
+        final String appName = provideAppName();
+        final String appTypeWithQualifier = getAppType() + qualifier;
+        return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s SecurityPatch/%s",
                 SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, getAppVersion(),
-                appTypeWithQualifier, uid, TextUtils.join(".", features));
+                appTypeWithQualifier, uid, TextUtils.join(".", features),
+                Build.VERSION.SECURITY_PATCH);
     }
 
     /**
@@ -1408,7 +1409,7 @@ public class SalesforceSDKManager {
      */
     private Object getBuildConfigValue(Context context, String fieldName) {
         try {
-            Class<?> clazz = Class.forName(context.getPackageName() + ".BuildConfig");
+            Class<?> clazz = Class.forName(context.getClass().getPackage().getName() + ".BuildConfig");
             Field field = clazz.getField(fieldName);
             return field.get(null);
         } catch (Exception e) {

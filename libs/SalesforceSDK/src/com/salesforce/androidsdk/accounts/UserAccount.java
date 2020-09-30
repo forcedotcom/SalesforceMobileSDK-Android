@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.accounts;
 
 import android.app.DownloadManager;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -380,6 +381,9 @@ public class UserAccount {
      */
     public Bitmap getProfilePhoto() {
         final File file = getProfilePhotoFile();
+        if (file == null) {
+            return null;
+        }
         final BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
         bitmapOptions.inPreferredConfig = Bitmap.Config.ARGB_8888;
         return BitmapFactory.decodeFile(file.getAbsolutePath(), bitmapOptions);
@@ -389,24 +393,30 @@ public class UserAccount {
      * Fetches this user's profile photo from the server and stores it in the cache.
      */
     public void downloadProfilePhoto() {
-        if (photoUrl == null) {
+        final File file = getProfilePhotoFile();
+        if (photoUrl == null || file == null) {
             return;
         }
-        final File file = getProfilePhotoFile();
         final Uri srcUri = Uri.parse(photoUrl);
         final Uri destUri = Uri.fromFile(file);
         if (srcUri == null || destUri == null) {
         	return;
 		}
-        final DownloadManager.Request downloadReq = new DownloadManager.Request(srcUri);
-        downloadReq.setDestinationUri(destUri);
-        downloadReq.addRequestHeader(AUTHORIZATION, BEARER + authToken);
-        downloadReq.setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN);
-        downloadReq.setVisibleInDownloadsUi(false);
-        final DownloadManager downloadManager = (DownloadManager) SalesforceSDKManager.getInstance().getAppContext().getSystemService(Context.DOWNLOAD_SERVICE);
-        if (downloadManager != null) {
-            downloadManager.enqueue(downloadReq);
-        }
+
+        // Checks if DownloadManager is enabled on the device, to ensure it doesn't crash.
+        final PackageManager pm = SalesforceSDKManager.getInstance().getAppContext().getPackageManager();
+        int state = pm.getApplicationEnabledSetting("com.android.providers.downloads");
+        if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
+			final DownloadManager.Request downloadReq = new DownloadManager.Request(srcUri);
+			downloadReq.setDestinationUri(destUri);
+			downloadReq.addRequestHeader(AUTHORIZATION, BEARER + authToken);
+			downloadReq.setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN);
+			downloadReq.setVisibleInDownloadsUi(false);
+			final DownloadManager downloadManager = (DownloadManager) SalesforceSDKManager.getInstance().getAppContext().getSystemService(Context.DOWNLOAD_SERVICE);
+			if (downloadManager != null) {
+				downloadManager.enqueue(downloadReq);
+			}
+		}
     }
 
 	/**
@@ -565,7 +575,7 @@ public class UserAccount {
 
     @Override
     public boolean equals(Object object) {
-        if (object == null || !(object instanceof UserAccount)) {
+        if (!(object instanceof UserAccount)) {
             return false;
         }
         final UserAccount userAccount = (UserAccount) object;
@@ -573,11 +583,8 @@ public class UserAccount {
         		|| userAccount.getOrgId() == null) {
         	return false;
         }
-        if (userAccount.getUserId().equals(userId) && userAccount.getOrgId().equals(orgId)) {
-        	return true;
-        }
-        return false;
-    }
+		return (userAccount.getUserId().equals(userId) && userAccount.getOrgId().equals(orgId));
+	}
 
     @Override
     public int hashCode() {
@@ -649,7 +656,7 @@ public class UserAccount {
 
     private File getProfilePhotoFile() {
         final String filename = PROFILE_PHOTO_PATH_PREFIX + getUserLevelFilenameSuffix() + JPG;
-        return (new File(SalesforceSDKManager.getInstance().getAppContext().getExternalCacheDir(),
-                filename));
+        File baseDir = SalesforceSDKManager.getInstance().getAppContext().getExternalCacheDir();
+        return baseDir != null ? new File(baseDir, filename) : null;
     }
 }

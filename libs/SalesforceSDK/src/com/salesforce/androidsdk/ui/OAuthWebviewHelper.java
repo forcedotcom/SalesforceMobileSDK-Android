@@ -167,7 +167,10 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         this.shouldReloadPage = shouldReloadPage;
         final WebSettings webSettings = webview.getSettings();
         webSettings.setJavaScriptEnabled(true);
-        webSettings.setUserAgentString(SalesforceSDKManager.getInstance().getUserAgent());
+        String origUserAgent = webSettings.getUserAgentString();
+        origUserAgent = (origUserAgent == null) ? "" : origUserAgent;
+        final String msdkUserAgent = SalesforceSDKManager.getInstance().getUserAgent();
+        webSettings.setUserAgentString(String.format("%s %s", msdkUserAgent, origUserAgent));
         webview.setWebViewClient(makeWebViewClient());
         webview.setWebChromeClient(makeWebChromeClient());
 

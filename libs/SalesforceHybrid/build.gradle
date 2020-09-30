@@ -127,9 +127,9 @@ bintray {
         licenses = ['Apache-2.0']
         labels = ['android', 'salesforce', 'mobilesdk']
         version {
-            name = '8.2.0'
+            name = '8.3.0'
             released  = new Date()
-            vcsTag = 'v8.2.0'
+            vcsTag = 'v8.3.0'
         }
     }
 }

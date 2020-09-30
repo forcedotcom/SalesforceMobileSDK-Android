@@ -28,12 +28,14 @@
 package com.salesforce.androidsdk.analytics.security;
 
 import com.salesforce.androidsdk.analytics.util.WatchableStream;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 
@@ -47,7 +49,9 @@ public class DecrypterInputStream extends InputStream implements WatchableStream
             throws GeneralSecurityException, IOException {
         // First byte should be iv length
         int ivLength = inputStream.read();
-        if (ivLength != 12 && ivLength != 32) {
+
+        // IV length is always 12 for AES-GCM-256.
+        if (ivLength != 12) {
             throw new IOException("Can't decrypt file: incorrect iv length found in file: " + ivLength);
         }
         // Next bytes should be iv

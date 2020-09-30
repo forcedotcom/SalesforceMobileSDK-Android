@@ -198,6 +198,22 @@ public class EncryptorTest {
 		Assert.assertEquals("Recovered text should match original", originalText, recoveredText);
 	}
 
+	/**
+	 * Encrypting/decrypting data with ciphers returned by Encryptor.encryptWithoutBase64Encoding and
+	 * Encryptor.decryptWithoutBase64Encoding.
+	 */
+	@Test
+	public void testEncryptDecryptWithoutBase64Encoding() {
+		for (final String key : TEST_KEYS) {
+			for (final String data : TEST_DATA) {
+				final byte[] dataBytes = data.getBytes();
+				byte[] encryptedData = Encryptor.encryptWithoutBase64Encoding(dataBytes, key);
+				byte[] decryptedData = Encryptor.decryptWithoutBase64Encoding(encryptedData, key);
+				Assert.assertArrayEquals("Decrypt should restore original",
+						dataBytes, decryptedData);
+			}
+		}
+	}
 
 	private static String makeKey(String passcode) {
         return Encryptor.hash(passcode, "hashing-key");

@@ -40,6 +40,7 @@ import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -58,6 +59,7 @@ public class UserAccountManager {
 	private static final String CURRENT_USER_PREF = "current_user_info";
 	private static final String USER_ID_KEY = "user_id";
 	private static final String ORG_ID_KEY = "org_id";
+	private static final String TAG = "UserAccountManager";
 
 	public static final String USER_SWITCH_INTENT_ACTION = "com.salesforce.USERSWITCHED";
 
@@ -349,15 +351,6 @@ public class UserAccountManager {
         switchToNewUserWithOptions(options);
 	}
 
-	private void switchToNewUserWithOptions(Bundle options) {
-		final Bundle reply = new Bundle();
-		final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
-		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-		i.putExtras(options);
-		reply.putParcelable(AccountManager.KEY_INTENT, i);
-		context.startActivity(i);
-	}
-
 	/**
 	 * Logs the current user out.
 	 *
@@ -554,4 +547,36 @@ public class UserAccountManager {
         }
         return null;
     }
+
+	/**
+	 * Attempts to refresh the access token for this user by making an API call
+	 * to the "/token" endpoint. If the call succeeds, the new token is persisted.
+	 * If the call fails and the refresh token is no longer valid, the user is logged out.
+	 * This should NOT be called from the main thread because it makes a network request.
+	 *
+	 * @param userAccount User account whose token should be refreshed. Use 'null' for current user.
+	 */
+	public synchronized void refreshToken(UserAccount userAccount) {
+		userAccount = (userAccount == null) ? getCurrentUser() : userAccount;
+		if (userAccount == null) {
+			return;
+		}
+		try {
+			final ClientManager clientManager = SalesforceSDKManager.getInstance().getClientManager();
+			final ClientManager.AccMgrAuthTokenProvider authTokenProvider = new ClientManager.AccMgrAuthTokenProvider(clientManager,
+					userAccount.getInstanceServer(), userAccount.getAuthToken(), userAccount.getRefreshToken());
+			authTokenProvider.getNewAuthToken();
+		} catch (Exception e) {
+			SalesforceSDKLogger.e(TAG, "Exception thrown while attempting to refresh token", e);
+		}
+	}
+
+	private void switchToNewUserWithOptions(Bundle options) {
+		final Bundle reply = new Bundle();
+		final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
+		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		i.putExtras(options);
+		reply.putParcelable(AccountManager.KEY_INTENT, i);
+		context.startActivity(i);
+	}
 }

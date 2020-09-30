@@ -211,6 +211,30 @@ public class Encryptor {
     }
 
     /**
+     * Decrypts data with key using using AES/GCM/NoPadding. The data is not Base64 encoded.
+     *
+     * @param data Data.
+     * @param key Key.
+     * @return Decrypted data.
+     */
+    public static byte[] decryptWithoutBase64Encoding(byte[] data, String key) {
+        if (TextUtils.isEmpty(key)) {
+            return data;
+        }
+        try {
+
+            // Decodes with Base64.
+            byte[] keyBytes = Base64.decode(key, Base64.DEFAULT);
+
+            // Decrypts with AES.
+            return decrypt(data, data.length, keyBytes, new byte[12]);
+        } catch (Exception ex) {
+            SalesforceAnalyticsLogger.w(null, TAG, "Error during decryption", ex);
+        }
+        return null;
+    }
+
+    /**
      * Encrypts data with key using AES/GCM/NoPadding.
      *
      * @param data Data.
@@ -290,6 +314,28 @@ public class Encryptor {
             byte[] keyBytes = Base64.decode(key, Base64.DEFAULT);
             byte[] dataBytes = data.getBytes(StandardCharsets.UTF_8);
             return Base64.encode(encrypt(dataBytes, keyBytes, iv), Base64.DEFAULT);
+        } catch (Exception ex) {
+            SalesforceAnalyticsLogger.w(null, TAG, "Error during encryption", ex);
+        }
+        return null;
+    }
+
+    /**
+     * Encrypts data with key using AES/GCM/NoPadding. The data is not Base64 encoded.
+     *
+     * @param data Data.
+     * @param key Key.
+     * @return Encrypted data.
+     */
+    public static byte[] encryptWithoutBase64Encoding(byte[] data, String key) {
+        if (TextUtils.isEmpty(key)) {
+            return data;
+        }
+        try {
+
+            // Encrypts with our preferred cipher.
+            byte[] keyBytes = Base64.decode(key, Base64.DEFAULT);
+            return encrypt(data, keyBytes, generateInitVector());
         } catch (Exception ex) {
             SalesforceAnalyticsLogger.w(null, TAG, "Error during encryption", ex);
         }

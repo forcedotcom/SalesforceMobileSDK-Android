@@ -29,24 +29,29 @@ package com.salesforce.androidsdk.smartstore.store;
 
 import android.content.Context;
 import android.text.TextUtils;
-import androidx.annotation.VisibleForTesting;
-import com.salesforce.androidsdk.analytics.security.DecrypterInputStream;
-import com.salesforce.androidsdk.analytics.security.EncrypterOutputStream;
+
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 import com.salesforce.androidsdk.util.ManagedFilesHelper;
+
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
 
-/** Key-value store backed by file system */
+/**
+ * Key-value store backed by file system. Currently uses an in-memory solution for encryption and
+ * decryption. While this solution is not particularly good from a memory standpoint, we will need
+ * to employ this as a workaround for now, until we figure out how we can achieve acceptable
+ * performance with a streaming solution, since CipherInputStream is a lot slower with AES-GCM.
+ */
 public class KeyValueEncryptedFileStore  {
 
     private static final String TAG = KeyValueEncryptedFileStore.class.getSimpleName();
@@ -86,7 +91,6 @@ public class KeyValueEncryptedFileStore  {
         }
         this.encryptionKey = encryptionKey;
     }
-
 
     /**
      * Return boolean indicating if a key value store with the given (full) name already exists
@@ -138,18 +142,31 @@ public class KeyValueEncryptedFileStore  {
             return false;
         }
         if (value == null) {
-            SmartStoreLogger.w(TAG, "saveValue: Invalid value supplied: " + value);
+            SmartStoreLogger.w(TAG, "saveValue: Invalid value supplied: null");
             return false;
         }
-
-        long startNanoTime = System.nanoTime();
-        try (FileOutputStream f = new FileOutputStream(getFileForKey(key));
-                EncrypterOutputStream outputStream = new EncrypterOutputStream(f, encryptionKey)) {
-            outputStream.write(value.getBytes(StandardCharsets.UTF_8));
-            return true;
-        } catch (Exception e) {
+        FileOutputStream f = null;
+        try {
+            final File file = getFileForKey(key);
+            f = new FileOutputStream(file);
+            byte[] encryptedContent = Encryptor.encryptWithoutBase64Encoding(value.getBytes(), encryptionKey);
+            if (encryptedContent != null) {
+                f.write(encryptedContent);
+                return true;
+            } else {
+                return false;
+            }
+        } catch (IOException e) {
             SmartStoreLogger.e(TAG, "IOException occurred while saving value to filesystem", e);
             return false;
+        } finally {
+            if (f != null) {
+                try {
+                    f.close();
+                } catch (IOException ex) {
+                    SmartStoreLogger.e(TAG, "IOException occurred while attempting to close file output stream", ex);
+                }
+            }
         }
     }
 
@@ -166,10 +183,9 @@ public class KeyValueEncryptedFileStore  {
             return false;
         }
         if (stream == null) {
-            SmartStoreLogger.w(TAG, "saveStream: Invalid value supplied: " + stream);
+            SmartStoreLogger.w(TAG, "saveStream: Invalid value supplied: null");
             return false;
         }
-
         try {
             saveStream(getFileForKey(key), stream, encryptionKey);
             return true;
@@ -190,16 +206,13 @@ public class KeyValueEncryptedFileStore  {
             if (inputStream == null) {
                 return null;
             }
-
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
             StringBuilder out = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {
                 out.append(line);
             }
-            String result = out.toString();
-
-            return result;
+            return out.toString();
         } catch (Exception e) {
             SmartStoreLogger.e(TAG, "getValue(): Threw exception for key: " + key, e);
             return null;
@@ -213,19 +226,14 @@ public class KeyValueEncryptedFileStore  {
      * @return stream to value for given key or null if key not found.
      */
     public InputStream getStream(String key) {
-        long startNanoTime = System.nanoTime();
-
         if (!isKeyValid(key, "getStream")) {
             return null;
         }
-
         final File file = getFileForKey(key);
-
-        if (file == null || !file.exists()) {
+        if (!file.exists()) {
             SmartStoreLogger.w(TAG, "getStream: File does not exist for key: " + key);
             return null;
         }
-
         try {
             return getStream(file, encryptionKey);
         } catch (Exception e) {
@@ -249,7 +257,7 @@ public class KeyValueEncryptedFileStore  {
 
     /** Deletes all stored values. */
     public void deleteAll() {
-        for (File file : storeDir.listFiles()) {
+        for (File file : safeListFiles()) {
             SmartStoreLogger.i(TAG, "deleting file :" + file.getName());
             file.delete();
         }
@@ -257,12 +265,12 @@ public class KeyValueEncryptedFileStore  {
 
     /** @return number of entries in the store. */
     public int count() {
-        return storeDir.list().length;
+        return safeListFiles().length;
     }
 
     /** @return True if store is empty. */
     public boolean isEmpty() {
-        return storeDir.list().length == 0;
+        return safeListFiles().length == 0;
     }
 
     /**
@@ -319,7 +327,6 @@ public class KeyValueEncryptedFileStore  {
         return true;
     }
 
-
     private String encodeKey(String key) {
         return SalesforceKeyGenerator.getSHA256Hash(key);
     }
@@ -336,20 +343,45 @@ public class KeyValueEncryptedFileStore  {
         return true;
     }
 
-    InputStream getStream(File file, String encryptionKey) throws IOException, GeneralSecurityException {
-        FileInputStream f = new FileInputStream(file);
-        DecrypterInputStream inputStream = new DecrypterInputStream(f, encryptionKey);
-        return inputStream;
+    /**
+     * @return array of files in storeDir won't return null even if storeDir has been deleted
+     */
+    private File[] safeListFiles() {
+        File[] files = storeDir == null ? null : storeDir.listFiles();
+        return files == null ? new File[0] : files;
+    }
+
+    InputStream getStream(File file, String encryptionKey) throws IOException {
+        final FileInputStream f = new FileInputStream(file);
+        final DataInputStream data = new DataInputStream(f);
+        byte[] bytes = new byte[(int) file.length()];
+        data.readFully(bytes);
+        final byte[] decryptedBytes = Encryptor.decryptWithoutBase64Encoding(bytes, encryptionKey);
+        if (decryptedBytes != null) {
+            return new ByteArrayInputStream(decryptedBytes);
+        }
+        return null;
     }
 
     void saveStream(File file, InputStream stream, String encryptionKey)
-        throws IOException, GeneralSecurityException {
-        try (FileOutputStream f = new FileOutputStream(file);
-            EncrypterOutputStream outputStream = new EncrypterOutputStream(f, encryptionKey)) {
-            byte[] buffer = new byte[1024];
-            int len;
-            while((len=stream.read(buffer))>0){
-                outputStream.write(buffer,0,len);
+        throws IOException {
+        FileOutputStream f = null;
+        try {
+            final ByteArrayOutputStream b = new ByteArrayOutputStream();
+            int nextByte = stream.read();
+            while (nextByte != -1) {
+                b.write(nextByte);
+                nextByte = stream.read();
+            }
+            byte[] content = b.toByteArray();
+            byte[] encryptedContent = Encryptor.encryptWithoutBase64Encoding(content, encryptionKey);
+            f = new FileOutputStream(file);
+            if (encryptedContent != null) {
+                f.write(encryptedContent);
+            }
+        } finally {
+            if (f != null) {
+                f.close();
             }
         }
     }

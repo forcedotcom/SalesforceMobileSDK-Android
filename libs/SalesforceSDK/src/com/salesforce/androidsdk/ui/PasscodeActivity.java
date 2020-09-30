@@ -162,8 +162,6 @@ public class PasscodeActivity extends Activity {
         passcodeField.announceForAccessibility(bioInstrTitle.getText());
         biometricBox = findViewById(R.id.sf__biometric_box);
         notNowButton = findViewById(R.id.sf__biometric_not_now_button);
-        notNowButton.setTextColor(getResources().getColor(isDarkTheme ? R.color.sf__secondary_color_dark
-                : R.color.sf__primary_color, null));
         notNowButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -261,6 +259,7 @@ public class PasscodeActivity extends Activity {
             instr.setVisibility(View.VISIBLE);
             passcodeBox.setVisibility(View.VISIBLE);
             passcodeField.setVisibility(View.VISIBLE);
+            passcodeField.requestFocus();
 
             if (!passcodeManager.getPasscodeLengthKnown()) {
                 verifyButton.setVisibility(View.VISIBLE);

@@ -203,7 +203,7 @@ public class RestRequest {
      * @param additionalHttpHeaders Additional headers.
      *
      */
-    public RestRequest(RestMethod method, String path,  Map<String, String> additionalHttpHeaders) {
+    public RestRequest(RestMethod method, String path, Map<String, String> additionalHttpHeaders) {
         this(method, path, (RequestBody) null, additionalHttpHeaders);
     }
 
@@ -257,7 +257,7 @@ public class RestRequest {
      *
      * Note: Use this constructor if requestBody is not null and you want to build a batch or composite request.
      */
-    public RestRequest(RestMethod method, String path, JSONObject requestBodyAsJson,  Map<String, String> additionalHttpHeaders) {
+    public RestRequest(RestMethod method, String path, JSONObject requestBodyAsJson, Map<String, String> additionalHttpHeaders) {
         this(method, RestEndpoint.INSTANCE, path, requestBodyAsJson, additionalHttpHeaders);
     }
 
@@ -343,6 +343,7 @@ public class RestRequest {
      * Returns whether the SDK should attempt to refresh tokens if the service returns HTTP 403.
      *
      * @return True - if the SDK should refresh on HTTP 403, False - otherwise.
+	 * @deprecated Will be removed in Mobile SDK 9.0.
      */
 	public boolean getShouldRefreshOn403() {
 	    return shouldRefreshOn403;
@@ -352,6 +353,7 @@ public class RestRequest {
      * Sets whether the SDK should attempt to refresh tokens if the service returns HTTP 403.
      *
      * @param shouldRefreshOn403 True - if the SDK should refresh on HTTP 403, False - otherwise.
+	 * @deprecated Will be removed in Mobile SDK 9.0.
      */
 	public synchronized void setShouldRefreshOn403(boolean shouldRefreshOn403) {
         this.shouldRefreshOn403 = shouldRefreshOn403;
