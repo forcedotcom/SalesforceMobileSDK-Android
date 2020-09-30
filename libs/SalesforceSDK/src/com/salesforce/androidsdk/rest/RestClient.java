@@ -320,7 +320,6 @@ public class RestClient {
         final Request.Builder builder =  new Request.Builder()
                 .url(HttpUrl.get(oAuthRefreshInterceptor.clientInfo.resolveUrl(restRequest)))
                 .method(restRequest.getMethod().toString(), restRequest.getRequestBody());
-        oAuthRefreshInterceptor.setShouldRefreshOn403(restRequest.getShouldRefreshOn403());
 
         // Adding additional headers
         final Map<String, String> additionalHttpHeaders = restRequest.getAdditionalHttpHeaders();
@@ -627,7 +626,6 @@ public class RestClient {
         private final AuthTokenProvider authTokenProvider;
         private String authToken;
         private ClientInfo clientInfo;
-        private boolean shouldRefreshOn403 = true;
 
         /**
          * Constructs a SalesforceHttpInterceptor with the given clientInfo, authToken and authTokenProvider.
@@ -653,14 +651,11 @@ public class RestClient {
             request = buildAuthenticatedRequest(request);
             Response response = chain.proceed(request);
 			int responseCode = response.code();
-			boolean refreshRequired = shouldRefreshOn403 ? (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED
-                    || responseCode == HttpURLConnection.HTTP_FORBIDDEN) : (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED);
 
 			/*
-			 * Standard access token expiry returns 401 as the error code. However, some APIs
-			 * return 403 as the error code when an instance split or migration occurs.
+			 * Standard access token expiry returns 401 as the error code.
 			 */
-            if (refreshRequired) {
+            if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED) {
 				final HttpUrl currentInstanceUrl = HttpUrl.get(clientInfo.getInstanceUrl());
 				if (currentInstanceUrl != null) {
 
@@ -687,26 +682,6 @@ public class RestClient {
 				}
             }
             return response;
-        }
-
-        /**
-         * Returns whether the SDK should attempt to refresh tokens if the service returns HTTP 403.
-         *
-         * @return True - if the SDK should refresh on HTTP 403, False - otherwise.
-		 * @deprecated Will be removed in Mobile SDK 9.0.
-         */
-        public boolean getShouldRefreshOn403() {
-            return shouldRefreshOn403;
-        }
-
-        /**
-         * Sets whether the SDK should attempt to refresh tokens if the service returns HTTP 403.
-         *
-         * @param shouldRefreshOn403 True - if the SDK should refresh on HTTP 403, False - otherwise.
-		 * @deprecated Will be removed in Mobile SDK 9.0.
-         */
-        public synchronized void setShouldRefreshOn403(boolean shouldRefreshOn403) {
-            this.shouldRefreshOn403 = shouldRefreshOn403;
         }
 
 		/**
