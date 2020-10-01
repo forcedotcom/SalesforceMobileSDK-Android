@@ -16,16 +16,16 @@ apply plugin: 'com.jfrog.bintray'
 dependencies {
   api project(':libs:MobileSync')
   api 'org.apache.cordova:framework:8.1.0'
-  androidTestImplementation 'androidx.test:runner:1.2.0'
-  androidTestImplementation 'androidx.test:rules:1.2.0'
-  androidTestImplementation 'androidx.test.ext:junit:1.1.1'
+  androidTestImplementation 'androidx.test:runner:1.3.0'
+  androidTestImplementation 'androidx.test:rules:1.3.0'
+  androidTestImplementation 'androidx.test.ext:junit:1.1.2'
 }
 
 android {
-    compileSdkVersion 29
+    compileSdkVersion 30
 
     defaultConfig {
-        targetSdkVersion 29
+        targetSdkVersion 30
         minSdkVersion 23
     }
 

@@ -33,7 +33,6 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.rest.ClientManager;
-import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.util.List;
@@ -91,9 +90,6 @@ public class SalesforceSDKUpgradeManager {
         try {
             final String majorVersionNum = installedVersion.substring(0, 3);
             double installedVerDouble = Double.parseDouble(majorVersionNum);
-            if (installedVerDouble < 7.1) {
-                upgradeTo7Dot1();
-            }
             if (installedVerDouble < 8.2) {
                 upgradeTo8Dot2();
             }
@@ -131,10 +127,6 @@ public class SalesforceSDKUpgradeManager {
         final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(VERSION_SHARED_PREF,
                 Context.MODE_PRIVATE);
         return sp.getString(key, "");
-    }
-
-    private void upgradeTo7Dot1() {
-        SalesforceKeyGenerator.upgradeTo7Dot1();
     }
 
     private void upgradeTo8Dot2() {
