@@ -548,12 +548,27 @@ public class PasscodeActivity extends Activity {
 
         // TODO: Remove this check once minAPI >= 29.
         if (VERSION.SDK_INT >= VERSION_CODES.Q) {
-            final BiometricManager biometricManager = (BiometricManager) this.getSystemService(Context.BIOMETRIC_SERVICE);
-
             if (checkSelfPermission(permission.USE_BIOMETRIC) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{permission.USE_BIOMETRIC}, REQUEST_CODE_ASK_PERMISSIONS);
             } else {
-                return biometricManager != null && biometricManager.canAuthenticate() == BiometricManager.BIOMETRIC_SUCCESS;
+                return canAuth();
+            }
+        }
+        return false;
+    }
+
+    /*
+     * TODO: Remove this annotation once minAPI >= 29.
+     */
+    @TargetApi(29)
+    private boolean canAuth() {
+        final BiometricManager biometricManager = (BiometricManager) this.getSystemService(Context.BIOMETRIC_SERVICE);
+        if (biometricManager != null) {
+            if (VERSION.SDK_INT >= VERSION_CODES.R) {
+                return BiometricManager.BIOMETRIC_SUCCESS == biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK
+                        | BiometricManager.Authenticators.BIOMETRIC_STRONG);
+            } else {
+                return BiometricManager.BIOMETRIC_SUCCESS == biometricManager.canAuthenticate();
             }
         }
         return false;
