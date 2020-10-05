@@ -288,7 +288,7 @@ public class OAuth2Test {
         Assert.assertEquals("Wrong username returned", TestCredentials.USERNAME, id.username);
         Assert.assertEquals("Wrong pinLength returned", -1, id.pinLength);
         Assert.assertEquals("Wrong screenLockTimeout returned", -1, id.screenLockTimeout);
-        Assert.assertTrue("Wrong biometricUnlockAllowed returned", id.biometricUnlockAlowed);
+        Assert.assertTrue("Wrong biometricUnlockAllowed returned", id.biometricUnlockAllowed);
 	}
 
     /**

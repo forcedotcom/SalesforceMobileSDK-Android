@@ -522,7 +522,7 @@ public class OAuth2 {
         public String thumbnailUrl;
         public int pinLength = -1;
         public int screenLockTimeout = -1;
-        public boolean biometricUnlockAlowed = true;
+        public boolean biometricUnlockAllowed = true;
         public JSONObject customAttributes;
         public JSONObject customPermissions;
 
@@ -552,7 +552,7 @@ public class OAuth2 {
                     if (customAttributes != null) {
                         String bioAttribute = customAttributes.optString(BIOMETRIC_UNLOCK).toLowerCase(Locale.US);
                         if (bioAttribute.equals("false")) {
-                            biometricUnlockAlowed = false;
+                            biometricUnlockAllowed = false;
                             SalesforceSDKLogger.i(TAG, "Biometric Unlock disabled by connected app.");
                         }
                     }
