@@ -56,6 +56,7 @@ public class KeyValueEncryptedFileStore  {
 
     private static final String TAG = KeyValueEncryptedFileStore.class.getSimpleName();
     public static final int MAX_STORE_NAME_LENGTH = 96;
+    private final int READ_BUFFER_LENGTH = 1024;
     private String encryptionKey;
     private final File storeDir;
 
@@ -206,14 +207,13 @@ public class KeyValueEncryptedFileStore  {
             if (inputStream == null) {
                 return null;
             }
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-            StringBuilder out = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                out.append(line + System.lineSeparator());
+            ByteArrayOutputStream value = new ByteArrayOutputStream();
+            byte[] buffer = new byte[READ_BUFFER_LENGTH];
+            int length;
+            while ((length = inputStream.read(buffer)) != -1) {
+                value.write(buffer, 0, length);
             }
-            String regex = String.format("\\%s$", System.lineSeparator());
-            return out.toString().replaceAll(regex, "");
+            return value.toString("UTF-8");
         } catch (Exception e) {
             SmartStoreLogger.e(TAG, "getValue(): Threw exception for key: " + key, e);
             return null;
