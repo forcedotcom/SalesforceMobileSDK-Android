@@ -408,6 +408,17 @@ public class KeyValueEncryptedFileStoreTest {
         Assert.assertNotEquals("Raw content should have changed", file2rawAfter, file2raw);
     }
 
+    /** Test code block with comment and newline */
+    @Test
+    public void testCodeBlock() {
+        String codeBlock = "var fun = function() {" + "\n\t// comment" + "\n\tvar i = 100;\n}";
+        String minifiedBlock = "function minified(){var n=Math.floor(Math.random());return n>50?7*n:n/2}";
+        keyValueStore.saveValue("js1", codeBlock);
+        keyValueStore.saveValue("js2", minifiedBlock);
+        Assert.assertEquals("Code block was not retrieved correctly.", codeBlock, keyValueStore.getValue("js1"));
+        Assert.assertEquals("Code block was not retrieved correctly.", minifiedBlock, keyValueStore.getValue("js2"));
+    }
+
     //
     // Helper methods
     //

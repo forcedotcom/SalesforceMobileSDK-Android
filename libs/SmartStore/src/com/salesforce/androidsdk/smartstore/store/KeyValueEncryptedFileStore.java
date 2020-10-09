@@ -210,9 +210,10 @@ public class KeyValueEncryptedFileStore  {
             StringBuilder out = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {
-                out.append(line);
+                out.append(line + System.lineSeparator());
             }
-            return out.toString();
+            String regex = String.format("\\%s$", System.lineSeparator());
+            return out.toString().replaceAll(regex, "");
         } catch (Exception e) {
             SmartStoreLogger.e(TAG, "getValue(): Threw exception for key: " + key, e);
             return null;
