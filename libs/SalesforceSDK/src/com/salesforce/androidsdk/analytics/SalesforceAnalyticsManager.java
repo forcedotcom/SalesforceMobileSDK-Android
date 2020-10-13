@@ -49,9 +49,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -489,15 +487,9 @@ public class SalesforceAnalyticsManager {
         }
         InstrumentationEvent event = null;
         String eventString = null;
-        final StringBuilder json = new StringBuilder();
         try {
-            final BufferedReader br = new BufferedReader(new FileReader(file));
-            String line;
-            while ((line = br.readLine()) != null) {
-                json.append(line).append('\n');
-            }
-            br.close();
-            eventString = Encryptor.legacyDecrypt(json.toString(),
+            String json = Encryptor.getStringFromFile(file);
+            eventString = Encryptor.legacyDecrypt(json,
                     SalesforceSDKManager.getLegacyEncryptionKey());
         } catch (Exception ex) {
             SalesforceSDKLogger.e(TAG, "Exception occurred while attempting to read file contents", ex);

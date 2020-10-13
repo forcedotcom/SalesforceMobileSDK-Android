@@ -32,6 +32,11 @@ import android.util.Base64;
 
 import com.salesforce.androidsdk.analytics.util.SalesforceAnalyticsLogger;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
@@ -58,6 +63,7 @@ public class Encryptor {
     private static final String SHA1PRNG = "SHA1PRNG";
     private static final String RSA_PKCS1 = "RSA/ECB/PKCS1Padding";
     private static final String BOUNCY_CASTLE = "BC";
+    private static final int READ_BUFFER_LENGTH = 1024;
 
     /**
      * Returns initialized cipher for encryption with an IV automatically generated.
@@ -467,6 +473,52 @@ public class Encryptor {
             SalesforceAnalyticsLogger.e(null, TAG, "Error during symmetric decryption using AES", e);
         }
         return null;
+    }
+
+    /**
+     * Retrieves data from an InputStream.  Guaranteed to close the InputStream.
+     *
+     * @param stream InputStream data.
+     * @return Data from the InputStream as a String.
+     * @throws IOException Provide log details of this exception in a catch with specifics
+     * about the operation this method was called for.
+     */
+    public static String getStringFromStream(InputStream stream) throws IOException {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        byte[] buffer = new byte[READ_BUFFER_LENGTH];
+        int length;
+        try {
+            while ((length = stream.read(buffer)) != -1) {
+                output.write(buffer, 0, length);
+            }
+        }
+        finally {
+            stream.close();
+        }
+        return output.toString(String.valueOf(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Retrieves data from a File.
+     *
+     * @param file File object.
+     * @return Data from the input File as a String.
+     * @throws IOException Provide log details of this exception in a catch with specifics
+     * about the operation this method was called for.
+     */
+    public static String getStringFromFile(File file) throws IOException {
+        FileInputStream stream = null;
+        String output;
+        try {
+            stream = new FileInputStream(file);
+            output =  getStringFromStream(stream);
+        }
+        finally {
+            if (stream != null) {
+                stream.close();
+            }
+        }
+        return output;
     }
 
     private static byte[] encryptWithPublicKey(PublicKey publicKey, String data, String cipher) {

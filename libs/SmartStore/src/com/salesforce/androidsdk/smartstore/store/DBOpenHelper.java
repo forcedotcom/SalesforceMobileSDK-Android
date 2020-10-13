@@ -43,12 +43,10 @@ import net.sqlcipher.database.SQLiteOpenHelper;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -546,15 +544,9 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 					final File[] blobs = table.listFiles();
 					if (blobs != null) {
 						for (final File blob : blobs) {
-							final StringBuilder json = new StringBuilder();
 							String result;
 							try {
-								final BufferedReader br = new BufferedReader(new FileReader(blob));
-								String line;
-								while ((line = br.readLine()) != null) {
-									json.append(line).append('\n');
-								}
-								br.close();
+								String json = Encryptor.getStringFromFile(blob);
 
 								/*
 								 * If the key length is 24, then it's the old key (16 bytes for the
@@ -562,9 +554,9 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 								 * new key (32 bytes for the key and 12 bytes for the IV).
 								 */
 								if (oldKey.getBytes().length == 24) {
-									result = Encryptor.legacyDecrypt(json.toString(), oldKey);
+									result = Encryptor.legacyDecrypt(json, oldKey);
 								} else {
-									result = Encryptor.decrypt(json.toString(), oldKey);
+									result = Encryptor.decrypt(json, oldKey);
 								}
 								blob.delete();
 								final FileOutputStream outputStream = new FileOutputStream(blob, false);

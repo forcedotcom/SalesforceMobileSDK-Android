@@ -35,7 +35,6 @@ import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 import com.salesforce.androidsdk.util.ManagedFilesHelper;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -44,7 +43,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 
 /**
  * Key-value store backed by file system. Currently uses an in-memory solution for encryption and
@@ -206,13 +204,7 @@ public class KeyValueEncryptedFileStore  {
             if (inputStream == null) {
                 return null;
             }
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-            StringBuilder out = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                out.append(line);
-            }
-            return out.toString();
+            return Encryptor.getStringFromStream(inputStream);
         } catch (Exception e) {
             SmartStoreLogger.e(TAG, "getValue(): Threw exception for key: " + key, e);
             return null;
