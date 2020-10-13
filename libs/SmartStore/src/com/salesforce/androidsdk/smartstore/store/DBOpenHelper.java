@@ -43,7 +43,6 @@ import net.sqlcipher.database.SQLiteOpenHelper;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -547,7 +546,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 						for (final File blob : blobs) {
 							String result;
 							try {
-								String json = Encryptor.getStringFromStream(blob);
+								String json = Encryptor.getStringFromFile(blob);
 
 								/*
 								 * If the key length is 24, then it's the old key (16 bytes for the

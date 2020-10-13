@@ -475,21 +475,49 @@ public class Encryptor {
         return null;
     }
 
+    /**
+     * Retrieves data from an InputStream.  Guaranteed to close the InputStream.
+     *
+     * @param stream InputStream data.
+     * @return Data from the InputStream as a String.
+     * @throws IOException Provide log details of this exception in a catch with specifics
+     * about the operation this method was called for.
+     */
     public static String getStringFromStream(InputStream stream) throws IOException {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         byte[] buffer = new byte[READ_BUFFER_LENGTH];
         int length;
-        while ((length = stream.read(buffer)) != -1) {
-            output.write(buffer, 0, length);
+        try {
+            while ((length = stream.read(buffer)) != -1) {
+                output.write(buffer, 0, length);
+            }
         }
-        stream.close();
+        finally {
+            stream.close();
+        }
         return output.toString(String.valueOf(StandardCharsets.UTF_8));
     }
 
-    public static String getStringFromStream(File file) throws IOException {
-        final FileInputStream stream = new FileInputStream(file);
-        String output =  getStringFromStream(stream);
-        stream.close();
+    /**
+     * Retrieves data from a File.
+     *
+     * @param file File object.
+     * @return Data from the input File as a String.
+     * @throws IOException Provide log details of this exception in a catch with specifics
+     * about the operation this method was called for.
+     */
+    public static String getStringFromFile(File file) throws IOException {
+        FileInputStream stream = null;
+        String output;
+        try {
+            stream = new FileInputStream(file);
+            output =  getStringFromStream(stream);
+        }
+        finally {
+            if (stream != null) {
+                stream.close();
+            }
+        }
         return output;
     }
 

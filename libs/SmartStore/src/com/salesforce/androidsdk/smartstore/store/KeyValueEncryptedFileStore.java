@@ -54,7 +54,6 @@ public class KeyValueEncryptedFileStore  {
 
     private static final String TAG = KeyValueEncryptedFileStore.class.getSimpleName();
     public static final int MAX_STORE_NAME_LENGTH = 96;
-    private final int READ_BUFFER_LENGTH = 1024;
     private String encryptionKey;
     private final File storeDir;
 

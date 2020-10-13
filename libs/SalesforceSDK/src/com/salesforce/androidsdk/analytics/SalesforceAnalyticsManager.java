@@ -49,9 +49,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -490,7 +488,7 @@ public class SalesforceAnalyticsManager {
         InstrumentationEvent event = null;
         String eventString = null;
         try {
-            String json = Encryptor.getStringFromStream(file);
+            String json = Encryptor.getStringFromFile(file);
             eventString = Encryptor.legacyDecrypt(json,
                     SalesforceSDKManager.getLegacyEncryptionKey());
         } catch (Exception ex) {
