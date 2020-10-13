@@ -26,9 +26,11 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.filters.LargeTest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.LargeTest;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
@@ -48,14 +50,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,6 +66,7 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+
 /**
  * Tests for RestClient
  *
@@ -734,7 +734,7 @@ public class RestClientTest {
         final RestResponse response = getStreamTestResponse();
         try {
             InputStream in = response.asInputStream();
-            inputStreamToString(in);
+            Encryptor.getStringFromStream(in);
         } catch (IOException e) {
             Assert.fail("The InputStream should be readable and an IOException should not have been thrown");
         }
@@ -754,7 +754,7 @@ public class RestClientTest {
         final RestResponse response = getStreamTestResponse();
         try {
             final InputStream in = response.asInputStream();
-            inputStreamToString(in);
+            Encryptor.getStringFromStream(in);
         } catch (IOException e) {
             Assert.fail("The InputStream should be readable and an IOException should not have been thrown");
         }
@@ -1050,20 +1050,10 @@ public class RestClientTest {
      * @throws JSONException if the response could not be decoded to a valid JSON object
      */
     private void assertStreamTestResponseStreamIsValid(InputStream in) throws IOException, JSONException {
-        final String responseData = inputStreamToString(in);
+        final String responseData = Encryptor.getStringFromStream(in);
         Assert.assertNotNull("The response should contain data", responseData);
         final JSONObject responseJson = new JSONObject(responseData);
         checkKeys(responseJson, "sobjects", "search", "recent");
-    }
-
-    private String inputStreamToString(InputStream inputStream) throws IOException {
-        StringBuilder builder = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-        String line;
-        while ((line = reader.readLine()) != null) {
-            builder.append(line);
-        }
-        return builder.toString();
     }
 
     /**

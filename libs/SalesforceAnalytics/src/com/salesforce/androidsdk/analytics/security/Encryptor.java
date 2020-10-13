@@ -32,6 +32,11 @@ import android.util.Base64;
 
 import com.salesforce.androidsdk.analytics.util.SalesforceAnalyticsLogger;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
@@ -58,6 +63,7 @@ public class Encryptor {
     private static final String SHA1PRNG = "SHA1PRNG";
     private static final String RSA_PKCS1 = "RSA/ECB/PKCS1Padding";
     private static final String BOUNCY_CASTLE = "BC";
+    private static final int READ_BUFFER_LENGTH = 1024;
 
     /**
      * Returns initialized cipher for encryption with an IV automatically generated.
@@ -467,6 +473,24 @@ public class Encryptor {
             SalesforceAnalyticsLogger.e(null, TAG, "Error during symmetric decryption using AES", e);
         }
         return null;
+    }
+
+    public static String getStringFromStream(InputStream stream) throws IOException {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        byte[] buffer = new byte[READ_BUFFER_LENGTH];
+        int length;
+        while ((length = stream.read(buffer)) != -1) {
+            output.write(buffer, 0, length);
+        }
+        stream.close();
+        return output.toString(String.valueOf(StandardCharsets.UTF_8));
+    }
+
+    public static String getStringFromStream(File file) throws IOException {
+        final FileInputStream stream = new FileInputStream(file);
+        String output =  getStringFromStream(stream);
+        stream.close();
+        return output;
     }
 
     private static byte[] encryptWithPublicKey(PublicKey publicKey, String data, String cipher) {
