@@ -46,8 +46,8 @@ import java.util.Map;
  */
 class PushNotificationDecryptor {
 
-    private static String CONTENT_KEY = "content";
-    private static PushNotificationDecryptor INSTANCE = new PushNotificationDecryptor();
+    private static final String CONTENT_KEY = "content";
+    private static final PushNotificationDecryptor INSTANCE = new PushNotificationDecryptor();
 
     /**
      * Returns a singleton instance of this class.
