@@ -26,6 +26,7 @@
 
     <preference name="loglevel" level="DEBUG"/>
     <preference name="classicRender" value="true" />
+    <preference name="AndroidXEnabled" value="true" />
     
     <feature name="App"><param name="android-package" value="org.apache.cordova.App"/></feature>
     <feature name="com.salesforce.oauth"><param name="android-package" value="com.salesforce.androidsdk.phonegap.plugin.SalesforceOAuthPlugin"/></feature>
