@@ -58,6 +58,7 @@ public class SalesforceWebViewClientHelper {
     private static final String HYBRID_SESSION_REDIRECT = "/services/identity/mobileauthredirect";
     private static final String FRONTDOOR = "frontdoor.jsp";
     private static final String START_URL_PARAM = "startURL";
+    private static final String RET_URL_PARAM = "retURL";
     private static final String EC_PARAM = "ec";
     private static final String QUESTION_MARK = "?";
 
@@ -140,12 +141,13 @@ public class SalesforceWebViewClientHelper {
     private static String isLoginRedirect(Context ctx, String url) {
         final Uri uri = Uri.parse(url);
         final Map<String, String> params = UriFragmentParser.parse(uri);
-        String startURL = params.get(START_URL_PARAM);
-        if (TextUtils.isEmpty(startURL) || startURL.contains(FRONTDOOR)) {
-            startURL = BootConfig.getBootConfig(ctx).getStartPage();
+        String retURL = params.get(RET_URL_PARAM);
+        retURL = TextUtils.isEmpty(retURL) ? params.get(START_URL_PARAM) : retURL;
+        if (TextUtils.isEmpty(retURL) || retURL.contains(FRONTDOOR)) {
+            retURL = BootConfig.getBootConfig(ctx).getStartPage();
         }
         if (isSessionExpirationRedirect(url) || isSamlLoginRedirect(ctx, url) || isVFPageRedirect(params)) {
-            return startURL;
+            return retURL;
         }
         return null;
     }
