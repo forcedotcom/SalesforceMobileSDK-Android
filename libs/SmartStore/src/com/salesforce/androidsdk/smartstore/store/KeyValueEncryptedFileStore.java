@@ -344,15 +344,23 @@ public class KeyValueEncryptedFileStore  {
     }
 
     InputStream getStream(File file, String encryptionKey) throws IOException {
-        final FileInputStream f = new FileInputStream(file);
-        final DataInputStream data = new DataInputStream(f);
-        byte[] bytes = new byte[(int) file.length()];
-        data.readFully(bytes);
-        final byte[] decryptedBytes = Encryptor.decryptWithoutBase64Encoding(bytes, encryptionKey);
-        if (decryptedBytes != null) {
-            return new ByteArrayInputStream(decryptedBytes);
+        FileInputStream f = null;
+        try {
+            f = new FileInputStream(file);
+            final DataInputStream data = new DataInputStream(f);
+            byte[] bytes = new byte[(int) file.length()];
+            data.readFully(bytes);
+            final byte[] decryptedBytes = Encryptor
+                .decryptWithoutBase64Encoding(bytes, encryptionKey);
+            if (decryptedBytes != null) {
+                return new ByteArrayInputStream(decryptedBytes);
+            }
+            return null;
+        } finally {
+             if (f != null) {
+                 f.close();
+             }
         }
-        return null;
     }
 
     void saveStream(File file, InputStream stream, String encryptionKey)
