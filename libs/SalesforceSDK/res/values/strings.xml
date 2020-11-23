@@ -7,6 +7,8 @@
     <string name="app_name">SalesforceSDK</string>
     <string name="account_type">com.salesforce.androidsdk</string>
     <string name="app_package">com.salesforce.androidsdk</string>
+    <!-- The icon visible for accounts in the Settings app. This is safely parsed as a reference and not a string. -->
+    <string name="authenticator_icon">@drawable/sf__icon</string>
 
     <!-- If you're only supporting recent versions of Android (e.g. 3.x and up), you can override this to be touch and get a better looking login UI  -->
     <string name="oauth_display_type">touch</string>
