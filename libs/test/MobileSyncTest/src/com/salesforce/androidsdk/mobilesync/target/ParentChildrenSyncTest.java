@@ -27,6 +27,7 @@
 
 package com.salesforce.androidsdk.mobilesync.target;
 
+import android.util.Log;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import com.salesforce.androidsdk.mobilesync.target.ParentChildrenSyncTargetHelper.RelationshipType;
@@ -966,84 +967,106 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
 
     /**
      * Create accounts and contacts on server.
-     * Create accounts and contacts locally with external id field populated (matching records on server)
-     * except last account and first contact.
+     * Create accounts and contacts locally - some with external id matching server record:
+     * - account with external id populated with contact with no external id
+     * - account with external id populated with contact with external id
+     * - account with no external id with contact with external id
+     *
      * Sync up with external id field name provided, check smartstore and server afterwards.
      *
      * @throws Exception
      */
     @Test
-    public void testSyncUpWithExternalIdPopulatedOnParents() throws Exception {
+    public void testParentChildrenSyncUpWithExternalId() throws Exception {
         String externalIdFieldName = "Id";
 
         // Creating test accounts and contacts on server
         createAccountsAndContactsOnServer(3, 1);
 
-        // Creating 3 new account names
-        String accountName1 = createRecordName(Constants.ACCOUNT);
-        String accountName2 = createRecordName(Constants.ACCOUNT);
-        String accountName3 = createRecordName(Constants.ACCOUNT);
-
         // Get id of accounts on the server
         String[] accountIds = accountIdToFields.keySet().toArray(new String[0]);
         Arrays.sort(accountIds);
-        String accountId1 = accountIds[0];
-        String accountId2 = accountIds[1];
-        String accountId3 = accountIds[2];
+        String accountId0 = accountIds[0];
+        String accountId1 = accountIds[1];
+        String accountId2 = accountIds[2];
 
-        // Get name of third account
-        String originalAccountName3 = (String) accountIdToFields.get(accountId3).get(Constants.NAME);
+        // Get name of third account on server
+        String originalAccountName2 = (String) accountIdToFields.get(accountId2).get(Constants.NAME);
 
         // Get id of contacts on the server
+        String contactId0 = accountIdContactIdToFields.get(accountId0).keySet().toArray(new String[0])[0];
         String contactId1 = accountIdContactIdToFields.get(accountId1).keySet().toArray(new String[0])[0];
         String contactId2 = accountIdContactIdToFields.get(accountId2).keySet().toArray(new String[0])[0];
-        String contactId3 = accountIdContactIdToFields.get(accountId3).keySet().toArray(new String[0])[0];
 
-        // Get name of first contact
-        String originalContactName1 = (String) accountIdContactIdToFields.get(accountId1).get(contactId1).get(Constants.LAST_NAME);
+        // Get name of first contact on server
+        String originalContactName0 = (String) accountIdContactIdToFields.get(accountId0).get(contactId0).get(Constants.LAST_NAME);
+
+        // Creating 3 new account names
+        String accountName0 = createRecordName(Constants.ACCOUNT);
+        String accountName1 = createRecordName(Constants.ACCOUNT);
+        String accountName2 = createRecordName(Constants.ACCOUNT);
 
         // Create accounts and contacts locally
         Map<JSONObject, JSONObject[]> accountToContactMap = createAccountsAndContactsLocally(
-            new String[]{accountName1, accountName2, accountName3}, 3);
+            new String[]{accountName0, accountName1, accountName2}, 1);
         JSONObject[] localAccounts = accountToContactMap.keySet().toArray(new JSONObject[0]);
         JSONObject[] localContacts = new JSONObject[]{accountToContactMap.get(localAccounts[0])[0],
             accountToContactMap.get(localAccounts[1])[0], accountToContactMap.get(localAccounts[2])[0] };
 
         // Local contact names
-        String contactName1 = localContacts[0].getString(Constants.LAST_NAME);
-        String contactName2 = localContacts[0].getString(Constants.LAST_NAME);
-        String contactName3 = localContacts[0].getString(Constants.LAST_NAME);
+        String contactName0 = localContacts[0].getString(Constants.LAST_NAME);
+        String contactName1 = localContacts[1].getString(Constants.LAST_NAME);
+        String contactName2 = localContacts[2].getString(Constants.LAST_NAME);
 
-        // Update Id field to match existing id for account 1 and 2
-        localAccounts[0].put(externalIdFieldName, accountId1);
+
+        Log.i("---test--", "accountName0=" + accountName0);
+        Log.i("---test--", "accountName1=" + accountName1);
+        Log.i("---test--", "accountName2=" + accountName2);
+        Log.i("---test--", "originalAccountName2=" + originalAccountName2);
+
+
+        Log.i("---test--", "contactName0=" + contactName0);
+        Log.i("---test--", "contactName0original=" + originalContactName0);
+        Log.i("---test--", "contactName1=" + contactName1);
+        Log.i("---test--", "contactName2=" + contactName2);
+
+        // Update Id field to match existing id for account 0 and 1
+        localAccounts[0].put(externalIdFieldName, accountId0);
         smartStore.upsert(ACCOUNTS_SOUP, localAccounts[0]);
-        localAccounts[1].put(externalIdFieldName, accountId2);
+        localAccounts[1].put(externalIdFieldName, accountId1);
         smartStore.upsert(ACCOUNTS_SOUP, localAccounts[1]);
-        localAccounts[2].put(externalIdFieldName, null);
-        smartStore.upsert(ACCOUNTS_SOUP, localAccounts[2]);
 
-        // Update Id field to match existing id for contact 2 and 3
-        localContacts[0].put(externalIdFieldName, null);
-        smartStore.upsert(CONTACTS_SOUP, localAccounts[0]);
-        localContacts[1].put(externalIdFieldName, contactId2);
-        smartStore.upsert(CONTACTS_SOUP, localAccounts[1]);
-        localContacts[2].put(externalIdFieldName, contactId3);
-        smartStore.upsert(CONTACTS_SOUP, localAccounts[2]);
+        // Update Id field to match existing id for contact 1 and 2
+        // Update accountId field also for contact 0 and 1
+        localContacts[0].put(ACCOUNT_ID, accountId0);
+        smartStore.upsert(CONTACTS_SOUP, localContacts[0]);
+        localContacts[1].put(externalIdFieldName, contactId1);
+        localContacts[1].put(ACCOUNT_ID, accountId1);
+        smartStore.upsert(CONTACTS_SOUP, localContacts[1]);
+        localContacts[2].put(externalIdFieldName, contactId2);
+        smartStore.upsert(CONTACTS_SOUP, localContacts[2]);
+
+        Log.i("---test--", "account0=" + localAccounts[0]);
+        Log.i("---test--", "account1=" + localAccounts[1]);
+        Log.i("---test--", "account2=" + localAccounts[2]);
+        Log.i("---test--", "contact0=" + localContacts[0]);
+        Log.i("---test--", "contact1=" + localContacts[1]);
+        Log.i("---test--", "contact2=" + localContacts[2]);
 
         // Sync up
         trySyncUp(getAccountContactsSyncUpTarget(Constants.LAST_MODIFIED_DATE, Constants.LAST_MODIFIED_DATE, externalIdFieldName, externalIdFieldName), 3, SyncState.MergeMode.OVERWRITE);
 
         // Getting id for third account upserted - the one without an valid external id
-        String newAccountId = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{}, Constants.NAME, new String[] { accountName3 }).keySet().toArray(new String[0])[0];
+        String newAccountId = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{}, Constants.NAME, new String[] { accountName2 }).keySet().toArray(new String[0])[0];
 
         // Getting id for first contact upserted - the one without an valid external id
-        String newContactId = getIdToFieldsByName(CONTACTS_SOUP, new String[]{}, Constants.LAST_NAME, new String[] { contactName1 }).keySet().toArray(new String[0])[0];
+        String newContactId = getIdToFieldsByName(CONTACTS_SOUP, new String[]{}, Constants.LAST_NAME, new String[] { contactName0 }).keySet().toArray(new String[0])[0];
 
         // Expected accounts records locally
         Map<String, Map<String, Object>> expectedAccountsDbIdToFields = new HashMap<>();
+        expectedAccountsDbIdToFields.put(accountId0, createFieldsMap(Constants.NAME, accountName0));
         expectedAccountsDbIdToFields.put(accountId1, createFieldsMap(Constants.NAME, accountName1));
-        expectedAccountsDbIdToFields.put(accountId2, createFieldsMap(Constants.NAME, accountName2));
-        expectedAccountsDbIdToFields.put(newAccountId, createFieldsMap(Constants.NAME, accountName3));
+        expectedAccountsDbIdToFields.put(newAccountId, createFieldsMap(Constants.NAME, accountName2));
 
         // Check db
         checkDbStateFlags(expectedAccountsDbIdToFields.keySet(), false, false, false, ACCOUNTS_SOUP);
@@ -1051,9 +1074,9 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
 
         // Expected contacts records locally
         Map<String, Map<String, Object>> expectedContactsDbIdToFields = new HashMap<>();
-        expectedContactsDbIdToFields.put(newContactId, createFieldsMap(Constants.LAST_NAME, contactName1));
+        expectedContactsDbIdToFields.put(newContactId, createFieldsMap(Constants.LAST_NAME, contactName0));
+        expectedContactsDbIdToFields.put(contactId1, createFieldsMap(Constants.LAST_NAME, contactName1));
         expectedContactsDbIdToFields.put(contactId2, createFieldsMap(Constants.LAST_NAME, contactName2));
-        expectedContactsDbIdToFields.put(contactId3, createFieldsMap(Constants.LAST_NAME, contactName3));
 
         // Check db
         checkDbStateFlags(expectedContactsDbIdToFields.keySet(), false, false, false, CONTACTS_SOUP);
@@ -1061,23 +1084,23 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
 
         // Expected accounts on server
         Map<String, Map<String, Object>> expectedAccountsServerIdToFields = new HashMap();
+        expectedAccountsServerIdToFields.put(accountId0, createFieldsMap(Constants.NAME, accountName0));
         expectedAccountsServerIdToFields.put(accountId1, createFieldsMap(Constants.NAME, accountName1));
-        expectedAccountsServerIdToFields.put(accountId2, createFieldsMap(Constants.NAME, accountName2));
-        expectedAccountsServerIdToFields.put(accountId3, createFieldsMap(Constants.NAME, originalAccountName3));
-        expectedAccountsServerIdToFields.put(newAccountId, createFieldsMap(Constants.NAME, accountName3));
+        expectedAccountsServerIdToFields.put(accountId2, createFieldsMap(Constants.NAME, originalAccountName2));
+        expectedAccountsServerIdToFields.put(newAccountId, createFieldsMap(Constants.NAME, accountName2));
 
         // Check server
         checkServer(expectedAccountsServerIdToFields, Constants.ACCOUNT);
 
         // Expected contacts on server
         Map<String, Map<String, Object>> expectedContactsServerIdToFields = new HashMap();
-        expectedContactsServerIdToFields.put(newContactId, createFieldsMap(Constants.LAST_NAME, contactName1));
-        expectedContactsServerIdToFields.put(contactId1, createFieldsMap(Constants.LAST_NAME, originalContactName1));
+        expectedContactsServerIdToFields.put(newContactId, createFieldsMap(Constants.LAST_NAME, contactName0));
+        expectedContactsServerIdToFields.put(contactId0, createFieldsMap(Constants.LAST_NAME, originalContactName0));
+        expectedContactsServerIdToFields.put(contactId1, createFieldsMap(Constants.LAST_NAME, contactName1));
         expectedContactsServerIdToFields.put(contactId2, createFieldsMap(Constants.LAST_NAME, contactName2));
-        expectedContactsServerIdToFields.put(contactId3, createFieldsMap(Constants.LAST_NAME, contactName3));
 
         // Check server
-        checkServer(expectedAccountsServerIdToFields, Constants.CONTACT);
+        checkServer(expectedContactsServerIdToFields, Constants.CONTACT);
 
         // Adding to idToFields so that they get deleted in tearDown
         accountIdToFields.putAll(expectedAccountsServerIdToFields);

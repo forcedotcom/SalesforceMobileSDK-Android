@@ -410,7 +410,12 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
             }
             if (isCreate) {
                 String externalId = info.externalIdFieldName != null ? JSONObjectHelper.optString(record, info.externalIdFieldName) : null;
-                if (externalId != null) {
+                if (externalId != null
+                    // the following check is there for the case
+                    // where the the external id field is the id field
+                    // and id field contains a local id
+                    // XXX how to we recognize a local id in a generic manner
+                    && !externalId.startsWith("local_")) {
                     return RestRequest.getRequestForUpsert(apiVersion,
                         info.sobjectType,
                         info.externalIdFieldName,
