@@ -34,15 +34,13 @@ import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * Subclass of SyncUpTarget that batches create/update/delete operations by using composite api
@@ -140,7 +138,7 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
 
             if (id == null) {
                 // create local id - needed for refId
-                id = createLocalId(record);
+                id = createLocalId();
                 record.put(getIdFieldName(), id);
             }
 
@@ -271,8 +269,4 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
         return needReRun;
     }
 
-    // Create a local id (based on the internal soup entry id)
-    private String createLocalId(JSONObject record) throws JSONException {
-        return LOCAL_ID_PREFIX + record.getLong(SmartStore.SOUP_ENTRY_ID);
-    }
 }
