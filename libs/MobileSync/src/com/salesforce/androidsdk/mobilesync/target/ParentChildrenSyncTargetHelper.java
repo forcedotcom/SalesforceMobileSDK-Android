@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.mobilesync.target;
 
 import android.text.TextUtils;
 
+import android.util.Log;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -117,6 +118,7 @@ public class ParentChildrenSyncTargetHelper {
 
     public static JSONArray getChildrenFromLocalStore(SmartStore smartStore, ParentInfo parentInfo, ChildrenInfo childrenInfo, JSONObject parent) throws JSONException {
         QuerySpec  querySpec = getQueryForChildren(parentInfo, childrenInfo, SmartSqlHelper.SOUP, parent.getString(parentInfo.idFieldName));
+        Log.i("------", querySpec.smartSql);
         JSONArray rows = smartStore.query(querySpec, 0);
         JSONArray children = new JSONArray();
         for (int i=0; i<rows.length(); i++) {

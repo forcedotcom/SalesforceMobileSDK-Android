@@ -63,6 +63,14 @@ public class KeyValueEncryptedFileStoreTest {
 
     @Before
     public void setUp() {
+        try {
+            Class.forName("dalvik.system.CloseGuard")
+                .getMethod("setEnabled", boolean.class)
+                .invoke(null, true);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
+
         context =
                 InstrumentationRegistry.getInstrumentation()
                         .getTargetContext()

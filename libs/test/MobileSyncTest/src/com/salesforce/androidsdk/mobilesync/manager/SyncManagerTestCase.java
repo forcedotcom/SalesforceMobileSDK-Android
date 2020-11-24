@@ -726,6 +726,32 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         return idToFieldsLocallyUpdated;
     }
 
+
+    /**
+     * Helper for building fields map
+     * @param fieldName
+     * @param fieldValue
+     * @return
+     */
+    protected Map<String, Object> createFieldsMap(String fieldName, String fieldValue) {
+        final Map<String, Object> fields = new HashMap<>();
+        fields.put(fieldName, fieldValue);
+        return fields;
+    }
+
+    /**
+     * Helper for building fields map
+     * @param name
+     * @param description
+     * @return
+     */
+    protected Map<String, Object> createFieldsMapFromNameDescription(String name, String description) {
+        final Map<String, Object> fields = new HashMap<>();
+        if (name != null) fields.put(Constants.NAME, name);
+        if (description != null) fields.put(Constants.DESCRIPTION, description);
+        return fields;
+    }
+
     /**
      * Class use to customize json object
      */

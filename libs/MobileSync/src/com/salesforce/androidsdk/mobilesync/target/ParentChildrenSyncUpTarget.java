@@ -62,7 +62,6 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
     public static final String CHILDREN_CREATE_FIELDLIST = "childrenCreateFieldlist";
     public static final String CHILDREN_UPDATE_FIELDLIST = "childrenUpdateFieldlist";
     public static final String BODY = "body";
-    public static final String HTTP_STATUS_CODE = "httpStatusCode";
 
     private ParentInfo parentInfo;
     private ChildrenInfo childrenInfo;
@@ -410,9 +409,18 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                 );
             }
             if (isCreate) {
-                return RestRequest.getRequestForCreate(apiVersion,
+                String externalId = info.externalIdFieldName != null ? JSONObjectHelper.optString(record, info.externalIdFieldName) : null;
+                if (externalId != null) {
+                    return RestRequest.getRequestForUpsert(apiVersion,
+                        info.sobjectType,
+                        info.externalIdFieldName,
+                        externalId,
+                        fields);
+                } else {
+                    return RestRequest.getRequestForCreate(apiVersion,
                         info.sobjectType,
                         fields);
+                }
             }
             else {
                 return RestRequest.getRequestForUpdate(apiVersion,

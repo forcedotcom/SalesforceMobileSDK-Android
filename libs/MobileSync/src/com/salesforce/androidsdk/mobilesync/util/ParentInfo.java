@@ -41,29 +41,39 @@ public class ParentInfo {
     public static final String SOUP_NAME = "soupName";
     public static final String ID_FIELD_NAME = "idFieldName";
     public static final String MODIFICATION_DATE_FIELD_NAME = "modificationDateFieldName";
+    public static final String EXTERNAL_ID_FIELD_NAME = "externalIdFieldName";
 
     // Fields
     public final String sobjectType;
     public final String idFieldName;
     public final String modificationDateFieldName;
     public final String soupName;
+    public final String externalIdFieldName;
 
     public ParentInfo(JSONObject json) throws JSONException {
         this(
                 json.getString(SOBJECT_TYPE),
-                json.getString(SOUP_NAME), JSONObjectHelper.optString(json, ID_FIELD_NAME), JSONObjectHelper.optString(json, MODIFICATION_DATE_FIELD_NAME)
-        );
+                json.getString(SOUP_NAME),
+                JSONObjectHelper.optString(json, ID_FIELD_NAME),
+                JSONObjectHelper.optString(json, MODIFICATION_DATE_FIELD_NAME),
+                JSONObjectHelper.optString(json, EXTERNAL_ID_FIELD_NAME)
+            );
     }
 
     public ParentInfo(String sobjectType, String soupName) {
-        this(sobjectType, soupName, null, null);
+        this(sobjectType, soupName, null, null, null);
     }
 
     public ParentInfo(String sobjectType, String soupName, String idFieldName, String modificationDateFieldName) {
+        this(sobjectType, soupName, idFieldName, modificationDateFieldName, null);
+    }
+
+    public ParentInfo(String sobjectType, String soupName, String idFieldName, String modificationDateFieldName, String externalIdFieldName) {
         this.sobjectType = sobjectType;
         this.soupName = soupName;
         this.idFieldName = idFieldName != null ? idFieldName : Constants.ID;
         this.modificationDateFieldName = modificationDateFieldName != null ? modificationDateFieldName : Constants.LAST_MODIFIED_DATE;
+        this.externalIdFieldName = externalIdFieldName;
     }
 
     public JSONObject asJSON() throws JSONException {
@@ -72,6 +82,7 @@ public class ParentInfo {
         json.put(SOBJECT_TYPE, sobjectType);
         json.put(ID_FIELD_NAME, idFieldName);
         json.put(MODIFICATION_DATE_FIELD_NAME, modificationDateFieldName);
+        json.put(EXTERNAL_ID_FIELD_NAME, externalIdFieldName);
         return json;
     }
 }
