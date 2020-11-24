@@ -235,12 +235,12 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         Map<JSONObject, JSONObject[]> mapAccountContacts = new HashMap<>();
         for (int i = 0; i < numberAccounts; i++) {
             JSONObject account = new JSONObject();
-            account.put(Constants.ID, createLocalId());
+            account.put(Constants.ID, SyncTarget.createLocalId());
             account.put(Constants.ATTRIBUTES, accountAttributes);
             JSONObject[] contacts = new JSONObject[numberContactsPerAccount];
             for (int j = 0; j < numberContactsPerAccount; j++) {
                 JSONObject contact = new JSONObject();
-                contact.put(Constants.ID, createLocalId());
+                contact.put(Constants.ID, SyncTarget.createLocalId());
                 contact.put(Constants.ATTRIBUTES, contactAttributes);
                 contact.put(ACCOUNT_ID, account.get(Constants.ID));
                 contacts[j] = contact;
@@ -326,13 +326,13 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         Map<JSONObject, JSONObject[]> mapAccountContacts = new HashMap<>();
         for (int i = 0; i < numberAccounts; i++) {
             JSONObject account = new JSONObject();
-            account.put(Constants.ID, createLocalId());
+            account.put(Constants.ID, SyncTarget.createLocalId());
             account.put("AccountTimeStamp1", timeStampStrs[i % timeStampStrs.length]);
             account.put("AccountTimeStamp2", timeStampStrs[0]);
             JSONObject[] contacts = new JSONObject[numberContactsPerAccount];
             for (int j = 0; j < numberContactsPerAccount; j++) {
                 JSONObject contact = new JSONObject();
-                contact.put(Constants.ID, createLocalId());
+                contact.put(Constants.ID, SyncTarget.createLocalId());
                 contact.put(ACCOUNT_ID, account.get(Constants.ID));
                 contact.put("ContactTimeStamp1", timeStampStrs[1]);
                 contact.put("ContactTimeStamp2", timeStampStrs[j % timeStampStrs.length]);

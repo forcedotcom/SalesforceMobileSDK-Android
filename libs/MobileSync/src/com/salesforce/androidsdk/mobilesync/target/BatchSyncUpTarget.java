@@ -208,8 +208,8 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
                 if (externalId != null
                         // the following check is there for the case
                         // where the the external id field is the id field
-                        // and the empty id field was populated by BatchSyncUpTarget using createLocalId()
-                        && !externalId.equals(createLocalId(record))) {
+                        // and the field is populated by a local id
+                        && !isLocalId(externalId)) {
                     return RestRequest.getRequestForUpsert(apiVersion, objectType, getExternalIdFieldName(), externalId, fields);
                 }
                 // Do a create otherwise
@@ -273,6 +273,6 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
 
     // Create a local id (based on the internal soup entry id)
     private String createLocalId(JSONObject record) throws JSONException {
-        return "local_" + record.getLong(SmartStore.SOUP_ENTRY_ID);
+        return LOCAL_ID_PREFIX + record.getLong(SmartStore.SOUP_ENTRY_ID);
     }
 }

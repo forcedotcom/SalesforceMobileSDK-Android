@@ -52,10 +52,8 @@ import org.junit.Assert;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Formatter;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -67,7 +65,6 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
 
     protected static final String TYPE = "type";
     protected static final String RECORDS = "records";
-    protected static final String LOCAL_ID_PREFIX = "local_";
     protected static final String ACCOUNTS_SOUP = "accounts";
     protected static final int TOTAL_SIZE_UNKNOWN = -2;
     protected static final String REMOTELY_UPDATED = "_r_upd";
@@ -124,17 +121,6 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
     }
 
     /**
-     * @return local id of the form local_number where number is different every time and increasing
-     */
-    protected String createLocalId() {
-        StringBuilder sb = new StringBuilder();
-        Formatter formatter = new Formatter(sb, Locale.US);
-        formatter.format(LOCAL_ID_PREFIX + System.nanoTime());
-        String name = sb.toString();
-        return name;
-    }
-
-    /**
      * Create accounts locally
      *
      * @param names
@@ -159,7 +145,7 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         for (int i = 0; i < names.length; i++) {
             String name = names[i];
             JSONObject account = new JSONObject();
-            account.put(Constants.ID, createLocalId());
+            account.put(Constants.ID, SyncTarget.createLocalId());
             account.put(Constants.NAME, name);
             account.put(Constants.DESCRIPTION, "Description_" + name);
             account.put(Constants.ATTRIBUTES, attributes);
@@ -485,7 +471,8 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
             String id = soupElt.getString(Constants.ID);
             Assert.assertEquals("Wrong local flag", expectDirty, soupElt.getBoolean(SyncTarget.LOCAL));
             Assert.assertEquals("Wrong local flag", expectLocallyCreated, soupElt.getBoolean(SyncTarget.LOCALLY_CREATED));
-            Assert.assertEquals("Id was not updated", expectLocallyCreated, id.startsWith(LOCAL_ID_PREFIX));
+            Assert.assertEquals("Id was not updated", expectLocallyCreated, id.startsWith(
+                SyncTarget.LOCAL_ID_PREFIX));
             Assert.assertEquals("Wrong local flag", expectLocallyUpdated, soupElt.getBoolean(SyncTarget.LOCALLY_UPDATED));
             Assert.assertEquals("Wrong local flag", expectLocallyDeleted, soupElt.getBoolean(SyncTarget.LOCALLY_DELETED));
             // Last error field should be empty for a clean record

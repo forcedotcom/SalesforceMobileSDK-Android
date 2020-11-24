@@ -624,7 +624,7 @@ public class ParentChildrenSyncTestCase extends SyncManagerTestCase {
             JSONObject[] contacts = new JSONObject[numberOfContactsPerAccount];
             for (int i = 0; i < numberOfContactsPerAccount; i++) {
                 JSONObject contact = new JSONObject();
-                contact.put(Constants.ID, createLocalId());
+                contact.put(Constants.ID, SyncTarget.createLocalId());
                 contact.put(Constants.LAST_NAME, createRecordName(Constants.CONTACT));
                 contact.put(Constants.ATTRIBUTES, attributes);
                 contact.put(SyncTarget.LOCAL, true);
