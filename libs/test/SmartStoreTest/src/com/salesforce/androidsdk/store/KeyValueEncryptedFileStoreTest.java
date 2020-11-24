@@ -63,6 +63,7 @@ public class KeyValueEncryptedFileStoreTest {
 
     @Before
     public void setUp() {
+        // Throw an exception if stream is not closed
         try {
             Class.forName("dalvik.system.CloseGuard")
                 .getMethod("setEnabled", boolean.class)

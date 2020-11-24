@@ -27,7 +27,6 @@
 
 package com.salesforce.androidsdk.mobilesync.target;
 
-import android.util.Log;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import com.salesforce.androidsdk.mobilesync.target.ParentChildrenSyncTargetHelper.RelationshipType;
@@ -1018,18 +1017,6 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         String contactName1 = localContacts[1].getString(Constants.LAST_NAME);
         String contactName2 = localContacts[2].getString(Constants.LAST_NAME);
 
-
-        Log.i("---test--", "accountName0=" + accountName0);
-        Log.i("---test--", "accountName1=" + accountName1);
-        Log.i("---test--", "accountName2=" + accountName2);
-        Log.i("---test--", "originalAccountName2=" + originalAccountName2);
-
-
-        Log.i("---test--", "contactName0=" + contactName0);
-        Log.i("---test--", "contactName0original=" + originalContactName0);
-        Log.i("---test--", "contactName1=" + contactName1);
-        Log.i("---test--", "contactName2=" + contactName2);
-
         // Update Id field to match existing id for account 0 and 1
         localAccounts[0].put(externalIdFieldName, accountId0);
         smartStore.upsert(ACCOUNTS_SOUP, localAccounts[0]);
@@ -1045,13 +1032,6 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         smartStore.upsert(CONTACTS_SOUP, localContacts[1]);
         localContacts[2].put(externalIdFieldName, contactId2);
         smartStore.upsert(CONTACTS_SOUP, localContacts[2]);
-
-        Log.i("---test--", "account0=" + localAccounts[0]);
-        Log.i("---test--", "account1=" + localAccounts[1]);
-        Log.i("---test--", "account2=" + localAccounts[2]);
-        Log.i("---test--", "contact0=" + localContacts[0]);
-        Log.i("---test--", "contact1=" + localContacts[1]);
-        Log.i("---test--", "contact2=" + localContacts[2]);
 
         // Sync up
         trySyncUp(getAccountContactsSyncUpTarget(Constants.LAST_MODIFIED_DATE, Constants.LAST_MODIFIED_DATE, externalIdFieldName, externalIdFieldName), 3, SyncState.MergeMode.OVERWRITE);
