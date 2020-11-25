@@ -40,6 +40,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1000,17 +1001,17 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         // Get name of first contact on server
         String originalContactName0 = (String) accountIdContactIdToFields.get(accountId0).get(contactId0).get(Constants.LAST_NAME);
 
-        // Creating 3 new account names
-        String accountName0 = createRecordName(Constants.ACCOUNT);
-        String accountName1 = createRecordName(Constants.ACCOUNT);
-        String accountName2 = createRecordName(Constants.ACCOUNT);
-
         // Create accounts and contacts locally
         Map<JSONObject, JSONObject[]> accountToContactMap = createAccountsAndContactsLocally(
-            new String[]{accountName0, accountName1, accountName2}, 1);
+            new String[]{createRecordName(Constants.ACCOUNT), createRecordName(Constants.ACCOUNT), createRecordName(Constants.ACCOUNT)}, 1);
         JSONObject[] localAccounts = accountToContactMap.keySet().toArray(new JSONObject[0]);
         JSONObject[] localContacts = new JSONObject[]{accountToContactMap.get(localAccounts[0])[0],
             accountToContactMap.get(localAccounts[1])[0], accountToContactMap.get(localAccounts[2])[0] };
+
+        // Local account names
+        String accountName0 = localAccounts[0].getString(Constants.NAME);
+        String accountName1 = localAccounts[1].getString(Constants.NAME);
+        String accountName2 = localAccounts[2].getString(Constants.NAME);
 
         // Local contact names
         String contactName0 = localContacts[0].getString(Constants.LAST_NAME);
@@ -1082,7 +1083,8 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         // Check server
         checkServer(expectedContactsServerIdToFields, Constants.CONTACT);
 
-        // Adding to idToFields so that they get deleted in tearDown
-        accountIdToFields.putAll(expectedAccountsServerIdToFields);
+        // Clean up
+        deleteRecordsOnServer(Collections.singletonList(newAccountId), Constants.ACCOUNT);
+        deleteRecordsOnServer(Collections.singletonList(newContactId), Constants.CONTACT);
     }
 }
