@@ -28,14 +28,12 @@
 package com.salesforce.androidsdk.mobilesync.target;
 
 import android.text.TextUtils;
-
-import com.salesforce.androidsdk.smartstore.store.QuerySpec;
-import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 import com.salesforce.androidsdk.mobilesync.util.ChildrenInfo;
 import com.salesforce.androidsdk.mobilesync.util.ParentInfo;
-
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;

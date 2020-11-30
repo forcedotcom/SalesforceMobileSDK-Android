@@ -202,7 +202,11 @@ public class SyncUpTarget extends SyncTarget {
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
         final Map<String,Object> fields = buildFieldsMap(record, fieldlist, getIdFieldName(), getModificationDateFieldName());
         final String externalId = externalIdFieldName != null ? JSONObjectHelper.optString(record, externalIdFieldName) : null;
-        if (externalId != null) {
+        if (externalId != null
+            // the following check is there for the case
+            // where the the external id field is the id field
+            // and the field is populated by a local id
+            && !isLocalId(externalId)) {
             return upsertOnServer(syncManager, objectType, fields, externalId);
         } else {
             return createOnServer(syncManager, objectType, fields);

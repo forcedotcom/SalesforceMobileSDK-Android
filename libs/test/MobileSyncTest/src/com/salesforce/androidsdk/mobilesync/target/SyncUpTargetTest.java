@@ -764,17 +764,4 @@ public class SyncUpTargetTest extends SyncManagerTestCase {
         return trySyncDown(mergeMode, target, ACCOUNTS_SOUP, idToFields.size(), 1, syncName);
 
     }
-
-    /**
-     * Helper for building fields map
-     * @param name
-     * @param description
-     * @return
-     */
-    protected Map<String, Object> createFieldsMapFromNameDescription(String name, String description) {
-        final Map<String, Object> fields = new HashMap<>();
-        if (name != null) fields.put(Constants.NAME, name);
-        if (description != null) fields.put(Constants.DESCRIPTION, description);
-        return fields;
-    }
 }

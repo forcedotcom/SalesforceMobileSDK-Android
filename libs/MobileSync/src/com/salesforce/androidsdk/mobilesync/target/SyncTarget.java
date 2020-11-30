@@ -27,21 +27,18 @@
 package com.salesforce.androidsdk.mobilesync.target;
 
 import android.text.TextUtils;
-
-import com.salesforce.androidsdk.smartstore.store.QuerySpec;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * Abstract super class for SyncUpTarget and SyncDownTarget
@@ -61,6 +58,7 @@ public abstract class SyncTarget {
     public static final String LOCALLY_UPDATED = "__locally_updated__";
     public static final String LOCALLY_DELETED = "__locally_deleted__";
     public static final String LOCAL = "__local__";
+    public static final String LOCAL_ID_PREFIX = "local_";
 
     // Field added to record to capture last sync error if any
     public static final String LAST_ERROR = "__last_error__";
@@ -317,5 +315,22 @@ public abstract class SyncTarget {
     public void deleteFromLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
         MobileSyncLogger.d(TAG, "deleteFromLocalStore", record);
         syncManager.getSmartStore().delete(soupName, record.getLong(SmartStore.SOUP_ENTRY_ID));
+    }
+
+    /**
+     * Generate local id for record
+     * @return generated id
+     */
+    public static String createLocalId() {
+        return LOCAL_ID_PREFIX + System.nanoTime();
+    }
+
+    /**
+     * Return true if id was generated locally
+     * @param id
+     * @return true if generated locally
+     */
+    public static boolean isLocalId(String id) {
+        return id.startsWith(LOCAL_ID_PREFIX);
     }
 }
