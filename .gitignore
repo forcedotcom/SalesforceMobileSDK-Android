@@ -18,5 +18,6 @@ bower_components/
 node_modules/
 .github/
 package-lock.json
+yarn.lock
 index.android.bundle*
 shared/test/test_credentials.json
