@@ -123,6 +123,7 @@ public class CustomServerUrlEditor extends DialogFragment {
 		if (activity != null) {
 			activity.rebuildDisplay();
 		}
+		super.onDismiss(dialog);
 	}
 
 	/**
