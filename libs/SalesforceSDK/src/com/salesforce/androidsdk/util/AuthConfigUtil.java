@@ -94,7 +94,7 @@ public class AuthConfigUtil {
         private static final String LOGIN_PAGE_KEY = "LoginPage";
         private static final String LOGIN_PAGE_URL_KEY = "LoginPageUrl";
 
-        private JSONObject authConfig;
+        private final JSONObject authConfig;
         private boolean browserLoginEnabled;
         private List<String> ssoUrls;
         private String loginPageUrl;

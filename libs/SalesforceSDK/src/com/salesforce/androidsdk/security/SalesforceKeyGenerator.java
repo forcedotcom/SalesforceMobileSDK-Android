@@ -59,14 +59,13 @@ public class SalesforceKeyGenerator {
     private static final String SHARED_PREF_FILE = "identifier.xml";
     private static final String ENCRYPTED_ID_SHARED_PREF_KEY = "encrypted_%s";
     private static final String ID_PREFIX = "id_";
-    private static final String ADDENDUM = "addendum_%s";
     private static final String KEYSTORE_ALIAS = "com.salesforce.androidsdk.security.KEYPAIR";
     private static final String SHA1 = "SHA-1";
     private static final String SHA256 = "SHA-256";
     private static final String SHA1PRNG = "SHA1PRNG";
     private static final String AES = "AES";
 
-    private static Map<String, String> CACHED_ENCRYPTION_KEYS = new ConcurrentHashMap<>();
+    private static final Map<String, String> CACHED_ENCRYPTION_KEYS = new ConcurrentHashMap<>();
 
     /**
      * Returns the unique ID being used. The default key length is 256 bits.

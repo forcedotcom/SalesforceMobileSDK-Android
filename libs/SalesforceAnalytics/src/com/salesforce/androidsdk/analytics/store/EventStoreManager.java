@@ -53,9 +53,9 @@ public class EventStoreManager {
     private static final String FILENAME = "event_store";
     private static final String TAG = "EventStoreManager";
 
-    private Context context;
-    private String encryptionKey;
-    private Book book;
+    private final Context context;
+    private final String encryptionKey;
+    private final Book book;
     private boolean isLoggingEnabled = true;
     private int maxEvents = 10000;
 
