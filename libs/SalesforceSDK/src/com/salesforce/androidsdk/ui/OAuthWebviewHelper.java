@@ -191,10 +191,10 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     protected final LoginOptions loginOptions;
     private final WebView webview;
     private AccountOptions accountOptions;
-    private Activity activity;
+    private final Activity activity;
     private PrivateKey key;
     private X509Certificate[] certChain;
-    private boolean shouldReloadPage;
+    private final boolean shouldReloadPage;
 
     public void saveState(Bundle outState) {
         webview.saveState(outState);
