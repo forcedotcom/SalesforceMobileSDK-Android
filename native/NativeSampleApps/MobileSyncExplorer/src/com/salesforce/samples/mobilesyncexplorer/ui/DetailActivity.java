@@ -252,8 +252,7 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 						Constants.ID, objectId)).getJSONObject(0);
 			} else {
 				contact = new JSONObject();
-				contact.put(Constants.ID, "local_" + System.currentTimeMillis()
-						+ Constants.EMPTY_STRING);
+				contact.put(Constants.ID, SyncTarget.createLocalId());
 				final JSONObject attributes = new JSONObject();
 				attributes.put(Constants.TYPE.toLowerCase(), Constants.CONTACT);
 				contact.put(Constants.ATTRIBUTES, attributes);

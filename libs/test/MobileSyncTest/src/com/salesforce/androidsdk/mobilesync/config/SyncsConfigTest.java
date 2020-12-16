@@ -250,10 +250,10 @@ public class SyncsConfigTest extends SyncManagerTestCase {
         Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, sync.getSoupName());
         checkStatus(sync, SyncState.Type.syncUp, sync.getId(),
                 new ParentChildrenSyncUpTarget(
-                        new ParentInfo("Account", "accounts", "IdX", "LastModifiedDateX"),
+                        new ParentInfo("Account", "accounts", "IdX", "LastModifiedDateX", "ExternalIdX"),
                         Arrays.asList("IdX", "Name", "Description"),
                         Arrays.asList("Name", "Description"),
-                        new ChildrenInfo("Contact", "Contacts", "contacts", "AccountId", "IdY", "LastModifiedDateY"),
+                        new ChildrenInfo("Contact", "Contacts", "contacts", "AccountId", "IdY", "LastModifiedDateY", "ExternalIdY"),
                         Arrays.asList("LastName", "AccountId"),
                         Arrays.asList("FirstName", "AccountId"),
                         ParentChildrenSyncTargetHelper.RelationshipType.MASTER_DETAIL),

@@ -48,18 +48,24 @@ public class ChildrenInfo extends ParentInfo {
         this(
                 json.getString(SOBJECT_TYPE),
                 json.getString(SOBJECT_TYPE_PLURAL),
-                json.getString(SOUP_NAME), json.getString(PARENT_ID_FIELD_NAME),
+                json.getString(SOUP_NAME),
+                json.getString(PARENT_ID_FIELD_NAME),
                 JSONObjectHelper.optString(json, ID_FIELD_NAME),
-                JSONObjectHelper.optString(json, MODIFICATION_DATE_FIELD_NAME)
+                JSONObjectHelper.optString(json, MODIFICATION_DATE_FIELD_NAME),
+                JSONObjectHelper.optString(json, EXTERNAL_ID_FIELD_NAME)
         );
     }
 
     public ChildrenInfo(String sobjectType, String sobjectTypePlural, String soupName, String parentIdFieldName) {
-        this(sobjectType, sobjectTypePlural, soupName, parentIdFieldName, null, null);
+        this(sobjectType, sobjectTypePlural, soupName, parentIdFieldName, null, null, null);
     }
 
     public ChildrenInfo(String sobjectType, String sobjectTypePlural, String soupName, String parentIdFieldName, String idFieldName, String modificationDateFieldName) {
-        super(sobjectType, soupName, idFieldName, modificationDateFieldName);
+        this(sobjectType, sobjectTypePlural, soupName, parentIdFieldName, idFieldName, modificationDateFieldName, null);
+    }
+
+    public ChildrenInfo(String sobjectType, String sobjectTypePlural, String soupName, String parentIdFieldName, String idFieldName, String modificationDateFieldName, String externalIdFieldName) {
+        super(sobjectType, soupName, idFieldName, modificationDateFieldName, externalIdFieldName);
         this.sobjectTypePlural = sobjectTypePlural;
         this.parentIdFieldName = parentIdFieldName;
     }

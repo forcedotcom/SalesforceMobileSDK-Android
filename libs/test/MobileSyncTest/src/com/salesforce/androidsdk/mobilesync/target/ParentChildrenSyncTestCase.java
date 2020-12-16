@@ -587,19 +587,19 @@ public class ParentChildrenSyncTestCase extends SyncManagerTestCase {
     }
 
     protected ParentChildrenSyncUpTarget getAccountContactsSyncUpTarget() {
-        return getAccountContactsSyncUpTarget("");
-    }
-
-    private ParentChildrenSyncUpTarget getAccountContactsSyncUpTarget(String parentSoqlFilter) {
         return getAccountContactsSyncUpTarget(Constants.LAST_MODIFIED_DATE, Constants.LAST_MODIFIED_DATE);
     }
 
-    private ParentChildrenSyncUpTarget getAccountContactsSyncUpTarget(String accountModificationDateFieldName, String contactModificationDateFieldName) {
+    protected ParentChildrenSyncUpTarget getAccountContactsSyncUpTarget(String accountModificationDateFieldName, String contactModificationDateFieldName) {
+        return getAccountContactsSyncUpTarget(accountModificationDateFieldName, contactModificationDateFieldName, null, null);
+    }
+
+    protected ParentChildrenSyncUpTarget getAccountContactsSyncUpTarget(String accountModificationDateFieldName, String contactModificationDateFieldName, String accountExternalIdFieldName, String contactExternalIdFieldName) {
         return new ParentChildrenSyncUpTarget(
-                new ParentInfo(Constants.ACCOUNT, ACCOUNTS_SOUP, Constants.ID, accountModificationDateFieldName),
+                new ParentInfo(Constants.ACCOUNT, ACCOUNTS_SOUP, Constants.ID, accountModificationDateFieldName, accountExternalIdFieldName),
                 Arrays.asList(Constants.ID, Constants.NAME, Constants.DESCRIPTION),
                 Arrays.asList(Constants.NAME, Constants.DESCRIPTION),
-                new ChildrenInfo(Constants.CONTACT, Constants.CONTACT + "s", CONTACTS_SOUP, ACCOUNT_ID, Constants.ID, contactModificationDateFieldName),
+                new ChildrenInfo(Constants.CONTACT, Constants.CONTACT + "s", CONTACTS_SOUP, ACCOUNT_ID, Constants.ID, contactModificationDateFieldName, contactExternalIdFieldName),
                 Arrays.asList(Constants.LAST_NAME, ACCOUNT_ID),
                 Arrays.asList(Constants.LAST_NAME, ACCOUNT_ID),
                 RelationshipType.MASTER_DETAIL); // account-contacts are master-detail
@@ -624,7 +624,7 @@ public class ParentChildrenSyncTestCase extends SyncManagerTestCase {
             JSONObject[] contacts = new JSONObject[numberOfContactsPerAccount];
             for (int i = 0; i < numberOfContactsPerAccount; i++) {
                 JSONObject contact = new JSONObject();
-                contact.put(Constants.ID, createLocalId());
+                contact.put(Constants.ID, SyncTarget.createLocalId());
                 contact.put(Constants.LAST_NAME, createRecordName(Constants.CONTACT));
                 contact.put(Constants.ATTRIBUTES, attributes);
                 contact.put(SyncTarget.LOCAL, true);
