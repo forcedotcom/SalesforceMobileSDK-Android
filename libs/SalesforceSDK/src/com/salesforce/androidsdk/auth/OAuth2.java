@@ -127,7 +127,8 @@ public class OAuth2 {
     private static final String BEARER = "Bearer ";
     private static final String ASSERTION = "assertion";
     private static final String JWT_BEARER = "urn:ietf:params:oauth:grant-type:jwt-bearer";
-    private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize";
+    //private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize";
+    private static final String OAUTH_AUTH_PATH = "/HD_CommunitiesLoginNew/";
     private static final String OAUTH_DISPLAY_PARAM = "?display=";
     private static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
     private static final String OAUTH_REVOKE_PATH = "/services/oauth2/revoke?token=";
@@ -155,7 +156,7 @@ public class OAuth2 {
                                           String[] scopes, String displayType,
                                           Map<String,String> addlParams) {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
-        sb.append(OAUTH_AUTH_PATH).append(getBrandedLoginPath());
+       /* sb.append(OAUTH_AUTH_PATH).append(getBrandedLoginPath());
         sb.append(OAUTH_DISPLAY_PARAM).append(displayType == null ? TOUCH : displayType);
         sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(TOKEN);
         sb.append(AND).append(CLIENT_ID).append(EQUAL).append(Uri.encode(clientId));
@@ -169,7 +170,7 @@ public class OAuth2 {
                 final String value = entry.getValue() == null ? EMPTY_STRING : entry.getValue();
                 sb.append(AND).append(entry.getKey()).append(EQUAL).append(Uri.encode(value));
             }
-        }
+        }*/
         return URI.create(sb.toString());
     }
 
