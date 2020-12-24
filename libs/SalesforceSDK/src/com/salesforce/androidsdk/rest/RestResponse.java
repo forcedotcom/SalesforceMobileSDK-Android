@@ -170,7 +170,10 @@ public class RestResponse {
 	public String asString() throws IOException {
 		if (responseAsString == null) {
 			byte[] bytes = asBytes(); // will also compute responseCharSet
-			responseAsString = new String(bytes, responseCharSet);
+			if(responseAsString==null){
+				responseAsString = new String(bytes, responseCharSet);
+			}
+			
 		}
 		return responseAsString;
 	}
