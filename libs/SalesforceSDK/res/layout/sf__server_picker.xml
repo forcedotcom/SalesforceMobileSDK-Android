@@ -5,18 +5,23 @@
 	android:layout_height="match_parent"
 	android:background="?android:colorBackground" >
 
-	<ScrollView android:id="@+id/sf__server_picker_scroll_view"
+	<ScrollView
+		android:id="@+id/sf__server_picker_scroll_view"
 		android:layout_width="match_parent"
-		android:layout_height="match_parent"
+		android:layout_height="wrap_content"
 		android:layout_marginStart="10dp"
-		android:layout_marginEnd="10dp"
 		android:layout_marginTop="10dp"
-		android:background="?android:colorBackground" >
+		android:layout_marginEnd="10dp"
+		android:layout_marginBottom="10dp"
+		android:background="?android:colorBackground"
+		android:layout_alignParentTop="true"
+		android:layout_above="@id/sf__show_custom_url_edit">
 
-		<RadioGroup android:id="@+id/sf__server_list_group"
-			android:orientation="vertical"
+		<RadioGroup
+			android:id="@+id/sf__server_list_group"
+			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
-			android:layout_width="match_parent" />
+			android:orientation="vertical" />
 
 	</ScrollView>
 
@@ -35,5 +40,4 @@
 		android:textAllCaps="false"
 		android:textSize="14sp"
 		android:textStyle="bold" />
-
 </RelativeLayout>
