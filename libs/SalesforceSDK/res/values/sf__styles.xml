@@ -81,13 +81,11 @@
     </style>
 
     <style name="SalesforceSDK_RadialButtonUrl" parent="@style/TextAppearance.AppCompat.Small">
-        <item name="android:textColor">@color/sf__hint_color</item>
-        <item name="android:buttonTint">@color/sf__hint_color</item>
+        <item name="android:textColor">@color/sf__subtext_color</item>
     </style>
 
     <style name="SalesforceSDK_RadialButtonUrl_Dark" parent="@style/TextAppearance.AppCompat.Small">
-        <item name="android:textColor">@color/sf__hint_color_dark</item>
-        <item name="android:buttonTint">@color/sf__hint_color_dark</item>
+        <item name="android:textColor">@color/sf__text_color_dark</item>
     </style>
 
     <style name="SalesforceSDK.Inspector" parent="Theme.MaterialComponents.Light">
