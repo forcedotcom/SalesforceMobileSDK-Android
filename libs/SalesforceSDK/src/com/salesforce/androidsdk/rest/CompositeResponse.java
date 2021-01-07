@@ -71,12 +71,16 @@ public class CompositeResponse {
             referenceId = subResponseJson.getString(REFERENCE_ID);
         }
 
-        public JSONObject bodyAsJSONObject() throws JSONException {
-            return json.getJSONObject(BODY);
+        public JSONObject bodyAsJSONObject() {
+            return json.optJSONObject(BODY);
         }
 
         public JSONArray bodyAsJSONArray() throws JSONException {
             return json.getJSONArray(BODY);
+        }
+
+        public boolean isSuccess() {
+            return httpStatusCode >= 200 && httpStatusCode < 300;
         }
 
         @Override
