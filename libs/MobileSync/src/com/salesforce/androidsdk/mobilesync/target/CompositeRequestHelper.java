@@ -84,7 +84,7 @@ public class CompositeRequestHelper {
             // See:
             // - https://github.com/forcedotcom/SalesforceMobileSDK-iOS/issues/3258
             // - https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_upsert.htm
-            // So the code checks for success without expecting to find and id in all cases
+            // So the code checks for success without expecting to find an id in all cases
             if (response.isSuccess()) {
                 JSONObject responseBodyResponse = response.bodyAsJSONObject();
                 if (responseBodyResponse != null) {
