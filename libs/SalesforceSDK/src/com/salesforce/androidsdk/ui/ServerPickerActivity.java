@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.FragmentManager;
 import android.content.Intent;
@@ -94,6 +95,12 @@ public class ServerPickerActivity extends Activity implements
     	}
     }
 
+    @Override
+    public boolean onNavigateUp() {
+        onBackPressed();
+        return true;
+    }
+
     /**
      * Called when the 'Reset' button is clicked. Clears custom URLs.
      *
@@ -121,6 +128,10 @@ public class ServerPickerActivity extends Activity implements
         SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
         loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
         setContentView(R.layout.sf__server_picker);
+
+        final ActionBar actionBar = getActionBar();
+        actionBar.setTitle("Change Server");
+        actionBar.setDisplayHomeAsUpEnabled(true);
 
         /*
          * Hides the 'Add Connection' button if the MDM variable to disable

@@ -29,7 +29,7 @@
 	<!-- Server picker -->
 	<string name="sf__auth_login_production">Production</string>
 	<string name="sf__auth_login_sandbox">Sandbox</string>
-	<string name="sf__custom_url_button">Add Connection</string>
+	<string name="sf__custom_url_button">Add New Connection</string>
 	<string name="sf__server_url_add_title">Add Connection</string>
 	<string name="sf__server_url_default_custom_label">Name</string>
 	<string name="sf__server_url_default_custom_url">URL</string>
