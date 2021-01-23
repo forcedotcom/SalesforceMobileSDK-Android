@@ -73,14 +73,29 @@ public class CompositeRequestHelper {
      * @return ref id to server id map if successful
      */
     public static Map<String, String> parseIdsFromResponses(Collection<CompositeSubResponse> responses) throws JSONException {
-        Map<String, String> refIdtoId = new HashMap<>();
+        Map<String, String> refIdToId = new HashMap<>();
         for (CompositeSubResponse response : responses) {
-            if (response.httpStatusCode == HttpURLConnection.HTTP_CREATED) {
-                String serverId = response.bodyAsJSONObject().getString(Constants.LID);
-                refIdtoId.put(response.referenceId, serverId);
+            // Status code will be 201 if record just got created.
+            // However if:
+            // - we are upserting by external id a locally created record
+            // - and the network got disconnected after request was processed by server but before response made it to the client,
+            // - and this is our second attempt to run the sync up
+            // Then the status code will be 200 since the record already exists
+            // See:
+            // - https://github.com/forcedotcom/SalesforceMobileSDK-iOS/issues/3258
+            // - https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_upsert.htm
+            // So the code checks for success without expecting to find an id in all cases
+            if (response.isSuccess()) {
+                JSONObject responseBodyResponse = response.bodyAsJSONObject();
+                if (responseBodyResponse != null) {
+                    String serverId = JSONObjectHelper.optString(response.bodyAsJSONObject(), Constants.LID);
+                    if (serverId != null) {
+                        refIdToId.put(response.referenceId, serverId);
+                    }
+                }
             }
         }
-        return refIdtoId;
+        return refIdToId;
     }
 
 
