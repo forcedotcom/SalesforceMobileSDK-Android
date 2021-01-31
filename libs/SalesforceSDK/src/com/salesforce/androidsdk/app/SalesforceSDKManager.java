@@ -145,7 +145,7 @@ public class SalesforceSDKManager {
 
     protected Context context;
     private LoginOptions loginOptions;
-    private Class<? extends Activity> mainActivityClass;
+    private final Class<? extends Activity> mainActivityClass;
     private Class<? extends Activity> loginActivityClass = LoginActivity.class;
     private Class<? extends PasscodeActivity> passcodeActivityClass = PasscodeActivity.class;
     private Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
@@ -157,8 +157,8 @@ public class SalesforceSDKManager {
     private AdminPermsManager adminPermsManager;
     private PushNotificationInterface pushNotificationInterface;
     private Class<? extends PushService> pushServiceType = PushService.class;
-    private String uid; // device id
-    private SortedSet<String> features;
+    private final String uid; // device id
+    private final SortedSet<String> features;
     private List<String> additionalOauthKeys;
     private String loginBrand;
     private boolean browserLoginEnabled;
@@ -178,7 +178,7 @@ public class SalesforceSDKManager {
     /**
      * PasscodeManager object lock.
      */
-    private Object passcodeManagerLock = new Object();
+    private final Object passcodeManagerLock = new Object();
 
     /**
      * Dev support
