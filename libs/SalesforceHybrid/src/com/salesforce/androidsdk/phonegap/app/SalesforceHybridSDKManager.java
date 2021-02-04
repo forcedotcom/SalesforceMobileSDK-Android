@@ -168,27 +168,22 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
 	 * Setup global store using config found in assets/www/globalstore.json
 	 */
 	public void setupGlobalStoreFromDefaultConfig() {
-		SmartStoreLogger.d(TAG, "Setting up global store using config found in " + ConfigAssetPath.globalStore.path);
-		setupStoreFromConfig(getGlobalSmartStore(), ConfigAssetPath.globalStore.path);
+        SmartStoreLogger.d(TAG, "Setting up global store using config found in " + ConfigAssetPath.globalStore.path);
+        StoreConfig config = new StoreConfig(context, ConfigAssetPath.globalStore.path);
+        if (config.hasSoups()) {
+            config.registerSoups(getGlobalSmartStore());
+        }
 	}
 
 	/**
 	 * Setup user store using config found in assets/www/userstore.json
 	 */
 	public void setupUserStoreFromDefaultConfig() {
-		SmartStoreLogger.d(TAG, "Setting up user store using config found in " + ConfigAssetPath.userStore.path);
-		setupStoreFromConfig(getSmartStore(), ConfigAssetPath.userStore.path);
-	}
-
-    /**
-	 * Setup given store using config found in given json assets file
-	 *
-	 * @param store
-	 * @param assetPath
-	 */
-	private void setupStoreFromConfig(SmartStore store, String assetPath) {
-		StoreConfig config = new StoreConfig(context, assetPath);
-		config.registerSoups(store);
+        SmartStoreLogger.d(TAG, "Setting up user store using config found in " + ConfigAssetPath.userStore.path);
+        StoreConfig config = new StoreConfig(context, ConfigAssetPath.userStore.path);
+        if (config.hasSoups()) {
+            config.registerSoups(getSmartStore());
+        }
 	}
 
     /**
@@ -196,25 +191,21 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
      */
     public void setupGlobalSyncsFromDefaultConfig() {
         MobileSyncLogger.d(TAG, "Setting up global syncs using config found in " + ConfigAssetPath.globalSyncs.path);
-        setupSyncsFromConfig(getGlobalSmartStore(), ConfigAssetPath.globalSyncs.path);
+        SyncsConfig config = new SyncsConfig(context, ConfigAssetPath.globalSyncs.path);
+        if (config.hasSyncs()) {
+            config.createSyncs(getGlobalSmartStore());
+        }
     }
 
     /**
      * Setup user syncs using config found in assets/www/usersyncs.json
      */
     public void setupUserSyncsFromDefaultConfig() {
-        MobileSyncLogger.d(TAG, "Setting up user syncs using config found in " + ConfigAssetPath.userSyncs.path);
-        setupSyncsFromConfig(getSmartStore(), ConfigAssetPath.userSyncs.path);
+        MobileSyncLogger.d(TAG, "Setting up global syncs using config found in " + ConfigAssetPath.userSyncs.path);
+        SyncsConfig config = new SyncsConfig(context, ConfigAssetPath.userSyncs.path);
+        if (config.hasSyncs()) {
+            config.createSyncs(getSmartStore());
+        }
     }
 
-    /**
-     * Setup syncs in given store using config found in given json assets file
-     *
-     * @param store
-     * @param assetPath
-     */
-    private void setupSyncsFromConfig(SmartStore store, String assetPath) {
-        SyncsConfig config = new SyncsConfig(context, assetPath);
-        config.createSyncs(store);
-    }
 }
