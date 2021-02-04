@@ -168,7 +168,7 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
 	 * Setup global store using config found in assets/www/globalstore.json
 	 */
 	public void setupGlobalStoreFromDefaultConfig() {
-		SmartStoreLogger.d(TAG, "Setting up global store using config found in " + ConfigAssetPath.globalStore.path);
+        SmartStoreLogger.d(TAG, "Setting up global store using config found in " + ConfigAssetPath.globalStore.path);
         StoreConfig config = new StoreConfig(context, ConfigAssetPath.globalStore.path);
         if (config.hasSoups()) {
             config.registerSoups(getGlobalSmartStore());
@@ -184,7 +184,6 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
         if (config.hasSoups()) {
             config.registerSoups(getSmartStore());
         }
-
 	}
 
     /**
