@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.FragmentManager;
 import android.content.Intent;
@@ -35,6 +36,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.RadioGroup;
+import android.widget.ScrollView;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -93,6 +95,12 @@ public class ServerPickerActivity extends Activity implements
     	}
     }
 
+    @Override
+    public boolean onNavigateUp() {
+        onBackPressed();
+        return true;
+    }
+
     /**
      * Called when the 'Reset' button is clicked. Clears custom URLs.
      *
@@ -120,6 +128,10 @@ public class ServerPickerActivity extends Activity implements
         SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
         loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
         setContentView(R.layout.sf__server_picker);
+
+        final ActionBar actionBar = getActionBar();
+        actionBar.setTitle("Change Server");
+        actionBar.setDisplayHomeAsUpEnabled(true);
 
         /*
          * Hides the 'Add Connection' button if the MDM variable to disable
@@ -204,6 +216,7 @@ public class ServerPickerActivity extends Activity implements
     	rb.setTextColor(textColor);
     	rb.getButtonDrawable().setTint(getResources().getColor(R.color.sf__primary_color));
     	radioGroup.addView(rb);
+        ((ScrollView) radioGroup.getParent()).scrollTo(0, radioGroup.getBottom());
     }
 
     /**

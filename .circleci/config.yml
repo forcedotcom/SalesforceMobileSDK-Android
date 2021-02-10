@@ -44,6 +44,7 @@ aliases:
       sudo npm i npm@latest -g
       sudo npm install -g shelljs@0.8.3
       sudo npm install -g cordova@8.1.2
+      sudo npm install -g typescript
       cordova telemetry off
       ./install.sh
       gem install bundler
@@ -194,9 +195,16 @@ jobs:
       - run:
           name: Copy test results data
           command: |
-            mkdir -p firebase/results
-            gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/<< parameters.lib >>-${CIRCLE_BUILD_NUM} | tail -1`*" ./firebase/
-            mv firebase/test_result_1.xml firebase/results
+            gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/<< parameters.lib >>-${CIRCLE_BUILD_NUM} > /dev/null 2>&1
+            if [ $? == 0 ]
+            then
+              mkdir -p firebase/results
+              gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/<< parameters.lib >>-${CIRCLE_BUILD_NUM} | tail -1`*" ./firebase/
+              mv firebase/test_result_1.xml firebase/results
+            else
+              echo "No test results found"
+              exit 1
+            fi
           when: always
       - when:
           condition: << parameters.pr >>

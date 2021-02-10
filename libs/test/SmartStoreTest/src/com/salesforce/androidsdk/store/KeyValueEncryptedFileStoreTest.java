@@ -31,6 +31,7 @@ import android.content.Context;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
@@ -42,14 +43,13 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
 @RunWith(AndroidJUnit4.class)
@@ -63,6 +63,15 @@ public class KeyValueEncryptedFileStoreTest {
 
     @Before
     public void setUp() {
+        // Throw an exception if stream is not closed
+        try {
+            Class.forName("dalvik.system.CloseGuard")
+                .getMethod("setEnabled", boolean.class)
+                .invoke(null, true);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
+
         context =
                 InstrumentationRegistry.getInstrumentation()
                         .getTargetContext()
@@ -408,6 +417,17 @@ public class KeyValueEncryptedFileStoreTest {
         Assert.assertNotEquals("Raw content should have changed", file2rawAfter, file2raw);
     }
 
+    /** Test code block with comment and newline */
+    @Test
+    public void testCodeBlock() {
+        String codeBlock = "var fun = function() {" + "\n\t// comment" + "\n\tvar i = 100;\n}";
+        String minifiedBlock = "function minified(){var n=Math.floor(Math.random());return n>50?7*n:n/2}";
+        keyValueStore.saveValue("js1", codeBlock);
+        keyValueStore.saveValue("js2", minifiedBlock);
+        Assert.assertEquals("Code block was not retrieved correctly.", codeBlock, keyValueStore.getValue("js1"));
+        Assert.assertEquals("Code block was not retrieved correctly.", minifiedBlock, keyValueStore.getValue("js2"));
+    }
+
     //
     // Helper methods
     //
@@ -424,18 +444,10 @@ public class KeyValueEncryptedFileStoreTest {
             return null;
         }
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-            StringBuilder out = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                out.append(line);
-            }
-            return out.toString();
+            return Encryptor.getStringFromStream(inputStream);
         } catch (IOException e) {
             Assert.fail("Failed to read from stream");
-
             return null;
-
         } finally {
             try {
                 inputStream.close();

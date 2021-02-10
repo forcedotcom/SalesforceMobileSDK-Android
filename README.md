@@ -25,8 +25,8 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 8.3.0
-See [release notes](https://github.com/forcedotcom/SalesforceMobileSDK-Android/releases/tag/v8.3.0).
+### What's New in 9.0.0
+See [release notes](https://github.com/forcedotcom/SalesforceMobileSDK-Android/releases/tag/v9.0.0).
 
 ### Native Applications
 The Salesforce Mobile SDK provides essential libraries for quickly building native mobile apps that seamlessly integrate with the Salesforce cloud architecture.  Out of the box, we provide an implementation of OAuth2, abstracting away the complexity of securely storing refresh tokens or fetching a new session ID when a session expires. The SDK also provides Java wrappers for the Salesforce REST API, making it easy to retrieve, store, and manipulate data.

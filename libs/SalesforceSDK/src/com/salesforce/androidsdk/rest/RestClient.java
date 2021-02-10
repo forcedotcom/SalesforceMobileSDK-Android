@@ -320,7 +320,6 @@ public class RestClient {
         final Request.Builder builder =  new Request.Builder()
                 .url(HttpUrl.get(oAuthRefreshInterceptor.clientInfo.resolveUrl(restRequest)))
                 .method(restRequest.getMethod().toString(), restRequest.getRequestBody());
-        oAuthRefreshInterceptor.setShouldRefreshOn403(restRequest.getShouldRefreshOn403());
 
         // Adding additional headers
         final Map<String, String> additionalHttpHeaders = restRequest.getAdditionalHttpHeaders();
@@ -627,7 +626,6 @@ public class RestClient {
         private final AuthTokenProvider authTokenProvider;
         private String authToken;
         private ClientInfo clientInfo;
-        private boolean shouldRefreshOn403 = true;
 
         /**
          * Constructs a SalesforceHttpInterceptor with the given clientInfo, authToken and authTokenProvider.
@@ -653,60 +651,40 @@ public class RestClient {
             request = buildAuthenticatedRequest(request);
             Response response = chain.proceed(request);
 			int responseCode = response.code();
-			boolean refreshRequired = shouldRefreshOn403 ? (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED
-                    || responseCode == HttpURLConnection.HTTP_FORBIDDEN) : (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED);
 
 			/*
-			 * Standard access token expiry returns 401 as the error code. However, some APIs
-			 * return 403 as the error code when an instance split or migration occurs.
+			 * Standard access token expiry returns 401 as the error code.
 			 */
-            if (refreshRequired) {
-				final HttpUrl currentInstanceUrl = HttpUrl.get(clientInfo.getInstanceUrl());
-				if (currentInstanceUrl != null) {
+            if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED) {
+				final URI curInstanceUrl = clientInfo.getInstanceUrl();
+				if (curInstanceUrl != null) {
+					final HttpUrl currentInstanceUrl = HttpUrl.get(curInstanceUrl);
+					if (currentInstanceUrl != null) {
 
-					// Checks if the host of the request is the same as instance URL.
-					boolean isHostInstanceUrl = currentInstanceUrl.host().equals(request.url().host());
-					refreshAccessToken();
-					if (getAuthToken() != null) {
-						request = buildAuthenticatedRequest(request);
+						// Checks if the host of the request is the same as instance URL.
+						boolean isHostInstanceUrl = currentInstanceUrl.host().equals(request.url().host());
+						refreshAccessToken();
+						if (getAuthToken() != null) {
+							request = buildAuthenticatedRequest(request);
 
-						/*
-						 * During instance migration, the instance URL could change. Hence, the host
-						 * needs to be adjusted to replace the old instance URL with the new instance
-						 * URL before replaying this request. However, this adjustment should be applied
-						 * only if the host of the request was the old instance URL. This avoids
-						 * accidental manipulation of the host for requests where the caller has
-						 * passed in their own fully formed host URL that is not instance URL.
-						 */
-						if (isHostInstanceUrl && !currentInstanceUrl.host().equals(request.url().host())) {
-							request = adjustHostInRequest(request, currentInstanceUrl.host());
+							/*
+							 * During instance migration, the instance URL could change. Hence, the host
+							 * needs to be adjusted to replace the old instance URL with the new instance
+							 * URL before replaying this request. However, this adjustment should be applied
+							 * only if the host of the request was the old instance URL. This avoids
+							 * accidental manipulation of the host for requests where the caller has
+							 * passed in their own fully formed host URL that is not instance URL.
+							 */
+							if (isHostInstanceUrl && !currentInstanceUrl.host().equals(request.url().host())) {
+								request = adjustHostInRequest(request, currentInstanceUrl.host());
+							}
+							response.close();
+							response = chain.proceed(request);
 						}
-						response.close();
-						response = chain.proceed(request);
 					}
 				}
             }
             return response;
-        }
-
-        /**
-         * Returns whether the SDK should attempt to refresh tokens if the service returns HTTP 403.
-         *
-         * @return True - if the SDK should refresh on HTTP 403, False - otherwise.
-		 * @deprecated Will be removed in Mobile SDK 9.0.
-         */
-        public boolean getShouldRefreshOn403() {
-            return shouldRefreshOn403;
-        }
-
-        /**
-         * Sets whether the SDK should attempt to refresh tokens if the service returns HTTP 403.
-         *
-         * @param shouldRefreshOn403 True - if the SDK should refresh on HTTP 403, False - otherwise.
-		 * @deprecated Will be removed in Mobile SDK 9.0.
-         */
-        public synchronized void setShouldRefreshOn403(boolean shouldRefreshOn403) {
-            this.shouldRefreshOn403 = shouldRefreshOn403;
         }
 
 		/**

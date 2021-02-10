@@ -191,10 +191,10 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     protected final LoginOptions loginOptions;
     private final WebView webview;
     private AccountOptions accountOptions;
-    private Activity activity;
+    private final Activity activity;
     private PrivateKey key;
     private X509Certificate[] certChain;
-    private boolean shouldReloadPage;
+    private final boolean shouldReloadPage;
 
     public void saveState(Bundle outState) {
         webview.saveState(outState);
@@ -618,13 +618,13 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
                 // Stores the mobile policy for the org.
                 final PasscodeManager passcodeManager = mgr.getPasscodeManager();
-                passcodeManager.storeMobilePolicyForOrg(account, id.screenLockTimeout * 1000 * 60, id.pinLength, id.biometricUnlockAlowed);
+                passcodeManager.storeMobilePolicyForOrg(account, id.screenLockTimeout * 1000 * 60, id.pinLength, id.biometricUnlockAllowed);
                 passcodeManager.setTimeoutMs(id.screenLockTimeout * 1000 * 60);
                 // NB setPasscodeLength(...)
                 //    If there was a passcode and the length is increased, the passcode manager will remember that a passcode change is required
                 //    The next SalesforceActivity to resume, will cause the locking screen to popup in passcode change mode
                 passcodeManager.setPasscodeLength((Activity) getContext(), id.pinLength);
-                passcodeManager.setBiometricAllowed((Activity) getContext(), id.biometricUnlockAlowed);
+                passcodeManager.setBiometricAllowed((Activity) getContext(), id.biometricUnlockAllowed);
             }
 
             // No screen lock required or no mobile policy specified.

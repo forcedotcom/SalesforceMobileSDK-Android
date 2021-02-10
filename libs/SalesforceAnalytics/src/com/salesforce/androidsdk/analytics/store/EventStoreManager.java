@@ -53,9 +53,9 @@ public class EventStoreManager {
     private static final String FILENAME = "event_store";
     private static final String TAG = "EventStoreManager";
 
-    private Context context;
-    private String encryptionKey;
-    private Book book;
+    private final Context context;
+    private final String encryptionKey;
+    private final Book book;
     private boolean isLoggingEnabled = true;
     private int maxEvents = 10000;
 
@@ -120,7 +120,12 @@ public class EventStoreManager {
             return null;
         }
         InstrumentationEvent event = null;
-        final String encryptedEvent = book.read(eventId, null);
+        String encryptedEvent = null;
+        try {
+            encryptedEvent = book.read(eventId, null);
+        } catch (Exception e) {
+            SalesforceAnalyticsLogger.e(context, TAG, "Exception occurred while attempting to read event from PaperDB", e);
+        }
         if (!TextUtils.isEmpty(encryptedEvent)) {
             final String decryptedEvent = decrypt(encryptedEvent);
             if (!TextUtils.isEmpty(decryptedEvent)) {

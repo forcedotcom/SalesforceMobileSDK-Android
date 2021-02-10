@@ -28,17 +28,22 @@ package com.salesforce.androidsdk.smartstore.ui;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -69,7 +74,6 @@ public class KeyValueStoreInspectorActivity extends Activity {
     private ListView resultsListView;
     private ArrayList<KeyValuePair> keyValueList;
     private ArrayAdapter listAdapter;
-    private LayoutInflater layoutInflater;
 
     /**
      * Create intent to bring up inspector
@@ -91,7 +95,6 @@ public class KeyValueStoreInspectorActivity extends Activity {
         getValueButton = findViewById(R.id.sf__inspector_get_value_button);
         resultsListView = findViewById(R.id.sf__inspector_key_value_list);
         keyValueList = new ArrayList<KeyValuePair>();
-        layoutInflater = LayoutInflater.from(this);
         listAdapter = new ArrayAdapter(this, R.layout.sf__inspector_key_value_results_cell, R.id.sf__inspector_value, keyValueList) {
             @Override
             public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
@@ -106,6 +109,18 @@ public class KeyValueStoreInspectorActivity extends Activity {
             }
         };
         resultsListView.setAdapter(listAdapter);
+        resultsListView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                String label = "Value for key: " + keyValueList.get(position).key;
+                String value = keyValueList.get(position).value;
+                ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                clipboard.setPrimaryClip(ClipData.newPlainText(label, value));
+
+                Toast.makeText(parent.getContext(), "Value copied to clipboard.", Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        });
         setupStoresDropdown();
         keyInput.requestFocus();
     }

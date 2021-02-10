@@ -183,7 +183,6 @@ public class RestRequest {
 	private final RequestBody requestBody;
 	private final Map<String, String> additionalHttpHeaders;
 	private final JSONObject requestBodyAsJson; // needed for composite and batch requests
-    private boolean shouldRefreshOn403 = true;
 
     /**
      * Generic constructor for arbitrary requests without a body.
@@ -338,26 +337,6 @@ public class RestRequest {
 	public Map<String, String> getAdditionalHttpHeaders() {
 		return additionalHttpHeaders;
 	}
-
-    /**
-     * Returns whether the SDK should attempt to refresh tokens if the service returns HTTP 403.
-     *
-     * @return True - if the SDK should refresh on HTTP 403, False - otherwise.
-	 * @deprecated Will be removed in Mobile SDK 9.0.
-     */
-	public boolean getShouldRefreshOn403() {
-	    return shouldRefreshOn403;
-    }
-
-    /**
-     * Sets whether the SDK should attempt to refresh tokens if the service returns HTTP 403.
-     *
-     * @param shouldRefreshOn403 True - if the SDK should refresh on HTTP 403, False - otherwise.
-	 * @deprecated Will be removed in Mobile SDK 9.0.
-     */
-	public synchronized void setShouldRefreshOn403(boolean shouldRefreshOn403) {
-        this.shouldRefreshOn403 = shouldRefreshOn403;
-    }
 
 	/**
 	 * Request to get information about the user making the request.
@@ -590,20 +569,6 @@ public class RestRequest {
 		path.append("?q=");
 		path.append(URLEncoder.encode(toCsv(objectList).toString(), UTF_8));
 		return new RestRequest(RestMethod.GET, path.toString());
-	}
-
-	/**
-	 * Request to get object layout data.
-	 *
-	 * @param apiVersion Salesforce API version.
-	 * @param objectType Object type.
-     * @param layoutType Layout type. Could be "Compact" or "Full".
-	 * @return RestRequest object that requests the object layout for the given object and layout types.
-	 * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_resources_record_layout.htm">https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_resources_record_layout.htm</a>
-	 * @deprecated Will be removed in Mobile SDK 9.0. Use {@link #getRequestForObjectLayout(String, String, String, String, String, String)} instead.
-	 */
-	public static RestRequest getRequestForObjectLayout(String apiVersion, String objectType, String layoutType) {
-		return getRequestForObjectLayout(apiVersion, objectType, null, layoutType, null, null);
 	}
 
 	/**

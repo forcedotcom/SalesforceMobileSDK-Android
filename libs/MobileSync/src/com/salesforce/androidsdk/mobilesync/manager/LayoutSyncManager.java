@@ -171,21 +171,6 @@ public class LayoutSyncManager {
     }
 
     /**
-     * Fetches layout data for the specified object type and layout type using the specified
-     * mode and triggers the supplied callback once complete.
-     *
-     * @param objectType Object type.
-     * @param layoutType Layout type. Defaults to "Full" if null is passed in.
-     * @param mode Fetch mode. See {@link com.salesforce.androidsdk.mobilesync.util.Constants.Mode} for available modes.
-     * @param syncCallback Layout sync callback.
-     * @deprecated Will be removed in Mobile SDK 9.0. Use {@link #fetchLayout(String, String, String, String, String, Constants.Mode, LayoutSyncCallback)} instead.
-     */
-    public void fetchLayout(String objectType, String layoutType, Constants.Mode mode,
-                            LayoutSyncCallback syncCallback) {
-        fetchLayout(objectType, null, layoutType, null, null, mode, syncCallback);
-    }
-
-    /**
      * Fetches layout data for the specified parameters using the specified sync mode
      * and triggers the supplied callback once complete.
      *

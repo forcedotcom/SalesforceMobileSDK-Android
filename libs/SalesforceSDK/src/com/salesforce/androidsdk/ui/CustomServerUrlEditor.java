@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import android.app.Activity;
 import android.app.DialogFragment;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -94,15 +93,19 @@ public class CustomServerUrlEditor extends DialogFragment {
 			public void onClick(View v) {
 				final String lbl = validateInput(R.id.sf__picker_custom_label);
 				if (lbl == null) {
+					Toast.makeText(context, getString(R.string.sf__invalid_server_name), Toast.LENGTH_SHORT).show();
 					return;
 				}
 				final String val = validateInput(R.id.sf__picker_custom_url);
 				if (val == null) {
+					Toast.makeText(context, getString(R.string.sf__invalid_server_url), Toast.LENGTH_SHORT).show();
 					return;
 				}
 
 				// Saves state and dismisses the dialog.
 				loginServerManager.addCustomLoginServer(lbl.trim(), val.trim());
+				((EditText) rootView.findViewById(R.id.sf__picker_custom_label)).getText().clear();
+				((EditText) rootView.findViewById(R.id.sf__picker_custom_url)).getText().clear();
 				dismiss();
 			}
 		});
@@ -123,6 +126,7 @@ public class CustomServerUrlEditor extends DialogFragment {
 		if (activity != null) {
 			activity.rebuildDisplay();
 		}
+		super.onDismiss(dialog);
 	}
 
 	/**
@@ -154,11 +158,11 @@ public class CustomServerUrlEditor extends DialogFragment {
 					}
 				}
 				// Check if string is a valid url
-				if (HttpUrl.parse(url) != null) {
+				if (HttpUrl.parse(url) != null && url.contains(".")) {
 					return url;
 				}
 			}
-			Toast.makeText(context, getString(R.string.sf__invalid_server_url), Toast.LENGTH_SHORT).show();
+			return null;
 		}
 
 		if (isInvalidValue) {

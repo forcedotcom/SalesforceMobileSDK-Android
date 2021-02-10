@@ -52,9 +52,15 @@ import java.util.Map;
  */
 public class SalesforceWebViewClientHelper {
 
-	public static String TAG = "SalesforceWebViewClientHelper";
-    public static final String SFDC_WEB_VIEW_CLIENT_SETTINGS = "sfdc_gapviewclient";
-    public static final String APP_HOME_URL_PROP_KEY =  "app_home_url";
+	private static final String TAG = "SalesforceWebViewClientHelper";
+    private static final String SFDC_WEB_VIEW_CLIENT_SETTINGS = "sfdc_gapviewclient";
+    private static final String APP_HOME_URL_PROP_KEY =  "app_home_url";
+    private static final String HYBRID_SESSION_REDIRECT = "/services/identity/mobileauthredirect";
+    private static final String FRONTDOOR = "frontdoor.jsp";
+    private static final String START_URL_PARAM = "startURL";
+    private static final String RET_URL_PARAM = "retURL";
+    private static final String EC_PARAM = "ec";
+    private static final String QUESTION_MARK = "?";
 
     // Full and partial URLs to exclude from consideration when determining the home page URL.
     private static final List<String> RESERVED_URL_PATTERNS =
@@ -108,8 +114,7 @@ public class SalesforceWebViewClientHelper {
      */
     public static String getAppHomeUrl(Context ctx) {
         SharedPreferences sp = ctx.getSharedPreferences(SalesforceWebViewClientHelper.SFDC_WEB_VIEW_CLIENT_SETTINGS, Context.MODE_PRIVATE);
-        String url = sp.getString(SalesforceWebViewClientHelper.APP_HOME_URL_PROP_KEY, null);
-        return url;
+        return sp.getString(SalesforceWebViewClientHelper.APP_HOME_URL_PROP_KEY, null);
     }
 
     /**
@@ -122,10 +127,10 @@ public class SalesforceWebViewClientHelper {
     }
 
     private static boolean isReservedUrl(String url) {
-        if (url == null || url.trim().equals("")) {
+        if (TextUtils.isEmpty(url)) {
             return false;
         }
-        for (String reservedUrlPattern : RESERVED_URL_PATTERNS) {
+        for (final String reservedUrlPattern : RESERVED_URL_PATTERNS) {
             if (url.toLowerCase(Locale.US).contains(reservedUrlPattern.toLowerCase(Locale.US))) {
                 return true;
             }
@@ -136,21 +141,19 @@ public class SalesforceWebViewClientHelper {
     private static String isLoginRedirect(Context ctx, String url) {
         final Uri uri = Uri.parse(url);
         final Map<String, String> params = UriFragmentParser.parse(uri);
-    	final String ec = params.get("ec");
-    	int ecInt = (ec != null ? Integer.parseInt(ec) : -1);
-    	final String startURL = params.get("startURL");
-        if (ecInt == HttpURLConnection.HTTP_MOVED_PERM
-    			|| ecInt == HttpURLConnection.HTTP_MOVED_TEMP) {
-            if (!TextUtils.isEmpty(startURL)) {
-                return startURL;
-            } else {
-                return BootConfig.getBootConfig(ctx).getStartPage();
-            }
-        } else if (isSamlLoginRedirect(ctx, url)) {
-            return BootConfig.getBootConfig(ctx).getStartPage();
-        } else {
-    		return null;
-    	}
+        String retURL = params.get(RET_URL_PARAM);
+        retURL = TextUtils.isEmpty(retURL) ? params.get(START_URL_PARAM) : retURL;
+        if (TextUtils.isEmpty(retURL) || retURL.contains(FRONTDOOR)) {
+            retURL = BootConfig.getBootConfig(ctx).getStartPage();
+        }
+        if (isSessionExpirationRedirect(url) || isSamlLoginRedirect(ctx, url) || isVFPageRedirect(params)) {
+            return retURL;
+        }
+        return null;
+    }
+
+    private static boolean isSessionExpirationRedirect(String url) {
+        return (url != null && url.contains(HYBRID_SESSION_REDIRECT));
     }
 
     private static boolean isSamlLoginRedirect(Context ctx, String url) {
@@ -164,7 +167,7 @@ public class SalesforceWebViewClientHelper {
                 final List<String> ssoUrls = authConfig.getSsoUrls();
                 if (ssoUrls != null && ssoUrls.size() > 0) {
                    for (String ssoUrl : ssoUrls) {
-                       int paramsIndex = ssoUrl.indexOf("?");
+                       int paramsIndex = ssoUrl.indexOf(QUESTION_MARK);
                        if (paramsIndex != -1) {
                            ssoUrl = ssoUrl.substring(0, paramsIndex);
                        }
@@ -176,5 +179,12 @@ public class SalesforceWebViewClientHelper {
             }
         }
         return false;
+    }
+
+    private static boolean isVFPageRedirect(Map<String, String> params) {
+        final String ec = params.get(EC_PARAM);
+        int ecInt = (ec != null ? Integer.parseInt(ec) : -1);
+        return (ecInt == HttpURLConnection.HTTP_MOVED_PERM
+                || ecInt == HttpURLConnection.HTTP_MOVED_TEMP);
     }
 }

@@ -83,8 +83,12 @@ public class SalesforceActivityDelegate {
                 final ClientManager.LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
 
                 // Gets a rest client.
-                new ClientManager(activity, accountType, loginOptions,
-                        SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(activity, new ClientManager.RestClientCallback() {
+                new ClientManager(
+                        SalesforceSDKManager.getInstance().getAppContext(),
+                        accountType,
+                        loginOptions,
+                        SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()
+                ).getRestClient(activity, new ClientManager.RestClientCallback() {
 
                     @Override
                     public void authenticatedRestClient(RestClient client) {

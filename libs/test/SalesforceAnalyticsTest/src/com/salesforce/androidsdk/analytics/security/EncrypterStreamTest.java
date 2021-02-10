@@ -38,12 +38,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -162,13 +161,13 @@ public class EncrypterStreamTest {
     private byte[] readThroughStream() {
         try (FileInputStream f = context.openFileInput(TEST_FILE);
                 DecrypterInputStream i = new DecrypterInputStream(f, encryptionKey)) {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(i));
-            StringBuilder out = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                out.append(line);
+            ByteArrayOutputStream value = new ByteArrayOutputStream();
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = i.read(buffer)) != -1) {
+                value.write(buffer, 0, length);
             }
-            return out.toString().getBytes();
+            return value.toByteArray();
         } catch (Exception e) {
             Assert.fail(e.getMessage());
             return null;

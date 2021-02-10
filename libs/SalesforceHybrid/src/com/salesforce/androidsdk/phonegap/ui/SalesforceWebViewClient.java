@@ -46,6 +46,7 @@ import org.apache.cordova.engine.SystemWebViewClient;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 public class SalesforceWebViewClient extends SystemWebViewClient {
 
@@ -136,24 +137,24 @@ public class SalesforceWebViewClient extends SystemWebViewClient {
 			String localPath = WWW_DIR + origUri.getPath();
 
 			// Trying to access file outside assets/www.
-			if (!isFileUnder(localPath, WWW_DIR)) {
+			if (!isFileUnder(localPath)) {
 				throw new IOException("Trying to access file outside assets/www");
 			} else {
 				Uri localUri = Uri.parse("file://" + localPath);
 				CordovaResourceApi resourceApi = cordovaWebView.getResourceApi();
 				OpenForReadResult result = resourceApi.openForRead(localUri, true);
 				SalesforceHybridLogger.i(TAG, "Loading local file: " + localUri);
-				return new WebResourceResponse(result.mimeType, "UTF-8", result.inputStream);
+				return new WebResourceResponse(result.mimeType, StandardCharsets.UTF_8.name(), result.inputStream);
 			}
 		} catch (IOException e) {
             SalesforceHybridLogger.e(TAG, "Invalid localhost URL: " + url, e);
-			return new WebResourceResponse("text/plain", "UTF-8", null);
+			return new WebResourceResponse("text/plain", StandardCharsets.UTF_8.name(), null);
 		}
     }
 
-    private boolean isFileUnder(String filePath, String dirPath) throws IOException {
+    private boolean isFileUnder(String filePath) throws IOException {
     	File file = new File(filePath);
-    	File dir = new File(dirPath);
+    	File dir = new File(WWW_DIR);
     	return file.getCanonicalPath().indexOf(dir.getCanonicalPath()) == 0;
     }
 }
