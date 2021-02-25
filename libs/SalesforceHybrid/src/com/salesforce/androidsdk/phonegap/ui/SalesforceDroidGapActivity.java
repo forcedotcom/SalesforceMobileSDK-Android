@@ -446,15 +446,23 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
 
                     @Override
                     public void run() {
+
                         /*
-                         * The client instance being used here needs to be
-                         * refreshed, to ensure we use the new access token.
+                         * The client instance being used here needs to be refreshed, to ensure we
+                         * use the new access token. However, if the refresh token was revoked
+                         * when the app was in the background, we need to catch that exception
+                         * and trigger a proper logout to reset the state of this class.
                          */
-                        SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
-                        setSidCookies();
-                        loadVFPingPage();
-                        final String frontDoorUrl = getFrontDoorUrl(url, BootConfig.isAbsoluteUrl(url));
-                        loadUrl(frontDoorUrl);
+                        try {
+                            SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
+                            setSidCookies();
+                            loadVFPingPage();
+                            final String frontDoorUrl = getFrontDoorUrl(url, BootConfig.isAbsoluteUrl(url));
+                            loadUrl(frontDoorUrl);
+                        } catch (AccountInfoNotFoundException e) {
+                            SalesforceHybridLogger.i(TAG, "User has been logged out.");
+                            logout(null);
+                        }
                     }
                 });
             }
