@@ -24,35 +24,25 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
+package com.salesforce.androidsdk.smartstore.store;
 
 import android.database.Cursor;
-
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
-
 import com.salesforce.androidsdk.analytics.security.Encryptor;
-import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
-import com.salesforce.androidsdk.smartstore.store.IndexSpec;
-import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.Order;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
-import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 import com.salesforce.androidsdk.util.JSONTestHelper;
-
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import net.sqlcipher.database.SQLiteDatabase;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Tests for encrypted smart store with external storage

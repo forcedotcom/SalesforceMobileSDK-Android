@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-present, salesforce.com, inc.
+ * Copyright (c) 2016-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,22 +24,27 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk;
+package com.salesforce.androidsdk.smartstore.store;
 
-import android.app.Application;
-import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.MediumTest;
+import org.junit.runner.RunWith;
 
 /**
- * Test implementation of Application class that uses SalesforceSDKManagerWithSmartStore.
- *
- * @author bhariharan
+ * Tests for full-text search in smartstore soups using external storage
  */
-public class TestForceApp extends Application {
+@RunWith(AndroidJUnit4.class)
+@MediumTest
+public class SmartStoreFTSExternalStorageTest extends SmartStoreFullTextSearchTest {
 
     @Override
-    public void onCreate() {
-    	SmartStoreSDKManager.initNative(getApplicationContext(), MainActivity.class);
-    	super.onCreate();
-    	SmartStoreSDKManager.getInstance().setIsTestRun(true);
+    protected void registerSoup(SmartStore store, String soupName, IndexSpec[] indexSpecs) {
+        store.registerSoupWithSpec(new SoupSpec(soupName, SoupSpec.FEATURE_EXTERNAL_STORAGE), indexSpecs);
+    }
+
+    @Override
+    protected String[] getExpectedColumns() {
+        return new String[]{"id", "created", "lastModified", FIRST_NAME_COL, LAST_NAME_COL, EMPLOYEE_ID_COL};
     }
 }

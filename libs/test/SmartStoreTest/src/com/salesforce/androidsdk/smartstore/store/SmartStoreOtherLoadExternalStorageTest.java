@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-present, salesforce.com, inc.
+ * Copyright (c) 2018-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,28 +24,28 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
+package com.salesforce.androidsdk.smartstore.store;
 
+import android.util.Log;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
-
 import com.salesforce.androidsdk.analytics.security.Encryptor;
-import com.salesforce.androidsdk.smartstore.store.IndexSpec;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
-import com.salesforce.androidsdk.smartstore.store.SoupSpec;
-
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.junit.Assert;
+import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import java.util.Arrays;
-import java.util.Collection;
 
 /**
- * Set of tests for the smart store loading numerous and/or large entries and querying them back - using external storage
+ * More load tests for smartstore - using external storage
  */
-@RunWith(Parameterized.class)
+@RunWith(AndroidJUnit4.class)
 @LargeTest
-public class SmartStoreLoadExternalStorageTest extends SmartStoreLoadTest {
+public class SmartStoreOtherLoadExternalStorageTest extends SmartStoreOtherLoadTest {
+
+    static final int LARGE_BYTES = 512 * 1024;
 
     @Override
     protected String getEncryptionKey() {
@@ -57,14 +57,36 @@ public class SmartStoreLoadExternalStorageTest extends SmartStoreLoadTest {
         store.registerSoupWithSpec(new SoupSpec(soupName, SoupSpec.FEATURE_EXTERNAL_STORAGE), indexSpecs);
     }
 
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection<Object[]> data() {
-        return Arrays.asList(new Object[][]{
-//                {"UpsertQuery1StringIndex1000fields1000characters", Type.string, NUMBER_ENTRIES, 1000, 1000, 1}, // to push memory utilization
-                {"UpsertQuery1StringIndex1field20characters", Type.string, NUMBER_ENTRIES, 1, 20, 1},
-                {"UpsertQuery1StringIndex1field1000characters", Type.string, NUMBER_ENTRIES, 1, 1000, 1},
-                {"UpsertQuery1StringIndex10fields20characters", Type.string, NUMBER_ENTRIES, 10, 20, 1},
-                {"UpsertQuery10StringIndexes10fields20characters", Type.string, NUMBER_ENTRIES, 10, 20, 10}
-        });
+    // Test very large payloads for smartstore
+    @Test
+    public void testUpsertLargePayload() throws JSONException {
+        setupSoup(TEST_SOUP, 1, Type.string);
+        JSONObject entry = new JSONObject();
+        for (int i = 0; i < 5; i++) {
+            StringBuilder sb = new StringBuilder();
+            for (int j = 0; j < LARGE_BYTES; j++) {
+                sb.append(i);
+            }
+            entry.put("value_" + i, sb.toString());
+        }
+
+        // Upsert
+        long start = System.currentTimeMillis();
+        store.upsert(TEST_SOUP, entry);
+        long end = System.currentTimeMillis();
+
+        // Log time taken
+        Log.i("SmartStoreLoadTest", "Upserting 5MB+ payload time taken: " + (end - start) + " ms");
+
+        // Verify
+        JSONArray result = store.retrieve(TEST_SOUP, 1L);
+        for (int i = 0; i < 5; i++) {
+            Assert.assertTrue("Value at index " + i + " is incorrect", result.getJSONObject(0).getString("value_" + i).startsWith("" + i));
+        }
+    }
+
+    @Override
+    public void testAlterSoupJSON1Indexing() throws JSONException {
+        // json1 is not compatible with external storage.
     }
 }

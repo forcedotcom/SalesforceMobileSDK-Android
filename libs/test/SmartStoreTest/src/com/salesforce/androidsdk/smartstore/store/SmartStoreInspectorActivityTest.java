@@ -24,28 +24,29 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
+package com.salesforce.androidsdk.smartstore.store;
+
+import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.action.ViewActions.click;
+import static androidx.test.espresso.action.ViewActions.closeSoftKeyboard;
+import static androidx.test.espresso.action.ViewActions.replaceText;
+import static androidx.test.espresso.matcher.ViewMatchers.withId;
 
 import android.content.Context;
-import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.filters.MediumTest;
-import androidx.test.rule.ActivityTestRule;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import android.widget.ListAdapter;
 import android.widget.MultiAutoCompleteTextView;
 import android.widget.TextView;
-
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.MediumTest;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.rule.ActivityTestRule;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.smartstore.R;
-import com.salesforce.androidsdk.smartstore.store.DBHelper;
-import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
-import com.salesforce.androidsdk.smartstore.store.IndexSpec;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
-
+import java.util.HashSet;
+import java.util.Set;
 import net.sqlcipher.database.SQLiteOpenHelper;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Assert;
@@ -53,15 +54,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.util.HashSet;
-import java.util.Set;
-
-import static androidx.test.espresso.Espresso.onView;
-import static androidx.test.espresso.action.ViewActions.click;
-import static androidx.test.espresso.action.ViewActions.closeSoftKeyboard;
-import static androidx.test.espresso.action.ViewActions.replaceText;
-import static androidx.test.espresso.matcher.ViewMatchers.withId;
 
 /**
  * Tests for SmartStoreInspectorActivity

@@ -25,27 +25,22 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.androidsdk.store;
+package com.salesforce.androidsdk.smartstore.store;
 
 import android.content.Context;
-import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.filters.SmallTest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-
+import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 import com.salesforce.androidsdk.MainActivity;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
-import com.salesforce.androidsdk.smartstore.store.IndexSpec;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.ui.LoginActivity;
-
+import java.util.List;
 import org.json.JSONException;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.util.List;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest

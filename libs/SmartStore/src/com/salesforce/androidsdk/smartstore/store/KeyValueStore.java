@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-present, salesforce.com, inc.
+ * Copyright (c) 2021-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,32 +24,29 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
 
+package com.salesforce.androidsdk.smartstore.store;
 
-import androidx.test.filters.MediumTest;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
+import java.io.IOException;
+import java.io.InputStream;
 
-import com.salesforce.androidsdk.smartstore.store.IndexSpec;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.smartstore.store.SoupSpec;
+public interface KeyValueStore {
 
-import org.junit.runner.RunWith;
+    String getValue(String key);
 
-/**
- * Tests for full-text search in smartstore soups using external storage
- */
-@RunWith(AndroidJUnit4.class)
-@MediumTest
-public class SmartStoreFTSExternalStorageTest extends SmartStoreFullTextSearchTest {
+    InputStream getStream(String key);
 
-    @Override
-    protected void registerSoup(SmartStore store, String soupName, IndexSpec[] indexSpecs) {
-        store.registerSoupWithSpec(new SoupSpec(soupName, SoupSpec.FEATURE_EXTERNAL_STORAGE), indexSpecs);
-    }
+    boolean saveValue(String key, String value);
 
-    @Override
-    protected String[] getExpectedColumns() {
-        return new String[]{"id", "created", "lastModified", FIRST_NAME_COL, LAST_NAME_COL, EMPLOYEE_ID_COL};
-    }
+    boolean saveStream(String key, InputStream stream) throws IOException;
+
+    boolean deleteValue(String key);
+
+    void deleteAll();
+
+    int count();
+
+    boolean isEmpty();
+
+    String getStoreName();
 }

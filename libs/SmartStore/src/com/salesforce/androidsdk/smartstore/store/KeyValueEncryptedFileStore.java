@@ -50,7 +50,7 @@ import java.io.InputStream;
  * to employ this as a workaround for now, until we figure out how we can achieve acceptable
  * performance with a streaming solution, since CipherInputStream is a lot slower with AES-GCM.
  */
-public class KeyValueEncryptedFileStore  {
+public class KeyValueEncryptedFileStore implements KeyValueStore {
 
     private static final String TAG = KeyValueEncryptedFileStore.class.getSimpleName();
     public static final int MAX_STORE_NAME_LENGTH = 96;
@@ -135,6 +135,7 @@ public class KeyValueEncryptedFileStore  {
      * @param value Value to be persisted.
      * @return True - if successful, False - otherwise.
      */
+    @Override
     public boolean saveValue(String key, String value) {
         if (!isKeyValid(key, "saveValue")) {
             return false;
@@ -176,6 +177,7 @@ public class KeyValueEncryptedFileStore  {
      * @param stream Stream to be persisted.
      * @return True - if successful, False - otherwise.
      */
+    @Override
     public boolean saveStream(String key, InputStream stream) {
         if (!isKeyValid(key, "saveStream")) {
             return false;
@@ -199,6 +201,7 @@ public class KeyValueEncryptedFileStore  {
      * @param key Unique identifier.
      * @return value for given key or null if key not found.
      */
+    @Override
     public String getValue(String key) {
         try (InputStream inputStream = getStream(key)) {
             if (inputStream == null) {
@@ -217,6 +220,7 @@ public class KeyValueEncryptedFileStore  {
      * @param key Unique identifier.
      * @return stream to value for given key or null if key not found.
      */
+    @Override
     public InputStream getStream(String key) {
         if (!isKeyValid(key, "getStream")) {
             return null;
@@ -240,6 +244,7 @@ public class KeyValueEncryptedFileStore  {
      * @param key Unique identifier.
      * @return True - if successful, False - otherwise.
      */
+    @Override
     public synchronized boolean deleteValue(String key) {
         if (!isKeyValid(key, "deleteValue")) {
             return false;
@@ -248,6 +253,7 @@ public class KeyValueEncryptedFileStore  {
     }
 
     /** Deletes all stored values. */
+    @Override
     public void deleteAll() {
         for (File file : safeListFiles()) {
             SmartStoreLogger.i(TAG, "deleting file :" + file.getName());
@@ -256,11 +262,13 @@ public class KeyValueEncryptedFileStore  {
     }
 
     /** @return number of entries in the store. */
+    @Override
     public int count() {
         return safeListFiles().length;
     }
 
     /** @return True if store is empty. */
+    @Override
     public boolean isEmpty() {
         return safeListFiles().length == 0;
     }
@@ -275,6 +283,7 @@ public class KeyValueEncryptedFileStore  {
     /**
      * @return store name
      */
+    @Override
     public String getStoreName() {
         return storeDir.getName();
     }
