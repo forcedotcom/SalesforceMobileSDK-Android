@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.smartstore.store;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Set;
 
 public interface KeyValueStore {
 
@@ -43,6 +44,8 @@ public interface KeyValueStore {
     boolean deleteValue(String key);
 
     void deleteAll();
+
+    Set<String> keySet();
 
     int count();
 

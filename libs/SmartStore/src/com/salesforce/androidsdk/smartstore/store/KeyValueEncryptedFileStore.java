@@ -29,20 +29,22 @@ package com.salesforce.androidsdk.smartstore.store;
 
 import android.content.Context;
 import android.text.TextUtils;
-
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 import com.salesforce.androidsdk.util.ManagedFilesHelper;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Key-value store backed by file system. Currently uses an in-memory solution for encryption and
@@ -52,12 +54,20 @@ import java.io.InputStream;
  */
 public class KeyValueEncryptedFileStore implements KeyValueStore {
 
+    // 1 --> 9.0 (no version files, only values are stored in files named hash(key)
+    // 2 --> starting at 9.1 (version file, keys stored in files named <hash(key)>.key and values stored in files named <hash(key)>.value
+    public static final int KV_VERSION = 2;
+
     private static final String TAG = KeyValueEncryptedFileStore.class.getSimpleName();
     public static final int MAX_STORE_NAME_LENGTH = 96;
-    private String encryptionKey;
-    private final File storeDir;
-
+    public static final String KEY_SUFFIX = ".key";
+    public static final String VALUE_SUFFIX = ".value";
+    public static final String VERSION_FILE_NAME = "version";
     public static final String KEY_VALUE_STORES = "keyvaluestores";
+
+    private String encryptionKey;
+    private int kvVersion;
+    private final File storeDir;
 
     /**
      * Constructor
@@ -81,13 +91,19 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
             throw new IllegalArgumentException("Invalid store name: " + storeName);
         }
         storeDir = new File(parentDir, storeName);
+        if (storeDir.exists() && !storeDir.isDirectory()) {
+            throw new IllegalArgumentException("Cannot create directory for: " + storeName);
+        }
+
+        this.encryptionKey = encryptionKey;
+
         if (!storeDir.exists()) {
             storeDir.mkdirs();
+            writeVersion(KV_VERSION);
+            kvVersion = KV_VERSION;
+        } else {
+            kvVersion = readVersion();
         }
-        if (!storeDir.isDirectory()) {
-            throw new IllegalArgumentException("Failed to create directory for: " + storeName);
-        }
-        this.encryptionKey = encryptionKey;
     }
 
     /**
@@ -144,28 +160,13 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
             SmartStoreLogger.w(TAG, "saveValue: Invalid value supplied: null");
             return false;
         }
-        FileOutputStream f = null;
         try {
-            final File file = getFileForKey(key);
-            f = new FileOutputStream(file);
-            byte[] encryptedContent = Encryptor.encryptWithoutBase64Encoding(value.getBytes(), encryptionKey);
-            if (encryptedContent != null) {
-                f.write(encryptedContent);
-                return true;
-            } else {
-                return false;
-            }
-        } catch (IOException e) {
-            SmartStoreLogger.e(TAG, "IOException occurred while saving value to filesystem", e);
+            encryptStringToFile(getKeyFile(key), key, encryptionKey);
+            encryptStringToFile(getValueFile(key), value, encryptionKey);
+            return true;
+        } catch (Exception e) {
+            SmartStoreLogger.e(TAG, "Exception occurred while saving value to filesystem", e);
             return false;
-        } finally {
-            if (f != null) {
-                try {
-                    f.close();
-                } catch (IOException ex) {
-                    SmartStoreLogger.e(TAG, "IOException occurred while attempting to close file output stream", ex);
-                }
-            }
         }
     }
 
@@ -183,14 +184,15 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
             return false;
         }
         if (stream == null) {
-            SmartStoreLogger.w(TAG, "saveStream: Invalid value supplied: null");
+            SmartStoreLogger.w(TAG, "saveStream: Invalid stream supplied: null");
             return false;
         }
         try {
-            saveStream(getFileForKey(key), stream, encryptionKey);
+            encryptStringToFile(getKeyFile(key), key, encryptionKey);
+            encryptStreamToFile(getValueFile(key), stream, encryptionKey);
             return true;
         } catch (Exception e) {
-            SmartStoreLogger.e(TAG, "Exception occurred while saving value from stream to filesystem", e);
+            SmartStoreLogger.e(TAG, "Exception occurred while saving stream to filesystem", e);
             return false;
         }
     }
@@ -203,13 +205,18 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
      */
     @Override
     public String getValue(String key) {
-        try (InputStream inputStream = getStream(key)) {
-            if (inputStream == null) {
-                return null;
-            }
-            return Encryptor.getStringFromStream(inputStream);
+        if (!isKeyValid(key, "getValue")) {
+            return null;
+        }
+        final File file = getValueFile(key);
+        if (!file.exists()) {
+            SmartStoreLogger.w(TAG, "getValue: File does not exist for key: " + key);
+            return null;
+        }
+        try {
+            return decryptFileAsString(file, encryptionKey);
         } catch (Exception e) {
-            SmartStoreLogger.e(TAG, "getValue(): Threw exception for key: " + key, e);
+            SmartStoreLogger.e(TAG, "getValue: Threw exception for key: " + key, e);
             return null;
         }
     }
@@ -225,13 +232,13 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
         if (!isKeyValid(key, "getStream")) {
             return null;
         }
-        final File file = getFileForKey(key);
+        final File file = getValueFile(key);
         if (!file.exists()) {
             SmartStoreLogger.w(TAG, "getStream: File does not exist for key: " + key);
             return null;
         }
         try {
-            return getStream(file, encryptionKey);
+            return decryptFileAsSteam(file, encryptionKey);
         } catch (Exception e) {
             SmartStoreLogger.e(TAG, "getStream: Threw exception for key: " + key, e);
             return null;
@@ -249,28 +256,51 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
         if (!isKeyValid(key, "deleteValue")) {
             return false;
         }
-        return getFileForKey(key).delete();
+        return getKeyFile(key).delete() && getValueFile(key).delete(); // XXX What if only one succeeds?
     }
 
     /** Deletes all stored values. */
     @Override
     public void deleteAll() {
-        for (File file : safeListFiles()) {
+        for (File file : safeListFiles(null /* all */)) {
             SmartStoreLogger.i(TAG, "deleting file :" + file.getName());
             file.delete();
         }
     }
 
+    /**
+     * Get all keys.
+     * NB: will return null if values were inserted with SDK 9.0 or if an error occurs reading a key
+     */
+    @Override
+    public Set<String> keySet() {
+        if (kvVersion < 2) {
+            return null;
+        }
+
+        HashSet<String> keys = new HashSet<>();
+        for (File file: safeListFiles(KEY_SUFFIX)) {
+            try {
+                String key =  decryptFileAsString(file, encryptionKey);
+                keys.add(key);
+            } catch (Exception e) {
+                SmartStoreLogger.e(TAG, "keySet(): Threw exception for:" + file.getName(), e);
+                return null;
+            }
+        }
+        return keys;
+    }
+
     /** @return number of entries in the store. */
     @Override
     public int count() {
-        return safeListFiles().length;
+        return kvVersion == 1 ? safeListFiles(null /* all */).length : safeListFiles(VALUE_SUFFIX).length;
     }
 
     /** @return True if store is empty. */
     @Override
     public boolean isEmpty() {
-        return safeListFiles().length == 0;
+        return count() == 0;
     }
 
     /**
@@ -307,9 +337,9 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
         File[] originalFiles = originalStoreDir.listFiles();
         for (File originalFile : originalFiles) {
             try {
-                saveStream(
+                encryptStreamToFile(
                     new File(tmpDir, originalFile.getName()), // tmp file
-                    getStream(originalFile, encryptionKey),   // reading original file
+                    decryptFileAsSteam(originalFile, encryptionKey),   // reading original file
                     newEncryptionKey);                        // encrypting with new encryption key
             } catch (Exception e) {
                 SmartStoreLogger.e(TAG, "changeKey: Threw exception for file: " + originalFile, e);
@@ -332,8 +362,17 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
         return SalesforceKeyGenerator.getSHA256Hash(key);
     }
 
-    private File getFileForKey(String key) {
-        return new File(storeDir, encodeKey(key));
+    private File getKeyFile(String key) {
+        return new File(storeDir, encodeKey(key) + KEY_SUFFIX);
+    }
+
+    private File getValueFile(String key) {
+        String valueFileName = kvVersion == 1 ? encodeKey(key) : encodeKey(key) + VALUE_SUFFIX;
+        return new File(storeDir, valueFileName);
+    }
+
+    private File getVersionFile() {
+        return new File(storeDir, VERSION_FILE_NAME);
     }
 
     private boolean isKeyValid(String key, String operation) {
@@ -345,14 +384,30 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
     }
 
     /**
-     * @return array of files in storeDir won't return null even if storeDir has been deleted
+     * Get array of Files in storeDir that ends with suffix
+     * Returns all files if suffix is null
+     * Returns empty array if storeDir does not exist
      */
-    private File[] safeListFiles() {
-        File[] files = storeDir == null ? null : storeDir.listFiles();
+    private File[] safeListFiles(final String suffix) {
+        FilenameFilter filter = new FilenameFilter() {
+            @Override
+            public boolean accept(File file, String name) {
+                return suffix == null ? true : name.endsWith(suffix);
+            }
+        };
+        File[] files = storeDir == null ? null : storeDir.listFiles(filter);
         return files == null ? new File[0] : files;
     }
 
-    InputStream getStream(File file, String encryptionKey) throws IOException {
+    void encryptStringToFile(File file, String content, String encryptionKey) throws IOException {
+        encryptStreamToFile(file, new ByteArrayInputStream(content.getBytes()), encryptionKey);
+    }
+
+    String decryptFileAsString(File file, String encryptionKey) throws IOException {
+        return Encryptor.getStringFromStream(decryptFileAsSteam(file, encryptionKey));
+    }
+
+    InputStream decryptFileAsSteam(File file, String encryptionKey) throws IOException {
         FileInputStream f = null;
         try {
             f = new FileInputStream(file);
@@ -372,8 +427,7 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
         }
     }
 
-    void saveStream(File file, InputStream stream, String encryptionKey)
-        throws IOException {
+    void encryptStreamToFile(File file, InputStream stream, String encryptionKey) throws IOException {
         FileOutputStream f = null;
         try {
             final ByteArrayOutputStream b = new ByteArrayOutputStream();
@@ -394,4 +448,26 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
             }
         }
     }
+
+    void writeVersion(int kvVersion) {
+        try {
+            encryptStringToFile(getVersionFile(), kvVersion + "", encryptionKey);
+        } catch (Exception e) {
+            SmartStoreLogger.e(TAG, "Failed to store version", e);
+            // What now ??
+        }
+    }
+
+    int readVersion() {
+        try {
+            return Integer.parseInt(decryptFileAsString(getVersionFile(), encryptionKey));
+        } catch (Exception e) {
+            if (!e.getClass().equals(FileNotFoundException.class)) {
+                // Version 1 did not have a version file - no need to log an error
+                SmartStoreLogger.e(TAG, "Failed to retrieve version", e);
+            }
+            return 1;
+        }
+    }
+
 }
