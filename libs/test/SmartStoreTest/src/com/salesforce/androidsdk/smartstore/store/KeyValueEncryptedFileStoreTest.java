@@ -33,6 +33,7 @@ import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
+import com.salesforce.androidsdk.util.ManagedFilesHelper;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -80,8 +81,7 @@ public class KeyValueEncryptedFileStoreTest {
 
     @After
     public void tearDown() {
-        keyValueStore.deleteAll();
-        getStoreDir(TEST_STORE).delete();
+        ManagedFilesHelper.deleteFile(getStoreDir(TEST_STORE));
     }
 
     /** Test isValidStoreName() */
@@ -148,6 +148,7 @@ public class KeyValueEncryptedFileStoreTest {
     @Test
     public void testFailedCreateFileExist() throws IOException {
         File file = getStoreDir("file");
+        file.delete(); // starting clean
         Assert.assertTrue("Test file creation failed", file.createNewFile());
         try {
             new KeyValueEncryptedFileStore(context, "file", "");
@@ -318,7 +319,7 @@ public class KeyValueEncryptedFileStoreTest {
     /** Making sure various operations won't NPE if storeDir was deleted */
     @Test
     public void testNoNPEIfStoreDirDeleted() {
-        keyValueStore.getStoreDir().delete();
+        ManagedFilesHelper.deleteFile(keyValueStore.getStoreDir());
         Assert.assertNull("Expected null for files in deleted stored dir", keyValueStore.getStoreDir().listFiles());
         try {
             Assert.assertEquals(TEST_STORE, keyValueStore.getStoreName());
@@ -371,7 +372,7 @@ public class KeyValueEncryptedFileStoreTest {
         keyValueStore.saveValue("key2", "value2");
         // Look at the raw content of files
         File[] files = keyValueStore.getStoreDir().listFiles();
-        Assert.assertEquals("Wrong number of files", 2, files.length);
+        Assert.assertEquals("Wrong number of files", 5 /* 2 keys, 2 values, 1 version*/, files.length);
         String file1raw = streamToString(new FileInputStream(files[0]));
         String file2raw = streamToString(new FileInputStream(files[1]));
         // Make sure the actual value can't be found
@@ -391,7 +392,7 @@ public class KeyValueEncryptedFileStoreTest {
         Assert.assertEquals("Wrong value for key1", "value2", keyValueStore.getValue("key2"));
         // Getting raw content of files
         File[] files = keyValueStore.getStoreDir().listFiles();
-        Assert.assertEquals("Wrong number of files", 2, files.length);
+        Assert.assertEquals("Wrong number of files", 5 /* 2 keys, 2 values, 1 version*/, files.length);
         String file1raw = streamToString(new FileInputStream(files[0]));
         String file2raw = streamToString(new FileInputStream(files[1]));
         // Generate new key

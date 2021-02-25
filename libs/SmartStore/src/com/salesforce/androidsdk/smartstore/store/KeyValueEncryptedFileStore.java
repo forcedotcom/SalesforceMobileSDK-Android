@@ -91,10 +91,6 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
             throw new IllegalArgumentException("Invalid store name: " + storeName);
         }
         storeDir = new File(parentDir, storeName);
-        if (storeDir.exists() && !storeDir.isDirectory()) {
-            throw new IllegalArgumentException("Cannot create directory for: " + storeName);
-        }
-
         this.encryptionKey = encryptionKey;
 
         if (!storeDir.exists()) {
@@ -103,6 +99,10 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
             kvVersion = KV_VERSION;
         } else {
             kvVersion = readVersion();
+        }
+
+        if (!storeDir.exists() || !storeDir.isDirectory()) {
+            throw new IllegalArgumentException("Failed to create directory for: " + storeName);
         }
     }
 
@@ -262,9 +262,16 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
     /** Deletes all stored values. */
     @Override
     public void deleteAll() {
-        for (File file : safeListFiles(null /* all */)) {
-            SmartStoreLogger.i(TAG, "deleting file :" + file.getName());
-            file.delete();
+        if (kvVersion == 1) {
+            for (File file : safeListFiles(null)) {
+                SmartStoreLogger.i(TAG, "deleting file :" + file.getName());
+                file.delete();
+            }
+        } else {
+            for (String key : keySet()) {
+                SmartStoreLogger.i(TAG, "deleting key :" + key);
+                deleteValue(key);
+            }
         }
     }
 
