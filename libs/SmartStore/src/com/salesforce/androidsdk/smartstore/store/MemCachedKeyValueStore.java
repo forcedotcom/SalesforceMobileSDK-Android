@@ -39,8 +39,8 @@ import java.nio.charset.StandardCharsets;
  */
 public class MemCachedKeyValueStore implements KeyValueStore {
 
-    private KeyValueStore keyValueStore;
-    private LruCache<String, String> memCache;
+    KeyValueStore keyValueStore;
+    LruCache<String, String> memCache;
 
     public MemCachedKeyValueStore(KeyValueStore keyValueStore, int cacheSize){
         this.keyValueStore = keyValueStore;
