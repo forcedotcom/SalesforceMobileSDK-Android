@@ -24,24 +24,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
+package com.salesforce.androidsdk.smartstore.store;
 
-import androidx.test.filters.LargeTest;
 import android.util.Log;
-
-import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import androidx.test.filters.LargeTest;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
-
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 
 /**
  * Set of tests for the smart store loading numerous and/or large entries and querying them back

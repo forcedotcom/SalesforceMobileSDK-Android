@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-present, salesforce.com, inc.
+ * Copyright (c) 2016-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,47 +24,27 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
+package com.salesforce.androidsdk.smartstore.store;
 
-import androidx.test.filters.LargeTest;
 
-import com.salesforce.androidsdk.analytics.security.Encryptor;
-import com.salesforce.androidsdk.smartstore.store.IndexSpec;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
-import com.salesforce.androidsdk.smartstore.store.SoupSpec;
-
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.MediumTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import java.util.Arrays;
-import java.util.Collection;
 
 /**
- * Set of tests for the smart store loading numerous and/or large entries and querying them back - using external storage
+ * Tests for full-text search in smartstore soups using external storage
  */
-@RunWith(Parameterized.class)
-@LargeTest
-public class SmartStoreLoadExternalStorageTest extends SmartStoreLoadTest {
-
-    @Override
-    protected String getEncryptionKey() {
-        return Encryptor.hash("test123", "hashing-key");
-    }
+@RunWith(AndroidJUnit4.class)
+@MediumTest
+public class SmartStoreFTSExternalStorageTest extends SmartStoreFullTextSearchTest {
 
     @Override
     protected void registerSoup(SmartStore store, String soupName, IndexSpec[] indexSpecs) {
         store.registerSoupWithSpec(new SoupSpec(soupName, SoupSpec.FEATURE_EXTERNAL_STORAGE), indexSpecs);
     }
 
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection<Object[]> data() {
-        return Arrays.asList(new Object[][]{
-//                {"UpsertQuery1StringIndex1000fields1000characters", Type.string, NUMBER_ENTRIES, 1000, 1000, 1}, // to push memory utilization
-                {"UpsertQuery1StringIndex1field20characters", Type.string, NUMBER_ENTRIES, 1, 20, 1},
-                {"UpsertQuery1StringIndex1field1000characters", Type.string, NUMBER_ENTRIES, 1, 1000, 1},
-                {"UpsertQuery1StringIndex10fields20characters", Type.string, NUMBER_ENTRIES, 10, 20, 1},
-                {"UpsertQuery10StringIndexes10fields20characters", Type.string, NUMBER_ENTRIES, 10, 20, 10}
-        });
+    @Override
+    protected String[] getExpectedColumns() {
+        return new String[]{"id", "created", "lastModified", FIRST_NAME_COL, LAST_NAME_COL, EMPLOYEE_ID_COL};
     }
 }

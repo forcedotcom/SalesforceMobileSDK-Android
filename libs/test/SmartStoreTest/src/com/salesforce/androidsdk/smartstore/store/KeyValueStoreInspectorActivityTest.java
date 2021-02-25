@@ -24,28 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
-
-import android.content.Intent;
-import android.widget.AutoCompleteTextView;
-import android.widget.Button;
-
-import androidx.test.espresso.matcher.RootMatchers;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.MediumTest;
-import androidx.test.rule.ActivityTestRule;
-
-import com.salesforce.androidsdk.analytics.EventBuilderHelper;
-import com.salesforce.androidsdk.smartstore.R;
-import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
-import com.salesforce.androidsdk.smartstore.store.KeyValueEncryptedFileStore;
-import com.salesforce.androidsdk.smartstore.ui.KeyValueStoreInspectorActivity;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+package com.salesforce.androidsdk.smartstore.store;
 
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
@@ -55,6 +34,23 @@ import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.CoreMatchers.allOf;
+
+import android.content.Intent;
+import android.widget.AutoCompleteTextView;
+import android.widget.Button;
+import androidx.test.espresso.matcher.RootMatchers;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.MediumTest;
+import androidx.test.rule.ActivityTestRule;
+import com.salesforce.androidsdk.analytics.EventBuilderHelper;
+import com.salesforce.androidsdk.smartstore.R;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
+import com.salesforce.androidsdk.smartstore.ui.KeyValueStoreInspectorActivity;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Tests for KeyValueStoreInspectorActivity

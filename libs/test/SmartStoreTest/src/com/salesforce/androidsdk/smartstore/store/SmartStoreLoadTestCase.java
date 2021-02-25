@@ -24,23 +24,17 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
+package com.salesforce.androidsdk.smartstore.store;
 
-import androidx.test.platform.app.InstrumentationRegistry;
 import android.util.Log;
-
-import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
-import com.salesforce.androidsdk.smartstore.store.IndexSpec;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import androidx.test.platform.app.InstrumentationRegistry;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.junit.Before;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.junit.Before;
 
 /**
  * Super class for smartstore load tests

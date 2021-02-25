@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-present, salesforce.com, inc.
+ * Copyright (c) 2018-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,32 +24,69 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
+package com.salesforce.androidsdk.smartstore.store;
 
-
-import androidx.test.filters.MediumTest;
+import android.util.Log;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-
-import com.salesforce.androidsdk.smartstore.store.IndexSpec;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.smartstore.store.SoupSpec;
-
+import androidx.test.filters.LargeTest;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
+import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.junit.Assert;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * Tests for full-text search in smartstore soups using external storage
+ * More load tests for smartstore - using external storage
  */
 @RunWith(AndroidJUnit4.class)
-@MediumTest
-public class SmartStoreFTSExternalStorageTest extends SmartStoreFullTextSearchTest {
+@LargeTest
+public class SmartStoreOtherLoadExternalStorageTest extends SmartStoreOtherLoadTest {
+
+    static final int LARGE_BYTES = 512 * 1024;
+
+    @Override
+    protected String getEncryptionKey() {
+        return Encryptor.hash("test123", "hashing-key");
+    }
 
     @Override
     protected void registerSoup(SmartStore store, String soupName, IndexSpec[] indexSpecs) {
         store.registerSoupWithSpec(new SoupSpec(soupName, SoupSpec.FEATURE_EXTERNAL_STORAGE), indexSpecs);
     }
 
+    // Test very large payloads for smartstore
+    @Test
+    public void testUpsertLargePayload() throws JSONException {
+        setupSoup(TEST_SOUP, 1, Type.string);
+        JSONObject entry = new JSONObject();
+        for (int i = 0; i < 5; i++) {
+            StringBuilder sb = new StringBuilder();
+            for (int j = 0; j < LARGE_BYTES; j++) {
+                sb.append(i);
+            }
+            entry.put("value_" + i, sb.toString());
+        }
+
+        // Upsert
+        long start = System.currentTimeMillis();
+        store.upsert(TEST_SOUP, entry);
+        long end = System.currentTimeMillis();
+
+        // Log time taken
+        Log.i("SmartStoreLoadTest", "Upserting 5MB+ payload time taken: " + (end - start) + " ms");
+
+        // Verify
+        JSONArray result = store.retrieve(TEST_SOUP, 1L);
+        for (int i = 0; i < 5; i++) {
+            Assert.assertTrue("Value at index " + i + " is incorrect", result.getJSONObject(0).getString("value_" + i).startsWith("" + i));
+        }
+    }
+
     @Override
-    protected String[] getExpectedColumns() {
-        return new String[]{"id", "created", "lastModified", FIRST_NAME_COL, LAST_NAME_COL, EMPLOYEE_ID_COL};
+    public void testAlterSoupJSON1Indexing() throws JSONException {
+        // json1 is not compatible with external storage.
     }
 }
