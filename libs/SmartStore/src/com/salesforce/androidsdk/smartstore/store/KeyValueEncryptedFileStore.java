@@ -326,6 +326,13 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
     }
 
     /**
+     * @return store version
+     */
+    public int getStoreVersion() {
+        return kvVersion;
+    }
+
+    /**
      * Change encryption key
      * All files are read/decrypted with old key and encrypted/written back with new key
      * @param newEncryptionKey

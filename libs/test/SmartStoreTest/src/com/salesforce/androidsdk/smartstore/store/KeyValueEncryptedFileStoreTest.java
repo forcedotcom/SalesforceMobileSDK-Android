@@ -87,6 +87,26 @@ public class KeyValueEncryptedFileStoreTest {
         ManagedFilesHelper.deleteFile(getStoreDir(TEST_STORE));
     }
 
+    /** Test getStoreVersion() */
+    @Test
+    public void testGetStoreVersion() {
+        Assert.assertEquals("Wrong kv store version", KeyValueEncryptedFileStore.KV_VERSION,
+            keyValueStore.getStoreVersion());
+    }
+
+    /** Test getStoreVersion() when there is on version file (v1 store) */
+    @Test
+    public void testGetStoreVersionWithoutVersionFile() {
+        File versionFile = new File(getStoreDir(TEST_STORE), "version");
+        Assert.assertTrue(versionFile.exists());
+        versionFile.delete();
+        KeyValueEncryptedFileStore keyValueStoreWithoutVersionFile =
+            new KeyValueEncryptedFileStore(
+                context, TEST_STORE, SalesforceSDKManager.getEncryptionKey());
+        Assert.assertEquals("Wrong kv store version", 1, keyValueStoreWithoutVersionFile.getStoreVersion());
+        Assert.assertFalse(versionFile.exists());
+    }
+
     /** Test isValidStoreName() */
     @Test
     public void isValidStoreName() {
