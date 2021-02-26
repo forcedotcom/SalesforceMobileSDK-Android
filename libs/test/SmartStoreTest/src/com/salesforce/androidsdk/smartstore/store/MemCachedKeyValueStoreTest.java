@@ -278,6 +278,28 @@ public class MemCachedKeyValueStoreTest {
         Assert.assertEquals(codeBlock, streamToString(memCachedStore.getStream("js2")));
     }
 
+    /** Test calling keySet() after saving and deleting values */
+    @Test
+    public void testSaveDeleteKeySet() {
+        Assert.assertTrue(memCachedStore.keySet().isEmpty());
+        for (int i = 0; i < NUM_ENTRIES; i++) {
+            String key = "key" + i;
+            String value = "value" + i;
+            Assert.assertEquals(i, memCachedStore.keySet().size());
+            Assert.assertFalse(memCachedStore.keySet().contains(key));
+            memCachedStore.saveValue(key, value);
+            Assert.assertTrue(memCachedStore.keySet().contains(key));
+            Assert.assertEquals(i+1, memCachedStore.keySet().size());
+        }
+        for (int i = 0; i < NUM_ENTRIES; i++) {
+            String key = "key" + i;
+            Assert.assertEquals(NUM_ENTRIES - i, memCachedStore.keySet().size());
+            Assert.assertTrue(memCachedStore.keySet().contains(key));
+            memCachedStore.deleteValue(key);
+            Assert.assertFalse(memCachedStore.keySet().contains(key));
+            Assert.assertEquals(NUM_ENTRIES - (i+1), memCachedStore.keySet().size());
+        }
+    }
 
     //
     // Helper methods

@@ -411,6 +411,69 @@ public class KeyValueEncryptedFileStoreTest {
         keyValueStore.deleteAll();
         Assert.assertEquals(1 /* version file */, getStoreDir(TEST_STORE).list().length);
     }
+
+
+    /** Test saving values and calling keySet() */
+    @Test
+    public void testSaveValueKeySet() {
+        for (int i = 0; i < NUM_ENTRIES; i++) {
+            String key = "key" + i;
+            String value = "value" + i;
+            Assert.assertEquals(i, keyValueStore.keySet().size());
+            Assert.assertFalse(keyValueStore.keySet().contains(key));
+            keyValueStore.saveValue(key, value);
+            Assert.assertTrue(keyValueStore.keySet().contains(key));
+            Assert.assertEquals(i+1, keyValueStore.keySet().size());
+        }
+    }
+
+    /** Test saving streams and calling keySet() */
+    @Test
+    public void testSaveStreamKeySet() {
+        for (int i = 0; i < NUM_ENTRIES; i++) {
+            String key = "key" + i;
+            InputStream stream = stringToStream("value" + i);
+            Assert.assertEquals(i, keyValueStore.keySet().size());
+            Assert.assertFalse(keyValueStore.keySet().contains(key));
+            keyValueStore.saveStream(key, stream);
+            Assert.assertTrue(keyValueStore.keySet().contains(key));
+            Assert.assertEquals(i+1, keyValueStore.keySet().size());
+        }
+    }
+
+    /** Test calling keySet() after saving then deleting values */
+    @Test
+    public void testSaveDeleteKeySet() {
+        Assert.assertTrue(keyValueStore.keySet().isEmpty());
+        for (int i = 0; i < NUM_ENTRIES; i++) {
+            String key = "key" + i;
+            String value = "value" + i;
+            keyValueStore.saveValue(key, value);
+        }
+        for (int i = 0; i < NUM_ENTRIES; i++) {
+            String key = "key" + i;
+            Assert.assertEquals(NUM_ENTRIES - i, keyValueStore.keySet().size());
+            Assert.assertTrue(keyValueStore.keySet().contains(key));
+            keyValueStore.deleteValue(key);
+            Assert.assertFalse(keyValueStore.keySet().contains(key));
+            Assert.assertEquals(NUM_ENTRIES - (i+1), keyValueStore.keySet().size());
+        }
+    }
+
+    /** Test calling keySet() after saving then deleting all values */
+    @Test
+    public void testSaveDeleteAllKeySet() {
+        Assert.assertTrue(keyValueStore.keySet().isEmpty());
+        for (int i = 0; i < NUM_ENTRIES; i++) {
+            String key = "key" + i;
+            String value = "value" + i;
+            keyValueStore.saveValue(key, value);
+        }
+        Assert.assertEquals(NUM_ENTRIES, keyValueStore.keySet().size());
+        keyValueStore.deleteAll();
+        Assert.assertTrue(keyValueStore.keySet().isEmpty());
+    }
+
     /** Making sure various operations won't NPE if storeDir was deleted */
     @Test
     public void testNoNPEIfStoreDirDeleted() {
