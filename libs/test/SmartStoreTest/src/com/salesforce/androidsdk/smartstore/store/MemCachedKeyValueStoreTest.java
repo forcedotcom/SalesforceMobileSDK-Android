@@ -46,7 +46,8 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class MemCachedKeyValueStoreTest {
     static final String TEST_STORE = "TEST_STORE";
-    static final int NUM_ENTRIES = 100;
+    static final int NUM_ENTRIES = 25;
+    static final int CACHE_SIZE = 10;
 
     private KeyValueEncryptedFileStore store;
     private MemCachedKeyValueStore memCachedStore;
@@ -69,7 +70,7 @@ public class MemCachedKeyValueStoreTest {
         
         SmartStoreSDKManager.initNative(context, null);
         store = new KeyValueEncryptedFileStore(context, TEST_STORE, SalesforceSDKManager.getEncryptionKey());
-        memCachedStore = new MemCachedKeyValueStore(store, NUM_ENTRIES);
+        memCachedStore = new MemCachedKeyValueStore(store, CACHE_SIZE);
     }
 
     @After
