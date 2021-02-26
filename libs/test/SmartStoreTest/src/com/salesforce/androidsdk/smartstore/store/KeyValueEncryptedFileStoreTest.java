@@ -41,6 +41,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -51,7 +54,7 @@ import org.junit.runner.RunWith;
 public class KeyValueEncryptedFileStoreTest {
 
     public static final String TEST_STORE = "TEST_STORE";
-    public static final int NUM_ENTRIES = 100;
+    public static final int NUM_ENTRIES = 25;
 
     private Context context;
     private KeyValueEncryptedFileStore keyValueStore;
@@ -316,6 +319,78 @@ public class KeyValueEncryptedFileStoreTest {
         }
     }
 
+    /** Test saving values and checking the file system */
+    @Test
+    public void testSaveValueCheckFiles() {
+        Assert.assertEquals(1 /* version file */, getStoreDir(TEST_STORE).list().length);
+        for (int i = 0; i < NUM_ENTRIES; i++) {
+            String key = "key" + i;
+            String value = "value" + i;
+            keyValueStore.saveValue(key, value);
+            File keyFile = new File(getStoreDir(TEST_STORE), SalesforceKeyGenerator.getSHA256Hash(key) + ".key");
+            File valueFile = new File(getStoreDir(TEST_STORE), SalesforceKeyGenerator.getSHA256Hash(key) + ".value");
+            Assert.assertTrue(keyFile.exists());
+            Assert.assertTrue(valueFile.exists());
+            Assert.assertEquals(1 /* version file */ + 2*(i+1), getStoreDir(TEST_STORE).list().length);
+        }
+    }
+
+    /** Test saving streams and checking the file system */
+    @Test
+    public void testSaveStreamsCheckFiles() {
+        Assert.assertEquals(1 /* version file */, getStoreDir(TEST_STORE).list().length);
+        for (int i = 0; i < NUM_ENTRIES; i++) {
+            String key = "key" + i;
+            InputStream stream = stringToStream("value" + i);
+            keyValueStore.saveStream(key, stream);
+            File keyFile = new File(getStoreDir(TEST_STORE),
+                SalesforceKeyGenerator.getSHA256Hash(key) + ".key");
+            File valueFile = new File(getStoreDir(TEST_STORE),
+                SalesforceKeyGenerator.getSHA256Hash(key) + ".value");
+            Assert.assertTrue(keyFile.exists());
+            Assert.assertTrue(valueFile.exists());
+            Assert.assertEquals(1 /* version file */ + 2*(i+1), getStoreDir(TEST_STORE).list().length);
+        }
+    }
+
+    /** Test checking file system after saving then deleting values */
+    @Test
+    public void testSaveDeleteCheckFiles() {
+        Assert.assertEquals(1 /* version file */, getStoreDir(TEST_STORE).list().length);
+        for (int i = 0; i < NUM_ENTRIES; i++) {
+            String key = "key" + i;
+            String value = "value" + i;
+            keyValueStore.saveValue(key, value);
+        }
+        for (int i = 0; i < NUM_ENTRIES; i++) {
+            String key = "key" + i;
+            File keyFile = new File(getStoreDir(TEST_STORE),
+                SalesforceKeyGenerator.getSHA256Hash(key) + ".key");
+            File valueFile = new File(getStoreDir(TEST_STORE),
+                SalesforceKeyGenerator.getSHA256Hash(key) + ".value");
+            Assert.assertTrue(keyFile.exists());
+            Assert.assertTrue(valueFile.exists());
+            Assert.assertEquals(1 /* version file */ + 2*(NUM_ENTRIES-i), getStoreDir(TEST_STORE).list().length);
+            keyValueStore.deleteValue(key);
+            Assert.assertEquals(1 /* version file */ + 2*(NUM_ENTRIES-(i+1)), getStoreDir(TEST_STORE).list().length);
+            Assert.assertFalse(keyFile.exists());
+            Assert.assertFalse(valueFile.exists());
+        }
+    }
+
+    /** Test checking file system after saving then deleting all values */
+    @Test
+    public void testSaveDeleteAllCheckFiles() {
+        Assert.assertEquals(1 /* version file */, getStoreDir(TEST_STORE).list().length);
+        for (int i = 0; i < NUM_ENTRIES; i++) {
+            String key = "key" + i;
+            String value = "value" + i;
+            keyValueStore.saveValue(key, value);
+        }
+        Assert.assertEquals(1 /* version file */ + 2*NUM_ENTRIES, getStoreDir(TEST_STORE).list().length);
+        keyValueStore.deleteAll();
+        Assert.assertEquals(1 /* version file */, getStoreDir(TEST_STORE).list().length);
+    }
     /** Making sure various operations won't NPE if storeDir was deleted */
     @Test
     public void testNoNPEIfStoreDirDeleted() {
