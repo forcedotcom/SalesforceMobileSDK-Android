@@ -38,12 +38,10 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -341,7 +339,7 @@ public class KeyValueEncryptedFileStoreTest {
 
     /** Test saving values and checking the file system */
     @Test
-    public void testSaveValueCheckFiles() {
+    public void testSaveValueCheckFiles() throws IOException {
         Assert.assertEquals(1 /* version file */, getStoreDir(TEST_STORE).list().length);
         for (int i = 0; i < NUM_ENTRIES; i++) {
             String key = "key" + i;
@@ -352,12 +350,14 @@ public class KeyValueEncryptedFileStoreTest {
             Assert.assertTrue(keyFile.exists());
             Assert.assertTrue(valueFile.exists());
             Assert.assertEquals(1 /* version file */ + 2*(i+1), getStoreDir(TEST_STORE).list().length);
+            Assert.assertEquals("key" + i, keyValueStore.decryptFileAsString(keyFile, SalesforceSDKManager.getEncryptionKey()));
+            Assert.assertEquals("value" + i, keyValueStore.decryptFileAsString(valueFile, SalesforceSDKManager.getEncryptionKey()));
         }
     }
 
     /** Test saving streams and checking the file system */
     @Test
-    public void testSaveStreamsCheckFiles() {
+    public void testSaveStreamsCheckFiles() throws IOException {
         Assert.assertEquals(1 /* version file */, getStoreDir(TEST_STORE).list().length);
         for (int i = 0; i < NUM_ENTRIES; i++) {
             String key = "key" + i;
@@ -370,6 +370,8 @@ public class KeyValueEncryptedFileStoreTest {
             Assert.assertTrue(keyFile.exists());
             Assert.assertTrue(valueFile.exists());
             Assert.assertEquals(1 /* version file */ + 2*(i+1), getStoreDir(TEST_STORE).list().length);
+            Assert.assertEquals("key" + i, keyValueStore.decryptFileAsString(keyFile, SalesforceSDKManager.getEncryptionKey()));
+            Assert.assertEquals("value" + i, keyValueStore.decryptFileAsString(valueFile, SalesforceSDKManager.getEncryptionKey()));
         }
     }
 
@@ -528,14 +530,32 @@ public class KeyValueEncryptedFileStoreTest {
         // Populate store
         keyValueStore.saveValue("key1", "value1");
         keyValueStore.saveValue("key2", "value2");
-        // Look at the raw content of files
-        File[] files = keyValueStore.getStoreDir().listFiles();
-        Assert.assertEquals("Wrong number of files", 5 /* 2 keys, 2 values, 1 version*/, files.length);
-        String file1raw = streamToString(new FileInputStream(files[0]));
-        String file2raw = streamToString(new FileInputStream(files[1]));
+
+        // Look at the raw content of value files
+        File[] valueFiles = keyValueStore.getStoreDir().listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File file, String s) {
+                return s.endsWith(".value");
+            }
+        });
+        Assert.assertEquals("Wrong number of files", 2, valueFiles.length);
+
         // Make sure the actual value can't be found
-        Assert.assertFalse("File should have been encrypted", file1raw.contains("value"));
-        Assert.assertFalse("File should have been encrypted", file2raw.contains("value"));
+        Assert.assertFalse("File should have been encrypted", streamToString(new FileInputStream(valueFiles[0])).contains("value"));
+        Assert.assertFalse("File should have been encrypted", streamToString(new FileInputStream(valueFiles[1])).contains("value"));
+
+        // Look at the raw content of key files
+        File[] keyFiles = keyValueStore.getStoreDir().listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File file, String s) {
+                return s.endsWith(".key");
+            }
+        });
+        Assert.assertEquals("Wrong number of files", 2, keyFiles.length);
+
+        // Make sure the actual key can't be found
+        Assert.assertFalse("File should have been encrypted", streamToString(new FileInputStream(keyFiles[0])).contains("key"));
+        Assert.assertFalse("File should have been encrypted", streamToString(new FileInputStream(keyFiles[1])).contains("key"));
     }
 
     /** Test changing encryption key */
@@ -547,10 +567,15 @@ public class KeyValueEncryptedFileStoreTest {
         // Check store
         Assert.assertEquals("Wrong count", 2, keyValueStore.count());
         Assert.assertEquals("Wrong value for key1", "value1", keyValueStore.getValue("key1"));
-        Assert.assertEquals("Wrong value for key1", "value2", keyValueStore.getValue("key2"));
+        Assert.assertEquals("Wrong value for key2", "value2", keyValueStore.getValue("key2"));
         // Getting raw content of files
-        File[] files = keyValueStore.getStoreDir().listFiles();
-        Assert.assertEquals("Wrong number of files", 5 /* 2 keys, 2 values, 1 version*/, files.length);
+        File[] files = keyValueStore.getStoreDir().listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File file, String s) {
+                return s.endsWith(".value");
+            }
+        });
+        Assert.assertEquals("Wrong number of files", 2, files.length);
         String file1raw = streamToString(new FileInputStream(files[0]));
         String file2raw = streamToString(new FileInputStream(files[1]));
         // Generate new key
@@ -562,7 +587,7 @@ public class KeyValueEncryptedFileStoreTest {
         // Make sure we can still read all the values from the store
         Assert.assertEquals("Wrong count", 2, keyValueStore.count());
         Assert.assertEquals("Wrong value for key1", "value1", keyValueStore.getValue("key1"));
-        Assert.assertEquals("Wrong value for key1", "value2", keyValueStore.getValue("key2"));
+        Assert.assertEquals("Wrong value for key2", "value2", keyValueStore.getValue("key2"));
         // Getting raw content of files
         String file1rawAfter = streamToString(new FileInputStream(files[0]));
         String file2rawAfter = streamToString(new FileInputStream(files[1]));
@@ -581,9 +606,100 @@ public class KeyValueEncryptedFileStoreTest {
         Assert.assertEquals("Code block was not retrieved correctly.", minifiedBlock, keyValueStore.getValue("js2"));
     }
 
+    /** Test save/get/delete/count with v1 store */
+    @Test
+    public void testSaveGetDeleteCountOnV1Store() throws IOException {
+        keyValueStore = turnIntoV1Store(keyValueStore);
+
+        // Saving values
+        keyValueStore.saveValue("key1", "value1");
+        keyValueStore.saveStream("key2", stringToStream("value2"));
+        keyValueStore.saveValue("key3", "value3");
+        keyValueStore.saveStream("key4", stringToStream("value4"));
+
+        // Getting values back
+        Assert.assertEquals("value1", streamToString(keyValueStore.getStream("key1")));
+        Assert.assertEquals("value2", keyValueStore.getValue("key2"));
+        Assert.assertEquals("value3", keyValueStore.getValue("key3"));
+        Assert.assertEquals("value4", streamToString(keyValueStore.getStream("key4")));
+
+        // Checking count
+        Assert.assertEquals(4, keyValueStore.count());
+
+        // Checking files
+        Assert.assertEquals(4, getStoreDir(TEST_STORE).list().length);
+        File value1 = new File(getStoreDir(TEST_STORE), SalesforceKeyGenerator.getSHA256Hash("key1"));
+        File value2 = new File(getStoreDir(TEST_STORE), SalesforceKeyGenerator.getSHA256Hash("key2"));
+        File value3 = new File(getStoreDir(TEST_STORE), SalesforceKeyGenerator.getSHA256Hash("key3"));
+        File value4 = new File(getStoreDir(TEST_STORE), SalesforceKeyGenerator.getSHA256Hash("key4"));
+        Assert.assertTrue(value1.exists());
+        Assert.assertTrue(value2.exists());
+        Assert.assertTrue(value3.exists());
+        Assert.assertTrue(value4.exists());
+        Assert.assertEquals("value1", keyValueStore.decryptFileAsString(value1, SalesforceSDKManager.getEncryptionKey()));
+        Assert.assertEquals("value2", keyValueStore.decryptFileAsString(value2, SalesforceSDKManager.getEncryptionKey()));
+        Assert.assertEquals("value3", keyValueStore.decryptFileAsString(value3, SalesforceSDKManager.getEncryptionKey()));
+        Assert.assertEquals("value4", keyValueStore.decryptFileAsString(value4, SalesforceSDKManager.getEncryptionKey()));
+
+        // Deleting one
+        keyValueStore.deleteValue("key2");
+        Assert.assertNull(keyValueStore.getValue("key2"));
+        Assert.assertNull(keyValueStore.getStream("key2"));
+
+        // Checking count
+        Assert.assertEquals(3, keyValueStore.count());
+
+        // Checking files
+        Assert.assertEquals(3, getStoreDir(TEST_STORE).list().length);
+        Assert.assertFalse(value2.exists());
+
+        // Deleting all
+        keyValueStore.deleteAll();
+        Assert.assertNull(keyValueStore.getValue("key1"));
+        Assert.assertNull(keyValueStore.getStream("key1"));
+
+        // Checking count
+        Assert.assertEquals(0, keyValueStore.count());
+
+        // Checking files
+        Assert.assertEquals(0, getStoreDir(TEST_STORE).list().length);
+        Assert.assertFalse(value1.exists());
+        Assert.assertFalse(value2.exists());
+        Assert.assertFalse(value3.exists());
+        Assert.assertFalse(value4.exists());
+    }
+
+    /** Test keySet() with v1 store - should throw exception */
+    @Test
+    public void testKeySetOnV1Store() throws FileNotFoundException {
+        keyValueStore = turnIntoV1Store(keyValueStore);
+        try {
+            keyValueStore.keySet();
+            Assert.fail("Exception was expected");
+        } catch (UnsupportedOperationException e) {
+            Assert.assertTrue(e.getMessage().contains("keySet() not supported on v1 stores"));
+        }
+    }
+
     //
     // Helper methods
     //
+    private KeyValueEncryptedFileStore turnIntoV1Store(KeyValueEncryptedFileStore store) {
+        if (!store.isEmpty()) {
+            throw new RuntimeException("turnIntoV1Store() should be called on empty store");
+        }
+        // Delete version file (they did not exist in v1)
+        new File(store.getStoreDir(), "version").delete();
+
+        KeyValueEncryptedFileStore storerV1 = new KeyValueEncryptedFileStore(
+            context, store.getStoreName(), SalesforceSDKManager.getEncryptionKey());
+
+        Assert.assertEquals(1, keyValueStore.readVersion());
+        Assert.assertEquals("Directory should be empty", 0, keyValueStore.getStoreDir().list().length);
+
+        return storerV1;
+    }
+
     private File getStoreDir(String storeName) {
         return new File(context.getApplicationInfo().dataDir + "/keyvaluestores", storeName);
     }

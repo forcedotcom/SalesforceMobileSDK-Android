@@ -161,7 +161,7 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
             return false;
         }
         try {
-            encryptStringToFile(getKeyFile(key), key, encryptionKey);
+            if (kvVersion >= 2) encryptStringToFile(getKeyFile(key), key, encryptionKey);
             encryptStringToFile(getValueFile(key), value, encryptionKey);
             return true;
         } catch (Exception e) {
@@ -188,7 +188,7 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
             return false;
         }
         try {
-            encryptStringToFile(getKeyFile(key), key, encryptionKey);
+            if (kvVersion >=2) encryptStringToFile(getKeyFile(key), key, encryptionKey);
             encryptStreamToFile(getValueFile(key), stream, encryptionKey);
             return true;
         } catch (Exception e) {
@@ -256,7 +256,8 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
         if (!isKeyValid(key, "deleteValue")) {
             return false;
         }
-        return getKeyFile(key).delete() && getValueFile(key).delete(); // XXX What if only one succeeds?
+        if (kvVersion >= 2)  getKeyFile(key).delete();
+        return getValueFile(key).delete();
     }
 
     /** Deletes all stored values. */
@@ -277,12 +278,12 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
 
     /**
      * Get all keys.
-     * NB: will return null if values were inserted with SDK 9.0 or if an error occurs reading a key
+     * NB: will throw UnsupportedOperationException for a v1 store
      */
     @Override
-    public Set<String> keySet() {
-        if (kvVersion < 2) {
-            return null;
+    public Set<String> keySet()  {
+        if (kvVersion == 1) {
+            throw new UnsupportedOperationException("keySet() not supported on v1 stores");
         }
 
         HashSet<String> keys = new HashSet<>();
