@@ -166,10 +166,9 @@ public class KeyValueStoreInspectorActivity extends Activity {
         }
 
         // Return all key/value pairs were key matches typedKey
-        // if v2 kv store AND typedKey starts or ends with *
-        if (currentStore.getStoreVersion() == 2 && (typedKey.startsWith("*") || typedKey.endsWith("*"))) {
-
-            String[] allKeys = currentStore.keySet().toArray(new String[0]);
+        // if v2 kv store AND typedKey contains a *
+        if (currentStore.getStoreVersion() == 2 && typedKey.contains("*")) {
+            String[] allKeys = currentStore.keySet().toArray(new String[0]); 
             Arrays.sort(allKeys);
 
             for (String key : allKeys) {
@@ -197,14 +196,8 @@ public class KeyValueStoreInspectorActivity extends Activity {
     }
 
     private boolean matches(String typedKey, String key) {
-        if (typedKey.equals("*")) {
-            return true;
-        } else if(typedKey.startsWith("*") && typedKey.endsWith("*")) {
-            return key.contains(typedKey.substring(1, typedKey.length()-1));
-        } else if (typedKey.startsWith("*")) {
-            return key.endsWith(typedKey.substring(1));
-        } else if (typedKey.endsWith("*")) {
-            return key.startsWith(typedKey.substring(0, typedKey.length()-1));
+        if (typedKey.contains("*")) {
+            return key.matches(typedKey.replaceAll("\\*", ".*"));
         } else {
             return key.equals(typedKey);
         }
