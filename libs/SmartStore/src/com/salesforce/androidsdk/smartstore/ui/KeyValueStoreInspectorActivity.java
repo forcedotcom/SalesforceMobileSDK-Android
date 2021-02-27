@@ -53,7 +53,9 @@ import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.KeyValueEncryptedFileStore;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 public class KeyValueStoreInspectorActivity extends Activity {
     // Keys for extras bundle
@@ -155,17 +157,32 @@ public class KeyValueStoreInspectorActivity extends Activity {
     }
 
     public void onGetValueClick(View v) {
-        String key = keyInput.getText().toString();
+        String typedKey = keyInput.getText().toString();
         setCurrentStore(storesDropdown.getText().toString());
-        String value = currentStore.getValue(key);
+        // v1 kv store: we simply lookup the given key
+        if (currentStore.getStoreVersion() == 1) {
+            String value = currentStore.getValue(typedKey);
 
-        if (value == null) {
-            new AlertDialog.Builder(this).setTitle(ERROR_DIALOG_TITLE)
+            if (value == null) {
+                new AlertDialog.Builder(this).setTitle(ERROR_DIALOG_TITLE)
                     .setMessage(ERROR_DIALOG_MESSAGE).show();
-        } else {
-            keyValueList.add(0, new KeyValuePair(key, value));
-            listAdapter.notifyDataSetChanged();
-            keyInput.setText("");
+            } else {
+                keyValueList.add(0, new KeyValuePair(typedKey, value));
+                listAdapter.notifyDataSetChanged();
+                keyInput.setText("");
+            }
+        }
+        // v2 kv store: we return all key/value where key contains the typed text
+        else {
+            keyValueList.clear();
+            String[] allKeys = currentStore.keySet().toArray(new String[0]);
+            Arrays.sort(allKeys);
+            for (String key : allKeys) {
+                if (key.contains(typedKey)) {
+                    keyValueList.add(new KeyValuePair(key, currentStore.getValue(key)));
+                    listAdapter.notifyDataSetChanged();
+                }
+            }
         }
     }
 
