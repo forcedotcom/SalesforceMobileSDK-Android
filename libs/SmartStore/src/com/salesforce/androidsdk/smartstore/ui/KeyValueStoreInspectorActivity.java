@@ -159,30 +159,54 @@ public class KeyValueStoreInspectorActivity extends Activity {
     public void onGetValueClick(View v) {
         String typedKey = keyInput.getText().toString();
         setCurrentStore(storesDropdown.getText().toString());
-        // v1 kv store: we simply lookup the given key
-        if (currentStore.getStoreVersion() == 1) {
-            String value = currentStore.getValue(typedKey);
+        keyValueList.clear();
 
-            if (value == null) {
-                new AlertDialog.Builder(this).setTitle(ERROR_DIALOG_TITLE)
-                    .setMessage(ERROR_DIALOG_MESSAGE).show();
-            } else {
-                keyValueList.add(0, new KeyValuePair(typedKey, value));
-                listAdapter.notifyDataSetChanged();
-                keyInput.setText("");
-            }
+        if (typedKey.length() == 0) {
+            return;
         }
-        // v2 kv store: we return all key/value where key contains the typed text
-        else {
-            keyValueList.clear();
+
+        // Return all key/value pairs were key matches typedKey
+        // if v2 kv store AND typedKey starts or ends with *
+        if (currentStore.getStoreVersion() == 2 && (typedKey.startsWith("*") || typedKey.endsWith("*"))) {
+
             String[] allKeys = currentStore.keySet().toArray(new String[0]);
             Arrays.sort(allKeys);
+
             for (String key : allKeys) {
-                if (key.contains(typedKey)) {
+                if (matches(typedKey, key)) {
                     keyValueList.add(new KeyValuePair(key, currentStore.getValue(key)));
-                    listAdapter.notifyDataSetChanged();
                 }
             }
+        }
+        // Otherwise simply lookup typeKey
+        else {
+            String value = currentStore.getValue(typedKey);
+
+            if (value != null) {
+                keyValueList.add(new KeyValuePair(typedKey, value));
+            }
+        }
+
+        // Show alert if nothing matched
+        if (keyValueList.size() == 0) {
+            new AlertDialog.Builder(this).setTitle(ERROR_DIALOG_TITLE)
+                .setMessage(ERROR_DIALOG_MESSAGE).show();
+        } else {
+            listAdapter.notifyDataSetChanged();
+        }
+    }
+
+    private boolean matches(String typedKey, String key) {
+        if (typedKey.equals("*")) {
+            return true;
+        } else if(typedKey.startsWith("*") && typedKey.endsWith("*")) {
+            return key.contains(typedKey.substring(1, typedKey.length()-1));
+        } else if (typedKey.startsWith("*")) {
+            return key.endsWith(typedKey.substring(1));
+        } else if (typedKey.endsWith("*")) {
+            return key.startsWith(typedKey.substring(0, typedKey.length()-1));
+        } else {
+            return key.equals(typedKey);
         }
     }
 

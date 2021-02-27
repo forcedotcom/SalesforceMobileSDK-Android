@@ -23,5 +23,5 @@
 
     <!--       KeyValueStore Inspector       -->
     <string name="sf__inspector_key">Key</string>
-    <string name="sf__inspector_get_value_button">Get Value</string>
+    <string name="sf__inspector_get_value_button">Get Value(s)</string>
 </resources>
