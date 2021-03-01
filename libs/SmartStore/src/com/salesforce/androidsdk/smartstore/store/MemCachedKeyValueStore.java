@@ -33,6 +33,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
 
 /**
  * Key value store that keeps recently accessed values in a in-memory lru cache for faster access
@@ -96,6 +97,11 @@ public class MemCachedKeyValueStore implements KeyValueStore {
     public void deleteAll() {
         memCache.evictAll();
         keyValueStore.deleteAll();
+    }
+
+    @Override
+    public Set<String> keySet() {
+        return keyValueStore.keySet();
     }
 
     @Override

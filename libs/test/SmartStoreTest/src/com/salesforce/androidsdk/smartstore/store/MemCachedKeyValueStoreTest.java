@@ -46,7 +46,8 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class MemCachedKeyValueStoreTest {
     static final String TEST_STORE = "TEST_STORE";
-    static final int NUM_ENTRIES = 100;
+    static final int NUM_ENTRIES = 25;
+    static final int CACHE_SIZE = 10;
 
     private KeyValueEncryptedFileStore store;
     private MemCachedKeyValueStore memCachedStore;
@@ -69,7 +70,7 @@ public class MemCachedKeyValueStoreTest {
         
         SmartStoreSDKManager.initNative(context, null);
         store = new KeyValueEncryptedFileStore(context, TEST_STORE, SalesforceSDKManager.getEncryptionKey());
-        memCachedStore = new MemCachedKeyValueStore(store, NUM_ENTRIES);
+        memCachedStore = new MemCachedKeyValueStore(store, CACHE_SIZE);
     }
 
     @After
@@ -277,6 +278,28 @@ public class MemCachedKeyValueStoreTest {
         Assert.assertEquals(codeBlock, streamToString(memCachedStore.getStream("js2")));
     }
 
+    /** Test calling keySet() after saving and deleting values */
+    @Test
+    public void testSaveDeleteKeySet() {
+        Assert.assertTrue(memCachedStore.keySet().isEmpty());
+        for (int i = 0; i < NUM_ENTRIES; i++) {
+            String key = "key" + i;
+            String value = "value" + i;
+            Assert.assertEquals(i, memCachedStore.keySet().size());
+            Assert.assertFalse(memCachedStore.keySet().contains(key));
+            memCachedStore.saveValue(key, value);
+            Assert.assertTrue(memCachedStore.keySet().contains(key));
+            Assert.assertEquals(i+1, memCachedStore.keySet().size());
+        }
+        for (int i = 0; i < NUM_ENTRIES; i++) {
+            String key = "key" + i;
+            Assert.assertEquals(NUM_ENTRIES - i, memCachedStore.keySet().size());
+            Assert.assertTrue(memCachedStore.keySet().contains(key));
+            memCachedStore.deleteValue(key);
+            Assert.assertFalse(memCachedStore.keySet().contains(key));
+            Assert.assertEquals(NUM_ENTRIES - (i+1), memCachedStore.keySet().size());
+        }
+    }
 
     //
     // Helper methods
