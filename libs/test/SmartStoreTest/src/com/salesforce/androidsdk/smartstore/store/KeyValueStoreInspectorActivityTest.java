@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.smartstore.store;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.replaceText;
+import static androidx.test.espresso.assertion.ViewAssertions.doesNotExist;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
@@ -62,8 +63,10 @@ public class KeyValueStoreInspectorActivityTest {
     private final String STORE_2 = "store2";
     private final String KEY_1 = "firstKey";
     private final String KEY_2 = "secondKey";
+    private final String KEY_3 = "keyThree";
     private final String VALUE_1 = "this is a value in ";
     private final String VALUE_2 = "this is a different value in ";
+    private final String VALUE_3 = "this is a third value in ";
     private final String GLOBAL_STORE_TEXT = KeyValueStoreInspectorActivity.GLOBAL_STORE;
 
     @Rule
@@ -90,7 +93,7 @@ public class KeyValueStoreInspectorActivityTest {
      * Test single KeyValueEncryptedFileStore
      */
     @Test
-    public void testSingeStore() {
+    public void testSingleStore() {
         createKeyValueStore(STORE_1);
         keyValueStoreInspectorActivityTestRule.launchActivity(new Intent());
         Assert.assertEquals("Wrong Store name shown.",
@@ -98,10 +101,10 @@ public class KeyValueStoreInspectorActivityTest {
         Assert.assertTrue("Get Value Button should be enabled.", isGetValueButtonEnabled());
         writeKey(KEY_1);
         tapGetValueButton();
-        checkResults(KEY_1, VALUE_1 + STORE_1);
+        checkKeyValuePairShown(KEY_1, VALUE_1 + STORE_1);
         writeKey(KEY_2);
         tapGetValueButton();
-        checkResults(KEY_2, VALUE_2 + STORE_1);
+        checkKeyValuePairShown(KEY_2, VALUE_2 + STORE_1);
     }
 
     /**
@@ -119,7 +122,7 @@ public class KeyValueStoreInspectorActivityTest {
                 STORE_2 + GLOBAL_STORE_TEXT, getCurrentStoreName());
         writeKey(KEY_1);
         tapGetValueButton();
-        checkResults(KEY_1, VALUE_1 + STORE_2);
+        checkKeyValuePairShown(KEY_1, VALUE_1 + STORE_2);
     }
 
     /**
@@ -134,10 +137,112 @@ public class KeyValueStoreInspectorActivityTest {
         checkForKeyNotFoundDialog();
     }
 
+    /**
+     * Test * query
+     */
+    @Test
+    public void testStarQuery() {
+        createKeyValueStore(STORE_1);
+        keyValueStoreInspectorActivityTestRule.launchActivity(new Intent());
+        writeKey("*");
+        tapGetValueButton();
+        checkKeyValuePairShown(KEY_1, VALUE_1 + STORE_1);
+        checkKeyValuePairShown(KEY_2, VALUE_2 + STORE_1);
+        checkKeyValuePairShown(KEY_3, VALUE_3 + STORE_1);
+    }
+
+    /**
+     * Test query ending with * matching one
+     */
+    @Test
+    public void testQueryEndingWithStarMatchingOne() {
+        createKeyValueStore(STORE_1);
+        keyValueStoreInspectorActivityTestRule.launchActivity(new Intent());
+        writeKey("f*");
+        tapGetValueButton();
+        checkKeyValuePairShown(KEY_1, VALUE_1 + STORE_1);
+        checkKeyValuePairNotShown(KEY_2, VALUE_2 + STORE_1);
+        checkKeyValuePairNotShown(KEY_3, VALUE_3 + STORE_1);
+    }
+
+    /**
+     * Test query ending with * matching none
+     */
+    @Test
+    public void testQueryEndingWithStarMatchingNone() {
+        createKeyValueStore(STORE_1);
+        keyValueStoreInspectorActivityTestRule.launchActivity(new Intent());
+        writeKey("x*");
+        tapGetValueButton();
+        checkForKeyNotFoundDialog();
+        checkKeyValuePairNotShown(KEY_1, VALUE_1 + STORE_1);
+        checkKeyValuePairNotShown(KEY_2, VALUE_2 + STORE_1);
+        checkKeyValuePairNotShown(KEY_3, VALUE_3 + STORE_1);
+    }
+
+    /**
+     * Test query starting with * matching two
+     */
+    @Test
+    public void testQueryStartingWithStarMatchingTwo() {
+        createKeyValueStore(STORE_1);
+        keyValueStoreInspectorActivityTestRule.launchActivity(new Intent());
+        writeKey("*Key");
+        tapGetValueButton();
+        checkKeyValuePairShown(KEY_1, VALUE_1 + STORE_1);
+        checkKeyValuePairShown(KEY_2, VALUE_2 + STORE_1);
+        checkKeyValuePairNotShown(KEY_3, VALUE_3 + STORE_1);
+    }
+
+    /**
+     * Test query ending with * matching two
+     */
+    @Test
+    public void testQueryEndingWithStarMatchingTwo() {
+        createKeyValueStore(STORE_1);
+        keyValueStoreInspectorActivityTestRule.launchActivity(new Intent());
+        writeKey("*x");
+        tapGetValueButton();
+        checkForKeyNotFoundDialog();
+        checkKeyValuePairNotShown(KEY_1, VALUE_1 + STORE_1);
+        checkKeyValuePairNotShown(KEY_2, VALUE_2 + STORE_1);
+        checkKeyValuePairNotShown(KEY_3, VALUE_3 + STORE_1);
+    }
+
+    /**
+     * Test query starting and ending with * matching two
+     */
+    @Test
+    public void testQueryStartingAndEndingWithStarMatchingTwo() {
+        createKeyValueStore(STORE_1);
+        keyValueStoreInspectorActivityTestRule.launchActivity(new Intent());
+        writeKey("*r*");
+        tapGetValueButton();
+        checkKeyValuePairShown(KEY_1, VALUE_1 + STORE_1);
+        checkKeyValuePairNotShown(KEY_2, VALUE_2 + STORE_1);
+        checkKeyValuePairShown(KEY_3, VALUE_3 + STORE_1);
+    }
+
+    /**
+     * Test query starting and ending with * matching none
+     */
+    @Test
+    public void testQueryStartingAndEndingWithStarMatchingNone() {
+        createKeyValueStore(STORE_1);
+        keyValueStoreInspectorActivityTestRule.launchActivity(new Intent());
+        writeKey("*zz*");
+        tapGetValueButton();
+        checkForKeyNotFoundDialog();
+        checkKeyValuePairNotShown(KEY_1, VALUE_1 + STORE_1);
+        checkKeyValuePairNotShown(KEY_2, VALUE_2 + STORE_1);
+        checkKeyValuePairNotShown(KEY_3, VALUE_3 + STORE_1);
+    }
+
     private void createKeyValueStore(String storeName) {
         KeyValueEncryptedFileStore store = SmartStoreSDKManager.getInstance().getGlobalKeyValueStore(storeName);
         store.saveValue(KEY_1, VALUE_1 + storeName);
         store.saveValue(KEY_2, VALUE_2 + storeName);
+        store.saveValue(KEY_3, VALUE_3 + storeName);
     }
 
     private String getCurrentStoreName() {
@@ -160,9 +265,14 @@ public class KeyValueStoreInspectorActivityTest {
         onView(withId(R.id.sf__inspector_get_value_button)).perform(click());
     }
 
-    private void checkResults(String key, String value) {
+    private void checkKeyValuePairShown(String key, String value) {
         onView(allOf(withId(R.id.sf__inspector_key), withText(key))).check(matches(isDisplayed()));
         onView(allOf(withId(R.id.sf__inspector_value), withText(value))).check(matches(isDisplayed()));
+    }
+
+    private void checkKeyValuePairNotShown(String key, String value) {
+        onView(allOf(withId(R.id.sf__inspector_key), withText(key))).check(doesNotExist());
+        onView(allOf(withId(R.id.sf__inspector_value), withText(value))).check(doesNotExist());
     }
 
     private void changeStore(String newStore) {

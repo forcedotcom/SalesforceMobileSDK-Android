@@ -44,7 +44,7 @@
             android:layout_weight="1"
             android:layout_height="match_parent"
             android:layout_marginBottom="0dp"
-            android:hint="@string/sf__inspector_key"
+            android:hint="@string/sf__inspector_key_hint"
             android:drawableLeft="@drawable/sf__inspector_key_icon"
             android:drawablePadding="10dp"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
