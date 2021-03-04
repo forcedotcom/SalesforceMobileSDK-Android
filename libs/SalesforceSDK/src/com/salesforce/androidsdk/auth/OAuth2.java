@@ -98,7 +98,7 @@ public class OAuth2 {
     private static final String REDIRECT_URI = "redirect_uri";
     private static final String DEVICE_ID = "device_id";
     private static final String SCREEN_LOCK = "screen_lock";
-    private static final String TOKEN = "token";
+    private static final String HYBRID_TOKEN = "hybrid_token";
     private static final String USERNAME = "username";
     private static final String EMAIL = "email";
     private static final String FIRST_NAME = "first_name";
@@ -157,7 +157,7 @@ public class OAuth2 {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
         sb.append(OAUTH_AUTH_PATH).append(getBrandedLoginPath());
         sb.append(OAUTH_DISPLAY_PARAM).append(displayType == null ? TOUCH : displayType);
-        sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(TOKEN);
+        sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(HYBRID_TOKEN);
         sb.append(AND).append(CLIENT_ID).append(EQUAL).append(Uri.encode(clientId));
         if (scopes != null && scopes.length > 0) {
             sb.append(AND).append(SCOPE).append(EQUAL).append(Uri.encode(computeScopeParameter(scopes)));
