@@ -130,7 +130,7 @@ public class SmartSqlHelper  {
 				}
 				// {soupName:path}
 				else {
-					String columnName = getColumnNameForPathForSmartSql(db, soupName, path, position);
+					String columnName = getColumnNameForPathForSmartSql(db, soupName, path, position, !useExternalStorage);
 					matcher.appendReplacement(sql, columnName.replace("$", "\\$") /* treat any $ as litteral */);
 				}
 			} else if (parts.length > 2) {
@@ -151,13 +151,21 @@ public class SmartSqlHelper  {
 		return sqlStr;
 	}
 	
-	private String getColumnNameForPathForSmartSql(SQLiteDatabase db, String soupName, String path, int position) {
+	private String getColumnNameForPathForSmartSql(SQLiteDatabase db, String soupName, String path, int position, boolean storedInDb) {
 		String columnName = null;
-		try {
-			columnName = DBHelper.getInstance(db).getColumnNameForPath(db, soupName, path);
-		} catch (SmartStoreException e) {
-			reportSmartSqlError(e.getMessage(), position);
+		boolean indexed = DBHelper.getInstance(db).hasIndexForPath(db, soupName, path);
+
+		if (!indexed && storedInDb) {
+			// Thanks to the json1 extension we can query the data even if it is not indexed (as long as the data is stored in the database)
+			columnName = "json_extract(" + SmartStore.SOUP_COL + ", '$." + path + "')";
+		} else {
+			try {
+				columnName = DBHelper.getInstance(db).getColumnNameForPath(db, soupName, path);
+			} catch (SmartStoreException e) {
+				reportSmartSqlError(e.getMessage(), position);
+			}
 		}
+
 		return columnName;
 	}
 
