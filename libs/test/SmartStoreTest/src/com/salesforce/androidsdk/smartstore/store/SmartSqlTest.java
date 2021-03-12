@@ -194,6 +194,12 @@ public class SmartSqlTest extends SmartStoreTestCase {
 		// XXX join query with json1 will only run if all the json1 columns are qualified by table or alias
 	}
 
+	@Test
+	public void testConvertSmartSqlForNonIndexedColumns() {
+		Assert.assertEquals("select json_extract(soup, '$.education'), json_extract(soup, '$.address.zipcode') from TABLE_1 where json_extract(soup, '$.address.city') = 'San Francisco'",
+			store.convertSmartSql("select {employees:education}, {employees:address.zipcode} from {employees} where {employees:address.city} = 'San Francisco'"));
+	}
+
 	/**
 	 * Test running smart query that does a select count
 	 * @throws JSONException 
@@ -358,6 +364,31 @@ public class SmartSqlTest extends SmartStoreTestCase {
         // Smart sql looking for isManager false
         result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:employeeId} from {employees} where {employees:isManager} = 0 order by {employees:employeeId}", 10), 0);
         JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[\"00020\"],[\"00060\"],[\"00070\"],[\"00310\"],[\"102\"]]"), result);
+	}
+
+	@Test
+	public void testSmartQueryFilteringByNonIndexedField() throws JSONException {
+		JSONObject employee101 = createEmployeeWithJsonString("{\"employeeId\":\"101\",\"address\":{\"city\":\"San Francisco\", \"zipcode\":94105}}");
+		JSONObject employee102 = createEmployeeWithJsonString("{\"employeeId\":\"102\",\"address\":{\"city\":\"New York City\", \"zipcode\":10004}}");
+		JSONObject employee103 = createEmployeeWithJsonString("{\"employeeId\":\"103\",\"address\":{\"city\":\"San Francisco\", \"zipcode\":94106}}");
+		JSONObject employee104 = createEmployeeWithJsonString("{\"employeeId\":\"104\",\"address\":{\"city\":\"New York City\", \"zipcode\":10006}}");
+
+		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:employeeId} from {employees} where {employees:address.city} = 'San Francisco' order by {employees:employeeId}", 10), 0);
+		JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[\"101\"],[\"103\"]]"), result);
+
+		result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:employeeId} from {employees} where {employees:address.zipcode} = 10006", 10), 0);
+		JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[\"104\"]]"), result);
+	}
+
+	@Test
+	public void testSmartQueryReturningNonIndexedField() throws JSONException {
+		JSONObject employee101 = createEmployeeWithJsonString("{\"employeeId\":\"101\",\"address\":{\"city\":\"San Francisco\", \"zipcode\":94105}}");
+		JSONObject employee102 = createEmployeeWithJsonString("{\"employeeId\":\"102\",\"address\":{\"city\":\"New York City\", \"zipcode\":10004}}");
+		JSONObject employee103 = createEmployeeWithJsonString("{\"employeeId\":\"103\",\"address\":{\"city\":\"San Francisco\", \"zipcode\":94106}}");
+		JSONObject employee104 = createEmployeeWithJsonString("{\"employeeId\":\"104\",\"address\":{\"city\":\"New York City\", \"zipcode\":10006}}");
+
+		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:employeeId}, {employees:address.zipcode} from {employees} where {employees:address.city} = 'San Francisco' order by {employees:employeeId}", 10), 0);
+		JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[\"101\", 94105],[\"103\", 94106]]"), result);
 	}
 
 

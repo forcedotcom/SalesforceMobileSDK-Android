@@ -171,6 +171,17 @@ public class SmartSqlExternalStorageTest extends SmartStoreTestCase {
 		}
 	}
 
+	@Test
+	public void testConvertSmartSqlForNonIndexedColumns() {
+    	String smartSql = "select {employees:education}, {employees:address.zipcode} from {employees} where {employees:address.city} = 'San Francisco'";
+		try {
+			store.convertSmartSql(smartSql);
+			Assert.fail("Should have thrown exception for " + smartSql);
+		} catch (SmartSqlException e) {
+			// Expected
+		}
+	}
+
 	/**
 	 * Test running smart query that does a select count
 	 * @throws JSONException

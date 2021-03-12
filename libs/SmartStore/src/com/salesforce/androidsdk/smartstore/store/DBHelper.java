@@ -463,6 +463,7 @@ public class DBHelper {
 
     /**
      * Return column name in soup table that holds the soup projection for path
+	 * @param db
      * @param soupName
      * @param path
      * @return
@@ -476,6 +477,25 @@ public class DBHelper {
         }
         throw new SmartStoreException(String.format("%s does not have an index on %s", soupName, path));
     }
+
+	/**
+	 * Return true if the given path is indexed on the given soup
+	 * @param db
+	 * @param soupName
+	 * @param path
+	 * @return
+	 */
+	public boolean hasIndexForPath(SQLiteDatabase db, String soupName, String path) {
+		IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
+		if (indexSpecs != null) {
+			for (IndexSpec indexSpec : indexSpecs) {
+				if (indexSpec.path.equals(path)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 
     /**
      * Read index specs back from the soup index map table
