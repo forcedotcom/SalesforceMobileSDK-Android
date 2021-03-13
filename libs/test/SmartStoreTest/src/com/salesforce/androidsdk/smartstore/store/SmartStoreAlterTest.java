@@ -602,7 +602,7 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         assertRowCount(1, "lastName", "Doe");
 
         // Making sure there is no index on city yet
-        Assert.assertFalse(store.hasIndexForPath(TEST_SOUP, "adderess.city"));
+        Assert.assertFalse(store.hasIndexForPath(TEST_SOUP, "address.city"));
 
         // Alter soup - add city + street
         IndexSpec[] indexSpecsNew = new IndexSpec[] {new IndexSpec("lastName", SmartStore.Type.string), new IndexSpec("address.city", SmartStore.Type.string), new IndexSpec("address.street", SmartStore.Type.string)};
