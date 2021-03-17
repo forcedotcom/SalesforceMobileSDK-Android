@@ -42,7 +42,7 @@ aliases:
     name: Setup Environment
     command: |
       sudo npm i npm@latest -g
-      sudo npm install -g shelljs@0.8.3
+      sudo npm install -g shelljs@0.8.4
       sudo npm install -g cordova@8.1.2
       sudo npm install -g typescript
       cordova telemetry off
