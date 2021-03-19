@@ -27,15 +27,15 @@
 
 package com.salesforce.androidsdk.mobilesync.target;
 
-import com.salesforce.androidsdk.auth.HttpAccess;
-import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManagerTestCase;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
-
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import java.io.IOException;
+import java.util.Date;
 import okhttp3.Interceptor;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -45,11 +45,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.util.Date;
-
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.SmallTest;
 
 /**
  * Test class for SoqlSyncDownTarget.

@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.mobilesync.config;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManagerTestCase;
 import com.salesforce.androidsdk.mobilesync.target.BatchSyncUpTarget;
@@ -42,22 +41,19 @@ import com.salesforce.androidsdk.mobilesync.target.ParentChildrenSyncUpTarget;
 import com.salesforce.androidsdk.mobilesync.target.RefreshSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.SoqlSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.SoslSyncDownTarget;
-import com.salesforce.androidsdk.mobilesync.target.SyncTarget;
 import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget;
 import com.salesforce.androidsdk.mobilesync.util.ChildrenInfo;
 import com.salesforce.androidsdk.mobilesync.util.ParentInfo;
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
 import com.salesforce.androidsdk.mobilesync.util.SyncState.MergeMode;
-
+import java.util.Arrays;
 import org.json.JSONException;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.util.Arrays;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest

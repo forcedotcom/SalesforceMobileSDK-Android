@@ -53,7 +53,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
     public static final String MAX_BATCH_SIZE = "maxBatchSize";
 
     protected int maxBatchSize;
-	private String query;
+    private String query;
     private String nextRecordsUrl;
 
     /**
