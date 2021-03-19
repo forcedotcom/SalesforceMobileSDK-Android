@@ -6,9 +6,9 @@
       "soupName": "accounts",
       "target": {
         "type":"soql",
-        "query":"SELECT Id, Name, LastModifiedDate FROM Account"
+        "query":"SELECT Id, Name, LastModifiedDate FROM Account",
+        "maxBatchSize": 200
       },
-      "maxBatchSize": 2000,
       "options": {
         "mergeMode":"OVERWRITE"
       }
@@ -135,7 +135,6 @@
         "modificationDateFieldName": "LastModifiedDateX",
         "externalIdFieldName": "ExternalIdX"
       },
-      "maxBatchSize": 25,
       "options": {
         "fieldlist": ["Name", "Description"],
         "mergeMode":"OVERWRITE"

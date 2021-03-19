@@ -42,6 +42,7 @@ import com.salesforce.androidsdk.mobilesync.target.ParentChildrenSyncUpTarget;
 import com.salesforce.androidsdk.mobilesync.target.RefreshSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.SoqlSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.SoslSyncDownTarget;
+import com.salesforce.androidsdk.mobilesync.target.SyncTarget;
 import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget;
 import com.salesforce.androidsdk.mobilesync.util.ChildrenInfo;
 import com.salesforce.androidsdk.mobilesync.util.ParentInfo;
@@ -134,7 +135,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
         SyncState sync = syncManager.getSyncStatus("soqlSyncDown");
         Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, sync.getSoupName());
         checkStatus(sync, SyncState.Type.syncDown, sync.getId(),
-                new SoqlSyncDownTarget("SELECT Id, Name, LastModifiedDate FROM Account"),
+                new SoqlSyncDownTarget(null, null, "SELECT Id, Name, LastModifiedDate FROM Account", 200),
                 SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE),
                 SyncState.Status.NEW, 0);
     }
