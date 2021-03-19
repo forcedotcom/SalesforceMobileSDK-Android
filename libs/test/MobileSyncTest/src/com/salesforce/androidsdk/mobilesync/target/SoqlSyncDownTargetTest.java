@@ -27,9 +27,19 @@
 
 package com.salesforce.androidsdk.mobilesync.target;
 
+import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManagerTestCase;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
 
+import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.rest.RestResponse;
+import java.io.IOException;
+import okhttp3.Interceptor;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -117,6 +127,68 @@ public class SoqlSyncDownTargetTest extends SyncManagerTestCase {
         String soqlExpected = "select Id,LastModifiedDate,FirstName, LastName from Contact order by LastModifiedDate";
         SoqlSyncDownTarget target = new SoqlSyncDownTarget("select FirstName, LastName from Contact");
         Assert.assertEquals("SOQL query should contain Id and LastModifiedDate fields", soqlExpected, target.getQuery());
+    }
+
+    /**
+     * Tests that request does not include batchSize header when no batch size was specified
+     */
+    @Test
+    public void testNoBatchSizeHeaderPresentByDefault() throws IOException, JSONException {
+        SoqlSyncDownTarget target = new SoqlSyncDownTarget("SELECT Name FROM Account WHERE Name = 'James Bond'");
+        InterceptingRestClient interceptingRestClient = new InterceptingRestClient();
+        syncManager.setRestClient(interceptingRestClient);
+        target.startFetch(syncManager,0);
+        Assert.assertNull(interceptingRestClient.lastRequest.getAdditionalHttpHeaders());
+    }
+
+    /**
+     * Tests that request does not include batchSize header when default batch size was specified
+     */
+    @Test
+    public void testNoBatchSizeHeaderPresentWithDefaultBatchSize()
+        throws IOException, JSONException {
+        SoqlSyncDownTarget target = new SoqlSyncDownTarget(null, null, "SELECT Name FROM Account WHERE Name = 'James Bond'", 2000);
+        InterceptingRestClient interceptingRestClient = new InterceptingRestClient();
+        syncManager.setRestClient(interceptingRestClient);
+        target.startFetch(syncManager,0);
+        Assert.assertNull(interceptingRestClient.lastRequest.getAdditionalHttpHeaders());
+    }
+
+    /**
+     * Tests that request does include batchSize header when non-default batch size was specified
+     */
+    @Test
+    public void testBatchSizeHeaderPresentWithNonDefaultBatchSize()
+        throws IOException, JSONException {
+        SoqlSyncDownTarget target = new SoqlSyncDownTarget(null, null, "SELECT Name FROM Account WHERE Name = 'James Bond'", 200);
+        InterceptingRestClient interceptingRestClient = new InterceptingRestClient();
+        syncManager.setRestClient(interceptingRestClient);
+        target.startFetch(syncManager,0);
+        Assert.assertEquals("batchSize=200", interceptingRestClient.lastRequest.getAdditionalHttpHeaders().get("Sforce-Query-Options"));
+    }
+
+
+    class InterceptingRestClient extends RestClient {
+        public RestRequest lastRequest;
+
+        public InterceptingRestClient() {
+            super(restClient.getClientInfo(), null, null, null);
+        }
+
+        @Override
+        public RestResponse sendSync(RestRequest restRequest, Interceptor... interceptors)
+            throws IOException {
+            lastRequest = restRequest;
+            return new RestResponse(null) {
+                @Override
+                public JSONObject asJSONObject() throws JSONException, IOException {
+                    JSONObject response = new JSONObject();
+                    response.put("records", new JSONArray());
+                    response.put("totalSize", 0);
+                    return response;
+                }
+            };
+        }
     }
 
 }
