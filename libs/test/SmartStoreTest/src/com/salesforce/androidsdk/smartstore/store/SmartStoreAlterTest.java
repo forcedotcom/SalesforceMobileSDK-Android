@@ -601,14 +601,8 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         // Find by last name
         assertRowCount(1, "lastName", "Doe");
 
-        // Find by city - error expected - field is not yet indexed
-        try {
-            assertRowCount(1, "address.city", "San Francisco");
-            Assert.fail("Expected smart sql exception");
-        }
-        catch (SmartSqlHelper.SmartSqlException e) {
-            // as expected
-        }
+        // Making sure there is no index on city yet
+        Assert.assertFalse(store.hasIndexForPath(TEST_SOUP, "address.city"));
 
         // Alter soup - add city + street
         IndexSpec[] indexSpecsNew = new IndexSpec[] {new IndexSpec("lastName", SmartStore.Type.string), new IndexSpec("address.city", SmartStore.Type.string), new IndexSpec("address.street", SmartStore.Type.string)};
@@ -619,6 +613,9 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
 
         // Re-index city
         store.reIndexSoup(TEST_SOUP, new String[] {"address.city"}, true);
+
+        // Making sure there is an index on city now
+        Assert.assertTrue(store.hasIndexForPath(TEST_SOUP, "address.city"));
 
         // Find by city
         assertRowCount(1, "address.city", "San Francisco");
