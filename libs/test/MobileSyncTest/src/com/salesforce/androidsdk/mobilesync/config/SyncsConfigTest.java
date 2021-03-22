@@ -131,9 +131,21 @@ public class SyncsConfigTest extends SyncManagerTestCase {
         SyncState sync = syncManager.getSyncStatus("soqlSyncDown");
         Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, sync.getSoupName());
         checkStatus(sync, SyncState.Type.syncDown, sync.getId(),
-                new SoqlSyncDownTarget(null, null, "SELECT Id, Name, LastModifiedDate FROM Account", 200),
+                new SoqlSyncDownTarget(null, null, "SELECT Id, Name, LastModifiedDate FROM Account"),
                 SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE),
                 SyncState.Status.NEW, 0);
+    }
+
+    @Test
+    public void testSoqlSyncDownWithBatchSizeFromConfig() throws JSONException {
+        MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
+
+        SyncState sync = syncManager.getSyncStatus("soqlSyncDownWithBatchSize");
+        Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, sync.getSoupName());
+        checkStatus(sync, SyncState.Type.syncDown, sync.getId(),
+            new SoqlSyncDownTarget(null, null, "SELECT Id, Name, LastModifiedDate FROM Account", 200),
+            SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE),
+            SyncState.Status.NEW, 0);
     }
 
     @Test

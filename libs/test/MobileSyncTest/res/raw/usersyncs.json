@@ -6,6 +6,18 @@
       "soupName": "accounts",
       "target": {
         "type":"soql",
+        "query":"SELECT Id, Name, LastModifiedDate FROM Account"
+      },
+      "options": {
+        "mergeMode":"OVERWRITE"
+      }
+    },
+    {
+      "syncName": "soqlSyncDownWithBatchSize",
+      "syncType": "syncDown",
+      "soupName": "accounts",
+      "target": {
+        "type":"soql",
         "query":"SELECT Id, Name, LastModifiedDate FROM Account",
         "maxBatchSize": 200
       },
