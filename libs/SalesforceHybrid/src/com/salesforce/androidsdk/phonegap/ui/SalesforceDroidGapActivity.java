@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.phonegap.ui;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.view.KeyEvent;
 import android.view.View;
 import android.webkit.CookieManager;
@@ -374,7 +373,6 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
                                      * refreshed, to ensure we use the new access token.
                                      */
                                     SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
-                                    setSidCookies();
                                     loadVFPingPage();
                                     getAuthCredentials(callbackContext);
                                 }
@@ -455,7 +453,6 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
                          */
                         try {
                             SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
-                            setSidCookies();
                             loadVFPingPage();
                             final String frontDoorUrl = getFrontDoorUrl(url, BootConfig.isAbsoluteUrl(url));
                             loadUrl(frontDoorUrl);
@@ -600,40 +597,6 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
      */
     public CordovaWebView getAppView() {
         return appView;
-    }
-
-    /**
-     * Set cookies on cookie manager.
-     */
-    private void setSidCookies() {
-        SalesforceHybridLogger.i(TAG, "setSidCookies called");
-        CookieManager cookieMgr = CookieManager.getInstance();
-        cookieMgr.setAcceptCookie(true);  // Required to set additional cookies that the auth process will return.
-        SalesforceSDKManager.getInstance().removeSessionCookies();
-        SystemClock.sleep(250); // removeSessionCookies kicks out a thread - let it finish
-        String accessToken = client.getAuthToken();
-        addSidCookieForInstance(cookieMgr, accessToken);
-        SalesforceSDKManager.getInstance().syncCookies();
-    }
-
-    private void addSidCookieForInstance(CookieManager cookieMgr, String sid) {
-        final ClientInfo clientInfo = SalesforceDroidGapActivity.this.client.getClientInfo();
-        URI instanceUrl = null;
-        if (clientInfo != null) {
-            instanceUrl = clientInfo.getInstanceUrl();
-        }
-        String host = null;
-        if (instanceUrl != null) {
-            host = instanceUrl.getHost();
-        }
-        if (host != null) {
-            addSidCookieForDomain(cookieMgr, host, sid);
-        }
-    }
-
-    private void addSidCookieForDomain(CookieManager cookieMgr, String domain, String sid) {
-        String cookieStr = "sid=" + sid;
-        cookieMgr.setCookie(domain, cookieStr);
     }
 
     @Override
