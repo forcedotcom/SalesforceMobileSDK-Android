@@ -29,11 +29,7 @@ package com.salesforce.androidsdk.phonegap.ui;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.KeyEvent;
-import android.view.View;
-import android.webkit.CookieManager;
 import android.webkit.URLUtil;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess.NoNetworkException;
@@ -46,7 +42,6 @@ import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
-import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.ui.SalesforceActivityDelegate;
@@ -61,8 +56,6 @@ import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaWebViewEngine;
 import org.apache.cordova.CordovaWebViewImpl;
 import org.json.JSONObject;
-
-import java.net.URI;
 
 import okhttp3.HttpUrl;
 
@@ -373,7 +366,6 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
                                      * refreshed, to ensure we use the new access token.
                                      */
                                     SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
-                                    loadVFPingPage();
                                     getAuthCredentials(callbackContext);
                                 }
                             });
@@ -453,7 +445,6 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
                          */
                         try {
                             SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
-                            loadVFPingPage();
                             final String frontDoorUrl = getFrontDoorUrl(url, BootConfig.isAbsoluteUrl(url));
                             loadUrl(frontDoorUrl);
                         } catch (AccountInfoNotFoundException e) {
@@ -474,43 +465,6 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
                 }
             }
         });
-    }
-
-    /**
-     * Loads the VF ping page and sets cookies.
-     */
-    private void loadVFPingPage() {
-        if (!bootconfig.isLocal()) {
-            final ClientInfo clientInfo = SalesforceDroidGapActivity.this.client.getClientInfo();
-            URI instanceUrl = null;
-            if (clientInfo != null) {
-                instanceUrl = clientInfo.getInstanceUrl();
-            }
-            setVFCookies(instanceUrl);
-        }
-    }
-
-    /**
-     * Sets VF domain cookies by loading the VF ping page on an invisible WebView.
-     *
-     * @param instanceUrl Instance URL.
-     */
-    private static void setVFCookies(URI instanceUrl) {
-        if (instanceUrl != null) {
-            final WebView view = new WebView(SalesforceSDKManager.getInstance().getAppContext());
-            view.setVisibility(View.GONE);
-            view.setWebViewClient(new WebViewClient() {
-
-                @Override
-                public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                    final CookieManager cookieMgr = CookieManager.getInstance();
-                    cookieMgr.setAcceptCookie(true);
-                    SalesforceSDKManager.getInstance().syncCookies();
-                    return true;
-                }
-            });
-            view.loadUrl(instanceUrl.toString() + "/visualforce/session?url=/apexpages/utils/ping.apexp&autoPrefixVFDomain=true");
-        }
     }
 
     /**
