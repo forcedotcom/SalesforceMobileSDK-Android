@@ -115,12 +115,18 @@ public class RestRequest {
     public static final String TYPE = "type";
     public static final String ATTRIBUTES = "attributes";
     public static final String IF_UNMODIFIED_SINCE = "If-Unmodified-Since";
+    public static final String SFORCE_QUERY_OPTIONS = "Sforce-Query-Options";
+    public static final String BATCH_SIZE_OPTION = "batchSize";
+    public static final int MIN_BATCH_SIZE = 200;
+    public static final int MAX_BATCH_SIZE = 2000;
+    public static final int DEFAULT_BATCH_SIZE = 2000;
 
     /**
      * HTTP date format
      */
     public static final DateFormat HTTP_DATE_FORMAT = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
-    static {
+
+	static {
         HTTP_DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
     }
 
@@ -531,17 +537,37 @@ public class RestRequest {
 	/**
 	 * Request to execute the specified SOQL query.
 	 *
-     * @param apiVersion    Salesforce API version.
-     * @param q             SOQL query string.
-     * @return              RestRequest object that requests a SOQL query.
+	 * @param apiVersion    Salesforce API version.
+	 * @param q             SOQL query string.
+	 * @return              RestRequest object that requests a SOQL query.
 	 * @throws UnsupportedEncodingException
-     * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_query.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_query.htm</a>
+	 * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_query.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_query.htm</a>
 	 */
 	public static RestRequest getRequestForQuery(String apiVersion, String q) throws UnsupportedEncodingException {
+		return getRequestForQuery(apiVersion, q, DEFAULT_BATCH_SIZE);
+	}
+
+	/**
+	 * Request to execute the specified SOQL query.
+	 *
+	 * @param apiVersion    Salesforce API version.
+	 * @param q             SOQL query string.
+	 * @param batchSize     Batch size: number between 200 and 2000 (default).
+	 * @return              RestRequest object that requests a SOQL query.
+	 * @throws UnsupportedEncodingException
+	 * @see <a href="http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_query.htm">http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_query.htm</a>
+	 */
+	public static RestRequest getRequestForQuery(String apiVersion, String q, int batchSize) throws UnsupportedEncodingException {
 		StringBuilder path = new StringBuilder(RestAction.QUERY.getPath(apiVersion));
 		path.append("?q=");
 		path.append(URLEncoder.encode(q, UTF_8));
-		return new RestRequest(RestMethod.GET, path.toString());
+		batchSize = Math.max(Math.min(batchSize, MAX_BATCH_SIZE), MIN_BATCH_SIZE);
+		Map<String, String> headers = null;
+		if (batchSize != DEFAULT_BATCH_SIZE) {
+			headers = new HashMap<>();
+			headers.put(SFORCE_QUERY_OPTIONS, BATCH_SIZE_OPTION + "=" + batchSize);
+		}
+		return new RestRequest(RestMethod.GET, path.toString(), headers);
 	}
 
 	/**
