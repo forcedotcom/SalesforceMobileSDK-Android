@@ -361,6 +361,23 @@ public class RestRequestTest {
 	}
 
 	/**
+	 * Test for getRequestForQuery specifying a batch size
+	 * @throws UnsupportedEncodingException
+	 */
+	@Test
+	public void testGetRequestForQueryWithBatchSize() throws UnsupportedEncodingException {
+		RestRequest request500 = RestRequest.getRequestForQuery(TEST_API_VERSION, TEST_QUERY, 500);
+		RestRequest request199 = RestRequest.getRequestForQuery(TEST_API_VERSION, TEST_QUERY, 199);
+		RestRequest request2001 = RestRequest.getRequestForQuery(TEST_API_VERSION, TEST_QUERY, 2001);
+		Assert.assertEquals("Wrong method", RestMethod.GET, request500.getMethod());
+		Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/query?q=" + TEST_QUERY, request500.getPath());
+		Assert.assertNull("Wrong request entity", request500.getRequestBody());
+		Assert.assertEquals("batchSize=500", request500.getAdditionalHttpHeaders().get(RestRequest.SFORCE_QUERY_OPTIONS));
+		Assert.assertEquals("batchSize=200", request199.getAdditionalHttpHeaders().get(RestRequest.SFORCE_QUERY_OPTIONS));
+		Assert.assertNull("Wrong additional headers", request2001.getAdditionalHttpHeaders());
+	}
+
+	/**
 	 * Test for getRequestForSearch
 	 * @throws UnsupportedEncodingException 
 	 */

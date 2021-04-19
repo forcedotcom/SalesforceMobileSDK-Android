@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.mobilesync.config;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManagerTestCase;
 import com.salesforce.androidsdk.mobilesync.target.BatchSyncUpTarget;
@@ -48,15 +47,13 @@ import com.salesforce.androidsdk.mobilesync.util.ParentInfo;
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
 import com.salesforce.androidsdk.mobilesync.util.SyncState.MergeMode;
-
+import java.util.Arrays;
 import org.json.JSONException;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.util.Arrays;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
@@ -134,9 +131,21 @@ public class SyncsConfigTest extends SyncManagerTestCase {
         SyncState sync = syncManager.getSyncStatus("soqlSyncDown");
         Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, sync.getSoupName());
         checkStatus(sync, SyncState.Type.syncDown, sync.getId(),
-                new SoqlSyncDownTarget("SELECT Id, Name, LastModifiedDate FROM Account"),
+                new SoqlSyncDownTarget(null, null, "SELECT Id, Name, LastModifiedDate FROM Account"),
                 SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE),
                 SyncState.Status.NEW, 0);
+    }
+
+    @Test
+    public void testSoqlSyncDownWithBatchSizeFromConfig() throws JSONException {
+        MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
+
+        SyncState sync = syncManager.getSyncStatus("soqlSyncDownWithBatchSize");
+        Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, sync.getSoupName());
+        checkStatus(sync, SyncState.Type.syncDown, sync.getId(),
+            new SoqlSyncDownTarget(null, null, "SELECT Id, Name, LastModifiedDate FROM Account", 200),
+            SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE),
+            SyncState.Status.NEW, 0);
     }
 
     @Test

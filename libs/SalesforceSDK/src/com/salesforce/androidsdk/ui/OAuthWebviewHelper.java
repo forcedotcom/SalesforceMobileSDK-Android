@@ -44,6 +44,7 @@ import android.security.KeyChainAliasCallback;
 import android.security.KeyChainException;
 import android.text.TextUtils;
 import android.webkit.ClientCertRequest;
+import android.webkit.CookieManager;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -221,7 +222,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     }
 
     public void clearCookies() {
-    	SalesforceSDKManager.getInstance().removeAllCookies();
+        CookieManager.getInstance().removeAllCookies(null);
     }
 
     public void clearView() {
