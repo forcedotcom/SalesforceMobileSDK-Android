@@ -473,7 +473,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
     public void loadLocalStartPage() {
         assert bootconfig.isLocal();
         String startPage = bootconfig.getStartPage();
-        SalesforceHybridLogger.i(TAG, "loadLocalStartPage called - loading: " + startPage);
+        SalesforceHybridLogger.i(TAG, "loadLocalStartPage called - loading!");
         loadUrl("file:///android_asset/www/" + startPage);
         webAppLoaded = true;
     }
@@ -496,7 +496,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
         if (loadThroughFrontDoor) {
             url = getFrontDoorUrl(url, BootConfig.isAbsoluteUrl(url));
         }
-        SalesforceHybridLogger.i(TAG, "loadRemoteStartPage called - loading: " + url);
+        SalesforceHybridLogger.i(TAG, "loadRemoteStartPage called - loading!");
         loadUrl(url);
         webAppLoaded = true;
     }
