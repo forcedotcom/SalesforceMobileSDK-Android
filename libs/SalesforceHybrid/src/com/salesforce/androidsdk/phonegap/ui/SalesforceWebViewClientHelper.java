@@ -34,7 +34,6 @@ import android.text.TextUtils;
 import android.webkit.WebView;
 
 import com.salesforce.androidsdk.config.BootConfig;
-import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 import com.salesforce.androidsdk.util.AuthConfigUtil;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -97,7 +96,6 @@ public class SalesforceWebViewClientHelper {
         // The first URL that's loaded that's not one of the URLs used in the bootstrap process will
         // be considered the "app home URL", which can be loaded directly in the event that the app is offline.
         if (!isReservedUrl(url)) {
-            SalesforceHybridLogger.i(TAG, "Setting '" + url + "' as the home page URL for this app");
             SharedPreferences sp = ctx.getSharedPreferences(SFDC_WEB_VIEW_CLIENT_SETTINGS, Context.MODE_PRIVATE);
             Editor e = sp.edit();
             e.putString(APP_HOME_URL_PROP_KEY, url);
