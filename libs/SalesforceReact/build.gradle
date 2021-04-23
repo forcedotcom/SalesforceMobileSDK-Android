@@ -11,7 +11,8 @@ def useIntlJsc = false
 
 buildscript {
     repositories {
-        jcenter()
+        google()
+        mavenCentral()
     }
 
     dependencies {

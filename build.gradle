@@ -1,7 +1,7 @@
 buildscript {
   repositories {
     google()
-    jcenter()
+    mavenCentral()
   }
 
   dependencies {
@@ -24,6 +24,6 @@ allprojects {
       url("$rootProject.projectDir/libs/SalesforceReact/node_modules/jsc-android/dist")
     }
     google()
-    jcenter()
+    mavenCentral()
   }
 }
