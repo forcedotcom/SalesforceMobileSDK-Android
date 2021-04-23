@@ -2,6 +2,9 @@ buildscript {
   repositories {
     google()
     mavenCentral()
+
+    // FIXME: Keeping this around for now, because some libraries aren't available on 'mavenCentral()'.
+    jcenter()
   }
 
   dependencies {
@@ -25,5 +28,8 @@ allprojects {
     }
     google()
     mavenCentral()
+
+    // FIXME: Keeping this around for now, because some libraries aren't available on 'mavenCentral()'.
+    jcenter()
   }
 }

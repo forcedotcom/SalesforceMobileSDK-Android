@@ -13,6 +13,9 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+
+        // FIXME: Keeping this around for now, because some of ReactNative's dependencies aren't available on 'mavenCentral()'.
+        jcenter()
     }
 }
 
