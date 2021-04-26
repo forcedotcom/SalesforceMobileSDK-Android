@@ -1,6 +1,9 @@
 buildscript {
   repositories {
     google()
+    mavenCentral()
+
+    // FIXME: Keeping this around for now, because some libraries aren't available on 'mavenCentral()'.
     jcenter()
   }
 
@@ -24,6 +27,9 @@ allprojects {
       url("$rootProject.projectDir/libs/SalesforceReact/node_modules/jsc-android/dist")
     }
     google()
+    mavenCentral()
+
+    // FIXME: Keeping this around for now, because some libraries aren't available on 'mavenCentral()'.
     jcenter()
   }
 }
