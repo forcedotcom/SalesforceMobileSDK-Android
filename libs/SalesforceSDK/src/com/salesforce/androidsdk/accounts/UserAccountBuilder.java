@@ -52,6 +52,13 @@ public class UserAccountBuilder {
     private String email;
     private String photoUrl;
     private String thumbnailUrl;
+    private String lightningDomain;
+    private String lightningSid;
+    private String vfDomain;
+    private String vfSid;
+    private String contentDomain;
+    private String contentSid;
+    private String csrfToken;
     private Map<String, String> additionalOauthValues;
 
     /**
@@ -255,6 +262,83 @@ public class UserAccountBuilder {
     }
 
     /**
+     * Sets lightning domain.
+     *
+     * @param lightningDomain Lightning domain.
+     * @return Instance of this class.
+     */
+    public UserAccountBuilder lightningDomain(String lightningDomain) {
+        this.lightningDomain = lightningDomain;
+        return this;
+    }
+
+    /**
+     * Sets lightning SID.
+     *
+     * @param lightningSid Lightning SID.
+     * @return Instance of this class.
+     */
+    public UserAccountBuilder lightningSid(String lightningSid) {
+        this.lightningSid = lightningSid;
+        return this;
+    }
+
+    /**
+     * Sets VF domain.
+     *
+     * @param vfDomain VF domain.
+     * @return Instance of this class.
+     */
+    public UserAccountBuilder vfDomain(String vfDomain) {
+        this.vfDomain = vfDomain;
+        return this;
+    }
+
+    /**
+     * Sets VF SID.
+     *
+     * @param vfSid VF SID.
+     * @return Instance of this class.
+     */
+    public UserAccountBuilder vfSid(String vfSid) {
+        this.vfSid = vfSid;
+        return this;
+    }
+
+    /**
+     * Sets content domain.
+     *
+     * @param contentDomain Content domain.
+     * @return Instance of this class.
+     */
+    public UserAccountBuilder contentDomain(String contentDomain) {
+        this.contentDomain = contentDomain;
+        return this;
+    }
+
+    /**
+     * Sets content SID.
+     *
+     * @param contentSid Content SID.
+     * @return Instance of this class.
+     */
+    public UserAccountBuilder contentSid(String contentSid) {
+        this.contentSid = contentSid;
+        return this;
+    }
+
+    /**
+     * Sets CSRF token.
+     *
+     * @param csrfToken CSRF token.
+     * @return Instance of this class.
+     */
+    public UserAccountBuilder csrfToken(String csrfToken) {
+        this.csrfToken = csrfToken;
+        return this;
+    }
+
+    /**
      * Sets additional OAuth values.
      *
      * @param additionalOauthValues Additional OAuth values.
@@ -273,6 +357,7 @@ public class UserAccountBuilder {
     public UserAccount build() {
         return new UserAccount(authToken, refreshToken, loginServer, idUrl, instanceServer, orgId,
                 userId, username, accountName, communityId, communityUrl, firstName, lastName,
-                displayName, email, photoUrl, thumbnailUrl, additionalOauthValues);
+                displayName, email, photoUrl, thumbnailUrl, additionalOauthValues, lightningDomain,
+                lightningSid, vfDomain, vfSid, contentDomain, contentSid, csrfToken);
     }
 }
