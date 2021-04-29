@@ -131,6 +131,14 @@ public class OAuth2 {
     private static final String OAUTH_DISPLAY_PARAM = "?display=";
     private static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
     private static final String OAUTH_REVOKE_PATH = "/services/oauth2/revoke?token=";
+    private static final String LIGHTNING_DOMAIN = "lightning_domain";
+    private static final String LIGHTNING_SID = "lightning_sid";
+    private static final String VF_DOMAIN = "visualforce_domain";
+    private static final String VF_SID = "visualforce_sid";
+    private static final String CONTENT_DOMAIN = "content_domain";
+    private static final String CONTENT_SID = "content_sid";
+    private static final String CSRF_TOKEN = "csrf_token";
+
     private static final String EMPTY_STRING = "";
     private static final String FORWARD_SLASH = "/";
     private static final String SINGLE_SPACE = " ";
@@ -609,6 +617,13 @@ public class OAuth2 {
         public String communityUrl;
         public Map<String, String> additionalOauthValues;
         public String idToken;
+        public String lightningDomain;
+        public String lightningSid;
+        public String vfDomain;
+        public String vfSid;
+        public String contentDomain;
+        public String contentSid;
+        public String csrfToken;
 
         /**
          * Parameterized constructor built during login flow.
@@ -638,6 +653,13 @@ public class OAuth2 {
                     }
                 }
                 idToken = callbackUrlParams.get(ID_TOKEN);
+                lightningDomain = callbackUrlParams.get(LIGHTNING_DOMAIN);
+                lightningSid = callbackUrlParams.get(LIGHTNING_SID);
+                vfDomain = callbackUrlParams.get(VF_DOMAIN);
+                vfSid = callbackUrlParams.get(VF_SID);
+                contentDomain = callbackUrlParams.get(CONTENT_DOMAIN);
+                contentSid = callbackUrlParams.get(CONTENT_SID);
+                csrfToken = callbackUrlParams.get(CSRF_TOKEN);
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);
             }
@@ -680,6 +702,13 @@ public class OAuth2 {
                     }
                 }
                 idToken = parsedResponse.optString(ID_TOKEN);
+                lightningDomain = parsedResponse.optString(LIGHTNING_DOMAIN);
+                lightningSid = parsedResponse.optString(LIGHTNING_SID);
+                vfDomain = parsedResponse.optString(VF_DOMAIN);
+                vfSid = parsedResponse.optString(VF_SID);
+                contentDomain = parsedResponse.optString(CONTENT_DOMAIN);
+                contentSid = parsedResponse.optString(CONTENT_SID);
+                csrfToken = parsedResponse.optString(CSRF_TOKEN);
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);
             }
