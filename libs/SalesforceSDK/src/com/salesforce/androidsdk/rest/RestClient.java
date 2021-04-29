@@ -67,13 +67,13 @@ public class RestClient {
 	private static final String COMMUNITY_URL = "communityUrl";
 	private static final String TAG = "RestClient";
 
-	private static Map<String, OAuthRefreshInterceptor> OAUTH_REFRESH_INTERCEPTORS = new HashMap<>();
-	private static Map<String, OkHttpClient.Builder> OK_CLIENT_BUILDERS = new HashMap<>();
-    private static Map<String, OkHttpClient> OK_CLIENTS = new HashMap<>();
+	private static final Map<String, OAuthRefreshInterceptor> OAUTH_REFRESH_INTERCEPTORS = new HashMap<>();
+	private static final Map<String, OkHttpClient.Builder> OK_CLIENT_BUILDERS = new HashMap<>();
+    private static final Map<String, OkHttpClient> OK_CLIENTS = new HashMap<>();
 
-	private ClientInfo clientInfo;
-    private HttpAccess httpAccessor;
-	private AuthTokenProvider authTokenProvider;
+	private final ClientInfo clientInfo;
+    private final HttpAccess httpAccessor;
+	private final AuthTokenProvider authTokenProvider;
     private OAuthRefreshInterceptor oAuthRefreshInterceptor;
 	private OkHttpClient.Builder okHttpClientBuilder;
 	private OkHttpClient okHttpClient;
@@ -409,6 +409,13 @@ public class RestClient {
 		public final String email;
 		public final String photoUrl;
 		public final String thumbnailUrl;
+		public final String lightningDomain;
+		public final String lightningSid;
+		public final String vfDomain;
+		public final String vfSid;
+		public final String contentDomain;
+		public final String contentSid;
+		public final String csrfToken;
 		public final Map<String, String> additionalOauthValues;
 
 		/**
@@ -430,12 +437,21 @@ public class RestClient {
          * @param photoUrl Photo URL.
          * @param thumbnailUrl Thumbnail URL.
          * @param additionalOauthValues Additional OAuth values.
+		 * @param lightningDomain Lightning domain.
+		 * @param lightningSid Lightning SID.
+		 * @param vfDomain VF domain.
+		 * @param vfSid VF SID.
+		 * @param contentDomain Content domain.
+		 * @param contentSid Content SID.
+		 * @param csrfToken CSRF token.
 		 */
 		public ClientInfo(URI instanceUrl, URI loginUrl,
 				URI identityUrl, String accountName, String username,
 				String userId, String orgId, String communityId, String communityUrl,
 				String firstName, String lastName, String displayName, String email,
-				String photoUrl, String thumbnailUrl, Map<String, String> additionalOauthValues) {
+				String photoUrl, String thumbnailUrl, Map<String, String> additionalOauthValues,
+				String lightningDomain, String lightningSid, String vfDomain, String vfSid,
+				String contentDomain, String contentSid, String csrfToken) {
 			this.instanceUrl = instanceUrl;
 			this.loginUrl = loginUrl;
 			this.identityUrl = identityUrl;
@@ -452,6 +468,13 @@ public class RestClient {
 			this.photoUrl = photoUrl;
 			this.thumbnailUrl = thumbnailUrl;
             this.additionalOauthValues = additionalOauthValues;
+            this.lightningDomain = lightningDomain;
+            this.lightningSid = lightningSid;
+            this.vfDomain = vfDomain;
+            this.vfSid = vfSid;
+            this.contentDomain = contentDomain;
+            this.contentSid = contentSid;
+            this.csrfToken = csrfToken;
 		}
 
         /**
@@ -480,7 +503,14 @@ public class RestClient {
               .append("     email: ").append(email).append("\n")
               .append("     photoUrl: ").append(photoUrl).append("\n")
               .append("     thumbnailUrl: ").append(thumbnailUrl).append("\n")
-              .append("     additionalOauthValues: ").append(additionalOauthValues).append("\n")
+			  .append("     lightningDomain: ").append(lightningDomain).append("\n")
+			  .append("     lightningSid: ").append(lightningSid).append("\n")
+			  .append("     vfDomain: ").append(vfDomain).append("\n")
+			  .append("     vfSid: ").append(vfSid).append("\n")
+			  .append("     contentDomain: ").append(contentDomain).append("\n")
+			  .append("     contentSid: ").append(contentSid).append("\n")
+			  .append("     csrfToken: ").append(csrfToken).append("\n")
+			  .append("     additionalOauthValues: ").append(additionalOauthValues).append("\n")
 			  .append("  }\n");
 			return sb.toString();
 		}
@@ -592,7 +622,9 @@ public class RestClient {
         public UnauthenticatedClientInfo() {
             super(null, null, null, null, null,
                     null, null, null, null, null,
-                    null, null, null, null, null, null);
+                    null, null, null, null, null,
+					null, null, null, null,
+					null, null, null, null);
         }
 
         @Override
@@ -790,7 +822,10 @@ public class RestClient {
                                 clientInfo.userId, clientInfo.orgId, clientInfo.communityId,
                                 clientInfo.communityUrl, clientInfo.firstName, clientInfo.lastName,
                                 clientInfo.displayName, clientInfo.email, clientInfo.photoUrl,
-                                clientInfo.thumbnailUrl, clientInfo.additionalOauthValues);
+                                clientInfo.thumbnailUrl, clientInfo.additionalOauthValues,
+								clientInfo.lightningDomain, clientInfo.lightningSid,
+								clientInfo.vfDomain, clientInfo.vfSid,
+								clientInfo.contentDomain, clientInfo.contentSid, clientInfo.csrfToken);
                     } catch (URISyntaxException ex) {
                         SalesforceSDKLogger.w(TAG, "Invalid server URL", ex);
                     }
