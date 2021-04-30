@@ -590,7 +590,9 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             accountOptions = new AccountOptions(id.username, tr.refreshToken,
                     tr.authToken, tr.idUrl, tr.instanceUrl, tr.orgId, tr.userId,
                     tr.communityId, tr.communityUrl, id.firstName, id.lastName,
-                    id.displayName, id.email, id.pictureUrl, id.thumbnailUrl, tr.additionalOauthValues);
+                    id.displayName, id.email, id.pictureUrl, id.thumbnailUrl, tr.additionalOauthValues,
+                    tr.lightningDomain, tr.lightningSid, tr.vfDomain, tr.vfSid, tr.contentDomain,
+                    tr.contentSid, tr.csrfToken);
 
             // Sets additional admin prefs, if they exist.
             final UserAccount account = UserAccountBuilder.getInstance().authToken(accountOptions.authToken).
@@ -602,7 +604,11 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     firstName(accountOptions.firstName).lastName(accountOptions.lastName).
                     displayName(accountOptions.displayName).email(accountOptions.email).
                     photoUrl(accountOptions.photoUrl).thumbnailUrl(accountOptions.thumbnailUrl).
-                    additionalOauthValues(accountOptions.additionalOauthValues).build();
+                    lightningDomain(accountOptions.lightningDomain).lightningSid(accountOptions.lightningSid).
+                    vfDomain(accountOptions.vfDomain).vfSid(accountOptions.vfSid).
+                    contentDomain(accountOptions.contentDomain).contentSid(accountOptions.contentSid).
+                    csrfToken(accountOptions.csrfToken).additionalOauthValues(accountOptions.additionalOauthValues).
+                    build();
             account.downloadProfilePhoto();
             if (id.customAttributes != null) {
                 mgr.getAdminSettingsManager().setPrefs(id.customAttributes, account);
@@ -692,7 +698,14 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 accountOptions.email,
                 accountOptions.photoUrl,
                 accountOptions.thumbnailUrl,
-                accountOptions.additionalOauthValues);
+                accountOptions.additionalOauthValues,
+                accountOptions.lightningDomain,
+                accountOptions.lightningSid,
+                accountOptions.vfDomain,
+                accountOptions.vfSid,
+                accountOptions.contentDomain,
+                accountOptions.contentSid,
+                accountOptions.csrfToken);
 
     	/*
     	 * Registers for push notifications, if push notification client ID is present.
@@ -773,6 +786,13 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         private static final String EMAIL = "email";
         private static final String PHOTO_URL = "photoUrl";
         private static final String THUMBNAIL_URL = "thumbnailUrl";
+        private static final String LIGHTNING_DOMAIN = "lightning_domain";
+        private static final String LIGHTNING_SID = "lightning_sid";
+        private static final String VF_DOMAIN = "visualforce_domain";
+        private static final String VF_SID = "visualforce_sid";
+        private static final String CONTENT_DOMAIN = "content_domain";
+        private static final String CONTENT_SID = "content_sid";
+        private static final String CSRF_TOKEN = "csrf_token";
 
         public final String username;
         public final String refreshToken;
@@ -790,13 +810,22 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         public final String photoUrl;
         public final String thumbnailUrl;
         public final Map<String, String> additionalOauthValues;
+        public final String lightningDomain;
+        public final String lightningSid;
+        public final String vfDomain;
+        public final String vfSid;
+        public final String contentDomain;
+        public final String contentSid;
+        public final String csrfToken;
         private Bundle bundle;
 
         public AccountOptions(String username, String refreshToken,
                 String authToken, String identityUrl, String instanceUrl,
                 String orgId, String userId, String communityId, String communityUrl,
                 String firstName, String lastName, String displayName, String email,
-                String photoUrl, String thumbnailUrl, Map<String, String> additionalOauthValues) {
+                String photoUrl, String thumbnailUrl, Map<String, String> additionalOauthValues,
+                String lightningDomain, String lightningSid, String vfDomain, String vfSid,
+                String contentDomain, String contentSid, String csrfToken) {
             super();
             this.username = username;
             this.refreshToken = refreshToken;
@@ -814,6 +843,13 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             this.photoUrl = photoUrl;
             this.thumbnailUrl = thumbnailUrl;
             this.additionalOauthValues = additionalOauthValues;
+            this.lightningDomain = lightningDomain;
+            this.lightningSid = lightningSid;
+            this.vfDomain = vfDomain;
+            this.vfSid = vfSid;
+            this.contentDomain = contentDomain;
+            this.contentSid = contentSid;
+            this.csrfToken = csrfToken;
             bundle = new Bundle();
             bundle.putString(USERNAME, username);
             bundle.putString(REFRESH_TOKEN, refreshToken);
@@ -830,6 +866,13 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             bundle.putString(EMAIL, email);
             bundle.putString(PHOTO_URL, photoUrl);
             bundle.putString(THUMBNAIL_URL, thumbnailUrl);
+            bundle.putString(LIGHTNING_DOMAIN, lightningDomain);
+            bundle.putString(LIGHTNING_SID, lightningSid);
+            bundle.putString(VF_DOMAIN, vfDomain);
+            bundle.putString(VF_SID, vfSid);
+            bundle.putString(CONTENT_DOMAIN, contentDomain);
+            bundle.putString(CONTENT_SID, contentSid);
+            bundle.putString(CSRF_TOKEN, csrfToken);
             bundle = MapUtil.addMapToBundle(additionalOauthValues,
                     SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), bundle);
         }
@@ -858,7 +901,14 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     options.getString(EMAIL),
                     options.getString(PHOTO_URL),
                     options.getString(THUMBNAIL_URL),
-                    getAdditionalOauthValues(options)
+                    getAdditionalOauthValues(options),
+                    options.getString(LIGHTNING_DOMAIN),
+                    options.getString(LIGHTNING_SID),
+                    options.getString(VF_DOMAIN),
+                    options.getString(VF_SID),
+                    options.getString(CONTENT_DOMAIN),
+                    options.getString(CONTENT_SID),
+                    options.getString(CSRF_TOKEN)
                     );
         }
 
