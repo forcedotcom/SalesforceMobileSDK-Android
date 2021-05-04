@@ -28,7 +28,6 @@
 package com.salesforce.androidsdk.reactnative.util;
 
 import com.facebook.react.ReactActivityDelegate;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.reactnative.ui.SalesforceReactActivity;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.util.test.TestCredentials;
@@ -58,7 +57,8 @@ public class ReactTestActivity extends SalesforceReactActivity {
         clientManager.createNewAccount(accountName, username, refreshToken, authToken, instanceUrl,
                 loginUrl, identityUrl, clientId, orgId, userId,
                 null, null, null, null, null,
-                null, photoUrl, null, null);
+                null, photoUrl, null, null, null,
+                null, null, null, null, null, null);
         return clientManager;
     }
 
