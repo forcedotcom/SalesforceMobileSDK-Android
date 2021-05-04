@@ -34,9 +34,8 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.util.Log;
 
-import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
-import androidx.test.filters.SmallTest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
 
 import com.salesforce.androidsdk.MainActivity;
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -51,6 +50,8 @@ import com.salesforce.androidsdk.ui.LoginActivity;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 /**
  * A class that contains tests for functionality exposed in SalesforceSDKManager.
@@ -156,7 +157,10 @@ public class SalesforceSDKManagerTest {
                 ClientManagerTest.TEST_INSTANCE_URL, ClientManagerTest.TEST_LOGIN_URL,
                 ClientManagerTest.TEST_IDENTITY_URL, ClientManagerTest.TEST_CLIENT_ID,
                 ClientManagerTest.TEST_ORG_ID, ClientManagerTest.TEST_USER_ID,
-                null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null,
+                null, null, null, null, null,
+                null, null, null, null, null,
+                null);
         final AccountManager accMgr = AccountManager.get(targetContext);
         final UserAccount curUser = userAccMgr.getCurrentUser();
         Assert.assertNotNull("Current user should NOT be null", curUser);

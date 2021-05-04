@@ -95,24 +95,22 @@ public class ClientManagerTest {
     public static final String TEST_CUSTOM_KEY = "test_custom_key";
     public static final String TEST_CUSTOM_VALUE = "test_custom_value";
 
-    private Context targetContext;
     private ClientManager clientManager;
     private AccountManager accountManager;
-    private LoginOptions loginOptions;
     private EventsListenerQueue eq;
     private List<String> testOauthKeys;
     private Map<String, String> testOauthValues;
 
     @Before
     public void setUp() throws Exception {
-        targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        final Context targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         final Application app = Instrumentation.newApplication(TestForceApp.class, targetContext);
         InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
         TestCredentials.init(InstrumentationRegistry.getInstrumentation().getContext());
-        loginOptions = new LoginOptions(TEST_LOGIN_URL, TEST_CALLBACK_URL,
+        final LoginOptions loginOptions = new LoginOptions(TEST_LOGIN_URL, TEST_CALLBACK_URL,
                 TEST_CLIENT_ID, TEST_SCOPES);
         clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE,
-        		loginOptions, true);
+                loginOptions, true);
         accountManager = clientManager.getAccountManager();
         eq = new EventsListenerQueue();
         if (!SalesforceSDKManager.hasInstance()) {
@@ -504,7 +502,9 @@ public class ClientManagerTest {
         return clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN,
                 TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_CLIENT_ID,
                 TEST_ORG_ID, TEST_USER_ID, null, null, TEST_FIRST_NAME, TEST_LAST_NAME,
-                TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL, testOauthValues);
+                TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL, testOauthValues,
+                null, null, null, null, null,
+                null, null);
     }
 
     /**
@@ -515,7 +515,9 @@ public class ClientManagerTest {
         return clientManager.createNewAccount(TEST_OTHER_ACCOUNT_NAME, TEST_OTHER_USERNAME,
                 TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL,
                 TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID_2, TEST_USER_ID_2,
-                null, null, TEST_FIRST_NAME, TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL,
-                TEST_THUMBNAIL_URL, testOauthValues);
+                null, null, TEST_FIRST_NAME, TEST_LAST_NAME, TEST_DISPLAY_NAME,
+                TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL, testOauthValues,
+                null, null, null, null, null,
+                null, null);
     }
 }

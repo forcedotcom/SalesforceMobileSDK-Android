@@ -31,9 +31,10 @@ import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.os.Bundle;
-import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.filters.SmallTest;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -249,7 +250,10 @@ public class UserAccountManagerTest {
         		ClientManagerTest.TEST_AUTH_TOKEN, ClientManagerTest.TEST_INSTANCE_URL,
         		ClientManagerTest.TEST_LOGIN_URL, ClientManagerTest.TEST_IDENTITY_URL,
         		ClientManagerTest.TEST_CLIENT_ID, ClientManagerTest.TEST_ORG_ID,
-        		ClientManagerTest.TEST_USER_ID, null, null, null, null, null, null, null, null, null);
+        		ClientManagerTest.TEST_USER_ID, null, null, null,
+                null, null, null, null, null,
+                null, null, null, null, null,
+                null, null, null);
     }
 
     /**
@@ -263,6 +267,9 @@ public class UserAccountManagerTest {
         		ClientManagerTest.TEST_AUTH_TOKEN, ClientManagerTest.TEST_INSTANCE_URL,
         		ClientManagerTest.TEST_LOGIN_URL, ClientManagerTest.TEST_IDENTITY_URL,
         		ClientManagerTest.TEST_CLIENT_ID, ClientManagerTest.TEST_ORG_ID_2,
-        		ClientManagerTest.TEST_USER_ID_2, null, null, null, null, null, null, null, null, null);
+        		ClientManagerTest.TEST_USER_ID_2, null, null, null,
+                null, null, null, null, null,
+                null, null, null, null, null,
+                null, null, null);
     }
 }
