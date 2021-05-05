@@ -2,9 +2,6 @@ buildscript {
   repositories {
     google()
     mavenCentral()
-
-    // FIXME: Keeping this around for now, because some libraries aren't available on 'mavenCentral()'.
-    jcenter()
   }
 
   dependencies {
@@ -29,7 +26,7 @@ allprojects {
     google()
     mavenCentral()
 
-    // FIXME: Keeping this around for now, because some libraries aren't available on 'mavenCentral()'.
+    // FIXME: Remove this once we can figure out an alternate source to fetch PaperDB and Cordova from.
     jcenter()
   }
 }

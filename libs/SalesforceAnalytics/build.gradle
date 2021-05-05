@@ -2,9 +2,6 @@ buildscript {
     repositories {
         google()
         mavenCentral()
-
-        // FIXME: Keeping this around for now, because PaperDB isn't available on 'mavenCentral()'.
-        jcenter()
     }
 }
 
