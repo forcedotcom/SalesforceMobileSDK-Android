@@ -93,6 +93,7 @@ public class OAuth2 {
     private static final String PIN_LENGTH = "pin_length";
     private static final String BIOMETRIC_UNLOCK = "biometric_unlock";
     private static final String REFRESH_TOKEN = "refresh_token";
+    private static final String HYBRID_REFRESH = "hybrid_refresh";
     private static final String RESPONSE_TYPE = "response_type";
     private static final String SCOPE = "scope";
     private static final String REDIRECT_URI = "redirect_uri";
@@ -347,7 +348,7 @@ public class OAuth2 {
                                                          Map<String,String> addlParams)
             throws OAuthFailedException, IOException {
         final FormBody.Builder builder = new FormBody.Builder();
-        builder.add(GRANT_TYPE, REFRESH_TOKEN);
+        builder.add(GRANT_TYPE, HYBRID_REFRESH);
         builder.add(CLIENT_ID, clientId);
         builder.add(REFRESH_TOKEN, refreshToken);
         builder.add(FORMAT, JSON);
