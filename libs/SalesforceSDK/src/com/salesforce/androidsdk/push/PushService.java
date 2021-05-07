@@ -380,7 +380,10 @@ public class PushService extends JobIntentService {
     	        		account.getUserId(), account.getOrgId(),
     	        		account.getCommunityId(), account.getCommunityUrl(),
 						account.getFirstName(), account.getLastName(), account.getDisplayName(), account.getEmail(),
-						account.getPhotoUrl(), account.getThumbnailUrl(), account.getAdditionalOauthValues());
+						account.getPhotoUrl(), account.getThumbnailUrl(), account.getAdditionalOauthValues(),
+						account.getLightningDomain(), account.getLightningSid(),
+						account.getVFDomain(), account.getVFSid(),
+						account.getContentDomain(), account.getContentSid(), account.getCSRFToken());
                 client = new RestClient(clientInfo, account.getAuthToken(),
                 		HttpAccess.DEFAULT, authTokenProvider);
     		} catch (Exception e) {

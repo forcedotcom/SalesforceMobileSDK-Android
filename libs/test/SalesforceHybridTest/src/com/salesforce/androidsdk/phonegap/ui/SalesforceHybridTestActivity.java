@@ -27,12 +27,8 @@
 
 package com.salesforce.androidsdk.phonegap.ui;
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.util.test.TestCredentials;
-
-import org.junit.Test;
 
 /**
  * Sub-class of SalesforceDroidGapActivity that authenticates using hard-coded credentials.
@@ -57,7 +53,8 @@ public class SalesforceHybridTestActivity extends SalesforceDroidGapActivity {
 		clientManager.createNewAccount(accountName, username, refreshToken, authToken, instanceUrl,
         		loginUrl, identityUrl, clientId, orgId, userId,
 				null, null, null, null, null,
-                null, photoUrl, null, null);
+                null, photoUrl, null, null, null,
+				null, null, null, null, null, null);
 		return clientManager;
 	}
 }

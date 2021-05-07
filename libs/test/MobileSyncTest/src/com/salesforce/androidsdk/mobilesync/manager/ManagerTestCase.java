@@ -29,13 +29,17 @@ package com.salesforce.androidsdk.mobilesync.manager;
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
+
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
+import com.salesforce.androidsdk.mobilesync.TestForceApp;
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
+import com.salesforce.androidsdk.mobilesync.util.Constants;
+import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
@@ -44,9 +48,6 @@ import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.mobilesync.TestForceApp;
-import com.salesforce.androidsdk.mobilesync.util.Constants;
-import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 import com.salesforce.androidsdk.util.test.TestCredentials;
@@ -109,7 +110,9 @@ abstract public class ManagerTestCase {
         		TestCredentials.LOGIN_URL, TestCredentials.IDENTITY_URL,
         		TestCredentials.CLIENT_ID, TestCredentials.ORG_ID,
         		TestCredentials.USER_ID, null, null, null,
-                null, null, null, TestCredentials.PHOTO_URL, null, null);
+                null, null, null, TestCredentials.PHOTO_URL, null,
+                null, null, null, null, null,
+                null, null, null);
     	SyncManager.reset();
     	sdkManager = MobileSyncSDKManager.getInstance();
         smartStore = sdkManager.getSmartStore();
@@ -139,7 +142,9 @@ abstract public class ManagerTestCase {
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null, null,
-                null, null, null, null, TestCredentials.PHOTO_URL, null, null);
+                null, null, null, null, TestCredentials.PHOTO_URL,
+                null, null, null, null,
+                null, null, null, null, null);
         return new RestClient(clientInfo, authToken, httpAccess, null);
     }
 

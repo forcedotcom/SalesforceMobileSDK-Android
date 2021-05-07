@@ -86,14 +86,14 @@ public class OAuth2Test {
 		URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null, null, null);
 		URI expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
-                "/services/oauth2/authorize?display=touch&response_type=token&client_id=" +
+                "/services/oauth2/authorize?display=touch&response_type=hybrid_token&client_id=" +
                 TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl + "&device_id=" +
 				SalesforceSDKManager.getInstance().getDeviceId());
         Assert.assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
 		authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null, "touch", null);
 		expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
-                "/services/oauth2/authorize?display=touch&response_type=token&client_id=" +
+                "/services/oauth2/authorize?display=touch&response_type=hybrid_token&client_id=" +
                 TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl + "&device_id=" +
                 SalesforceSDKManager.getInstance().getDeviceId());
         Assert.assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
@@ -131,14 +131,14 @@ public class OAuth2Test {
         URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null, null, null);
         URI expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
-                "/services/oauth2/authorize/BRAND?display=touch&response_type=token&client_id=" +
+                "/services/oauth2/authorize/BRAND?display=touch&response_type=hybrid_token&client_id=" +
                 TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl + "&device_id=" +
                 SalesforceSDKManager.getInstance().getDeviceId());
         Assert.assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
         authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null, "touch", null);
         expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
-                "/services/oauth2/authorize/BRAND?display=touch&response_type=token&client_id=" +
+                "/services/oauth2/authorize/BRAND?display=touch&response_type=hybrid_token&client_id=" +
                 TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl + "&device_id=" +
                 SalesforceSDKManager.getInstance().getDeviceId());
         Assert.assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
@@ -157,14 +157,14 @@ public class OAuth2Test {
         URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null, null, null);
         URI expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
-                "/services/oauth2/authorize/BRAND?display=touch&response_type=token&client_id=" +
+                "/services/oauth2/authorize/BRAND?display=touch&response_type=hybrid_token&client_id=" +
                 TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl + "&device_id=" +
                 SalesforceSDKManager.getInstance().getDeviceId());
         Assert.assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
         authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null, "touch", null);
         expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
-                "/services/oauth2/authorize/BRAND?display=touch&response_type=token&client_id=" +
+                "/services/oauth2/authorize/BRAND?display=touch&response_type=hybrid_token&client_id=" +
                 TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl + "&device_id=" +
                 SalesforceSDKManager.getInstance().getDeviceId());
         Assert.assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
@@ -183,14 +183,14 @@ public class OAuth2Test {
         URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null, null, null);
         URI expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
-                "/services/oauth2/authorize/BRAND?display=touch&response_type=token&client_id=" +
+                "/services/oauth2/authorize/BRAND?display=touch&response_type=hybrid_token&client_id=" +
                 TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl + "&device_id=" +
                 SalesforceSDKManager.getInstance().getDeviceId());
         Assert.assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
         authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null, "touch", null);
         expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
-                "/services/oauth2/authorize/BRAND?display=touch&response_type=token&client_id=" +
+                "/services/oauth2/authorize/BRAND?display=touch&response_type=hybrid_token&client_id=" +
                 TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl + "&device_id=" +
                 SalesforceSDKManager.getInstance().getDeviceId());
         Assert.assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
