@@ -130,7 +130,7 @@ public class ServerPickerActivity extends Activity implements
         setContentView(R.layout.sf__server_picker);
 
         final ActionBar actionBar = getActionBar();
-        actionBar.setTitle("Change Server");
+        actionBar.setTitle(R.string.sf__server_picker_title);
         actionBar.setDisplayHomeAsUpEnabled(true);
 
         /*
