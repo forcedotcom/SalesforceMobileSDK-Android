@@ -1,17 +1,17 @@
 buildscript {
   repositories {
     google()
-    jcenter()
+    mavenCentral()
   }
 
   dependencies {
-    classpath 'com.android.tools.build:gradle:4.1.2'
+    classpath 'com.android.tools.build:gradle:4.2.1'
   }
 }
 
 allprojects {
   group = 'com.salesforce.mobilesdk'
-  version = '9.0.0'
+  version = '9.1.0'
   repositories {
     mavenLocal()
     maven {
@@ -24,6 +24,9 @@ allprojects {
       url("$rootProject.projectDir/libs/SalesforceReact/node_modules/jsc-android/dist")
     }
     google()
+    mavenCentral()
+
+    // FIXME: Remove this once we can figure out an alternate source to fetch PaperDB and Cordova from.
     jcenter()
   }
 }

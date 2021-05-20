@@ -108,7 +108,7 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "9.0.0";
+    public static final String SDK_VERSION = "9.1.0.dev";
 
     /**
      * Intent action meant for instances of SalesforceSDKManager residing in other processes
@@ -775,7 +775,7 @@ public class SalesforceSDKManager {
     protected void startLoginPage() {
 
         // Clears cookies.
-    	removeAllCookies();
+        CookieManager.getInstance().removeAllCookies(null);
 
         // Restarts the application.
         final Intent i = new Intent(context, getMainActivityClass());
@@ -790,7 +790,7 @@ public class SalesforceSDKManager {
     public void startSwitcherActivityIfRequired() {
 
         // Clears cookies.
-    	removeAllCookies();
+        CookieManager.getInstance().removeAllCookies(null);
 
         /*
          * If the number of accounts remaining is 0, shows the login page.
@@ -1197,18 +1197,26 @@ public class SalesforceSDKManager {
         return new ClientManager(getAppContext(), getAccountType(), getLoginOptions(jwt, url), true);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 10.0.
+     */
 	public void removeAllCookies() {
 		CookieManager.getInstance().removeAllCookies(null);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 10.0.
+     */
 	public void removeSessionCookies() {
         CookieManager.getInstance().removeSessionCookies(null);
     }
 
+    /**
+     * @deprecated Will be removed in Mobile SDK 10.0.
+     */
 	public void syncCookies() {
         CookieManager.getInstance().flush();
     }
-
 
     /**
      * Show dev support dialog

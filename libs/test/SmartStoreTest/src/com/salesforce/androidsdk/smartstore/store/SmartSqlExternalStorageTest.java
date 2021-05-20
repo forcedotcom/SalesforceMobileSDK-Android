@@ -24,20 +24,14 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
+package com.salesforce.androidsdk.smartstore.store;
 
-import androidx.test.filters.MediumTest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-
+import androidx.test.filters.MediumTest;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
-import com.salesforce.androidsdk.smartstore.store.IndexSpec;
-import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
-import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 import com.salesforce.androidsdk.util.JSONTestHelper;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -174,6 +168,17 @@ public class SmartSqlExternalStorageTest extends SmartStoreTestCase {
 			catch (SmartSqlException e) {
 				// Expected
 			}
+		}
+	}
+
+	@Test
+	public void testConvertSmartSqlForNonIndexedColumns() {
+    	String smartSql = "select {employees:education}, {employees:address.zipcode} from {employees} where {employees:address.city} = 'San Francisco'";
+		try {
+			store.convertSmartSql(smartSql);
+			Assert.fail("Should have thrown exception for " + smartSql);
+		} catch (SmartSqlException e) {
+			// Expected
 		}
 	}
 

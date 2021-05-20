@@ -36,6 +36,7 @@
 	<string name="sf__server_url_default_cancel">Cancel</string>
 	<string name="sf__server_url_default_apply">Apply</string>
 	<string name="sf__server_url_reset">Reset</string>
+	<string name="sf__server_picker_title">Change Server</string>
 	
 	<!-- Passcode entry screen -->
 	<string name="sf__passcode_create_title">Passcode</string>

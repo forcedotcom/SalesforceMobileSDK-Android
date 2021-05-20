@@ -40,7 +40,6 @@ import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 import com.salesforce.androidsdk.util.test.TestCredentials;
 
-import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -66,6 +65,8 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+
+import okhttp3.Response;
 
 /**
  * Tests for RestClient
@@ -120,7 +121,8 @@ public class RestClientTest {
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null, null,
                 TEST_FIRST_NAME, TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TestCredentials.PHOTO_URL,
-                TEST_THUMBNAIL_URL, testOauthValues);
+                TEST_THUMBNAIL_URL, testOauthValues, null, null, null,
+                null, null, null, null);
         restClient = new RestClient(clientInfo, authToken, httpAccess, null);
     }
 
@@ -174,7 +176,9 @@ public class RestClientTest {
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null,
-        		TestCredentials.COMMUNITY_URL, null, null, null, null, null, null, testOauthValues);
+        		TestCredentials.COMMUNITY_URL, null, null, null,
+                null, null, null, testOauthValues, null,
+                null, null, null, null, null, null);
         Assert.assertEquals("Wrong url", TestCredentials.COMMUNITY_URL + "/a/b/", info.resolveUrl("a/b/").toString());
         Assert.assertEquals("Wrong url", TestCredentials.COMMUNITY_URL + "/a/b/", info.resolveUrl("/a/b/").toString());
     }
@@ -198,7 +202,9 @@ public class RestClientTest {
                 new URI(TestCredentials.IDENTITY_URL),
                 TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
                 TestCredentials.USER_ID, TestCredentials.ORG_ID, null,
-                TestCredentials.COMMUNITY_URL, null, null, null, null, null, null, testOauthValues);
+                TestCredentials.COMMUNITY_URL, null, null, null,
+                null, null, null, testOauthValues, null,
+                null, null, null, null, null, null);
         RestRequest r = new RestRequest(RestMethod.GET, RestRequest.RestEndpoint.LOGIN, "/a", (JSONObject) null, null);
         Assert.assertEquals("Community URL should take precedence over login or instance endpoint",
                 TestCredentials.COMMUNITY_URL + "/a", info.resolveUrl(r).toString());
@@ -211,7 +217,9 @@ public class RestClientTest {
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null,
-        		TestCredentials.COMMUNITY_URL, null, null, null, null, null, null, testOauthValues);
+        		TestCredentials.COMMUNITY_URL, null, null, null,
+                null, null, null, testOauthValues, null,
+                null, null, null, null, null, null);
         Assert.assertEquals("Wrong url", TestCredentials.COMMUNITY_URL, info.getInstanceUrlAsString());
     }
 
@@ -641,6 +649,38 @@ public class RestClientTest {
         checkKeys(jsonResponse, "done", "totalSize", "records");
         Assert.assertEquals("Expected one row", 1, jsonResponse.getInt("totalSize"));
         Assert.assertEquals("Wrong row returned", newAccountIdName.name, jsonResponse.getJSONArray("records").getJSONObject(0).get(NAME));
+    }
+
+    /**
+     * Testing a query call to the server which specifies a batch size.
+     * Create new account then look for it using soql.
+     * @throws Exception
+     */
+    @Test
+    public void testQueryWithBatchSize() throws Exception {
+        cleanup();
+        List<IdName> idNames = createAccounts(201, "-testWithBatchSize-");
+        String soql = "select name from account where Name like '" + ENTITY_NAME_PREFIX + "-testWithBatchSize-%'";
+
+        // SOQL without batch size
+        RestRequest requestNoBatchSizeSpecified = RestRequest.getRequestForQuery(TestCredentials.API_VERSION, soql);
+        Assert.assertNull(requestNoBatchSizeSpecified.getAdditionalHttpHeaders());
+        RestResponse responseNoBatchSizeSpecified = restClient.sendSync(requestNoBatchSizeSpecified);
+        checkResponse(responseNoBatchSizeSpecified, HttpURLConnection.HTTP_OK, false);
+        JSONObject jsonResponseNoBatchSizeSpecified = responseNoBatchSizeSpecified.asJSONObject();
+        checkKeys(jsonResponseNoBatchSizeSpecified, "done", "totalSize", "records");
+        Assert.assertEquals("201 rows should match", 201, jsonResponseNoBatchSizeSpecified.getInt("totalSize"));
+        Assert.assertEquals("201 rows should have been returned", 201, jsonResponseNoBatchSizeSpecified.getJSONArray("records").length());
+
+        // SOQL with batch size
+        RestRequest requestWithBatchSizeSpecified = RestRequest.getRequestForQuery(TestCredentials.API_VERSION, soql, 200);
+        Assert.assertEquals("batchSize=200", requestWithBatchSizeSpecified.getAdditionalHttpHeaders().get(RestRequest.SFORCE_QUERY_OPTIONS));
+        RestResponse responseWithBatchSizeSpecified = restClient.sendSync(requestWithBatchSizeSpecified);
+        checkResponse(responseWithBatchSizeSpecified, HttpURLConnection.HTTP_OK, false);
+        JSONObject jsonResponseWithBatchSizeSpecified = responseWithBatchSizeSpecified.asJSONObject();
+        checkKeys(jsonResponseWithBatchSizeSpecified, "done", "totalSize", "records");
+        Assert.assertEquals("201 rows should match", 201, jsonResponseWithBatchSizeSpecified.getInt("totalSize"));
+        Assert.assertEquals("200 rows should have been returned", 200, jsonResponseWithBatchSizeSpecified.getJSONArray("records").length());
     }
 
     /**
@@ -1084,11 +1124,55 @@ public class RestClientTest {
      */
     private IdName createAccount() throws Exception {
         Map<String, Object> fields = new HashMap<>();
-        String newAccountName = ENTITY_NAME_PREFIX + "-" + System.nanoTime();
+        String newAccountName = ENTITY_NAME_PREFIX + System.nanoTime();
         fields.put(NAME, newAccountName);
         RestResponse response = restClient.sendSync(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, ACCOUNT, fields));
         String newAccountId = response.asJSONObject().getString("id");
         return new IdName(newAccountId, newAccountName);
+    }
+
+    /**
+     * Helper method to create multiple accounts with a unique name and returns their name and id
+     */
+    private List<IdName> createAccounts(int count, String additionalPrefix) throws Exception {
+        Map<String, Object> fields = new HashMap<>();
+        List<String> ids = new ArrayList<>();
+        List<String> names = new ArrayList<>();
+
+        // Creating names
+        for (int i = 0; i < count; i++) {
+            names.add(ENTITY_NAME_PREFIX + additionalPrefix + System.nanoTime());
+        }
+
+        // Creating accounts collecting ids
+        List<RestRequest> requests = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            fields.put(NAME, names.get(i));
+            requests.add(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, ACCOUNT, fields));
+            if (requests.size() == 25) {
+                ids.addAll(getCreatedIds(requests));
+                requests.clear();
+            }
+        }
+        if (requests.size() > 0) {
+            ids.addAll(getCreatedIds(requests));
+        }
+
+        // Build IdName's
+        List<IdName> idNames = new ArrayList<>();
+        for (int i=0;i<ids.size(); i++) {
+            idNames.add(new IdName(ids.get(i), names.get(i)));
+        }
+        return idNames;
+    }
+
+    private List<String> getCreatedIds(List<RestRequest> createRequests) throws Exception {
+        List<String> ids = new ArrayList<>();
+        BatchResponse batchResponse = new BatchResponse(restClient.sendSync(RestRequest.getBatchRequest(TestCredentials.API_VERSION, false, createRequests)).asJSONObject());
+        for (JSONObject response : batchResponse.results) {
+            ids.add(response.getJSONObject("result").getString("id"));
+        }
+        return ids;
     }
 
     /**

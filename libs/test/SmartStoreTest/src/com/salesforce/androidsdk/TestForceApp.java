@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk;
 
 import android.app.Application;
-
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 
 /**

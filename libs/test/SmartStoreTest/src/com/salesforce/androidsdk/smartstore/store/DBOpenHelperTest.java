@@ -24,22 +24,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
+package com.salesforce.androidsdk.smartstore.store;
 
 import android.content.Context;
 import android.os.Bundle;
-
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
-import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
-
+import java.io.File;
+import java.util.Map;
+import java.util.Set;
 import net.sqlcipher.database.SQLiteDatabase;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.After;
@@ -47,10 +45,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.io.File;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Tests for obtaining and deleting databases via the DBOpenHelper.

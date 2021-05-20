@@ -53,7 +53,9 @@ import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.KeyValueEncryptedFileStore;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 public class KeyValueStoreInspectorActivity extends Activity {
     // Keys for extras bundle
@@ -155,17 +157,49 @@ public class KeyValueStoreInspectorActivity extends Activity {
     }
 
     public void onGetValueClick(View v) {
-        String key = keyInput.getText().toString();
+        String typedKey = keyInput.getText().toString();
         setCurrentStore(storesDropdown.getText().toString());
-        String value = currentStore.getValue(key);
+        keyValueList.clear();
 
-        if (value == null) {
+        if (typedKey.length() == 0) {
+            return;
+        }
+
+        // Return all key/value pairs were key matches typedKey
+        // if v2 kv store AND typedKey contains a *
+        if (currentStore.getStoreVersion() == 2 && typedKey.contains("*")) {
+            String[] allKeys = currentStore.keySet().toArray(new String[0]); 
+            Arrays.sort(allKeys);
+
+            for (String key : allKeys) {
+                if (matches(typedKey, key)) {
+                    keyValueList.add(new KeyValuePair(key, currentStore.getValue(key)));
+                }
+            }
+        }
+        // Otherwise simply lookup typeKey
+        else {
+            String value = currentStore.getValue(typedKey);
+
+            if (value != null) {
+                keyValueList.add(new KeyValuePair(typedKey, value));
+            }
+        }
+
+        // Show alert if nothing matched
+        if (keyValueList.size() == 0) {
             new AlertDialog.Builder(this).setTitle(ERROR_DIALOG_TITLE)
-                    .setMessage(ERROR_DIALOG_MESSAGE).show();
+                .setMessage(ERROR_DIALOG_MESSAGE).show();
         } else {
-            keyValueList.add(0, new KeyValuePair(key, value));
             listAdapter.notifyDataSetChanged();
-            keyInput.setText("");
+        }
+    }
+
+    private boolean matches(String typedKey, String key) {
+        if (typedKey.contains("*")) {
+            return key.matches(typedKey.replaceAll("\\*", ".*"));
+        } else {
+            return key.equals(typedKey);
         }
     }
 

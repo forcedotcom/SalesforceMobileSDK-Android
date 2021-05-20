@@ -24,20 +24,14 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
+package com.salesforce.androidsdk.smartstore.store;
 
 import android.database.Cursor;
-import androidx.test.filters.MediumTest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-
-import com.salesforce.androidsdk.smartstore.store.DBHelper;
-import com.salesforce.androidsdk.smartstore.store.IndexSpec;
-import com.salesforce.androidsdk.smartstore.store.QuerySpec;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import androidx.test.filters.MediumTest;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
-
+import java.util.Arrays;
 import net.sqlcipher.database.SQLiteDatabase;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -46,8 +40,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.util.Arrays;
 
 /**
  * Tests for full-text search with smartstore

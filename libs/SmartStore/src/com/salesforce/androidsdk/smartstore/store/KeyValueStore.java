@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-present, salesforce.com, inc.
+ * Copyright (c) 2021-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -25,36 +25,31 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.androidsdk.phonegap.ui;
+package com.salesforce.androidsdk.smartstore.store;
 
-import com.salesforce.androidsdk.rest.ClientManager;
-import com.salesforce.androidsdk.util.test.TestCredentials;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Set;
 
-/**
- * Sub-class of SalesforceDroidGapActivity that authenticates using hard-coded credentials.
- */
-public class SalesforceHybridTestActivity extends SalesforceDroidGapActivity {
+public interface KeyValueStore {
 
-	static String username = TestCredentials.USERNAME;
-	static String accountName = TestCredentials.ACCOUNT_NAME;
-	static String refreshToken = TestCredentials.REFRESH_TOKEN;
-	static String authToken = "--will-be-set-through-refresh--";
-	static String identityUrl = TestCredentials.IDENTITY_URL;
-	static String instanceUrl = TestCredentials.INSTANCE_URL;
-	static String loginUrl = TestCredentials.LOGIN_URL;
-	static String orgId = TestCredentials.ORG_ID;
-	static String userId = TestCredentials.USER_ID;
-    static String photoUrl = TestCredentials.PHOTO_URL;
-	static String clientId = TestCredentials.CLIENT_ID;
+    String getValue(String key);
 
-	@Override
-	public ClientManager buildClientManager() {
-		final ClientManager clientManager = super.buildClientManager();
-		clientManager.createNewAccount(accountName, username, refreshToken, authToken, instanceUrl,
-        		loginUrl, identityUrl, clientId, orgId, userId,
-				null, null, null, null, null,
-                null, photoUrl, null, null, null,
-				null, null, null, null, null, null);
-		return clientManager;
-	}
+    InputStream getStream(String key);
+
+    boolean saveValue(String key, String value);
+
+    boolean saveStream(String key, InputStream stream) throws IOException;
+
+    boolean deleteValue(String key);
+
+    void deleteAll();
+
+    Set<String> keySet();
+
+    int count();
+
+    boolean isEmpty();
+
+    String getStoreName();
 }

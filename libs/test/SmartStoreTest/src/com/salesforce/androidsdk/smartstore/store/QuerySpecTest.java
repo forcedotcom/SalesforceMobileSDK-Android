@@ -24,13 +24,10 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
+package com.salesforce.androidsdk.smartstore.store;
 
-import androidx.test.filters.SmallTest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-
-import com.salesforce.androidsdk.smartstore.store.QuerySpec;
-
+import androidx.test.filters.SmallTest;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;

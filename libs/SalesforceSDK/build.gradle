@@ -1,30 +1,24 @@
 buildscript {
     repositories {
-        jcenter()
-    }
-
-    dependencies {
-        classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
+        google()
+        mavenCentral()
     }
 }
 
 apply plugin: 'com.android.library'
-apply plugin: 'com.github.dcendents.android-maven'
-apply plugin: 'com.jfrog.bintray'
 
 dependencies {
     api project(':libs:SalesforceAnalytics')
-    api 'com.squareup.okhttp3:okhttp:3.12.1'
+    api 'com.squareup.okhttp3:okhttp:3.12.12'
     api 'com.google.firebase:firebase-messaging:20.1.0'
-    api 'androidx.core:core:1.3.1'
+    api 'androidx.core:core:1.3.2'
 
     /*
      * Don't upgrade browser library version until minApiVersion >= 24.
      * This is because the latest version of this library has minVersion = 24.
      */
     api 'androidx.browser:browser:1.0.0'
-    implementation 'com.google.android.material:material:1.2.1'
+    implementation 'com.google.android.material:material:1.3.0'
     androidTestImplementation 'androidx.test:runner:1.3.0'
     androidTestImplementation 'androidx.test:rules:1.3.0'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
@@ -76,69 +70,4 @@ android {
     xmlReport true
     abortOnError false
   }
-}
-
-install {
-    repositories.mavenInstaller {
-        pom {
-            project {
-                packaging 'aar'
-                name 'SalesforceSDK'
-                url 'https://github.com/forcedotcom/SalesforceMobileSDK-Android'
-                licenses {
-                    license {
-                        name 'The Apache Software License, Version 2.0'
-                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                    }
-                }
-                developers {
-                    developer {
-                        id 'bhariharan'
-                        name 'Bharath Hariharan'
-                        email 'bhariharan@salesforce.com'
-                    }
-                }
-                scm {
-                    connection 'https://github.com/forcedotcom/SalesforceMobileSDK-Android.git'
-                    developerConnection 'https://github.com/forcedotcom/SalesforceMobileSDK-Android.git'
-                    url 'https://github.com/forcedotcom/SalesforceMobileSDK-Android'
-
-                }
-            }
-        }
-    }
-}
-
-task sourcesJar(type: Jar) {
-    from android.sourceSets.main.java.srcDirs
-    classifier = 'sources'
-}
-
-artifacts {
-    archives sourcesJar
-}
-
-bintray {
-    user = System.getenv('BINTRAY_USER')
-    key = System.getenv('BINTRAY_KEY')
-    configurations = ['archives']
-    pkg {
-        repo = 'salesforcemobilesdk'
-        name = 'salesforce-sdk'
-        userOrg = 'forcedotcom'
-        licenses = ['Apache-2.0']
-        vcsUrl = 'https://github.com/forcedotcom/SalesforceMobileSDK-Android.git'
-        websiteUrl = 'https://github.com/forcedotcom/SalesforceMobileSDK-Android'
-        issueTrackerUrl = 'https://github.com/forcedotcom/SalesforceMobileSDK-Android/issues'
-        publicDownloadNumbers = true
-        githubRepo = 'forcedotcom/SalesforceMobileSDK-Android'
-        githubReleaseNotesFile = 'README.md'
-        licenses = ['Apache-2.0']
-        labels = ['android', 'salesforce', 'mobilesdk']
-        version {
-            name = '9.0.0'
-            released  = new Date()
-            vcsTag = 'v9.0.0'
-        }
-    }
 }

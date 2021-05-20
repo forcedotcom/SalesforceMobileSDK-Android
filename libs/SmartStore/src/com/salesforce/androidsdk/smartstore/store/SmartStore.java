@@ -663,6 +663,20 @@ public class SmartStore  {
 	}
 
 	/**
+	 * Return true if the given path is indexed on the given soup
+	 *
+	 * @param soupName
+	 * @param path
+	 * @return
+	 */
+	public boolean hasIndexForPath(String soupName, String path) {
+		final SQLiteDatabase db = getDatabase();
+		synchronized(db) {
+			return DBHelper.getInstance(db).hasIndexForPath(db, soupName, path);
+		}
+	}
+
+	/**
 	 * Clear all rows from a soup
 	 * @param soupName
 	 */

@@ -24,32 +24,24 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
+package com.salesforce.androidsdk.smartstore.store;
 
 import android.content.Context;
 import android.database.Cursor;
 import androidx.test.platform.app.InstrumentationRegistry;
-
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
-import com.salesforce.androidsdk.smartstore.store.DBHelper;
-import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
-import com.salesforce.androidsdk.smartstore.store.IndexSpec;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.util.JSONTestHelper;
-
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteOpenHelper;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Abstract super class for smart store tests

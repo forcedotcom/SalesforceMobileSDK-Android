@@ -66,7 +66,6 @@ public class SmartStoreJSTest extends JSTestCase {
                 "testQuerySoupWithExactQuery",
                 "testQuerySoupWithAllQueryDescending",
                 "testQuerySoupWithRangeQueryWithOrderPath",
-                "testQuerySoupBadQuerySpec",
                 "testQuerySoupEndKeyNoBeginKey",
                 "testQuerySoupBeginKeyNoEndKey",
                 "testManipulateCursor",

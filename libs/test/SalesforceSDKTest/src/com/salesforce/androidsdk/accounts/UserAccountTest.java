@@ -30,9 +30,10 @@ import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.os.Bundle;
-import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.filters.SmallTest;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -118,6 +119,8 @@ public class UserAccountTest {
                 communityId(TEST_COMMUNITY_ID).communityUrl(TEST_COMMUNITY_URL).firstName(TEST_FIRST_NAME).
                 lastName(TEST_LAST_NAME).displayName(TEST_DISPLAY_NAME).email(TEST_EMAIL).
                 photoUrl(TEST_PHOTO_URL).thumbnailUrl(TEST_THUMBNAIL_URL).
+                lightningDomain(null).lightningSid(null).vfDomain(null).vfSid(null).
+                contentDomain(null).contentSid(null).csrfToken(null).
                 additionalOauthValues(createAdditionalOauthValues()).build();
         final Bundle bundle = account.toBundle();
         final Bundle expectedBundle = createTestAccountBundle();
@@ -232,6 +235,13 @@ public class UserAccountTest {
         object.putString(UserAccount.EMAIL, TEST_EMAIL);
         object.putString(UserAccount.PHOTO_URL, TEST_PHOTO_URL);
         object.putString(UserAccount.THUMBNAIL_URL, TEST_THUMBNAIL_URL);
+        object.putString(UserAccount.LIGHTNING_DOMAIN, null);
+        object.putString(UserAccount.LIGHTNING_SID, null);
+        object.putString(UserAccount.VF_DOMAIN, null);
+        object.putString(UserAccount.VF_SID, null);
+        object.putString(UserAccount.CONTENT_DOMAIN, null);
+        object.putString(UserAccount.CONTENT_SID, null);
+        object.putString(UserAccount.CSRF_TOKEN, null);
         object = MapUtil.addMapToBundle(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }

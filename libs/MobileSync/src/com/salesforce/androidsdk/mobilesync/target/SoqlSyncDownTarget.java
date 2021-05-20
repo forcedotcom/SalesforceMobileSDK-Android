@@ -49,8 +49,11 @@ import java.util.Set;
  */
 public class SoqlSyncDownTarget extends SyncDownTarget {
 
-	public static final String QUERY = "query";
-	private String query;
+    public static final String QUERY = "query";
+    public static final String MAX_BATCH_SIZE = "maxBatchSize";
+
+    protected int maxBatchSize;
+    private String query;
     private String nextRecordsUrl;
 
     /**
@@ -61,6 +64,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
     public SoqlSyncDownTarget(JSONObject target) throws JSONException {
         super(target);
         this.query = modifyQueryIfNeeded(JSONObjectHelper.optString(target, QUERY));
+        this.maxBatchSize = target.optInt(MAX_BATCH_SIZE, RestRequest.DEFAULT_BATCH_SIZE);
     }
 
 	/**
@@ -73,12 +77,26 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
 
     /**
      * Construct SoqlSyncDownTarget from soql query
+     * @param idFieldName
+     * @param modificationDateFieldName
      * @param query
      */
     public SoqlSyncDownTarget(String idFieldName, String modificationDateFieldName, String query) {
+        this(idFieldName, modificationDateFieldName, query, RestRequest.DEFAULT_BATCH_SIZE);
+    }
+
+    /**
+     * Construct SoqlSyncDownTarget from soql query
+     * @param idFieldName
+     * @param modificationDateFieldName
+     * @param query
+     * @param maxBatchSize - must be between 200 and 2000
+     */
+    public SoqlSyncDownTarget(String idFieldName, String modificationDateFieldName, String query, int maxBatchSize) {
         super(idFieldName, modificationDateFieldName);
         this.queryType = QueryType.soql;
         this.query = modifyQueryIfNeeded(query);
+        this.maxBatchSize = maxBatchSize;
     }
 
     private String modifyQueryIfNeeded(String query) {
@@ -127,6 +145,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
 	public JSONObject asJSON() throws JSONException {
 		JSONObject target = super.asJSON();
         if (query != null) target.put(QUERY, query);
+        target.put(MAX_BATCH_SIZE, maxBatchSize);
 		return target;
 	}
 
@@ -136,7 +155,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
     }
 
     protected JSONArray startFetch(SyncManager syncManager, String query) throws IOException, JSONException {
-        RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, query);
+        RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, query, maxBatchSize);
         RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
         JSONObject responseJson = getResponseJson(response);
         JSONArray records = getRecordsFromResponseJson(responseJson);

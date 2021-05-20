@@ -24,24 +24,16 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
+package com.salesforce.androidsdk.smartstore.store;
 
 import android.database.Cursor;
-import androidx.test.filters.MediumTest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-
-import com.salesforce.androidsdk.smartstore.store.AlterSoupLongOperation;
-import com.salesforce.androidsdk.smartstore.store.DBHelper;
-import com.salesforce.androidsdk.smartstore.store.IndexSpec;
-import com.salesforce.androidsdk.smartstore.store.LongOperation;
-import com.salesforce.androidsdk.smartstore.store.QuerySpec;
-import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.smartstore.store.SoupSpec;
+import androidx.test.filters.MediumTest;
 import com.salesforce.androidsdk.util.JSONTestHelper;
-
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import net.sqlcipher.database.SQLiteDatabase;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -50,10 +42,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Tests to compare speed of smartstore full-text-search indices with regular indices
@@ -613,14 +601,8 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         // Find by last name
         assertRowCount(1, "lastName", "Doe");
 
-        // Find by city - error expected - field is not yet indexed
-        try {
-            assertRowCount(1, "address.city", "San Francisco");
-            Assert.fail("Expected smart sql exception");
-        }
-        catch (SmartSqlHelper.SmartSqlException e) {
-            // as expected
-        }
+        // Making sure there is no index on city yet
+        Assert.assertFalse(store.hasIndexForPath(TEST_SOUP, "address.city"));
 
         // Alter soup - add city + street
         IndexSpec[] indexSpecsNew = new IndexSpec[] {new IndexSpec("lastName", SmartStore.Type.string), new IndexSpec("address.city", SmartStore.Type.string), new IndexSpec("address.street", SmartStore.Type.string)};
@@ -631,6 +613,9 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
 
         // Re-index city
         store.reIndexSoup(TEST_SOUP, new String[] {"address.city"}, true);
+
+        // Making sure there is an index on city now
+        Assert.assertTrue(store.hasIndexForPath(TEST_SOUP, "address.city"));
 
         // Find by city
         assertRowCount(1, "address.city", "San Francisco");
