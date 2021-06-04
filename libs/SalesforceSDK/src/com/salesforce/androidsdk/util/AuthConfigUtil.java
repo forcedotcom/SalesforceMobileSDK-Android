@@ -26,8 +26,10 @@
  */
 package com.salesforce.androidsdk.util;
 
+import android.content.Intent;
 import android.text.TextUtils;
 
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.RestResponse;
 
@@ -46,6 +48,9 @@ import okhttp3.Response;
  * @author bhariharan
  */
 public class AuthConfigUtil {
+
+    public static final String AUTH_CONFIG_COMPLETE_INTENT_ACTION = "com.salesforce.AUTH_CONFIG_COMPLETE";
+    public static final String WAS_REQUEST_SUCCESSFUL_EXTRA = "com.salesforce.WAS_REQUEST_SUCCESSFUL";
 
     private static final String FORWARD_SLASH = "/";
     private static final String MY_DOMAIN_AUTH_CONFIG_ENDPOINT = "/.well-known/auth-configuration";
@@ -76,6 +81,9 @@ public class AuthConfigUtil {
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Auth config request was not successful", e);
         }
+        final Intent intent = new Intent(AUTH_CONFIG_COMPLETE_INTENT_ACTION);
+        intent.putExtra(WAS_REQUEST_SUCCESSFUL_EXTRA, authConfig != null);
+        SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
         return authConfig;
     }
 
