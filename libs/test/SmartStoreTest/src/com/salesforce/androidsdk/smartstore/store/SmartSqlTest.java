@@ -191,13 +191,25 @@ public class SmartSqlTest extends SmartStoreTestCase {
         Assert.assertEquals("select json_extract(e.soup, '$.education'), json_extract(soup, '$.building') from TABLE_1 as e, TABLE_2",
 				store.convertSmartSql("select e.{employees:education}, {departments:building} from {employees} as e, {departments}"));
 
-		// XXX join query with json1 will only run if all the json1 columns are qualified by table or alias
+		// XXX join query with json1 will only run if all the json1 columns are qualified by table or alias
 	}
 
 	@Test
 	public void testConvertSmartSqlForNonIndexedColumns() {
 		Assert.assertEquals("select json_extract(soup, '$.education'), json_extract(soup, '$.address.zipcode') from TABLE_1 where json_extract(soup, '$.address.city') = 'San Francisco'",
 			store.convertSmartSql("select {employees:education}, {employees:address.zipcode} from {employees} where {employees:address.city} = 'San Francisco'"));
+	}
+
+	@Test
+	public void testConvertSmartSqlWithQuotedCurlyBraces() {
+    	Assert.assertEquals("select json_extract(soup, '$.education') from TABLE_1 where json_extract(soup, '$.education') like 'Account(where: {Name: {eq: \"Jason\"}})'",
+			store.convertSmartSql("select {employees:education} from {employees} where {employees:education} like 'Account(where: {Name: {eq: \"Jason\"}})'"));
+	}
+
+	@Test
+	public void testConvertSmartSqlWithMultipleQuotedCurlyBraces() {
+		Assert.assertEquals("select json_extract(soup, '$.education'), '{a:b}', TABLE_1_0 from TABLE_1 where json_extract(soup, '$.address') = '{\"city\": \"San Francisco\"}' or TABLE_1_1 like 'B%'",
+			store.convertSmartSql("select {employees:education}, '{a:b}', {employees:firstName} from {employees} where {employees:address} = '{\"city\": \"San Francisco\"}' or {employees:lastName} like 'B%'"));
 	}
 
 	/**
