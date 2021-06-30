@@ -106,10 +106,16 @@ public class ClientManager {
         // No account found - let's add one - the AuthenticatorService add account method will start the login activity
         if (acc == null) {
             SalesforceSDKLogger.i(TAG, "No account of type " + accountType + " found");
-            accountManager.addAccount(getAccountType(), AccountManager.KEY_AUTHTOKEN, null, options,
-                    activityContext, new AccMgrCallback(restClientCallback), null);
-
+            final Intent i = new Intent(activityContext,
+                    SalesforceSDKManager.getInstance().getLoginActivityClass());
+            i.setPackage(activityContext.getPackageName());
+            i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            if (options != null) {
+                i.putExtras(options);
+            }
+            activityContext.startActivity(i);
         }
+
         // Account found
         else {
             SalesforceSDKLogger.i(TAG, "Found account of type " + accountType);
