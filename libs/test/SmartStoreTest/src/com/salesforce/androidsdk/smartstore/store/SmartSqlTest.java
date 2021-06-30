@@ -212,6 +212,12 @@ public class SmartSqlTest extends SmartStoreTestCase {
 			store.convertSmartSql("select {employees:education}, '{a:b}', {employees:firstName} from {employees} where {employees:address} = '{\"city\": \"San Francisco\"}' or {employees:lastName} like 'B%'"));
 	}
 
+	@Test
+	public void testConvertSmartSqlWithQuotedUnbalancedCurlyBraces() {
+		Assert.assertEquals("select json_extract(soup, '$.education') from TABLE_1 where json_extract(soup, '$.education') like ' { { { } } '",
+			store.convertSmartSql("select {employees:education} from {employees} where {employees:education} like ' { { { } } '"));
+	}
+
 	/**
 	 * Test running smart query that does a select count
 	 * @throws JSONException 
