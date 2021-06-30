@@ -43,7 +43,18 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException
  */
 public class SmartSqlHelper  {
 
+	private static final String NO_STRINGS_OR_FULL_STRINGS_REGEXP = "^([^']|'[^']*')*";
+	//  ^           # the start of the string, then
+	//  ([^']       # either not a quote character
+	//  |'[^']*'    # or a fully quoted string
+	//  )*          # as many times as you want
+
+	private static final String INSIDE_QUOTED_STRING_REGEXP = NO_STRINGS_OR_FULL_STRINGS_REGEXP + "'[^']*";
+
+	private static final String INSIDE_QUOTED_STRING_FOR_FTS_MATCH_PREDICATE_REGEXP = NO_STRINGS_OR_FULL_STRINGS_REGEXP + "MATCH[ ]+'[^']*";
+
 	public static final Pattern SOUP_PATH_PATTERN = Pattern.compile("\\{([^}]+)\\}");
+
 	private static Map<SQLiteDatabase, SmartSqlHelper> INSTANCES;
 
 	/**
@@ -93,6 +104,14 @@ public class SmartSqlHelper  {
 			String fullMatch = matcher.group();
 			String match = matcher.group(1);
 			int position = matcher.start();
+
+			String beforeStr = smartSql.substring(0, position);
+			if (beforeStr.matches(INSIDE_QUOTED_STRING_REGEXP)
+				&& !beforeStr.matches(INSIDE_QUOTED_STRING_FOR_FTS_MATCH_PREDICATE_REGEXP))
+			{
+				continue;
+			}
+
 			String[] parts = match.split(":");
 			String soupName = parts[0];
 			String soupTableName = getSoupTableNameForSmartSql(db, soupName, position);
