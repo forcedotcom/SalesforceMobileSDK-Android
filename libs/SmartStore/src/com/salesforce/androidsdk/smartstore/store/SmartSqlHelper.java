@@ -164,7 +164,7 @@ public class SmartSqlHelper  {
 		// With json1 support, the column name could be an expression of the form json_extract(soup, '$.x.y.z')
 		// We can't have TABLE_x.json_extract(soup, ...) or table_alias.json_extract(soup, ...) in the sql query
         // Instead we should have json_extract(TABLE_x.soup, ...)
-		sqlStr = sqlStr.replaceAll("([^ ]+)\\.json_extract\\(soup", "json_extract($1.soup");
+		sqlStr = sqlStr.replaceAll("\\s([^ ]+)\\.json_extract\\(soup", " json_extract($1.soup");
 
 		// Done
 		return sqlStr;
