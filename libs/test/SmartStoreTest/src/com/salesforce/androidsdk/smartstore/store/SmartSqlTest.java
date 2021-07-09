@@ -132,6 +132,33 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	}
 
 	/**
+	 * Testing smart sql to sql conversion when there is a self join accessing json extracted fields
+	 */
+	@Test
+	public void testConvertSmartSqlWithSelfJoinAndJsonExtractedField() {
+		Assert.assertEquals("select json_extract(mgr.soup, '$.education'), json_extract(e.soup, '$.education') "
+				+ "from TABLE_1 as mgr, TABLE_1 as e "
+				+ "where json_extract(mgr.soup, '$.education') = json_extract(e.soup, '$.education')",
+			store.convertSmartSql("select mgr.{employees:education}, e.{employees:education} "
+				+ "from {employees} as mgr, {employees} as e "
+				+ "where mgr.{employees:education} = e.{employees:education}"));
+	}
+
+	/**
+	 * Testing smart sql to sql conversion when there is a self join accessing json extracted fields
+	 * with no spaces between referenced fields
+	 */
+	@Test
+	public void testConvertSmartSqlWithSelfJoinAndJsonExtractedFieldNoLeadingSpace() {
+		Assert.assertEquals("select json_extract(mgr.soup, '$.education'),json_extract(e.soup, '$.education') "
+				+ "from TABLE_1 as mgr, TABLE_1 as e "
+				+ "where not (json_extract(mgr.soup, '$.education')=json_extract(e.soup, '$.education'))",
+			store.convertSmartSql("select mgr.{employees:education},e.{employees:education} "
+				+ "from {employees} as mgr, {employees} as e "
+				+ "where not (mgr.{employees:education}=e.{employees:education})"));
+	}
+
+	/**
 	 * Testing smart sql to sql conversion when path is: _soup, _soupEntryId or _soupLastModifiedDate
 	 */
     @Test
