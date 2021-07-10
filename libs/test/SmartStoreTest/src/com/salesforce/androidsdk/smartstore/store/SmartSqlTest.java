@@ -444,7 +444,7 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	public void testCleanupRegexpFaster() {
 		String oldRegexp = "([^ ]+)\\.json_extract\\(soup";
 
-		// At least 500 times faster than the old query
+		// At least 500 times faster than the old regexp
 		Assert.assertTrue(
 			timeRegexpInMs(SmartSqlHelper.TABLE_DOT_JSON_EXTRACT_REGEXP) * 500 < timeRegexpInMs(oldRegexp));
 		// No more than 25ms
