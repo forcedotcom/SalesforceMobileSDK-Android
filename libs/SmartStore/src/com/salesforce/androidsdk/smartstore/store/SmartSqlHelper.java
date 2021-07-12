@@ -55,6 +55,8 @@ public class SmartSqlHelper  {
 
 	public static final Pattern SOUP_PATH_PATTERN = Pattern.compile("\\{([^}]+)\\}");
 
+	public static final String TABLE_DOT_JSON_EXTRACT_REGEXP = "(\\w+)\\.json_extract\\(soup";
+
 	private static Map<SQLiteDatabase, SmartSqlHelper> INSTANCES;
 
 	/**
@@ -164,7 +166,7 @@ public class SmartSqlHelper  {
 		// With json1 support, the column name could be an expression of the form json_extract(soup, '$.x.y.z')
 		// We can't have TABLE_x.json_extract(soup, ...) or table_alias.json_extract(soup, ...) in the sql query
         // Instead we should have json_extract(TABLE_x.soup, ...)
-		sqlStr = sqlStr.replaceAll("([\\w]+)\\.json_extract\\(soup", "json_extract($1.soup");
+		sqlStr = sqlStr.replaceAll(TABLE_DOT_JSON_EXTRACT_REGEXP, "json_extract($1.soup");
 
 		// Done
 		return sqlStr;
