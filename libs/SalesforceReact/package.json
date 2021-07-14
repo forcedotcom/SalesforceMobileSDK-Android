@@ -1,6 +1,6 @@
 {
     "name": "SalesforceReact",
-    "version": "9.1.0",
+    "version": "9.2.0",
     "private": true,
     "scripts": {
         "start": "node node_modules/react-native/local-cli/cli.js start"
@@ -8,7 +8,7 @@
     "dependencies": {
         "react": "16.13.1",
         "react-native": "0.63.4",
-        "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#v9.1.0",
+        "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#dev",
         "create-react-class": "^15.7.0"
     },
     "devDependencies": {
