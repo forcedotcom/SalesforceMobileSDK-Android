@@ -117,3 +117,11 @@ afterEvaluate {
         println("The preDebugAndroidTestBuild task was not found.")
     }
 }
+
+ext {
+    PUBLISH_GROUP_ID = 'com.salesforce.mobilesdk'
+    PUBLISH_VERSION = '9.1.1'
+    PUBLISH_ARTIFACT_ID = 'SalesforceReact'
+}
+
+apply from: "${rootProject.projectDir}/publish/publish-module.gradle"
