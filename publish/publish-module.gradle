@@ -24,7 +24,7 @@ afterEvaluate {
                 artifact sourcesJar
                 pom {
                     name = PUBLISH_ARTIFACT_ID
-                    url = 'https://github.com/getstream/stream-chat-android'
+                    url = 'https://github.com/forcedotcom/SalesforceMobileSDK-Android'
                     licenses {
                         license {
                             name = 'The Apache Software License, Version 2.0'
