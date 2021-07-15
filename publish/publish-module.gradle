@@ -24,6 +24,7 @@ afterEvaluate {
                 artifact sourcesJar
                 pom {
                     name = PUBLISH_ARTIFACT_ID
+                    description = 'Official Salesforce Android SDK'
                     url = 'https://github.com/forcedotcom/SalesforceMobileSDK-Android'
                     licenses {
                         license {

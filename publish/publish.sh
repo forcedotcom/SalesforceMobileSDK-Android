@@ -1,0 +1,8 @@
+#!/bin/bash
+
+./gradlew libs:SalesforceAnalytics:publishReleasePublicationToSonatypeRepository
+./gradlew libs:SalesforceSDK:publishReleasePublicationToSonatypeRepository
+./gradlew libs:SalesforceHybrid:publishReleasePublicationToSonatypeRepository
+./gradlew libs:SalesforceReact:publishReleasePublicationToSonatypeRepository
+./gradlew libs:SmartStore:publishReleasePublicationToSonatypeRepository
+./gradlew libs:MobileSync:publishReleasePublicationToSonatypeRepository
