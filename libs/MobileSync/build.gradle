@@ -3,9 +3,14 @@ buildscript {
         google()
         mavenCentral()
     }
+
+    dependencies {
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
+    }
 }
 
 apply plugin: 'com.android.library'
+apply plugin: 'maven-publish'
 
 dependencies {
     api project(':libs:SmartStore')
@@ -62,3 +67,11 @@ android {
     abortOnError false
   }
 }
+
+ext {
+    PUBLISH_GROUP_ID = 'com.salesforce.mobilesdk'
+    PUBLISH_VERSION = '9.1.1'
+    PUBLISH_ARTIFACT_ID = 'MobileSync'
+}
+
+apply from: "${rootProject.projectDir}/publish/publish-module.gradle"

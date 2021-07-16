@@ -1,0 +1,70 @@
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
+
+task sourcesJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    archiveClassifier.set('sources')
+}
+
+artifacts {
+    archives sourcesJar
+}
+
+group = PUBLISH_GROUP_ID
+version = PUBLISH_VERSION
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                groupId PUBLISH_GROUP_ID
+                artifactId PUBLISH_ARTIFACT_ID
+                version PUBLISH_VERSION
+                from components.release
+                artifact sourcesJar
+                pom {
+                    name = PUBLISH_ARTIFACT_ID
+                    description = 'Official Salesforce Android SDK'
+                    url = 'https://github.com/forcedotcom/SalesforceMobileSDK-Android'
+                    licenses {
+                        license {
+                            name = 'The Apache Software License, Version 2.0'
+                            url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = 'bpage'
+                            name = 'Brandon Page'
+                            email = 'bpage@salesforce.com'
+                        }
+                        developer {
+                            id = 'wmathurin'
+                            name = 'Wolfgang Mathurin'
+                            email = 'wmathurin@salesforce.com '
+                        }
+                        developer {
+                            id = 'bhariharan'
+                            name = 'Bharath Hariharan'
+                            email = 'bhariharan@salesforce.com'
+                        }
+                    }
+                    scm {
+                        connection = 'https://github.com/forcedotcom/SalesforceMobileSDK-Android.git'
+                        developerConnection = 'https://github.com/forcedotcom/SalesforceMobileSDK-Android.git'
+                        url = 'https://github.com/forcedotcom/SalesforceMobileSDK-Android'
+                    }
+                }
+            }
+        }
+    }
+}
+
+signing {
+    useInMemoryPgpKeys(
+            rootProject.ext["signing.keyId"],
+            rootProject.ext["signing.key"],
+            rootProject.ext["signing.password"],
+    )
+    sign publishing.publications
+}
