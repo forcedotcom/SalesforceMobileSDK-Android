@@ -10,7 +10,7 @@ buildscript {
   }
 
   dependencies {
-    classpath 'com.android.tools.build:gradle:4.2.1'
+    classpath 'com.android.tools.build:gradle:7.0.0'
     classpath 'io.github.gradle-nexus:publish-plugin:1.1.0'
   }
 }
@@ -32,7 +32,7 @@ allprojects {
     google()
     mavenCentral()
 
-    // FIXME: Remove this once we can figure out an alternate source to fetch PaperDB and Cordova from.
+    // FIXME: Remove this once we can figure out an alternate source to fetch Cordova from.
     jcenter()
   }
 }
