@@ -32,7 +32,7 @@ allprojects {
     google()
     mavenCentral()
 
-    // FIXME: Remove this once we can figure out an alternate source to fetch PaperDB and Cordova from.
+    // FIXME: Remove this once we can figure out an alternate source to fetch Cordova from.
     jcenter()
   }
 }
