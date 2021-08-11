@@ -1,6 +1,3 @@
 [submodule "external/shared"]
 	path = external/shared
     url = https://github.com/forcedotcom/SalesforceMobileSDK-Shared.git
-[submodule "external/cordova-plugin-whitelist"]
-	path = external/cordova-plugin-whitelist
-	url = https://github.com/apache/cordova-plugin-whitelist
