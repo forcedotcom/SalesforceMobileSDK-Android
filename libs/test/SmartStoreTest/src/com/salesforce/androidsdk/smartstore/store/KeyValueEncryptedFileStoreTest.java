@@ -681,6 +681,60 @@ public class KeyValueEncryptedFileStoreTest {
         }
     }
 
+    /**
+     * Making sure that keySet(), deleteAll(), count() work even if there is a bad key file
+     * Bad key file should not happen unless files were tampered with directly
+     * @throws IOException
+     */
+    @Test
+    public void  testKeySetCountDeleteAllWithBadKeyFile() throws IOException {
+        keyValueStore.saveValue("key1", "value1");
+        keyValueStore.saveValue("key2", "value2");
+
+        // Calling count() -  should return 2
+        Assert.assertEquals(2, keyValueStore.count());
+
+        // Getting file objects
+        File key1File = new File(getStoreDir(TEST_STORE), SalesforceKeyGenerator.getSHA256Hash("key1") + ".key");
+        File key2File = new File(getStoreDir(TEST_STORE), SalesforceKeyGenerator.getSHA256Hash("key2") + ".key");
+        File value1File = new File(getStoreDir(TEST_STORE), SalesforceKeyGenerator.getSHA256Hash("key1") + ".value");
+        File value2File = new File(getStoreDir(TEST_STORE), SalesforceKeyGenerator.getSHA256Hash("key2") + ".value");
+
+        // Making sure all 4 files exist
+        Assert.assertTrue(key1File.exists());
+        Assert.assertTrue(key2File.exists());
+        Assert.assertTrue(value1File.exists());
+        Assert.assertTrue(value2File.exists());
+
+        // Tampering with one of the key file
+        key1File.delete();
+        key1File.createNewFile();
+        Assert.assertEquals(1, keyValueStore.count());
+        Assert.assertTrue(key1File.exists());
+        Assert.assertTrue(key2File.exists());
+        Assert.assertTrue(value1File.exists());
+        Assert.assertTrue(value2File.exists());
+
+        // Calling keySet() - should not return bad key
+        String[] foundKeys = keyValueStore.keySet().toArray(new String[0]);
+        Assert.assertEquals(1, foundKeys.length);
+        Assert.assertEquals("key2", foundKeys[0]);
+
+        // Calling count() -  should return 1
+        Assert.assertEquals(1, keyValueStore.count());
+
+        // Calling deleteAll() - should also delete bad key file
+        keyValueStore.deleteAll();
+        Assert.assertFalse(key1File.exists());
+        Assert.assertFalse(key2File.exists());
+        Assert.assertFalse(value1File.exists());
+        Assert.assertFalse(value2File.exists());
+
+        // Calling count() -  should return 0
+        Assert.assertEquals(0, keyValueStore.count());
+
+    }
+
     //
     // Helper methods
     //

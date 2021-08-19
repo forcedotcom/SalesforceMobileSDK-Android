@@ -43,6 +43,7 @@ import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -269,9 +270,13 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
                 file.delete();
             }
         } else {
-            for (String key : keySet()) {
-                SmartStoreLogger.i(TAG, "deleting key :" + key);
-                deleteValue(key);
+            for (File file : safeListFiles(KEY_SUFFIX)) {
+                SmartStoreLogger.i(TAG, "deleting file :" + file.getName());
+                file.delete();
+            }
+            for (File file : safeListFiles(VALUE_SUFFIX)) {
+                SmartStoreLogger.i(TAG, "deleting file :" + file.getName());
+                file.delete();
             }
         }
     }
@@ -293,7 +298,7 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
                 keys.add(key);
             } catch (Exception e) {
                 SmartStoreLogger.e(TAG, "keySet(): Threw exception for:" + file.getName(), e);
-                return null;
+                // skip the bad key but keep going
             }
         }
         return keys;
@@ -302,7 +307,7 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
     /** @return number of entries in the store. */
     @Override
     public int count() {
-        return kvVersion == 1 ? safeListFiles(null /* all */).length : safeListFiles(VALUE_SUFFIX).length;
+        return kvVersion == 1 ? safeListFiles(null /* all */).length : keySet().size();
     }
 
     /** @return True if store is empty. */
