@@ -78,4 +78,6 @@ ext {
     PUBLISH_ARTIFACT_ID = 'SalesforceSDK'
 }
 
-apply from: "${rootProject.projectDir}/publish/publish-module.gradle"
+if (rootProject.name == 'SalesforceMobileSDK-Android') {
+    apply from: "${rootProject.projectDir}/publish/publish-module.gradle"
+}
