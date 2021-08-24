@@ -31,9 +31,5 @@ allprojects {
     }
     google()
     mavenCentral()
-
-    // TODO: Remove jcenter when we upgrade to RN 0.65
-    // https://github.com/facebook/react-native/commit/9a923be8979ddd7da5ea3dc68232a7c36aa0380d
-    jcenter()
   }
 }
