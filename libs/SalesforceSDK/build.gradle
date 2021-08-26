@@ -19,6 +19,7 @@ dependencies {
      */
     api 'androidx.browser:browser:1.0.0'
     implementation 'com.google.android.material:material:1.4.0'
+    implementation 'androidx.biometric:biometric:1.1.0'
     androidTestImplementation 'androidx.test:runner:1.4.0'
     androidTestImplementation 'androidx.test:rules:1.4.0'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'

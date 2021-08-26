@@ -169,4 +169,32 @@
         <item name="android:layout_marginLeft">@dimen/sf__passcode_instr_margin_left</item>
         <item name="android:layout_marginRight">@dimen/sf__passcode_instr_margin_right</item>
     </style>
+
+    <style name="SalesforceSDK.ScreenLock" parent="@style/Theme.Design.NoActionBar">
+        <item name="android:colorPrimary">@color/sf__primary_color</item>
+        <item name="sfColorSecondary">@color/sf__secondary_color</item>
+        <item name="sfLayoutBackground">@color/sf__layout_background</item>
+        <item name="android:colorBackground">@color/sf__background</item>
+        <item name="android:textColor">@color/sf__text_color</item>
+        <item name="android:textColorPrimary">@color/sf__text_color</item>
+        <item name="android:colorPrimaryDark">@color/sf__layout_background</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">@color/sf__background</item>
+        <item name="sfNegativeButtonTextColor">@color/sf__primary_color</item>
+        <item name="sfNegativeButtonBorderColor">@color/sf__border_color</item>
+    </style>
+
+    <style name="SalesforceSDK.ScreenLock.Dark">
+        <item name="sfColorSecondary">@color/sf__secondary_color_dark</item>
+        <item name="sfLayoutBackground">@color/sf__layout_background_dark</item>
+        <item name="android:colorBackground">@color/sf__background_dark</item>
+        <item name="android:textColor">@color/sf__text_color_dark</item>
+        <item name="android:textColorPrimary">@color/sf__text_color_dark</item>
+        <item name="android:colorPrimaryDark">@color/sf__layout_background_dark</item>
+        <item name="android:navigationBarColor">@color/sf__background_dark</item>
+        <item name="sfNegativeButtonTextColor">@color/sf__secondary_color_dark</item>
+        <item name="sfNegativeButtonBorderColor">@color/sf__secondary_color_dark</item>
+    </style>
+
 </resources>

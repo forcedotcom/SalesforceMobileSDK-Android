@@ -529,6 +529,7 @@ public class OAuth2 {
         public String displayName;
         public String pictureUrl;
         public String thumbnailUrl;
+        public boolean mobilePolicy;
         public int pinLength = -1;
         public int screenLockTimeout = -1;
         public boolean biometricUnlockAllowed = true;
@@ -555,17 +556,7 @@ public class OAuth2 {
                 }
                 customAttributes = parsedResponse.optJSONObject(CUSTOM_ATTRIBUTES);
                 customPermissions = parsedResponse.optJSONObject(CUSTOM_PERMISSIONS);
-                if (parsedResponse.has(MOBILE_POLICY)) {
-                    pinLength = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(PIN_LENGTH);
-                    screenLockTimeout = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(SCREEN_LOCK);
-                    if (customAttributes != null) {
-                        String bioAttribute = customAttributes.optString(BIOMETRIC_UNLOCK).toLowerCase(Locale.US);
-                        if (bioAttribute.equals("false")) {
-                            biometricUnlockAllowed = false;
-                            SalesforceSDKLogger.i(TAG, "Biometric Unlock disabled by connected app.");
-                        }
-                    }
-                }
+                mobilePolicy = parsedResponse.has(MOBILE_POLICY);
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse identity response", e);
             }

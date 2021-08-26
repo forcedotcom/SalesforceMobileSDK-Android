@@ -49,6 +49,8 @@ import android.text.TextUtils;
 import android.view.View;
 import android.webkit.CookieManager;
 
+import androidx.annotation.NonNull;
+
 import com.salesforce.androidsdk.BuildConfig;
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -73,10 +75,12 @@ import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
+import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 import com.salesforce.androidsdk.ui.DevInfoActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
+import com.salesforce.androidsdk.ui.ScreenLockActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
@@ -147,9 +151,9 @@ public class SalesforceSDKManager {
     private LoginOptions loginOptions;
     private final Class<? extends Activity> mainActivityClass;
     private Class<? extends Activity> loginActivityClass = LoginActivity.class;
-    private Class<? extends PasscodeActivity> passcodeActivityClass = PasscodeActivity.class;
+    private Class<? extends ScreenLockActivity> screenLockActivityClass = ScreenLockActivity.class;
     private Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
-    private PasscodeManager passcodeManager;
+    private ScreenLockManager screenLockManager;
     private LoginServerManager loginServerManager;
     private boolean isTestRun = false;
 	private boolean isLoggingOut = false;
@@ -176,9 +180,9 @@ public class SalesforceSDKManager {
     }
 
     /**
-     * PasscodeManager object lock.
+     * ScreenLockManager object lock.
      */
-    private final Object passcodeManagerLock = new Object();
+    private final Object screenLockManagerLock = new Object();
 
     /**
      * Dev support
@@ -400,20 +404,39 @@ public class SalesforceSDKManager {
      * The custom class must subclass PasscodeActivity.
      *
      * @param activity Subclass of PasscodeActivity.
+     *
+     * @deprecated Will be removed in Mobile SDK 10.0.  Use {@link #setScreenLockActivity(Class)} instead.
      */
-    public void setPasscodeActivity(Class<? extends PasscodeActivity> activity) {
-    	if (activity != null) {
-    		passcodeActivityClass = activity;
-    	}
-    }
+    public void setPasscodeActivity(Class<? extends PasscodeActivity> activity) { }
 
     /**
      * Returns the descriptor of the passcode activity class that's currently in use.
      *
      * @return Passcode activity class descriptor.
+     *
+     * @deprecated Will be removed in Mobile SDK 10.0.  Use {@link #getScreenLockActivity()} instead.
      */
-    public Class<? extends PasscodeActivity> getPasscodeActivity() {
-    	return passcodeActivityClass;
+    public Class<? extends PasscodeActivity> getPasscodeActivity() { return null; }
+
+    /**
+     * Sets a custom ScreenLock activity class to be used instead of the default class.
+     * The custom class must subclass {@link ScreenLockActivity}.
+     *
+     * @param activity Subclass of ScreenLockActivity.
+     */
+    public void setScreenLockActivity(Class<? extends ScreenLockActivity> activity) {
+        if (activity != null) {
+            screenLockActivityClass = activity;
+        }
+    }
+
+    /**
+     * Returns the descriptor of the ScreenLock activity class that's currently in use.
+     *
+     * @return ScreenLock activity class descriptor.
+     */
+    public Class<? extends ScreenLockActivity> getScreenLockActivity() {
+        return screenLockActivityClass;
     }
 
     /**
@@ -512,17 +535,26 @@ public class SalesforceSDKManager {
     }
 
     /**
-     * Returns the passcode manager that's associated with SalesforceSDKManager.
+     * Returns the descriptor of the passcode activity class that's currently in use.
      *
-     * @return PasscodeManager instance.
+     * @return Passcode activity class descriptor.
+     *
+     * @deprecated Will be removed in Mobile SDK 10.0.  Use {@link #getScreenLockManager()} instead.
      */
-    public PasscodeManager getPasscodeManager() {
-    	synchronized (passcodeManagerLock) {
-            if (passcodeManager == null) {
-                passcodeManager = new PasscodeManager(context);
+    public PasscodeManager getPasscodeManager() { return null; }
+
+    /**
+     * Returns the ScreenLock manager that's associated with SalesforceSDKManager.
+     *
+     * @return ScreenLockManager instance.
+     */
+    public ScreenLockManager getScreenLockManager() {
+        synchronized (screenLockManagerLock) {
+            if (screenLockManager == null) {
+                screenLockManager = new ScreenLockManager();
             }
-            return passcodeManager;
-		}
+            return screenLockManager;
+        }
     }
 
 	/**
@@ -753,8 +785,9 @@ public class SalesforceSDKManager {
             getAdminPermsManager().resetAll();
             adminSettingsManager = null;
             adminPermsManager = null;
-            getPasscodeManager().reset(context);
-            passcodeManager = null;
+
+            getScreenLockManager().reset();
+            screenLockManager = null;
         }
     }
 
@@ -767,6 +800,7 @@ public class SalesforceSDKManager {
         SalesforceAnalyticsManager.reset(userAccount);
         RestClient.clearCaches(userAccount);
         UserAccountManager.getInstance().clearCachedCurrentUser();
+        getScreenLockManager().cleanUp(userAccount);
     }
 
     /**
@@ -1072,21 +1106,14 @@ public class SalesforceSDKManager {
         return context.getString(R.string.account_type);
     }
 
+    @NonNull
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder();
-        sb.append(this.getClass()).append(": {\n")
-          .append("   accountType: ").append(getAccountType()).append("\n")
-          .append("   userAgent: ").append(getUserAgent()).append("\n")
-          .append("   mainActivityClass: ").append(getMainActivityClass()).append("\n")
-          .append("\n");
-        if (passcodeManager != null) {
-
-            // passcodeManager may be null at startup if the app is running in debug mode.
-            sb.append("   hasStoredPasscode: ").append(passcodeManager.hasStoredPasscode(context)).append("\n");
-        }
-        sb.append("}\n");
-        return sb.toString();
+        return this.getClass() + ": {\n" +
+                "   accountType: " + getAccountType() + "\n" +
+                "   userAgent: " + getUserAgent() + "\n" +
+                "   mainActivityClass: " + getMainActivityClass() + "\n" +
+                "\n";
     }
 
     /**
