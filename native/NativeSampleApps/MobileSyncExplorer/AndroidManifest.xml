@@ -14,7 +14,8 @@
 		<!-- Launcher screen -->
 		<activity android:name="com.salesforce.samples.mobilesyncexplorer.ui.MainActivity"
 		    android:label="@string/app_name"
-			android:theme="@style/SalesforceSDK">
+			android:theme="@style/SalesforceSDK"
+            android:exported="false">
 
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />
@@ -44,7 +45,8 @@
         <!--
         <activity android:name="com.salesforce.androidsdk.ui.LoginActivity"
             android:theme="@style/SalesforceSDK"
-            android:launchMode="singleInstance">
+            android:launchMode="singleInstance"
+            android:exported="true">
 
             <intent-filter>
                 <data android:scheme="testsfdc"
@@ -72,7 +74,8 @@
         <!--
         <activity android:name="com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity"
             android:excludeFromRecents="true"
-            android:theme="@style/SalesforceSDK">
+            android:theme="@style/SalesforceSDK"
+            android:exported="true">
 
             <intent-filter>
                 <data android:scheme="com.salesforce.samples.mobilesyncexplorer"
@@ -86,7 +89,8 @@
 
 		<!-- Detail screen -->
         <activity android:name="com.salesforce.samples.mobilesyncexplorer.ui.DetailActivity"
-            android:theme="@style/SalesforceSDK">
+            android:theme="@style/SalesforceSDK"
+            android:exported="false">
             <intent-filter>
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
