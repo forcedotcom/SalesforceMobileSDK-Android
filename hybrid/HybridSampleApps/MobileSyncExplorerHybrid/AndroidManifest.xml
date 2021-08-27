@@ -21,7 +21,8 @@
         <activity android:label="@string/app_name"
             android:name="com.salesforce.androidsdk.phonegap.ui.SalesforceDroidGapActivity"
             android:configChanges="orientation|keyboardHidden"
-            android:theme="@style/Theme.AppCompat.DayNight">
+            android:theme="@style/Theme.AppCompat.DayNight"
+            android:exported="false">
 
             <intent-filter >
                 <action android:name="android.intent.action.MAIN" />
@@ -51,7 +52,8 @@
         <!--
         <activity android:name="com.salesforce.androidsdk.ui.LoginActivity"
             android:theme="@style/SalesforceSDK"
-            android:launchMode="singleInstance">
+            android:launchMode="singleInstance"
+            android:exported="true">
 
             <intent-filter>
                 <data android:scheme="testsfdc"
@@ -79,7 +81,8 @@
         <!--
         <activity android:name="com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity"
             android:excludeFromRecents="true"
-            android:theme="@style/SalesforceSDK">
+            android:theme="@style/SalesforceSDK"
+            android:exported="true">
 
             <intent-filter>
                 <data android:scheme="com.salesforce.samples.mobilesyncexplorerhybrid"

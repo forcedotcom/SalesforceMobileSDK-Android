@@ -10,7 +10,9 @@
 	    <!-- Launcher screen -->
         <activity android:name="com.salesforce.androidsdk.reactnative.util.ReactTestActivity"
             android:label="@string/app_name"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:exported="false">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -19,7 +21,7 @@
 
         <!-- Disabling AILTN in tests -->
         <service android:name="com.salesforce.androidsdk.analytics.AnalyticsPublisherService"
-            android:enabled="false" />
-
+            android:enabled="false"
+            android:exported="false" />
 	</application>
 </manifest>
