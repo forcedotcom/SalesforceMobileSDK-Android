@@ -8,8 +8,10 @@
         android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpaceActivity">
 
         <!-- Launcher screen -->
-        <activity android:name=".MainActivity" android:label="@string/app_name"
-            android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+        <activity android:name=".MainActivity"
+            android:label="@string/app_name"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+            android:exported="false">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -19,7 +21,7 @@
 
         <!-- Disabling AILTN in tests -->
         <service android:name="com.salesforce.androidsdk.analytics.AnalyticsPublisherService"
-            android:enabled="false" />
-
+            android:enabled="false"
+            android:exported="false" />
 	</application>
 </manifest>

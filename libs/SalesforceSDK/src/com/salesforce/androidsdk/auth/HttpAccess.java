@@ -69,7 +69,9 @@ public class HttpAccess {
      * Initializes HttpAccess. Should be called from the application.
      */
     public static void init(Context app) {
-        DEFAULT = new HttpAccess(app, null /* user agent will be calculated at request time */);
+        if (DEFAULT != null) {
+            DEFAULT = new HttpAccess(app, null /* user agent will be calculated at request time */);
+        }
     }
 
     /**
