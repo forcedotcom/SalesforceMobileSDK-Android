@@ -16,26 +16,22 @@ public class ScreenLockManager {
     public static final String MOBILE_POLICY_PREF = "mobile_policy";
     public static final String SCREEN_LOCK = "screen_lock";
 
-    private boolean mobilePolicy = readMobilePolicy();
     private boolean shouldLock = true;
 
-    public void storeMobilePolicyForOrg(UserAccount account, boolean screenlockreqiured) {
+    public void storeMobilePolicyForOrg(UserAccount account, boolean screenLockRequired) {
         Context ctx = SalesforceSDKManager.getInstance().getAppContext();
         SharedPreferences accountSharedPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
                 + account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
-        accountSharedPrefs.edit().putBoolean(SCREEN_LOCK, screenlockreqiured).apply();
+        accountSharedPrefs.edit().putBoolean(SCREEN_LOCK, screenLockRequired).apply();
 
         SharedPreferences globalPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
-        if (screenlockreqiured && !globalPrefs.getBoolean(MOBILE_POLICY_PREF, false)) {
+        if (screenLockRequired) {
             globalPrefs.edit().putBoolean(SCREEN_LOCK, true).apply();
         }
-
-        // This is necessary to lock the app upon initial login
-        mobilePolicy = true;
     }
 
     public boolean onResume() {
-        boolean locked = mobilePolicy && shouldLock;
+        boolean locked = shouldLock && readMobilePolicy();
         if (locked) {
             lock();
         }
@@ -52,10 +48,6 @@ public class ScreenLockManager {
         this.shouldLock = shouldLock;
     }
 
-    public boolean shouldLock() {
-        return this.shouldLock;
-    }
-
     public void reset() {
         Context ctx = SalesforceSDKManager.getInstance().getAppContext();
         SharedPreferences globalPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
@@ -68,7 +60,6 @@ public class ScreenLockManager {
         SharedPreferences accountPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
                 + account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
         accountPrefs.edit().remove(SCREEN_LOCK).apply();
-        this.mobilePolicy = false;
 
         // Determine if any other users still need ScreenLock.
         List<UserAccount> accounts = SalesforceSDKManager.getInstance()
@@ -78,12 +69,11 @@ public class ScreenLockManager {
             accountPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
                     + mAccount.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
             if (accountPrefs.getBoolean(SCREEN_LOCK, false)) {
-                this.mobilePolicy = true;
                 return;
             }
         }
 
-        if (!this.mobilePolicy) {
+        if (!readMobilePolicy()) {
             reset();
         }
     }

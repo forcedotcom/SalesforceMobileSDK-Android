@@ -57,39 +57,6 @@ public class PasscodeManager  {
     // Default min passcode length
     public static final int MIN_PASSCODE_LENGTH = 4;
 
-    // Key in preference for the passcode
-    protected static final String KEY_PASSCODE ="passcode";
-
-    // Private preference where we stored the passcode (hashed)
-    protected static final String PASSCODE_PREF_NAME = "user";
-
-    // Private preference where we stored the org settings.
-    protected static final String MOBILE_POLICY_PREF = "mobile_policy";
-
-    // Key in preference for the access timeout.
-    protected static final String KEY_TIMEOUT = "access_timeout";
-
-    // Key in preference for the passcode length.
-    protected static final String KEY_PASSCODE_LENGTH = "passcode_length";
-
-    // Key in preferences for actual passcode length known
-    protected static final String KEY_PASSCODE_LENGTH_KNOWN = "passcode_length_known";
-
-    // Key in preference for connect app biometric flag.
-    protected static final String KEY_BIOMETRIC_ALLOWED = "biometric_allowed";
-
-    // Key in preferences to indicate if the user has been prompted to use biometric.
-    protected static final String KEY_BIOMETRIC_ENROLLMENT = "biometric_enrollment";
-
-    // Key in preferences to indicate if the user has enabled biometric.
-    protected static final String KEY_BIOMETRIC_ENABLED = "biometric_enabled";
-
-    // Key in preference to indicate passcode change is required.
-    protected static final String KEY_PASSCODE_CHANGE_REQUIRED= "passcode_change_required";
-
-    // Key in preference for failed attempts
-    protected static final String KEY_FAILED_ATTEMPTS = "failed_attempts";
-
     // Request code used to start passcode activity
     public static final int PASSCODE_REQUEST_CODE = 777;
 
@@ -107,9 +74,7 @@ public class PasscodeManager  {
      *
      * @return true if passcode change required.
      */
-    public boolean isPasscodeChangeRequired() {
-        return false;
-    }
+    public boolean isPasscodeChangeRequired() { return false; }
 
 
     /**

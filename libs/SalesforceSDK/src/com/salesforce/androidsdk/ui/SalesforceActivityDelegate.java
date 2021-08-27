@@ -34,7 +34,6 @@ import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.LogoutCompleteReceiver;
@@ -68,7 +67,7 @@ public class SalesforceActivityDelegate {
     }
 
     /**
-     * Brings up passcode screen if needed
+     * Brings up ScreenLock if needed
      * Build RestClient if requested and then calls activity.onResume(restClient)
      * Otherwise calls activity.onResume(null)
      *

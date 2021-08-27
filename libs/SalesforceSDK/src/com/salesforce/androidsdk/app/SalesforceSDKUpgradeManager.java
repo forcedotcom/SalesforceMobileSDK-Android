@@ -26,6 +26,9 @@
  */
 package com.salesforce.androidsdk.app;
 
+import static com.salesforce.androidsdk.security.ScreenLockManager.MOBILE_POLICY_PREF;
+import static com.salesforce.androidsdk.security.ScreenLockManager.SCREEN_LOCK;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 
@@ -93,6 +96,9 @@ public class SalesforceSDKUpgradeManager {
             if (installedVerDouble < 8.2) {
                 upgradeTo8Dot2();
             }
+            if (installedVerDouble < 9.2) {
+                upgradeTo9Dot2();
+            }
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Failed to parse installed version.");
         }
@@ -148,6 +154,32 @@ public class SalesforceSDKUpgradeManager {
                             SalesforceSDKManager.getInstance().getAppContext());
                 }
             }
+        }
+    }
+
+    private void upgradeTo9Dot2() {
+        final String KEY_PASSCODE ="passcode";
+        final String KEY_TIMEOUT = "access_timeout";
+        final String KEY_PASSCODE_LENGTH = "passcode_length";
+        final String KEY_FAILED_ATTEMPTS = "failed_attempts";
+        final String KEY_PASSCODE_LENGTH_KNOWN = "passcode_length_known";
+        final String KEY_BIOMETRIC_ALLOWED = "biometric_allowed";
+        final String KEY_BIOMETRIC_ENROLLMENT = "biometric_enrollment";
+        final String KEY_BIOMETRIC_ENABLED = "biometric_enabled";
+
+        final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext()
+                .getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
+        if (sp.contains(KEY_TIMEOUT) && sp.contains(KEY_PASSCODE_LENGTH)) {
+            SharedPreferences.Editor e = sp.edit();
+            e.remove(KEY_PASSCODE);
+            e.remove(KEY_FAILED_ATTEMPTS);
+            e.remove(KEY_PASSCODE_LENGTH);
+            e.remove(KEY_PASSCODE_LENGTH_KNOWN);
+            e.remove(KEY_BIOMETRIC_ALLOWED);
+            e.remove(KEY_BIOMETRIC_ENROLLMENT);
+            e.remove(KEY_BIOMETRIC_ENABLED);
+
+            e.putBoolean(SCREEN_LOCK, true).apply();
         }
     }
 }

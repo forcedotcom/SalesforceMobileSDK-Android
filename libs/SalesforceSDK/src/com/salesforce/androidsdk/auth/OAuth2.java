@@ -90,15 +90,12 @@ public class OAuth2 {
     private static final String INSTANCE_URL = "instance_url";
     private static final String JSON = "json";
     private static final String MOBILE_POLICY = "mobile_policy";
-    private static final String PIN_LENGTH = "pin_length";
-    private static final String BIOMETRIC_UNLOCK = "biometric_unlock";
     private static final String REFRESH_TOKEN = "refresh_token";
     private static final String HYBRID_REFRESH = "hybrid_refresh";
     private static final String RESPONSE_TYPE = "response_type";
     private static final String SCOPE = "scope";
     private static final String REDIRECT_URI = "redirect_uri";
     private static final String DEVICE_ID = "device_id";
-    private static final String SCREEN_LOCK = "screen_lock";
     private static final String HYBRID_TOKEN = "hybrid_token";
     private static final String USERNAME = "username";
     private static final String EMAIL = "email";

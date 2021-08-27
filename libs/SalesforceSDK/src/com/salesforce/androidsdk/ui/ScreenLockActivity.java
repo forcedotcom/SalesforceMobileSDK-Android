@@ -21,6 +21,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.biometric.BiometricPrompt;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import com.salesforce.androidsdk.R;
@@ -57,6 +58,7 @@ public class ScreenLockActivity extends FragmentActivity {
             appIcon.setImageDrawable(icon);
         } catch (PackageManager.NameNotFoundException e) {
             Log.e(TAG, "Unable to retrieve host app icon.  NameNotFoundException: " + e.getMessage());
+            appIcon.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.sf__salesforce_logo, null));
         }
 
         BiometricPrompt biometricPrompt = new BiometricPrompt(this, new BiometricPrompt.AuthenticationCallback() {
@@ -134,7 +136,7 @@ public class ScreenLockActivity extends FragmentActivity {
         // TODO:  We may need logic here to save the last (current) account and determine if we need to navigate back to the login screen or not.
 
         SalesforceSDKManager.getInstance().getScreenLockManager().reset();
-        sendAccessibilityEvent(getString(R.string.sf__accessibility_logged_out_announcement));
+        sendAccessibilityEvent("You are logged out.");
     }
 
     private void sendAccessibilityEvent(String text) {

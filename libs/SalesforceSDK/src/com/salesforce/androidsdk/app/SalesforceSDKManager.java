@@ -775,8 +775,8 @@ public class SalesforceSDKManager {
         /*
          * Checks how many accounts are left that are authenticated. If only one
          * account is left, this is the account that is being removed. In this
-         * case, we can safely reset passcode manager, admin prefs, and encryption keys.
-         * Otherwise, we don't reset passcode manager and admin prefs since
+         * case, we can safely reset screen lock manager, admin prefs, and encryption keys.
+         * Otherwise, we don't reset screen lock manager and admin prefs since
          * there might be other accounts on that same org, and these policies
          * are stored at the org level.
          */
@@ -966,6 +966,8 @@ public class SalesforceSDKManager {
     	cleanUp(frontActivity, account, showLoginPage);
 
     	/*
+    	 * TODO: Remove null check in Mobile SDK 10.0.
+    	 *
     	 * Removes the existing account, if any. 'account == null' does not
     	 * guarantee that there are no accounts to remove. In the 'Forgot Passcode'
     	 * flow there could be accounts to remove, but we don't have them, since
