@@ -10,7 +10,7 @@
     android:fitsSystemWindows="true">
 
     <Button
-        android:id="@+id/sf__screenlock_logout_button"
+        android:id="@+id/sf__screen_lock_logout_button"
         style="?android:attr/borderlessButtonStyle"
         android:layout_width="wrap_content"
         android:layout_height="44dp"
@@ -37,10 +37,10 @@
             android:layout_height="200dp"
             android:layout_gravity="center"
             android:layout_marginTop="100dp"
-            android:contentDescription="@string/application_icon" />
+            android:contentDescription="@string/sf__application_icon" />
 
         <TextView
-            android:id="@+id/sf__screenlock_error_message"
+            android:id="@+id/sf__screen_lock_error_message"
             style="@style/SalesforceSDK.ScreenLock.ErrorMessage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

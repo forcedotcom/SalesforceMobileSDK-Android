@@ -1,3 +1,29 @@
+/*
+ * Copyright (c) 2021-present, salesforce.com, inc.
+ * All rights reserved.
+ * Redistribution and use of this software in source and binary forms, with or
+ * without modification, are permitted provided that the following conditions
+ * are met:
+ * - Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * - Neither the name of salesforce.com, inc. nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission of salesforce.com, inc.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 package com.salesforce.androidsdk.ui;
 
 import static androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG;
@@ -6,20 +32,24 @@ import static com.salesforce.androidsdk.security.ScreenLockManager.MOBILE_POLICY
 import static com.salesforce.androidsdk.security.ScreenLockManager.SCREEN_LOCK;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.fragment.app.FragmentActivity;
@@ -31,6 +61,9 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 import java.util.List;
 
+/**
+ * Locks the app behind OS provided authentication.
+ */
 public class ScreenLockActivity extends FragmentActivity {
     private static final String TAG = "ScreenLockActivity";
 
@@ -38,16 +71,16 @@ public class ScreenLockActivity extends FragmentActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // Protect against screenshots.
-//        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
-//                WindowManager.LayoutParams.FLAG_SECURE);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
+                WindowManager.LayoutParams.FLAG_SECURE);
         boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         setTheme(isDarkTheme ? R.style.SalesforceSDK_ScreenLock_Dark : R.style.SalesforceSDK_ScreenLock);
         // This makes the navigation bar visible on light themes.
         SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
         setContentView(R.layout.sf__screen_lock);
 
-        TextView errorMessage = findViewById(R.id.sf__screenlock_error_message);
-        Button logoutButton = findViewById(R.id.sf__screenlock_logout_button);
+        TextView errorMessage = findViewById(R.id.sf__screen_lock_error_message);
+        Button logoutButton = findViewById(R.id.sf__screen_lock_logout_button);
         ImageView appIcon = findViewById(R.id.sf__app_icon);
 
         logoutButton.setOnClickListener(v -> logoutScreenLockUsers());
@@ -65,21 +98,15 @@ public class ScreenLockActivity extends FragmentActivity {
             @Override
             public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
                 super.onAuthenticationError(errorCode, errString);
-
-                // TODO: handle:
-                //  * biometric cancelled by showing logout button
-                //  * "no fingerprints enrolled" when no lock at all
-                Toast.makeText(getApplicationContext(),
-                        "Authentication error: " + errString, Toast.LENGTH_SHORT)
-                        .show();
+                String authError = getString(R.string.sf__screen_lock_auth_error);
 
                 if (errString.length() == 0) {
-                    errString = "Authenticate to use the app.";
+                    errString = authError;
                 }
                 errorMessage.setText(errString);
                 errorMessage.setVisibility(View.VISIBLE);
                 logoutButton.setVisibility(View.VISIBLE);
-                sendAccessibilityEvent("Authentication error.");
+                sendAccessibilityEvent(authError);
             }
 
             @Override
@@ -88,7 +115,7 @@ public class ScreenLockActivity extends FragmentActivity {
                 errorMessage.setVisibility(View.GONE);
                 logoutButton.setVisibility(View.GONE);
 
-                sendAccessibilityEvent("Authentication succeeded.");
+                sendAccessibilityEvent(getString(R.string.sf__screen_lock_auth_success));
                 SalesforceSDKManager.getInstance().getScreenLockManager().setShouldLock(false);
                 finish();
             }
@@ -96,23 +123,17 @@ public class ScreenLockActivity extends FragmentActivity {
             @Override
             public void onAuthenticationFailed() {
                 super.onAuthenticationFailed();
-
-                // TODO: Too many attempts failure
-                Toast.makeText(getApplicationContext(), "Authentication failed",
-                        Toast.LENGTH_SHORT)
-                        .show();
-
-                // TODO: what string goes here?
-                errorMessage.setText("Authentication Failed.");
+                errorMessage.setText(R.string.sf__screen_lock_auth_failed);
                 errorMessage.setVisibility(View.VISIBLE);
                 logoutButton.setVisibility(View.VISIBLE);
-                sendAccessibilityEvent("Authentication failed");
+                sendAccessibilityEvent(getString(R.string.sf__screen_lock_auth_failed));
             }
         });
 
+        String appName = SalesforceSDKManager.getInstance().provideAppName();
         BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
-                .setTitle(SalesforceSDKManager.getInstance().provideAppName() + " Lock")
-                .setSubtitle("Some prompt to the user to authenticate to continue.")
+                .setTitle(getString(R.string.sf__screen_lock_title, appName))
+                .setSubtitle(getString(R.string.sf__screen_lock_subtitle, appName))
                 .setAllowedAuthenticators(BIOMETRIC_STRONG | DEVICE_CREDENTIAL)
                 .build();
 

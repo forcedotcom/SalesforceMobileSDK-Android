@@ -26,28 +26,12 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import android.Manifest.permission;
 import android.app.Dialog;
 import android.app.DialogFragment;
-import android.content.Context;
-import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.hardware.fingerprint.FingerprintManager;
-import android.hardware.fingerprint.FingerprintManager.AuthenticationCallback;
-import android.hardware.fingerprint.FingerprintManager.AuthenticationResult;
-import android.hardware.fingerprint.FingerprintManager.CryptoObject;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
-import android.widget.Button;
-import android.widget.TextView;
-
-import com.salesforce.androidsdk.R;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-
-import javax.crypto.Cipher;
 
 /**
  * A dialog which uses Fingerprint APIs to authenticate the user, and falls back to password

@@ -50,7 +50,7 @@ import java.io.FilenameFilter;
  * @author wmathurin
  * @author bhariharan
  *
- * deprecated Will be removed in Mobile SDK 10.0.  Use {@link ScreenLockManager} instead.
+ * @deprecated Will be removed in Mobile SDK 10.0.  Use {@link ScreenLockManager} instead.
  */
 public class PasscodeManager  {
 	

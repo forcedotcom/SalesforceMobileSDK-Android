@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.security;
+package com.salesforce.samples.restexplorer;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
@@ -32,10 +32,9 @@ import androidx.test.filters.SmallTest;
 import org.junit.runner.RunWith;
 
 /**
- * Tests for ScreenLockManager
+ * Tests for ScreenLockActivity
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class ScreenLockManagerTest {
-
+public class ScreenLockActivityTest {
 }

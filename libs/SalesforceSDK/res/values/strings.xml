@@ -13,5 +13,4 @@
 
     <!-- Default API version used by the SDK and sample apps -->
     <string name="api_version">v49.0</string>
-    <string name="application_icon">Application Icon</string>
 </resources>

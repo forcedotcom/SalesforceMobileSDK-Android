@@ -416,7 +416,7 @@ public class SalesforceSDKManager {
      *
      * @deprecated Will be removed in Mobile SDK 10.0.  Use {@link #getScreenLockActivity()} instead.
      */
-    public Class<? extends PasscodeActivity> getPasscodeActivity() { return null; }
+    public Class<? extends PasscodeActivity> getPasscodeActivity() { return PasscodeActivity.class; }
 
     /**
      * Sets a custom ScreenLock activity class to be used instead of the default class.
@@ -541,7 +541,7 @@ public class SalesforceSDKManager {
      *
      * @deprecated Will be removed in Mobile SDK 10.0.  Use {@link #getScreenLockManager()} instead.
      */
-    public PasscodeManager getPasscodeManager() { return null; }
+    public PasscodeManager getPasscodeManager() { return new PasscodeManager(context); }
 
     /**
      * Returns the ScreenLock manager that's associated with SalesforceSDKManager.
@@ -963,33 +963,9 @@ public class SalesforceSDKManager {
     private void removeAccount(ClientManager clientMgr, final boolean showLoginPage,
     		String refreshToken, String loginServer,
     		Account account, Activity frontActivity) {
-    	cleanUp(frontActivity, account, showLoginPage);
 
-    	/*
-    	 * TODO: Remove null check in Mobile SDK 10.0.
-    	 *
-    	 * Removes the existing account, if any. 'account == null' does not
-    	 * guarantee that there are no accounts to remove. In the 'Forgot Passcode'
-    	 * flow there could be accounts to remove, but we don't have them, since
-    	 * we don't have the passcode hash to decrypt them. Hence, we query
-    	 * AccountManager directly here and remove the accounts for the case
-    	 * where 'account == null'. If AccountManager doesn't have accounts
-    	 * either, then there's nothing to do.
-    	 */
-    	if (account == null) {
-    		final AccountManager accMgr = AccountManager.get(context);
-    		if (accMgr != null) {
-    			final Account[] accounts = accMgr.getAccountsByType(getAccountType());
-    			if (accounts.length > 0) {
-    				for (int i = 0; i < accounts.length - 1; i++) {
-    					clientMgr.removeAccounts(accounts);
-    				}
-    				clientMgr.removeAccount(accounts[accounts.length - 1]);
-    			}
-    		}
-    	} else {
-    	    clientMgr.removeAccount(account);
-    	}
+    	cleanUp(frontActivity, account, showLoginPage);
+        clientMgr.removeAccount(account);
         isLoggingOut = false;
         notifyLogoutComplete(showLoginPage);
 
