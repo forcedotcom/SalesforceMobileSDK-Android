@@ -33,6 +33,7 @@ import android.content.SharedPreferences;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.ui.ScreenLockActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 
 import java.util.List;
@@ -119,11 +120,10 @@ public class ScreenLockManager {
         Context ctx = SalesforceSDKManager.getInstance().getAppContext();
         Intent intent = new Intent(ctx, SalesforceSDKManager.getInstance().getScreenLockActivity());
         intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
         intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         if (ctx instanceof Activity) {
-            ((Activity) ctx).startActivityForResult(intent, PasscodeManager.PASSCODE_REQUEST_CODE);
+                ((Activity) ctx).startActivityForResult(intent, ScreenLockActivity.SCREEN_LOCK_REQUEST_CODE);
         } else {
             ctx.startActivity(intent);
         }

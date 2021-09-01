@@ -27,10 +27,13 @@
 package com.salesforce.androidsdk.ui;
 
 import static androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG;
+import static androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK;
 import static androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL;
 import static com.salesforce.androidsdk.security.ScreenLockManager.MOBILE_POLICY_PREF;
 import static com.salesforce.androidsdk.security.ScreenLockManager.SCREEN_LOCK;
 
+import android.app.KeyguardManager;
+import android.app.admin.DevicePolicyManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -51,6 +54,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.fragment.app.FragmentActivity;
 
@@ -65,7 +69,15 @@ import java.util.List;
  * Locks the app behind OS provided authentication.
  */
 public class ScreenLockActivity extends FragmentActivity {
+    public static final int SCREEN_LOCK_REQUEST_CODE = 777;
+    private static final int API_29_REQUEST_CODE = 123;
+
     private static final String TAG = "ScreenLockActivity";
+    private static final int SETUP_REQUEST_CODE = 70;
+    private static final String appName = SalesforceSDKManager.getInstance().provideAppName();
+    private TextView errorMessage;
+    private Button logoutButton;
+    private Button actionButton;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -75,17 +87,16 @@ public class ScreenLockActivity extends FragmentActivity {
                 WindowManager.LayoutParams.FLAG_SECURE);
         boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         setTheme(isDarkTheme ? R.style.SalesforceSDK_ScreenLock_Dark : R.style.SalesforceSDK_ScreenLock);
-        // This makes the navigation bar visible on light themes.
+        // Makes the navigation bar visible on light themes.
         SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
         setContentView(R.layout.sf__screen_lock);
 
-        TextView errorMessage = findViewById(R.id.sf__screen_lock_error_message);
-        Button logoutButton = findViewById(R.id.sf__screen_lock_logout_button);
+        errorMessage = findViewById(R.id.sf__screen_lock_error_message);
+        logoutButton = findViewById(R.id.sf__screen_lock_logout_button);
+        logoutButton.setOnClickListener(v -> logoutScreenLockUsers());
+        actionButton = findViewById(R.id.sf__screen_action_button);
         ImageView appIcon = findViewById(R.id.sf__app_icon);
 
-        logoutButton.setOnClickListener(v -> logoutScreenLockUsers());
-        logoutButton.setVisibility(View.GONE);
-        errorMessage.setVisibility(View.GONE);
         try {
             Drawable icon = getPackageManager().getApplicationIcon(getApplicationInfo().packageName);
             appIcon.setImageDrawable(icon);
@@ -94,70 +105,181 @@ public class ScreenLockActivity extends FragmentActivity {
             appIcon.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.sf__salesforce_logo, null));
         }
 
-        BiometricPrompt biometricPrompt = new BiometricPrompt(this, new BiometricPrompt.AuthenticationCallback() {
+        presentAuth();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        /*
+         * presentAuth again after the user has come back from security settings to ensure they
+         * actually set up a secure lock screen (pin/pattern/password/etc) instead of swipe or none.
+         */
+        if (resultCode == 0 && requestCode == SETUP_REQUEST_CODE) {
+            presentAuth();
+        }
+
+        /*
+         * Get the results of KeyguardManager on API 29.
+         * TODO: TODO: Remove when min API > 29.
+         */
+        if (requestCode == API_29_REQUEST_CODE) {
+            if (resultCode == -1) {
+                finishSuccess();
+            } else {
+                onAuthError("");
+            }
+        }
+    }
+
+    private void presentAuth() {
+        BiometricPrompt biometricPrompt = getBiometricPrompt();
+        BiometricManager biometricManager = BiometricManager.from(this);
+
+        switch (biometricManager.canAuthenticate(getAuthenticators())) {
+            case BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE:
+            case BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED:
+            case BiometricManager.BIOMETRIC_ERROR_UNSUPPORTED:
+            case BiometricManager.BIOMETRIC_STATUS_UNKNOWN:
+                // This should never happen.
+                String error = getString(R.string.sf__screen_lock_error);
+                Log.e(TAG, "Biometric manager cannot authenticate. " + error);
+                setErrorMessage(error);
+                break;
+            case BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE:
+                setErrorMessage(getString(R.string.sf__screen_lock_error_hw_unavailable));
+                break;
+            case BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED:
+                setErrorMessage(getString(R.string.sf__screen_lock_setup_required, appName));
+
+                /*
+                 * Prompts the user to setup OS screen lock and biometric.
+                 * TODO: TODO: Remove when min API > 29.
+                 */
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    final Intent biometricIntent = new Intent(Settings.ACTION_BIOMETRIC_ENROLL);
+                    biometricIntent.putExtra(Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED, getAuthenticators());
+                    actionButton.setOnClickListener(v -> startActivityForResult(biometricIntent, SETUP_REQUEST_CODE));
+                } else {
+                    final Intent lockScreenIntent = new Intent(DevicePolicyManager.ACTION_SET_NEW_PASSWORD);
+                    actionButton.setOnClickListener(v -> startActivityForResult(lockScreenIntent, SETUP_REQUEST_CODE));
+                }
+                actionButton.setText(getString(R.string.sf__screen_lock_setup_button));
+                actionButton.setVisibility(View.VISIBLE);
+                break;
+            case BiometricManager.BIOMETRIC_SUCCESS:
+                resetUI();
+
+                /*
+                 * This is necessary due to an Android bug that can't be fixed.
+                 * https://issuetracker.google.com/issues/145231213
+                 *
+                 * TODO: Remove when min API > 29.
+                 */
+                if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
+                    KeyguardManager keyguard = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
+                    Intent lockScreenIntent = keyguard.createConfirmDeviceCredentialIntent(
+                            getString(R.string.sf__screen_lock_title, appName),
+                            getString(R.string.sf__screen_lock_subtitle, appName));
+                    startActivityForResult(lockScreenIntent, API_29_REQUEST_CODE);
+                } else {
+                    biometricPrompt.authenticate(getPromptInfo());
+                }
+                break;
+        }
+    }
+
+    private BiometricPrompt.PromptInfo getPromptInfo() {
+        return new BiometricPrompt.PromptInfo.Builder()
+                .setTitle(getString(R.string.sf__screen_lock_title, appName))
+                .setSubtitle(getString(R.string.sf__screen_lock_subtitle, appName))
+                .setAllowedAuthenticators(getAuthenticators())
+                .setConfirmationRequired(false)
+                .build();
+    }
+
+    private BiometricPrompt getBiometricPrompt() {
+        return  new BiometricPrompt(this, ContextCompat.getMainExecutor(this),
+                new BiometricPrompt.AuthenticationCallback() {
             @Override
             public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
-                super.onAuthenticationError(errorCode, errString);
-                String authError = getString(R.string.sf__screen_lock_auth_error);
-
-                if (errString.length() == 0) {
-                    errString = authError;
-                }
-                errorMessage.setText(errString);
-                errorMessage.setVisibility(View.VISIBLE);
-                logoutButton.setVisibility(View.VISIBLE);
-                sendAccessibilityEvent(authError);
+                    super.onAuthenticationError(errorCode, errString);
+                    onAuthError(errString);
             }
 
             @Override
             public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
                 super.onAuthenticationSucceeded(result);
-                errorMessage.setVisibility(View.GONE);
-                logoutButton.setVisibility(View.GONE);
-
-                sendAccessibilityEvent(getString(R.string.sf__screen_lock_auth_success));
-                SalesforceSDKManager.getInstance().getScreenLockManager().setShouldLock(false);
-                finish();
+                finishSuccess();
             }
 
             @Override
             public void onAuthenticationFailed() {
                 super.onAuthenticationFailed();
-                errorMessage.setText(R.string.sf__screen_lock_auth_failed);
-                errorMessage.setVisibility(View.VISIBLE);
-                logoutButton.setVisibility(View.VISIBLE);
+                setErrorMessage(getString(R.string.sf__screen_lock_auth_failed));
                 sendAccessibilityEvent(getString(R.string.sf__screen_lock_auth_failed));
             }
         });
+    }
 
-        String appName = SalesforceSDKManager.getInstance().provideAppName();
-        BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
-                .setTitle(getString(R.string.sf__screen_lock_title, appName))
-                .setSubtitle(getString(R.string.sf__screen_lock_subtitle, appName))
-                .setAllowedAuthenticators(BIOMETRIC_STRONG | DEVICE_CREDENTIAL)
-                .build();
+    private void onAuthError(CharSequence errString) {
+        String authError = getString(R.string.sf__screen_lock_auth_error);
 
-        errorMessage.setVisibility(View.GONE);
-        logoutButton.setVisibility(View.GONE);
-        biometricPrompt.authenticate(promptInfo);
+        if (errString.length() == 0) {
+            errString = authError;
+        }
+        setErrorMessage(errString.toString());
+        sendAccessibilityEvent(authError);
+
+        actionButton.setVisibility(View.VISIBLE);
+        actionButton.setText(getString(R.string.sf__screen_lock_retry_button));
+        actionButton.setOnClickListener(v -> presentAuth());
+    }
+
+    private void finishSuccess() {
+        resetUI();
+        sendAccessibilityEvent(getString(R.string.sf__screen_lock_auth_success));
+        SalesforceSDKManager.getInstance().getScreenLockManager().setShouldLock(false);
+        finish();
+    }
+
+    private int getAuthenticators() {
+        // TODO: Remove when min API > 29.
+        return (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                ? BIOMETRIC_STRONG | DEVICE_CREDENTIAL
+                : BIOMETRIC_WEAK | DEVICE_CREDENTIAL;
     }
 
     private void logoutScreenLockUsers() {
         final UserAccountManager manager = SalesforceSDKManager.getInstance().getUserAccountManager();
         final List<UserAccount> accounts = manager.getAuthenticatedUsers();
         Context ctx = SalesforceSDKManager.getInstance().getAppContext();
-        for (UserAccount account : accounts) {
-            SharedPreferences accountPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
-                    + account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
-            if (accountPrefs.getBoolean(SCREEN_LOCK, false)) {
-                manager.signoutUser(account, null, false);
+
+        if (accounts != null) {
+            for (UserAccount account : accounts) {
+                SharedPreferences accountPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
+                        + account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
+                if (accountPrefs.getBoolean(SCREEN_LOCK, false)) {
+                    manager.signoutUser(account, null, false);
+                }
             }
         }
 
-        // TODO:  We may need logic here to save the last (current) account and determine if we need to navigate back to the login screen or not.
-
         SalesforceSDKManager.getInstance().getScreenLockManager().reset();
         sendAccessibilityEvent("You are logged out.");
+    }
+
+    private void setErrorMessage(String message) {
+        errorMessage.setText(message);
+        errorMessage.setVisibility(View.VISIBLE);
+        logoutButton.setVisibility(View.VISIBLE);
+    }
+
+    private void resetUI() {
+        logoutButton.setVisibility(View.GONE);
+        errorMessage.setVisibility(View.GONE);
+        actionButton.setVisibility(View.GONE);
     }
 
     private void sendAccessibilityEvent(String text) {

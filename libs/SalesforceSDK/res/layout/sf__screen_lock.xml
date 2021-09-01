@@ -49,5 +49,20 @@
             android:gravity="center"
             android:textColor="?android:attr/textColorPrimary"
             android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/sf__screen_action_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="25dp"
+            android:background="@drawable/sf__primary_color_button"
+            android:textAllCaps="false"
+            android:textColor="?attr/sfColorSecondary"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            tools:ignore="ButtonStyle" />
     </LinearLayout>
 </RelativeLayout>

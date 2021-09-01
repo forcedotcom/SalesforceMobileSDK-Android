@@ -65,6 +65,11 @@
 	<string name="sf__screen_lock_auth_success">Authentication error.</string>
 	<string name="sf__screen_lock_title">%s Lock</string>
 	<string name="sf__screen_lock_subtitle">Unlock to access your %s account.</string>
+	<string name="sf__screen_lock_error_hw_unavailable">Hardware unavailable.  Try again later.</string>
+	<string name="sf__screen_lock_error">An unknown error has occurred.</string>
+	<string name="sf__screen_lock_setup_required">%s requires a device lock screen.</string>
+	<string name="sf__screen_lock_setup_button">Setup Lock Screen</string>
+	<string name="sf__screen_lock_retry_button">Retry Unlock</string>
 
 	<!-- Dev support -->
 	<string name="sf__dev_support_title">Authentication succeeded.</string>
