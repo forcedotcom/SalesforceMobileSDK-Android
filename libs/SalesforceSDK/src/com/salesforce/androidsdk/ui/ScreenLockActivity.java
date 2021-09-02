@@ -116,7 +116,7 @@ public class ScreenLockActivity extends FragmentActivity {
          * presentAuth again after the user has come back from security settings to ensure they
          * actually set up a secure lock screen (pin/pattern/password/etc) instead of swipe or none.
          */
-        if (resultCode == 0 && requestCode == SETUP_REQUEST_CODE) {
+        if (requestCode == SETUP_REQUEST_CODE) {
             presentAuth();
         }
 

@@ -33,10 +33,10 @@
 
         <ImageView
             android:id="@+id/sf__app_icon"
-            android:layout_width="200dp"
-            android:layout_height="200dp"
+            android:layout_width="150dp"
+            android:layout_height="150dp"
             android:layout_gravity="center"
-            android:layout_marginTop="100dp"
+            android:layout_marginTop="200dp"
             android:contentDescription="@string/sf__application_icon" />
 
         <TextView
@@ -45,7 +45,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="start"
-            android:layout_marginTop="130dp"
+            android:layout_marginTop="200dp"
             android:gravity="center"
             android:textColor="?android:attr/textColorPrimary"
             android:textSize="14sp" />
@@ -57,12 +57,12 @@
             android:layout_gravity="center"
             android:layout_marginTop="25dp"
             android:background="@drawable/sf__primary_color_button"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
             android:textAllCaps="false"
             android:textColor="?attr/sfColorSecondary"
             android:textSize="14sp"
             android:textStyle="bold"
-            android:paddingLeft="10dp"
-            android:paddingRight="10dp"
             tools:ignore="ButtonStyle" />
     </LinearLayout>
 </RelativeLayout>

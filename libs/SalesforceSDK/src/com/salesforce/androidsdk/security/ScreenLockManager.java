@@ -31,6 +31,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 
+import androidx.annotation.VisibleForTesting;
+
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.ui.ScreenLockActivity;
@@ -48,7 +50,7 @@ public class ScreenLockManager {
     public static final String MOBILE_POLICY_PREF = "mobile_policy";
     public static final String SCREEN_LOCK = "screen_lock";
 
-    private boolean shouldLock = true;
+    boolean shouldLock = true;
 
     public void storeMobilePolicyForOrg(UserAccount account, boolean screenLockRequired) {
         Context ctx = SalesforceSDKManager.getInstance().getAppContext();
@@ -96,18 +98,19 @@ public class ScreenLockManager {
         // Determine if any other users still need ScreenLock.
         List<UserAccount> accounts = SalesforceSDKManager.getInstance()
                 .getUserAccountManager().getAuthenticatedUsers();
-        accounts.remove(account);
-        for (UserAccount mAccount : accounts) {
-            accountPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
-                    + mAccount.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
-            if (accountPrefs.getBoolean(SCREEN_LOCK, false)) {
-                return;
+        if (accounts != null) {
+            accounts.remove(account);
+            for (UserAccount mAccount : accounts) {
+                accountPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
+                        + mAccount.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
+                if (accountPrefs.getBoolean(SCREEN_LOCK, false)) {
+                    return;
+                }
             }
         }
 
-        if (!readMobilePolicy()) {
-            reset();
-        }
+        // If we have returned, no other accounts require Screen Lock.
+        reset();
     }
 
     private boolean readMobilePolicy() {

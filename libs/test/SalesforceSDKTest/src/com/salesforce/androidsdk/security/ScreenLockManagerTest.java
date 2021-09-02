@@ -26,9 +26,31 @@
  */
 package com.salesforce.androidsdk.security;
 
+import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_LOGIN_URL;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_ACCOUNT_TYPE;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_CALLBACK_URL;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_CLIENT_ID;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_SCOPES;
+import static com.salesforce.androidsdk.security.ScreenLockManager.MOBILE_POLICY_PREF;
+import static com.salesforce.androidsdk.security.ScreenLockManager.SCREEN_LOCK;
+
+import android.accounts.Account;
+import android.content.Context;
+import android.content.SharedPreferences;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountBuilder;
+import com.salesforce.androidsdk.accounts.UserAccountTest;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.rest.ClientManager;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
@@ -38,4 +60,102 @@ import org.junit.runner.RunWith;
 @SmallTest
 public class ScreenLockManagerTest {
 
+    private ScreenLockManager screenLockManager;
+    private UserAccount userAccount = buildTestUserAccount();
+    private Context ctx = SalesforceSDKManager.getInstance().getAppContext();
+    private SharedPreferences sharedPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
+    private SharedPreferences accountPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
+            + userAccount.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
+
+    @Before
+    public void setUp() {
+        screenLockManager = new ScreenLockManager();
+    }
+
+    @After
+    public void tearDown() {
+        sharedPrefs.edit().remove(SCREEN_LOCK).apply();
+        accountPrefs.edit().remove(SCREEN_LOCK).apply();
+    }
+
+    @Test
+    public void testShouldNotLock() {
+        Assert.assertTrue("Should not be locked by default.", screenLockManager.onResume());
+        screenLockManager.setShouldLock(true);
+        Assert.assertTrue("Should not be locked without mobile policy set.", screenLockManager.onResume());
+        screenLockManager.storeMobilePolicyForOrg(userAccount, false);
+        Assert.assertTrue("Should not be locked without mobile policy set.", screenLockManager.onResume());
+
+        screenLockManager.storeMobilePolicyForOrg(userAccount, false);
+        screenLockManager.setShouldLock(false);
+        Assert.assertTrue("Should not be locked if shouldLock is false.", screenLockManager.onResume());
+    }
+
+    @Test
+    public void testShouldLock() {
+        Assert.assertTrue("Should not be locked by default.", screenLockManager.onResume());
+        screenLockManager.setShouldLock(true);
+        screenLockManager.storeMobilePolicyForOrg(userAccount, true);
+        Assert.assertFalse("Screen should lock.", screenLockManager.onResume());
+    }
+
+    @Test
+    public void testStoreMobilePolicy() {
+        Assert.assertFalse("Org Mobile Policy should not be set yet.", sharedPrefs.getBoolean(SCREEN_LOCK, false));
+        Assert.assertFalse("User Mobile Policy should not be set yet.", accountPrefs.getBoolean(SCREEN_LOCK, false));
+
+        screenLockManager.storeMobilePolicyForOrg(userAccount, true);
+        Assert.assertTrue("Org Mobile Policy should be set.", sharedPrefs.getBoolean(SCREEN_LOCK, false));
+        Assert.assertTrue("User Mobile Policy should be set.", accountPrefs.getBoolean(SCREEN_LOCK, false));
+    }
+
+    @Test
+    public void testLockOnPause() {
+        Assert.assertTrue("Should not be locked by default.", screenLockManager.onResume());
+        screenLockManager.storeMobilePolicyForOrg(userAccount, true);
+        screenLockManager.onPause();
+        Assert.assertFalse("Screen should lock.", screenLockManager.onResume());
+    }
+
+    @Test
+    public void testReset() {
+        screenLockManager.storeMobilePolicyForOrg(userAccount, true);
+        screenLockManager.reset();
+        Assert.assertFalse("Org Mobile Policy should not be set.", sharedPrefs.getBoolean(SCREEN_LOCK, false));
+    }
+
+    @Test
+    public void testCleanUp() {
+        final ClientManager.LoginOptions loginOptions = new ClientManager.LoginOptions(TEST_LOGIN_URL, TEST_CALLBACK_URL,
+                TEST_CLIENT_ID, TEST_SCOPES);
+        ClientManager clientManager = new ClientManager(ctx, TEST_ACCOUNT_TYPE, loginOptions, true);
+        clientManager.createNewAccount(userAccount.getAccountName(), userAccount.getUsername(), userAccount.getRefreshToken(),
+                userAccount.getAuthToken(), userAccount.getInstanceServer(), userAccount.getLoginServer(), userAccount.getIdUrl(),
+                userAccount.getUserId(), userAccount.getOrgId(), userAccount.getUserId(), userAccount.getCommunityId(), userAccount.getCommunityId(),
+                userAccount.getFirstName(), userAccount.getLastName(), userAccount.getDisplayName(), userAccount.getEmail(), userAccount.getPhotoUrl(),
+                userAccount.getThumbnailUrl(), userAccount.getAdditionalOauthValues(),
+                userAccount.getLightningDomain(), userAccount.getLightningSid(), userAccount.getVFDomain(), userAccount.getVFSid(),
+                userAccount.getContentDomain(), userAccount.getContentSid(), userAccount.getCSRFToken());
+        UserAccount storedUser = SalesforceSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers().get(0);
+        SharedPreferences storedUserPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
+                + storedUser.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
+
+        screenLockManager.storeMobilePolicyForOrg(storedUser, true);
+        screenLockManager.cleanUp(storedUser);
+        Assert.assertFalse("User Mobile Policy should not be set.", storedUserPrefs.getBoolean(SCREEN_LOCK, false));
+        Assert.assertFalse("Org Mobile Policy should not be set.", sharedPrefs.getBoolean(SCREEN_LOCK, false));
+    }
+
+    private UserAccount buildTestUserAccount() {
+        return UserAccountBuilder.getInstance().authToken(UserAccountTest.TEST_AUTH_TOKEN).
+                refreshToken(UserAccountTest.TEST_REFRESH_TOKEN).loginServer(TEST_LOGIN_URL).
+                idUrl(UserAccountTest.TEST_IDENTITY_URL).instanceServer(UserAccountTest.TEST_INSTANCE_URL).
+                orgId(UserAccountTest.TEST_ORG_ID).userId(UserAccountTest.TEST_USER_ID).
+                username(UserAccountTest.TEST_USERNAME).accountName(UserAccountTest.TEST_ACCOUNT_NAME).
+                communityId(UserAccountTest.TEST_COMMUNITY_ID).communityUrl(UserAccountTest.TEST_COMMUNITY_URL).
+                firstName(UserAccountTest.TEST_FIRST_NAME).lastName(UserAccountTest.TEST_LAST_NAME).
+                displayName(UserAccountTest.TEST_DISPLAY_NAME).email(UserAccountTest.TEST_EMAIL).
+                photoUrl(UserAccountTest.TEST_PHOTO_URL).thumbnailUrl(UserAccountTest.TEST_THUMBNAIL_URL).
+                additionalOauthValues(null).build();
+    }
 }
