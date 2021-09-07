@@ -80,7 +80,6 @@ import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 import com.salesforce.androidsdk.ui.DevInfoActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
-import com.salesforce.androidsdk.ui.ScreenLockActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
@@ -151,7 +150,6 @@ public class SalesforceSDKManager {
     private LoginOptions loginOptions;
     private final Class<? extends Activity> mainActivityClass;
     private Class<? extends Activity> loginActivityClass = LoginActivity.class;
-    private Class<? extends ScreenLockActivity> screenLockActivityClass = ScreenLockActivity.class;
     private Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
     private ScreenLockManager screenLockManager;
     private LoginServerManager loginServerManager;
@@ -405,7 +403,7 @@ public class SalesforceSDKManager {
      *
      * @param activity Subclass of PasscodeActivity.
      *
-     * @deprecated Will be removed in Mobile SDK 10.0.  Use {@link #setScreenLockActivity(Class)} instead.
+     * @deprecated Will be removed in Mobile SDK 10.0.
      */
     public void setPasscodeActivity(Class<? extends PasscodeActivity> activity) { }
 
@@ -414,30 +412,9 @@ public class SalesforceSDKManager {
      *
      * @return Passcode activity class descriptor.
      *
-     * @deprecated Will be removed in Mobile SDK 10.0.  Use {@link #getScreenLockActivity()} instead.
+     * @deprecated Will be removed in Mobile SDK 10.0.
      */
     public Class<? extends PasscodeActivity> getPasscodeActivity() { return PasscodeActivity.class; }
-
-    /**
-     * Sets a custom ScreenLock activity class to be used instead of the default class.
-     * The custom class must subclass {@link ScreenLockActivity}.
-     *
-     * @param activity Subclass of ScreenLockActivity.
-     */
-    public void setScreenLockActivity(Class<? extends ScreenLockActivity> activity) {
-        if (activity != null) {
-            screenLockActivityClass = activity;
-        }
-    }
-
-    /**
-     * Returns the descriptor of the ScreenLock activity class that's currently in use.
-     *
-     * @return ScreenLock activity class descriptor.
-     */
-    public Class<? extends ScreenLockActivity> getScreenLockActivity() {
-        return screenLockActivityClass;
-    }
 
     /**
      * Indicates whether the SDK should automatically log out when the
@@ -539,7 +516,7 @@ public class SalesforceSDKManager {
      *
      * @return Passcode activity class descriptor.
      *
-     * @deprecated Will be removed in Mobile SDK 10.0.  Use {@link #getScreenLockManager()} instead.
+     * @deprecated Will be removed in Mobile SDK 10.0.
      */
     public PasscodeManager getPasscodeManager() { return new PasscodeManager(context); }
 

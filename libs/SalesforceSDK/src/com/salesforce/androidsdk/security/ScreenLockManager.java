@@ -26,12 +26,9 @@
  */
 package com.salesforce.androidsdk.security;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-
-import androidx.annotation.VisibleForTesting;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -121,15 +118,11 @@ public class ScreenLockManager {
 
     private void lock() {
         Context ctx = SalesforceSDKManager.getInstance().getAppContext();
-        Intent intent = new Intent(ctx, SalesforceSDKManager.getInstance().getScreenLockActivity());
+        Intent intent = new Intent(ctx, ScreenLockActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        if (ctx instanceof Activity) {
-                ((Activity) ctx).startActivityForResult(intent, ScreenLockActivity.SCREEN_LOCK_REQUEST_CODE);
-        } else {
-            ctx.startActivity(intent);
-        }
+        ctx.startActivity(intent);
         EventsObservable.get().notifyEvent(EventsObservable.EventType.AppLocked);
     }
 }

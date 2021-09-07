@@ -62,6 +62,7 @@ import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.util.List;
 
@@ -69,7 +70,6 @@ import java.util.List;
  * Locks the app behind OS provided authentication.
  */
 public class ScreenLockActivity extends FragmentActivity {
-    public static final int SCREEN_LOCK_REQUEST_CODE = 777;
     private static final int API_29_REQUEST_CODE = 123;
 
     private static final String TAG = "ScreenLockActivity";
@@ -101,7 +101,7 @@ public class ScreenLockActivity extends FragmentActivity {
             Drawable icon = getPackageManager().getApplicationIcon(getApplicationInfo().packageName);
             appIcon.setImageDrawable(icon);
         } catch (PackageManager.NameNotFoundException e) {
-            Log.e(TAG, "Unable to retrieve host app icon.  NameNotFoundException: " + e.getMessage());
+            SalesforceSDKLogger.e(TAG, "Unable to retrieve host app icon.  NameNotFoundException: " + e.getMessage());
             appIcon.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.sf__salesforce_logo, null));
         }
 
@@ -122,7 +122,7 @@ public class ScreenLockActivity extends FragmentActivity {
 
         /*
          * Get the results of KeyguardManager on API 29.
-         * TODO: TODO: Remove when min API > 29.
+         * TODO: Remove when min API > 29.
          */
         if (requestCode == API_29_REQUEST_CODE) {
             if (resultCode == -1) {
@@ -144,7 +144,7 @@ public class ScreenLockActivity extends FragmentActivity {
             case BiometricManager.BIOMETRIC_STATUS_UNKNOWN:
                 // This should never happen.
                 String error = getString(R.string.sf__screen_lock_error);
-                Log.e(TAG, "Biometric manager cannot authenticate. " + error);
+                SalesforceSDKLogger.e(TAG, "Biometric manager cannot authenticate. " + error);
                 setErrorMessage(error);
                 break;
             case BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE:
@@ -155,7 +155,7 @@ public class ScreenLockActivity extends FragmentActivity {
 
                 /*
                  * Prompts the user to setup OS screen lock and biometric.
-                 * TODO: TODO: Remove when min API > 29.
+                 * TODO: Remove when min API > 29.
                  */
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                     final Intent biometricIntent = new Intent(Settings.ACTION_BIOMETRIC_ENROLL);
