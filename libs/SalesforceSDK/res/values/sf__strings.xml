@@ -72,5 +72,5 @@
 	<string name="sf__screen_lock_retry_button">Retry Unlock</string>
 
 	<!-- Dev support -->
-	<string name="sf__dev_support_title">Authentication succeeded.</string>
+	<string name="sf__dev_support_title">Mobile SDK Dev Support</string>
 </resources>
