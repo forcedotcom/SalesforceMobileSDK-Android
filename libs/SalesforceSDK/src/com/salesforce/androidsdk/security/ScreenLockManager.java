@@ -44,12 +44,17 @@ import java.util.List;
  * @author bpage
  */
 public class ScreenLockManager {
-
     public static final String MOBILE_POLICY_PREF = "mobile_policy";
     public static final String SCREEN_LOCK = "screen_lock";
 
-    boolean shouldLock = true;
+    private boolean shouldLock = true;
 
+    /**
+     * Stores the mobile policy for the org upon user login.
+     *
+     * @param account the newly add account
+     * @param screenLockRequired if the account requires screen lock or not
+     */
     public void storeMobilePolicyForOrg(UserAccount account, boolean screenLockRequired) {
         Context ctx = SalesforceSDKManager.getInstance().getAppContext();
         SharedPreferences accountSharedPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
@@ -62,30 +67,51 @@ public class ScreenLockManager {
         }
     }
 
+    /**
+     * To be called by the protected activity to lock the device when being resumed.
+     *
+     * @return true if the resume should be allowed to continue and false otherwise
+     */
     public boolean onResume() {
-        boolean locked = shouldLock && readMobilePolicy();
-        if (locked) {
+        if (shouldLock && readMobilePolicy()) {
             lock();
+            return true;
+        } else {
+            // If locked, do nothing - when the app gets unlocked we will be back here.
+            return false;
         }
-
-        // If locked, do nothing - when the app gets unlocked we will be back here.
-        return !locked;
     }
 
+    /**
+     * To be called by the protected activity is paused to denote that the app should lock.
+     */
     public void onPause() {
         setShouldLock(true);
     }
 
+    /**
+     * Tells the manager if the app should lock or not.
+     *
+     * @param shouldLock if the app should lock or not.
+     */
     public void setShouldLock(boolean shouldLock) {
         this.shouldLock = shouldLock;
     }
 
+    /**
+     * Resets and removes the screen lock.
+     */
     public void reset() {
         Context ctx = SalesforceSDKManager.getInstance().getAppContext();
         SharedPreferences globalPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
         globalPrefs.edit().remove(SCREEN_LOCK).apply();
     }
 
+    /**
+     * Screen lock specific cleanup for account logout/removal.
+     *
+     * @param account the account being removed
+     */
     public void cleanUp(UserAccount account) {
         // CleanUp and remove Lock for account.
         Context ctx = SalesforceSDKManager.getInstance().getAppContext();

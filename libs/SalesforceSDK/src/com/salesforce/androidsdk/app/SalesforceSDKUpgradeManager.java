@@ -157,6 +157,7 @@ public class SalesforceSDKUpgradeManager {
         }
     }
 
+    // TODO: Remove upgrade step in Mobile SDK 10.0
     private void upgradeTo9Dot2() {
         final String KEY_PASSCODE ="passcode";
         final String KEY_TIMEOUT = "access_timeout";
