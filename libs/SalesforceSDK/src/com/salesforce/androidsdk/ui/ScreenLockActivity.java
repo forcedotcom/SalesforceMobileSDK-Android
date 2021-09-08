@@ -259,15 +259,15 @@ public class ScreenLockActivity extends FragmentActivity {
         if (accounts != null) {
             for (UserAccount account : accounts) {
                 SharedPreferences accountPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
-                        + account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
+                        + account.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
                 if (accountPrefs.getBoolean(SCREEN_LOCK, false)) {
-                    manager.signoutUser(account, null, false);
+                    manager.signoutUser(account, null);
                 }
             }
         }
 
-        SalesforceSDKManager.getInstance().getScreenLockManager().reset();
         sendAccessibilityEvent("You are logged out.");
+        finish();
     }
 
     private void setErrorMessage(String message) {

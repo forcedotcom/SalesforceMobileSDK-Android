@@ -62,7 +62,7 @@
 	<string name="sf__application_icon">Application Icon</string>
 	<string name="sf__screen_lock_auth_failed">Authentication Failed.</string>
 	<string name="sf__screen_lock_auth_error">Authentication error.</string>
-	<string name="sf__screen_lock_auth_success">Authentication error.</string>
+	<string name="sf__screen_lock_auth_success">Authentication Success.</string>
 	<string name="sf__screen_lock_title">%s Lock</string>
 	<string name="sf__screen_lock_subtitle">Unlock to access your %s account.</string>
 	<string name="sf__screen_lock_error_hw_unavailable">Hardware unavailable.  Try again later.</string>

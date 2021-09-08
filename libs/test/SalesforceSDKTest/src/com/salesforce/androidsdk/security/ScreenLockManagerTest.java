@@ -65,7 +65,7 @@ public class ScreenLockManagerTest {
     private Context ctx = SalesforceSDKManager.getInstance().getAppContext();
     private SharedPreferences sharedPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
     private SharedPreferences accountPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
-            + userAccount.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
+            + userAccount.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
 
     @Before
     public void setUp() {
@@ -138,7 +138,7 @@ public class ScreenLockManagerTest {
                 userAccount.getContentDomain(), userAccount.getContentSid(), userAccount.getCSRFToken());
         UserAccount storedUser = SalesforceSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers().get(0);
         SharedPreferences storedUserPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
-                + storedUser.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
+                + storedUser.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
 
         screenLockManager.storeMobilePolicyForOrg(storedUser, true);
         screenLockManager.cleanUp(storedUser);

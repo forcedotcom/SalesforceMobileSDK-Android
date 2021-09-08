@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.security;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -52,7 +53,7 @@ public class ScreenLockManager {
     public void storeMobilePolicyForOrg(UserAccount account, boolean screenLockRequired) {
         Context ctx = SalesforceSDKManager.getInstance().getAppContext();
         SharedPreferences accountSharedPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
-                + account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
+                + account.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
         accountSharedPrefs.edit().putBoolean(SCREEN_LOCK, screenLockRequired).apply();
 
         SharedPreferences globalPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
@@ -89,7 +90,7 @@ public class ScreenLockManager {
         // CleanUp and remove Lock for account.
         Context ctx = SalesforceSDKManager.getInstance().getAppContext();
         SharedPreferences accountPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
-                + account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
+                + account.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
         accountPrefs.edit().remove(SCREEN_LOCK).apply();
 
         // Determine if any other users still need ScreenLock.
@@ -99,7 +100,7 @@ public class ScreenLockManager {
             accounts.remove(account);
             for (UserAccount mAccount : accounts) {
                 accountPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
-                        + mAccount.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
+                        + mAccount.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
                 if (accountPrefs.getBoolean(SCREEN_LOCK, false)) {
                     return;
                 }
