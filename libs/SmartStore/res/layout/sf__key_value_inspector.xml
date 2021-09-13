@@ -58,7 +58,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_weight="0"
-            android:background="@drawable/sf__passcode_primary_color_button"
+            android:background="@drawable/sf__primary_color_button"
             android:onClick="onGetValueClick"
             android:text="@string/sf__inspector_get_value_button"
             android:textAllCaps="false"

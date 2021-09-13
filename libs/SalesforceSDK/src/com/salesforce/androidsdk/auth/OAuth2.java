@@ -90,15 +90,12 @@ public class OAuth2 {
     private static final String INSTANCE_URL = "instance_url";
     private static final String JSON = "json";
     private static final String MOBILE_POLICY = "mobile_policy";
-    private static final String PIN_LENGTH = "pin_length";
-    private static final String BIOMETRIC_UNLOCK = "biometric_unlock";
     private static final String REFRESH_TOKEN = "refresh_token";
     private static final String HYBRID_REFRESH = "hybrid_refresh";
     private static final String RESPONSE_TYPE = "response_type";
     private static final String SCOPE = "scope";
     private static final String REDIRECT_URI = "redirect_uri";
     private static final String DEVICE_ID = "device_id";
-    private static final String SCREEN_LOCK = "screen_lock";
     private static final String HYBRID_TOKEN = "hybrid_token";
     private static final String USERNAME = "username";
     private static final String EMAIL = "email";
@@ -529,6 +526,7 @@ public class OAuth2 {
         public String displayName;
         public String pictureUrl;
         public String thumbnailUrl;
+        public boolean mobilePolicy;
         public int pinLength = -1;
         public int screenLockTimeout = -1;
         public boolean biometricUnlockAllowed = true;
@@ -555,17 +553,7 @@ public class OAuth2 {
                 }
                 customAttributes = parsedResponse.optJSONObject(CUSTOM_ATTRIBUTES);
                 customPermissions = parsedResponse.optJSONObject(CUSTOM_PERMISSIONS);
-                if (parsedResponse.has(MOBILE_POLICY)) {
-                    pinLength = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(PIN_LENGTH);
-                    screenLockTimeout = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(SCREEN_LOCK);
-                    if (customAttributes != null) {
-                        String bioAttribute = customAttributes.optString(BIOMETRIC_UNLOCK).toLowerCase(Locale.US);
-                        if (bioAttribute.equals("false")) {
-                            biometricUnlockAllowed = false;
-                            SalesforceSDKLogger.i(TAG, "Biometric Unlock disabled by connected app.");
-                        }
-                    }
-                }
+                mobilePolicy = parsedResponse.has(MOBILE_POLICY);
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse identity response", e);
             }
