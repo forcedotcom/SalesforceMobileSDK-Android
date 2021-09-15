@@ -50,6 +50,10 @@ import android.view.View;
 import android.webkit.CookieManager;
 
 import androidx.annotation.NonNull;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleObserver;
+import androidx.lifecycle.OnLifecycleEvent;
+import androidx.lifecycle.ProcessLifecycleOwner;
 
 import com.salesforce.androidsdk.BuildConfig;
 import com.salesforce.androidsdk.R;
@@ -106,7 +110,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
  * use the static getInstance() method to access the
  * singleton SalesforceSDKManager object.
  */
-public class SalesforceSDKManager {
+public class SalesforceSDKManager implements LifecycleObserver {
 
     /**
      * Current version of this SDK.
@@ -267,6 +271,7 @@ public class SalesforceSDKManager {
         // If your app runs in multiple processes, all the SalesforceSDKManager need to run cleanup during a logout
         final CleanupReceiver cleanupReceiver = new CleanupReceiver();
         context.registerReceiver(cleanupReceiver, new IntentFilter(SalesforceSDKManager.CLEANUP_INTENT_ACTION));
+        ProcessLifecycleOwner.get().getLifecycle().addObserver(this);
     }
 
     /**
@@ -1448,5 +1453,15 @@ public class SalesforceSDKManager {
                 activity.setTheme(R.style.SalesforceSDK_AccessibleNav);
             }
         }
+    }
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
+    protected void onAppBackgrounded() {
+        getScreenLockManager().onAppBackgrounded();
+    }
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_START)
+    protected void onAppForegrounded() {
+        getScreenLockManager().onAppForegrounded();
     }
 }

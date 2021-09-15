@@ -34,7 +34,6 @@ import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_SCOPES;
 import static com.salesforce.androidsdk.security.ScreenLockManager.MOBILE_POLICY_PREF;
 import static com.salesforce.androidsdk.security.ScreenLockManager.SCREEN_LOCK;
 
-import android.accounts.Account;
 import android.content.Context;
 import android.content.SharedPreferences;
 
@@ -80,23 +79,23 @@ public class ScreenLockManagerTest {
 
     @Test
     public void testShouldNotLock() {
-        Assert.assertTrue("Should not be locked by default.", screenLockManager.onResume());
-        screenLockManager.setShouldLock(true);
-        Assert.assertTrue("Should not be locked without mobile policy set.", screenLockManager.onResume());
-        screenLockManager.storeMobilePolicyForOrg(userAccount, false);
-        Assert.assertTrue("Should not be locked without mobile policy set.", screenLockManager.onResume());
+        Assert.assertFalse("Should not be locked by default.", screenLockManager.shouldLock());
+        screenLockManager.onAppBackgrounded();
+        Assert.assertFalse("Should not be locked without mobile policy set.", screenLockManager.shouldLock());
+        screenLockManager.storeMobilePolicy(userAccount, false);
+        Assert.assertFalse("Should not be locked without mobile policy set.", screenLockManager.shouldLock());
 
-        screenLockManager.storeMobilePolicyForOrg(userAccount, false);
-        screenLockManager.setShouldLock(false);
-        Assert.assertTrue("Should not be locked if shouldLock is false.", screenLockManager.onResume());
+        screenLockManager.storeMobilePolicy(userAccount, false);
+        screenLockManager.unlock();
+        Assert.assertFalse("Should not be locked if shouldLock is false.", screenLockManager.shouldLock());
     }
 
     @Test
     public void testShouldLock() {
-        Assert.assertTrue("Should not be locked by default.", screenLockManager.onResume());
-        screenLockManager.setShouldLock(true);
-        screenLockManager.storeMobilePolicyForOrg(userAccount, true);
-        Assert.assertFalse("Screen should lock.", screenLockManager.onResume());
+        Assert.assertFalse("Should not be locked by default.", screenLockManager.shouldLock());
+        screenLockManager.onAppBackgrounded();
+        screenLockManager.storeMobilePolicy(userAccount, true);
+        Assert.assertTrue("Screen should lock.", screenLockManager.shouldLock());
     }
 
     @Test
@@ -104,22 +103,22 @@ public class ScreenLockManagerTest {
         Assert.assertFalse("Org Mobile Policy should not be set yet.", sharedPrefs.getBoolean(SCREEN_LOCK, false));
         Assert.assertFalse("User Mobile Policy should not be set yet.", accountPrefs.getBoolean(SCREEN_LOCK, false));
 
-        screenLockManager.storeMobilePolicyForOrg(userAccount, true);
+        screenLockManager.storeMobilePolicy(userAccount, true);
         Assert.assertTrue("Org Mobile Policy should be set.", sharedPrefs.getBoolean(SCREEN_LOCK, false));
         Assert.assertTrue("User Mobile Policy should be set.", accountPrefs.getBoolean(SCREEN_LOCK, false));
     }
 
     @Test
     public void testLockOnPause() {
-        Assert.assertTrue("Should not be locked by default.", screenLockManager.onResume());
-        screenLockManager.storeMobilePolicyForOrg(userAccount, true);
-        screenLockManager.onPause();
-        Assert.assertFalse("Screen should lock.", screenLockManager.onResume());
+        Assert.assertFalse("Should not be locked by default.", screenLockManager.shouldLock());
+        screenLockManager.storeMobilePolicy(userAccount, true);
+        screenLockManager.onAppBackgrounded();
+        Assert.assertTrue("Screen should lock.", screenLockManager.shouldLock());
     }
 
     @Test
     public void testReset() {
-        screenLockManager.storeMobilePolicyForOrg(userAccount, true);
+        screenLockManager.storeMobilePolicy(userAccount, true);
         screenLockManager.reset();
         Assert.assertFalse("Org Mobile Policy should not be set.", sharedPrefs.getBoolean(SCREEN_LOCK, false));
     }
@@ -140,7 +139,7 @@ public class ScreenLockManagerTest {
         SharedPreferences storedUserPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
                 + storedUser.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
 
-        screenLockManager.storeMobilePolicyForOrg(storedUser, true);
+        screenLockManager.storeMobilePolicy(storedUser, true);
         screenLockManager.cleanUp(storedUser);
         Assert.assertFalse("User Mobile Policy should not be set.", storedUserPrefs.getBoolean(SCREEN_LOCK, false));
         Assert.assertFalse("Org Mobile Policy should not be set.", sharedPrefs.getBoolean(SCREEN_LOCK, false));

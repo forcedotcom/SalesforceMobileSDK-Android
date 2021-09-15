@@ -29,7 +29,8 @@ package com.salesforce.androidsdk.security;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.util.Log;
+
+import androidx.annotation.VisibleForTesting;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -47,7 +48,7 @@ public class ScreenLockManager {
     public static final String MOBILE_POLICY_PREF = "mobile_policy";
     public static final String SCREEN_LOCK = "screen_lock";
 
-    private boolean shouldLock = true;
+    private boolean backgroundedSinceUnlock = true;
 
     /**
      * Stores the mobile policy for the org upon user login.
@@ -55,7 +56,7 @@ public class ScreenLockManager {
      * @param account the newly add account
      * @param screenLockRequired if the account requires screen lock or not
      */
-    public void storeMobilePolicyForOrg(UserAccount account, boolean screenLockRequired) {
+    public void storeMobilePolicy(UserAccount account, boolean screenLockRequired) {
         Context ctx = SalesforceSDKManager.getInstance().getAppContext();
         SharedPreferences accountSharedPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
                 + account.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
@@ -64,38 +65,27 @@ public class ScreenLockManager {
         SharedPreferences globalPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
         if (screenLockRequired) {
             globalPrefs.edit().putBoolean(SCREEN_LOCK, true).apply();
+
+            // This is needed to block access to the app immediately on login
+            backgroundedSinceUnlock = true;
+            onAppForegrounded();
         }
     }
 
     /**
      * To be called by the protected activity to lock the device when being resumed.
-     *
-     * @return true if the resume should be allowed to continue and false otherwise
      */
-    public boolean onResume() {
-        if (shouldLock && readMobilePolicy()) {
+    public void onAppForegrounded() {
+        if (shouldLock()) {
             lock();
-            return true;
-        } else {
-            // If locked, do nothing - when the app gets unlocked we will be back here.
-            return false;
         }
     }
 
     /**
      * To be called by the protected activity is paused to denote that the app should lock.
      */
-    public void onPause() {
-        setShouldLock(true);
-    }
-
-    /**
-     * Tells the manager if the app should lock or not.
-     *
-     * @param shouldLock if the app should lock or not.
-     */
-    public void setShouldLock(boolean shouldLock) {
-        this.shouldLock = shouldLock;
+    public void onAppBackgrounded() {
+        backgroundedSinceUnlock = true;
     }
 
     /**
@@ -135,6 +125,18 @@ public class ScreenLockManager {
 
         // If we have returned, no other accounts require Screen Lock.
         reset();
+    }
+
+    /**
+     * Unlocks the app.
+     */
+    public void unlock() {
+        backgroundedSinceUnlock = false;
+    }
+
+    @VisibleForTesting
+    protected boolean shouldLock() {
+        return backgroundedSinceUnlock && readMobilePolicy();
     }
 
     private boolean readMobilePolicy() {

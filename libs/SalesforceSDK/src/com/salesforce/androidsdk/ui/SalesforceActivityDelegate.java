@@ -75,36 +75,34 @@ public class SalesforceActivityDelegate {
      */
     public void onResume(boolean buildRestClient) {
         // Brings up the ScreenLock if needed.
-        if (screenLockManager.onResume()) {
-            if (buildRestClient) {
-                // Gets login options.
-                final String accountType = SalesforceSDKManager.getInstance().getAccountType();
-                final ClientManager.LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
+        if (buildRestClient) {
+            // Gets login options.
+            final String accountType = SalesforceSDKManager.getInstance().getAccountType();
+            final ClientManager.LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
 
-                // Gets a rest client.
-                new ClientManager(
-                        SalesforceSDKManager.getInstance().getAppContext(),
-                        accountType,
-                        loginOptions,
-                        SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()
-                ).getRestClient(activity, new ClientManager.RestClientCallback() {
+            // Gets a rest client.
+            new ClientManager(
+                    SalesforceSDKManager.getInstance().getAppContext(),
+                    accountType,
+                    loginOptions,
+                    SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()
+            ).getRestClient(activity, new ClientManager.RestClientCallback() {
 
-                    @Override
-                    public void authenticatedRestClient(RestClient client) {
-                        if (client == null) {
-                            SalesforceSDKManager.getInstance().logout(activity);
-                            return;
-                        }
-                        ((SalesforceActivityInterface) activity).onResume(client);
-
-                        // Lets observers know that rendition is complete.
-                        EventsObservable.get().notifyEvent(EventsObservable.EventType.RenditionComplete);
+                @Override
+                public void authenticatedRestClient(RestClient client) {
+                    if (client == null) {
+                        SalesforceSDKManager.getInstance().logout(activity);
+                        return;
                     }
-                });
-            }
-            else {
-                ((SalesforceActivityInterface) activity).onResume(null);
-            }
+                    ((SalesforceActivityInterface) activity).onResume(client);
+
+                    // Lets observers know that rendition is complete.
+                    EventsObservable.get().notifyEvent(EventsObservable.EventType.RenditionComplete);
+                }
+            });
+        }
+        else {
+            ((SalesforceActivityInterface) activity).onResume(null);
         }
     }
 
@@ -113,9 +111,7 @@ public class SalesforceActivityDelegate {
      */
     public void onUserInteraction() { }
 
-    public void onPause() {
-        screenLockManager.onPause();
-    }
+    public void onPause() { }
 
     public void onDestroy() {
         activity.unregisterReceiver(userSwitchReceiver);
