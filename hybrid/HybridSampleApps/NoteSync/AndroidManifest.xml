@@ -21,8 +21,8 @@
         <activity android:label="@string/app_name"
             android:name="com.salesforce.androidsdk.phonegap.ui.SalesforceDroidGapActivity"
             android:configChanges="orientation|keyboardHidden"
-            android:theme="@style/Theme.AppCompat.DayNight"
-            android:exported="false">
+            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:exported="true">
 
             <intent-filter >
                 <action android:name="android.intent.action.MAIN" />
