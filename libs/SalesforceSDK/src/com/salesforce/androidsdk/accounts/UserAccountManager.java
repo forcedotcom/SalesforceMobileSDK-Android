@@ -101,9 +101,9 @@ public class UserAccountManager {
 
 	private static UserAccountManager INSTANCE;
 
-	private Context context;
-	private AccountManager accountManager;
-	private String accountType;
+	private final Context context;
+	private final AccountManager accountManager;
+	private final String accountType;
 	private UserAccount cachedCurrentUserAccount;
 
 	/**
@@ -462,6 +462,41 @@ public class UserAccountManager {
         if (encCommunityUrl != null) {
         	communityUrl = SalesforceSDKManager.decrypt(encCommunityUrl, encryptionKey);
         }
+		final String encLightningDomain = accountManager.getUserData(account, AuthenticatorService.KEY_LIGHTNING_DOMAIN);
+		String lightningDomain = null;
+		if (encLightningDomain != null) {
+			lightningDomain = SalesforceSDKManager.decrypt(encLightningDomain, encryptionKey);
+		}
+		final String encLightningSid = accountManager.getUserData(account, AuthenticatorService.KEY_LIGHTNING_SID);
+		String lightningSid = null;
+		if (encLightningSid != null) {
+			lightningSid = SalesforceSDKManager.decrypt(encLightningSid, encryptionKey);
+		}
+		final String encVFDomain = accountManager.getUserData(account, AuthenticatorService.KEY_VF_DOMAIN);
+		String vfDomain = null;
+		if (encVFDomain != null) {
+			vfDomain = SalesforceSDKManager.decrypt(encVFDomain, encryptionKey);
+		}
+		final String encVFSid = accountManager.getUserData(account, AuthenticatorService.KEY_VF_SID);
+		String vfSid = null;
+		if (encVFSid != null) {
+			vfSid = SalesforceSDKManager.decrypt(encVFSid, encryptionKey);
+		}
+		final String encContentDomain = accountManager.getUserData(account, AuthenticatorService.KEY_CONTENT_DOMAIN);
+		String contentDomain = null;
+		if (encContentDomain != null) {
+			contentDomain = SalesforceSDKManager.decrypt(encContentDomain, encryptionKey);
+		}
+		final String encContentSid = accountManager.getUserData(account, AuthenticatorService.KEY_CONTENT_SID);
+		String contentSid = null;
+		if (encContentSid != null) {
+			contentSid = SalesforceSDKManager.decrypt(encContentSid, encryptionKey);
+		}
+		final String encCsrfToken = accountManager.getUserData(account, AuthenticatorService.KEY_CSRF_TOKEN);
+		String csrfToken = null;
+		if (encCsrfToken != null) {
+			csrfToken = SalesforceSDKManager.decrypt(encCsrfToken, encryptionKey);
+		}
 		if (authToken == null || instanceServer == null || userId == null || orgId == null) {
 			return null;
 		}
@@ -469,8 +504,10 @@ public class UserAccountManager {
                 loginServer(loginServer).idUrl(idUrl).instanceServer(instanceServer).orgId(orgId).
                 userId(userId).username(username).accountName(accountName).communityId(communityId).
                 communityUrl(communityUrl).firstName(firstName).lastName(lastName).displayName(displayName).
-                email(email).photoUrl(photoUrl).thumbnailUrl(thumbnailUrl).
-                additionalOauthValues(additionalOauthValues).build();
+                email(email).photoUrl(photoUrl).thumbnailUrl(thumbnailUrl).lightningDomain(lightningDomain).
+				lightningSid(lightningSid).vfDomain(vfDomain).vfSid(vfSid).contentDomain(contentDomain).
+				contentSid(contentSid).csrfToken(csrfToken).additionalOauthValues(additionalOauthValues).
+				build();
 	}
 
 	/**
