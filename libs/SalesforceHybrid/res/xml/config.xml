@@ -3,6 +3,8 @@
     id        = "com.salesforce.androidsdk"
     version   = "9.2.0">
 
+    <content src="index.html" />
+
     <!-- To allow XHR requests with the new Whitelist plugin -->
     <allow-navigation href="https://localhost" />
     <allow-navigation href="https://*.force.com" />
