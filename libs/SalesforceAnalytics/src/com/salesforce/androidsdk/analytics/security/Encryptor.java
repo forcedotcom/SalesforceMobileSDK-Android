@@ -495,7 +495,7 @@ public class Encryptor {
         finally {
             stream.close();
         }
-        return output.toString(String.valueOf(StandardCharsets.UTF_8));
+        return output.toString(StandardCharsets.UTF_8.name());
     }
 
     /**
