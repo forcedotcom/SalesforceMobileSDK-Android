@@ -390,7 +390,7 @@ workflows:
   # Friday 9 PM  - API 27
   # Friday 10 PM - API 25
   # Friday 11 PM - API 23
-   test-api-30:
+  test-api-30:
     triggers:
       - schedule:
           cron: "0 4 * * 2"
@@ -435,7 +435,7 @@ workflows:
           api_level: 30
 
 
- test-api-28:
+  test-api-28:
     triggers:
       - schedule:
           cron: "0 5 * * 2"
