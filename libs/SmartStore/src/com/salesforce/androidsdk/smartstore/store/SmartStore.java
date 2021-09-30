@@ -1586,7 +1586,18 @@ public class SmartStore  {
 	 * projectIntoJson(json, "a.b.d.e") = [[1, 2], [3, 4]]                               // new in 4.1
 	 *
      */
-    public static Object project(JSONObject soup, String path) {
+	public static Object project(JSONObject soup, String path) {
+		Object result = projectReturningNULLObject(soup, path);
+		return result == JSONObject.NULL ? null : result;
+	}
+
+	/**
+	 * Same as project but returns JSONObject.NULL if node found but without value and null if node not found
+	 * @param soup
+	 * @param path
+	 * @return
+	 */
+    public static Object projectReturningNULLObject(JSONObject soup, String path) {
         if (soup == null) {
             return null;
         }
@@ -1594,10 +1605,10 @@ public class SmartStore  {
             return soup;
         }
         String[] pathElements = path.split("[.]");
-		return project(soup, pathElements, 0);
+		return projectRecursive(soup, pathElements, 0);
     }
 
-	private static Object project(Object jsonObj, String[] pathElements, int index) {
+	private static Object projectRecursive(Object jsonObj, String[] pathElements, int index) {
 		Object result = null;
 		if (index == pathElements.length) {
 			return jsonObj;
@@ -1608,15 +1619,15 @@ public class SmartStore  {
 
 			if (jsonObj instanceof JSONObject) {
 				JSONObject jsonDict = (JSONObject) jsonObj;
-				Object dictVal = JSONObjectHelper.opt(jsonDict, pathElement);
-				result = project(dictVal, pathElements, index+1);
+				Object dictVal = jsonDict.opt(pathElement);
+				result = projectRecursive(dictVal, pathElements, index+1);
 			}
 			else if (jsonObj instanceof JSONArray) {
 				JSONArray jsonArr = (JSONArray) jsonObj;
 				result = new JSONArray();
 				for (int i=0; i<jsonArr.length(); i++) {
-					Object arrayElt = JSONObjectHelper.opt(jsonArr, i);
-					Object resultPart = project(arrayElt, pathElements, index);
+					Object arrayElt = jsonArr.opt(i);
+					Object resultPart = projectRecursive(arrayElt, pathElements, index);
 					if (resultPart != null) {
 						((JSONArray) result).put(resultPart);
 					}

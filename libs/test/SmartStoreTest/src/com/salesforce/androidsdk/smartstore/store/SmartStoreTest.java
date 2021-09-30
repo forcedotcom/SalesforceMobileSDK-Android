@@ -177,6 +177,22 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	}
 
 	/**
+	 * Making sure projectReturningNULLObject:
+	 * - returns JSONObject.NULL if the node is found but has the value null
+	 * - returns null if the node is not found
+	 */
+	@Test
+	public void testProjectMissingVsSetToNull() throws JSONException {
+		JSONObject json = new JSONObject("{\"a\":null, \"b\":{\"bb\":null}, \"c\":{\"cc\":{\"ccc\":null}}}");
+		Assert.assertEquals(JSONObject.NULL, SmartStore.projectReturningNULLObject(json, "a"));
+		Assert.assertEquals(JSONObject.NULL, SmartStore.projectReturningNULLObject(json, "b.bb"));
+		Assert.assertEquals(JSONObject.NULL, SmartStore.projectReturningNULLObject(json, "c.cc.ccc"));
+		Assert.assertEquals(null, SmartStore.projectReturningNULLObject(json, "a1"));
+		Assert.assertEquals(null, SmartStore.projectReturningNULLObject(json, "b.bb1"));
+		Assert.assertEquals(null, SmartStore.projectReturningNULLObject(json, "c.cc.ccc1"));
+	}
+
+	/**
 	 * Check that the meta data table (soup index map) has been created
 	 */
     @Test

@@ -413,7 +413,10 @@ public class SyncUpTarget extends SyncTarget {
         Map<String,Object> fields = new HashMap<>();
         for (String fieldName : fieldlist) {
             if (!fieldName.equals(idFieldName) && !fieldName.equals(modificationDateFieldName)) {
-                fields.put(fieldName, SmartStore.project(record, fieldName));
+                Object fieldValue = SmartStore.projectReturningNULLObject(record, fieldName);
+                if (fieldValue != null) {
+                    fields.put(fieldName, fieldValue == JSONObject.NULL ? null : fieldValue);
+                }
             }
         }
         return fields;
