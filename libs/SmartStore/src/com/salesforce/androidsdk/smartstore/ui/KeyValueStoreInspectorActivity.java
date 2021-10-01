@@ -54,6 +54,7 @@ import com.salesforce.androidsdk.smartstore.store.KeyValueEncryptedFileStore;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -141,6 +142,7 @@ public class KeyValueStoreInspectorActivity extends Activity {
             setCurrentStore(allStores.get(0));
         }
 
+        Collections.sort(allStores);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.sf__inspector_menu_popup_item, allStores);
         storesDropdown.setAdapter(adapter);
         storesDropdown.setText(allStores.get(0), false);
