@@ -3,7 +3,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.salesforce.androidsdk.mobilesync"
     android:versionCode="74"
-    android:versionName="9.2.0.dev">
+    android:versionName="9.2.0">
 
     <application />
 
