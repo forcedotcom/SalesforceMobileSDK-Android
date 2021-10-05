@@ -63,8 +63,7 @@ update_build_gradle ()
 {
     local file=$1
     local versionName=$2
-    gsed -i "s/name = '[0-9\.]*'/name = '${versionName}'/g" ${file}
-    gsed -i "s/vcsTag = '[^']*'/vcsTag = 'v${versionName}'/g" ${file}
+    gsed -i "s/PUBLISH_VERSION = '[0-9\.]*'/PUBLISH_VERSION = '${versionName}'/g" ${file}
 }
 
 update_manifest ()

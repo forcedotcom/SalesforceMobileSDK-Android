@@ -70,7 +70,7 @@ import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
-import com.salesforce.androidsdk.security.PasscodeManager;
+import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.MapUtil;
@@ -620,25 +620,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             // Save the user account
             addAccount(account);
 
-            // Screen lock required by mobile policy.
-            if (id.screenLockTimeout > 0) {
-
-                // Stores the mobile policy for the org.
-                final PasscodeManager passcodeManager = mgr.getPasscodeManager();
-                passcodeManager.storeMobilePolicyForOrg(account, id.screenLockTimeout * 1000 * 60, id.pinLength, id.biometricUnlockAllowed);
-                passcodeManager.setTimeoutMs(id.screenLockTimeout * 1000 * 60);
-                // NB setPasscodeLength(...)
-                //    If there was a passcode and the length is increased, the passcode manager will remember that a passcode change is required
-                //    The next SalesforceActivity to resume, will cause the locking screen to popup in passcode change mode
-                passcodeManager.setPasscodeLength((Activity) getContext(), id.pinLength);
-                passcodeManager.setBiometricAllowed((Activity) getContext(), id.biometricUnlockAllowed);
-            }
-
-            // No screen lock required or no mobile policy specified.
-            else {
-                final PasscodeManager passcodeManager = mgr.getPasscodeManager();
-                passcodeManager.storeMobilePolicyForOrg(account, 0, PasscodeManager.MIN_PASSCODE_LENGTH , true);
-            }
+            final ScreenLockManager screenLockManager = mgr.getScreenLockManager();
+            screenLockManager.storeMobilePolicy(account, id.mobilePolicy);
 
             // All done
             callback.finish(account);

@@ -135,7 +135,7 @@ jobs:
         default: false
       api_level:
         type: integer
-        default: 27
+        default: 29 # most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
     environment:
       CURRENT_LIB: << parameters.lib >>
     steps:
@@ -309,7 +309,7 @@ jobs:
 workflows:
   version: 2
 
-  # PRs run on Android API 27
+  # PRs run on Android API 29 
   pr-test:
     jobs:
       - static-analysis:
@@ -381,17 +381,64 @@ workflows:
 
 
   # Cron are on a timezone 8 hours ahead of PST
-  # Monday 8 PM  - API 28
-  # Monday 9 PM  - API 26
-  # Monday 10 PM - API 24
-  # Monday 11 PM - API 29
-  # Friday 8 PM  - API 27
-  # Friday 9 PM  - API 25
-  # Friday 10 PM - API 23
-  test-api-28:
+  # Monday 8 PM  - API 30
+  # Monday 9 PM  - API 28
+  # Monday 10 PM - API 26
+  # Monday 11 PM - API 24
+  # Friday 7 PM  - API 31
+  # Friday 8 PM  - API 29
+  # Friday 9 PM  - API 27
+  # Friday 10 PM - API 25
+  # Friday 11 PM - API 23
+  test-api-30:
     triggers:
       - schedule:
           cron: "0 4 * * 2"
+          filters:
+            branches:
+              only:
+                - dev
+    jobs:
+      - generate-artifacts
+      - run-tests:
+          name: "SalesforceAnalytics API 30"
+          api_level: 30
+      - run-tests:
+          name: "SalesforceSDK API 30"
+          lib: "SalesforceSDK"
+          test_apk: *coresdk-apk-path
+          api_level: 30
+      - run-tests:
+          name: "SmartStore API 30"
+          lib: "SmartStore"
+          test_apk: *smartStore-apk-path
+          api_level: 30
+      - run-tests:
+          name: "MobileSync API 30"
+          lib: "MobileSync"
+          test_apk: *mobileSync-apk-path
+          api_level: 30
+      - run-tests:
+          name: "SalesforceHybrid API 30"
+          lib: "SalesforceHybrid"
+          test_apk: *salesforceHybrid-apk-path
+          api_level: 30
+      - run-tests:
+          name: "RestExplorer API 30"
+          lib: "RestExplorer"
+          test_apk: *restExplorer-apk-path
+          api_level: 30
+      - run-tests:
+          name: "SalesforceReact API 30"
+          lib: "SalesforceReact"
+          test_apk: *salesforceReact-apk-path
+          api_level: 30
+
+
+  test-api-28:
+    triggers:
+      - schedule:
+          cron: "0 5 * * 2"
           filters:
             branches:
               only:
@@ -435,7 +482,7 @@ workflows:
   test-api-26:
     triggers:
       - schedule:
-          cron: "0 5 * * 2"
+          cron: "0 6 * * 2"
           filters:
             branches:
               only:
@@ -478,7 +525,7 @@ workflows:
   test-api-24:
     triggers:
       - schedule:
-          cron: "0 6 * * 2"
+          cron: "0 7 * * 2"
           filters:
             branches:
               only:
@@ -518,10 +565,98 @@ workflows:
           test_apk: *salesforceReact-apk-path
           api_level: 24
 
-  test-api-27:
+#  test-api-31:
+#    triggers:
+#      - schedule:
+#          cron: "0 3 * * 6"
+#          filters:
+#            branches:
+#              only:
+#                - dev
+#    jobs:
+#      - run-tests:
+#          name: "SalesforceAnalytics API 31"
+#          api_level: 31
+#      - run-tests:
+#          name: "SalesforceSDK API 31"
+#          lib: "SalesforceSDK"
+#          test_apk: *coresdk-apk-path
+#          api_level: 31
+#      - run-tests:
+#          name: "SmartStore API 31"
+#          lib: "SmartStore"
+#          test_apk: *smartStore-apk-path
+#          api_level: 31
+#      - run-tests:
+#          name: "MobileSync API 31"
+#          lib: "MobileSync"
+#          test_apk: *mobileSync-apk-path
+#          api_level: 31
+#      - run-tests:
+#          name: "SalesforceHybrid API 31"
+#          lib: "SalesforceHybrid"
+#          test_apk: *salesforceHybrid-apk-path
+#          api_level: 31
+#      - run-tests:
+#          name: "RestExplorer API 31"
+#          lib: "RestExplorer"
+#          test_apk: *restExplorer-apk-path
+#          api_level: 31
+#      - run-tests:
+#          name: "SalesforceReact API 31"
+#          lib: "SalesforceReact"
+#          test_apk: *salesforceReact-apk-path
+#          api_level: 31
+
+
+  test-api-29:
     triggers:
       - schedule:
           cron: "0 4 * * 6"
+          filters:
+            branches:
+              only:
+                - dev
+    jobs:
+      - run-tests:
+          name: "SalesforceAnalytics API 29"
+          api_level: 29
+      - run-tests:
+          name: "SalesforceSDK API 29"
+          lib: "SalesforceSDK"
+          test_apk: *coresdk-apk-path
+          api_level: 29
+      - run-tests:
+          name: "SmartStore API 29"
+          lib: "SmartStore"
+          test_apk: *smartStore-apk-path
+          api_level: 29
+      - run-tests:
+          name: "MobileSync API 29"
+          lib: "MobileSync"
+          test_apk: *mobileSync-apk-path
+          api_level: 29
+      - run-tests:
+          name: "SalesforceHybrid API 29"
+          lib: "SalesforceHybrid"
+          test_apk: *salesforceHybrid-apk-path
+          api_level: 29
+      - run-tests:
+          name: "RestExplorer API 29"
+          lib: "RestExplorer"
+          test_apk: *restExplorer-apk-path
+          api_level: 29
+      - run-tests:
+          name: "SalesforceReact API 29"
+          lib: "SalesforceReact"
+          test_apk: *salesforceReact-apk-path
+          api_level: 29
+
+
+  test-api-27:
+    triggers:
+      - schedule:
+          cron: "0 5 * * 6"
           filters:
             branches:
               only:
@@ -564,7 +699,7 @@ workflows:
   test-api-25:
     triggers:
       - schedule:
-          cron: "0 5 * * 6"
+          cron: "0 6 * * 6"
           filters:
             branches:
               only:
@@ -607,7 +742,7 @@ workflows:
   test-api-23:
     triggers:
       - schedule:
-          cron: "0 6 * * 6"
+          cron: "0 7 * * 6"
           filters:
             branches:
               only:
@@ -647,45 +782,3 @@ workflows:
           test_apk: *salesforceReact-apk-path
           api_level: 23
 
-  test-api-29:
-    triggers:
-      - schedule:
-          cron: "0 7 * * 2"
-          filters:
-            branches:
-              only:
-                - dev
-    jobs:
-      - run-tests:
-          name: "SalesforceAnalytics API 29"
-          api_level: 29
-      - run-tests:
-          name: "SalesforceSDK API 29"
-          lib: "SalesforceSDK"
-          test_apk: *coresdk-apk-path
-          api_level: 29
-      - run-tests:
-          name: "SmartStore API 29"
-          lib: "SmartStore"
-          test_apk: *smartStore-apk-path
-          api_level: 29
-      - run-tests:
-          name: "MobileSync API 29"
-          lib: "MobileSync"
-          test_apk: *mobileSync-apk-path
-          api_level: 29
-      - run-tests:
-          name: "SalesforceHybrid API 29"
-          lib: "SalesforceHybrid"
-          test_apk: *salesforceHybrid-apk-path
-          api_level: 29
-      - run-tests:
-          name: "RestExplorer API 29"
-          lib: "RestExplorer"
-          test_apk: *restExplorer-apk-path
-          api_level: 29
-      - run-tests:
-          name: "SalesforceReact API 29"
-          lib: "SalesforceReact"
-          test_apk: *salesforceReact-apk-path
-          api_level: 29

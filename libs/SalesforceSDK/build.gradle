@@ -11,17 +11,26 @@ dependencies {
     api project(':libs:SalesforceAnalytics')
     api 'com.squareup.okhttp3:okhttp:3.12.12'
     api 'com.google.firebase:firebase-messaging:20.1.0'
-    api 'androidx.core:core:1.3.2'
+    api 'androidx.core:core:1.6.0'
 
     /*
      * Don't upgrade browser library version until minApiVersion >= 24.
      * This is because the latest version of this library has minVersion = 24.
      */
     api 'androidx.browser:browser:1.0.0'
-    implementation 'com.google.android.material:material:1.3.0'
-    androidTestImplementation 'androidx.test:runner:1.3.0'
-    androidTestImplementation 'androidx.test:rules:1.3.0'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    implementation 'com.google.android.material:material:1.4.0'
+    implementation 'androidx.biometric:biometric:1.1.0'
+    implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
+    androidTestImplementation 'androidx.test:runner:1.4.0'
+    androidTestImplementation 'androidx.test:rules:1.4.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
+
+
+    /*
+     * Provides backport of CompletableFuture
+     * Remove once minApiVersion >= 24
+     */
+    androidTestImplementation 'net.sourceforge.streamsupport:android-retrofuture:1.7.3'
 }
 
 android {
@@ -70,4 +79,14 @@ android {
     xmlReport true
     abortOnError false
   }
+}
+
+ext {
+    PUBLISH_GROUP_ID = 'com.salesforce.mobilesdk'
+    PUBLISH_VERSION = '9.2.0'
+    PUBLISH_ARTIFACT_ID = 'SalesforceSDK'
+}
+
+if (rootProject.name == 'SalesforceMobileSDK-Android') {
+    apply from: "${rootProject.projectDir}/publish/publish-module.gradle"
 }

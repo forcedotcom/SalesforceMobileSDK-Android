@@ -112,7 +112,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	 */
 	@Test
 	public void testSQLCipherVersion() {
-		Assert.assertEquals("Wrong sqlcipher version", "4.4.2 community", store.getSQLCipherVersion());
+		Assert.assertEquals("Wrong sqlcipher version", "4.4.3 community", store.getSQLCipherVersion());
 	}
 
 	/**
@@ -174,6 +174,22 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		JSONTestHelper.assertSameJSON("Wrong value for key d.dd", new JSONArray("[[{\"ddd\":\"ddd11\"},{\"ddd\":\"ddd12\"}], [{\"ddd\":\"ddd21\"}], [{\"ddd\":\"ddd31\"},{\"ddd3\":\"ddd32\"}]]"), SmartStore.project(json, "d.dd"));
 		JSONTestHelper.assertSameJSON("Wrong value for key d.dd.ddd", new JSONArray("[[\"ddd11\",\"ddd12\"],[\"ddd21\"],[\"ddd31\"]]"), SmartStore.project(json, "d.dd.ddd"));
 		JSONTestHelper.assertSameJSON("Wrong value for key d.dd.ddd3", new JSONArray("[[\"ddd32\"]]"), SmartStore.project(json, "d.dd.ddd3"));
+	}
+
+	/**
+	 * Making sure projectReturningNULLObject:
+	 * - returns JSONObject.NULL if the node is found but has the value null
+	 * - returns null if the node is not found
+	 */
+	@Test
+	public void testProjectMissingVsSetToNull() throws JSONException {
+		JSONObject json = new JSONObject("{\"a\":null, \"b\":{\"bb\":null}, \"c\":{\"cc\":{\"ccc\":null}}}");
+		Assert.assertEquals(JSONObject.NULL, SmartStore.projectReturningNULLObject(json, "a"));
+		Assert.assertEquals(JSONObject.NULL, SmartStore.projectReturningNULLObject(json, "b.bb"));
+		Assert.assertEquals(JSONObject.NULL, SmartStore.projectReturningNULLObject(json, "c.cc.ccc"));
+		Assert.assertEquals(null, SmartStore.projectReturningNULLObject(json, "a1"));
+		Assert.assertEquals(null, SmartStore.projectReturningNULLObject(json, "b.bb1"));
+		Assert.assertEquals(null, SmartStore.projectReturningNULLObject(json, "c.cc.ccc1"));
 	}
 
 	/**

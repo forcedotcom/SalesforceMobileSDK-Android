@@ -35,7 +35,7 @@
 		android:layout_marginLeft="20dp"
 		android:layout_marginRight="20dp"
 		android:layout_marginBottom="20dp"
-		android:background="@drawable/sf__passcode_secondary_color_button"
+		android:background="@drawable/sf__secondary_color_button"
 		android:textColor="?attr/sfNegativeButtonTextColor"
 		android:textAllCaps="false"
 		android:textSize="14sp"

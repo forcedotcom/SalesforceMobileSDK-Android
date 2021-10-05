@@ -49,6 +49,12 @@ import android.text.TextUtils;
 import android.view.View;
 import android.webkit.CookieManager;
 
+import androidx.annotation.NonNull;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleObserver;
+import androidx.lifecycle.OnLifecycleEvent;
+import androidx.lifecycle.ProcessLifecycleOwner;
+
 import com.salesforce.androidsdk.BuildConfig;
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -73,6 +79,7 @@ import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
+import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 import com.salesforce.androidsdk.ui.DevInfoActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -103,12 +110,12 @@ import java.util.concurrent.ConcurrentSkipListSet;
  * use the static getInstance() method to access the
  * singleton SalesforceSDKManager object.
  */
-public class SalesforceSDKManager {
+public class SalesforceSDKManager implements LifecycleObserver {
 
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "9.1.1";
+    public static final String SDK_VERSION = "9.2.0.dev";
 
     /**
      * Intent action meant for instances of SalesforceSDKManager residing in other processes
@@ -147,9 +154,8 @@ public class SalesforceSDKManager {
     private LoginOptions loginOptions;
     private final Class<? extends Activity> mainActivityClass;
     private Class<? extends Activity> loginActivityClass = LoginActivity.class;
-    private Class<? extends PasscodeActivity> passcodeActivityClass = PasscodeActivity.class;
     private Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
-    private PasscodeManager passcodeManager;
+    private ScreenLockManager screenLockManager;
     private LoginServerManager loginServerManager;
     private boolean isTestRun = false;
 	private boolean isLoggingOut = false;
@@ -176,9 +182,9 @@ public class SalesforceSDKManager {
     }
 
     /**
-     * PasscodeManager object lock.
+     * ScreenLockManager object lock.
      */
-    private final Object passcodeManagerLock = new Object();
+    private final Object screenLockManagerLock = new Object();
 
     /**
      * Dev support
@@ -265,6 +271,7 @@ public class SalesforceSDKManager {
         // If your app runs in multiple processes, all the SalesforceSDKManager need to run cleanup during a logout
         final CleanupReceiver cleanupReceiver = new CleanupReceiver();
         context.registerReceiver(cleanupReceiver, new IntentFilter(SalesforceSDKManager.CLEANUP_INTENT_ACTION));
+        ProcessLifecycleOwner.get().getLifecycle().addObserver(this);
     }
 
     /**
@@ -400,21 +407,19 @@ public class SalesforceSDKManager {
      * The custom class must subclass PasscodeActivity.
      *
      * @param activity Subclass of PasscodeActivity.
+     *
+     * @deprecated Will be removed in Mobile SDK 10.0.
      */
-    public void setPasscodeActivity(Class<? extends PasscodeActivity> activity) {
-    	if (activity != null) {
-    		passcodeActivityClass = activity;
-    	}
-    }
+    public void setPasscodeActivity(Class<? extends PasscodeActivity> activity) { }
 
     /**
      * Returns the descriptor of the passcode activity class that's currently in use.
      *
      * @return Passcode activity class descriptor.
+     *
+     * @deprecated Will be removed in Mobile SDK 10.0.
      */
-    public Class<? extends PasscodeActivity> getPasscodeActivity() {
-    	return passcodeActivityClass;
-    }
+    public Class<? extends PasscodeActivity> getPasscodeActivity() { return PasscodeActivity.class; }
 
     /**
      * Indicates whether the SDK should automatically log out when the
@@ -512,17 +517,26 @@ public class SalesforceSDKManager {
     }
 
     /**
-     * Returns the passcode manager that's associated with SalesforceSDKManager.
+     * Returns the descriptor of the passcode activity class that's currently in use.
      *
-     * @return PasscodeManager instance.
+     * @return Passcode activity class descriptor.
+     *
+     * @deprecated Will be removed in Mobile SDK 10.0.
      */
-    public PasscodeManager getPasscodeManager() {
-    	synchronized (passcodeManagerLock) {
-            if (passcodeManager == null) {
-                passcodeManager = new PasscodeManager(context);
+    public PasscodeManager getPasscodeManager() { return new PasscodeManager(context); }
+
+    /**
+     * Returns the ScreenLock manager that's associated with SalesforceSDKManager.
+     *
+     * @return ScreenLockManager instance.
+     */
+    public ScreenLockManager getScreenLockManager() {
+        synchronized (screenLockManagerLock) {
+            if (screenLockManager == null) {
+                screenLockManager = new ScreenLockManager();
             }
-            return passcodeManager;
-		}
+            return screenLockManager;
+        }
     }
 
 	/**
@@ -743,8 +757,8 @@ public class SalesforceSDKManager {
         /*
          * Checks how many accounts are left that are authenticated. If only one
          * account is left, this is the account that is being removed. In this
-         * case, we can safely reset passcode manager, admin prefs, and encryption keys.
-         * Otherwise, we don't reset passcode manager and admin prefs since
+         * case, we can safely reset screen lock manager, admin prefs, and encryption keys.
+         * Otherwise, we don't reset screen lock manager and admin prefs since
          * there might be other accounts on that same org, and these policies
          * are stored at the org level.
          */
@@ -753,8 +767,9 @@ public class SalesforceSDKManager {
             getAdminPermsManager().resetAll();
             adminSettingsManager = null;
             adminPermsManager = null;
-            getPasscodeManager().reset(context);
-            passcodeManager = null;
+
+            getScreenLockManager().reset();
+            screenLockManager = null;
         }
     }
 
@@ -767,6 +782,7 @@ public class SalesforceSDKManager {
         SalesforceAnalyticsManager.reset(userAccount);
         RestClient.clearCaches(userAccount);
         UserAccountManager.getInstance().clearCachedCurrentUser();
+        getScreenLockManager().cleanUp(userAccount);
     }
 
     /**
@@ -929,31 +945,9 @@ public class SalesforceSDKManager {
     private void removeAccount(ClientManager clientMgr, final boolean showLoginPage,
     		String refreshToken, String loginServer,
     		Account account, Activity frontActivity) {
-    	cleanUp(frontActivity, account, showLoginPage);
 
-    	/*
-    	 * Removes the existing account, if any. 'account == null' does not
-    	 * guarantee that there are no accounts to remove. In the 'Forgot Passcode'
-    	 * flow there could be accounts to remove, but we don't have them, since
-    	 * we don't have the passcode hash to decrypt them. Hence, we query
-    	 * AccountManager directly here and remove the accounts for the case
-    	 * where 'account == null'. If AccountManager doesn't have accounts
-    	 * either, then there's nothing to do.
-    	 */
-    	if (account == null) {
-    		final AccountManager accMgr = AccountManager.get(context);
-    		if (accMgr != null) {
-    			final Account[] accounts = accMgr.getAccountsByType(getAccountType());
-    			if (accounts.length > 0) {
-    				for (int i = 0; i < accounts.length - 1; i++) {
-    					clientMgr.removeAccounts(accounts);
-    				}
-    				clientMgr.removeAccount(accounts[accounts.length - 1]);
-    			}
-    		}
-    	} else {
-    	    clientMgr.removeAccount(account);
-    	}
+    	cleanUp(frontActivity, account, showLoginPage);
+        clientMgr.removeAccount(account);
         isLoggingOut = false;
         notifyLogoutComplete(showLoginPage);
 
@@ -1072,21 +1066,14 @@ public class SalesforceSDKManager {
         return context.getString(R.string.account_type);
     }
 
+    @NonNull
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder();
-        sb.append(this.getClass()).append(": {\n")
-          .append("   accountType: ").append(getAccountType()).append("\n")
-          .append("   userAgent: ").append(getUserAgent()).append("\n")
-          .append("   mainActivityClass: ").append(getMainActivityClass()).append("\n")
-          .append("\n");
-        if (passcodeManager != null) {
-
-            // passcodeManager may be null at startup if the app is running in debug mode.
-            sb.append("   hasStoredPasscode: ").append(passcodeManager.hasStoredPasscode(context)).append("\n");
-        }
-        sb.append("}\n");
-        return sb.toString();
+        return this.getClass() + ": {\n" +
+                "   accountType: " + getAccountType() + "\n" +
+                "   userAgent: " + getUserAgent() + "\n" +
+                "   mainActivityClass: " + getMainActivityClass() + "\n" +
+                "\n";
     }
 
     /**
@@ -1466,5 +1453,15 @@ public class SalesforceSDKManager {
                 activity.setTheme(R.style.SalesforceSDK_AccessibleNav);
             }
         }
+    }
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
+    protected void onAppBackgrounded() {
+        getScreenLockManager().onAppBackgrounded();
+    }
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_START)
+    protected void onAppForegrounded() {
+        getScreenLockManager().onAppForegrounded();
     }
 }

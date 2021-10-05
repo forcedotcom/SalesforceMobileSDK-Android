@@ -234,6 +234,12 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	}
 
 	@Test
+	public void testConvertOtherComplexSmartSql() {
+    	Assert.assertEquals("SELECT json_set('{}', '$.data.uiapi.query.Account.edges', ( SELECT json_group_array(json_set('{}', '$.node.Id', (json_extract('Account.JSON', '$.data.fields.Id.value')) )) FROM (SELECT 'Account'.TABLE_1_1 as 'Account.JSON' FROM TABLE_1 as 'Account' WHERE ( json_extract('Account.JSON', '$.data.apiName') = 'Account' ) ) ) ) as json",
+			store.convertSmartSql("SELECT json_set('{}', '$.data.uiapi.query.Account.edges', ( SELECT json_group_array(json_set('{}', '$.node.Id', (json_extract('Account.JSON', '$.data.fields.Id.value')) )) FROM (SELECT 'Account'.TABLE_1_1 as 'Account.JSON' FROM TABLE_1 as 'Account' WHERE ( json_extract('Account.JSON', '$.data.apiName') = 'Account' ) ) ) ) as json"));
+	}
+
+	@Test
 	public void testConvertSmartSqlWithMultipleQuotedCurlyBraces() {
 		Assert.assertEquals("select json_extract(soup, '$.education'), '{a:b}', TABLE_1_0 from TABLE_1 where json_extract(soup, '$.address') = '{\"city\": \"San Francisco\"}' or TABLE_1_1 like 'B%'",
 			store.convertSmartSql("select {employees:education}, '{a:b}', {employees:firstName} from {employees} where {employees:address} = '{\"city\": \"San Francisco\"}' or {employees:lastName} like 'B%'"));

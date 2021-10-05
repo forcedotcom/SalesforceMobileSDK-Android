@@ -10,7 +10,10 @@
 
         <!--  Main activity -->
         <activity android:label="@string/app_name"
-            android:name="com.salesforce.androidsdk.phonegap.ui.SalesforceHybridTestActivity">
+          android:name="com.salesforce.androidsdk.phonegap.ui.SalesforceHybridTestActivity"
+          android:configChanges="orientation|keyboardHidden"
+          android:theme="@style/Theme.AppCompat.NoActionBar"
+          android:exported="true">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -20,7 +23,7 @@
 
         <!-- Disabling AILTN in tests -->
         <service android:name="com.salesforce.androidsdk.analytics.AnalyticsPublisherService"
-            android:enabled="false" />
-
+            android:enabled="false"
+            android:exported="false" />
     </application>
 </manifest>

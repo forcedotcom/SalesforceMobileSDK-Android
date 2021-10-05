@@ -37,36 +37,6 @@
 	<string name="sf__server_url_default_apply">Apply</string>
 	<string name="sf__server_url_reset">Reset</string>
 	<string name="sf__server_picker_title">Change Server</string>
-	
-	<!-- Passcode entry screen -->
-	<string name="sf__passcode_create_title">Passcode</string>
-	<string name="sf__passcode_create_instructions">Create a passcode</string>
-	<string name="sf__passcode_change_title">Passcode</string>
-	<string name="sf__passcode_change_instructions">Create a passcode</string>
-	<string name="sf__passcode_confirm_title">Passcode</string>
-	<string name="sf__passcode_confirm_instructions">Verify passcode</string>
-	<string name="sf__passcode_enter_title">Passcode</string>
-	<string name="sf__passcode_enter_instructions">Enter passcode</string>
-	<string name="sf__passcodes_dont_match">Passcodes do not match. Try again.</string>
-	<string name="sf__passcode_try_again">Incorrect passcode. %d attempts remaining.</string>
-	<string name="sf__passcode_final">Final passcode attempt.</string>
-	<string name="sf__passcode_logout">Log out</string>
-	<string name="sf__passcode_verify_button">Verify Passcode</string>
-	<string name="sf__passcode_fingerprint_icon_description">Fingerprint icon</string>
-	<string name="sf__passcode_face_icon_description">Face Unlock icon</string>
-	<string name="sf__biometric_fingerprint_title">Fingerprint Unlock</string>
-	<string name="sf__biometric_face_title">Face Unlock</string>
-	<string name="sf__biometric_iris_title">Iris Scanner Unlock</string>
-	<string name="sf__biometric_fingerprint_allow_instructions_title">Set up Fingerprint Unlock</string>
-	<string name="sf__biometric_face_allow_instructions_title">Set up Face Unlock</string>
-	<string name="sf__biometric_iris_allow_instructions_title">Set up Iris Scanner Unlock</string>
-	<string name="sf__biometric_allow_instructions">You can now unlock %s using biometric for extra security and convenience.</string>
-	<string name="sf__biometric_not_now_button">Not Now</string>
-	<string name="sf__biometric_enable_button">Enable</string>
-	<string name="sf__accessibility_passcode_field_label">Passcode field</string>
-	<string name="sf__accessibility_passcode_length_hint">Passcode is %d alphanumeric characters long.</string>
-	<string name="sf__accessibility_unlock_announcement">Passcode confirmed.</string>
-	<string name="sf__accessibility_logged_out_announcement">You are logged out.</string>
 
 	<!-- Manage space activity -->
 	<string name="sf__manage_space_confirmation">Clearing user data will log the current user out. Are you sure you want to perform this action?</string>
@@ -87,25 +57,19 @@
 	<string name="sf__only_show_authorized_hosts_description">Used to specify that only authorized hosts can be shown.</string>
     <string name="sf__idp_app_url_scheme_description">Used to specify IDP app\'s URL scheme to be used.</string>
 
-	<!-- Fingerprint auth resources-->
-	<string name="sf__fingerprint_title">Fingerprint Unlock</string>
-	<string name="sf__fingerprint_description">Unlock using your fingerprint to access your %s account.</string>
-	<string name="sf__fingerprint_hint">Touch sensor</string>
-	<string name="sf__fingerprint_failed">Fingerprint authentication failed</string>
-
-	<!-- Face Unlock auth resources-->
-	<string name="sf__face_unlock_title">Face Unlock</string>
-	<string name="sf__face_unlock_description">Use Face Unlock to access your %s account.</string>
-	<string name="sf__face_unlock_failed">Face Unlock failed</string>
-
-	<!-- Iris auth resources-->
-	<string name="sf__iris_title">Iris Scanner Unlock</string>
-	<string name="sf__iris_description">Use the Iris Scanner to access your %s account.</string>
-	<string name="sf__iris_failed">Iris authentication failed</string>
-
-	<!-- Generic biometric authentication resources-->
-	<string name="sf__biometric_cancel">Cancel</string>
-	<string name="sf__biometric_success">Success</string>
+	<!-- ScreenLock -->
+	<string name="sf__logout">Logout</string>
+	<string name="sf__application_icon">Application Icon</string>
+	<string name="sf__screen_lock_auth_failed">Authentication Failed.</string>
+	<string name="sf__screen_lock_auth_error">Authentication error.</string>
+	<string name="sf__screen_lock_auth_success">Authentication Success.</string>
+	<string name="sf__screen_lock_title">%s Lock</string>
+	<string name="sf__screen_lock_subtitle">Unlock to access your %s account.</string>
+	<string name="sf__screen_lock_error_hw_unavailable">Hardware unavailable.  Try again later.</string>
+	<string name="sf__screen_lock_error">An unknown error has occurred.</string>
+	<string name="sf__screen_lock_setup_required">%s requires a device lock screen.</string>
+	<string name="sf__screen_lock_setup_button">Setup Lock Screen</string>
+	<string name="sf__screen_lock_retry_button">Retry Unlock</string>
 
 	<!-- Dev support -->
 	<string name="sf__dev_support_title">Mobile SDK Dev Support</string>

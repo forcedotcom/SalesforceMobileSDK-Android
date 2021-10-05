@@ -26,6 +26,9 @@
  */
 package com.salesforce.androidsdk.app;
 
+import static com.salesforce.androidsdk.security.ScreenLockManager.MOBILE_POLICY_PREF;
+import static com.salesforce.androidsdk.security.ScreenLockManager.SCREEN_LOCK;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 
@@ -93,6 +96,9 @@ public class SalesforceSDKUpgradeManager {
             if (installedVerDouble < 8.2) {
                 upgradeTo8Dot2();
             }
+            if (installedVerDouble < 9.2) {
+                upgradeTo9Dot2();
+            }
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Failed to parse installed version.");
         }
@@ -146,6 +152,63 @@ public class SalesforceSDKUpgradeManager {
                 if (userAccount != null) {
                     SalesforceAnalyticsManager.upgradeTo8Dot2(userAccount,
                             SalesforceSDKManager.getInstance().getAppContext());
+                }
+            }
+        }
+    }
+
+    // TODO: Remove upgrade step in Mobile SDK 11.0
+    private void upgradeTo9Dot2() {
+        final String KEY_PASSCODE ="passcode";
+        final String KEY_TIMEOUT = "access_timeout";
+        final String KEY_PASSCODE_LENGTH = "passcode_length";
+        final String KEY_FAILED_ATTEMPTS = "failed_attempts";
+        final String KEY_PASSCODE_LENGTH_KNOWN = "passcode_length_known";
+        final String KEY_BIOMETRIC_ALLOWED = "biometric_allowed";
+        final String KEY_BIOMETRIC_ENROLLMENT = "biometric_enrollment";
+        final String KEY_BIOMETRIC_ENABLED = "biometric_enabled";
+        final Context ctx = SalesforceSDKManager.getInstance().getAppContext();
+
+        final SharedPreferences globalPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
+        if (globalPrefs.contains(KEY_TIMEOUT) && globalPrefs.contains(KEY_PASSCODE_LENGTH)) {
+            SharedPreferences.Editor globalEditor = globalPrefs.edit();
+            globalEditor.remove(KEY_PASSCODE);
+            globalEditor.remove(KEY_TIMEOUT);
+            globalEditor.remove(KEY_FAILED_ATTEMPTS);
+            globalEditor.remove(KEY_PASSCODE_LENGTH);
+            globalEditor.remove(KEY_PASSCODE_LENGTH_KNOWN);
+            globalEditor.remove(KEY_BIOMETRIC_ALLOWED);
+            globalEditor.remove(KEY_BIOMETRIC_ENROLLMENT);
+            globalEditor.remove(KEY_BIOMETRIC_ENABLED);
+
+            globalEditor.putBoolean(SCREEN_LOCK, true).apply();
+
+            // Set which users should have screen lock
+            final UserAccountManager manager = SalesforceSDKManager.getInstance().getUserAccountManager();
+            final List<UserAccount> accounts = manager.getAuthenticatedUsers();
+
+            if (accounts != null) {
+                for (UserAccount account : accounts) {
+                    final SharedPreferences orgPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
+                            + account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
+                    if (orgPrefs.contains(KEY_TIMEOUT) &&  orgPrefs.contains(KEY_PASSCODE_LENGTH)) {
+                        // Delete passcode keys at org level
+                        SharedPreferences.Editor orgEditor = globalPrefs.edit();
+                        orgEditor.remove(KEY_PASSCODE);
+                        orgEditor.remove(KEY_TIMEOUT);
+                        orgEditor.remove(KEY_FAILED_ATTEMPTS);
+                        orgEditor.remove(KEY_PASSCODE_LENGTH);
+                        orgEditor.remove(KEY_PASSCODE_LENGTH_KNOWN);
+                        orgEditor.remove(KEY_BIOMETRIC_ALLOWED);
+                        orgEditor.remove(KEY_BIOMETRIC_ENROLLMENT);
+                        orgEditor.remove(KEY_BIOMETRIC_ENABLED);
+                        orgEditor.apply();
+
+                        // Set screen lock key at user level
+                        final SharedPreferences userPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
+                            + account.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
+                        userPrefs.edit().putBoolean(SCREEN_LOCK, true).apply();
+                    }
                 }
             }
         }
