@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <servers>
-    <server name="Production" url="https://login.salesforce.com" />
-    <server name="Sandbox" url="https://test.salesforce.com" />
+    <server name="Harmony" url="https://training1-harmonyschools.cs203.force.com/purple" />
+    <server name="Aldine" url="https://training07-aldine.cs43.force.com/purple" />
+    <server name="Hisd" url="https://training15-houstonisd.cs194.force.com/purple" />
+    <server name="Yesprep" url="https://training1-yesprep.cs159.force.com/purple" />
 </servers>
