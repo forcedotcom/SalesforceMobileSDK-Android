@@ -169,12 +169,7 @@ public class ServerPickerActivity extends Activity implements
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.sf__menu_clear_custom_url) {
-            clearCustomUrlSetting();
-            return true;
-        } else {
-            return super.onOptionsItemSelected(item);
-        }
+        return super.onOptionsItemSelected(item);
     }
 
     /**
