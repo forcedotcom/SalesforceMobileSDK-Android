@@ -16,9 +16,8 @@
 	<!-- Explorer -->
 	<string name="explorer_title">@string/app_name</string>
 	<string name="print_info_button">Print Info</string>
-	<string name="switch_acc_button">Switch Account</string>
 	<string name="clear_button">Clear</string>
-	<string name="logout_button">Logout</string>
+	<string name="dev_menu_button">Dev Menu</string>
 	<string name="versions_tab">Versions</string>
 	<string name="versions_title"><u><b>Versions</b></u>\nGet summary information about each Salesforce.com version currently available.</string>
 	<string name="versions_button">Go</string>
