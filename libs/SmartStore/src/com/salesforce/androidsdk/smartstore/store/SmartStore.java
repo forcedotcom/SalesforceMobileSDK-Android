@@ -798,19 +798,40 @@ public class SmartStore  {
 	}
 
     /**
-	 * Run a query given by its query Spec, only returned results from selected page
+	 * Run a query given by its query Spec,
+	 * Returns results from selected page
+	 *
 	 * @param querySpec
 	 * @param pageIndex
      * @throws JSONException
 	 */
 	public JSONArray query(QuerySpec querySpec, int pageIndex) throws JSONException {
+		return queryWithArgs(querySpec, pageIndex, null);
+	}
+
+	/**
+	 * Run a smart query with optional "where args"
+	 * Returns results from selected page
+	 * Query can contain ? which will be replaced by provided "where args"
+	 *
+	 * @param querySpec
+	 * @param pageIndex
+	 * @param whereArgs
+	 *
+	 * @throws JSONException
+	 */
+	public JSONArray queryWithArgs(QuerySpec querySpec, int pageIndex, String... whereArgs) throws JSONException {
+		if (whereArgs != null && querySpec.queryType != QueryType.smart) {
+			throw new SmartStoreException("whereArgs can only be provided for smart queries");
+		}
+
 		JSONArray resultAsArray = new JSONArray();
-		runQuery(resultAsArray, null, querySpec, pageIndex);
+		runQuery(resultAsArray, null, querySpec, pageIndex, whereArgs);
 		return resultAsArray;
 	}
 	/**
-	 * Run a query given by its query Spec, only returned results from selected page
-	 * without deserializing any JSON
+	 * Run a query given by its query Spec
+	 * Returns results from selected page without deserializing any JSON
 	 *
 	 * @param resultBuilder string builder to which results are appended
 	 * @param querySpec
@@ -818,7 +839,7 @@ public class SmartStore  {
 	 */
 	public void queryAsString(StringBuilder resultBuilder, QuerySpec querySpec, int pageIndex) {
 		try {
-			runQuery(null, resultBuilder, querySpec, pageIndex);
+			runQuery(null, resultBuilder, querySpec, pageIndex, null);
 		}
 		catch (JSONException e) {
 			// shouldn't happen since we call runQuery with a string builder
@@ -826,7 +847,7 @@ public class SmartStore  {
 		}
 	}
 
-	private void runQuery(JSONArray resultAsArray, StringBuilder resultAsStringBuilder, QuerySpec querySpec, int pageIndex) throws JSONException {
+	private void runQuery(JSONArray resultAsArray, StringBuilder resultAsStringBuilder, QuerySpec querySpec, int pageIndex, String... whereArgs) throws JSONException {
 		boolean computeResultAsString = resultAsStringBuilder != null;
 
 		final SQLiteDatabase db = getDatabase();
@@ -840,7 +861,7 @@ public class SmartStore  {
 			String limit = offsetRows + "," + numberRows;
 			Cursor cursor = null;
 			try {
-				cursor = DBHelper.getInstance(db).limitRawQuery(db, sql, limit, querySpec.getArgs());
+				cursor = DBHelper.getInstance(db).limitRawQuery(db, sql, limit, querySpec.getArgs() != null ? querySpec.getArgs() : whereArgs);
 
 				if (computeResultAsString) {
 					resultAsStringBuilder.append("[");
