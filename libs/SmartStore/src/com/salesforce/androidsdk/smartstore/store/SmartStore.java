@@ -798,11 +798,11 @@ public class SmartStore  {
 	}
 
     /**
-	 * Run a query given by its query Spec,
+	 * Run a query given by its query spec
 	 * Returns results from selected page
 	 *
-	 * @param querySpec
-	 * @param pageIndex
+	 * @param querySpec the query to run
+	 * @param pageIndex the page to return
      * @throws JSONException
 	 */
 	public JSONArray query(QuerySpec querySpec, int pageIndex) throws JSONException {
@@ -810,13 +810,14 @@ public class SmartStore  {
 	}
 
 	/**
-	 * Run a smart query with optional "where args"
+	 * Run a query given by its query spec with optional "where args" (i.e. bind args)
+     * Provided bind args will be substituted to the ? found in the query
+	 * NB: Bind args are only supported for smart queries
 	 * Returns results from selected page
-	 * Query can contain ? which will be replaced by provided "where args"
 	 *
-	 * @param querySpec
-	 * @param pageIndex
-	 * @param whereArgs
+	 * @param querySpec the query to run
+	 * @param pageIndex the page to return
+	 * @param whereArgs the bind args (optional - only supported for smart queries)
 	 *
 	 * @throws JSONException
 	 */
