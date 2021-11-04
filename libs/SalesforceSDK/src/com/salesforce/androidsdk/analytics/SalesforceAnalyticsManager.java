@@ -53,6 +53,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -60,6 +61,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 /**
  * This class contains APIs that can be used to interact with
@@ -72,6 +74,7 @@ public class SalesforceAnalyticsManager {
     private static final String ANALYTICS_ON_OFF_KEY = "ailtn_enabled";
     private static final String AILTN_POLICY_PREF = "ailtn_policy";
     private static final int DEFAULT_PUBLISH_FREQUENCY_IN_HOURS = 8;
+    private static final int DEFAULT_BATCH_SIZE = 100;
     private static final String TAG = "AnalyticsManager";
     private static final String UNAUTH_INSTANCE_KEY = "_no_user";
 
@@ -79,6 +82,7 @@ public class SalesforceAnalyticsManager {
     private static boolean sPublishHandlerActive;
     private static ScheduledFuture sScheduler;
     private static int sPublishFrequencyInHours = DEFAULT_PUBLISH_FREQUENCY_IN_HOURS;
+    private static int sEventPublishBatchSize = DEFAULT_BATCH_SIZE;
 
     private AnalyticsManager analyticsManager;
     private EventStoreManager eventStoreManager;
@@ -200,6 +204,13 @@ public class SalesforceAnalyticsManager {
         }
     }
 
+    public static void setEventPublishBatchSize(int batchSize) {
+        if (batchSize <= 0) {
+            throw new IllegalArgumentException("Illegal batch size, must be greater than zero.");
+        }
+        sEventPublishBatchSize = batchSize;
+    }
+
     /**
      * Returns the publish frequency currently set, in hours.
      *
@@ -274,7 +285,7 @@ public class SalesforceAnalyticsManager {
      * This method should NOT be called from the main thread.
      */
     public synchronized void publishAllEvents() {
-        final List<InstrumentationEvent> events = eventStoreManager.fetchAllEvents();
+        final Iterable<InstrumentationEvent> events = eventStoreManager.iterateAllEvents();
         publishEvents(events);
     }
 
@@ -284,49 +295,63 @@ public class SalesforceAnalyticsManager {
      * deleted if publishing was successful for all registered endpoints.
      * This method should NOT be called from the main thread.
      *
-     * @param events List of events.
+     * @param events Iterable of events.
      */
-    public synchronized void publishEvents(List<InstrumentationEvent> events) {
-        if (events == null || events.size() == 0) {
+    public synchronized void publishEvents(Iterable<InstrumentationEvent> events) {
+        if (events == null) {
             return;
         }
-        final List<String> eventsIds = new ArrayList<>();
+        final Set<String> eventsIds = new HashSet<>();
         boolean success = true;
-        final Set<Class<? extends Transform>> remoteKeySet = remotes.keySet();
-        for (final Class<? extends Transform> transformClass : remoteKeySet) {
-            Transform transformer = null;
+        final Set<Map.Entry<Class<? extends Transform>, Class<? extends AnalyticsPublisher>>> remoteKeySet = remotes.entrySet();
+        for (final Map.Entry<Class<? extends Transform>, Class<? extends AnalyticsPublisher>> remoteEntry : remoteKeySet) {
+            Transform transformer;
             try {
-                transformer = transformClass.newInstance();
+                transformer = remoteEntry.getKey().newInstance();
             } catch (Exception e) {
                 SalesforceSDKLogger.e(TAG, "Exception thrown while instantiating class", e);
+                continue;
             }
-            if (transformer != null) {
-                final JSONArray eventsJSONArray = new JSONArray();
-                for (final InstrumentationEvent event : events) {
-                    eventsIds.add(event.getEventId());
-                    final JSONObject eventJSON = transformer.transform(event);
-                    if (eventJSON != null) {
-                        eventsJSONArray.put(eventJSON);
-                    }
-                }
-                AnalyticsPublisher networkPublisher = null;
-                try {
-                    networkPublisher = remotes.get(transformClass).newInstance();
-                } catch (Exception e) {
-                    SalesforceSDKLogger.e(TAG, "Exception thrown while instantiating class", e);
-                }
-                if (networkPublisher != null) {
-                    boolean networkSuccess = networkPublisher.publish(eventsJSONArray);
 
-                    /*
-                     * Updates the success flag only if all previous requests have been
-                     * successful. This ensures that the operation is marked success only
-                     * if all publishers are successful.
-                     */
-                    if (success) {
-                        success = networkSuccess;
+            AnalyticsPublisher networkPublisher;
+            try {
+                networkPublisher = remoteEntry.getValue().newInstance();
+            } catch (Exception e) {
+                SalesforceSDKLogger.e(TAG, "Exception thrown while instantiating class", e);
+                continue;
+            }
+
+            int eventCount = 0;
+            JSONArray eventsJSONArray = new JSONArray();
+            for (final InstrumentationEvent event : events) {
+                if (event == null) {
+                    continue;
+                }
+                eventsIds.add(event.getEventId());
+                final JSONObject eventJSON = transformer.transform(event);
+                if (eventJSON == null) {
+                    continue;
+                }
+                eventsJSONArray.put(eventJSON);
+
+                // Publish a batch if we've reached the batch size
+                eventCount++;
+                if (eventCount >= sEventPublishBatchSize) {
+                    eventCount = 0;
+
+                    boolean batchSuccess = networkPublisher.publish(eventsJSONArray);
+                    eventsJSONArray = new JSONArray();
+                    success &= batchSuccess;
+                    if (!batchSuccess) {
+                        // Don't bother trying this publisher after the first failure
+                        break;
                     }
                 }
+            }
+
+            // Publish events that didn't get batched
+            if (eventCount > 0) {
+                success &= networkPublisher.publish(eventsJSONArray);
             }
         }
 
@@ -368,6 +393,19 @@ public class SalesforceAnalyticsManager {
             return;
         }
         remotes.put(transformer, publisher);
+    }
+
+    /**
+     * Removes a remote publisher to publish events to.
+     *
+     * @param transformer Transformer class.
+     */
+    public void removeRemotePublisher(Class<? extends Transform> transformer) {
+        if (transformer == null) {
+            SalesforceSDKLogger.w(TAG, "Invalid transformer");
+            return;
+        }
+        remotes.remove(transformer);
     }
 
     private SalesforceAnalyticsManager(UserAccount account) {

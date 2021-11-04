@@ -37,6 +37,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 import io.paperdb.Book;
@@ -146,15 +148,42 @@ public class EventStoreManager {
      * @return List of events.
      */
     public List<InstrumentationEvent> fetchAllEvents() {
-        final List<String> eventIds = book.getAllKeys();
         final List<InstrumentationEvent> events = new ArrayList<>();
-        for (final String eventId : eventIds) {
-            final InstrumentationEvent event = fetchEvent(eventId);
+        for (InstrumentationEvent event : iterateAllEvents()) {
             if (event != null) {
                 events.add(event);
             }
         }
         return events;
+    }
+
+    /**
+     * Returns all the events stored on the filesystem for that unique identifier.
+     * Does not fetch them all at once, but
+     *
+     * @return Iterable of events.
+     */
+    public Iterable<InstrumentationEvent> iterateAllEvents() {
+        return new Iterable<InstrumentationEvent>() {
+            private final List<String> eventIds = book.getAllKeys();
+
+            @Override
+            public Iterator<InstrumentationEvent> iterator() {
+                return new Iterator<InstrumentationEvent>() {
+                    private final Iterator<String> eventIdIterator = eventIds.iterator();
+
+                    @Override
+                    public boolean hasNext() {
+                        return eventIdIterator.hasNext();
+                    }
+
+                    @Override
+                    public InstrumentationEvent next() {
+                        return fetchEvent(eventIdIterator.next());
+                    }
+                };
+            }
+        };
     }
 
     /**
@@ -171,7 +200,7 @@ public class EventStoreManager {
     /**
      * Deletes the events stored on the filesystem for that unique identifier.
      */
-    public void deleteEvents(List<String> eventIds) {
+    public void deleteEvents(Collection<String> eventIds) {
         if (eventIds == null || eventIds.size() == 0) {
             SalesforceAnalyticsLogger.d(context, TAG, "No events to delete");
             return;
