@@ -123,19 +123,6 @@ public class Encryptor {
     }
 
     /**
-     * Decrypts data with key using AES/CBC/PKCS5Padding. Should be used only for
-     * migration of encrypted data from an older version to Mobile SDK 8.2.
-     *
-     * @param data Data.
-     * @param key Base64 encoded 128 bit key or null (to leave data unchanged).
-     * @return Decrypted data.
-     * @deprecated Will be removed in Mobile SDK 10.0.
-     */
-    public static String legacyDecrypt(String data, String key) {
-        return decrypt(data, key, new byte[16]);
-    }
-
-    /**
      * Decrypts data with key using AES/GCM/NoPadding.
      *
      * @param data Data.
@@ -144,19 +131,6 @@ public class Encryptor {
      */
     public static String decrypt(String data, String key) {
         return decrypt(data, key, new byte[12]);
-    }
-
-    /**
-     * Decrypts data with key using AES/CBC/PKCS5Padding. Should be used only for
-     * migration of encrypted data from an older version to Mobile SDK 8.2.
-     *
-     * @param data Data.
-     * @param key Key.
-     * @return Decrypted data.
-     * @deprecated Will be removed in Mobile SDK 10.0.
-     */
-    public static String legacyDecrypt(byte[] data, String key) {
-        return decrypt(data, key, new byte[16]);
     }
 
     /**
