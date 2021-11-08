@@ -341,34 +341,6 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	}
 
 	/**
-	 * One time upgrade steps from older versions to Mobile SDK 8.2. Only for internal use!
-	 *
-	 * @deprecated Will be removed in Mobile SDK 10.0.
-	 */
-	public static void upgradeTo8Dot2() {
-		final Context context = SmartStoreSDKManager.getInstance().getAppContext();
-		final String oldEncryptionKey = SmartStoreSDKManager.getLegacyEncryptionKey();
-		final String newEncryptionKey = SmartStoreSDKManager.getEncryptionKey();
-
-		// Migrates all user and global databases to the new encryption key.
-		final File[] userFiles = ManagedFilesHelper.getFiles(context,
-				DATABASES, "00D", ".db", null);
-		final File[] globalFiles = ManagedFilesHelper.getFiles(context,
-				DATABASES, GLOBAL_SUFFIX, ".db", null);
-		int numUserFiles = userFiles.length;
-		int numGlobalFiles = globalFiles.length;
-		final File[] allFiles = new File[numUserFiles + numGlobalFiles];
-		System.arraycopy(userFiles, 0, allFiles, 0, numUserFiles);
-		System.arraycopy(globalFiles, 0, allFiles, numUserFiles, numGlobalFiles);
-		for (final File file : allFiles) {
-			final DBOpenHelper openHelper = new DBOpenHelper(context, file.getName());
-			final SQLiteDatabase db = openHelper.getWritableDatabase(oldEncryptionKey);
-			changeKey(db, oldEncryptionKey, newEncryptionKey);
-			reEncryptAllFiles(db, oldEncryptionKey, newEncryptionKey);
-		}
-	}
-
-	/**
 	 * Determines if a smart store currently exists for the given account and/or community id.
 	 *
 	 * @param ctx Context.
