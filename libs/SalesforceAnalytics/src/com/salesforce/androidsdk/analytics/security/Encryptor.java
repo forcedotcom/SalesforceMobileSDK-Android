@@ -110,10 +110,7 @@ public class Encryptor {
         return cipher;
     }
 
-    /*
-     * TODO: Remove this in Mobile SDK 10.0.
-     */
-    private static Cipher getLegacyDecryptingCipher(byte[] keyBytes, byte[] iv)
+    private static Cipher getAESCBCDecryptingCipher(byte[] keyBytes, byte[] iv)
             throws InvalidAlgorithmParameterException, InvalidKeyException {
         final Cipher cipher = getBestCipher(AES_CBC_CIPHER);
         final SecretKeySpec skeySpec = new SecretKeySpec(keyBytes, cipher.getAlgorithm());
@@ -440,7 +437,7 @@ public class Encryptor {
      */
     public static String decryptBytes(byte[] data, byte[] key, byte[] iv) {
         try {
-            final Cipher cipher = getLegacyDecryptingCipher(key, iv);
+            final Cipher cipher = getAESCBCDecryptingCipher(key, iv);
             byte[] result = cipher.doFinal(data, 0, data.length);
             return new String(result, 0, result.length, StandardCharsets.UTF_8);
         } catch (Exception e) {
@@ -558,7 +555,7 @@ public class Encryptor {
         if (iv.length == 12) {
             cipher = getDecryptingCipher(key, iv);
         } else {
-            cipher = getLegacyDecryptingCipher(key, iv);
+            cipher = getAESCBCDecryptingCipher(key, iv);
         }
         return cipher.doFinal(meat, 0, meatLen);
     }
