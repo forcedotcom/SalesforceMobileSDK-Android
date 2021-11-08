@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.mobilesync.app;
 
-import com.salesforce.androidsdk.mobilesync.manager.LayoutSyncManager;
-import com.salesforce.androidsdk.mobilesync.manager.MetadataSyncManager;
 import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreUpgradeManager;
 
@@ -80,9 +78,6 @@ public class MobileSyncUpgradeManager extends SmartStoreUpgradeManager {
         try {
             final String majorVersionNum = installedVersion.substring(0, 3);
             double installedVerDouble = Double.parseDouble(majorVersionNum);
-            if (installedVerDouble < 8.2) {
-                upgradeTo8Dot2();
-            }
         } catch (Exception e) {
             MobileSyncLogger.e(TAG, "Failed to parse installed version.");
         }
@@ -95,12 +90,5 @@ public class MobileSyncUpgradeManager extends SmartStoreUpgradeManager {
      */
     public String getInstalledSobjectVersion() {
         return getInstalledVersion(MOBILE_SYNC_KEY);
-    }
-
-    private void upgradeTo8Dot2() {
-        LayoutSyncManager.getInstance().getSmartStore().dropSoup("sfdcLayouts");
-        LayoutSyncManager.reset();
-        MetadataSyncManager.getInstance().getSmartStore().dropSoup("sfdcMetadata");
-        MetadataSyncManager.reset();
     }
 }
