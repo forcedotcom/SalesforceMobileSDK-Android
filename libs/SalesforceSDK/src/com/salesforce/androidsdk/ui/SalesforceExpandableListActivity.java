@@ -57,11 +57,6 @@ public abstract class SalesforceExpandableListActivity extends ExpandableListAct
 	}
 
 	@Override
-	public void onUserInteraction() {
-		delegate.onUserInteraction();
-	}
-
-	@Override
 	public void onPause() {
 		super.onPause();
 		delegate.onPause();
