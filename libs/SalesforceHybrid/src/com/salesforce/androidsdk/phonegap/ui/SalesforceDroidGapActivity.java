@@ -282,11 +282,6 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
     }
 
     @Override
-    public void onUserInteraction() {
-        delegate.onUserInteraction();
-    }
-
-    @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         return delegate.onKeyUp(keyCode, event) || super.onKeyUp(keyCode, event);
     }
