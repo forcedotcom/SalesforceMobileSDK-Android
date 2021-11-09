@@ -110,29 +110,13 @@ public class Encryptor {
         return cipher;
     }
 
-    /*
-     * TODO: Remove this in Mobile SDK 10.0.
-     */
-    private static Cipher getLegacyDecryptingCipher(byte[] keyBytes, byte[] iv)
+    private static Cipher getAESCBCDecryptingCipher(byte[] keyBytes, byte[] iv)
             throws InvalidAlgorithmParameterException, InvalidKeyException {
         final Cipher cipher = getBestCipher(AES_CBC_CIPHER);
         final SecretKeySpec skeySpec = new SecretKeySpec(keyBytes, cipher.getAlgorithm());
         final IvParameterSpec ivSpec = new IvParameterSpec(iv);
         cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec);
         return cipher;
-    }
-
-    /**
-     * Decrypts data with key using AES/CBC/PKCS5Padding. Should be used only for
-     * migration of encrypted data from an older version to Mobile SDK 8.2.
-     *
-     * @param data Data.
-     * @param key Base64 encoded 128 bit key or null (to leave data unchanged).
-     * @return Decrypted data.
-     * @deprecated Will be removed in Mobile SDK 10.0.
-     */
-    public static String legacyDecrypt(String data, String key) {
-        return decrypt(data, key, new byte[16]);
     }
 
     /**
@@ -144,19 +128,6 @@ public class Encryptor {
      */
     public static String decrypt(String data, String key) {
         return decrypt(data, key, new byte[12]);
-    }
-
-    /**
-     * Decrypts data with key using AES/CBC/PKCS5Padding. Should be used only for
-     * migration of encrypted data from an older version to Mobile SDK 8.2.
-     *
-     * @param data Data.
-     * @param key Key.
-     * @return Decrypted data.
-     * @deprecated Will be removed in Mobile SDK 10.0.
-     */
-    public static String legacyDecrypt(byte[] data, String key) {
-        return decrypt(data, key, new byte[16]);
     }
 
     /**
@@ -466,7 +437,7 @@ public class Encryptor {
      */
     public static String decryptBytes(byte[] data, byte[] key, byte[] iv) {
         try {
-            final Cipher cipher = getLegacyDecryptingCipher(key, iv);
+            final Cipher cipher = getAESCBCDecryptingCipher(key, iv);
             byte[] result = cipher.doFinal(data, 0, data.length);
             return new String(result, 0, result.length, StandardCharsets.UTF_8);
         } catch (Exception e) {
@@ -584,7 +555,7 @@ public class Encryptor {
         if (iv.length == 12) {
             cipher = getDecryptingCipher(key, iv);
         } else {
-            cipher = getLegacyDecryptingCipher(key, iv);
+            cipher = getAESCBCDecryptingCipher(key, iv);
         }
         return cipher.doFinal(meat, 0, meatLen);
     }

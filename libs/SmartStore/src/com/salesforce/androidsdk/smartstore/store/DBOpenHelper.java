@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
+import static com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager.GLOBAL_SUFFIX;
+
 import android.content.Context;
 import android.text.TextUtils;
 
@@ -51,8 +53,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager.GLOBAL_SUFFIX;
 
 /**
  * Helper class to manage SmartStore's database creation and version management.
@@ -341,34 +341,6 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	}
 
 	/**
-	 * One time upgrade steps from older versions to Mobile SDK 8.2. Only for internal use!
-	 *
-	 * @deprecated Will be removed in Mobile SDK 10.0.
-	 */
-	public static void upgradeTo8Dot2() {
-		final Context context = SmartStoreSDKManager.getInstance().getAppContext();
-		final String oldEncryptionKey = SmartStoreSDKManager.getLegacyEncryptionKey();
-		final String newEncryptionKey = SmartStoreSDKManager.getEncryptionKey();
-
-		// Migrates all user and global databases to the new encryption key.
-		final File[] userFiles = ManagedFilesHelper.getFiles(context,
-				DATABASES, "00D", ".db", null);
-		final File[] globalFiles = ManagedFilesHelper.getFiles(context,
-				DATABASES, GLOBAL_SUFFIX, ".db", null);
-		int numUserFiles = userFiles.length;
-		int numGlobalFiles = globalFiles.length;
-		final File[] allFiles = new File[numUserFiles + numGlobalFiles];
-		System.arraycopy(userFiles, 0, allFiles, 0, numUserFiles);
-		System.arraycopy(globalFiles, 0, allFiles, numUserFiles, numGlobalFiles);
-		for (final File file : allFiles) {
-			final DBOpenHelper openHelper = new DBOpenHelper(context, file.getName());
-			final SQLiteDatabase db = openHelper.getWritableDatabase(oldEncryptionKey);
-			changeKey(db, oldEncryptionKey, newEncryptionKey);
-			reEncryptAllFiles(db, oldEncryptionKey, newEncryptionKey);
-		}
-	}
-
-	/**
 	 * Determines if a smart store currently exists for the given account and/or community id.
 	 *
 	 * @param ctx Context.
@@ -547,17 +519,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 							String result;
 							try {
 								String json = Encryptor.getStringFromFile(blob);
-
-								/*
-								 * If the key length is 24, then it's the old key (16 bytes for the
-								 * key and 8 bytes for the IV. If the key length is 44, then it's the
-								 * new key (32 bytes for the key and 12 bytes for the IV).
-								 */
-								if (oldKey.getBytes().length == 24) {
-									result = Encryptor.legacyDecrypt(json, oldKey);
-								} else {
-									result = Encryptor.decrypt(json, oldKey);
-								}
+								result = Encryptor.decrypt(json, oldKey);
 								blob.delete();
 								final FileOutputStream outputStream = new FileOutputStream(blob, false);
 								outputStream.write(Encryptor.encrypt(result, newKey).getBytes());

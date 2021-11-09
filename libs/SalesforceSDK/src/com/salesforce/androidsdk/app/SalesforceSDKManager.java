@@ -77,13 +77,11 @@ import com.salesforce.androidsdk.push.PushService;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 import com.salesforce.androidsdk.ui.DevInfoActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
-import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
@@ -403,25 +401,6 @@ public class SalesforceSDKManager implements LifecycleObserver {
     }
 
     /**
-     * Sets a custom passcode activity class to be used instead of the default class.
-     * The custom class must subclass PasscodeActivity.
-     *
-     * @param activity Subclass of PasscodeActivity.
-     *
-     * @deprecated Will be removed in Mobile SDK 10.0.
-     */
-    public void setPasscodeActivity(Class<? extends PasscodeActivity> activity) { }
-
-    /**
-     * Returns the descriptor of the passcode activity class that's currently in use.
-     *
-     * @return Passcode activity class descriptor.
-     *
-     * @deprecated Will be removed in Mobile SDK 10.0.
-     */
-    public Class<? extends PasscodeActivity> getPasscodeActivity() { return PasscodeActivity.class; }
-
-    /**
      * Indicates whether the SDK should automatically log out when the
      * access token is revoked. If you override this method to return
      * false, your app is responsible for handling its own cleanup when the
@@ -515,15 +494,6 @@ public class SalesforceSDKManager implements LifecycleObserver {
     public synchronized Class<? extends PushService> getPushServiceType() {
         return pushServiceType;
     }
-
-    /**
-     * Returns the descriptor of the passcode activity class that's currently in use.
-     *
-     * @return Passcode activity class descriptor.
-     *
-     * @deprecated Will be removed in Mobile SDK 10.0.
-     */
-    public PasscodeManager getPasscodeManager() { return new PasscodeManager(context); }
 
     /**
      * Returns the ScreenLock manager that's associated with SalesforceSDKManager.
@@ -1088,16 +1058,6 @@ public class SalesforceSDKManager implements LifecycleObserver {
     }
 
     /**
-     * Returns the legacy encryption key. This should be called only as a means to migrate to the new key.
-     *
-     * @return Legacy encryption key.
-     * @deprecated Will be removed in Mobile SDK 10.0.
-     */
-    public static String getLegacyEncryptionKey() {
-        return SalesforceKeyGenerator.getLegacyEncryptionKey(INTERNAL_ENTROPY);
-    }
-
-    /**
      * Returns the encryption key being used.
      *
      * @return Encryption key.
@@ -1124,8 +1084,8 @@ public class SalesforceSDKManager implements LifecycleObserver {
      */
     private static class RevokeTokenTask extends AsyncTask<Void, Void, Void> {
 
-    	private String refreshToken;
-    	private String loginServer;
+    	private final String refreshToken;
+    	private final String loginServer;
 
     	public RevokeTokenTask(String refreshToken, String loginServer) {
     		this.refreshToken = refreshToken;
@@ -1185,27 +1145,6 @@ public class SalesforceSDKManager implements LifecycleObserver {
     }
 
     /**
-     * @deprecated Will be removed in Mobile SDK 10.0.
-     */
-	public void removeAllCookies() {
-		CookieManager.getInstance().removeAllCookies(null);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 10.0.
-     */
-	public void removeSessionCookies() {
-        CookieManager.getInstance().removeSessionCookies(null);
-    }
-
-    /**
-     * @deprecated Will be removed in Mobile SDK 10.0.
-     */
-	public void syncCookies() {
-        CookieManager.getInstance().flush();
-    }
-
-    /**
      * Show dev support dialog
      */
     public void showDevSupportDialog(final Activity frontActivity) {
@@ -1223,19 +1162,11 @@ public class SalesforceSDKManager implements LifecycleObserver {
                         new AlertDialog.Builder(frontActivity)
                                 .setItems(
                                         devActions.keySet().toArray(new String[0]),
-                                        new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface dialog, int which) {
-                                                devActionHandlers[which].onSelected();
-                                                devActionsDialog = null;
-                                            }
+                                        (dialog, which) -> {
+                                            devActionHandlers[which].onSelected();
+                                            devActionsDialog = null;
                                         })
-                                .setOnCancelListener(new DialogInterface.OnCancelListener() {
-                                    @Override
-                                    public void onCancel(DialogInterface dialog) {
-                                        devActionsDialog = null;
-                                    }
-                                })
+                                .setOnCancelListener(dialog -> devActionsDialog = null)
                                 .setTitle(R.string.sf__dev_support_title)
                                 .create();
                 devActionsDialog.show();
