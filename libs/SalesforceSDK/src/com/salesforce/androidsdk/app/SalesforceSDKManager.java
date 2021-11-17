@@ -33,7 +33,6 @@ import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
@@ -44,6 +43,8 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.View;
@@ -269,7 +270,9 @@ public class SalesforceSDKManager implements LifecycleObserver {
         // If your app runs in multiple processes, all the SalesforceSDKManager need to run cleanup during a logout
         final CleanupReceiver cleanupReceiver = new CleanupReceiver();
         context.registerReceiver(cleanupReceiver, new IntentFilter(SalesforceSDKManager.CLEANUP_INTENT_ACTION));
-        ProcessLifecycleOwner.get().getLifecycle().addObserver(this);
+        new Handler(Looper.getMainLooper()).post(() -> {
+            ProcessLifecycleOwner.get().getLifecycle().addObserver(this);
+        });
     }
 
     /**
