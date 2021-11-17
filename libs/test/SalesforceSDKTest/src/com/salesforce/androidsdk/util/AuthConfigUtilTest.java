@@ -35,7 +35,7 @@ import androidx.test.filters.SmallTest;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java9.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletableFuture;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
