@@ -73,16 +73,6 @@ public class CustomServerUrlEditor extends DialogFragment {
 		rootView.getContext().setTheme(isDarkTheme ? R.style.SalesforceSDK_Dialog_Dark : R.style.SalesforceSDK_Dialog);
 		getDialog().setTitle(R.string.sf__server_url_add_title);
 
-		// TODO: Remove this when min API becomes 24.
-		if (!isDarkTheme && Build.VERSION.SDK_INT <= Build.VERSION_CODES.M) {
-			EditText label = getRootView().findViewById(R.id.sf__picker_custom_label);
-			label.setTextColor(getResources().getColor(R.color.sf__text_color));
-			label.setHintTextColor(getResources().getColor(R.color.sf__hint_color));
-			EditText url = getRootView().findViewById(R.id.sf__picker_custom_url);
-			url.setTextColor(getResources().getColor(R.color.sf__text_color));
-			url.setHintTextColor(getResources().getColor(R.color.sf__hint_color));
-		}
-
 		/*
 		 * Sets handlers in the code for the dialog. 
 		 */

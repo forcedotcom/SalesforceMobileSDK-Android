@@ -335,7 +335,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         final Resources resources = activity.getResources();
         intentBuilder.setCloseButtonIcon(BitmapFactory.decodeResource(resources,
                 R.drawable.sf__action_back));
-        intentBuilder.setToolbarColor(resources.getColor(R.color.sf__primary_color));
+        intentBuilder.setToolbarColor(getContext().getColor(R.color.sf__primary_color));
 
         // Adds a menu item to change server.
         final Intent changeServerIntent = new Intent(activity, ServerPickerActivity.class);

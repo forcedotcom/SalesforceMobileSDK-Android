@@ -39,7 +39,7 @@ android {
 
     defaultConfig {
         targetSdkVersion 31
-        minSdkVersion 23
+        minSdkVersion 24
     }
 
   buildTypes {
@@ -113,7 +113,7 @@ afterEvaluate {
 
         // Generate react tests bundle first.
         preDebugAndroidTestBuild.dependsOn(buildReactTestBundleIfNotExists)
-    } catch(Throwable t) {
+    } catch(Throwable ignored) {
         println("The preDebugAndroidTestBuild task was not found.")
     }
 }
