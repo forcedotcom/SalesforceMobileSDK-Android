@@ -96,7 +96,7 @@ public class SalesforceWebViewClient extends SystemWebViewClient {
 		if (SalesforceWebViewClientHelper.shouldOverrideUrlLoading(ctx, view, url)) {
 			return true;
 		} else {
-			return super.shouldOverrideUrlLoading(view, url);
+			return super.shouldOverrideUrlLoading(view, request);
 		}
 	}
 
