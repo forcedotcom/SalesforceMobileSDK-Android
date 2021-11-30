@@ -111,7 +111,7 @@ public class EventStoreManager {
     }
 
     /**
-     * Returns a specific event stored on the filesystem.
+     * Returns a specific event stored on the filesystem for that unique identifier.
      *
      * @param eventId Unique identifier for the event.
      * @return Event.
@@ -143,7 +143,7 @@ public class EventStoreManager {
     }
 
     /**
-     * Returns all the events stored on the filesystem for that unique identifier.
+     * Returns all the events stored on the filesystem.
      *
      * @return List of events.
      */
@@ -158,8 +158,8 @@ public class EventStoreManager {
     }
 
     /**
-     * Returns all the events stored on the filesystem for that unique identifier.
-     * Does not fetch them all at once, but
+     * Streams all the events stored on the filesystem. Will load each
+     * event into memory one at a time to decrease memory impact.
      *
      * @return Iterable of events.
      */

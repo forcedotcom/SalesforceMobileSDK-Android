@@ -204,9 +204,16 @@ public class SalesforceAnalyticsManager {
         }
     }
 
-    public static void setEventPublishBatchSize(int batchSize) {
+    /**
+     * Set the batch size for publishing instrumentation events. Will limit the
+     * number of events sent in a single network request to the specified batch
+     * size. Will silently return if batch size is less than or equal to zero.
+     *
+     * @param batchSize Event batch size
+     */
+    public static synchronized void setEventPublishBatchSize(int batchSize) {
         if (batchSize <= 0) {
-            throw new IllegalArgumentException("Illegal batch size, must be greater than zero.");
+            return;
         }
         sEventPublishBatchSize = batchSize;
     }
@@ -400,7 +407,7 @@ public class SalesforceAnalyticsManager {
      *
      * @param transformer Transformer class.
      */
-    public void removeRemotePublisher(Class<? extends Transform> transformer) {
+    void removeRemotePublisher(Class<? extends Transform> transformer) {
         if (transformer == null) {
             SalesforceSDKLogger.w(TAG, "Invalid transformer");
             return;
