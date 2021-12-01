@@ -56,6 +56,7 @@ public class SalesforceAnalyticsManagerTest {
     @After
     public void teardown() {
         TestPublisher.reset();
+        manager.removeRemotePublisher(TestTransform.class);
         manager.addRemotePublisher(AILTNTransform.class, AILTNPublisher.class);
     }
 
