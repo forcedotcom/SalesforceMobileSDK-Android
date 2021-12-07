@@ -340,7 +340,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         // Adds a menu item to change server.
         final Intent changeServerIntent = new Intent(activity, ServerPickerActivity.class);
         final PendingIntent changeServerPendingIntent = PendingIntent.getActivity(activity,
-                LoginActivity.PICK_SERVER_REQUEST_CODE, changeServerIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+                LoginActivity.PICK_SERVER_REQUEST_CODE, changeServerIntent,
+                PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         intentBuilder.addMenuItem(activity.getString(R.string.sf__pick_server), changeServerPendingIntent);
         final CustomTabsIntent customTabsIntent = intentBuilder.build();
 
