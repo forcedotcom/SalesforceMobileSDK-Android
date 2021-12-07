@@ -188,7 +188,8 @@ public class PushService extends JobIntentService {
             retryIntent.putExtra(PushMessaging.ACCOUNT_BUNDLE_KEY, account.toBundle());
         }
         final PendingIntent retryPIntent = PendingIntent.getBroadcast(SalesforceSDKManager.getInstance().getAppContext(),
-        		1, retryIntent, PendingIntent.FLAG_ONE_SHOT);
+        		1, retryIntent,
+				PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE);
         final AlarmManager am = (AlarmManager) SalesforceSDKManager.getInstance().getAppContext().getSystemService(Context.ALARM_SERVICE);
         am.set(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), retryPIntent);
     }
