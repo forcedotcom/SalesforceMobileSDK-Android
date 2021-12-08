@@ -172,6 +172,11 @@ public class SalesforceSDKUpgradeManager {
         final SharedPreferences globalPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
         if (globalPrefs.contains(KEY_TIMEOUT) && globalPrefs.contains(KEY_PASSCODE_LENGTH)) {
             SharedPreferences.Editor globalEditor = globalPrefs.edit();
+            // Check that Passcode was enabled
+            if (globalPrefs.getInt(KEY_TIMEOUT, 0) != 0) {
+                globalEditor.putBoolean(SCREEN_LOCK, true);
+            }
+
             globalEditor.remove(KEY_PASSCODE);
             globalEditor.remove(KEY_TIMEOUT);
             globalEditor.remove(KEY_FAILED_ATTEMPTS);
@@ -180,8 +185,7 @@ public class SalesforceSDKUpgradeManager {
             globalEditor.remove(KEY_BIOMETRIC_ALLOWED);
             globalEditor.remove(KEY_BIOMETRIC_ENROLLMENT);
             globalEditor.remove(KEY_BIOMETRIC_ENABLED);
-
-            globalEditor.putBoolean(SCREEN_LOCK, true).apply();
+            globalEditor.apply();
 
             // Set which users should have screen lock
             final UserAccountManager manager = SalesforceSDKManager.getInstance().getUserAccountManager();
@@ -191,9 +195,17 @@ public class SalesforceSDKUpgradeManager {
                 for (UserAccount account : accounts) {
                     final SharedPreferences orgPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
                             + account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
-                    if (orgPrefs.contains(KEY_TIMEOUT) &&  orgPrefs.contains(KEY_PASSCODE_LENGTH)) {
+                    if (orgPrefs.contains(KEY_TIMEOUT) && orgPrefs.contains(KEY_PASSCODE_LENGTH)) {
+                        // Check that Passcode was enabled
+                        if (orgPrefs.getInt(KEY_TIMEOUT, 0) != 0) {
+                            // Set screen lock key at user level
+                            final SharedPreferences userPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
+                                    + account.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
+                            userPrefs.edit().putBoolean(SCREEN_LOCK, true).apply();
+                        }
+
                         // Delete passcode keys at org level
-                        SharedPreferences.Editor orgEditor = globalPrefs.edit();
+                        SharedPreferences.Editor orgEditor = orgPrefs.edit();
                         orgEditor.remove(KEY_PASSCODE);
                         orgEditor.remove(KEY_TIMEOUT);
                         orgEditor.remove(KEY_FAILED_ATTEMPTS);
@@ -203,11 +215,6 @@ public class SalesforceSDKUpgradeManager {
                         orgEditor.remove(KEY_BIOMETRIC_ENROLLMENT);
                         orgEditor.remove(KEY_BIOMETRIC_ENABLED);
                         orgEditor.apply();
-
-                        // Set screen lock key at user level
-                        final SharedPreferences userPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
-                            + account.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
-                        userPrefs.edit().putBoolean(SCREEN_LOCK, true).apply();
                     }
                 }
             }
