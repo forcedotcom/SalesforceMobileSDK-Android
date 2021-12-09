@@ -1335,6 +1335,12 @@ public class SmartStoreTest extends SmartStoreTestCase {
 			JSONObject soupElt = new JSONObject("{'key':'abcd" + i + "', 'value':'va" + i + "', 'otherValue':'ova" + i + "'}");
 			store.create(TEST_SOUP, soupElt);
 		}
+
+		// With WAL enabled we must force a WAL checkpoint if we want the actual DB file to reflect the new content:
+		store.getDatabase()
+				.query("PRAGMA wal_checkpoint(FULL);")
+				.moveToNext();
+
         Assert.assertTrue("Database should be larger now", store.getDatabaseSize() > initialSize);
 	}
 
