@@ -17,7 +17,7 @@ buildscript {
 
 allprojects {
   group = 'com.salesforce.mobilesdk'
-  version = '9.2.0'
+  version = '9.2.1'
   repositories {
     mavenLocal()
     maven {
