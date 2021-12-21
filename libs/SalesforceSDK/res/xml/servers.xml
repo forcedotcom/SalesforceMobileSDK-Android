@@ -5,5 +5,5 @@
     <server name="Houston ISD" url="https://training15-houstonisd.cs194.force.com/purple" />
     <server name="Yellowstone Schools" url="https://training01-purplehou.cs36.force.com/purple" />
     <server name="YES Prep Public Schools" url="https://training1-yesprep.cs159.force.com/purple" />
-    <server name="Service Providers" url="https://slmrest-purple-sense.cs159.force.com" />
+    <server name="Service Providers" url="https://purple-sense.force.com" />
 </servers>
