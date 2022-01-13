@@ -43,7 +43,6 @@ import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -420,7 +419,20 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
     }
 
     void encryptStringToFile(File file, String content, String encryptionKey) throws IOException {
-        encryptStreamToFile(file, new ByteArrayInputStream(content.getBytes()), encryptionKey);
+        FileOutputStream f = null;
+        try {
+            byte[] contentBytes = content.getBytes();
+            byte[] encryptedContent = Encryptor.encryptWithoutBase64Encoding(contentBytes,
+                encryptionKey);
+            f = new FileOutputStream(file);
+            if (encryptedContent != null) {
+                f.write(encryptedContent);
+            }
+        } finally {
+            if (f != null) {
+                f.close();
+            }
+        }
     }
 
     String decryptFileAsString(File file, String encryptionKey) throws IOException {
