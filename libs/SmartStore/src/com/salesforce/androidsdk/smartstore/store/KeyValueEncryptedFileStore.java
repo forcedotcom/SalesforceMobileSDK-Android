@@ -418,23 +418,6 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
         return files == null ? new File[0] : files;
     }
 
-    void encryptStringToFile(File file, String content, String encryptionKey) throws IOException {
-        FileOutputStream f = null;
-        try {
-            byte[] contentBytes = content.getBytes();
-            byte[] encryptedContent = Encryptor.encryptWithoutBase64Encoding(contentBytes,
-                encryptionKey);
-            f = new FileOutputStream(file);
-            if (encryptedContent != null) {
-                f.write(encryptedContent);
-            }
-        } finally {
-            if (f != null) {
-                f.close();
-            }
-        }
-    }
-
     String decryptFileAsString(File file, String encryptionKey) throws IOException {
         return Encryptor.getStringFromStream(decryptFileAsSteam(file, encryptionKey));
     }
@@ -459,16 +442,24 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
         }
     }
 
+    void encryptStringToFile(File file, String content, String encryptionKey) throws IOException {
+        encryptBytesToFile(file, content.getBytes(), encryptionKey);
+    }
+
     void encryptStreamToFile(File file, InputStream stream, String encryptionKey) throws IOException {
+        final ByteArrayOutputStream b = new ByteArrayOutputStream();
+        int nextByte = stream.read();
+        while (nextByte != -1) {
+            b.write(nextByte);
+            nextByte = stream.read();
+        }
+        byte[] content = b.toByteArray();
+        encryptBytesToFile(file, content, encryptionKey);
+    }
+
+    void encryptBytesToFile(File file, byte[] content, String encryptionKey) throws IOException {
         FileOutputStream f = null;
         try {
-            final ByteArrayOutputStream b = new ByteArrayOutputStream();
-            int nextByte = stream.read();
-            while (nextByte != -1) {
-                b.write(nextByte);
-                nextByte = stream.read();
-            }
-            byte[] content = b.toByteArray();
             byte[] encryptedContent = Encryptor.encryptWithoutBase64Encoding(content, encryptionKey);
             f = new FileOutputStream(file);
             if (encryptedContent != null) {
