@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
+import static com.salesforce.androidsdk.smartstore.tests.R.drawable.sf__icon;
+
 import android.content.Context;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -735,9 +737,33 @@ public class KeyValueEncryptedFileStoreTest {
 
     }
 
+    /**
+     * Read some binary file from assets, save it to the key value store then get it back
+     * Make sure it's identical to the original file
+     */
+    @Test
+    public void testBinaryStorage() throws IOException {
+        // Saving resource icon to key value store
+        keyValueStore.saveStream("icon", getResourceIconStream());
+
+        // Retrieving icon back from key value store
+        byte[] savedIconBytes = Encryptor.getByteArrayStreamFromStream(keyValueStore.getStream("icon")).toByteArray();
+
+        // Comparing bytes
+        byte[] resourceIconBytes = Encryptor.getByteArrayStreamFromStream(getResourceIconStream()).toByteArray();
+        Assert.assertEquals(resourceIconBytes.length, savedIconBytes.length);
+        for (int i=0; i<resourceIconBytes.length; i++) {
+            Assert.assertEquals(resourceIconBytes[i], savedIconBytes[i]);
+        }
+    }
+
     //
     // Helper methods
     //
+    private InputStream getResourceIconStream() {
+        return context.getResources().openRawResource(sf__icon);
+    }
+
     private KeyValueEncryptedFileStore turnIntoV1Store(KeyValueEncryptedFileStore store) {
         if (!store.isEmpty()) {
             throw new RuntimeException("turnIntoV1Store() should be called on empty store");

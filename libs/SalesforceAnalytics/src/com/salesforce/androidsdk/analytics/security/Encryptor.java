@@ -455,6 +455,19 @@ public class Encryptor {
      * about the operation this method was called for.
      */
     public static String getStringFromStream(InputStream stream) throws IOException {
+        ByteArrayOutputStream output = getByteArrayStreamFromStream(stream);
+        return output.toString(StandardCharsets.UTF_8.name());
+    }
+
+    /**
+     * Retrieves data from an InputStream.  Guaranteed to close the InputStream.
+     *
+     * @param stream InputStream data.
+     * @return Data from the InputStream as a ByteArrayOutputStream
+     * @throws IOException Provide log details of this exception in a catch with specifics
+     * about the operation this method was called for.
+     */
+    public static ByteArrayOutputStream getByteArrayStreamFromStream(InputStream stream) throws IOException {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         byte[] buffer = new byte[READ_BUFFER_LENGTH];
         int length;
@@ -466,7 +479,7 @@ public class Encryptor {
         finally {
             stream.close();
         }
-        return output.toString(StandardCharsets.UTF_8.name());
+        return output;
     }
 
     /**
