@@ -1769,7 +1769,7 @@ public class SmartStore  {
 	 *
 	 * @return  True if soup uses external storage; false otherwise.
 	 *
-	 * Deprecated: we are retiring external storage in 11.0
+	 * Deprecated: we are removing external storage and soup spec in 11.0
 	 */
 	@Deprecated
 	public boolean usesExternalStorage(String soupName) {

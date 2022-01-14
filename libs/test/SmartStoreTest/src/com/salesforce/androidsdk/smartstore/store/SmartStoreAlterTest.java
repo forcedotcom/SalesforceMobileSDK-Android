@@ -716,7 +716,7 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
 
         // Partial alter - up to toStep included
         IndexSpec[] indexSpecsNew = new IndexSpec[] {new IndexSpec("lastName", SmartStore.Type.string), new IndexSpec("address.city", SmartStore.Type.string), new IndexSpec("address.street", SmartStore.Type.string)};
-        AlterSoupLongOperation operation = new AlterSoupLongOperation(store, TEST_SOUP, new SoupSpec(TEST_SOUP), indexSpecsNew, true);
+        AlterSoupLongOperation operation = new AlterSoupLongOperation(store, TEST_SOUP, indexSpecsNew, true);
         operation.run(toStep);
 
         // Validate long_operations_status table
