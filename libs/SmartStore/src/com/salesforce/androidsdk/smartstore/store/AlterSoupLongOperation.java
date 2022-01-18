@@ -121,14 +121,31 @@ public class AlterSoupLongOperation extends LongOperation {
 
 	/**
 	 * Constructor
+	 *
+	 * @param store
+	 * @param soupName
+	 * @param newIndexSpecs
+	 * @param reIndexData
+	 * @throws JSONException
+	 */
+	public AlterSoupLongOperation(SmartStore store, String soupName, IndexSpec[] newIndexSpecs,
+		boolean reIndexData) throws JSONException {
+		this(store, soupName, new SoupSpec(soupName), newIndexSpecs, reIndexData);
+	}
+
+	/**
+	 * Constructor
 	 * 
 	 * @param store
 	 * @param soupName
 	 * @param newSoupSpec
 	 * @param newIndexSpecs
 	 * @param reIndexData
-	 * @throws JSONException 
+	 * @throws JSONException
+	 *
+	 * Deprecated: we are removing external storage and soup spec in 11.0 - use other constructor instead
 	 */
+	@Deprecated
 	public AlterSoupLongOperation(SmartStore store, String soupName, SoupSpec newSoupSpec, IndexSpec[] newIndexSpecs,
 			boolean reIndexData) throws JSONException {
 		

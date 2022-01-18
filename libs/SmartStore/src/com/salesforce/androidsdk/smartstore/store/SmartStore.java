@@ -29,29 +29,23 @@ package com.salesforce.androidsdk.smartstore.store;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.TextUtils;
-
 import androidx.annotation.NonNull;
-
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.store.LongOperation.LongOperationType;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
-import com.salesforce.androidsdk.util.JSONObjectHelper;
-
-import net.sqlcipher.database.SQLiteDatabase;
-import net.sqlcipher.database.SQLiteOpenHelper;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import net.sqlcipher.database.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteOpenHelper;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * Smart store
@@ -297,7 +291,10 @@ public class SmartStore  {
 	 * Create rows in soup index map table for indexSpecs
 	 * @param soupSpec
 	 * @param indexSpecs
+	 *
+	 * Deprecated: we are removing external storage and soup spec in 11.0 - use registerSoup(String soupName, IndexSpec[] indexSpecs) instead
 	 */
+	@Deprecated
 	public void registerSoupWithSpec(final SoupSpec soupSpec, final IndexSpec[] indexSpecs) {
 		final SQLiteDatabase db = getDatabase();
 		synchronized (db) {
@@ -552,7 +549,10 @@ public class SmartStore  {
 	 * @param indexSpecs array of index specs
 	 * @param reIndexData
 	 * @throws JSONException
+	 *
+	 * Deprecated: we are removing external storage and soup spec in 11.0 - use alterSoup(String soupName, IndexSpec[] indexSpecs) instead
 	 */
+	@Deprecated
 	public void alterSoup(String soupName, SoupSpec soupSpec, IndexSpec[] indexSpecs,
 			boolean reIndexData) throws JSONException {
 		AlterSoupLongOperation operation = new AlterSoupLongOperation(this, soupName, soupSpec, indexSpecs, reIndexData);
@@ -790,7 +790,10 @@ public class SmartStore  {
 	 * Returns the entire SoupSpec of the given soup.
 	 * @param soupName
 	 * @return SoupSpec for given soup name.
+	 *
+	 * Deprecated: we are removing external storage and soup spec in 11.0
 	 */
+	@Deprecated
 	public SoupSpec getSoupSpec(String soupName) {
 		final SQLiteDatabase db = getDatabase();
 		List<String> features = DBHelper.getInstance(db).getFeatures(db, soupName);
@@ -1765,7 +1768,10 @@ public class SmartStore  {
 	 * @param soupName Name of the soup to determine external storage enablement.
 	 *
 	 * @return  True if soup uses external storage; false otherwise.
+	 *
+	 * Deprecated: we are removing external storage and soup spec in 11.0
 	 */
+	@Deprecated
 	public boolean usesExternalStorage(String soupName) {
 		final SQLiteDatabase db = getDatabase();
 		synchronized (db) {
