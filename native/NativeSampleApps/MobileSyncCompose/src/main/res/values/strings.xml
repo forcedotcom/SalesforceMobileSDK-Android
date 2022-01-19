@@ -1,6 +1,10 @@
 <resources>
     <string name="app_name">Mobile Sync Compose</string>
+    <string name="label_contacts">Contacts</string>
+    <string name="content_desc_add_contact">Create New Contact</string>
     <string name="content_desc_item_synced">Item is synced</string>
     <string name="content_desc_item_saved_locally">Item is only saved locally</string>
+    <string name="content_desc_menu">Menu</string>
+    <string name="content_desc_search">Search</string>
     <string name="content_desc_show_more">Show more</string>
 </resources>
