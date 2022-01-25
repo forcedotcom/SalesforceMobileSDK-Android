@@ -14,19 +14,14 @@ import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSD
 @Composable
 fun ToggleableEditTextField(
     modifier: Modifier = Modifier,
-    startingFieldText: String,
+    fieldValue: String,
     isEditEnabled: Boolean,
     isError: Boolean = false,
-    onValueChangeListener: (String) -> Unit = {},
+    onValueChange: (String) -> Unit = {},
     label: (@Composable () -> Unit)? = null,
     placeholder: (@Composable () -> Unit)? = null,
     help: (@Composable () -> Unit)? = null,
 ) {
-    var content by remember { mutableStateOf(startingFieldText) }
-    val onValueChange: (String) -> Unit = { newValue ->
-        content = newValue
-        onValueChangeListener(newValue)
-    }
     val borderColor =
         if (!isEditEnabled)
             TextFieldDefaults.outlinedTextFieldColors(
@@ -40,13 +35,13 @@ fun ToggleableEditTextField(
 
     Column(modifier = modifier) {
         OutlinedTextField(
-            value = content,
+            value = fieldValue,
             onValueChange = onValueChange,
             label = label,
             placeholder = placeholder,
             readOnly = !isEditEnabled,
             isError = isError,
-            colors = borderColor
+            colors = borderColor,
         )
         if (help != null) {
             val localContentColor = if (isError)
@@ -77,7 +72,7 @@ private fun LabeledTextFieldPreview() {
                 var isError = true
                 ToggleableEditTextField(
                     modifier = Modifier.padding(8.dp),
-                    startingFieldText = "isEditEnabled = $isEditEnabled, isError = $isError",
+                    fieldValue = "isEditEnabled = $isEditEnabled, isError = $isError",
                     isEditEnabled = isEditEnabled,
                     isError = isError,
                     label = { Text("Label") },
@@ -89,7 +84,7 @@ private fun LabeledTextFieldPreview() {
 
                 ToggleableEditTextField(
                     modifier = Modifier.padding(8.dp),
-                    startingFieldText = "isEditEnabled = $isEditEnabled, isError = $isError",
+                    fieldValue = "isEditEnabled = $isEditEnabled, isError = $isError",
                     isEditEnabled = isEditEnabled,
                     isError = isError,
                     label = { Text("Label") },
@@ -101,7 +96,7 @@ private fun LabeledTextFieldPreview() {
 
                 ToggleableEditTextField(
                     modifier = Modifier.padding(8.dp),
-                    startingFieldText = "isEditEnabled = $isEditEnabled, isError = $isError",
+                    fieldValue = "isEditEnabled = $isEditEnabled, isError = $isError",
                     isEditEnabled = isEditEnabled,
                     isError = isError,
                     label = { Text("Label") },
@@ -113,7 +108,7 @@ private fun LabeledTextFieldPreview() {
 
                 ToggleableEditTextField(
                     modifier = Modifier.padding(8.dp),
-                    startingFieldText = "isEditEnabled = $isEditEnabled, isError = $isError",
+                    fieldValue = "isEditEnabled = $isEditEnabled, isError = $isError",
                     isEditEnabled = isEditEnabled,
                     isError = isError,
                     label = { Text("Label") },
