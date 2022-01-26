@@ -42,6 +42,12 @@ class MainActivity : ComponentActivity() {
 private fun MainActivityContent() {
     SalesforceMobileSDKAndroidTheme {
         CompactAppScaffold(
+//            layoutRestrictions = LayoutRestrictions(
+//                WindowSizeRestrictions(
+//                    horiz = WindowSizeClass.Compact,
+//                    vert = WindowSizeClass.Medium
+//                )
+//            ),
             topAppBarContent = {
                 CompactAppTopBar(label = stringResource(id = label_contacts))
             },
