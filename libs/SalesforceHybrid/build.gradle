@@ -49,21 +49,20 @@ android {
       res.srcDirs = ['../test/SalesforceHybridTest/res']
     }
   }
-  defaultConfig {
+    packagingOptions {
+        resources {
+            excludes += ['META-INF/LICENSE', 'META-INF/LICENSE.txt', 'META-INF/DEPENDENCIES', 'META-INF/NOTICE']
+        }
+    }
+    defaultConfig {
     testApplicationId "com.salesforce.androidsdk.salesforcehybrid.tests"
     testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
   }
-  packagingOptions {
-    exclude 'META-INF/LICENSE'
-    exclude 'META-INF/LICENSE.txt'
-    exclude 'META-INF/DEPENDENCIES'
-    exclude 'META-INF/NOTICE'
-  }
-  
-  lintOptions {
-    xmlReport true
-    abortOnError false
-  }
+    lint {
+        abortOnError false
+        xmlReport true
+    }
+
 }
 
 ext {
