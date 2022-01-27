@@ -1,4 +1,4 @@
-package com.salesforce.samples.mobilesynccompose.app.ui.compact
+package com.salesforce.samples.mobilesynccompose.app.ui
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.layout.padding
@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 
 @Composable
-fun CompactAppTopBar(label: String) {
+fun AppTopBar(label: String) {
     TopAppBar {
         Text(
             label,
@@ -30,6 +30,6 @@ fun CompactAppTopBar(label: String) {
 @Composable
 private fun CompactTopAppBarPreview() {
     SalesforceMobileSDKAndroidTheme {
-        CompactAppTopBar(label = "Hello, World!")
+        AppTopBar(label = "Hello, World!")
     }
 }

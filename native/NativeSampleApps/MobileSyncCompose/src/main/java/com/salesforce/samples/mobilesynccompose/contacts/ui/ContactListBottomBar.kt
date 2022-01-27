@@ -1,4 +1,4 @@
-package com.salesforce.samples.mobilesynccompose.app.ui.compact
+package com.salesforce.samples.mobilesynccompose.contacts.ui
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.layout.Spacer
@@ -19,7 +19,7 @@ import com.salesforce.samples.mobilesynccompose.R
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 
 @Composable
-fun CompactContactListBottomBar(
+fun ContactListBottomBar(
     modifier: Modifier = Modifier,
     onSearchClick: () -> Unit,
     onMenuClick: () -> Unit,
@@ -47,7 +47,7 @@ fun CompactContactListBottomBar(
 @Composable
 private fun CompactBottomAppBarPreview() {
     SalesforceMobileSDKAndroidTheme {
-        CompactContactListBottomBar(
+        ContactListBottomBar(
             onSearchClick = { /*TODO*/ },
             onMenuClick = { /*TODO*/ },
             cutoutShape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))

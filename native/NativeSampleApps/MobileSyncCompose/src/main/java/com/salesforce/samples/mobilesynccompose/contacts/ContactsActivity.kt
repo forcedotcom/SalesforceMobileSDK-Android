@@ -1,4 +1,4 @@
-package com.salesforce.samples.mobilesynccompose
+package com.salesforce.samples.mobilesynccompose.contacts
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.os.Bundle
@@ -22,14 +22,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R.string.content_desc_add_contact
 import com.salesforce.samples.mobilesynccompose.R.string.label_contacts
-import com.salesforce.samples.mobilesynccompose.app.ui.compact.CompactAppScaffold
-import com.salesforce.samples.mobilesynccompose.app.ui.compact.CompactAppTopBar
-import com.salesforce.samples.mobilesynccompose.app.ui.compact.CompactContactListBottomBar
+import com.salesforce.samples.mobilesynccompose.app.ui.AppScaffold
+import com.salesforce.samples.mobilesynccompose.app.ui.AppTopBar
+import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactListBottomBar
 import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactListContent
 import com.salesforce.samples.mobilesynccompose.contacts.ui.TempContactObject
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 
-class MainActivity : ComponentActivity() {
+class ContactsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun MainActivityContent() {
     SalesforceMobileSDKAndroidTheme {
-        CompactAppScaffold(
+        AppScaffold(
 //            layoutRestrictions = LayoutRestrictions(
 //                WindowSizeRestrictions(
 //                    horiz = WindowSizeClass.Compact,
@@ -49,11 +49,11 @@ private fun MainActivityContent() {
 //                )
 //            ),
             topAppBarContent = {
-                CompactAppTopBar(label = stringResource(id = label_contacts))
+                AppTopBar(label = stringResource(id = label_contacts))
             },
 
             bottomAppBarContent = {
-                CompactContactListBottomBar(
+                ContactListBottomBar(
                     onSearchClick = { /*TODO: enter search mode*/ },
                     onMenuClick = { /*TODO: Bottom sheet*/ },
                     cutoutShape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))
