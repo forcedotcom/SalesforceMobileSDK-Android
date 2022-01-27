@@ -1,4 +1,4 @@
-package com.salesforce.samples.mobilesynccompose.app.ui.compact
+package com.salesforce.samples.mobilesynccompose.app.ui
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,12 +16,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R
+import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactListBottomBar
 import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactListContent
 import com.salesforce.samples.mobilesynccompose.contacts.ui.TempContactObject
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 
 @Composable
-fun CompactAppScaffold(
+fun AppScaffold(
     modifier: Modifier = Modifier,
 //    layoutRestrictions: LayoutRestrictions,
     topAppBarContent: @Composable () -> Unit = {},
@@ -43,17 +44,17 @@ fun CompactAppScaffold(
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
-private fun CompactAppScaffoldPreview() {
+private fun AppScaffoldPreview() {
     SalesforceMobileSDKAndroidTheme {
-        CompactAppScaffold(
+        AppScaffold(
 //            layoutRestrictions = LayoutRestrictions(
 //                sizeRestrictions = WindowSizeRestrictions(
 //                    horiz = WindowSizeClass.Compact, vert = WindowSizeClass.Medium
 //                )
 //            ),
-            topAppBarContent = { CompactAppTopBar(label = "Contact List XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX") },
+            topAppBarContent = { AppTopBar(label = "Contact List XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX") },
             bottomAppBarContent = {
-                CompactContactListBottomBar(
+                ContactListBottomBar(
                     onSearchClick = {},
                     onMenuClick = {},
                     cutoutShape = MaterialTheme.shapes.small.copy(all = CornerSize(percent = 50))
