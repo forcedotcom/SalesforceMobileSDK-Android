@@ -32,7 +32,6 @@ import static androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTI
 import static com.salesforce.androidsdk.security.ScreenLockManager.MOBILE_POLICY_PREF;
 import static com.salesforce.androidsdk.security.ScreenLockManager.SCREEN_LOCK;
 
-import android.app.KeyguardManager;
 import android.app.admin.DevicePolicyManager;
 import android.content.Context;
 import android.content.Intent;
@@ -42,7 +41,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
@@ -70,8 +68,6 @@ import java.util.List;
  * Locks the app behind OS provided authentication.
  */
 public class ScreenLockActivity extends FragmentActivity {
-    private static final int API_29_REQUEST_CODE = 123;
-
     private static final String TAG = "ScreenLockActivity";
     private static final int SETUP_REQUEST_CODE = 70;
     private static final String appName = SalesforceSDKManager.getInstance().provideAppName();
@@ -119,18 +115,6 @@ public class ScreenLockActivity extends FragmentActivity {
         if (requestCode == SETUP_REQUEST_CODE) {
             presentAuth();
         }
-
-        /*
-         * Get the results of KeyguardManager on API 29.
-         * TODO: Remove when min API > 29.
-         */
-        if (requestCode == API_29_REQUEST_CODE) {
-            if (resultCode == -1) {
-                finishSuccess();
-            } else {
-                onAuthError("");
-            }
-        }
     }
 
     @Override
@@ -175,22 +159,7 @@ public class ScreenLockActivity extends FragmentActivity {
                 break;
             case BiometricManager.BIOMETRIC_SUCCESS:
                 resetUI();
-
-                /*
-                 * This is necessary due to an Android bug that can't be fixed.
-                 * https://issuetracker.google.com/issues/145231213
-                 *
-                 * TODO: Remove when min API > 29.
-                 */
-                if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
-                    KeyguardManager keyguard = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
-                    Intent lockScreenIntent = keyguard.createConfirmDeviceCredentialIntent(
-                            getString(R.string.sf__screen_lock_title, appName),
-                            getString(R.string.sf__screen_lock_subtitle, appName));
-                    startActivityForResult(lockScreenIntent, API_29_REQUEST_CODE);
-                } else {
-                    biometricPrompt.authenticate(getPromptInfo());
-                }
+                biometricPrompt.authenticate(getPromptInfo());
                 break;
         }
     }
