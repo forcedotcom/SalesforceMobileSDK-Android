@@ -1,6 +1,9 @@
 <resources>
     <string name="app_name">Mobile Sync Compose</string>
     <string name="label_contacts">Contacts</string>
+    <string name="label_contact_name">Name</string>
+    <string name="label_contact_title">Title</string>
+    <string name="help_cannot_be_blank">This field cannot be left blank</string>
     <string name="content_desc_add_contact">Create New Contact</string>
     <string name="content_desc_item_synced">Item is synced</string>
     <string name="content_desc_item_saved_locally">Item is only saved locally</string>
