@@ -77,7 +77,10 @@ private fun AppScaffoldPreview() {
                         name = "Name $it",
                         title = "Title $it"
                     )
-                }
+                },
+                onContactClick = {},
+                onContactEditClick = {},
+                onContactDeleteClick = {},
             )
         }
     }
