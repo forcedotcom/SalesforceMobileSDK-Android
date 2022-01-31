@@ -20,7 +20,7 @@ apply plugin: 'com.android.library'
 
 dependencies {
   api project(':libs:MobileSync')
-  api 'com.facebook.react:react-native:0.67.0'
+  api 'com.facebook.react:react-native:0.67.1'
   androidTestImplementation 'androidx.test:runner:1.4.0'
   androidTestImplementation 'androidx.test:rules:1.4.0'
   androidTestImplementation 'androidx.test.ext:junit:1.1.3'

@@ -8,7 +8,7 @@
     "dependencies": {
         "create-react-class": "^15.7.0",
         "react": "17.0.2",
-        "react-native": "0.67.0",
+        "react-native": "0.67.1",
         "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#dev"
     },
     "devDependencies": {
