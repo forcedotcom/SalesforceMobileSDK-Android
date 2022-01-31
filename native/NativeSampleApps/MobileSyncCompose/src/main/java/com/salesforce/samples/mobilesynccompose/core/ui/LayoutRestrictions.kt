@@ -1,6 +1,7 @@
 package com.salesforce.samples.mobilesynccompose.core.ui
 
 import android.graphics.Rect
+import androidx.compose.ui.unit.DpSize
 
 data class LayoutRestrictions(
     val sizeRestrictions: WindowSizeRestrictions,
@@ -8,6 +9,11 @@ data class LayoutRestrictions(
 )
 
 data class WindowSizeRestrictions(val horiz: WindowSizeClass, val vert: WindowSizeClass)
+
+fun DpSize.toWindowSizeRestrictions(): WindowSizeRestrictions = WindowSizeRestrictions(
+    horiz = width.toWindowSizeClass(),
+    vert = height.toWindowSizeClass()
+)
 
 data class FoldRestrictions(
     val foldOrientation: FoldOrientation,

@@ -3,6 +3,7 @@ package com.salesforce.samples.mobilesynccompose.contacts.ui
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -15,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -29,25 +31,37 @@ import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSD
 /* TODO How to put in profile pic?  Glide lib? */
 fun ContactCard(
     modifier: Modifier = Modifier,
-    elevation: Dp = 2.dp,
-    startExpanded: Boolean,
+    contact: TempContactObject,
     isSynced: Boolean,
-    name: String,
-    title: String,
+    onCardClick: (TempContactObject) -> Unit,
+    onDeleteClick: (TempContactObject) -> Unit,
+    onEditClick: (TempContactObject) -> Unit,
+    startExpanded: Boolean = false,
+    elevation: Dp = 2.dp,
 ) {
+    var showDropDownMenu by rememberSaveable { mutableStateOf(false) }
     var isExpanded by rememberSaveable { mutableStateOf(startExpanded) }
 
     Card(
         modifier = Modifier
             .animateContentSize()
-            .then(modifier),
+            .then(modifier)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = { onCardClick(contact) },
+                    onLongPress = {
+                        android.util.Log.d("ContactListContent", "Long Click: $contact")
+                        showDropDownMenu = !showDropDownMenu
+                    }
+                )
+            },
         elevation = elevation
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
             Row {
                 SelectionContainer(modifier = Modifier.weight(1f)) {
                     Text(
-                        name,
+                        contact.name,
                         style = MaterialTheme.typography.body1,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
@@ -79,8 +93,19 @@ fun ContactCard(
                 Divider(modifier = Modifier.padding(vertical = 4.dp))
                 Row {
                     SelectionContainer {
-                        Text(title, style = MaterialTheme.typography.body2)
+                        Text(contact.title, style = MaterialTheme.typography.body2)
                     }
+                }
+            }
+            DropdownMenu(
+                expanded = showDropDownMenu,
+                onDismissRequest = { showDropDownMenu = false }
+            ) {
+                DropdownMenuItem(onClick = { onDeleteClick(contact) }) {
+                    Text(stringResource(id = R.string.cta_delete))
+                }
+                DropdownMenuItem(onClick = { onEditClick(contact) }) {
+                    Text(stringResource(id = R.string.cta_edit))
                 }
             }
         }
@@ -97,8 +122,14 @@ fun PreviewContactListItem() {
                 modifier = Modifier.padding(8.dp),
                 startExpanded = true,
                 isSynced = false,
-                name = "FirstFirstFirstFirstFirstFirst Middleee Last Last Last Last Last Last Last Last",
-                title = "Title"
+                contact = TempContactObject(
+                    1,
+                    "FirstFirstFirstFirstFirstFirst Middleee Last Last Last Last Last Last Last Last",
+                    "Title"
+                ),
+                onCardClick = {},
+                onDeleteClick = {},
+                onEditClick = {},
             )
         }
     }

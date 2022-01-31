@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">Mobile Sync Compose</string>
+    <string name="cta_delete">Delete</string>
+    <string name="cta_edit">Edit</string>
     <string name="label_contacts">Contacts</string>
     <string name="label_contact_name">Name</string>
     <string name="label_contact_title">Title</string>
