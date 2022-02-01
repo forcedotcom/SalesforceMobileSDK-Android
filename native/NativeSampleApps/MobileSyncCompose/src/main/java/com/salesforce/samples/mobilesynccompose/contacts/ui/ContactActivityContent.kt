@@ -1,5 +1,6 @@
 package com.salesforce.samples.mobilesynccompose.contacts.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.*
@@ -84,6 +85,9 @@ fun ContactActivityContent(
                         isEditMode = detailState.isInEditMode
                     )
                     NoContactSelected -> ContactDetailContent.Empty()
+                }
+                BackHandler(enabled = true) {
+                    vm.detailVm.onBack()
                 }
             }
 
