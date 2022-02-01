@@ -2,86 +2,75 @@ package com.salesforce.samples.mobilesynccompose.contacts.vm
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.salesforce.samples.mobilesynccompose.contacts.model.ContactsRepo
 import com.salesforce.samples.mobilesynccompose.contacts.ui.TempContactObject
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactActivityState.ViewContactDetails
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactActivityState.ViewContactList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 interface ContactActivityViewModel {
-    val activityState: StateFlow<ContactActivityState>
-    fun viewContact(contact: TempContactObject)
-    fun editContact(contact: TempContactObject)
-    fun deleteContact(contact: TempContactObject)
-    fun createNewContact()
+    val uiState: StateFlow<ContactActivityState>
+    val detailVm: ContactDetailViewModel
+    val listVm: ContactListViewModel
 
-    fun showSearch()
+    fun inspectDb()
+    fun logout()
+    fun switchUser()
     fun sync()
 }
 
 sealed interface ContactActivityState {
-    val contacts: List<TempContactObject>
-
-    data class ViewContactDetails(
-        override val contacts: List<TempContactObject>,
-        val selectedContact: TempContactObject?,
-        val isSearchMode: Boolean,
-        val currentSearchTerm: String?
-    ) : ContactActivityState
-
-    data class EditContactDetails(
-        override val contacts: List<TempContactObject>,
-        val selectedContact: TempContactObject
-    ) : ContactActivityState
-
-    data class CreateNewContact(override val contacts: List<TempContactObject>) :
-        ContactActivityState
+    object ViewContactDetails : ContactActivityState
+    object ViewContactList : ContactActivityState
 }
 
-class DefaultContactActivityViewModel : ViewModel(), ContactActivityViewModel {
-    private val contacts = (0..100).map {
-        TempContactObject(
-            id = it,
-            name = "Name $it",
-            title = "Title $it"
-        )
-    }
-    private val mutableState = MutableStateFlow(
-        ViewContactDetails(
-            contacts = contacts,
-            selectedContact = null,
-            isSearchMode = false,
-            currentSearchTerm = null
-        )
-    )
+class DefaultContactActivityViewModel(
+    private val contactsRepo: ContactsRepo
+) : ViewModel(), ContactActivityViewModel {
 
-    override val activityState: StateFlow<ContactActivityState> get() = mutableState
+    private val mutUiState: MutableStateFlow<ContactActivityState> =
+        MutableStateFlow(ViewContactList)
 
-    override fun viewContact(contact: TempContactObject) {
-        viewModelScope.launch {
-            mutableState.value.let {
-                mutableState.emit(it.copy(selectedContact = contact))
+    override val uiState: StateFlow<ContactActivityState> get() = mutUiState
+
+    private val contactSelectionEvents = MutableStateFlow<TempContactObject?>(null)
+    override val detailVm: ContactDetailViewModel = DefaultContactDetailViewModel(
+        contactSelectionEvents = contactSelectionEvents,
+        parentScope = viewModelScope,
+        onBackDelegate = {
+            viewModelScope.launch {
+                contactSelectionEvents.emit(null)
+                mutUiState.emit(ViewContactList)
             }
         }
+    )
+
+    override val listVm: ContactListViewModel = DefaultContactListViewModel(
+        contactUpdates = contactsRepo.contactUpdates,
+        parentScope = viewModelScope,
+        onContactSelectedDelegate = { contact ->
+            viewModelScope.launch {
+                contactSelectionEvents.emit(contact)
+                mutUiState.emit(ViewContactDetails)
+            }
+        }
+    )
+
+    override fun inspectDb() {
+        TODO("Not yet implemented")
     }
 
-    override fun editContact(contact: TempContactObject) {
-        TODO("editContact")
+    override fun logout() {
+        TODO("Not yet implemented")
     }
 
-    override fun deleteContact(contact: TempContactObject) {
-        TODO("deleteContact")
-    }
-
-    override fun createNewContact() {
-        TODO("createNewContact")
-    }
-
-    override fun showSearch() {
-        TODO("showSearch")
+    override fun switchUser() {
+        TODO("Not yet implemented")
     }
 
     override fun sync() {
-        TODO("sync")
+        TODO("Not yet implemented")
     }
 }

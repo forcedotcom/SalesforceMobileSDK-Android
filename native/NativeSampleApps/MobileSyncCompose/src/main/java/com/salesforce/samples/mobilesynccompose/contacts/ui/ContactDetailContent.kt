@@ -3,6 +3,7 @@ package com.salesforce.samples.mobilesynccompose.contacts.ui
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -11,6 +12,7 @@ import androidx.compose.material.Card
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -22,6 +24,13 @@ import com.salesforce.samples.mobilesynccompose.core.ui.components.ToggleableEdi
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 
 object ContactDetailContent {
+    @Composable
+    fun Empty() {
+        Box(contentAlignment = Alignment.Center) {
+            Text("No contact selected")
+        }
+    }
+
     @Composable
     fun Compact(
         modifier: Modifier = Modifier,
