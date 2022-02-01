@@ -10,12 +10,16 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.window.layout.WindowMetricsCalculator
+import com.salesforce.samples.mobilesynccompose.contacts.model.ContactsRepo
 import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactActivityContent
+import com.salesforce.samples.mobilesynccompose.contacts.ui.TempContactObject
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactActivityViewModel
 import com.salesforce.samples.mobilesynccompose.contacts.vm.DefaultContactActivityViewModel
 import com.salesforce.samples.mobilesynccompose.core.ui.LayoutRestrictions
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 import com.salesforce.samples.mobilesynccompose.core.ui.toWindowSizeRestrictions
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 class ContactsActivity : ComponentActivity() {
     private lateinit var vm: ContactActivityViewModel
@@ -23,7 +27,13 @@ class ContactsActivity : ComponentActivity() {
     @Suppress("UNCHECKED_CAST")
     private val vmFactory = object : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return DefaultContactActivityViewModel() as T
+            return DefaultContactActivityViewModel(
+                contactsRepo = object : ContactsRepo {
+                    override val contactUpdates: Flow<List<TempContactObject>> = flowOf(
+                        (0..100).map { TempContactObject(it, "Name $it", "Title $it") }
+                    )
+                }
+            ) as T
         }
     }
 
