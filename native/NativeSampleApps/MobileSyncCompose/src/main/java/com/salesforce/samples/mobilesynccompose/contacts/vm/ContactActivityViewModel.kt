@@ -21,9 +21,11 @@ interface ContactActivityViewModel {
     fun sync()
 }
 
+// TODO this really is more of just a layout state, and it should probably be renamed accordingly
 sealed interface ContactActivityState {
     object ViewContactDetails : ContactActivityState
     object ViewContactList : ContactActivityState
+//    object ListDetail : ContactActivityState
 }
 
 class DefaultContactActivityViewModel(
