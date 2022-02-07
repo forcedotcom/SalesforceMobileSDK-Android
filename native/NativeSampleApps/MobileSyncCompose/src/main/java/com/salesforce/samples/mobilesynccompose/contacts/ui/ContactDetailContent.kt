@@ -32,7 +32,6 @@ object ContactDetailContent {
     fun Compact(
         modifier: Modifier = Modifier,
         firstNameVm: ContactDetailFieldViewModel,
-        middleNameVm: ContactDetailFieldViewModel,
         lastNameVm: ContactDetailFieldViewModel,
         nameVm: ContactDetailFieldViewModel,
         titleVm: ContactDetailFieldViewModel,
@@ -53,7 +52,6 @@ object ContactDetailContent {
                 isEditMode = isEditMode,
                 nameVm = nameVm,
                 firstNameVm = firstNameVm,
-                middleNameVm = middleNameVm,
                 lastNameVm = lastNameVm,
                 contactDetailsChangedHandler = contactDetailsChangedHandler
             )
@@ -76,7 +74,6 @@ private fun ColumnScope.nameFields(
     isEditMode: Boolean,
     nameVm: ContactDetailFieldViewModel,
     firstNameVm: ContactDetailFieldViewModel,
-    middleNameVm: ContactDetailFieldViewModel,
     lastNameVm: ContactDetailFieldViewModel,
     contactDetailsChangedHandler: ContactDetailsChangedHandler
 ) {
@@ -100,15 +97,6 @@ private fun ColumnScope.nameFields(
             label = { Text(stringResource(id = label_contact_first_name)) },
             placeholder = { Text(stringResource(id = label_contact_first_name)) },
             help = { Text(firstNameVm.helperRes?.let { stringResource(id = it) } ?: "") }
-        )
-        ToggleableEditTextField(
-            fieldValue = middleNameVm.fieldValue,
-            isError = middleNameVm.isInErrorState,
-            isEditEnabled = isEditMode,
-            onValueChange = contactDetailsChangedHandler::onMiddleNameChanged,
-            label = { Text(stringResource(id = label_contact_middle_name)) },
-            placeholder = { Text(stringResource(id = label_contact_middle_name)) },
-            help = { Text(middleNameVm.helperRes?.let { stringResource(id = it) } ?: "") }
         )
         ToggleableEditTextField(
             fieldValue = lastNameVm.fieldValue,
@@ -223,7 +211,6 @@ private fun ContactDetailContentPreview(isEditMode: Boolean, hasHelp: Boolean) {
 
     ContactDetailContent.Compact(
         firstNameVm = firstNameVm,
-        middleNameVm = middleNameVm,
         lastNameVm = lastNameVm,
         nameVm = nameVm,
         titleVm = titleVm,

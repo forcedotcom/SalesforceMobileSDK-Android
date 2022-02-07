@@ -20,7 +20,6 @@ inline fun JSONArray.forEachIndexed(block: (index: Int, JSONObject) -> Unit) {
 }
 
 inline fun <reified T> JSONArray.map(mapper: (JSONObject) -> T): List<T> {
-    val length = length().also { if (it < 1) return emptyList() }
     val results = mutableListOf<T>()
 
     this.forEach { jsonObject ->

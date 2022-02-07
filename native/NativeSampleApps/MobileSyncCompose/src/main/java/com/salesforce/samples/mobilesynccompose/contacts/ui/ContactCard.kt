@@ -125,9 +125,8 @@ fun PreviewContactListItem() {
                 isSynced = false,
                 contact = ContactObject(
                     id = "1",
-                    firstName = "FirstFirstFirstFirstFirstFirst",
-                    middleName = "Middleee",
-                    lastName = "Last Last Last Last Last Last Last Last",
+                    firstName = "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirstFirst",
+                    lastName = "Last Last Last Last Last Last Last Last Last Last Last",
                     title = "Title",
                 ),
                 onCardClick = {},
