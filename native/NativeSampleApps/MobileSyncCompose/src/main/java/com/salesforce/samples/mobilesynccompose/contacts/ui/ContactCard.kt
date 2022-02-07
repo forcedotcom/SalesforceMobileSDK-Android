@@ -26,16 +26,17 @@ import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R
 import com.salesforce.samples.mobilesynccompose.core.ui.components.ExpandoButton
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
+import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 
 @Composable
 /* TODO How to put in profile pic?  Glide lib? */
 fun ContactCard(
     modifier: Modifier = Modifier,
-    contact: TempContactObject,
+    contact: ContactObject,
     isSynced: Boolean,
-    onCardClick: (TempContactObject) -> Unit,
-    onDeleteClick: (TempContactObject) -> Unit,
-    onEditClick: (TempContactObject) -> Unit,
+    onCardClick: (ContactObject) -> Unit,
+    onDeleteClick: (ContactObject) -> Unit,
+    onEditClick: (ContactObject) -> Unit,
     startExpanded: Boolean = false,
     elevation: Dp = 2.dp,
 ) {
@@ -122,10 +123,12 @@ fun PreviewContactListItem() {
                 modifier = Modifier.padding(8.dp),
                 startExpanded = true,
                 isSynced = false,
-                contact = TempContactObject(
-                    1,
-                    "FirstFirstFirstFirstFirstFirst Middleee Last Last Last Last Last Last Last Last",
-                    "Title"
+                contact = ContactObject(
+                    id = "1",
+                    firstName = "FirstFirstFirstFirstFirstFirst",
+                    middleName = "Middleee",
+                    lastName = "Last Last Last Last Last Last Last Last",
+                    title = "Title",
                 ),
                 onCardClick = {},
                 onDeleteClick = {},
