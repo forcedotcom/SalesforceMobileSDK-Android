@@ -25,13 +25,11 @@ sealed interface ContactDetailUiState {
         val curContactDetails: ContactObject,
         val isInEditMode: Boolean,
         val firstNameVm: ContactDetailFieldViewModel,
-        val middleNameVm: ContactDetailFieldViewModel,
         val lastNameVm: ContactDetailFieldViewModel,
         val nameVm: ContactDetailFieldViewModel,
         val titleVm: ContactDetailFieldViewModel,
     ) : ContactDetailUiState {
         val isModified: Boolean = firstNameVm.fieldValue != curContactDetails.firstName ||
-                middleNameVm.fieldValue != curContactDetails.middleName ||
                 lastNameVm.fieldValue != curContactDetails.lastName ||
                 titleVm.fieldValue != curContactDetails.title
     }
@@ -61,7 +59,6 @@ class DefaultContactDetailViewModel(
                             curContactDetails = it,
                             isInEditMode = false,
                             firstNameVm = it.toFirstNameVm(),
-                            middleNameVm = it.toMiddleNameVm(),
                             lastNameVm = it.toLastNameVm(),
                             nameVm = it.toNameVm(),
                             titleVm = it.toTitleVm()
@@ -113,13 +110,6 @@ class DefaultContactDetailViewModel(
 private fun ContactObject.toFirstNameVm(): ContactDetailFieldViewModel =
     ContactDetailFieldViewModel(
         fieldValue = firstName,
-        isInErrorState = false,
-        helperRes = null
-    )
-
-private fun ContactObject.toMiddleNameVm(): ContactDetailFieldViewModel =
-    ContactDetailFieldViewModel(
-        fieldValue = middleName,
         isInErrorState = false,
         helperRes = null
     )

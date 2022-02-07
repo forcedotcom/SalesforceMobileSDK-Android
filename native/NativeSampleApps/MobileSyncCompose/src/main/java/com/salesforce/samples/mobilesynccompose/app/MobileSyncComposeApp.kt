@@ -8,5 +8,9 @@ class MobileSyncComposeApp : Application() {
     override fun onCreate() {
         super.onCreate()
         MobileSyncSDKManager.initNative(this, ContactsActivity::class.java)
+        MobileSyncSDKManager.getInstance().apply {
+            setupUserStoreFromDefaultConfig()
+            setupUserSyncsFromDefaultConfig()
+        }
     }
 }

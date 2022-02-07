@@ -10,8 +10,11 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.window.layout.WindowMetricsCalculator
+import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager
 import com.salesforce.androidsdk.rest.RestClient
+import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity
 import com.salesforce.androidsdk.ui.SalesforceActivityDelegate
 import com.salesforce.androidsdk.ui.SalesforceActivityInterface
 import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactActivityContent
@@ -30,7 +33,25 @@ class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
     private val vmFactory = object : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             // TODO Use Hilt to inject this
-            return DefaultContactActivityViewModel(DefaultContactsRepo()) as T
+            return DefaultContactActivityViewModel(
+                DefaultContactsRepo(
+                    MobileSyncSDKManager.getInstance().userAccountManager.currentUser
+                )
+            ) as T
+        }
+    }
+
+    init {
+        lifecycleScope.launchWhenStarted {
+            for (event in vm.inspectDbClickEvents) {
+                startActivity(
+                    SmartStoreInspectorActivity.getIntent(
+                        this@ContactsActivity,
+                        false,
+                        null
+                    )
+                )
+            }
         }
     }
 
@@ -81,6 +102,7 @@ class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
 
     override fun onResume(client: RestClient?) {
         // TODO use this entry point as the time to launch sync operations b/c at this point the rest client is ready.
+        vm.sync(syncDownOnly = true)
     }
 
     override fun onLogoutComplete() {

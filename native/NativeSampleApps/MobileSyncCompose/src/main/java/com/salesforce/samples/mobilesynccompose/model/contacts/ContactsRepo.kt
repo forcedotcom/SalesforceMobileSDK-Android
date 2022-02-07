@@ -9,7 +9,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec
 import com.salesforce.samples.mobilesynccompose.core.extensions.map
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.resume
@@ -23,7 +23,7 @@ interface ContactsRepo {
 }
 
 class DefaultContactsRepo(
-    account: UserAccount? = null, // default to current account
+    account: UserAccount,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ContactsRepo {
 
@@ -35,17 +35,7 @@ class DefaultContactsRepo(
      * We're not using StateFlow with an `emptyList()` as a starting value because this flow is
      * about updates, and an empty list would logically indicate that there are no contacts to be
      * found. */
-//    private val mutContactUpdates = MutableSharedFlow<List<ContactObject>>(replay = 1)
-    // TODO replace this with ☝️
-    private val mutContactUpdates = MutableStateFlow<List<ContactObject>>((1..100).map {
-        ContactObject(
-            id = it.toString(),
-            firstName = "First",
-            middleName = "Middle",
-            lastName = "Last $it",
-            title = "Title"
-        )
-    })
+    private val mutContactUpdates = MutableSharedFlow<List<ContactObject>>(replay = 1)
     override val contactUpdates: Flow<List<ContactObject>> get() = mutContactUpdates
 
     override suspend fun sync(syncDownOnly: Boolean) = withContext(ioDispatcher) {
@@ -56,13 +46,13 @@ class DefaultContactsRepo(
 
             currentCoroutineContext().ensureActive() // cooperative cancellation
 
-            if (upResult != null && upResult.isDone) {
-                SyncResults(syncDown(), upResult)
-            } else {
+            if (!syncDownOnly && (upResult == null || !upResult.isDone)) {
                 // sync up failed
                 Log.e(TAG, "The Sync Up operation failed: $upResult")
                 // TODO better handle this failure case
                 return@withContext
+            } else {
+                SyncResults(syncDown(), upResult)
             }
         }
 
@@ -82,14 +72,42 @@ class DefaultContactsRepo(
 
     // Individual syncs cannot be cancelled, so we don't use suspendCancellableCoroutine
     private suspend fun syncDown(): SyncState = suspendCoroutine { cont ->
-        val callback: (SyncState) -> Unit = { cont.resume(it) }
+        // TODO: will MobileSync use the same instance of the callback (this coroutine block) in the STOPPED -> RUNNING -> DONE flow?
+        val callback: (SyncState) -> Unit = {
+            when (it.status) {
+                // terminal states
+                SyncState.Status.DONE,
+                SyncState.Status.FAILED,
+                SyncState.Status.STOPPED -> cont.resume(it)
+
+                SyncState.Status.NEW,
+                SyncState.Status.RUNNING,
+                null -> {
+                    /* no-op; suspending for terminal state */
+                }
+            }
+        }
         // TODO Replace this raw string with compile time constant:
         syncManager.reSync("syncDownContacts", callback)
     }
 
     // Individual syncs cannot be cancelled, so we don't use suspendCancellableCoroutine
     private suspend fun syncUp(): SyncState = suspendCoroutine { cont ->
-        val callback: (SyncState) -> Unit = { cont.resume(it) }
+        val callback: (SyncState) -> Unit = {
+            when (it.status) {
+                // terminal states
+                SyncState.Status.DONE,
+                SyncState.Status.FAILED,
+                SyncState.Status.STOPPED -> cont.resume(it)
+
+                SyncState.Status.NEW,
+                SyncState.Status.RUNNING,
+                null -> {
+                    /* no-op; suspending for terminal state */
+                }
+            }
+        }
+        // TODO Replace this raw string with compile time constant:
         syncManager.reSync("syncUpContacts", callback)
     }
 

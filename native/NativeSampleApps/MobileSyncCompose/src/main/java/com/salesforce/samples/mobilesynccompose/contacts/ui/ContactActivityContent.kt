@@ -80,7 +80,6 @@ fun ContactActivityContent(
                     is ContactSelected -> ContactDetailContent.Compact(
                         modifier = Modifier.padding(fixedPadding),
                         firstNameVm = detailState.firstNameVm,
-                        middleNameVm = detailState.middleNameVm,
                         lastNameVm = detailState.lastNameVm,
                         nameVm = detailState.nameVm,
                         titleVm = detailState.titleVm,

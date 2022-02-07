@@ -6,6 +6,8 @@ import com.salesforce.samples.mobilesynccompose.model.contacts.ContactsRepo
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactActivityState.ViewContactDetails
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactActivityState.ViewContactList
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -14,6 +16,8 @@ interface ContactActivityViewModel {
     val uiState: StateFlow<ContactActivityState>
     val detailVm: ContactDetailViewModel
     val listVm: ContactListViewModel
+
+    val inspectDbClickEvents: ReceiveChannel<Unit>
 
     fun inspectDb()
     fun logout()
@@ -60,8 +64,13 @@ class DefaultContactActivityViewModel(
         }
     )
 
+    private val mutDbClickEvents = Channel<Unit>()
+    override val inspectDbClickEvents: ReceiveChannel<Unit> get() = mutDbClickEvents
+
     override fun inspectDb() {
-        TODO("Not yet implemented")
+        viewModelScope.launch {
+            mutDbClickEvents.send(Unit)
+        }
     }
 
     override fun logout() {

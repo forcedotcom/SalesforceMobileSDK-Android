@@ -44,7 +44,6 @@ private fun ContactListContentPreview() {
         ContactObject(
             id = it.toString(),
             firstName = "Contact",
-            middleName = "Name",
             lastName = "$it",
             title = "Title $it"
         )
