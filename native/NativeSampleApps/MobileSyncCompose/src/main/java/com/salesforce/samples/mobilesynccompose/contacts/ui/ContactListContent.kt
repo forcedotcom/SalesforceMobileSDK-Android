@@ -11,19 +11,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
-
-data class TempContactObject(val id: Int, val name: String, val title: String)
+import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 
 @Composable
 fun ContactListContent(
     modifier: Modifier = Modifier,
-    contacts: List<TempContactObject>,
-    onContactClick: (TempContactObject) -> Unit,
-    onContactDeleteClick: (TempContactObject) -> Unit,
-    onContactEditClick: (TempContactObject) -> Unit,
+    contacts: List<ContactObject>,
+    onContactClick: (ContactObject) -> Unit,
+    onContactDeleteClick: (ContactObject) -> Unit,
+    onContactEditClick: (ContactObject) -> Unit,
 ) {
     LazyColumn(modifier = modifier) {
-        items(items = contacts, key = { it.id }) { contact ->
+        items(items = contacts, key = { it.objectId }) { contact ->
             ContactCard(
                 modifier = Modifier.padding(4.dp),
                 startExpanded = false,
@@ -42,7 +41,13 @@ fun ContactListContent(
 @Composable
 private fun ContactListContentPreview() {
     val contacts = (0..100).map {
-        TempContactObject(id = it, name = "Contact Name $it", title = "Title $it")
+        ContactObject(
+            id = it.toString(),
+            firstName = "Contact",
+            middleName = "Name",
+            lastName = "$it",
+            title = "Title $it"
+        )
     }
 
     SalesforceMobileSDKAndroidTheme {

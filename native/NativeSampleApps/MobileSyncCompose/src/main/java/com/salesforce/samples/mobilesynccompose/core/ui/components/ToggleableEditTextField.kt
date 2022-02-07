@@ -39,7 +39,7 @@ fun ToggleableEditTextField(
 
     Column(modifier = modifier) {
         OutlinedTextField(
-            modifier = fieldModifier,
+            modifier = fieldModifier.then(Modifier.fillMaxWidth()),
             value = fieldValue,
             onValueChange = onValueChange,
             label = label,

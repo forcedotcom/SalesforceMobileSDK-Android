@@ -14,16 +14,13 @@ import androidx.window.layout.WindowMetricsCalculator
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.ui.SalesforceActivityDelegate
 import com.salesforce.androidsdk.ui.SalesforceActivityInterface
-import com.salesforce.samples.mobilesynccompose.contacts.model.ContactsRepo
 import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactActivityContent
-import com.salesforce.samples.mobilesynccompose.contacts.ui.TempContactObject
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactActivityViewModel
 import com.salesforce.samples.mobilesynccompose.contacts.vm.DefaultContactActivityViewModel
 import com.salesforce.samples.mobilesynccompose.core.ui.LayoutRestrictions
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 import com.salesforce.samples.mobilesynccompose.core.ui.toWindowSizeRestrictions
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
+import com.salesforce.samples.mobilesynccompose.model.contacts.DefaultContactsRepo
 
 class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
     private lateinit var vm: ContactActivityViewModel
@@ -32,13 +29,8 @@ class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
     @Suppress("UNCHECKED_CAST")
     private val vmFactory = object : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return DefaultContactActivityViewModel(
-                contactsRepo = object : ContactsRepo {
-                    override val contactUpdates: Flow<List<TempContactObject>> = flowOf(
-                        (0..100).map { TempContactObject(it, "Name $it", "Title $it") }
-                    )
-                }
-            ) as T
+            // TODO Use Hilt to inject this
+            return DefaultContactActivityViewModel(DefaultContactsRepo()) as T
         }
     }
 

@@ -1,7 +1,7 @@
 package com.salesforce.samples.mobilesynccompose.contacts.vm
 
-import com.salesforce.samples.mobilesynccompose.contacts.ui.TempContactObject
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactListUiState.*
+import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,33 +13,33 @@ import kotlinx.coroutines.sync.withLock
 
 interface ContactListViewModel {
     val uiState: StateFlow<ContactListUiState>
-    fun onContactSelected(contact: TempContactObject)
+    fun onContactSelected(contact: ContactObject)
     fun onSearchTermUpdate(newSearch: String)
     fun enterSearchMode()
     fun exitSearchMode()
 }
 
 sealed interface ContactListUiState {
-    val contacts: List<TempContactObject>
+    val contacts: List<ContactObject>
 
     object Loading : ContactListUiState {
-        override val contacts: List<TempContactObject> = emptyList()
+        override val contacts: List<ContactObject> = emptyList()
     }
 
     data class ViewList(
-        override val contacts: List<TempContactObject>
+        override val contacts: List<ContactObject>
     ) : ContactListUiState
 
     data class Search(
-        override val contacts: List<TempContactObject>,
+        override val contacts: List<ContactObject>,
         val searchTerm: String
     ) : ContactListUiState
 }
 
 class DefaultContactListViewModel(
-    contactUpdates: Flow<List<TempContactObject>>,
+    contactUpdates: Flow<List<ContactObject>>,
     parentScope: CoroutineScope,
-    private val onContactSelectedDelegate: (TempContactObject) -> Unit
+    private val onContactSelectedDelegate: (ContactObject) -> Unit
 ) : ContactListViewModel {
 
     private val contactsMutex = Mutex()
@@ -62,7 +62,7 @@ class DefaultContactListViewModel(
         }
     }
 
-    override fun onContactSelected(contact: TempContactObject) {
+    override fun onContactSelected(contact: ContactObject) {
         onContactSelectedDelegate(contact)
     }
 

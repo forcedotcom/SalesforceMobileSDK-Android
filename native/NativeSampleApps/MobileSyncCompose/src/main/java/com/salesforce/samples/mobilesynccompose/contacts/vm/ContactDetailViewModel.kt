@@ -1,8 +1,9 @@
 package com.salesforce.samples.mobilesynccompose.contacts.vm
 
 import com.salesforce.samples.mobilesynccompose.R
-import com.salesforce.samples.mobilesynccompose.contacts.ui.TempContactObject
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailUiState.*
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailUiState.ContactSelected
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailUiState.NoContactSelected
+import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,23 +22,25 @@ interface ContactDetailViewModel : ContactDetailsChangedHandler {
 
 sealed interface ContactDetailUiState {
     data class ContactSelected(
-        val curContactDetails: TempContactObject,
+        val curContactDetails: ContactObject,
         val isInEditMode: Boolean,
+        val firstNameVm: ContactDetailFieldViewModel,
+        val middleNameVm: ContactDetailFieldViewModel,
+        val lastNameVm: ContactDetailFieldViewModel,
         val nameVm: ContactDetailFieldViewModel,
         val titleVm: ContactDetailFieldViewModel,
     ) : ContactDetailUiState {
-        val isModified: Boolean =
-            curContactDetails.copy(
-                name = nameVm.fieldValue,
-                title = titleVm.fieldValue
-            ) != curContactDetails
+        val isModified: Boolean = firstNameVm.fieldValue != curContactDetails.firstName ||
+                middleNameVm.fieldValue != curContactDetails.middleName ||
+                lastNameVm.fieldValue != curContactDetails.lastName ||
+                titleVm.fieldValue != curContactDetails.title
     }
 
     object NoContactSelected : ContactDetailUiState
 }
 
 class DefaultContactDetailViewModel(
-    contactSelectionEvents: Flow<TempContactObject?>,
+    contactSelectionEvents: Flow<ContactObject?>,
     parentScope: CoroutineScope,
     private val onBackDelegate: () -> Unit
 ) : ContactDetailViewModel {
@@ -57,6 +60,9 @@ class DefaultContactDetailViewModel(
                         ContactSelected(
                             curContactDetails = it,
                             isInEditMode = false,
+                            firstNameVm = it.toFirstNameVm(),
+                            middleNameVm = it.toMiddleNameVm(),
+                            lastNameVm = it.toLastNameVm(),
                             nameVm = it.toNameVm(),
                             titleVm = it.toTitleVm()
                         )
@@ -82,6 +88,18 @@ class DefaultContactDetailViewModel(
         TODO("onSaveClick")
     }
 
+    override fun onFirstNameChanged(newValue: String) {
+        TODO("Not yet implemented")
+    }
+
+    override fun onMiddleNameChanged(newValue: String) {
+        TODO("Not yet implemented")
+    }
+
+    override fun onLastNameChanged(newValue: String) {
+        TODO("Not yet implemented")
+    }
+
     override fun onNameChanged(newValue: String) {
         TODO("onNameChanged")
     }
@@ -92,7 +110,32 @@ class DefaultContactDetailViewModel(
 
 }
 
-private fun TempContactObject.toNameVm(): ContactDetailFieldViewModel {
+private fun ContactObject.toFirstNameVm(): ContactDetailFieldViewModel =
+    ContactDetailFieldViewModel(
+        fieldValue = firstName,
+        isInErrorState = false,
+        helperRes = null
+    )
+
+private fun ContactObject.toMiddleNameVm(): ContactDetailFieldViewModel =
+    ContactDetailFieldViewModel(
+        fieldValue = middleName,
+        isInErrorState = false,
+        helperRes = null
+    )
+
+private fun ContactObject.toLastNameVm(): ContactDetailFieldViewModel {
+    val isError = lastName.isBlank()
+    val help = if (isError) R.string.help_cannot_be_blank else null
+
+    return ContactDetailFieldViewModel(
+        fieldValue = lastName,
+        isInErrorState = isError,
+        helperRes = help
+    )
+}
+
+private fun ContactObject.toNameVm(): ContactDetailFieldViewModel {
     val isError = name.isBlank()
     val help = if (isError) R.string.help_cannot_be_blank else null
 
@@ -103,7 +146,7 @@ private fun TempContactObject.toNameVm(): ContactDetailFieldViewModel {
     )
 }
 
-private fun TempContactObject.toTitleVm(): ContactDetailFieldViewModel =
+private fun ContactObject.toTitleVm(): ContactDetailFieldViewModel =
     ContactDetailFieldViewModel(
         fieldValue = title,
         isInErrorState = false, // cannot be in error state

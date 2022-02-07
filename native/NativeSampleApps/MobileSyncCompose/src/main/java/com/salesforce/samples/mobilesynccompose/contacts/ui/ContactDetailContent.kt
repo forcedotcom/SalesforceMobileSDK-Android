@@ -3,10 +3,7 @@ package com.salesforce.samples.mobilesynccompose.contacts.ui
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.scrollable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.Card
 import androidx.compose.material.Surface
@@ -17,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.salesforce.samples.mobilesynccompose.R
+import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailFieldViewModel
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsChangedHandler
 import com.salesforce.samples.mobilesynccompose.core.ui.components.ToggleableEditTextField
@@ -26,7 +23,7 @@ import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSD
 object ContactDetailContent {
     @Composable
     fun Empty() {
-        Box(contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("No contact selected")
         }
     }
@@ -34,6 +31,9 @@ object ContactDetailContent {
     @Composable
     fun Compact(
         modifier: Modifier = Modifier,
+        firstNameVm: ContactDetailFieldViewModel,
+        middleNameVm: ContactDetailFieldViewModel,
+        lastNameVm: ContactDetailFieldViewModel,
         nameVm: ContactDetailFieldViewModel,
         titleVm: ContactDetailFieldViewModel,
         contactDetailsChangedHandler: ContactDetailsChangedHandler,
@@ -49,29 +49,76 @@ object ContactDetailContent {
                 )
                 .padding(horizontal = 8.dp)
         ) {
-            ToggleableEditTextField(
-                fieldValue = nameVm.fieldValue,
-                isError = nameVm.isInErrorState,
-                isEditEnabled = isEditMode,
-                modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
-                fieldModifier = Modifier.fillMaxWidth(),
-                onValueChange = contactDetailsChangedHandler::onNameChanged,
-                label = { Text(stringResource(id = R.string.label_contact_name)) },
-                placeholder = { Text(stringResource(id = R.string.label_contact_name)) },
-                help = { Text(nameVm.helperRes?.let { stringResource(id = it) } ?: "") }
+            nameFields(
+                isEditMode = isEditMode,
+                nameVm = nameVm,
+                firstNameVm = firstNameVm,
+                middleNameVm = middleNameVm,
+                lastNameVm = lastNameVm,
+                contactDetailsChangedHandler = contactDetailsChangedHandler
             )
             ToggleableEditTextField(
                 fieldValue = titleVm.fieldValue,
                 isError = titleVm.isInErrorState,
                 isEditEnabled = isEditMode,
                 modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
-                fieldModifier = Modifier.fillMaxWidth(),
                 onValueChange = contactDetailsChangedHandler::onTitleChanged,
-                label = { Text(stringResource(id = R.string.label_contact_title)) },
-                placeholder = { Text(stringResource(id = R.string.label_contact_title)) },
+                label = { Text(stringResource(id = label_contact_title)) },
+                placeholder = { Text(stringResource(id = label_contact_title)) },
                 help = { Text(titleVm.helperRes?.let { stringResource(id = it) } ?: "") }
             )
         }
+    }
+}
+
+@Composable
+private fun ColumnScope.nameFields(
+    isEditMode: Boolean,
+    nameVm: ContactDetailFieldViewModel,
+    firstNameVm: ContactDetailFieldViewModel,
+    middleNameVm: ContactDetailFieldViewModel,
+    lastNameVm: ContactDetailFieldViewModel,
+    contactDetailsChangedHandler: ContactDetailsChangedHandler
+) {
+    if (!isEditMode) {
+        ToggleableEditTextField(
+            fieldValue = nameVm.fieldValue,
+            isError = nameVm.isInErrorState,
+            isEditEnabled = isEditMode,
+            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
+            onValueChange = contactDetailsChangedHandler::onNameChanged,
+            label = { Text(stringResource(id = label_contact_name)) },
+            placeholder = { Text(stringResource(id = label_contact_name)) },
+            help = { Text(nameVm.helperRes?.let { stringResource(id = it) } ?: "") }
+        )
+    } else {
+        ToggleableEditTextField(
+            fieldValue = firstNameVm.fieldValue,
+            isError = firstNameVm.isInErrorState,
+            isEditEnabled = isEditMode,
+            onValueChange = contactDetailsChangedHandler::onFirstNameChanged,
+            label = { Text(stringResource(id = label_contact_first_name)) },
+            placeholder = { Text(stringResource(id = label_contact_first_name)) },
+            help = { Text(firstNameVm.helperRes?.let { stringResource(id = it) } ?: "") }
+        )
+        ToggleableEditTextField(
+            fieldValue = middleNameVm.fieldValue,
+            isError = middleNameVm.isInErrorState,
+            isEditEnabled = isEditMode,
+            onValueChange = contactDetailsChangedHandler::onMiddleNameChanged,
+            label = { Text(stringResource(id = label_contact_middle_name)) },
+            placeholder = { Text(stringResource(id = label_contact_middle_name)) },
+            help = { Text(middleNameVm.helperRes?.let { stringResource(id = it) } ?: "") }
+        )
+        ToggleableEditTextField(
+            fieldValue = lastNameVm.fieldValue,
+            isError = lastNameVm.isInErrorState,
+            isEditEnabled = isEditMode,
+            onValueChange = contactDetailsChangedHandler::onLastNameChanged,
+            label = { Text(stringResource(id = label_contact_last_name)) },
+            placeholder = { Text(stringResource(id = label_contact_last_name)) },
+            help = { Text(lastNameVm.helperRes?.let { stringResource(id = it) } ?: "") }
+        )
     }
 }
 
@@ -101,12 +148,39 @@ private fun ContactDetailContentPreview() {
 
 @Composable
 private fun ContactDetailContentPreview(isEditMode: Boolean, hasHelp: Boolean) {
+    var firstNameVm: ContactDetailFieldViewModel by remember {
+        mutableStateOf(
+            ContactDetailFieldViewModel(
+                fieldValue = "First",
+                isInErrorState = false,
+                helperRes = null
+            )
+        )
+    }
+    var middleNameVm: ContactDetailFieldViewModel by remember {
+        mutableStateOf(
+            ContactDetailFieldViewModel(
+                fieldValue = "Middle",
+                isInErrorState = false,
+                helperRes = null
+            )
+        )
+    }
+    var lastNameVm: ContactDetailFieldViewModel by remember {
+        mutableStateOf(
+            ContactDetailFieldViewModel(
+                fieldValue = "Last",
+                isInErrorState = false,
+                helperRes = null
+            )
+        )
+    }
     var nameVm: ContactDetailFieldViewModel by remember {
         mutableStateOf(
             ContactDetailFieldViewModel(
                 fieldValue = "Name",
                 isInErrorState = true,
-                helperRes = if (hasHelp) R.string.help_cannot_be_blank else null
+                helperRes = if (hasHelp) help_cannot_be_blank else null
             )
         )
     }
@@ -115,18 +189,30 @@ private fun ContactDetailContentPreview(isEditMode: Boolean, hasHelp: Boolean) {
             ContactDetailFieldViewModel(
                 fieldValue = "Title",
                 isInErrorState = false,
-                helperRes = if (hasHelp) R.string.help_cannot_be_blank else null
+                helperRes = if (hasHelp) help_cannot_be_blank else null
             )
         )
     }
 
     val onValueChangedHandler = object : ContactDetailsChangedHandler {
+        override fun onFirstNameChanged(newValue: String) {
+            TODO("Not yet implemented")
+        }
+
+        override fun onMiddleNameChanged(newValue: String) {
+            TODO("Not yet implemented")
+        }
+
+        override fun onLastNameChanged(newValue: String) {
+            TODO("Not yet implemented")
+        }
+
         override fun onNameChanged(newValue: String) {
             val isBlank = newValue.isBlank()
             nameVm = nameVm.copy(
                 fieldValue = newValue,
                 isInErrorState = isBlank,
-                helperRes = if (hasHelp) R.string.help_cannot_be_blank else null
+                helperRes = if (hasHelp) help_cannot_be_blank else null
             )
         }
 
@@ -136,6 +222,9 @@ private fun ContactDetailContentPreview(isEditMode: Boolean, hasHelp: Boolean) {
     }
 
     ContactDetailContent.Compact(
+        firstNameVm = firstNameVm,
+        middleNameVm = middleNameVm,
+        lastNameVm = lastNameVm,
         nameVm = nameVm,
         titleVm = titleVm,
         contactDetailsChangedHandler = onValueChangedHandler,
