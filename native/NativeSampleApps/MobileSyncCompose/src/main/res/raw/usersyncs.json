@@ -11,6 +11,18 @@
       "options": {
         "mergeMode": "OVERWRITE"
       }
+    },
+    {
+      "syncName": "syncUpContacts",
+      "syncType": "syncUp",
+      "soupName": "contacts",
+      "target": {
+        "createFieldlist": [
+          "FirstName",
+          "LastName",
+          "Title"
+        ]
+      }
     }
   ]
 }

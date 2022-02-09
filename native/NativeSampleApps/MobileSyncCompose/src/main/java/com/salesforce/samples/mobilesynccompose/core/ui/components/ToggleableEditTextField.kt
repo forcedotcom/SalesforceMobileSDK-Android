@@ -16,10 +16,10 @@ import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSD
 fun ToggleableEditTextField(
     fieldValue: String,
     isEditEnabled: Boolean,
+    isError: Boolean,
+    onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     fieldModifier: Modifier = Modifier,
-    isError: Boolean = false,
-    onValueChange: (String) -> Unit = {},
     label: (@Composable () -> Unit)? = null,
     placeholder: (@Composable () -> Unit)? = null,
     help: (@Composable () -> Unit)? = null,
@@ -86,7 +86,8 @@ private fun LabeledTextFieldPreview() {
                     isError = isError,
                     label = { Text("Label") },
                     placeholder = { Text("Hint") },
-                    help = { Text("Help Text Goes Here") }
+                    help = { Text("Help Text Goes Here") },
+                    onValueChange = {}
                 )
 
                 isError = false
@@ -99,7 +100,8 @@ private fun LabeledTextFieldPreview() {
                     isError = isError,
                     label = { Text("Label") },
                     placeholder = { Text("Hint") },
-                    help = { Text("Help Text Goes Here") }
+                    help = { Text("Help Text Goes Here") },
+                    onValueChange = {}
                 )
 
                 isError = true
@@ -113,7 +115,8 @@ private fun LabeledTextFieldPreview() {
                     isError = isError,
                     label = { Text("Label") },
                     placeholder = { Text("Hint") },
-                    help = { Text("Help Text Goes Here") }
+                    help = { Text("Help Text Goes Here") },
+                    onValueChange = {}
                 )
 
                 isError = false
@@ -126,7 +129,8 @@ private fun LabeledTextFieldPreview() {
                     isError = isError,
                     label = { Text("Label") },
                     placeholder = { Text("Hint") },
-                    help = { Text("Help Text Goes Here") }
+                    help = { Text("Help Text Goes Here") },
+                    onValueChange = {}
                 )
             }
         }
