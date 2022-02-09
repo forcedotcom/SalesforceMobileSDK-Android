@@ -17,23 +17,24 @@ import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity
 import com.salesforce.androidsdk.ui.SalesforceActivityDelegate
 import com.salesforce.androidsdk.ui.SalesforceActivityInterface
-import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactActivityContent
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactActivityViewModel
-import com.salesforce.samples.mobilesynccompose.contacts.vm.DefaultContactActivityViewModel
+import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactsActivityContent
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityUiEvents
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityViewModel
+import com.salesforce.samples.mobilesynccompose.contacts.vm.DefaultContactsActivityViewModel
 import com.salesforce.samples.mobilesynccompose.core.ui.LayoutRestrictions
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 import com.salesforce.samples.mobilesynccompose.core.ui.toWindowSizeRestrictions
 import com.salesforce.samples.mobilesynccompose.model.contacts.DefaultContactsRepo
 
 class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
-    private lateinit var vm: ContactActivityViewModel
+    private lateinit var vm: ContactsActivityViewModel
     private lateinit var salesforceActivityDelegate: SalesforceActivityDelegate
 
     @Suppress("UNCHECKED_CAST")
     private val vmFactory = object : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             // TODO Use Hilt to inject this
-            return DefaultContactActivityViewModel(
+            return DefaultContactsActivityViewModel(
                 DefaultContactsRepo(
                     MobileSyncSDKManager.getInstance().userAccountManager.currentUser
                 )
@@ -59,7 +60,7 @@ class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
         super.onCreate(savedInstanceState)
 
         vm = ViewModelProvider(this, vmFactory)
-            .get(DefaultContactActivityViewModel::class.java)
+            .get(DefaultContactsActivityViewModel::class.java)
 
         salesforceActivityDelegate = SalesforceActivityDelegate(this).also { it.onCreate() }
 
@@ -78,7 +79,7 @@ class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
             }
 
             SalesforceMobileSDKAndroidTheme {
-                ContactActivityContent(
+                ContactsActivityContent(
                     layoutRestrictions = LayoutRestrictions(windowSizeRestrictions),
                     vm = vm
                 )
@@ -102,7 +103,7 @@ class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
 
     override fun onResume(client: RestClient?) {
         // TODO use this entry point as the time to launch sync operations b/c at this point the rest client is ready.
-        vm.sync(syncDownOnly = true)
+        vm.handleEvent(ContactsActivityUiEvents.Sync)
     }
 
     override fun onLogoutComplete() {

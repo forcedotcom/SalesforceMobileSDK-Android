@@ -3,6 +3,10 @@ package com.salesforce.samples.mobilesynccompose.model.contacts
 import com.salesforce.androidsdk.mobilesync.model.SalesforceObject
 import com.salesforce.androidsdk.mobilesync.target.SyncTarget
 import com.salesforce.androidsdk.mobilesync.util.Constants
+import com.salesforce.samples.mobilesynccompose.R.string.*
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailFieldViewModel
+import com.salesforce.samples.mobilesynccompose.contacts.vm.EditingContact
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ViewingContact
 import org.json.JSONObject
 
 class ContactObject(raw: JSONObject) : SalesforceObject(raw) {
@@ -51,3 +55,54 @@ class ContactObject(raw: JSONObject) : SalesforceObject(raw) {
         const val KEY_TITLE = "Title"
     }
 }
+
+fun ContactObject.toViewContactUiState(): ViewingContact = ViewingContact(
+    contactObject = this,
+    firstNameVm = toFirstNameVm(),
+    lastNameVm = toLastNameVm(),
+    titleVm = toTitleVm()
+)
+
+fun ContactObject.toEditContactUiState(): EditingContact = EditingContact(
+    originalContactObj = this,
+    firstNameVm = toFirstNameVm(),
+    lastNameVm = toLastNameVm(),
+    titleVm = toTitleVm(),
+)
+
+private fun ContactObject.toFirstNameVm(): ContactDetailFieldViewModel =
+    ContactDetailFieldViewModel(
+        fieldValue = firstName,
+        isInErrorState = false,
+        canBeEdited = true,
+        labelRes = label_contact_first_name,
+        helperRes = null,
+        placeholderRes = label_contact_first_name,
+        onFieldValueChange = { newValue -> this.copy(firstName = newValue) }
+    )
+
+private fun ContactObject.toLastNameVm(): ContactDetailFieldViewModel {
+    val isError = lastName.isBlank()
+    val help = if (isError) help_cannot_be_blank else null
+
+    return ContactDetailFieldViewModel(
+        fieldValue = lastName,
+        isInErrorState = isError,
+        canBeEdited = true,
+        labelRes = label_contact_last_name,
+        helperRes = help,
+        placeholderRes = label_contact_last_name,
+        onFieldValueChange = { newValue -> this.copy(lastName = newValue) }
+    )
+}
+
+private fun ContactObject.toTitleVm(): ContactDetailFieldViewModel =
+    ContactDetailFieldViewModel(
+        fieldValue = title,
+        isInErrorState = false, // cannot be in error state
+        canBeEdited = true,
+        labelRes = label_contact_title,
+        helperRes = null,
+        placeholderRes = label_contact_title,
+        onFieldValueChange = { newValue -> this.copy(title = newValue) }
+    )

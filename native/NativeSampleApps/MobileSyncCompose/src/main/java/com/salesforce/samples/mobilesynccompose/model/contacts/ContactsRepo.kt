@@ -23,7 +23,7 @@ interface ContactsRepo {
 }
 
 class DefaultContactsRepo(
-    account: UserAccount,
+    account: UserAccount?, // TODO this shouldn't be nullable. The logic whether to instantiate this object should be moved higher up, but this is a quick fix to get things testable
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ContactsRepo {
 

@@ -1,144 +1,106 @@
 package com.salesforce.samples.mobilesynccompose.contacts.vm
 
-import com.salesforce.samples.mobilesynccompose.R
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailUiState.ContactSelected
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailUiState.NoContactSelected
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityUiEvents.*
+import com.salesforce.samples.mobilesynccompose.contacts.vm.DetailComponentUiEvents.FieldValuesChanged
+import com.salesforce.samples.mobilesynccompose.contacts.vm.DetailComponentUiEvents.SaveClick
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
+import com.salesforce.samples.mobilesynccompose.model.contacts.toEditContactUiState
+import com.salesforce.samples.mobilesynccompose.model.contacts.toViewContactUiState
 
-interface ContactDetailViewModel : ContactDetailsChangedHandler {
-    val uiState: StateFlow<ContactDetailUiState>
-
-    fun onBack()
-    fun onDeleteClick()
-    fun onEditClick()
-    fun onSaveClick()
+sealed interface ContactDetailUiState : Iterable<ContactDetailFieldViewModel> {
+    fun calculateProposedTransition(event: ContactsActivityUiEvents): ContactDetailUiState
+    fun calculateProposedTransition(event: DetailComponentUiEvents): ContactDetailUiState
 }
 
-sealed interface ContactDetailUiState {
-    data class ContactSelected(
-        val curContactDetails: ContactObject,
-        val isInEditMode: Boolean,
-        val firstNameVm: ContactDetailFieldViewModel,
-        val lastNameVm: ContactDetailFieldViewModel,
-        val nameVm: ContactDetailFieldViewModel,
-        val titleVm: ContactDetailFieldViewModel,
-    ) : ContactDetailUiState {
-        val isModified: Boolean = firstNameVm.fieldValue != curContactDetails.firstName ||
-                lastNameVm.fieldValue != curContactDetails.lastName ||
-                titleVm.fieldValue != curContactDetails.title
-    }
+data class EditingContact(
+    val originalContactObj: ContactObject,
+    val firstNameVm: ContactDetailFieldViewModel,
+    val lastNameVm: ContactDetailFieldViewModel,
+    val titleVm: ContactDetailFieldViewModel,
+) : ContactDetailUiState {
+    private val vmList = listOf(
+        firstNameVm,
+        lastNameVm,
+        titleVm
+    )
 
-    object NoContactSelected : ContactDetailUiState
-}
-
-class DefaultContactDetailViewModel(
-    contactSelectionEvents: Flow<ContactObject?>,
-    parentScope: CoroutineScope,
-    private val onBackDelegate: () -> Unit
-) : ContactDetailViewModel {
-
-    private val mutUiState: MutableStateFlow<ContactDetailUiState> =
-        MutableStateFlow(NoContactSelected)
-
-    override val uiState: StateFlow<ContactDetailUiState> get() = mutUiState
-
-    init {
-        parentScope.launch {
-            contactSelectionEvents.collect {
-                if (it == null) {
-                    mutUiState.emit(NoContactSelected)
-                } else {
-                    mutUiState.emit(
-                        ContactSelected(
-                            curContactDetails = it,
-                            isInEditMode = false,
-                            firstNameVm = it.toFirstNameVm(),
-                            lastNameVm = it.toLastNameVm(),
-                            nameVm = it.toNameVm(),
-                            titleVm = it.toTitleVm()
-                        )
-                    )
-                }
-            }
+    override fun calculateProposedTransition(event: ContactsActivityUiEvents): ContactDetailUiState =
+        when (event) {
+            ContactCreate -> TODO("EditingContact -> ContactCreate")
+            is ContactDelete -> TODO("EditingContact -> ContactDelete")
+            is ContactEdit -> TODO("EditingContact -> ContactEdit")
+            is ContactView -> TODO("EditingContact -> ContactView")
+            NavBack -> TODO("EditingContact -> NavBack")
+            NavUp -> TODO("EditingContact -> NavUp")
+            else -> this
         }
-    }
 
-    override fun onBack() {
-        onBackDelegate()
-    }
+    override fun calculateProposedTransition(event: DetailComponentUiEvents): ContactDetailUiState =
+        when (event) {
+            is FieldValuesChanged -> {
+                event.newObject.toEditContactUiState()
+            }
+            SaveClick -> TODO("EditingContact -> SaveClick")
+        }
 
-    override fun onDeleteClick() {
-        TODO("onDeleteClick")
-    }
+    override fun iterator(): Iterator<ContactDetailFieldViewModel> = vmList.iterator()
 
-    override fun onEditClick() {
-        TODO("onEditClick")
-    }
-
-    override fun onSaveClick() {
-        TODO("onSaveClick")
-    }
-
-    override fun onFirstNameChanged(newValue: String) {
-        TODO("Not yet implemented")
-    }
-
-    override fun onMiddleNameChanged(newValue: String) {
-        TODO("Not yet implemented")
-    }
-
-    override fun onLastNameChanged(newValue: String) {
-        TODO("Not yet implemented")
-    }
-
-    override fun onNameChanged(newValue: String) {
-        TODO("onNameChanged")
-    }
-
-    override fun onTitleChanged(newValue: String) {
-        TODO("onTitleChanged")
-    }
-
+    fun toViewContactState() = ViewingContact(originalContactObj, firstNameVm, lastNameVm, titleVm)
 }
 
-private fun ContactObject.toFirstNameVm(): ContactDetailFieldViewModel =
-    ContactDetailFieldViewModel(
-        fieldValue = firstName,
-        isInErrorState = false,
-        helperRes = null
+data class ViewingContact(
+    val contactObject: ContactObject,
+    val firstNameVm: ContactDetailFieldViewModel,
+    val lastNameVm: ContactDetailFieldViewModel,
+    val titleVm: ContactDetailFieldViewModel,
+) : ContactDetailUiState {
+    private val vmList = listOf(
+        firstNameVm,
+        lastNameVm,
+        titleVm
     )
 
-private fun ContactObject.toLastNameVm(): ContactDetailFieldViewModel {
-    val isError = lastName.isBlank()
-    val help = if (isError) R.string.help_cannot_be_blank else null
+    override fun calculateProposedTransition(event: ContactsActivityUiEvents): ContactDetailUiState =
+        when (event) {
+            ContactCreate -> TODO("ViewingContact -> ContactCreate")
+            is ContactDelete -> TODO("ViewingContact -> ContactDelete")
+            is ContactEdit -> event.contact.toEditContactUiState()
+            is ContactView -> event.contact.toViewContactUiState()
+            else -> this
+        }
 
-    return ContactDetailFieldViewModel(
-        fieldValue = lastName,
-        isInErrorState = isError,
-        helperRes = help
-    )
+    override fun calculateProposedTransition(event: DetailComponentUiEvents): ContactDetailUiState =
+        when (event) {
+            is FieldValuesChanged -> TODO("ViewingContact -> FieldValuesChanged")
+            SaveClick -> TODO("ViewingContact -> SaveClick")
+        }
+
+    override fun iterator(): Iterator<ContactDetailFieldViewModel> = vmList.iterator()
+
+    fun toEditContactState() = EditingContact(contactObject, firstNameVm, lastNameVm, titleVm)
 }
 
-private fun ContactObject.toNameVm(): ContactDetailFieldViewModel {
-    val isError = name.isBlank()
-    val help = if (isError) R.string.help_cannot_be_blank else null
+object NoContactSelected : ContactDetailUiState {
+    private val vmList = emptyList<ContactDetailFieldViewModel>()
+    override fun calculateProposedTransition(event: ContactsActivityUiEvents): ContactDetailUiState =
+        when (event) {
+            ContactCreate -> TODO("NoContactSelected -> ContactCreate")
+            is ContactDelete -> TODO("NoContactSelected -> ContactDelete")
+            is ContactEdit -> event.contact.toEditContactUiState()
+            is ContactView -> event.contact.toViewContactUiState()
+            InspectDb -> TODO("NoContactSelected -> InspectDb")
+            Logout -> TODO("NoContactSelected -> Logout")
+            NavBack -> TODO("NoContactSelected -> NavBack")
+            NavUp -> TODO("NoContactSelected -> NavUp")
+            SwitchUser -> TODO("NoContactSelected -> SwitchUser")
+            else -> this
+        }
 
-    return ContactDetailFieldViewModel(
-        fieldValue = name,
-        isInErrorState = isError,
-        helperRes = help
-    )
+    override fun calculateProposedTransition(event: DetailComponentUiEvents): ContactDetailUiState =
+        when (event) {
+            is FieldValuesChanged -> TODO("NoContactSelected -> FieldValuesChanged")
+            SaveClick -> TODO("NoContactSelected -> SaveClick")
+        }
+
+    override fun iterator(): Iterator<ContactDetailFieldViewModel> = vmList.iterator()
 }
-
-private fun ContactObject.toTitleVm(): ContactDetailFieldViewModel =
-    ContactDetailFieldViewModel(
-        fieldValue = title,
-        isInErrorState = false, // cannot be in error state
-        helperRes = null
-    )
