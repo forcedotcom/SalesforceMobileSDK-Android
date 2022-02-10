@@ -36,7 +36,10 @@ import org.json.JSONObject;
 
 /**
  * Object representation for soup specifications, such as soup name and features.
+ *
+ * Deprecated: we are removing external storage and soup spec in 11.0
  */
+@Deprecated
 public class SoupSpec {
     /** Soup features **/
     public static final String FEATURE_EXTERNAL_STORAGE = "externalStorage";

@@ -29,29 +29,23 @@ package com.salesforce.androidsdk.smartstore.store;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.TextUtils;
-
 import androidx.annotation.NonNull;
-
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.store.LongOperation.LongOperationType;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
-import com.salesforce.androidsdk.util.JSONObjectHelper;
-
-import net.sqlcipher.database.SQLiteDatabase;
-import net.sqlcipher.database.SQLiteOpenHelper;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import net.sqlcipher.database.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteOpenHelper;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * Smart store
@@ -297,7 +291,10 @@ public class SmartStore  {
 	 * Create rows in soup index map table for indexSpecs
 	 * @param soupSpec
 	 * @param indexSpecs
+	 *
+	 * Deprecated: we are removing external storage and soup spec in 11.0 - use registerSoup(String soupName, IndexSpec[] indexSpecs) instead
 	 */
+	@Deprecated
 	public void registerSoupWithSpec(final SoupSpec soupSpec, final IndexSpec[] indexSpecs) {
 		final SQLiteDatabase db = getDatabase();
 		synchronized (db) {
@@ -552,7 +549,10 @@ public class SmartStore  {
 	 * @param indexSpecs array of index specs
 	 * @param reIndexData
 	 * @throws JSONException
+	 *
+	 * Deprecated: we are removing external storage and soup spec in 11.0 - use alterSoup(String soupName, IndexSpec[] indexSpecs) instead
 	 */
+	@Deprecated
 	public void alterSoup(String soupName, SoupSpec soupSpec, IndexSpec[] indexSpecs,
 			boolean reIndexData) throws JSONException {
 		AlterSoupLongOperation operation = new AlterSoupLongOperation(this, soupName, soupSpec, indexSpecs, reIndexData);
@@ -790,7 +790,10 @@ public class SmartStore  {
 	 * Returns the entire SoupSpec of the given soup.
 	 * @param soupName
 	 * @return SoupSpec for given soup name.
+	 *
+	 * Deprecated: we are removing external storage and soup spec in 11.0
 	 */
+	@Deprecated
 	public SoupSpec getSoupSpec(String soupName) {
 		final SQLiteDatabase db = getDatabase();
 		List<String> features = DBHelper.getInstance(db).getFeatures(db, soupName);
@@ -798,19 +801,41 @@ public class SmartStore  {
 	}
 
     /**
-	 * Run a query given by its query Spec, only returned results from selected page
-	 * @param querySpec
-	 * @param pageIndex
+	 * Run a query given by its query spec
+	 * Returns results from selected page
+	 *
+	 * @param querySpec the query to run
+	 * @param pageIndex the page to return
      * @throws JSONException
 	 */
 	public JSONArray query(QuerySpec querySpec, int pageIndex) throws JSONException {
+		return queryWithArgs(querySpec, pageIndex, null);
+	}
+
+	/**
+	 * Run a query given by its query spec with optional "where args" (i.e. bind args)
+     * Provided bind args will be substituted to the ? found in the query
+	 * NB: Bind args are only supported for smart queries
+	 * Returns results from selected page
+	 *
+	 * @param querySpec the query to run
+	 * @param pageIndex the page to return
+	 * @param whereArgs the bind args (optional - only supported for smart queries)
+	 *
+	 * @throws JSONException
+	 */
+	public JSONArray queryWithArgs(QuerySpec querySpec, int pageIndex, String... whereArgs) throws JSONException {
+		if (whereArgs != null && querySpec.queryType != QueryType.smart) {
+			throw new SmartStoreException("whereArgs can only be provided for smart queries");
+		}
+
 		JSONArray resultAsArray = new JSONArray();
-		runQuery(resultAsArray, null, querySpec, pageIndex);
+		runQuery(resultAsArray, null, querySpec, pageIndex, whereArgs);
 		return resultAsArray;
 	}
 	/**
-	 * Run a query given by its query Spec, only returned results from selected page
-	 * without deserializing any JSON
+	 * Run a query given by its query Spec
+	 * Returns results from selected page without deserializing any JSON
 	 *
 	 * @param resultBuilder string builder to which results are appended
 	 * @param querySpec
@@ -818,7 +843,7 @@ public class SmartStore  {
 	 */
 	public void queryAsString(StringBuilder resultBuilder, QuerySpec querySpec, int pageIndex) {
 		try {
-			runQuery(null, resultBuilder, querySpec, pageIndex);
+			runQuery(null, resultBuilder, querySpec, pageIndex, null);
 		}
 		catch (JSONException e) {
 			// shouldn't happen since we call runQuery with a string builder
@@ -826,7 +851,7 @@ public class SmartStore  {
 		}
 	}
 
-	private void runQuery(JSONArray resultAsArray, StringBuilder resultAsStringBuilder, QuerySpec querySpec, int pageIndex) throws JSONException {
+	private void runQuery(JSONArray resultAsArray, StringBuilder resultAsStringBuilder, QuerySpec querySpec, int pageIndex, String... whereArgs) throws JSONException {
 		boolean computeResultAsString = resultAsStringBuilder != null;
 
 		final SQLiteDatabase db = getDatabase();
@@ -840,7 +865,7 @@ public class SmartStore  {
 			String limit = offsetRows + "," + numberRows;
 			Cursor cursor = null;
 			try {
-				cursor = DBHelper.getInstance(db).limitRawQuery(db, sql, limit, querySpec.getArgs());
+				cursor = DBHelper.getInstance(db).limitRawQuery(db, sql, limit, querySpec.getArgs() != null ? querySpec.getArgs() : whereArgs);
 
 				if (computeResultAsString) {
 					resultAsStringBuilder.append("[");
@@ -1743,7 +1768,10 @@ public class SmartStore  {
 	 * @param soupName Name of the soup to determine external storage enablement.
 	 *
 	 * @return  True if soup uses external storage; false otherwise.
+	 *
+	 * Deprecated: we are removing external storage and soup spec in 11.0
 	 */
+	@Deprecated
 	public boolean usesExternalStorage(String soupName) {
 		final SQLiteDatabase db = getDatabase();
 		synchronized (db) {

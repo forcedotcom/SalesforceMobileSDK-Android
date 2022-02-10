@@ -45,7 +45,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -157,6 +160,30 @@ public class EventStoreManagerTest {
         Assert.assertEquals("Number of events stored should be 2", 2, events.size());
         Assert.assertTrue("Stored event should be the same as generated event", events.contains(event1));
         Assert.assertTrue("Stored event should be the same as generated event", events.contains(event2));
+    }
+
+    /**
+     * Test for iterating over all stored events.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testIterateAllEvents() throws Exception {
+        final Set<InstrumentationEvent> events = new HashSet<>();
+        events.add(createTestEvent());
+        events.add(createTestEvent());
+        for (InstrumentationEvent event : events) {
+            storeManager.storeEvent(event);
+        }
+
+        final Iterable<InstrumentationEvent> eventsIterable = storeManager.iterateAllEvents();
+        Assert.assertNotNull("Iterable of events stored should not be null", eventsIterable);
+        final Iterator<InstrumentationEvent> iterator = eventsIterable.iterator();
+        Assert.assertTrue("Iterator should return the first event", iterator.hasNext());
+        Assert.assertTrue("Stored event should be the same as generated event", events.contains(iterator.next()));
+        Assert.assertTrue("Iterator should return the second event", iterator.hasNext());
+        Assert.assertTrue("Stored event should be the same as generated event", events.contains(iterator.next()));
+        Assert.assertFalse("Iterator should only return two events", iterator.hasNext());
     }
 
     /**

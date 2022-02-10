@@ -26,9 +26,14 @@
  */
 package com.salesforce.samples.restexplorer;
 
+import android.app.Activity;
 import android.app.Application;
+import android.content.Context;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.ui.LoginActivity;
+
+import java.util.LinkedHashMap;
 
 /**
  * Application class for the rest explorer app.
@@ -38,7 +43,12 @@ public class RestExplorerApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SalesforceSDKManager.initNative(getApplicationContext(), ExplorerActivity.class);
+		/*
+		 * Extend SalesforceSDKManager to add custom dev menu options to the app.
+		 *
+		 * Normal use would be: SalesforceSDKManager.initNative(getApplicationContext(), ExplorerActivity.class);
+		 */
+		RestExplorerSDKManager.initNative(getApplicationContext(), ExplorerActivity.class);
 
 		/*
          * Uncomment the following line to enable IDP login flow. This will allow the user to
@@ -54,5 +64,51 @@ public class RestExplorerApp extends Application {
 		 * for the key 'androidPushNotificationClientId'.
 		 */
 		// SalesforceSDKManager.getInstance().setPushNotificationReceiver(pnInterface);
+	}
+
+	static class RestExplorerSDKManager extends SalesforceSDKManager {
+		LinkedHashMap<String, DevActionHandler> devActions;
+
+		/**
+		 * Protected constructor.
+		 *
+		 * @param context       Application context.
+		 * @param mainActivity  Activity that should be launched after the login flow.
+		 * @param loginActivity Login activity.
+		 */
+		private RestExplorerSDKManager(Context context, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+			super(context, mainActivity, loginActivity);
+		}
+
+		/**
+		 * Initializes required components. Native apps must call one overload of
+		 * this method before using the Salesforce Mobile SDK.
+		 *
+		 * @param context Application context.
+		 * @param mainActivity Activity that should be launched after the login flow.
+		 */
+		public static void initNative(Context context, Class<? extends Activity> mainActivity) {
+			if (SalesforceSDKManager.INSTANCE == null) {
+				SalesforceSDKManager.INSTANCE = new RestExplorerSDKManager(context, mainActivity, LoginActivity.class);
+			}
+			initInternal(context);
+		}
+
+		@Override
+		public LinkedHashMap<String, DevActionHandler> getDevActions(Activity frontActivity) {
+			if (devActions == null) {
+				devActions = super.getDevActions(frontActivity);
+			}
+
+			return devActions;
+		}
+
+		public void addDevAction(Activity frontActivity, String name, DevActionHandler handler) {
+			if (devActions == null) {
+				devActions = super.getDevActions(frontActivity);
+			}
+
+			devActions.put(name, handler);
+		}
 	}
 }

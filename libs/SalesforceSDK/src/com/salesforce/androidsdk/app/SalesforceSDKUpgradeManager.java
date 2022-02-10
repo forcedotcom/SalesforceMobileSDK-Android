@@ -34,8 +34,6 @@ import android.content.SharedPreferences;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
-import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.util.List;
@@ -93,9 +91,6 @@ public class SalesforceSDKUpgradeManager {
         try {
             final String majorVersionNum = installedVersion.substring(0, 3);
             double installedVerDouble = Double.parseDouble(majorVersionNum);
-            if (installedVerDouble < 8.2) {
-                upgradeTo8Dot2();
-            }
             if (installedVerDouble < 9.2) {
                 upgradeTo9Dot2();
             }
@@ -133,28 +128,6 @@ public class SalesforceSDKUpgradeManager {
         final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(VERSION_SHARED_PREF,
                 Context.MODE_PRIVATE);
         return sp.getString(key, "");
-    }
-
-    private void upgradeTo8Dot2() {
-        ClientManager.upgradeTo8Dot2();
-        migrateAnalyticsData();
-    }
-
-    private void migrateAnalyticsData() {
-        final List<UserAccount> userAccounts = UserAccountManager.getInstance().getAuthenticatedUsers();
-
-        // Migrating an unauthenticated user's analytics data.
-        SalesforceAnalyticsManager.upgradeTo8Dot2(null, SalesforceSDKManager.getInstance().getAppContext());
-
-        // Migrating each individual user's analytics data.
-        if (userAccounts != null) {
-            for (final UserAccount userAccount : userAccounts) {
-                if (userAccount != null) {
-                    SalesforceAnalyticsManager.upgradeTo8Dot2(userAccount,
-                            SalesforceSDKManager.getInstance().getAppContext());
-                }
-            }
-        }
     }
 
     // TODO: Remove upgrade step in Mobile SDK 11.0

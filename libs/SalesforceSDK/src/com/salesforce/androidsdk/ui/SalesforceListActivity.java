@@ -57,11 +57,6 @@ public abstract class SalesforceListActivity extends ListActivity implements Sal
 	}
 
 	@Override
-	public void onUserInteraction() {
-		delegate.onUserInteraction();
-	}
-
-	@Override
 	public void onPause() {
 		super.onPause();
 		delegate.onPause();

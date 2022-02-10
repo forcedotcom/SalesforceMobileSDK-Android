@@ -26,8 +26,9 @@
  */
 package com.salesforce.samples.restexplorer;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
 import android.view.View;
@@ -40,7 +41,10 @@ import android.widget.RadioGroup;
 import android.widget.TabHost;
 import android.widget.TextView;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
@@ -125,6 +129,9 @@ public class ExplorerActivity extends SalesforceActivity {
 		resultText = (TextView) findViewById(R.id.result_text);
 		resultText.setMovementMethod(new ScrollingMovementMethod());
         logoutConfirmationDialog = new LogoutDialogFragment();
+
+		((RestExplorerApp.RestExplorerSDKManager) RestExplorerApp.RestExplorerSDKManager.getInstance())
+				.addDevAction(this, "Export Credentials to Clipboard", this::exportCredentials);
 	}
 
 	@Override
@@ -177,17 +184,6 @@ public class ExplorerActivity extends SalesforceActivity {
 	 */
 	public void onGetVersionsClick(View v) {
 		sendRequest(RestRequest.getRequestForVersions());
-	}
-
-	/**
-	 * Called when the "Switch Account" button is clicked.
-	 *
-	 * @param v View that was clicked.
-	 */
-	public void onSwitchAccClick(View v) {
-		final Intent i = new Intent(this, SalesforceSDKManager.getInstance().getAccountSwitcherActivityClass());
-		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-		this.startActivity(i);
 	}
 
 	/**
@@ -584,14 +580,14 @@ public class ExplorerActivity extends SalesforceActivity {
 	}
 
 	/**
-	 * Called when "Logout" button is clicked. Brings up the
-	 * logout confirmation dialog.
+	 * Called when "Dev Menu" button is clicked.
 	 *
 	 * @param v View that was clicked.
 	 */
-	public void onLogoutClick(View v) {
-		logoutConfirmationDialog.show(getFragmentManager(), "LogoutDialog");
+	public void onDevMenuClick(View v) {
+		RestExplorerApp.RestExplorerSDKManager.getInstance().showDevSupportDialog(this);
 	}
+
 
 	/**
 	 * Helper to read a JSON string representing field name-value map.
@@ -755,6 +751,36 @@ public class ExplorerActivity extends SalesforceActivity {
 		printHeader("Info");
 		println(SalesforceSDKManager.getInstance());
 		println(client);
+	}
+
+	/**
+	 * Copies credentials to clipboard.
+	 */
+	private void exportCredentials() {
+		BootConfig config = BootConfig.getBootConfig(this);
+		UserAccount user = UserAccountManager.getInstance().getCurrentUser();
+		HashMap<String, String> credsMap = new HashMap<String, String>();
+		credsMap.put("test_client_id", config.getRemoteAccessConsumerKey());
+		credsMap.put("test_login_domain", user.getLoginServer());
+		credsMap.put("test_redirect_uri", config.getOauthRedirectURI());
+		credsMap.put("refresh_token", user.getRefreshToken());
+		credsMap.put("instance_url", user.getInstanceServer());
+		credsMap.put("identity_url", user.getIdUrl());
+		credsMap.put("access_token", "__NOT_REQUIRED__");
+		credsMap.put("organization_id", user.getOrgId());
+		credsMap.put("username", user.getUsername());
+		credsMap.put("user_id", user.getUserId());
+		credsMap.put("display_name", user.getDisplayName());
+		credsMap.put("photo_url", user.getPhotoUrl());
+
+		if (user.getCommunityUrl() != null) {
+			credsMap.put("community_url", user.getCommunityUrl());
+		}
+
+		String credentials = new JSONObject(credsMap).toString().replaceAll("\\\\", "");
+		ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+		ClipData data = ClipData.newPlainText("credentials", credentials);
+		clipboard.setPrimaryClip(data);
 	}
 
 	/**

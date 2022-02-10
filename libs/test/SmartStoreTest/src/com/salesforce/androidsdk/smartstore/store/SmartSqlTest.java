@@ -28,7 +28,9 @@ package com.salesforce.androidsdk.smartstore.store;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec.Order;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
+import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.util.JSONTestHelper;
 import org.json.JSONArray;
@@ -440,6 +442,31 @@ public class SmartSqlTest extends SmartStoreTestCase {
 
 		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:employeeId}, {employees:address.zipcode} from {employees} where {employees:address.city} = 'San Francisco' order by {employees:employeeId}", 10), 0);
 		JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[\"101\", 94105],[\"103\", 94106]]"), result);
+	}
+
+	@Test
+	public void testSmartQueryUsingWhereArgs() throws JSONException {
+		JSONObject employee101 = createEmployeeWithJsonString("{\"employeeId\":\"101\",\"address\":{\"city\":\"San Francisco\", \"zipcode\":94105}}");
+		JSONObject employee102 = createEmployeeWithJsonString("{\"employeeId\":\"102\",\"address\":{\"city\":\"New York City\", \"zipcode\":10004}}");
+		JSONObject employee103 = createEmployeeWithJsonString("{\"employeeId\":\"103\",\"address\":{\"city\":\"San Francisco\", \"zipcode\":94106}}");
+		JSONObject employee104 = createEmployeeWithJsonString("{\"employeeId\":\"104\",\"address\":{\"city\":\"New York City\", \"zipcode\":10006}}");
+
+		QuerySpec querySpec = QuerySpec.buildSmartQuerySpec("select {employees:employeeId}, {employees:address.zipcode} from {employees} where {employees:address.city} = ? order by {employees:employeeId}", 10);
+		JSONArray result = store.queryWithArgs(querySpec, 0 , "San Francisco");
+		JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[\"101\", 94105],[\"103\", 94106]]"), result);
+		result = store.queryWithArgs(querySpec,0 , "New York City");
+		JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[\"102\", 10004],[\"104\", 10006]]"), result);
+	}
+
+	@Test
+	public void testNonSmartQueryUsingWhereArgs() throws JSONException {
+		QuerySpec querySpec = QuerySpec.buildAllQuerySpec(EMPLOYEES_SOUP, EMPLOYEE_ID, Order.ascending, 10);
+		try {
+			store.queryWithArgs(querySpec, 0, "San Francisco");
+			Assert.fail("SmartStoreException should have been thrown");
+		} catch (SmartStoreException e) {
+			Assert.assertEquals("whereArgs can only be provided for smart queries", e.getMessage());
+		}
 	}
 
 	/**

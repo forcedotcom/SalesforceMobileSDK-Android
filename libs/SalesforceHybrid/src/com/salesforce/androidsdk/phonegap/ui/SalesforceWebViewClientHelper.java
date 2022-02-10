@@ -68,10 +68,10 @@ public class SalesforceWebViewClientHelper {
     /**
      * To be called from shouldOverrideUrlLoading.
      *
-     * @param ctx
-     * @param view
-     * @param url
-     * @return
+     * @param ctx           Context.
+     * @param view          The webview initiating the callback.
+     * @param url           The url of the page.
+     * @return              True if url loading should be overridden, false otherwise.
      */
     public static boolean shouldOverrideUrlLoading(Context ctx,
     		WebView view, String url) {
@@ -116,8 +116,8 @@ public class SalesforceWebViewClientHelper {
     }
 
     /**
-     * @param ctx
-     * @return true if there is a cached version of the app's home page
+     * @param ctx   Context.
+     * @return      true if there is a cached version of the app's home page
      */
     public static boolean hasCachedAppHome(Context ctx) {
     	String cachedAppHomeUrl = getAppHomeUrl(ctx);

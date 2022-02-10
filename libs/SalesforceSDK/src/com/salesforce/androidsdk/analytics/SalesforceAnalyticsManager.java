@@ -35,7 +35,6 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.manager.AnalyticsManager;
 import com.salesforce.androidsdk.analytics.model.DeviceAppAttributes;
 import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
-import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.analytics.store.EventStoreManager;
 import com.salesforce.androidsdk.analytics.transform.AILTNTransform;
 import com.salesforce.androidsdk.analytics.transform.Transform;
@@ -46,13 +45,11 @@ import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.File;
-import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -60,6 +57,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 /**
  * This class contains APIs that can be used to interact with
@@ -72,6 +70,7 @@ public class SalesforceAnalyticsManager {
     private static final String ANALYTICS_ON_OFF_KEY = "ailtn_enabled";
     private static final String AILTN_POLICY_PREF = "ailtn_policy";
     private static final int DEFAULT_PUBLISH_FREQUENCY_IN_HOURS = 8;
+    private static final int DEFAULT_BATCH_SIZE = 100;
     private static final String TAG = "AnalyticsManager";
     private static final String UNAUTH_INSTANCE_KEY = "_no_user";
 
@@ -79,12 +78,13 @@ public class SalesforceAnalyticsManager {
     private static boolean sPublishHandlerActive;
     private static ScheduledFuture sScheduler;
     private static int sPublishFrequencyInHours = DEFAULT_PUBLISH_FREQUENCY_IN_HOURS;
+    private static int sEventPublishBatchSize = DEFAULT_BATCH_SIZE;
 
-    private AnalyticsManager analyticsManager;
-    private EventStoreManager eventStoreManager;
-    private UserAccount account;
+    private final AnalyticsManager analyticsManager;
+    private final EventStoreManager eventStoreManager;
+    private final UserAccount account;
     private boolean enabled;
-    private Map<Class<? extends Transform>, Class<? extends AnalyticsPublisher>> remotes;
+    private final Map<Class<? extends Transform>, Class<? extends AnalyticsPublisher>> remotes;
 
     /**
      * Returns the instance of this class associated with an unauthenticated user context.
@@ -201,6 +201,20 @@ public class SalesforceAnalyticsManager {
     }
 
     /**
+     * Set the batch size for publishing instrumentation events. Will limit the
+     * number of events sent in a single network request to the specified batch
+     * size. Will silently return if batch size is less than or equal to zero.
+     *
+     * @param batchSize Event batch size
+     */
+    public static synchronized void setEventPublishBatchSize(int batchSize) {
+        if (batchSize <= 0) {
+            return;
+        }
+        sEventPublishBatchSize = batchSize;
+    }
+
+    /**
      * Returns the publish frequency currently set, in hours.
      *
      * @return Publish frequency, in hours.
@@ -274,7 +288,7 @@ public class SalesforceAnalyticsManager {
      * This method should NOT be called from the main thread.
      */
     public synchronized void publishAllEvents() {
-        final List<InstrumentationEvent> events = eventStoreManager.fetchAllEvents();
+        final Iterable<InstrumentationEvent> events = eventStoreManager.iterateAllEvents();
         publishEvents(events);
     }
 
@@ -284,49 +298,63 @@ public class SalesforceAnalyticsManager {
      * deleted if publishing was successful for all registered endpoints.
      * This method should NOT be called from the main thread.
      *
-     * @param events List of events.
+     * @param events Iterable of events.
      */
-    public synchronized void publishEvents(List<InstrumentationEvent> events) {
-        if (events == null || events.size() == 0) {
+    public synchronized void publishEvents(Iterable<InstrumentationEvent> events) {
+        if (events == null) {
             return;
         }
-        final List<String> eventsIds = new ArrayList<>();
+        final Set<String> eventsIds = new HashSet<>();
         boolean success = true;
-        final Set<Class<? extends Transform>> remoteKeySet = remotes.keySet();
-        for (final Class<? extends Transform> transformClass : remoteKeySet) {
-            Transform transformer = null;
+        final Set<Map.Entry<Class<? extends Transform>, Class<? extends AnalyticsPublisher>>> remoteKeySet = remotes.entrySet();
+        for (final Map.Entry<Class<? extends Transform>, Class<? extends AnalyticsPublisher>> remoteEntry : remoteKeySet) {
+            Transform transformer;
             try {
-                transformer = transformClass.newInstance();
+                transformer = remoteEntry.getKey().newInstance();
             } catch (Exception e) {
                 SalesforceSDKLogger.e(TAG, "Exception thrown while instantiating class", e);
+                continue;
             }
-            if (transformer != null) {
-                final JSONArray eventsJSONArray = new JSONArray();
-                for (final InstrumentationEvent event : events) {
-                    eventsIds.add(event.getEventId());
-                    final JSONObject eventJSON = transformer.transform(event);
-                    if (eventJSON != null) {
-                        eventsJSONArray.put(eventJSON);
-                    }
-                }
-                AnalyticsPublisher networkPublisher = null;
-                try {
-                    networkPublisher = remotes.get(transformClass).newInstance();
-                } catch (Exception e) {
-                    SalesforceSDKLogger.e(TAG, "Exception thrown while instantiating class", e);
-                }
-                if (networkPublisher != null) {
-                    boolean networkSuccess = networkPublisher.publish(eventsJSONArray);
 
-                    /*
-                     * Updates the success flag only if all previous requests have been
-                     * successful. This ensures that the operation is marked success only
-                     * if all publishers are successful.
-                     */
-                    if (success) {
-                        success = networkSuccess;
+            AnalyticsPublisher networkPublisher;
+            try {
+                networkPublisher = remoteEntry.getValue().newInstance();
+            } catch (Exception e) {
+                SalesforceSDKLogger.e(TAG, "Exception thrown while instantiating class", e);
+                continue;
+            }
+
+            int eventCount = 0;
+            JSONArray eventsJSONArray = new JSONArray();
+            for (final InstrumentationEvent event : events) {
+                if (event == null) {
+                    continue;
+                }
+                eventsIds.add(event.getEventId());
+                final JSONObject eventJSON = transformer.transform(event);
+                if (eventJSON == null) {
+                    continue;
+                }
+                eventsJSONArray.put(eventJSON);
+
+                // Publish a batch if we've reached the batch size
+                eventCount++;
+                if (eventCount >= sEventPublishBatchSize) {
+                    eventCount = 0;
+
+                    boolean batchSuccess = networkPublisher.publish(eventsJSONArray);
+                    eventsJSONArray = new JSONArray();
+                    success &= batchSuccess;
+                    if (!batchSuccess) {
+                        // Don't bother trying this publisher after the first failure
+                        break;
                     }
                 }
+            }
+
+            // Publish events that didn't get batched
+            if (eventCount > 0) {
+                success &= networkPublisher.publish(eventsJSONArray);
             }
         }
 
@@ -368,6 +396,19 @@ public class SalesforceAnalyticsManager {
             return;
         }
         remotes.put(transformer, publisher);
+    }
+
+    /**
+     * Removes a remote publisher to publish events to.
+     *
+     * @param transformer Transformer class.
+     */
+    void removeRemotePublisher(Class<? extends Transform> transformer) {
+        if (transformer == null) {
+            SalesforceSDKLogger.w(TAG, "Invalid transformer");
+            return;
+        }
+        remotes.remove(transformer);
     }
 
     private SalesforceAnalyticsManager(UserAccount account) {
@@ -452,90 +493,5 @@ public class SalesforceAnalyticsManager {
             }
         };
         return scheduler.scheduleAtFixedRate(publishRunnable, 0, sPublishFrequencyInHours, TimeUnit.HOURS);
-    }
-
-    /**
-     * One time upgrade steps from older versions to Mobile SDK 8.2. Only for internal use!
-     *
-     * @param account User account.
-     * @param context Context.
-     * @deprecated Will be removed in Mobile SDK 10.0.
-     */
-    public static synchronized void upgradeTo8Dot2(UserAccount account, Context context) {
-        final String filenameSuffix = (account != null) ? account.getCommunityLevelFilenameSuffix()
-                : UNAUTH_INSTANCE_KEY;
-        final File rootDir = context.getFilesDir();
-        final List<File> oldEventFiles = getAllEventFiles(rootDir, filenameSuffix);
-        final List<InstrumentationEvent> oldEvents = new ArrayList<>();
-        for (final File file : oldEventFiles) {
-            final InstrumentationEvent event = fetchEvent(file);
-            if (event != null) {
-                oldEvents.add(event);
-                file.delete();
-            }
-        }
-        final SalesforceAnalyticsManager sfAnalyticsManager = new SalesforceAnalyticsManager(account);
-        sfAnalyticsManager.getEventStoreManager().storeEvents(oldEvents);
-    }
-
-    /*
-     * TODO: Exists only for upgrade steps to 8.2. Remove this in Mobile SDK 10.0.
-     */
-    private static InstrumentationEvent fetchEvent(File file) {
-        if (file == null || !file.exists()) {
-            return null;
-        }
-        InstrumentationEvent event = null;
-        String eventString = null;
-        try {
-            String json = Encryptor.getStringFromFile(file);
-            eventString = Encryptor.legacyDecrypt(json,
-                    SalesforceSDKManager.getLegacyEncryptionKey());
-        } catch (Exception ex) {
-            SalesforceSDKLogger.e(TAG, "Exception occurred while attempting to read file contents", ex);
-        }
-        if (!TextUtils.isEmpty(eventString)) {
-            try {
-                final JSONObject jsonObject = new JSONObject(eventString);
-                event = new InstrumentationEvent(jsonObject);
-            } catch (JSONException e) {
-                SalesforceSDKLogger.e(TAG, "Exception occurred while attempting to convert to JSON", e);
-            }
-        }
-        return event;
-    }
-
-    /*
-     * TODO: Exists only for upgrade steps to 8.2. Remove this in Mobile SDK 10.0.
-     */
-    private static List<File> getAllEventFiles(File rootDir, String fileSuffix) {
-        final EventFileFilter fileFilter = new EventFileFilter(fileSuffix);
-        final List<File> files = new ArrayList<>();
-        final File[] listOfFiles = rootDir.listFiles();
-        if (listOfFiles != null) {
-            for (final File file : listOfFiles) {
-                if (file != null && fileFilter.accept(rootDir, file.getName())) {
-                    files.add(file);
-                }
-            }
-        }
-        return files;
-    }
-
-    /*
-     * TODO: Exists only for upgrade steps to 8.2. Remove this in Mobile SDK 10.0.
-     */
-    private static class EventFileFilter implements FilenameFilter {
-
-        private String fileSuffix;
-
-        EventFileFilter(String fileSuffix) {
-            this.fileSuffix = fileSuffix;
-        }
-
-        @Override
-        public boolean accept(File dir, String filename) {
-            return (filename != null && filename.endsWith(fileSuffix));
-        }
     }
 }

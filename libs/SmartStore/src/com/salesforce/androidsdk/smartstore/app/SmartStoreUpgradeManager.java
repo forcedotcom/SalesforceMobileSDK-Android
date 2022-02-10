@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.smartstore.app;
 
 import com.salesforce.androidsdk.app.SalesforceSDKUpgradeManager;
-import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 
 /**
@@ -80,9 +79,6 @@ public class SmartStoreUpgradeManager extends SalesforceSDKUpgradeManager {
         try {
             final String majorVersionNum = installedVersion.substring(0, 3);
             double installedVerDouble = Double.parseDouble(majorVersionNum);
-            if (installedVerDouble < 8.2) {
-                upgradeTo8Dot2();
-            }
         } catch (Exception e) {
             SmartStoreLogger.e(TAG, "Failed to parse installed version.");
         }
@@ -95,9 +91,5 @@ public class SmartStoreUpgradeManager extends SalesforceSDKUpgradeManager {
      */
     public String getInstalledSmartStoreVersion() {
         return getInstalledVersion(SMART_STORE_KEY);
-    }
-
-    private void upgradeTo8Dot2() {
-        DBOpenHelper.upgradeTo8Dot2();
     }
 }

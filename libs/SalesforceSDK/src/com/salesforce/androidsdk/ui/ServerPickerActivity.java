@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import static java.security.AccessController.getContext;
+
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.FragmentManager;
@@ -212,9 +214,9 @@ public class ServerPickerActivity extends Activity implements
     	final SalesforceServerRadioButton rb = new SalesforceServerRadioButton(this,
     			server.name, server.url, server.isCustom);
         boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
-        int textColor = getResources().getColor(isDarkTheme ? R.color.sf__text_color_dark : R.color.sf__text_color);
+        int textColor = getColor(isDarkTheme ? R.color.sf__text_color_dark : R.color.sf__text_color);
     	rb.setTextColor(textColor);
-    	rb.getButtonDrawable().setTint(getResources().getColor(R.color.sf__primary_color));
+    	rb.getButtonDrawable().setTint(getColor(R.color.sf__primary_color));
     	radioGroup.addView(rb);
         ((ScrollView) radioGroup.getParent()).scrollTo(0, radioGroup.getBottom());
     }

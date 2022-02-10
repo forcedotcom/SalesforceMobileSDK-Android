@@ -10,14 +10,14 @@ buildscript {
   }
 
   dependencies {
-    classpath 'com.android.tools.build:gradle:7.0.2'
+    classpath 'com.android.tools.build:gradle:7.1.0'
     classpath 'io.github.gradle-nexus:publish-plugin:1.1.0'
   }
 }
 
 allprojects {
   group = 'com.salesforce.mobilesdk'
-  version = '9.2.1'
+  version = '10.0.0'
   repositories {
     mavenLocal()
     maven {

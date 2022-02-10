@@ -2,8 +2,8 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.salesforce.androidsdk" 
-	android:versionCode="75"
-	android:versionName="9.2.1">
+	android:versionCode="76"
+	android:versionName="10.0.0.dev">
 
     <application>
 
@@ -111,7 +111,10 @@
     <uses-permission android:name="android.permission.USE_CREDENTIALS" />
     <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
 
-    <!-- USE_FINGERPRINT is available from API 23 to API 27 and should be removed once minAPI > 27 -->
+    <!--
+        USE_FINGERPRINT is available from API 23 to API 27
+        TODO: should be removed once minAPI > 27
+    -->
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
 
     <!-- USE_BIOMETRIC is available on API 28 and higher -->

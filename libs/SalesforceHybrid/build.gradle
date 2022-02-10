@@ -10,8 +10,8 @@ apply plugin: 'com.android.library'
 dependencies {
   api project(':libs:MobileSync')
   api 'org.apache.cordova:framework:10.1.0'
-  api 'androidx.appcompat:appcompat:1.3.1'
-  api 'androidx.appcompat:appcompat-resources:1.3.1'
+  api 'androidx.appcompat:appcompat:1.4.0'
+  api 'androidx.appcompat:appcompat-resources:1.4.0'
   api 'androidx.webkit:webkit:1.4.0'
   androidTestImplementation 'androidx.test:runner:1.4.0'
   androidTestImplementation 'androidx.test:rules:1.4.0'
@@ -19,11 +19,11 @@ dependencies {
 }
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 32
 
     defaultConfig {
-        targetSdkVersion 30
-        minSdkVersion 23
+        targetSdkVersion 32
+        minSdkVersion 24
     }
 
   buildTypes {
@@ -49,26 +49,25 @@ android {
       res.srcDirs = ['../test/SalesforceHybridTest/res']
     }
   }
-  defaultConfig {
+    packagingOptions {
+        resources {
+            excludes += ['META-INF/LICENSE', 'META-INF/LICENSE.txt', 'META-INF/DEPENDENCIES', 'META-INF/NOTICE']
+        }
+    }
+    defaultConfig {
     testApplicationId "com.salesforce.androidsdk.salesforcehybrid.tests"
     testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
   }
-  packagingOptions {
-    exclude 'META-INF/LICENSE'
-    exclude 'META-INF/LICENSE.txt'
-    exclude 'META-INF/DEPENDENCIES'
-    exclude 'META-INF/NOTICE'
-  }
-  
-  lintOptions {
-    xmlReport true
-    abortOnError false
-  }
+    lint {
+        abortOnError false
+        xmlReport true
+    }
+
 }
 
 ext {
   PUBLISH_GROUP_ID = 'com.salesforce.mobilesdk'
-  PUBLISH_VERSION = '9.2.1'
+  PUBLISH_VERSION = '10.0.0'
   PUBLISH_ARTIFACT_ID = 'SalesforceHybrid'
 }
 

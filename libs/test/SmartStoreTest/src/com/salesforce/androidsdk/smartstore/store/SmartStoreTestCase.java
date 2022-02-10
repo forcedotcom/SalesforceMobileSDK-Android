@@ -180,9 +180,9 @@ public abstract class SmartStoreTestCase {
         JSONObject explainQueryPlan = store.getLastExplainQueryPlan();
         String soupTableName = getSoupTableName(soupName);
         String indexName = soupTableName + "_" + index + "_idx";
-        String expectedDetailPrefix = String.format("%s TABLE %s USING %sINDEX %s", dbOperation, soupTableName, covering ? "COVERING " : "", indexName);
+        String expectedDetailPrefix = String.format("%s %s USING %sINDEX %s", dbOperation, soupTableName, covering ? "COVERING " : "", indexName);
         String detail = explainQueryPlan.getJSONArray(DBHelper.EXPLAIN_ROWS).getJSONObject(0).getString("detail");
-		Assert.assertTrue("Wrong query plan:" + detail, detail.startsWith(expectedDetailPrefix));
+		Assert.assertTrue("Query plan: " + detail + " - not starting with " + expectedDetailPrefix, detail.startsWith(expectedDetailPrefix));
     }
 
 	protected void checkFileSystem(String soupName, long[] expectedIds, boolean shouldExist) {

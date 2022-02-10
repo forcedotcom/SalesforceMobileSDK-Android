@@ -45,6 +45,7 @@ import java.util.List;
  * @author bpage
  */
 public class ScreenLockManager {
+
     public static final String MOBILE_POLICY_PREF = "mobile_policy";
     public static final String SCREEN_LOCK = "screen_lock";
 
@@ -100,25 +101,30 @@ public class ScreenLockManager {
     /**
      * Screen lock specific cleanup for account logout/removal.
      *
-     * @param account the account being removed
+     * @param account The account being removed.
      */
     public void cleanUp(UserAccount account) {
-        // CleanUp and remove Lock for account.
-        Context ctx = SalesforceSDKManager.getInstance().getAppContext();
-        SharedPreferences accountPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
-                + account.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
-        accountPrefs.edit().remove(SCREEN_LOCK).apply();
 
-        // Determine if any other users still need ScreenLock.
-        List<UserAccount> accounts = SalesforceSDKManager.getInstance()
+        // Clean up and remove lock for account.
+        final Context ctx = SalesforceSDKManager.getInstance().getAppContext();
+        if (account != null) {
+            final SharedPreferences accountPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
+                    + account.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
+            accountPrefs.edit().remove(SCREEN_LOCK).apply();
+        }
+
+        // Determine if any other users still need Screen Lock.
+        final List<UserAccount> accounts = SalesforceSDKManager.getInstance()
                 .getUserAccountManager().getAuthenticatedUsers();
         if (accounts != null) {
             accounts.remove(account);
-            for (UserAccount mAccount : accounts) {
-                accountPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
-                        + mAccount.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
-                if (accountPrefs.getBoolean(SCREEN_LOCK, false)) {
-                    return;
+            for (final UserAccount mAccount : accounts) {
+                if (mAccount != null) {
+                    final SharedPreferences accountPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
+                            + mAccount.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
+                    if (accountPrefs.getBoolean(SCREEN_LOCK, false)) {
+                        return;
+                    }
                 }
             }
         }

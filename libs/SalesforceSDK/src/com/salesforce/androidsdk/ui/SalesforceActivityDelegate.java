@@ -106,11 +106,6 @@ public class SalesforceActivityDelegate {
         }
     }
 
-    /*
-     * @deprecated Will be removed in Mobile SDK 10.0.
-     */
-    public void onUserInteraction() { }
-
     public void onPause() { }
 
     public void onDestroy() {
