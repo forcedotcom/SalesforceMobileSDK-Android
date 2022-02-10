@@ -126,8 +126,19 @@ class DefaultContactsActivityViewModel(
         viewModelScope.launch {
             eventMutex.lock()
 
-            if (event is ContactsActivityUiEvents.SyncClick) {
-                sync(syncDownOnly = true)
+            when (event) {
+                ContactsActivityUiEvents.ContactCreate -> TODO()
+                is ContactsActivityUiEvents.ContactDelete -> TODO()
+                is ContactsActivityUiEvents.ContactEdit -> TODO()
+                is ContactsActivityUiEvents.ContactView -> TODO()
+                ContactsActivityUiEvents.InspectDbClick -> TODO()
+                ContactsActivityUiEvents.LogoutClick -> TODO()
+                ContactsActivityUiEvents.NavBack -> TODO()
+                ContactsActivityUiEvents.NavUp -> TODO()
+                ContactsActivityUiEvents.SwitchUserClick -> TODO()
+                ContactsActivityUiEvents.SyncClick -> {
+                    sync(syncDownOnly = true)
+                }
             }
 
             val detailTransition =
@@ -144,6 +155,20 @@ class DefaultContactsActivityViewModel(
     override fun handleEvent(event: DetailComponentUiEvents) {
         viewModelScope.launch {
             eventMutex.lock()
+
+            when (event) {
+                is DetailComponentUiEvents.FieldValuesChanged -> {
+                    /* no-op */
+                }
+                DetailComponentUiEvents.SaveClick -> {
+                    val detailState = uiState.value.contactDetailsUiState
+                    if (detailState is EditingContact) {
+                        viewModelScope.launch {
+                            contactsRepo.saveContact(detailState.updatedContact)
+                        }
+                    }
+                }
+            }
 
             val detailTransition =
                 uiState.value.contactDetailsUiState.calculateProposedTransition(event)

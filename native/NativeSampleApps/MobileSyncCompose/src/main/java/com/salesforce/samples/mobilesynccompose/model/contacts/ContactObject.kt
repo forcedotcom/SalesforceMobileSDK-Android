@@ -5,70 +5,140 @@ import com.salesforce.androidsdk.mobilesync.target.SyncTarget.*
 import com.salesforce.androidsdk.mobilesync.util.Constants
 import org.json.JSONObject
 
-data class Contact(
-    val id: String,
-    val firstName: String,
-    val lastName: String,
-    val title: String,
-    val locallyCreated: Boolean,
-    val locallyDeleted: Boolean,
-    val locallyUpdated: Boolean,
-) {
-    val fullName = "$firstName $lastName"
-    val local: Boolean = locallyCreated || locallyDeleted || locallyUpdated
-
-    //    private constructor(
+class Contact private constructor(raw: JSONObject) {
+//    private constructor(
 //        id: String,
 //        firstName: String,
 //        lastName: String,
 //        title: String,
 //        locallyCreated: Boolean,
 //        locallyDeleted: Boolean,
-//        locallyUpdated: Boolean
-//    ) : this (
-//
-//            )
+//        locallyUpdated: Boolean,
+//    ) : this(
+//        JSONObject()
+//            .putOpt(Constants.ID, id)
+//            .putOpt(KEY_FIRST_NAME, firstName)
+//            .putOpt(KEY_LAST_NAME, lastName)
+//            .putOpt(KEY_TITLE, title)
+//            .putOpt(Constants.NAME, "$firstName $lastName")
+//            .putOpt(LOCALLY_CREATED, locallyCreated)
+//            .putOpt(LOCALLY_DELETED, locallyDeleted)
+//            .putOpt(LOCALLY_UPDATED, locallyUpdated)
+//            .putOpt(LOCAL, locallyCreated || locallyDeleted || locallyUpdated)
+//    )
 
-    val raw: JSONObject by lazy {
-        JSONObject()
+    private val raw = JSONObject(raw.toString())
+
+    val id: String = raw.optString(Constants.ID)
+    val firstName: String = raw.optString(KEY_FIRST_NAME)
+    val lastName: String = raw.optString(KEY_LAST_NAME)
+    val title: String = raw.optString(KEY_TITLE)
+    val fullName: String = raw.optString(Constants.NAME)
+    private val locallyCreated: Boolean = raw.optBoolean(LOCALLY_CREATED, false)
+    private val locallyDeleted: Boolean = raw.optBoolean(LOCALLY_DELETED, false)
+    private val locallyUpdated: Boolean = raw.optBoolean(LOCALLY_UPDATED, false)
+    private val local: Boolean =
+        raw.optBoolean(LOCAL, locallyCreated || locallyDeleted || locallyUpdated)
+
+//    val raw: JSONObject by lazy {
+//        JSONObject()
+//            .putOpt(Constants.ID, id)
+//            .putOpt(KEY_FIRST_NAME, firstName)
+//            .putOpt(KEY_LAST_NAME, lastName)
+//            .putOpt(KEY_TITLE, title)
+//            .putOpt(Constants.NAME, fullName)
+//            .putOpt(LOCALLY_CREATED, locallyCreated)
+//            .putOpt(LOCALLY_DELETED, locallyDeleted)
+//            .putOpt(LOCALLY_UPDATED, locallyUpdated)
+//            .putOpt(LOCAL, local)
+//    }
+
+    fun copy(
+        firstName: String = this.firstName,
+        lastName: String = this.lastName,
+        title: String = this.title
+    ) = copy(
+        firstName = firstName,
+        lastName = lastName,
+        title = title,
+        locallyUpdated = firstName != this.firstName || lastName != this.lastName || title != this.title,
+    )
+
+    private fun copy(
+        firstName: String = this.firstName,
+        lastName: String = this.lastName,
+        title: String = this.title,
+        locallyCreated: Boolean = this.locallyCreated,
+        locallyDeleted: Boolean = this.locallyDeleted,
+        locallyUpdated: Boolean = this.locallyUpdated,
+        local: Boolean = this.local
+    ) = Contact(
+        raw
             .putOpt(Constants.ID, id)
             .putOpt(KEY_FIRST_NAME, firstName)
             .putOpt(KEY_LAST_NAME, lastName)
             .putOpt(KEY_TITLE, title)
-            .putOpt(Constants.NAME, fullName)
+            .putOpt(Constants.NAME, "$firstName $lastName")
             .putOpt(LOCALLY_CREATED, locallyCreated)
             .putOpt(LOCALLY_DELETED, locallyDeleted)
             .putOpt(LOCALLY_UPDATED, locallyUpdated)
             .putOpt(LOCAL, local)
-    }
+    )
+
+    fun markForDeletion() = copy(locallyDeleted = true)
+    fun toJson() = JSONObject(raw.toString())
 
     companion object {
         const val KEY_FIRST_NAME = "FirstName"
         const val KEY_LAST_NAME = "LastName"
         const val KEY_TITLE = "Title"
 
-        fun fromExistingObject(json: JSONObject): Contact {
-            val id = json.optString(Constants.ID)
+        fun coerceFromJson(json: JSONObject): Contact {
+            val rawCopy = JSONObject(json.toString())
+            var locallyCreated = rawCopy.optBoolean(LOCALLY_CREATED, false)
+
+            val id = rawCopy.optString(Constants.ID).ifEmpty {
+                locallyCreated = true
+                SyncTarget.createLocalId()
+            }
+
+            val locallyDeleted = rawCopy.optBoolean(LOCALLY_DELETED, false)
+            val locallyUpdated = rawCopy.optBoolean(LOCALLY_UPDATED, false)
+
+            val local = rawCopy.optBoolean(
+                LOCAL, locallyCreated || locallyDeleted || locallyUpdated
+            )
 
             return Contact(
-                id = id,
-                firstName = json.optString(KEY_FIRST_NAME),
-                lastName = json.optString(KEY_LAST_NAME),
-                title = json.optString(KEY_TITLE),
-                locallyCreated = json.optBoolean(LOCALLY_CREATED, id.isEmpty()),
-                locallyDeleted = json.optBoolean(LOCALLY_DELETED, false),
-                locallyUpdated = json.optBoolean(LOCALLY_UPDATED, false),
+                rawCopy
+                    .putOpt(Constants.ID, id)
+                    .putOpt(LOCALLY_CREATED, locallyCreated)
+                    .putOpt(LOCAL, local)
             )
         }
 
-        fun createNewLocal() = Contact(
-            id = SyncTarget.createLocalId(),
-            firstName = "",
-            lastName = "",
-            title = "",
-            locallyCreated = true,
-            locallyUpdated = false,
-            locallyDeleted = false
+        fun createNewLocal(
+            firstName: String = "",
+            lastName: String = "",
+            title: String = ""
+        ) = Contact(
+            JSONObject()
+                .putOpt(Constants.ID, SyncTarget.createLocalId())
+                .putOpt(KEY_FIRST_NAME, firstName)
+                .putOpt(KEY_LAST_NAME, lastName)
+                .putOpt(KEY_TITLE, title)
+                .putOpt(Constants.NAME, "$firstName $lastName") // TODO If first and last are empty, the NAME field will be " ", and I don't know if that is a problem.
+                .putOpt(LOCALLY_CREATED, true)
+                .putOpt(LOCALLY_DELETED, false)
+                .putOpt(LOCALLY_UPDATED, false)
+                .putOpt(LOCAL, true)
+//            id = SyncTarget.createLocalId(),
+//            firstName = "",
+//            lastName = "",
+//            title = "",
+//            locallyCreated = true,
+//            locallyUpdated = false,
+//            locallyDeleted = false
         )
     }
 }

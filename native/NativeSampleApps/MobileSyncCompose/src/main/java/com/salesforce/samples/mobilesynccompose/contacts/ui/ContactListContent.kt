@@ -41,14 +41,10 @@ fun ContactListContent(
 @Composable
 private fun ContactListContentPreview() {
     val contacts = (0..100).map {
-        Contact(
-            id = it.toString(),
+        Contact.createNewLocal(
             firstName = "Contact",
             lastName = "$it",
             title = "Title $it",
-            locallyCreated = false,
-            locallyDeleted = false,
-            locallyUpdated = false
         )
     }
 
