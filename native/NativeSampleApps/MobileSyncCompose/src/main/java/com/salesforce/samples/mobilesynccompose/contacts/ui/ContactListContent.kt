@@ -11,18 +11,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
-import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
+import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 
 @Composable
 fun ContactListContent(
     modifier: Modifier = Modifier,
-    contacts: List<ContactObject>,
-    onContactClick: (ContactObject) -> Unit,
-    onContactDeleteClick: (ContactObject) -> Unit,
-    onContactEditClick: (ContactObject) -> Unit,
+    contacts: List<Contact>,
+    onContactClick: (Contact) -> Unit,
+    onContactDeleteClick: (Contact) -> Unit,
+    onContactEditClick: (Contact) -> Unit,
 ) {
     LazyColumn(modifier = modifier) {
-        items(items = contacts, key = { it.objectId }) { contact ->
+        items(items = contacts, key = { it.id }) { contact ->
             ContactCard(
                 modifier = Modifier.padding(4.dp),
                 startExpanded = false,
@@ -41,11 +41,14 @@ fun ContactListContent(
 @Composable
 private fun ContactListContentPreview() {
     val contacts = (0..100).map {
-        ContactObject(
+        Contact(
             id = it.toString(),
             firstName = "Contact",
             lastName = "$it",
-            title = "Title $it"
+            title = "Title $it",
+            locallyCreated = false,
+            locallyDeleted = false,
+            locallyUpdated = false
         )
     }
 

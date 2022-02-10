@@ -1,7 +1,7 @@
 package com.salesforce.samples.mobilesynccompose.contacts.vm
 
 import androidx.annotation.StringRes
-import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
+import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 
 data class ContactDetailFieldViewModel(
     val fieldValue: String,
@@ -10,5 +10,5 @@ data class ContactDetailFieldViewModel(
     @StringRes val labelRes: Int?,
     @StringRes val helperRes: Int?,
     @StringRes val placeholderRes: Int?,
-    val onFieldValueChange: (newValue: String) -> ContactObject
+    val onFieldValueChange: (newValue: String) -> Contact
 )

@@ -103,7 +103,7 @@ class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
 
     override fun onResume(client: RestClient?) {
         // TODO use this entry point as the time to launch sync operations b/c at this point the rest client is ready.
-        vm.handleEvent(ContactsActivityUiEvents.Sync)
+        vm.handleEvent(ContactsActivityUiEvents.SyncClick)
     }
 
     override fun onLogoutComplete() {

@@ -2,7 +2,7 @@ package com.salesforce.samples.mobilesynccompose.contacts.vm
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
+import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactsRepo
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
@@ -24,23 +24,25 @@ interface ContactsActivityViewModel
 
 data class ContactActivityUiState(
     val contactDetailsUiState: ContactDetailUiState,
-    val contactListUiState: ContactListUiState
+    val contactsListUiState: ContactsListUiState
 )
 
 sealed interface ContactsActivityUiEvents {
     object ContactCreate : ContactsActivityUiEvents
-    data class ContactDelete(val contact: ContactObject) : ContactsActivityUiEvents
-    data class ContactEdit(val contact: ContactObject) : ContactsActivityUiEvents
-    data class ContactView(val contact: ContactObject) : ContactsActivityUiEvents
-    data class ContactListUpdates(val newContactList: List<ContactObject>) :
-        ContactsActivityUiEvents
-
+    data class ContactDelete(val contact: Contact) : ContactsActivityUiEvents
+    data class ContactEdit(val contact: Contact) : ContactsActivityUiEvents
+    data class ContactView(val contact: Contact) : ContactsActivityUiEvents
     object NavBack : ContactsActivityUiEvents
     object NavUp : ContactsActivityUiEvents
-    object Sync : ContactsActivityUiEvents
-    object Logout : ContactsActivityUiEvents
-    object SwitchUser : ContactsActivityUiEvents
-    object InspectDb : ContactsActivityUiEvents
+    object SyncClick : ContactsActivityUiEvents
+    object LogoutClick : ContactsActivityUiEvents
+    object SwitchUserClick : ContactsActivityUiEvents
+    object InspectDbClick : ContactsActivityUiEvents
+}
+
+sealed interface ContactsActivityDataEvents {
+    data class ContactListUpdates(val newContactList: List<Contact>) : ContactsActivityDataEvents
+    data class ContactDetailsSaved(val contact: Contact) : ContactsActivityDataEvents
 }
 
 sealed interface ListComponentUiEvents {
@@ -50,7 +52,7 @@ sealed interface ListComponentUiEvents {
 
 sealed interface DetailComponentUiEvents {
     object SaveClick : DetailComponentUiEvents
-    data class FieldValuesChanged(val newObject: ContactObject) : DetailComponentUiEvents
+    data class FieldValuesChanged(val newObject: Contact) : DetailComponentUiEvents
 }
 
 fun interface ContactActivityEventHandler {
@@ -65,12 +67,31 @@ fun interface DetailComponentEventHandler {
     fun handleEvent(event: DetailComponentUiEvents)
 }
 
+//private data class TransitionProposal<T>(
+//    val event: T,
+//    val curDetailState: KClass<out ContactDetailUiState>? = null,
+//    val targetDetailState: KClass<out ContactDetailUiState>? = null,
+//    val curListState: KClass<out ContactsListUiState>? = null,
+//    val targetListState: KClass<out ContactsListUiState>? = null,
+//)
+
 class DefaultContactsActivityViewModel(
     private val contactsRepo: ContactsRepo
 ) : ViewModel(), ContactsActivityViewModel {
 
+//    private val eventInterceptors = mapOf(
+//        TransitionProposal(
+//            event = DetailComponentUiEvents.SaveClick,
+//            curDetailState = EditingContact::class,
+//            targetDetailState = ViewingContact::class,
+//        ) to { curDetailState: EditingContact, targetDetailState: ViewingContact ->
+//            viewModelScope.launch {
+//                contactsRepo.saveContact(targetDetailState.contact)
+//            }
+//        },
+//    )
     private val mutUiState: MutableStateFlow<ContactActivityUiState> = MutableStateFlow(
-        ContactActivityUiState(NoContactSelected, ContactListUiState.Loading)
+        ContactActivityUiState(NoContactSelected, ContactsListUiState.Loading)
     )
 
     override val uiState: StateFlow<ContactActivityUiState> get() = mutUiState
@@ -83,8 +104,21 @@ class DefaultContactsActivityViewModel(
     init {
         viewModelScope.launch {
             contactsRepo.contactUpdates.collect { contacts ->
-                handleEvent(ContactsActivityUiEvents.ContactListUpdates(contacts))
+                handleDataEvent(ContactsActivityDataEvents.ContactListUpdates(contacts))
             }
+        }
+    }
+
+    private fun handleDataEvent(event: ContactsActivityDataEvents) {
+        viewModelScope.launch {
+            eventMutex.lock()
+
+            val detailTransition = uiState.value.contactDetailsUiState.calculateProposedTransition(event)
+            val listTransition = uiState.value.contactsListUiState.calculateProposedTransition(event)
+
+            mutUiState.value = ContactActivityUiState(detailTransition, listTransition)
+
+            eventMutex.unlock()
         }
     }
 
@@ -92,14 +126,14 @@ class DefaultContactsActivityViewModel(
         viewModelScope.launch {
             eventMutex.lock()
 
-            if (event is ContactsActivityUiEvents.Sync) {
+            if (event is ContactsActivityUiEvents.SyncClick) {
                 sync(syncDownOnly = true)
             }
 
             val detailTransition =
                 uiState.value.contactDetailsUiState.calculateProposedTransition(event)
             val listTransition =
-                uiState.value.contactListUiState.calculateProposedTransition(event)
+                uiState.value.contactsListUiState.calculateProposedTransition(event)
 
             mutUiState.value = ContactActivityUiState(detailTransition, listTransition)
 
@@ -124,8 +158,8 @@ class DefaultContactsActivityViewModel(
             eventMutex.lock()
 
             uiState.value.let { state ->
-                val listTransition = state.contactListUiState.calculateProposedTransition(event)
-                mutUiState.value = state.copy(contactListUiState = listTransition)
+                val listTransition = state.contactsListUiState.calculateProposedTransition(event)
+                mutUiState.value = state.copy(contactsListUiState = listTransition)
             }
 
             eventMutex.unlock()
