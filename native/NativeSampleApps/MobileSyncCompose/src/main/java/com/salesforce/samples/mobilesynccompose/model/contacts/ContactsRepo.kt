@@ -18,9 +18,11 @@ import kotlin.coroutines.suspendCoroutine
 interface ContactsRepo {
     val contactUpdates: Flow<List<Contact>>
     suspend fun sync(syncDownOnly: Boolean)
-    suspend fun saveContact(updatedContactObject: Contact)
+    suspend fun saveContact(updatedContactObject: Contact): Result<Contact>
 //    fun deleteContact(...)
 }
+
+data class SyncOperationResults(val syncUpSuccess: Boolean, val syncDownSuccess: Boolean)
 
 class DefaultContactsRepo(
     account: UserAccount?, // TODO this shouldn't be nullable. The logic whether to instantiate this object should be moved higher up, but this is a quick fix to get things testable
@@ -70,9 +72,20 @@ class DefaultContactsRepo(
         }
     }
 
-    override suspend fun saveContact(updatedContactObject: Contact) {
-        TODO("$TAG - saveContact() - $updatedContactObject")
-    }
+    override suspend fun saveContact(updatedContactObject: Contact): Result<Contact> =
+        withContext(ioDispatcher) {
+            TODO("$TAG - saveContact() - $updatedContactObject")
+//            val result = kotlin.runCatching {
+//                Contact.coerceFromJson(
+//                    store.upsert("contacts", updatedContactObject.toJson())
+//                )
+//            }
+//
+//            result.getOrNull()?.let {
+//            }
+//
+//            result
+        }
 
     // Individual syncs cannot be cancelled, so we don't use suspendCancellableCoroutine
     private suspend fun syncDown(): SyncState = suspendCoroutine { cont ->
@@ -81,11 +94,11 @@ class DefaultContactsRepo(
             when (it.status) {
                 // terminal states
                 SyncState.Status.DONE,
-                SyncState.Status.FAILED,
-                SyncState.Status.STOPPED -> cont.resume(it)
+                SyncState.Status.FAILED -> cont.resume(it)
 
                 SyncState.Status.NEW,
                 SyncState.Status.RUNNING,
+                SyncState.Status.STOPPED,
                 null -> {
                     /* no-op; suspending for terminal state */
                 }
@@ -125,7 +138,7 @@ class DefaultContactsRepo(
             ),
             0
         )
-        mutContactUpdates.emit(contactResults.map { Contact.fromExistingObject(it) })
+        mutContactUpdates.emit(contactResults.map { Contact.coerceFromJson(it) })
     }
 
     private fun onSyncDownFailed(syncDownResult: SyncState) {

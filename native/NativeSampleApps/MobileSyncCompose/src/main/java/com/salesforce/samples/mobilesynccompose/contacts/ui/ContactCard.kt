@@ -123,14 +123,10 @@ fun PreviewContactListItem() {
                 modifier = Modifier.padding(8.dp),
                 startExpanded = true,
                 isSynced = false,
-                contact = Contact(
-                    id = "1",
+                contact = Contact.createNewLocal(
                     firstName = "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirstFirst",
                     lastName = "Last Last Last Last Last Last Last Last Last Last Last",
                     title = "Title",
-                    locallyCreated = false,
-                    locallyDeleted = false,
-                    locallyUpdated = false
                 ),
                 onCardClick = {},
                 onDeleteClick = {},
