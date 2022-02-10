@@ -26,17 +26,17 @@ import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R
 import com.salesforce.samples.mobilesynccompose.core.ui.components.ExpandoButton
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
-import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
+import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 
 @Composable
 /* TODO How to put in profile pic?  Glide lib? */
 fun ContactCard(
     modifier: Modifier = Modifier,
-    contact: ContactObject,
+    contact: Contact,
     isSynced: Boolean,
-    onCardClick: (ContactObject) -> Unit,
-    onDeleteClick: (ContactObject) -> Unit,
-    onEditClick: (ContactObject) -> Unit,
+    onCardClick: (Contact) -> Unit,
+    onDeleteClick: (Contact) -> Unit,
+    onEditClick: (Contact) -> Unit,
     startExpanded: Boolean = false,
     elevation: Dp = 2.dp,
 ) {
@@ -62,7 +62,7 @@ fun ContactCard(
             Row {
                 SelectionContainer(modifier = Modifier.weight(1f)) {
                     Text(
-                        contact.name,
+                        contact.fullName,
                         style = MaterialTheme.typography.body1,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
@@ -123,11 +123,14 @@ fun PreviewContactListItem() {
                 modifier = Modifier.padding(8.dp),
                 startExpanded = true,
                 isSynced = false,
-                contact = ContactObject(
+                contact = Contact(
                     id = "1",
                     firstName = "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirstFirst",
                     lastName = "Last Last Last Last Last Last Last Last Last Last Last",
                     title = "Title",
+                    locallyCreated = false,
+                    locallyDeleted = false,
+                    locallyUpdated = false
                 ),
                 onCardClick = {},
                 onDeleteClick = {},

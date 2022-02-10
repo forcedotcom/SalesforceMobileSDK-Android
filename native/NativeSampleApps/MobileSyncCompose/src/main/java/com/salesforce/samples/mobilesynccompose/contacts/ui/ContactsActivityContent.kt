@@ -1,6 +1,5 @@
 package com.salesforce.samples.mobilesynccompose.contacts.ui
 
-import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
@@ -11,19 +10,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.contacts.vm.*
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactListUiState.*
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsListUiState.*
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityUiEvents.*
-import com.salesforce.samples.mobilesynccompose.contacts.vm.DetailComponentUiEvents.*
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ListComponentUiEvents.*
+import com.salesforce.samples.mobilesynccompose.contacts.vm.DetailComponentUiEvents.SaveClick
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ListComponentUiEvents.SearchClick
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ListComponentUiEvents.SearchTermUpdated
 import com.salesforce.samples.mobilesynccompose.core.ui.LayoutRestrictions
-import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeClass
-import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeRestrictions
 import com.salesforce.samples.mobilesynccompose.core.ui.components.ToggleableEditTextField
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 @Composable
@@ -33,13 +32,13 @@ fun ContactsActivityContent(
 ) {
     val uiState by vm.uiState.collectAsState()
     val detailUiState = uiState.contactDetailsUiState
-    val listUiState = uiState.contactListUiState
+    val listUiState = uiState.contactsListUiState
     val menuButtonContent: @Composable () -> Unit = {
         ContactsActivityMenuButton(
-            onSyncClick = { vm.handleEvent(Sync) },
-            onSwitchUserClick = { vm.handleEvent(SwitchUser) },
-            onLogoutClick = { vm.handleEvent(Logout) },
-            onInspectDbClick = { vm.handleEvent(InspectDb) }
+            onSyncClick = { vm.handleEvent(SyncClick) },
+            onSwitchUserClick = { vm.handleEvent(SwitchUserClick) },
+            onLogoutClick = { vm.handleEvent(LogoutClick) },
+            onInspectDbClick = { vm.handleEvent(InspectDbClick) }
         )
     }
 
@@ -98,7 +97,7 @@ fun ContactsActivityContent(
             is ViewingContact -> {
                 {
                     ContactActivityFab.Edit(
-                        onEditClick = { vm.handleEvent(ContactEdit(detailUiState.contactObject)) }
+                        onEditClick = { vm.handleEvent(ContactEdit(detailUiState.contact)) }
                     )
                 }
             }
@@ -149,11 +148,11 @@ fun ContactsActivityContent(
 
 private fun ContactDetailUiState.onDetailDeleteClick(handler: ContactActivityEventHandler) {
     when (this) {
-        is EditingContact -> handler.handleEvent(ContactDelete(this.originalContactObj))
+        is EditingContact -> handler.handleEvent(ContactDelete(this.originalContact))
         NoContactSelected -> {
             /* no-op */
         }
-        is ViewingContact -> handler.handleEvent(ContactDelete(this.contactObject))
+        is ViewingContact -> handler.handleEvent(ContactDelete(this.contact))
     }
 }
 
@@ -206,7 +205,7 @@ private fun getBottomAppBarContentForContactDetail(
     }
 }
 
-private fun ContactListUiState.getTopAppBarContent(
+private fun ContactsListUiState.getTopAppBarContent(
     layoutRestrictions: LayoutRestrictions,
     onUpClick: () -> Unit,
     onSearchTermUpdate: (String) -> Unit,
@@ -309,35 +308,94 @@ private object ContactActivityFab {
     }
 }
 
-@Composable
-@Preview(showBackground = true)
-@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
-private fun ListPreview() {
-    val vm = object : ContactsActivityViewModel {
-        override val uiState: StateFlow<ContactActivityUiState>
-            get() = TODO("Not yet implemented")
-        override val inspectDbClickEvents: ReceiveChannel<Unit>
-            get() = TODO("Not yet implemented")
+//@Composable
+//@Preview(showBackground = true)
+//@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
+//private fun ListPreview() {
+//    val contacts = (1..100).map {
+//        ContactObject(
+//            id = it.toString(),
+//            firstName = "First",
+//            lastName = "Last $it",
+//            title = "Title",
+//            isLocallyCreated = false,
+//            isLocallyDeleted = false,
+//            isLocallyUpdated = false
+//        )
+//    }
+//    val vm = object : PreviewContactsActivityViewModel() {}.apply {
+//        mutUiState.value = ContactActivityUiState(
+//            contactDetailsUiState = NoContactSelected,
+//            contactsListUiState = ViewList(contacts)
+//        )
+//    }
+//    SalesforceMobileSDKAndroidTheme {
+//        ContactsActivityContent(
+//            layoutRestrictions = LayoutRestrictions(
+//                WindowSizeRestrictions(
+//                    WindowSizeClass.Compact,
+//                    WindowSizeClass.Medium
+//                )
+//            ),
+//            vm = vm
+//        )
+//    }
+//}
 
-        override fun handleEvent(event: ContactsActivityUiEvents) {
-            TODO("Not yet implemented")
-        }
+//@Composable
+//@Preview(showBackground = true)
+//@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
+//private fun DetailsPreview() {
+//    val contact = ContactObject(
+//        id = "1",
+//        firstName = "First",
+//        lastName = "Last",
+//        title = "Title",
+//        isLocallyCreated = false,
+//        isLocallyDeleted = false,
+//        isLocallyUpdated = false
+//    )
+//
+//    val vm = object : PreviewContactsActivityViewModel() {}.apply {
+//        mutUiState.value = ContactActivityUiState(
+//            contactDetailsUiState = contact.toViewContactUiState(),
+//            contactsListUiState = Loading
+//        )
+//    }
+//
+//    SalesforceMobileSDKAndroidTheme {
+//        ContactsActivityContent(
+//            layoutRestrictions = LayoutRestrictions(
+//                WindowSizeRestrictions(
+//                    WindowSizeClass.Compact,
+//                    WindowSizeClass.Medium
+//                )
+//            ),
+//            vm = vm
+//        )
+//    }
+//}
 
-        override fun handleEvent(event: ListComponentUiEvents) {
-            TODO("Not yet implemented")
-        }
-
-        override fun handleEvent(event: DetailComponentUiEvents) {
-            TODO("Not yet implemented")
-        }
-    }
-    ContactsActivityContent(
-        layoutRestrictions = LayoutRestrictions(
-            WindowSizeRestrictions(
-                WindowSizeClass.Compact,
-                WindowSizeClass.Medium
-            )
-        ),
-        vm = vm
+private abstract class PreviewContactsActivityViewModel : ContactsActivityViewModel {
+    val mutUiState = MutableStateFlow(
+        ContactActivityUiState(
+            contactDetailsUiState = NoContactSelected,
+            contactsListUiState = Loading
+        )
     )
+    override val uiState: StateFlow<ContactActivityUiState> get() = mutUiState
+    override val inspectDbClickEvents: ReceiveChannel<Unit>
+        get() = Channel()
+
+    override fun handleEvent(event: ContactsActivityUiEvents) {
+        /* no-op */
+    }
+
+    override fun handleEvent(event: ListComponentUiEvents) {
+        /* no-op */
+    }
+
+    override fun handleEvent(event: DetailComponentUiEvents) {
+        /* no-op */
+    }
 }

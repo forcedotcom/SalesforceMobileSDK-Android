@@ -16,9 +16,9 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 interface ContactsRepo {
-    val contactUpdates: Flow<List<ContactObject>>
+    val contactUpdates: Flow<List<Contact>>
     suspend fun sync(syncDownOnly: Boolean)
-//    fun saveContact(...)
+    suspend fun saveContact(updatedContactObject: Contact)
 //    fun deleteContact(...)
 }
 
@@ -35,8 +35,8 @@ class DefaultContactsRepo(
      * We're not using StateFlow with an `emptyList()` as a starting value because this flow is
      * about updates, and an empty list would logically indicate that there are no contacts to be
      * found. */
-    private val mutContactUpdates = MutableSharedFlow<List<ContactObject>>(replay = 1)
-    override val contactUpdates: Flow<List<ContactObject>> get() = mutContactUpdates
+    private val mutContactUpdates = MutableSharedFlow<List<Contact>>(replay = 1)
+    override val contactUpdates: Flow<List<Contact>> get() = mutContactUpdates
 
     override suspend fun sync(syncDownOnly: Boolean) = withContext(ioDispatcher) {
         data class SyncResults(val syncDownResult: SyncState, val syncUpResult: SyncState?)
@@ -68,6 +68,10 @@ class DefaultContactsRepo(
                 /* no-op */
             }
         }
+    }
+
+    override suspend fun saveContact(updatedContactObject: Contact) {
+        TODO("$TAG - saveContact() - $updatedContactObject")
     }
 
     // Individual syncs cannot be cancelled, so we don't use suspendCancellableCoroutine
@@ -121,7 +125,7 @@ class DefaultContactsRepo(
             ),
             0
         )
-        mutContactUpdates.emit(contactResults.map { ContactObject(it) })
+        mutContactUpdates.emit(contactResults.map { Contact.fromExistingObject(it) })
     }
 
     private fun onSyncDownFailed(syncDownResult: SyncState) {
