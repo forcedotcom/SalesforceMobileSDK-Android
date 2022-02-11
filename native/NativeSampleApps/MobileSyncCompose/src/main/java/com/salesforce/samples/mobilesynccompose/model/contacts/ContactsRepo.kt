@@ -7,9 +7,9 @@ import com.salesforce.androidsdk.mobilesync.manager.SyncManager
 import com.salesforce.androidsdk.mobilesync.util.SyncState
 import com.salesforce.androidsdk.smartstore.store.QuerySpec
 import com.salesforce.samples.mobilesynccompose.core.extensions.map
+import com.salesforce.samples.mobilesynccompose.core.extensions.replaceAll
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.resume
@@ -33,12 +33,14 @@ class DefaultContactsRepo(
     private val syncManager = SyncManager.getInstance(account)
     private val syncMutex = Mutex()
 
+    private val mutContactListState = MutableStateFlow(emptyList<Contact>())
+
     /* Replay latest update on new `Flow.collect { }` so all new collectors get current state.
      * We're not using StateFlow with an `emptyList()` as a starting value because this flow is
      * about updates, and an empty list would logically indicate that there are no contacts to be
      * found. */
-    private val mutContactUpdates = MutableSharedFlow<List<Contact>>(replay = 1)
-    override val contactUpdates: Flow<List<Contact>> get() = mutContactUpdates
+//    private val mutContactUpdates = MutableSharedFlow<List<Contact>>(replay = 1)
+    override val contactUpdates: Flow<List<Contact>> get() = mutContactListState//mutContactUpdates
 
     override suspend fun sync(syncDownOnly: Boolean) = withContext(ioDispatcher) {
         data class SyncResults(val syncDownResult: SyncState, val syncUpResult: SyncState?)
@@ -74,17 +76,20 @@ class DefaultContactsRepo(
 
     override suspend fun saveContact(updatedContactObject: Contact): Result<Contact> =
         withContext(ioDispatcher) {
-            TODO("$TAG - saveContact() - $updatedContactObject")
-//            val result = kotlin.runCatching {
-//                Contact.coerceFromJson(
-//                    store.upsert("contacts", updatedContactObject.toJson())
-//                )
-//            }
-//
-//            result.getOrNull()?.let {
-//            }
-//
-//            result
+            val result = kotlin.runCatching {
+                Contact.coerceFromJson(
+                    // TODO Use compile-time constant for soup name
+                    store.upsert("contacts", updatedContactObject.toJson())
+                )
+            }
+
+            result.getOrNull()?.let { updatedContact ->
+                val updatedList = mutContactListState.value
+                    .replaceAll(newValue = updatedContact) { it.id == updatedContact.id }
+                mutContactListState.value = updatedList
+            }
+
+            result
         }
 
     // Individual syncs cannot be cancelled, so we don't use suspendCancellableCoroutine
@@ -138,7 +143,7 @@ class DefaultContactsRepo(
             ),
             0
         )
-        mutContactUpdates.emit(contactResults.map { Contact.coerceFromJson(it) })
+        mutContactListState.value = contactResults.map { Contact.coerceFromJson(it) }
     }
 
     private fun onSyncDownFailed(syncDownResult: SyncState) {

@@ -68,7 +68,8 @@ fun ContactsActivityContent(
         mainContent = { paddingVals ->
             ContactListContent(
                 modifier = Modifier.padding(paddingValues = paddingVals.fixForMainContent()),
-                contacts = listUiState.contacts,
+                listUiState = listUiState,
+//                contacts = listUiState.contacts,
                 onContactClick = { vm.handleEvent(ContactView(it)) },
                 onContactDeleteClick = { TODO("onContactDeleteClick") },
                 onContactEditClick = { TODO("onContactEditClick") }

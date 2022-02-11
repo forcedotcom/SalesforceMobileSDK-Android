@@ -22,6 +22,15 @@
           "LastName",
           "Title"
         ]
+      },
+      "options": {
+        "fieldlist": [
+          "Id",
+          "FirstName",
+          "LastName",
+          "Title"
+        ],
+        "mergeMode": "LEAVE_IF_CHANGED"
       }
     }
   ]

@@ -43,7 +43,7 @@ object ContactDetailContent {
                 )
                 .padding(horizontal = 8.dp),
         ) {
-            state.forEach { fieldVm ->
+            state.vmList.forEach { fieldVm ->
                 ToggleableEditTextField(
                     fieldValue = fieldVm.fieldValue,
                     isEditEnabled = false,
@@ -71,7 +71,7 @@ object ContactDetailContent {
                 .padding(horizontal = 8.dp)
                 .verticalScroll(state = scrollState)
         ) {
-            state.forEach { fieldVm ->
+            state.vmList.forEach { fieldVm ->
                 ToggleableEditTextField(
                     fieldValue = fieldVm.fieldValue,
                     isEditEnabled = fieldVm.canBeEdited,

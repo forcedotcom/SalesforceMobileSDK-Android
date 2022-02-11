@@ -37,7 +37,7 @@ class Contact private constructor(raw: JSONObject) {
     private val locallyCreated: Boolean = raw.optBoolean(LOCALLY_CREATED, false)
     private val locallyDeleted: Boolean = raw.optBoolean(LOCALLY_DELETED, false)
     private val locallyUpdated: Boolean = raw.optBoolean(LOCALLY_UPDATED, false)
-    private val local: Boolean =
+    val local: Boolean =
         raw.optBoolean(LOCAL, locallyCreated || locallyDeleted || locallyUpdated)
 
 //    val raw: JSONObject by lazy {
@@ -88,6 +88,34 @@ class Contact private constructor(raw: JSONObject) {
     fun markForDeletion() = copy(locallyDeleted = true)
     fun toJson() = JSONObject(raw.toString())
 
+    override fun equals(other: Any?): Boolean = other === this || (
+            other is Contact &&
+                    other.id == this.id &&
+                    other.firstName == this.firstName &&
+                    other.lastName == this.lastName &&
+                    other.title == this.title &&
+                    other.locallyCreated == this.locallyCreated &&
+                    other.locallyDeleted == this.locallyDeleted &&
+                    other.locallyUpdated == this.locallyUpdated &&
+                    other.local == this.local
+            )
+
+    override fun hashCode(): Int {
+        var result = id.hashCode()
+        result = 31 * result + firstName.hashCode()
+        result = 31 * result + lastName.hashCode()
+        result = 31 * result + title.hashCode()
+        result = 31 * result + locallyCreated.hashCode()
+        result = 31 * result + locallyDeleted.hashCode()
+        result = 31 * result + locallyUpdated.hashCode()
+        result = 31 * result + local.hashCode()
+        return result
+    }
+
+    override fun toString(): String {
+        return "Contact(id='$id', firstName='$firstName', lastName='$lastName', title='$title', fullName='$fullName', locallyCreated=$locallyCreated, locallyDeleted=$locallyDeleted, locallyUpdated=$locallyUpdated, local=$local)"
+    }
+
     companion object {
         const val KEY_FIRST_NAME = "FirstName"
         const val KEY_LAST_NAME = "LastName"
@@ -109,11 +137,16 @@ class Contact private constructor(raw: JSONObject) {
                 LOCAL, locallyCreated || locallyDeleted || locallyUpdated
             )
 
+            val name = rawCopy.optString(Constants.NAME).ifEmpty {
+                "${rawCopy.optString(KEY_FIRST_NAME)} ${rawCopy.optString(KEY_LAST_NAME)}"
+            }
+
             return Contact(
                 rawCopy
                     .putOpt(Constants.ID, id)
                     .putOpt(LOCALLY_CREATED, locallyCreated)
                     .putOpt(LOCAL, local)
+                    .putOpt(Constants.NAME, name)
             )
         }
 
@@ -127,7 +160,10 @@ class Contact private constructor(raw: JSONObject) {
                 .putOpt(KEY_FIRST_NAME, firstName)
                 .putOpt(KEY_LAST_NAME, lastName)
                 .putOpt(KEY_TITLE, title)
-                .putOpt(Constants.NAME, "$firstName $lastName") // TODO If first and last are empty, the NAME field will be " ", and I don't know if that is a problem.
+                .putOpt(
+                    Constants.NAME,
+                    "$firstName $lastName"
+                ) // TODO If first and last are empty, the NAME field will be " ", and I don't know if that is a problem.
                 .putOpt(LOCALLY_CREATED, true)
                 .putOpt(LOCALLY_DELETED, false)
                 .putOpt(LOCALLY_UPDATED, false)

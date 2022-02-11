@@ -7,7 +7,9 @@ import com.salesforce.samples.mobilesynccompose.contacts.vm.DetailComponentUiEve
 import com.salesforce.samples.mobilesynccompose.contacts.vm.DetailComponentUiEvents.SaveClick
 import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 
-sealed interface ContactDetailUiState : Iterable<ContactDetailFieldViewModel> {
+sealed interface ContactDetailUiState {
+    val vmList: List<ContactDetailFieldViewModel>
+    // TODO These methods should be suspending and use Dispatchers.Default withContext
     fun calculateProposedTransition(event: ContactsActivityUiEvents): ContactDetailUiState
     fun calculateProposedTransition(event: DetailComponentUiEvents): ContactDetailUiState
     fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactDetailUiState
@@ -19,9 +21,10 @@ data class EditingContact(
     val firstNameVm: ContactDetailFieldViewModel,
     val lastNameVm: ContactDetailFieldViewModel,
     val titleVm: ContactDetailFieldViewModel,
-    val vmToScrollTo: ContactDetailFieldViewModel? = null
+    val savingContact: Boolean,
+    val vmToScrollTo: ContactDetailFieldViewModel? = null,
 ) : ContactDetailUiState {
-    private val vmList = listOf(
+    override val vmList = listOf(
         firstNameVm,
         lastNameVm,
         titleVm,
@@ -52,11 +55,11 @@ data class EditingContact(
             }
 
             SaveClick -> {
-                val vmToScrollTo = firstOrNull { it.isInErrorState }
+                val vmToScrollTo = fieldsInErrorState.firstOrNull()
                 return if (vmToScrollTo != null) {
                     copy(vmToScrollTo = vmToScrollTo)
                 } else {
-                    this
+                    copy(savingContact = true)
                 }
             }
         }
@@ -64,34 +67,28 @@ data class EditingContact(
 
     override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactDetailUiState =
         when (event) {
-            is ContactsActivityDataEvents.ContactDetailsSaved -> {
-                if (event.contact.id == originalContact.id) {
-                    ViewingContact(
-                        contact = event.contact,
-                        firstNameVm = event.contact.createFirstNameVm(),
-                        lastNameVm = event.contact.createLastNameVm(),
-                        titleVm = event.contact.createTitleVm()
-                    )
-                } else {
-                    this
-                }
-            }
+//            is ContactsActivityDataEvents.ContactDetailsSaved -> {
+//                if (event.contact.id == originalContact.id) {
+//                    ViewingContact(
+//                        contact = event.contact,
+//                        firstNameVm = event.contact.createFirstNameVm(),
+//                        lastNameVm = event.contact.createLastNameVm(),
+//                        titleVm = event.contact.createTitleVm()
+//                    )
+//                } else {
+//                    this
+//                }
+//            }
             is ContactsActivityDataEvents.ContactListUpdates -> {
-                val conflictingContact = event.newContactList.firstOrNull {
+                val matchingContact = event.newContactList.firstOrNull {
                     it.id == this.originalContact.id
                 }
 
-                if (conflictingContact == null) {
-                    // updated list does not contain the contact we are editing, so ignore the event
-                    this
-                } else {
-                    // The updated list contains the contact we are editing, but there were no upstream changes.  Ignore this event.
-                    if (conflictingContact == originalContact) {
-                        this
-                    } else {
-                        // The updated list contains the contact we are editing _and_ there were upstream changes.
-                        TODO("EditingContact -> ContactListUpdates with conflicting updates. This contact=$originalContact upstream contact=$conflictingContact")
-                    }
+                when {
+                    matchingContact == null -> this // updated list does not contain this contact, so ignore
+                    savingContact -> ViewingContact(matchingContact) // we were saving and then received an updated contact with the same ID which means the save was successful
+                    matchingContact == originalContact -> this // updated contact is same as current edit state, so ignore
+                    else -> TODO("EditingContact -> ContactListUpdates with conflicting updates. This contact=$originalContact upstream contact=$matchingContact")
                 }
             }
         }
@@ -104,7 +101,11 @@ data class EditingContact(
         )
     }
 
-    override fun iterator(): Iterator<ContactDetailFieldViewModel> = vmList.iterator()
+    val fieldsInErrorState: List<ContactDetailFieldViewModel> by lazy {
+        vmList.filter { it.isInErrorState }
+    }
+
+    val hasFieldsInErrorState: Boolean by lazy { fieldsInErrorState.isNotEmpty() }
 }
 
 data class ViewingContact(
@@ -113,10 +114,17 @@ data class ViewingContact(
     val lastNameVm: ContactDetailFieldViewModel,
     val titleVm: ContactDetailFieldViewModel,
 ) : ContactDetailUiState {
-    private val vmList = listOf(
+    override val vmList = listOf(
         firstNameVm,
         lastNameVm,
         titleVm
+    )
+
+    constructor(contact: Contact) : this(
+        contact = contact,
+        firstNameVm = contact.createFirstNameVm(),
+        lastNameVm = contact.createLastNameVm(),
+        titleVm = contact.createTitleVm()
     )
 
     override fun calculateProposedTransition(event: ContactsActivityUiEvents): ContactDetailUiState =
@@ -125,15 +133,11 @@ data class ViewingContact(
                 originalContact = contact,
                 firstNameVm = firstNameVm,
                 lastNameVm = lastNameVm,
-                titleVm = titleVm
+                titleVm = titleVm,
+                savingContact = false
             )
 
-            is ContactView -> ViewingContact(
-                contact = event.contact,
-                firstNameVm = event.contact.createFirstNameVm(),
-                lastNameVm = event.contact.createLastNameVm(),
-                titleVm = event.contact.createTitleVm()
-            )
+            is ContactView -> ViewingContact(contact = event.contact)
 
             ContactsActivityUiEvents.ContactCreate,
             is ContactsActivityUiEvents.ContactDelete,
@@ -153,17 +157,26 @@ data class ViewingContact(
 
     override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactDetailUiState =
         when (event) {
-            is ContactsActivityDataEvents.ContactDetailsSaved -> TODO()
-            is ContactsActivityDataEvents.ContactListUpdates -> TODO()
+//            is ContactsActivityDataEvents.ContactDetailsSaved -> {
+//                if (event.contact.id == this.contact.id) {
+//                    ViewingContact(event.contact)
+//                } else {
+//                    this
+//                }
+//            }
+            is ContactsActivityDataEvents.ContactListUpdates -> {
+                val updatedContact = event.newContactList.firstOrNull { it.id == this.contact.id }
+                if (updatedContact != null) {
+                    ViewingContact(updatedContact)
+                } else {
+                    this
+                }
+            }
         }
-
-    override fun iterator(): Iterator<ContactDetailFieldViewModel> = vmList.iterator()
-
-    fun toEditContactState() = EditingContact(contact, firstNameVm, lastNameVm, titleVm)
 }
 
 object NoContactSelected : ContactDetailUiState {
-    private val vmList = emptyList<ContactDetailFieldViewModel>()
+    override val vmList = emptyList<ContactDetailFieldViewModel>()
     override fun calculateProposedTransition(event: ContactsActivityUiEvents): ContactDetailUiState =
         when (event) {
             is ContactEdit -> EditingContact(
@@ -171,6 +184,7 @@ object NoContactSelected : ContactDetailUiState {
                 firstNameVm = event.contact.createFirstNameVm(),
                 lastNameVm = event.contact.createLastNameVm(),
                 titleVm = event.contact.createTitleVm(),
+                savingContact = false
             )
             is ContactView -> ViewingContact(
                 contact = event.contact,
@@ -194,11 +208,11 @@ object NoContactSelected : ContactDetailUiState {
             SaveClick -> this
         }
 
-    override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactDetailUiState {
-        TODO("Not yet implemented")
-    }
-
-    override fun iterator(): Iterator<ContactDetailFieldViewModel> = vmList.iterator()
+    override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactDetailUiState =
+        when (event) {
+//            is ContactsActivityDataEvents.ContactDetailsSaved,
+            is ContactsActivityDataEvents.ContactListUpdates -> this
+        }
 }
 
 private fun Contact.createFirstNameVm(): ContactDetailFieldViewModel =
