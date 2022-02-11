@@ -42,7 +42,7 @@ sealed interface ContactsActivityUiEvents {
 
 sealed interface ContactsActivityDataEvents {
     data class ContactListUpdates(val newContactList: List<Contact>) : ContactsActivityDataEvents
-    data class ContactDetailsSaved(val contact: Contact) : ContactsActivityDataEvents
+//    data class ContactDetailsSaved(val contact: Contact) : ContactsActivityDataEvents
 }
 
 sealed interface ListComponentUiEvents {
@@ -79,7 +79,7 @@ class DefaultContactsActivityViewModel(
     private val contactsRepo: ContactsRepo
 ) : ViewModel(), ContactsActivityViewModel {
 
-//    private val eventInterceptors = mapOf(
+    //    private val eventInterceptors = mapOf(
 //        TransitionProposal(
 //            event = DetailComponentUiEvents.SaveClick,
 //            curDetailState = EditingContact::class,
@@ -103,6 +103,7 @@ class DefaultContactsActivityViewModel(
 
     init {
         viewModelScope.launch {
+            sync(syncDownOnly = false)
             contactsRepo.contactUpdates.collect { contacts ->
                 handleDataEvent(ContactsActivityDataEvents.ContactListUpdates(contacts))
             }
@@ -113,8 +114,10 @@ class DefaultContactsActivityViewModel(
         viewModelScope.launch {
             eventMutex.lock()
 
-            val detailTransition = uiState.value.contactDetailsUiState.calculateProposedTransition(event)
-            val listTransition = uiState.value.contactsListUiState.calculateProposedTransition(event)
+            val detailTransition =
+                uiState.value.contactDetailsUiState.calculateProposedTransition(event)
+            val listTransition =
+                uiState.value.contactsListUiState.calculateProposedTransition(event)
 
             mutUiState.value = ContactActivityUiState(detailTransition, listTransition)
 
@@ -126,20 +129,20 @@ class DefaultContactsActivityViewModel(
         viewModelScope.launch {
             eventMutex.lock()
 
-            when (event) {
-                ContactsActivityUiEvents.ContactCreate -> TODO()
-                is ContactsActivityUiEvents.ContactDelete -> TODO()
-                is ContactsActivityUiEvents.ContactEdit -> TODO()
-                is ContactsActivityUiEvents.ContactView -> TODO()
-                ContactsActivityUiEvents.InspectDbClick -> TODO()
-                ContactsActivityUiEvents.LogoutClick -> TODO()
-                ContactsActivityUiEvents.NavBack -> TODO()
-                ContactsActivityUiEvents.NavUp -> TODO()
-                ContactsActivityUiEvents.SwitchUserClick -> TODO()
-                ContactsActivityUiEvents.SyncClick -> {
-                    sync(syncDownOnly = true)
-                }
-            }
+//            when (event) {
+//                ContactsActivityUiEvents.ContactCreate -> TODO()
+//                is ContactsActivityUiEvents.ContactDelete -> TODO()
+//                is ContactsActivityUiEvents.ContactEdit -> TODO()
+//                is ContactsActivityUiEvents.ContactView -> TODO()
+//                ContactsActivityUiEvents.InspectDbClick -> TODO()
+//                ContactsActivityUiEvents.LogoutClick -> TODO()
+//                ContactsActivityUiEvents.NavBack -> TODO()
+//                ContactsActivityUiEvents.NavUp -> TODO()
+//                ContactsActivityUiEvents.SwitchUserClick -> TODO()
+//                ContactsActivityUiEvents.SyncClick -> {
+//                    sync(syncDownOnly = true)
+//                }
+//            }
 
             val detailTransition =
                 uiState.value.contactDetailsUiState.calculateProposedTransition(event)
@@ -162,9 +165,11 @@ class DefaultContactsActivityViewModel(
                 }
                 DetailComponentUiEvents.SaveClick -> {
                     val detailState = uiState.value.contactDetailsUiState
-                    if (detailState is EditingContact) {
+                    if (detailState is EditingContact && !detailState.hasFieldsInErrorState) {
                         viewModelScope.launch {
-                            contactsRepo.saveContact(detailState.updatedContact)
+                            contactsRepo.saveContact(detailState.updatedContact).getOrNull()?.also {
+//                                handleDataEvent(ContactsActivityDataEvents.ContactDetailsSaved(it))
+                            }
                         }
                     }
                 }

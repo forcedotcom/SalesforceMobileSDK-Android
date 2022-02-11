@@ -15,8 +15,6 @@ sealed interface ContactsListUiState {
         override val contacts: List<Contact> = emptyList()
         override fun calculateProposedTransition(event: ContactsActivityUiEvents): ContactsListUiState =
             when (event) {
-//                is ContactListUpdates -> ViewList(event.newContactList)
-
                 ContactCreate,
                 is ContactDelete,
                 is ContactEdit,
@@ -35,9 +33,11 @@ sealed interface ContactsListUiState {
                 is SearchTermUpdated -> this
             }
 
-        override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactsListUiState {
-            TODO("Not yet implemented")
-        }
+        override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactsListUiState =
+            when (event) {
+//                is ContactsActivityDataEvents.ContactDetailsSaved -> this
+                is ContactsActivityDataEvents.ContactListUpdates -> ViewList(event.newContactList)
+            }
     }
 
     data class ViewList(
@@ -45,8 +45,6 @@ sealed interface ContactsListUiState {
     ) : ContactsListUiState {
         override fun calculateProposedTransition(event: ContactsActivityUiEvents): ContactsListUiState =
             when (event) {
-//                is ContactListUpdates -> this.copy(contacts = event.newContactList)
-
                 ContactCreate,
                 is ContactDelete,
                 is ContactEdit,
@@ -65,9 +63,13 @@ sealed interface ContactsListUiState {
                 is SearchTermUpdated -> this
             }
 
-        override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactsListUiState {
-            TODO("Not yet implemented")
-        }
+        override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactsListUiState =
+            when (event) {
+//                is ContactsActivityDataEvents.ContactDetailsSaved -> ViewList(
+//                    this.contacts.map { if (it.id == event.contact.id) event.contact else it }
+//                )
+                is ContactsActivityDataEvents.ContactListUpdates -> this.copy(contacts = event.newContactList)
+            }
     }
 
     data class Search(
@@ -94,8 +96,10 @@ sealed interface ContactsListUiState {
                 is SearchTermUpdated -> this
             }
 
-        override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactsListUiState {
-            TODO("Not yet implemented")
-        }
+        override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactsListUiState =
+            when (event) {
+//                is ContactsActivityDataEvents.ContactDetailsSaved -> TODO()
+                is ContactsActivityDataEvents.ContactListUpdates -> TODO()
+            }
     }
 }
