@@ -1,17 +1,21 @@
-package com.salesforce.samples.mobilesynccompose.contacts.vm
+package com.salesforce.samples.mobilesynccompose.contacts.state
 
 import com.salesforce.samples.mobilesynccompose.R
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityUiEvents.ContactEdit
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityUiEvents.ContactView
-import com.salesforce.samples.mobilesynccompose.contacts.vm.DetailComponentUiEvents.FieldValuesChanged
-import com.salesforce.samples.mobilesynccompose.contacts.vm.DetailComponentUiEvents.SaveClick
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactDetailUiEvents
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityUiEvents.ContactEdit
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityUiEvents.ContactView
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactDetailUiEvents.FieldValuesChanged
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactDetailUiEvents.SaveClick
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityDataEvents
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityUiEvents
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailFieldViewModel
 import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 
 sealed interface ContactDetailUiState {
     val vmList: List<ContactDetailFieldViewModel>
     // TODO These methods should be suspending and use Dispatchers.Default withContext
     fun calculateProposedTransition(event: ContactsActivityUiEvents): ContactDetailUiState
-    fun calculateProposedTransition(event: DetailComponentUiEvents): ContactDetailUiState
+    fun calculateProposedTransition(event: ContactDetailUiEvents): ContactDetailUiState
     fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactDetailUiState
 }
 
@@ -44,7 +48,7 @@ data class EditingContact(
             ContactsActivityUiEvents.SyncClick -> this
         }
 
-    override fun calculateProposedTransition(event: DetailComponentUiEvents): ContactDetailUiState {
+    override fun calculateProposedTransition(event: ContactDetailUiEvents): ContactDetailUiState {
         when (event) {
             is FieldValuesChanged -> {
                 return copy(
@@ -149,7 +153,7 @@ data class ViewingContact(
             ContactsActivityUiEvents.SyncClick -> this
         }
 
-    override fun calculateProposedTransition(event: DetailComponentUiEvents): ContactDetailUiState =
+    override fun calculateProposedTransition(event: ContactDetailUiEvents): ContactDetailUiState =
         when (event) {
             is FieldValuesChanged,
             SaveClick -> this
@@ -202,7 +206,7 @@ object NoContactSelected : ContactDetailUiState {
             ContactsActivityUiEvents.SyncClick -> this
         }
 
-    override fun calculateProposedTransition(event: DetailComponentUiEvents): ContactDetailUiState =
+    override fun calculateProposedTransition(event: ContactDetailUiEvents): ContactDetailUiState =
         when (event) {
             is FieldValuesChanged,
             SaveClick -> this
@@ -215,7 +219,7 @@ object NoContactSelected : ContactDetailUiState {
         }
 }
 
-private fun Contact.createFirstNameVm(): ContactDetailFieldViewModel =
+fun Contact.createFirstNameVm(): ContactDetailFieldViewModel =
     ContactDetailFieldViewModel(
         fieldValue = firstName,
         isInErrorState = false,
@@ -226,7 +230,7 @@ private fun Contact.createFirstNameVm(): ContactDetailFieldViewModel =
         onFieldValueChange = { newValue -> this.copy(firstName = newValue) }
     )
 
-private fun Contact.createLastNameVm(): ContactDetailFieldViewModel {
+fun Contact.createLastNameVm(): ContactDetailFieldViewModel {
     val isError = lastName.isBlank()
     val help = if (isError) R.string.help_cannot_be_blank else null
 
@@ -241,7 +245,7 @@ private fun Contact.createLastNameVm(): ContactDetailFieldViewModel {
     )
 }
 
-private fun Contact.createTitleVm(): ContactDetailFieldViewModel =
+fun Contact.createTitleVm(): ContactDetailFieldViewModel =
     ContactDetailFieldViewModel(
         fieldValue = title,
         isInErrorState = false, // cannot be in error state

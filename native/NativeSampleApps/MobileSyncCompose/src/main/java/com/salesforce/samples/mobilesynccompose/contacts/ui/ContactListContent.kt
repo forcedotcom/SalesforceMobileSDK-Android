@@ -15,7 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsListUiState
+import com.salesforce.samples.mobilesynccompose.contacts.state.ContactsListUiState
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 
@@ -23,7 +23,6 @@ import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 fun ContactListContent(
     modifier: Modifier = Modifier,
     listUiState: ContactsListUiState,
-//    contacts: List<Contact>,
     onContactClick: (Contact) -> Unit,
     onContactDeleteClick: (Contact) -> Unit,
     onContactEditClick: (Contact) -> Unit,
@@ -38,7 +37,6 @@ fun ContactListContent(
                 ContactCard(
                     modifier = Modifier.padding(4.dp),
                     startExpanded = false,
-                    isSynced = true,
                     contact = contact,
                     onCardClick = onContactClick,
                     onDeleteClick = onContactDeleteClick,

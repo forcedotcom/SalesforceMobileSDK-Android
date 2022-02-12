@@ -33,7 +33,6 @@ import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 fun ContactCard(
     modifier: Modifier = Modifier,
     contact: Contact,
-    isSynced: Boolean,
     onCardClick: (Contact) -> Unit,
     onDeleteClick: (Contact) -> Unit,
     onEditClick: (Contact) -> Unit,
@@ -70,16 +69,16 @@ fun ContactCard(
                 }
                 Image(
                     painter = painterResource(
-                        id = if (isSynced)
-                            R.drawable.sync_save
-                        else
+                        id = if (contact.local)
                             R.drawable.sync_local
+                        else
+                            R.drawable.sync_save
                     ),
                     contentDescription = stringResource(
-                        id = if (isSynced)
-                            R.string.content_desc_item_synced
-                        else
+                        id = if (contact.local)
                             R.string.content_desc_item_saved_locally
+                        else
+                            R.string.content_desc_item_synced
                     ),
                     modifier = Modifier
                         .size(48.dp)
@@ -122,7 +121,6 @@ fun PreviewContactListItem() {
             ContactCard(
                 modifier = Modifier.padding(8.dp),
                 startExpanded = true,
-                isSynced = false,
                 contact = Contact.createNewLocal(
                     firstName = "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirstFirst",
                     lastName = "Last Last Last Last Last Last Last Last Last Last Last",
