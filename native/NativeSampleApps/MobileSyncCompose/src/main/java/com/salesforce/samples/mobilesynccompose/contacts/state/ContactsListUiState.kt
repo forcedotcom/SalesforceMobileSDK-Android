@@ -1,14 +1,17 @@
-package com.salesforce.samples.mobilesynccompose.contacts.vm
+package com.salesforce.samples.mobilesynccompose.contacts.state
 
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityUiEvents.*
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ListComponentUiEvents.SearchClick
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ListComponentUiEvents.SearchTermUpdated
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityDataEvents
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityUiEvents
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityUiEvents.*
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsListUiEvents
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsListUiEvents.SearchClick
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsListUiEvents.SearchTermUpdated
 import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 
 sealed interface ContactsListUiState {
     val contacts: List<Contact>
     fun calculateProposedTransition(event: ContactsActivityUiEvents): ContactsListUiState
-    fun calculateProposedTransition(event: ListComponentUiEvents): ContactsListUiState
+    fun calculateProposedTransition(event: ContactsListUiEvents): ContactsListUiState
     fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactsListUiState
 
     object Loading : ContactsListUiState {
@@ -27,7 +30,7 @@ sealed interface ContactsListUiState {
                 SyncClick -> this
             }
 
-        override fun calculateProposedTransition(event: ListComponentUiEvents): ContactsListUiState =
+        override fun calculateProposedTransition(event: ContactsListUiEvents): ContactsListUiState =
             when (event) {
                 SearchClick -> this
                 is SearchTermUpdated -> this
@@ -57,7 +60,7 @@ sealed interface ContactsListUiState {
                 SyncClick -> this
             }
 
-        override fun calculateProposedTransition(event: ListComponentUiEvents): ContactsListUiState =
+        override fun calculateProposedTransition(event: ContactsListUiEvents): ContactsListUiState =
             when (event) {
                 SearchClick,
                 is SearchTermUpdated -> this
@@ -90,7 +93,7 @@ sealed interface ContactsListUiState {
                 SyncClick -> this
             }
 
-        override fun calculateProposedTransition(event: ListComponentUiEvents): ContactsListUiState =
+        override fun calculateProposedTransition(event: ContactsListUiEvents): ContactsListUiState =
             when (event) {
                 SearchClick,
                 is SearchTermUpdated -> this

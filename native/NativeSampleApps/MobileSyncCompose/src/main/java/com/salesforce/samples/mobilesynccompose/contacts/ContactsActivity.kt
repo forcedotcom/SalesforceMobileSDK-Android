@@ -17,8 +17,8 @@ import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity
 import com.salesforce.androidsdk.ui.SalesforceActivityDelegate
 import com.salesforce.androidsdk.ui.SalesforceActivityInterface
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityUiEvents
 import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactsActivityContent
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityUiEvents
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityViewModel
 import com.salesforce.samples.mobilesynccompose.contacts.vm.DefaultContactsActivityViewModel
 import com.salesforce.samples.mobilesynccompose.core.ui.LayoutRestrictions

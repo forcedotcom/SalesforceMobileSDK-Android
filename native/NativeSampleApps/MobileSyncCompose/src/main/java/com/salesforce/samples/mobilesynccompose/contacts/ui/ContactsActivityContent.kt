@@ -1,5 +1,6 @@
 package com.salesforce.samples.mobilesynccompose.contacts.ui
 
+import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
@@ -10,16 +11,25 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R.string.*
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactDetailUiEvents
 import com.salesforce.samples.mobilesynccompose.contacts.vm.*
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsListUiState.*
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityUiEvents.*
-import com.salesforce.samples.mobilesynccompose.contacts.vm.DetailComponentUiEvents.SaveClick
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ListComponentUiEvents.SearchClick
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ListComponentUiEvents.SearchTermUpdated
+import com.salesforce.samples.mobilesynccompose.contacts.state.ContactsListUiState.*
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityUiEvents.*
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactDetailUiEvents.SaveClick
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityUiEvents
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsListUiEvents
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsListUiEvents.SearchClick
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsListUiEvents.SearchTermUpdated
+import com.salesforce.samples.mobilesynccompose.contacts.state.*
 import com.salesforce.samples.mobilesynccompose.core.ui.LayoutRestrictions
+import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeClass
+import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeRestrictions
 import com.salesforce.samples.mobilesynccompose.core.ui.components.ToggleableEditTextField
+import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
+import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -69,7 +79,6 @@ fun ContactsActivityContent(
             ContactListContent(
                 modifier = Modifier.padding(paddingValues = paddingVals.fixForMainContent()),
                 listUiState = listUiState,
-//                contacts = listUiState.contacts,
                 onContactClick = { vm.handleEvent(ContactView(it)) },
                 onContactDeleteClick = { TODO("onContactDeleteClick") },
                 onContactEditClick = { TODO("onContactEditClick") }
@@ -309,73 +318,65 @@ private object ContactActivityFab {
     }
 }
 
-//@Composable
-//@Preview(showBackground = true)
-//@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
-//private fun ListPreview() {
-//    val contacts = (1..100).map {
-//        ContactObject(
-//            id = it.toString(),
-//            firstName = "First",
-//            lastName = "Last $it",
-//            title = "Title",
-//            isLocallyCreated = false,
-//            isLocallyDeleted = false,
-//            isLocallyUpdated = false
-//        )
-//    }
-//    val vm = object : PreviewContactsActivityViewModel() {}.apply {
-//        mutUiState.value = ContactActivityUiState(
-//            contactDetailsUiState = NoContactSelected,
-//            contactsListUiState = ViewList(contacts)
-//        )
-//    }
-//    SalesforceMobileSDKAndroidTheme {
-//        ContactsActivityContent(
-//            layoutRestrictions = LayoutRestrictions(
-//                WindowSizeRestrictions(
-//                    WindowSizeClass.Compact,
-//                    WindowSizeClass.Medium
-//                )
-//            ),
-//            vm = vm
-//        )
-//    }
-//}
+@Composable
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
+private fun ListPreview() {
+    val contacts = (1..100).map {
+        Contact.createNewLocal(
+            firstName = "First",
+            lastName = "Last $it",
+            title = "Title",
+        )
+    }
+    val vm = object : PreviewContactsActivityViewModel() {}.apply {
+        mutUiState.value = ContactActivityUiState(
+            contactDetailsUiState = NoContactSelected,
+            contactsListUiState = ViewList(contacts)
+        )
+    }
+    SalesforceMobileSDKAndroidTheme {
+        ContactsActivityContent(
+            layoutRestrictions = LayoutRestrictions(
+                WindowSizeRestrictions(
+                    WindowSizeClass.Compact,
+                    WindowSizeClass.Medium
+                )
+            ),
+            vm = vm
+        )
+    }
+}
 
-//@Composable
-//@Preview(showBackground = true)
-//@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
-//private fun DetailsPreview() {
-//    val contact = ContactObject(
-//        id = "1",
-//        firstName = "First",
-//        lastName = "Last",
-//        title = "Title",
-//        isLocallyCreated = false,
-//        isLocallyDeleted = false,
-//        isLocallyUpdated = false
-//    )
-//
-//    val vm = object : PreviewContactsActivityViewModel() {}.apply {
-//        mutUiState.value = ContactActivityUiState(
-//            contactDetailsUiState = contact.toViewContactUiState(),
-//            contactsListUiState = Loading
-//        )
-//    }
-//
-//    SalesforceMobileSDKAndroidTheme {
-//        ContactsActivityContent(
-//            layoutRestrictions = LayoutRestrictions(
-//                WindowSizeRestrictions(
-//                    WindowSizeClass.Compact,
-//                    WindowSizeClass.Medium
-//                )
-//            ),
-//            vm = vm
-//        )
-//    }
-//}
+@Composable
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
+private fun DetailsPreview() {
+    val contact = Contact.createNewLocal(
+        firstName = "First",
+        lastName = "Last",
+        title = "Title",
+    )
+
+    val vm = object : PreviewContactsActivityViewModel() {}.apply {
+        mutUiState.value = ContactActivityUiState(
+            contactDetailsUiState = ViewingContact(contact),
+            contactsListUiState = Loading
+        )
+    }
+
+    SalesforceMobileSDKAndroidTheme {
+        ContactsActivityContent(
+            layoutRestrictions = LayoutRestrictions(
+                WindowSizeRestrictions(
+                    WindowSizeClass.Compact,
+                    WindowSizeClass.Medium
+                )
+            ),
+            vm = vm
+        )
+    }
+}
 
 private abstract class PreviewContactsActivityViewModel : ContactsActivityViewModel {
     val mutUiState = MutableStateFlow(
@@ -392,11 +393,11 @@ private abstract class PreviewContactsActivityViewModel : ContactsActivityViewMo
         /* no-op */
     }
 
-    override fun handleEvent(event: ListComponentUiEvents) {
+    override fun handleEvent(event: ContactsListUiEvents) {
         /* no-op */
     }
 
-    override fun handleEvent(event: DetailComponentUiEvents) {
+    override fun handleEvent(event: ContactDetailUiEvents) {
         /* no-op */
     }
 }

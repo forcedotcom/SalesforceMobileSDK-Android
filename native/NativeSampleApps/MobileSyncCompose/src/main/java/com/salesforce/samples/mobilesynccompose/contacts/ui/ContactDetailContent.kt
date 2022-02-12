@@ -1,5 +1,6 @@
 package com.salesforce.samples.mobilesynccompose.contacts.ui
 
+import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Box
@@ -8,20 +9,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.salesforce.samples.mobilesynccompose.contacts.vm.DetailComponentEventHandler
-import com.salesforce.samples.mobilesynccompose.contacts.vm.DetailComponentUiEvents.FieldValuesChanged
-import com.salesforce.samples.mobilesynccompose.contacts.vm.EditingContact
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ViewingContact
+import com.salesforce.samples.mobilesynccompose.contacts.vm.*
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactDetailUiEvents.FieldValuesChanged
+import com.salesforce.samples.mobilesynccompose.contacts.state.*
 import com.salesforce.samples.mobilesynccompose.core.ui.components.ToggleableEditTextField
 import com.salesforce.samples.mobilesynccompose.core.ui.safeStringResource
+import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
+import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 import kotlinx.coroutines.launch
 
 object ContactDetailContent {
@@ -96,26 +99,31 @@ object ContactDetailContent {
     }
 }
 
-//@Preview(showBackground = true)
-//@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
-//@Composable
-//private fun CompactEditModePreview() {
-//    var contactObject: ContactObject by remember {
-//        mutableStateOf(
-//            ContactObject(
-//                id = "1",
-//                firstName = "First",
-//                lastName = "Last",
-//                title = "Title"
-//            )
-//        )
-//    }
-//
-//    val state = contactObject.toEditContactUiState()
-//
-//    SalesforceMobileSDKAndroidTheme {
-//        Surface {
-//            ContactDetailContent.CompactEditMode(state = state, delegate = {})
-//        }
-//    }
-//}
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
+@Composable
+private fun CompactEditModePreview() {
+    var contactObject: Contact by remember {
+        mutableStateOf(
+            Contact.createNewLocal(
+                firstName = "First",
+                lastName = "Last",
+                title = "Title"
+            )
+        )
+    }
+
+    val state = EditingContact(
+        originalContact = contactObject,
+        firstNameVm = contactObject.createFirstNameVm(),
+        lastNameVm = contactObject.createLastNameVm(),
+        titleVm = contactObject.createTitleVm(),
+        savingContact = false
+    )
+
+    SalesforceMobileSDKAndroidTheme {
+        Surface {
+            ContactDetailContent.CompactEditMode(state = state, delegate = {})
+        }
+    }
+}

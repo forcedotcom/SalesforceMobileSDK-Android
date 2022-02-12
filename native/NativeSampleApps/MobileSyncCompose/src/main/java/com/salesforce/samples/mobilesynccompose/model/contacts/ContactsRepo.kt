@@ -9,7 +9,8 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec
 import com.salesforce.samples.mobilesynccompose.core.extensions.map
 import com.salesforce.samples.mobilesynccompose.core.extensions.replaceAll
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.resume
@@ -147,7 +148,7 @@ class DefaultContactsRepo(
     }
 
     private fun onSyncDownFailed(syncDownResult: SyncState) {
-        TODO("onSyncDownFailed() syncDownResult = $syncDownResult")
+        Log.e(TAG, "onSyncDownFailed() syncDownResult = $syncDownResult")
     }
 
     private companion object {
