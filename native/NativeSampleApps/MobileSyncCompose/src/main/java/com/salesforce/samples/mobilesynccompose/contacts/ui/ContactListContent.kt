@@ -63,7 +63,7 @@ private fun ContactListContentPreview() {
         Surface {
             ContactListContent(
                 modifier = Modifier.padding(4.dp),
-                listUiState = ContactsListUiState.ViewList(contacts = contacts),
+                listUiState = ContactsListUiState.ViewingList(contacts = contacts),
 //                contacts = contacts,
                 onContactClick = { Log.d("ContactListContentPreview", "Clicked: $it") },
                 onContactDeleteClick = {

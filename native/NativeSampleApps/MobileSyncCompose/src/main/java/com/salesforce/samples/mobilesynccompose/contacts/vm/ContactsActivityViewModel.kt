@@ -20,29 +20,29 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 
 interface ContactsActivityViewModel
-    : ContactActivityEventHandler,
-    ListComponentEventHandler,
-    DetailComponentEventHandler {
+    : ContactsActivityEventHandler,
+    ContactsListEventHandler,
+    ContactDetailEventHandler {
 
-    val uiState: StateFlow<ContactActivityUiState>
+    val uiState: StateFlow<ContactsActivityUiState>
 
     val inspectDbClickEvents: ReceiveChannel<Unit>
 }
 
-data class ContactActivityUiState(
+data class ContactsActivityUiState(
     val contactDetailsUiState: ContactDetailUiState,
     val contactsListUiState: ContactsListUiState
 )
 
-fun interface ContactActivityEventHandler {
+fun interface ContactsActivityEventHandler {
     fun handleEvent(event: ContactsActivityUiEvents)
 }
 
-fun interface ListComponentEventHandler {
+fun interface ContactsListEventHandler {
     fun handleEvent(event: ContactsListUiEvents)
 }
 
-fun interface DetailComponentEventHandler {
+fun interface ContactDetailEventHandler {
     fun handleEvent(event: ContactDetailUiEvents)
 }
 
@@ -50,11 +50,11 @@ class DefaultContactsActivityViewModel(
     private val contactsRepo: ContactsRepo
 ) : ViewModel(), ContactsActivityViewModel {
 
-    private val mutUiState: MutableStateFlow<ContactActivityUiState> = MutableStateFlow(
-        ContactActivityUiState(NoContactSelected, ContactsListUiState.Loading)
+    private val mutUiState: MutableStateFlow<ContactsActivityUiState> = MutableStateFlow(
+        ContactsActivityUiState(NoContactSelected, ContactsListUiState.Loading)
     )
 
-    override val uiState: StateFlow<ContactActivityUiState> get() = mutUiState
+    override val uiState: StateFlow<ContactsActivityUiState> get() = mutUiState
 
     private val eventMutex = Mutex()
 
@@ -79,7 +79,7 @@ class DefaultContactsActivityViewModel(
             val listTransition =
                 uiState.value.contactsListUiState.calculateProposedTransition(event)
 
-            mutUiState.value = ContactActivityUiState(detailTransition, listTransition)
+            mutUiState.value = ContactsActivityUiState(detailTransition, listTransition)
 
             eventMutex.unlock()
         }
@@ -109,7 +109,7 @@ class DefaultContactsActivityViewModel(
             val listTransition =
                 uiState.value.contactsListUiState.calculateProposedTransition(event)
 
-            mutUiState.value = ContactActivityUiState(detailTransition, listTransition)
+            mutUiState.value = ContactsActivityUiState(detailTransition, listTransition)
 
             eventMutex.unlock()
         }
