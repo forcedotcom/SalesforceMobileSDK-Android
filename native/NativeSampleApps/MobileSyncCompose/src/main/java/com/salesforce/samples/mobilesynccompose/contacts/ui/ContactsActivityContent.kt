@@ -24,6 +24,8 @@ import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsListUiEv
 import com.salesforce.samples.mobilesynccompose.contacts.state.*
 import com.salesforce.samples.mobilesynccompose.contacts.state.ContactsListUiState.*
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.Single
+import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.SinglePaneContactDetails
+import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.SinglePaneContactsList
 import com.salesforce.samples.mobilesynccompose.contacts.vm.*
 import com.salesforce.samples.mobilesynccompose.core.ui.LayoutRestrictions
 import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeClass
@@ -44,124 +46,140 @@ fun ContactsActivityContent(
     val uiState by vm.uiState.collectAsState()
     val detailUiState = uiState.contactDetailsUiState
     val listUiState = uiState.contactsListUiState
-    val menuButtonContent: @Composable () -> Unit = {
-        ContactsActivityMenuButton(
-            onSyncClick = { vm.handleEvent(SyncClick) },
-            onSwitchUserClick = { vm.handleEvent(SwitchUserClick) },
-            onLogoutClick = { vm.handleEvent(LogoutClick) },
-            onInspectDbClick = { vm.handleEvent(InspectDbClick) }
-        )
-    }
+//    val menuButtonContent: @Composable () -> Unit = {
+//        ContactsActivityMenuButton(
+//            onSyncClick = { vm.handleEvent(SyncClick) },
+//            onSwitchUserClick = { vm.handleEvent(SwitchUserClick) },
+//            onLogoutClick = { vm.handleEvent(LogoutClick) },
+//            onInspectDbClick = { vm.handleEvent(InspectDbClick) }
+//        )
+//    }
 
-    val paneLayout = layoutRestrictions.calculatePaneLayout()
+    when (layoutRestrictions.calculatePaneLayout()) {
+        Single -> {
+            if (detailUiState !is NoContactSelected) {
+                SinglePaneContactDetails(
+                    uiState = detailUiState,
+                    activityEventHandler = vm,
+                    detailEventHandler = vm
+                )
+            } else {
+                SinglePaneContactsList(
+                    uiState = listUiState,
+                    listEventHandler = vm,
+                    activityEventHandler = vm
+                )
+            }
+        }
+    }
 
 //    val topAppBarContent: @Composable RowScope.() -> Unit
 //    val bottomAppBarContent: @Composable RowScope.() -> Unit
 //    val fabContent: @Composable () -> Unit
 //    val mainContent: @Composable (PaddingValues) -> Unit
-    val topAppBarContent = paneLayout.getTopAppBarContentForUiState(uiState, vm)
-    val bottomAppBarContent = paneLayout.getBottomAppBarContentForUiState(uiState, vm)
-    val fabContent: @Composable () -> Unit = when () {
-    }
-    val mainContent: @Composable (PaddingValues) -> Unit
+//    val topAppBarContent = paneLayout.getTopAppBarContentForUiState(uiState, vm)
+//    val bottomAppBarContent = paneLayout.getBottomAppBarContentForUiState(uiState, vm)
+//    val fabContent: @Composable () -> Unit = when () {
+//    }
+//    val mainContent: @Composable (PaddingValues) -> Unit
 
     // NoContactSelected means we are viewing the list
-    if (detailUiState is NoContactSelected) {
+//    if (detailUiState is NoContactSelected) {
 //        topAppBarContent = listUiState.getSinglePaneTopAppBarContent(
 //            layoutRestrictions,
 //            onUpClick = { vm.handleEvent(ListNavUp) },
 //            onSearchTermUpdate = { vm.handleEvent(SearchTermUpdated(newSearchTerm = it)) },
 //            menuButtonContent = menuButtonContent
 //        )
-
-        bottomAppBarContent = getBottomAppBarContentForContactList(
-            layoutRestrictions,
-            onSearchClick = { vm.handleEvent(SearchClick) }
-        )
-
-        fabContent = {
-            ContactsActivityFab.Add(onAddClick = { vm.handleEvent(ContactCreate) })
-        }
-
-        mainContent = { paddingVals ->
-            ContactListContent(
-                modifier = Modifier.padding(paddingValues = paddingVals.fixForMainContent()),
-                listUiState = listUiState,
-                onContactClick = { vm.handleEvent(ContactView(it)) },
-                onContactDeleteClick = { TODO("onContactDeleteClick") },
-                onContactEditClick = { TODO("onContactEditClick") }
-            )
+//
+//        bottomAppBarContent = getBottomAppBarContentForContactList(
+//            layoutRestrictions,
+//            onSearchClick = { vm.handleEvent(SearchClick) }
+//        )
+//
+//        fabContent = {
+//            ContactsActivityFab.Add(onAddClick = { vm.handleEvent(ContactCreate) })
+//        }
+//
+//        mainContent = { paddingVals ->
+//            ContactListContent(
+//                modifier = Modifier.padding(paddingValues = paddingVals.fixForMainContent()),
+//                listUiState = listUiState,
+//                onContactClick = { vm.handleEvent(ContactView(it)) },
+//                onContactDeleteClick = { TODO("onContactDeleteClick") },
+//                onContactEditClick = { TODO("onContactEditClick") }
+//            )
 //            BackHandler(enabled = listUiState is Search, onBack = { vm.handleEvent(NavBack) })
-        }
-    } else {
+//        }
+//    } else {
 //        topAppBarContent = detailUiState.getSinglePaneTopAppBarContent(
 //            layoutRestrictions,
 //            onUpClick = { vm.handleEvent(ListNavUp) },
 //            menuButtonContent = menuButtonContent
 //        )
 
-        bottomAppBarContent = getBottomAppBarContentForContactDetail(
-            layoutRestrictions,
-            onDeleteClick = { detailUiState.onDetailDeleteClick(vm) }
-        )
-
-        fabContent = when (detailUiState) {
-            is EditingContact -> {
-                { ContactsActivityFab.Save(onSaveClick = { vm.handleEvent(SaveClick) }) }
-            }
-            NoContactSelected -> {
-                {}
-            }
-            is ViewingContact -> {
-                {
-                    ContactsActivityFab.Edit(
-                        onEditClick = { vm.handleEvent(ContactEdit(detailUiState.contact)) }
-                    )
-                }
-            }
-        }
-
-        mainContent = when (val detailState = uiState.contactDetailsUiState) {
-            is EditingContact -> {
-                { paddingVals ->
-                    ContactDetailContent.CompactEditMode(
-                        modifier = Modifier.padding(paddingVals.fixForMainContent()),
-                        delegate = vm,
-                        state = detailState,
-                    )
-                    BackHandler { vm.handleEvent(ListNavBack) }
-                }
-            }
-            is ViewingContact -> {
-                { paddingVals ->
-                    ContactDetailContent.CompactViewMode(
-                        modifier = Modifier.padding(paddingVals.fixForMainContent()),
-                        state = detailState
-                    )
-                    BackHandler {
-                        vm.handleEvent(ListNavBack)
-                    }
-                }
-            }
-            NoContactSelected -> {
-                { ContactDetailContent.Empty() }
-            }
-        }
-    }
-
-    Scaffold(
-        topBar = { TopAppBar(content = topAppBarContent) },
-        bottomBar = {
-            BottomAppBar(
-                cutoutShape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50)),
-                content = bottomAppBarContent
-            )
-        },
-        floatingActionButtonPosition = FabPosition.Center,
-        floatingActionButton = fabContent,
-        isFloatingActionButtonDocked = true,
-        content = mainContent
-    )
+//        bottomAppBarContent = getBottomAppBarContentForContactDetail(
+//            layoutRestrictions,
+//            onDeleteClick = { detailUiState.onDetailDeleteClick(vm) }
+//        )
+//
+//        fabContent = when (detailUiState) {
+//            is EditingContact -> {
+//                { ContactsActivityFab.Save(onSaveClick = { vm.handleEvent(SaveClick) }) }
+//            }
+//            NoContactSelected -> {
+//                {}
+//            }
+//            is ViewingContact -> {
+//                {
+//                    ContactsActivityFab.Edit(
+//                        onEditClick = { vm.handleEvent(ContactEdit(detailUiState.contact)) }
+//                    )
+//                }
+//            }
+//        }
+//
+//        mainContent = when (val detailState = uiState.contactDetailsUiState) {
+//            is EditingContact -> {
+//                { paddingVals ->
+//                    ContactDetailContent.CompactEditMode(
+//                        modifier = Modifier.padding(paddingVals.fixForMainContent()),
+//                        delegate = vm,
+//                        state = detailState,
+//                    )
+//                    BackHandler { vm.handleEvent(ListNavBack) }
+//                }
+//            }
+//            is ViewingContact -> {
+//                { paddingVals ->
+//                    ContactDetailContent.CompactViewMode(
+//                        modifier = Modifier.padding(paddingVals.fixForMainContent()),
+//                        state = detailState
+//                    )
+//                    BackHandler {
+//                        vm.handleEvent(ListNavBack)
+//                    }
+//                }
+//            }
+//            NoContactSelected -> {
+//                { ContactDetailContent.Empty() }
+//            }
+//        }
+//    }
+//
+//    Scaffold(
+//        topBar = { TopAppBar(content = topAppBarContent) },
+//        bottomBar = {
+//            BottomAppBar(
+//                cutoutShape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50)),
+//                content = bottomAppBarContent
+//            )
+//        },
+//        floatingActionButtonPosition = FabPosition.Center,
+//        floatingActionButton = fabContent,
+//        isFloatingActionButtonDocked = true,
+//        content = mainContent
+//    )
 }
 
 private fun LayoutRestrictions.calculatePaneLayout(): PaneLayout = Single
@@ -334,7 +352,7 @@ private object ContactDetailAppBarContent {
 //}
 
 @Composable
-private fun PaddingValues.fixForMainContent() = PaddingValues(
+fun PaddingValues.fixForMainContent() = PaddingValues(
     start = calculateStartPadding(LocalLayoutDirection.current) + 4.dp,
     top = calculateTopPadding() + 4.dp,
     end = calculateEndPadding(LocalLayoutDirection.current) + 4.dp,

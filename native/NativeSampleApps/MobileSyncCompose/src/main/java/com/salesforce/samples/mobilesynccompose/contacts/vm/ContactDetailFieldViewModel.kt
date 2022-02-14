@@ -10,5 +10,6 @@ data class ContactDetailFieldViewModel(
     @StringRes val labelRes: Int?,
     @StringRes val helperRes: Int?,
     @StringRes val placeholderRes: Int?,
-    val onFieldValueChange: (newValue: String) -> Contact
+    val onFieldValueChange: (newValue: String) -> Contact,
+    val maxLines: UInt = 1u
 )

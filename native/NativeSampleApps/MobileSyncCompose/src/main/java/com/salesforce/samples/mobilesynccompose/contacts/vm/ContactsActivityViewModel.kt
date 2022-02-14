@@ -133,6 +133,8 @@ class DefaultContactsActivityViewModel(
                         }
                     }
                 }
+                ContactDetailUiEvents.DetailNavBack,
+                ContactDetailUiEvents.DetailNavUp -> TODO()
             }
 
             val detailTransition =

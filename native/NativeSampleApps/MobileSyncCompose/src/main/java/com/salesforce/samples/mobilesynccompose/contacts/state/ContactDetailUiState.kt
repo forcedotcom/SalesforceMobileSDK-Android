@@ -2,8 +2,7 @@ package com.salesforce.samples.mobilesynccompose.contacts.state
 
 import com.salesforce.samples.mobilesynccompose.R
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactDetailUiEvents
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactDetailUiEvents.FieldValuesChanged
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactDetailUiEvents.SaveClick
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactDetailUiEvents.*
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityDataEvents
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityUiEvents
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityUiEvents.ContactEdit
@@ -20,7 +19,6 @@ sealed interface ContactDetailUiState {
     fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactDetailUiState
 }
 
-// TODO just make the list of VMs the val in the primary constructor and stop trying to be cute with iterable implementation.
 data class EditingContact(
     val originalContact: Contact,
     val firstNameVm: ContactDetailFieldViewModel,
@@ -68,8 +66,15 @@ data class EditingContact(
                     copy(savingContact = true)
                 }
             }
-            ContactDetailUiEvents.DetailNavBack -> TODO()
-            ContactDetailUiEvents.DetailNavUp -> TODO()
+
+            DetailNavBack,
+            DetailNavUp -> {
+                if (!isModified) {
+                    ViewingContact(contact = originalContact)
+                } else {
+                    this
+                }
+            }
         }
 
     override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactDetailUiState =
@@ -107,6 +112,7 @@ data class EditingContact(
             title = titleVm.fieldValue
         )
     }
+    val isModified: Boolean by lazy { updatedContact != originalContact }
 
     val fieldsInErrorState: List<ContactDetailFieldViewModel> by lazy {
         vmList.filter { it.isInErrorState }
@@ -160,8 +166,8 @@ data class ViewingContact(
         when (event) {
             is FieldValuesChanged,
             SaveClick -> this
-            ContactDetailUiEvents.DetailNavBack -> TODO()
-            ContactDetailUiEvents.DetailNavUp -> TODO()
+            DetailNavBack,
+            DetailNavUp -> NoContactSelected
         }
 
     override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactDetailUiState =
@@ -214,9 +220,9 @@ object NoContactSelected : ContactDetailUiState {
     override fun calculateProposedTransition(event: ContactDetailUiEvents): ContactDetailUiState =
         when (event) {
             is FieldValuesChanged,
-            SaveClick -> this
-            ContactDetailUiEvents.DetailNavBack -> TODO()
-            ContactDetailUiEvents.DetailNavUp -> TODO()
+            SaveClick,
+            DetailNavBack,
+            DetailNavUp -> this
         }
 
     override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactDetailUiState =
