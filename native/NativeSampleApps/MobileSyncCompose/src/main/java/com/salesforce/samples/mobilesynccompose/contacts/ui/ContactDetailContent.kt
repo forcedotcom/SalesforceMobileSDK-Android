@@ -1,8 +1,6 @@
 package com.salesforce.samples.mobilesynccompose.contacts.ui
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,9 +16,9 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.salesforce.samples.mobilesynccompose.contacts.vm.*
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactDetailUiEvents.FieldValuesChanged
 import com.salesforce.samples.mobilesynccompose.contacts.state.*
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailEventHandler
 import com.salesforce.samples.mobilesynccompose.core.ui.components.ToggleableEditTextField
 import com.salesforce.samples.mobilesynccompose.core.ui.safeStringResource
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
@@ -40,11 +38,8 @@ object ContactDetailContent {
         val scrollState = rememberScrollState()
         Column(
             modifier = modifier
-                .scrollable(
-                    state = scrollState,
-                    orientation = Orientation.Vertical
-                )
-                .padding(horizontal = 8.dp),
+                .padding(horizontal = 8.dp)
+                .verticalScroll(state = scrollState)
         ) {
             state.vmList.forEach { fieldVm ->
                 ToggleableEditTextField(
@@ -63,7 +58,7 @@ object ContactDetailContent {
     @Composable
     fun CompactEditMode(
         state: EditingContact,
-        delegate: ContactDetailEventHandler,
+        detailEventHandler: ContactDetailEventHandler,
         modifier: Modifier = Modifier
     ) {
         val scrollState = rememberScrollState()
@@ -77,11 +72,11 @@ object ContactDetailContent {
             state.vmList.forEach { fieldVm ->
                 ToggleableEditTextField(
                     fieldValue = fieldVm.fieldValue,
-                    isEditEnabled = fieldVm.canBeEdited,
+                    isEditEnabled = fieldVm.canBeEdited && !state.savingContact,
                     isError = fieldVm.isInErrorState,
                     onValueChange = { newVal ->
                         val newObj = fieldVm.onFieldValueChange(newVal)
-                        delegate.handleEvent(FieldValuesChanged(newObject = newObj))
+                        detailEventHandler.handleEvent(FieldValuesChanged(newObject = newObj))
                     },
                     modifier = Modifier.onGloballyPositioned { layoutCoords ->
                         if (fieldVm == state.vmToScrollTo) {
@@ -92,7 +87,8 @@ object ContactDetailContent {
                     },
                     label = { Text(safeStringResource(id = fieldVm.labelRes)) },
                     help = { Text(safeStringResource(id = fieldVm.helperRes)) },
-                    placeholder = { Text(safeStringResource(id = fieldVm.placeholderRes)) }
+                    placeholder = { Text(safeStringResource(id = fieldVm.placeholderRes)) },
+                    maxLines = fieldVm.maxLines
                 )
             }
         }
@@ -123,7 +119,7 @@ private fun CompactEditModePreview() {
 
     SalesforceMobileSDKAndroidTheme {
         Surface {
-            ContactDetailContent.CompactEditMode(state = state, delegate = {})
+            ContactDetailContent.CompactEditMode(state = state, detailEventHandler = {})
         }
     }
 }

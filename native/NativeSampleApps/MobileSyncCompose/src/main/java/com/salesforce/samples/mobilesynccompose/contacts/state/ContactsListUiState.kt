@@ -56,8 +56,8 @@ sealed interface ContactsListUiState {
                 is ContactView,
                 InspectDbClick,
                 LogoutClick,
-                NavBack,
-                NavUp,
+//                NavBack,
+//                NavUp,
                 SwitchUserClick,
                 SyncClick -> this
             }
@@ -65,7 +65,9 @@ sealed interface ContactsListUiState {
         override fun calculateProposedTransition(event: ContactsListUiEvents): ContactsListUiState =
             when (event) {
                 SearchClick,
-                is SearchTermUpdated -> this
+                is SearchTermUpdated,
+                ContactsListUiEvents.ListNavBack,
+                ContactsListUiEvents.ListNavUp -> this
             }
 
         override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactsListUiState =
@@ -89,8 +91,8 @@ sealed interface ContactsListUiState {
                 is ContactView,
                 InspectDbClick,
                 LogoutClick,
-                NavBack,
-                NavUp,
+//                NavBack,
+//                NavUp,
                 SwitchUserClick,
                 SyncClick -> this
             }
@@ -98,7 +100,9 @@ sealed interface ContactsListUiState {
         override fun calculateProposedTransition(event: ContactsListUiEvents): ContactsListUiState =
             when (event) {
                 SearchClick,
-                is SearchTermUpdated -> this
+                is SearchTermUpdated,
+                ContactsListUiEvents.ListNavBack,
+                ContactsListUiEvents.ListNavUp -> this
             }
 
         override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactsListUiState =

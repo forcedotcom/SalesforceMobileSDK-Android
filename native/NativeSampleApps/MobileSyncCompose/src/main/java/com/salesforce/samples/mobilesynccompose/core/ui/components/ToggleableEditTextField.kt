@@ -23,6 +23,7 @@ fun ToggleableEditTextField(
     label: (@Composable () -> Unit)? = null,
     placeholder: (@Composable () -> Unit)? = null,
     help: (@Composable () -> Unit)? = null,
+    maxLines: UInt = UInt.MAX_VALUE,
 ) {
     /* TODO I'm not sure what the best way to differentiate editable from not...  It would be great
         if the border was gone for non-editable, but then placeholder + label behavior is weird b/c
@@ -47,6 +48,7 @@ fun ToggleableEditTextField(
             readOnly = !isEditEnabled,
             isError = isError,
             enabled = isEditEnabled,
+            maxLines = maxLines.toInt().coerceIn(1..Int.MAX_VALUE),
 //            colors = colors,
         )
         if (help != null) {
@@ -135,4 +137,16 @@ private fun LabeledTextFieldPreview() {
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun OverflowPreview() {
+    ToggleableEditTextField(
+        fieldValue = "OverflowOverflowOverflowOverflowOverflowOverflowOverflowOverflowOverflowOverflowOverflow",
+        isEditEnabled = false,
+        isError = false,
+        onValueChange = {},
+        maxLines = 1u
+    )
 }
