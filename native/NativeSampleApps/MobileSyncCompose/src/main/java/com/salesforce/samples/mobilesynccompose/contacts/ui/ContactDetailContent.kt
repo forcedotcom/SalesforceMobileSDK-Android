@@ -63,7 +63,7 @@ object ContactDetailContent {
     @Composable
     fun CompactEditMode(
         state: EditingContact,
-        delegate: DetailComponentEventHandler,
+        delegate: ContactDetailEventHandler,
         modifier: Modifier = Modifier
     ) {
         val scrollState = rememberScrollState()

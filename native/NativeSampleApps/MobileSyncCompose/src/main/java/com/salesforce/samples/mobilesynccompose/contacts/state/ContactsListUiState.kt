@@ -24,8 +24,8 @@ sealed interface ContactsListUiState {
                 is ContactView,
                 InspectDbClick,
                 LogoutClick,
-                NavBack,
-                NavUp,
+//                NavBack,
+//                NavUp,
                 SwitchUserClick,
                 SyncClick -> this
             }
@@ -34,16 +34,18 @@ sealed interface ContactsListUiState {
             when (event) {
                 SearchClick -> this
                 is SearchTermUpdated -> this
+                ContactsListUiEvents.ListNavBack -> TODO()
+                ContactsListUiEvents.ListNavUp -> TODO()
             }
 
         override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactsListUiState =
             when (event) {
 //                is ContactsActivityDataEvents.ContactDetailsSaved -> this
-                is ContactsActivityDataEvents.ContactListUpdates -> ViewList(event.newContactList)
+                is ContactsActivityDataEvents.ContactListUpdates -> ViewingList(event.newContactList)
             }
     }
 
-    data class ViewList(
+    data class ViewingList(
         override val contacts: List<Contact>
     ) : ContactsListUiState {
         override fun calculateProposedTransition(event: ContactsActivityUiEvents): ContactsListUiState =
@@ -75,7 +77,7 @@ sealed interface ContactsListUiState {
             }
     }
 
-    data class Search(
+    data class Searching(
         override val contacts: List<Contact>,
         val searchTerm: String
     ) : ContactsListUiState {

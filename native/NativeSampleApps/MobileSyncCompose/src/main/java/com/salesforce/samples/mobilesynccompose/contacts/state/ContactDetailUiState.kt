@@ -2,17 +2,18 @@ package com.salesforce.samples.mobilesynccompose.contacts.state
 
 import com.salesforce.samples.mobilesynccompose.R
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactDetailUiEvents
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityUiEvents.ContactEdit
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityUiEvents.ContactView
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactDetailUiEvents.FieldValuesChanged
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactDetailUiEvents.SaveClick
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityDataEvents
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityUiEvents
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityUiEvents.ContactEdit
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityUiEvents.ContactView
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailFieldViewModel
 import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 
 sealed interface ContactDetailUiState {
     val vmList: List<ContactDetailFieldViewModel>
+
     // TODO These methods should be suspending and use Dispatchers.Default withContext
     fun calculateProposedTransition(event: ContactsActivityUiEvents): ContactDetailUiState
     fun calculateProposedTransition(event: ContactDetailUiEvents): ContactDetailUiState
@@ -42,16 +43,16 @@ data class EditingContact(
             is ContactView,
             ContactsActivityUiEvents.InspectDbClick,
             ContactsActivityUiEvents.LogoutClick,
-            ContactsActivityUiEvents.NavBack,
-            ContactsActivityUiEvents.NavUp,
+//            ContactsActivityUiEvents.NavBack,
+//            ContactsActivityUiEvents.NavUp,
             ContactsActivityUiEvents.SwitchUserClick,
             ContactsActivityUiEvents.SyncClick -> this
         }
 
-    override fun calculateProposedTransition(event: ContactDetailUiEvents): ContactDetailUiState {
+    override fun calculateProposedTransition(event: ContactDetailUiEvents): ContactDetailUiState =
         when (event) {
             is FieldValuesChanged -> {
-                return copy(
+                copy(
                     firstNameVm = event.newObject.createFirstNameVm(),
                     lastNameVm = event.newObject.createLastNameVm(),
                     titleVm = event.newObject.createTitleVm()
@@ -60,14 +61,16 @@ data class EditingContact(
 
             SaveClick -> {
                 val vmToScrollTo = fieldsInErrorState.firstOrNull()
-                return if (vmToScrollTo != null) {
+
+                if (vmToScrollTo != null) {
                     copy(vmToScrollTo = vmToScrollTo)
                 } else {
                     copy(savingContact = true)
                 }
             }
+            ContactDetailUiEvents.DetailNavBack -> TODO()
+            ContactDetailUiEvents.DetailNavUp -> TODO()
         }
-    }
 
     override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactDetailUiState =
         when (event) {
@@ -147,8 +150,8 @@ data class ViewingContact(
             is ContactsActivityUiEvents.ContactDelete,
             ContactsActivityUiEvents.InspectDbClick,
             ContactsActivityUiEvents.LogoutClick,
-            ContactsActivityUiEvents.NavBack,
-            ContactsActivityUiEvents.NavUp,
+//            ContactsActivityUiEvents.NavBack,
+//            ContactsActivityUiEvents.NavUp,
             ContactsActivityUiEvents.SwitchUserClick,
             ContactsActivityUiEvents.SyncClick -> this
         }
@@ -157,6 +160,8 @@ data class ViewingContact(
         when (event) {
             is FieldValuesChanged,
             SaveClick -> this
+            ContactDetailUiEvents.DetailNavBack -> TODO()
+            ContactDetailUiEvents.DetailNavUp -> TODO()
         }
 
     override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactDetailUiState =
@@ -200,8 +205,8 @@ object NoContactSelected : ContactDetailUiState {
             is ContactsActivityUiEvents.ContactDelete,
             ContactsActivityUiEvents.InspectDbClick,
             ContactsActivityUiEvents.LogoutClick,
-            ContactsActivityUiEvents.NavBack,
-            ContactsActivityUiEvents.NavUp,
+//            ContactsActivityUiEvents.NavBack,
+//            ContactsActivityUiEvents.NavUp,
             ContactsActivityUiEvents.SwitchUserClick,
             ContactsActivityUiEvents.SyncClick -> this
         }
@@ -210,6 +215,8 @@ object NoContactSelected : ContactDetailUiState {
         when (event) {
             is FieldValuesChanged,
             SaveClick -> this
+            ContactDetailUiEvents.DetailNavBack -> TODO()
+            ContactDetailUiEvents.DetailNavUp -> TODO()
         }
 
     override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactDetailUiState =
