@@ -51,11 +51,11 @@ git clone https://github.com/forcedotcom/SalesforceMobileSDK-Android.git
 Documentation
 ==
 
-* [SalesforceSDK](http://forcedotcom.github.com/SalesforceMobileSDK-Android/index.html)
+* [SalesforceSDK](https://forcedotcom.github.io/SalesforceMobileSDK-Android/index.html)
 * Salesforce Mobile SDK Development Guide -- [HTML](https://developer.salesforce.com/docs/atlas.en-us.mobile_sdk.meta/mobile_sdk/preface_intro.htm)
 * [Mobile SDK Trail](https://trailhead.salesforce.com/trails/mobile_sdk_intro)
 
 Discussion
 ==
 
-If you would like to make suggestions, have questions, or encounter any issues, we'd love to hear from you. Post any feedback you have on [Salesforce StackExchange](https://salesforce.stackexchange.com/questions/tagged/mobilesdk).
+If you would like to make suggestions, have questions, or encounter any issues, we'd love to hear from you. Post any feedback you have on the [Mobile SDK Trailblazer Community](https://trailhead.salesforce.com/en/trailblazer-community/groups/0F94S000000kH0HSAU?tab=discussion&sort=LAST_MODIFIED_DATE_DESC).
