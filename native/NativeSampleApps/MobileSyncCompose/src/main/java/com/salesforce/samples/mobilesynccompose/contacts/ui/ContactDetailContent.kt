@@ -57,7 +57,7 @@ object ContactDetailContent {
 
     @Composable
     fun CompactEditMode(
-        state: EditingContact,
+        state: EditMode,
         detailEventHandler: ContactDetailEventHandler,
         modifier: Modifier = Modifier
     ) {
@@ -69,17 +69,20 @@ object ContactDetailContent {
                 .padding(horizontal = 8.dp)
                 .verticalScroll(state = scrollState)
         ) {
+            val isEditing = state is EditMode.EditingContact
+            val stateAsEditing = state as? EditMode.EditingContact
+
             state.vmList.forEach { fieldVm ->
                 ToggleableEditTextField(
                     fieldValue = fieldVm.fieldValue,
-                    isEditEnabled = fieldVm.canBeEdited && !state.savingContact,
+                    isEditEnabled = fieldVm.canBeEdited && isEditing,
                     isError = fieldVm.isInErrorState,
                     onValueChange = { newVal ->
                         val newObj = fieldVm.onFieldValueChange(newVal)
                         detailEventHandler.handleEvent(FieldValuesChanged(newObject = newObj))
                     },
                     modifier = Modifier.onGloballyPositioned { layoutCoords ->
-                        if (fieldVm == state.vmToScrollTo) {
+                        if (stateAsEditing != null && fieldVm == state.vmToScrollTo) {
                             scope.launch {
                                 scrollState.animateScrollTo(layoutCoords.positionInParent().y.toInt())
                             }
@@ -109,12 +112,11 @@ private fun CompactEditModePreview() {
         )
     }
 
-    val state = EditingContact(
+    val state = EditMode.EditingContact(
         originalContact = contactObject,
         firstNameVm = contactObject.createFirstNameVm(),
         lastNameVm = contactObject.createLastNameVm(),
         titleVm = contactObject.createTitleVm(),
-        savingContact = false
     )
 
     SalesforceMobileSDKAndroidTheme {

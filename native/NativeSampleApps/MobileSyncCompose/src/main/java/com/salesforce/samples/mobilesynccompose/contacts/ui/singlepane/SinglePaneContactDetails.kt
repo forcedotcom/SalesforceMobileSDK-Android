@@ -62,14 +62,18 @@ fun SinglePaneContactDetails(
         val fixedPadding = paddingVals.fixForMainContent()
         Box {
             when (uiState) {
-                is EditingContact -> {
+                is EditMode -> {
                     ContactDetailContent.CompactEditMode(
                         state = uiState,
                         detailEventHandler = detailEventHandler,
                         modifier = Modifier.padding(fixedPadding)
                     )
-                    if (uiState.savingContact) {
-                        LoadingContent()
+                    when (uiState) {
+                        is EditMode.Saving -> LoadingContent()
+                        is EditMode.DiscardChanges -> TODO()
+                        is EditMode.EditingContact -> {
+                            /* no-op */
+                        }
                     }
                 }
                 NoContactSelected -> ContactDetailContent.Empty()
@@ -98,7 +102,7 @@ private fun TopAppBarContent(
         }
 
         val label = when (uiState) {
-            is EditingContact -> {
+            is EditMode -> {
                 "${uiState.firstNameVm.fieldValue} ${uiState.lastNameVm.fieldValue}"
             }
 
@@ -125,7 +129,7 @@ private fun BottomAppBarContent(
             Spacer(modifier = Modifier.weight(1f))
             IconButton(onClick = {
                 when (uiState) {
-                    is EditingContact -> activityEventHandler.handleEvent(ContactDelete(uiState.originalContact))
+                    is EditMode -> activityEventHandler.handleEvent(ContactDelete(uiState.originalContact))
                     NoContactSelected -> {}
                     is ViewingContact -> activityEventHandler.handleEvent(ContactDelete(uiState.contact))
                 }
@@ -148,7 +152,7 @@ private fun FabContent(
     if (uiState !is NoContactSelected) {
         FloatingActionButton(onClick = {
             when (uiState) {
-                is EditingContact -> detailEventHandler.handleEvent(SaveClick)
+                is EditMode -> detailEventHandler.handleEvent(SaveClick)
                 NoContactSelected -> {
                     /* no-op */
                 }
@@ -156,7 +160,7 @@ private fun FabContent(
             }
         }) {
             when (uiState) {
-                is EditingContact -> {
+                is EditMode -> {
                     Icon(
                         Icons.Default.Check,
                         contentDescription = stringResource(id = R.string.cta_save)
@@ -243,12 +247,11 @@ private fun ContactDetailEditModePreview() {
     )
 
     val uiState =
-        EditingContact(
+        EditMode.EditingContact(
             originalContact = origContact,
             firstNameVm = editedContact.createFirstNameVm(),
             lastNameVm = editedContact.createLastNameVm(),
             titleVm = editedContact.createTitleVm(),
-            savingContact = false
         )
     SalesforceMobileSDKAndroidTheme {
         SinglePaneContactDetails(
@@ -274,12 +277,11 @@ private fun ContactDetailEditModeSavingPreview() {
     )
 
     val uiState =
-        EditingContact(
+        EditMode.Saving(
             originalContact = origContact,
             firstNameVm = editedContact.createFirstNameVm(),
             lastNameVm = editedContact.createLastNameVm(),
             titleVm = editedContact.createTitleVm(),
-            savingContact = true
         )
     SalesforceMobileSDKAndroidTheme {
         SinglePaneContactDetails(

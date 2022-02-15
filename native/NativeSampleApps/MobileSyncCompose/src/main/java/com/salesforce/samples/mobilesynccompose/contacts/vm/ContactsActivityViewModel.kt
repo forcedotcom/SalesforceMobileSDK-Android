@@ -8,7 +8,7 @@ import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivity
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsListUiEvents
 import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailUiState
 import com.salesforce.samples.mobilesynccompose.contacts.state.ContactsListUiState
-import com.salesforce.samples.mobilesynccompose.contacts.state.EditingContact
+import com.salesforce.samples.mobilesynccompose.contacts.state.EditMode
 import com.salesforce.samples.mobilesynccompose.contacts.state.NoContactSelected
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactsRepo
 import kotlinx.coroutines.channels.Channel
@@ -125,7 +125,7 @@ class DefaultContactsActivityViewModel(
                 }
                 ContactDetailUiEvents.SaveClick -> {
                     val detailState = uiState.value.contactDetailsUiState
-                    if (detailState is EditingContact && !detailState.hasFieldsInErrorState) {
+                    if (detailState is EditMode.EditingContact && !detailState.hasFieldsInErrorState) {
                         viewModelScope.launch {
                             contactsRepo.saveContact(detailState.updatedContact).getOrNull()?.also {
 //                                handleDataEvent(ContactsActivityDataEvents.ContactDetailsSaved(it))
@@ -133,8 +133,12 @@ class DefaultContactsActivityViewModel(
                         }
                     }
                 }
-                ContactDetailUiEvents.DetailNavBack,
-                ContactDetailUiEvents.DetailNavUp -> TODO()
+                ContactDetailUiEvents.DetailNavBack -> {
+                    // TODO Check for deep link and if so delegate the back handling to system nav
+                }
+                else -> {
+                    /* no-op */
+                }
             }
 
             val detailTransition =
