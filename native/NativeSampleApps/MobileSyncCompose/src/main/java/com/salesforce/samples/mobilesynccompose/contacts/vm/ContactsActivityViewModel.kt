@@ -27,6 +27,7 @@ interface ContactsActivityViewModel
     val uiState: StateFlow<ContactsActivityUiState>
 
     val inspectDbClickEvents: ReceiveChannel<Unit>
+    val logoutClickEvents: ReceiveChannel<Unit>
 }
 
 data class ContactsActivityUiState(
@@ -61,9 +62,11 @@ class DefaultContactsActivityViewModel(
     private val mutDbClickEvents = Channel<Unit>()
     override val inspectDbClickEvents: ReceiveChannel<Unit> get() = mutDbClickEvents
 
+    private val mutLogoutClickEvents = Channel<Unit>()
+    override val logoutClickEvents: ReceiveChannel<Unit> get() = mutLogoutClickEvents
+
     init {
         viewModelScope.launch {
-            sync(syncDownOnly = false)
             contactsRepo.contactUpdates.collect { contacts ->
                 handleDataEvent(ContactsActivityDataEvents.ContactListUpdates(contacts))
             }
@@ -89,20 +92,14 @@ class DefaultContactsActivityViewModel(
         viewModelScope.launch {
             eventMutex.lock()
 
-//            when (event) {
-//                ContactsActivityUiEvents.ContactCreate -> TODO()
-//                is ContactsActivityUiEvents.ContactDelete -> TODO()
-//                is ContactsActivityUiEvents.ContactEdit -> TODO()
-//                is ContactsActivityUiEvents.ContactView -> TODO()
-//                ContactsActivityUiEvents.InspectDbClick -> TODO()
-//                ContactsActivityUiEvents.LogoutClick -> TODO()
-//                ContactsActivityUiEvents.NavBack -> TODO()
-//                ContactsActivityUiEvents.NavUp -> TODO()
-//                ContactsActivityUiEvents.SwitchUserClick -> TODO()
-//                ContactsActivityUiEvents.SyncClick -> {
-//                    sync(syncDownOnly = true)
-//                }
-//            }
+            when (event) {
+                ContactsActivityUiEvents.SyncClick -> sync(syncDownOnly = false)
+                ContactsActivityUiEvents.InspectDbClick -> inspectDb()
+                ContactsActivityUiEvents.LogoutClick -> logout()
+                else -> {
+                    /* no-op */
+                }
+            }
 
             val detailTransition =
                 uiState.value.contactDetailsUiState.calculateProposedTransition(event)
@@ -119,17 +116,16 @@ class DefaultContactsActivityViewModel(
         viewModelScope.launch {
             eventMutex.lock()
 
+            val detailTransition =
+                uiState.value.contactDetailsUiState.calculateProposedTransition(event)
+
+            mutUiState.value = mutUiState.value.copy(contactDetailsUiState = detailTransition)
+
             when (event) {
-                is ContactDetailUiEvents.FieldValuesChanged -> {
-                    /* no-op */
-                }
                 ContactDetailUiEvents.SaveClick -> {
-                    val detailState = uiState.value.contactDetailsUiState
-                    if (detailState is EditMode.EditingContact && !detailState.hasFieldsInErrorState) {
+                    if (detailTransition is EditMode.Saving) {
                         viewModelScope.launch {
-                            contactsRepo.saveContact(detailState.updatedContact).getOrNull()?.also {
-//                                handleDataEvent(ContactsActivityDataEvents.ContactDetailsSaved(it))
-                            }
+                            contactsRepo.saveContact(detailTransition.updatedContact)
                         }
                     }
                 }
@@ -140,10 +136,6 @@ class DefaultContactsActivityViewModel(
                     /* no-op */
                 }
             }
-
-            val detailTransition =
-                uiState.value.contactDetailsUiState.calculateProposedTransition(event)
-            mutUiState.value = mutUiState.value.copy(contactDetailsUiState = detailTransition)
 
             eventMutex.unlock()
         }
@@ -165,6 +157,12 @@ class DefaultContactsActivityViewModel(
     private fun inspectDb() {
         viewModelScope.launch {
             mutDbClickEvents.send(Unit)
+        }
+    }
+
+    private fun logout() {
+        viewModelScope.launch {
+            mutLogoutClickEvents.send(Unit)
         }
     }
 
