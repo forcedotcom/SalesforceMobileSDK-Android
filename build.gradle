@@ -17,7 +17,7 @@ plugins {
   /* TODO: Re-evaluate the need to have this plugin declared at the top-level build.gradle.  With
       this plugin only applied at the module-level, the Compose compiler fails with a very low level
       Kotlin IR error, so we're keeping it here for now. gkotula 2022-01-13 */
-  id 'org.jetbrains.kotlin.android' version '1.5.31' apply false
+  id 'org.jetbrains.kotlin.android' version '1.6.10' apply false
 }
 
 apply plugin: 'io.github.gradle-nexus.publish-plugin'
