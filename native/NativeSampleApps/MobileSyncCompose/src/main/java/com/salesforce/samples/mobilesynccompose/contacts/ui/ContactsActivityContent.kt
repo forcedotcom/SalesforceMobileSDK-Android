@@ -1,36 +1,35 @@
 package com.salesforce.samples.mobilesynccompose.contacts.ui
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactDetailUiEvents
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactDetailUiEvents.DetailNavUp
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactDetailUiEvents.SaveClick
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityUiEvents
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityUiEvents.*
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsListUiEvents
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsListUiEvents.*
-import com.salesforce.samples.mobilesynccompose.contacts.state.*
-import com.salesforce.samples.mobilesynccompose.contacts.state.ContactsListUiState.*
+import com.salesforce.samples.mobilesynccompose.contacts.state.ContactsListUiState.Loading
+import com.salesforce.samples.mobilesynccompose.contacts.state.ContactsListUiState.ViewingList
+import com.salesforce.samples.mobilesynccompose.contacts.state.NoContactSelected
+import com.salesforce.samples.mobilesynccompose.contacts.state.ViewingContact
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.Single
 import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.SinglePaneContactDetails
 import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.SinglePaneContactsList
-import com.salesforce.samples.mobilesynccompose.contacts.vm.*
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityEventHandler
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityUiState
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityViewModel
 import com.salesforce.samples.mobilesynccompose.core.ui.LayoutRestrictions
 import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeClass
 import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeRestrictions
-import com.salesforce.samples.mobilesynccompose.core.ui.components.ToggleableEditTextField
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 import kotlinx.coroutines.channels.Channel
@@ -208,16 +207,39 @@ fun ContactsActivityMenuButton(handler: ContactsActivityEventHandler) {
             contentDescription = stringResource(id = content_desc_menu)
         )
         DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-            DropdownMenuItem(onClick = { handler.handleEvent(SyncClick) }) {
+            DropdownMenuItem(
+                onClick = {
+                    menuExpanded = false
+                    handler.handleEvent(SyncClick)
+                }
+            ) {
                 Text(stringResource(id = cta_sync))
             }
-            DropdownMenuItem(onClick = { handler.handleEvent(SwitchUserClick) }) {
+
+            DropdownMenuItem(
+                onClick = {
+                    menuExpanded = false
+                    handler.handleEvent(SwitchUserClick)
+                }
+            ) {
                 Text(stringResource(id = cta_switch_user))
             }
-            DropdownMenuItem(onClick = { handler.handleEvent(LogoutClick) }) {
+
+            DropdownMenuItem(
+                onClick = {
+                    menuExpanded = false
+                    handler.handleEvent(LogoutClick)
+                }
+            ) {
                 Text(stringResource(id = cta_logout))
             }
-            DropdownMenuItem(onClick = { handler.handleEvent(InspectDbClick) }) {
+
+            DropdownMenuItem(
+                onClick = {
+                    menuExpanded = false
+                    handler.handleEvent(InspectDbClick)
+                }
+            ) {
                 Text(stringResource(id = cta_inspect_db))
             }
         }
@@ -293,6 +315,8 @@ private abstract class PreviewContactsActivityViewModel : ContactsActivityViewMo
     )
     override val uiState: StateFlow<ContactsActivityUiState> get() = mutUiState
     override val inspectDbClickEvents: ReceiveChannel<Unit>
+        get() = Channel()
+    override val logoutClickEvents: ReceiveChannel<Unit>
         get() = Channel()
 
     override fun handleEvent(event: ContactsActivityUiEvents) {

@@ -54,6 +54,12 @@ class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
                 )
             }
         }
+
+        lifecycleScope.launchWhenStarted {
+            for (event in vm.logoutClickEvents) {
+                MobileSyncSDKManager.getInstance().logout(this@ContactsActivity)
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -107,7 +113,7 @@ class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
     }
 
     override fun onLogoutComplete() {
-        // TODO SalesforceActivity has this as a no-op, but I don't understand why - gkotula 2022-02-03
+        // TODO is there any cleanup required after logout?
         /* no-op */
     }
 
