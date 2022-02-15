@@ -23,8 +23,8 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 10.1.0
-See [release notes](https://github.com/forcedotcom/SalesforceMobileSDK-Android/releases/tag/v10.1.0).
+### What's New in 10.0.0
+See [release notes](https://github.com/forcedotcom/SalesforceMobileSDK-Android/releases/tag/v10.0.0).
 
 ### Native Applications
 The Salesforce Mobile SDK provides essential libraries for quickly building native mobile apps that seamlessly integrate with the Salesforce cloud architecture.  Out of the box, we provide an implementation of OAuth2, abstracting away the complexity of securely storing refresh tokens or fetching a new session ID when a session expires. The SDK also provides Java wrappers for the Salesforce REST API, making it easy to retrieve, store, and manipulate data.
@@ -51,11 +51,11 @@ git clone https://github.com/forcedotcom/SalesforceMobileSDK-Android.git
 Documentation
 ==
 
-* [SalesforceSDK](http://forcedotcom.github.com/SalesforceMobileSDK-Android/index.html)
+* [SalesforceSDK](https://forcedotcom.github.io/SalesforceMobileSDK-Android/index.html)
 * Salesforce Mobile SDK Development Guide -- [HTML](https://developer.salesforce.com/docs/atlas.en-us.mobile_sdk.meta/mobile_sdk/preface_intro.htm)
 * [Mobile SDK Trail](https://trailhead.salesforce.com/trails/mobile_sdk_intro)
 
 Discussion
 ==
 
-If you would like to make suggestions, have questions, or encounter any issues, we'd love to hear from you. Post any feedback you have on [Salesforce StackExchange](https://salesforce.stackexchange.com/questions/tagged/mobilesdk).
+If you would like to make suggestions, have questions, or encounter any issues, we'd love to hear from you. Post any feedback you have on the [Mobile SDK Trailblazer Community](https://trailhead.salesforce.com/en/trailblazer-community/groups/0F94S000000kH0HSAU?tab=discussion&sort=LAST_MODIFIED_DATE_DESC).
