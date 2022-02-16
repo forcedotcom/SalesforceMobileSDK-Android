@@ -17,6 +17,7 @@ import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity
 import com.salesforce.androidsdk.ui.SalesforceActivityDelegate
 import com.salesforce.androidsdk.ui.SalesforceActivityInterface
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivitySharedUiEvents
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityUiEvents
 import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactsActivityContent
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityViewModel
@@ -109,7 +110,7 @@ class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
 
     override fun onResume(client: RestClient?) {
         // TODO use this entry point as the time to launch sync operations b/c at this point the rest client is ready.
-        vm.handleEvent(ContactsActivityUiEvents.SyncClick)
+        vm.handleEvent(ContactsActivitySharedUiEvents.SyncClick)
     }
 
     override fun onLogoutComplete() {

@@ -21,13 +21,7 @@ sealed interface ContactsListUiState {
                 ContactCreate,
                 is ContactDelete,
                 is ContactEdit,
-                is ContactView,
-                InspectDbClick,
-                LogoutClick,
-//                NavBack,
-//                NavUp,
-                SwitchUserClick,
-                SyncClick -> this
+                is ContactView -> this
             }
 
         override fun calculateProposedTransition(event: ContactsListUiEvents): ContactsListUiState =
@@ -40,7 +34,6 @@ sealed interface ContactsListUiState {
 
         override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactsListUiState =
             when (event) {
-//                is ContactsActivityDataEvents.ContactDetailsSaved -> this
                 is ContactsActivityDataEvents.ContactListUpdates -> ViewingList(event.newContactList)
             }
     }
@@ -53,13 +46,7 @@ sealed interface ContactsListUiState {
                 ContactCreate,
                 is ContactDelete,
                 is ContactEdit,
-                is ContactView,
-                InspectDbClick,
-                LogoutClick,
-//                NavBack,
-//                NavUp,
-                SwitchUserClick,
-                SyncClick -> this
+                is ContactView -> this
             }
 
         override fun calculateProposedTransition(event: ContactsListUiEvents): ContactsListUiState =
@@ -72,9 +59,6 @@ sealed interface ContactsListUiState {
 
         override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactsListUiState =
             when (event) {
-//                is ContactsActivityDataEvents.ContactDetailsSaved -> ViewList(
-//                    this.contacts.map { if (it.id == event.contact.id) event.contact else it }
-//                )
                 is ContactsActivityDataEvents.ContactListUpdates -> this.copy(contacts = event.newContactList)
             }
     }
@@ -88,13 +72,7 @@ sealed interface ContactsListUiState {
                 ContactCreate,
                 is ContactDelete,
                 is ContactEdit,
-                is ContactView,
-                InspectDbClick,
-                LogoutClick,
-//                NavBack,
-//                NavUp,
-                SwitchUserClick,
-                SyncClick -> this
+                is ContactView -> this
             }
 
         override fun calculateProposedTransition(event: ContactsListUiEvents): ContactsListUiState =
@@ -107,7 +85,6 @@ sealed interface ContactsListUiState {
 
         override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactsListUiState =
             when (event) {
-//                is ContactsActivityDataEvents.ContactDetailsSaved -> TODO()
                 is ContactsActivityDataEvents.ContactListUpdates -> TODO()
             }
     }

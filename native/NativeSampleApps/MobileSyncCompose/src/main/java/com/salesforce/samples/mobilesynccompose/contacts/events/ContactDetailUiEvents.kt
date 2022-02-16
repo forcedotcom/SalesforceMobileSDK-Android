@@ -7,5 +7,6 @@ sealed interface ContactDetailUiEvents {
     data class FieldValuesChanged(val newObject: Contact) : ContactDetailUiEvents
     object DetailNavBack : ContactDetailUiEvents
     object DetailNavUp : ContactDetailUiEvents
-//    object DiscardChanges : ContactDetailUiEvents
+    object DiscardChanges : ContactDetailUiEvents
+    object ContinueEditing : ContactDetailUiEvents
 }
