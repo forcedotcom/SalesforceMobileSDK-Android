@@ -61,13 +61,7 @@ sealed class EditMode : ContactDetailUiState {
                 ContactsActivityUiEvents.ContactCreate,
                 is ContactsActivityUiEvents.ContactDelete,
                 is ContactEdit,
-                is ContactView,
-                ContactsActivityUiEvents.InspectDbClick,
-                ContactsActivityUiEvents.LogoutClick,
-//            ContactsActivityUiEvents.NavBack,
-//            ContactsActivityUiEvents.NavUp,
-                ContactsActivityUiEvents.SwitchUserClick,
-                ContactsActivityUiEvents.SyncClick -> this
+                is ContactView -> this
             }
 
         override fun calculateProposedTransition(event: ContactDetailUiEvents): ContactDetailUiState =
@@ -92,13 +86,15 @@ sealed class EditMode : ContactDetailUiState {
 
                 DetailNavBack,
                 DetailNavUp -> {
-                    ViewingContact(contact = originalContact)
-//                    if (!isModified) {
-//                        ViewingContact(contact = originalContact)
-//                    } else {
-//                        DiscardChanges(originalContact, firstNameVm, lastNameVm, titleVm)
-//                    }
+//                    ViewingContact(contact = originalContact)
+                    if (!isModified) {
+                        ViewingContact(contact = originalContact)
+                    } else {
+                        DiscardChanges(originalContact, firstNameVm, lastNameVm, titleVm)
+                    }
                 }
+                ContinueEditing -> this
+                DiscardChanges -> ViewingContact(originalContact)
             }
 
         override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactDetailUiState =
@@ -110,7 +106,6 @@ sealed class EditMode : ContactDetailUiState {
 
                     when (matchingContact) {
                         null -> this // updated list does not contain this contact, so ignore
-                        //                        savingContact -> ViewingContact(matchingContact) // we were saving and then received an updated contact with the same ID which means the save was successful
                         originalContact -> this // updated contact is same as current edit state, so ignore
                         else -> TODO("EditingContact -> ContactListUpdates with conflicting updates. This contact=$originalContact upstream contact=$matchingContact")
                     }
@@ -128,12 +123,7 @@ sealed class EditMode : ContactDetailUiState {
             this // ignore event
 
         override fun calculateProposedTransition(event: ContactDetailUiEvents): ContactDetailUiState =
-            when (event) {
-                DetailNavBack -> TODO()
-                DetailNavUp -> TODO()
-                is FieldValuesChanged -> TODO()
-                SaveClick -> TODO()
-            }
+            this // ignore event
 
         override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactDetailUiState =
             when (event) {
@@ -162,10 +152,12 @@ sealed class EditMode : ContactDetailUiState {
                 DetailNavUp -> EditingContact(originalContact, firstNameVm, lastNameVm, titleVm)
                 is FieldValuesChanged -> this
                 SaveClick -> Saving(originalContact, firstNameVm, lastNameVm, titleVm)
+                ContinueEditing -> EditingContact(originalContact, firstNameVm, lastNameVm, titleVm)
+                DiscardChanges -> ViewingContact(originalContact)
             }
 
         override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactDetailUiState =
-            this
+            this // ignore event
     }
 }
 
@@ -200,32 +192,22 @@ data class ViewingContact(
             is ContactView -> ViewingContact(contact = event.contact)
 
             ContactsActivityUiEvents.ContactCreate,
-            is ContactsActivityUiEvents.ContactDelete,
-            ContactsActivityUiEvents.InspectDbClick,
-            ContactsActivityUiEvents.LogoutClick,
-//            ContactsActivityUiEvents.NavBack,
-//            ContactsActivityUiEvents.NavUp,
-            ContactsActivityUiEvents.SwitchUserClick,
-            ContactsActivityUiEvents.SyncClick -> this
+            is ContactsActivityUiEvents.ContactDelete -> this
         }
 
     override fun calculateProposedTransition(event: ContactDetailUiEvents): ContactDetailUiState =
         when (event) {
+            ContinueEditing,
+            DiscardChanges,
             is FieldValuesChanged,
             SaveClick -> this
+
             DetailNavBack,
             DetailNavUp -> NoContactSelected
         }
 
     override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactDetailUiState =
         when (event) {
-//            is ContactsActivityDataEvents.ContactDetailsSaved -> {
-//                if (event.contact.id == this.contact.id) {
-//                    ViewingContact(event.contact)
-//                } else {
-//                    this
-//                }
-//            }
             is ContactsActivityDataEvents.ContactListUpdates -> {
                 val updatedContact = event.newContactList.firstOrNull { it.id == this.contact.id }
                 if (updatedContact != null) {
@@ -254,13 +236,7 @@ object NoContactSelected : ContactDetailUiState {
                 titleVm = event.contact.createTitleVm()
             )
             ContactsActivityUiEvents.ContactCreate,
-            is ContactsActivityUiEvents.ContactDelete,
-            ContactsActivityUiEvents.InspectDbClick,
-            ContactsActivityUiEvents.LogoutClick,
-//            ContactsActivityUiEvents.NavBack,
-//            ContactsActivityUiEvents.NavUp,
-            ContactsActivityUiEvents.SwitchUserClick,
-            ContactsActivityUiEvents.SyncClick -> this
+            is ContactsActivityUiEvents.ContactDelete -> this
         }
 
     override fun calculateProposedTransition(event: ContactDetailUiEvents): ContactDetailUiState =
@@ -269,11 +245,12 @@ object NoContactSelected : ContactDetailUiState {
             SaveClick,
             DetailNavBack,
             DetailNavUp -> this
+            ContinueEditing -> TODO()
+            DiscardChanges -> TODO()
         }
 
     override fun calculateProposedTransition(event: ContactsActivityDataEvents): ContactDetailUiState =
         when (event) {
-//            is ContactsActivityDataEvents.ContactDetailsSaved,
             is ContactsActivityDataEvents.ContactListUpdates -> this
         }
 }

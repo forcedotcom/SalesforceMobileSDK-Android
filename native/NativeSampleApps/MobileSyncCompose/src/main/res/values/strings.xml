@@ -1,12 +1,18 @@
 <resources>
     <string name="app_name">Mobile Sync Compose</string>
+
+    <string name="body_discard_changes">There are unsaved changes to this contact. Would you like to discard your changes?</string>
+
+    <string name="cta_continue_editing">Continue Editing</string>
     <string name="cta_delete">Delete</string>
+    <string name="cta_discard">Discard</string>
     <string name="cta_edit">Edit</string>
     <string name="cta_inspect_db">Inspect DB</string>
     <string name="cta_logout">Log Out</string>
     <string name="cta_save">Save</string>
     <string name="cta_switch_user">Switch User</string>
     <string name="cta_sync">Sync</string>
+
     <string name="label_contacts">Contacts</string>
     <string name="label_contact_details">Contact Details</string>
     <string name="label_contact_first_name">First Name</string>
@@ -14,7 +20,10 @@
     <string name="label_contact_last_name">Last Name</string>
     <string name="label_contact_name">Name</string>
     <string name="label_contact_title">Title</string>
+    <string name="label_discard_changes">Discard Changes?</string>
+
     <string name="help_cannot_be_blank">This field cannot be left blank</string>
+
     <string name="content_desc_add_contact">Create New Contact</string>
     <string name="content_desc_item_synced">Item is synced</string>
     <string name="content_desc_item_saved_locally">Item is only saved locally</string>

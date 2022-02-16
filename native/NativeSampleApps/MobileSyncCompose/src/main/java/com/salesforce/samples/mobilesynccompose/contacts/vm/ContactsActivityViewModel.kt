@@ -2,10 +2,7 @@ package com.salesforce.samples.mobilesynccompose.contacts.vm
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactDetailUiEvents
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityDataEvents
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityUiEvents
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsListUiEvents
+import com.salesforce.samples.mobilesynccompose.contacts.events.*
 import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailUiState
 import com.salesforce.samples.mobilesynccompose.contacts.state.ContactsListUiState
 import com.salesforce.samples.mobilesynccompose.contacts.state.EditMode
@@ -21,6 +18,7 @@ import kotlinx.coroutines.sync.Mutex
 
 interface ContactsActivityViewModel
     : ContactsActivityEventHandler,
+    ContactsActivitySharedEventHandler,
     ContactsListEventHandler,
     ContactDetailEventHandler {
 
@@ -37,6 +35,10 @@ data class ContactsActivityUiState(
 
 fun interface ContactsActivityEventHandler {
     fun handleEvent(event: ContactsActivityUiEvents)
+}
+
+fun interface ContactsActivitySharedEventHandler {
+    fun handleEvent(event: ContactsActivitySharedUiEvents)
 }
 
 fun interface ContactsListEventHandler {
@@ -88,23 +90,54 @@ class DefaultContactsActivityViewModel(
         }
     }
 
+    override fun handleEvent(event: ContactsActivitySharedUiEvents) {
+        viewModelScope.launch {
+            eventMutex.lock()
+
+            val isNavigatingAway = when (event) {
+                ContactsActivitySharedUiEvents.InspectDbClick,
+                ContactsActivitySharedUiEvents.LogoutClick,
+                ContactsActivitySharedUiEvents.SwitchUserClick -> true
+
+                ContactsActivitySharedUiEvents.SyncClick -> false
+            }
+
+            val curDetailState = mutUiState.value.contactDetailsUiState
+
+            if (isNavigatingAway && curDetailState is EditMode && curDetailState.isModified) {
+                mutUiState.value = mutUiState.value.copy(
+                    contactDetailsUiState = EditMode.DiscardChanges(
+                        curDetailState.originalContact,
+                        curDetailState.firstNameVm,
+                        curDetailState.lastNameVm,
+                        curDetailState.titleVm
+                    )
+                )
+            } else {
+                when (event) {
+                    ContactsActivitySharedUiEvents.InspectDbClick -> inspectDb()
+                    ContactsActivitySharedUiEvents.LogoutClick -> logout()
+                    ContactsActivitySharedUiEvents.SwitchUserClick -> TODO()
+                    ContactsActivitySharedUiEvents.SyncClick -> sync(syncDownOnly = false)
+                }
+            }
+
+            eventMutex.unlock()
+        }
+    }
+
     override fun handleEvent(event: ContactsActivityUiEvents) {
         viewModelScope.launch {
             eventMutex.lock()
 
-            when (event) {
-                ContactsActivityUiEvents.SyncClick -> sync(syncDownOnly = false)
-                ContactsActivityUiEvents.InspectDbClick -> inspectDb()
-                ContactsActivityUiEvents.LogoutClick -> logout()
-                else -> {
-                    /* no-op */
-                }
-            }
+            val (curDetailState, curListState) = mutUiState.value
 
-            val detailTransition =
-                uiState.value.contactDetailsUiState.calculateProposedTransition(event)
-            val listTransition =
-                uiState.value.contactsListUiState.calculateProposedTransition(event)
+            val detailTransition = curDetailState.calculateProposedTransition(event)
+            var listTransition = curListState.calculateProposedTransition(event)
+
+            if (detailTransition is EditMode.DiscardChanges) {
+                listTransition = curListState // revert the list transition
+            }
 
             mutUiState.value = ContactsActivityUiState(detailTransition, listTransition)
 

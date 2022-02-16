@@ -23,6 +23,7 @@ import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactListContent
 import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactsActivityMenuButton
 import com.salesforce.samples.mobilesynccompose.contacts.ui.fixForMainContent
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityEventHandler
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivitySharedEventHandler
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsListEventHandler
 import com.salesforce.samples.mobilesynccompose.core.ui.components.ToggleableEditTextField
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
@@ -32,6 +33,7 @@ import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 fun SinglePaneContactsList(
     uiState: ContactsListUiState,
     listEventHandler: ContactsListEventHandler,
+    sharedEventHandler: ContactsActivitySharedEventHandler,
     activityEventHandler: ContactsActivityEventHandler
 ) {
     Scaffold(
@@ -39,6 +41,7 @@ fun SinglePaneContactsList(
             TopAppBarContent(
                 uiState = uiState,
                 listEventHandler = listEventHandler,
+                sharedEventHandler = sharedEventHandler,
                 activityEventHandler = activityEventHandler
             )
         },
@@ -61,6 +64,7 @@ fun SinglePaneContactsList(
 private fun TopAppBarContent(
     uiState: ContactsListUiState,
     listEventHandler: ContactsListEventHandler,
+    sharedEventHandler: ContactsActivitySharedEventHandler,
     activityEventHandler: ContactsActivityEventHandler
 ) {
     TopAppBar {
@@ -92,7 +96,7 @@ private fun TopAppBarContent(
             }
         }
 
-        ContactsActivityMenuButton(handler = activityEventHandler)
+        ContactsActivityMenuButton(handler = sharedEventHandler)
 
         BackHandler(enabled = handleBack) { listEventHandler.handleEvent(ListNavBack) }
     }
@@ -135,7 +139,12 @@ private fun SinglePaneContactsListPreview() {
         }
     )
     SalesforceMobileSDKAndroidTheme {
-        SinglePaneContactsList(uiState = uiState, listEventHandler = {}, activityEventHandler = {})
+        SinglePaneContactsList(
+            uiState = uiState,
+            listEventHandler = {},
+            sharedEventHandler = {},
+            activityEventHandler = {}
+        )
     }
 }
 
@@ -154,7 +163,12 @@ private fun SinglePaneContactsListSearchPreview() {
         searchTerm = "evens only"
     )
     SalesforceMobileSDKAndroidTheme {
-        SinglePaneContactsList(uiState = uiState, listEventHandler = {}, activityEventHandler = {})
+        SinglePaneContactsList(
+            uiState = uiState,
+            listEventHandler = {},
+            sharedEventHandler = {},
+            activityEventHandler = {}
+        )
     }
 }
 
@@ -164,6 +178,11 @@ private fun SinglePaneContactsListSearchPreview() {
 private fun SinglePaneContactsListLoadingPreview() {
     val uiState = ContactsListUiState.Loading
     SalesforceMobileSDKAndroidTheme {
-        SinglePaneContactsList(uiState = uiState, listEventHandler = {}, activityEventHandler = {})
+        SinglePaneContactsList(
+            uiState = uiState,
+            listEventHandler = {},
+            sharedEventHandler = {},
+            activityEventHandler = {}
+        )
     }
 }
