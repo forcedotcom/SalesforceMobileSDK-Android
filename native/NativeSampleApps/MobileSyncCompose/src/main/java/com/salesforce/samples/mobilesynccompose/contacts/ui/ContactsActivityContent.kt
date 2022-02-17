@@ -19,6 +19,7 @@ import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityMenuEventHandler
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.ListDetail
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.Single
+import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.SinglePaneContactsList
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityUiState
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityViewModel
 import com.salesforce.samples.mobilesynccompose.core.ui.LayoutRestrictions
