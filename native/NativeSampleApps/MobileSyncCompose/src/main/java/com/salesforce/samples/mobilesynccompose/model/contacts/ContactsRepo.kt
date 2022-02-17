@@ -18,6 +18,7 @@ import kotlin.coroutines.suspendCoroutine
 
 interface ContactsRepo {
     val contactUpdates: Flow<List<Contact>>
+    val curUpstreamContacts: List<Contact>
     suspend fun sync(syncDownOnly: Boolean)
     suspend fun saveContact(updatedContactObject: Contact): Result<Contact>
 //    fun deleteContact(...)
@@ -35,6 +36,10 @@ class DefaultContactsRepo(
     private val syncMutex = Mutex()
 
     private val mutContactListState = MutableStateFlow(emptyList<Contact>())
+
+    @Volatile
+    private var mutUpstreamContacts: List<Contact> = emptyList()
+    override val curUpstreamContacts: List<Contact> get() = mutUpstreamContacts
 
     /* Replay latest update on new `Flow.collect { }` so all new collectors get current state.
      * We're not using StateFlow with an `emptyList()` as a starting value because this flow is
@@ -144,7 +149,9 @@ class DefaultContactsRepo(
             ),
             0
         )
-        mutContactListState.value = contactResults.map { Contact.coerceFromJson(it) }
+        val contacts = contactResults.map { Contact.coerceFromJson(it) }
+        mutUpstreamContacts = contacts
+        mutContactListState.value = contacts
     }
 
     private fun onSyncDownFailed(syncDownResult: SyncState) {

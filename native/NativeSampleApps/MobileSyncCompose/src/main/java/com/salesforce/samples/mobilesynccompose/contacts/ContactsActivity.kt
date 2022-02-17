@@ -128,7 +128,7 @@ class ContactsActivity : ComponentActivity(),
     }
 
     override fun logoutClicked() {
-        TODO("Not yet implemented")
+        MobileSyncSDKManager.getInstance().logout(this)
     }
 
     override fun switchUserClicked() {
