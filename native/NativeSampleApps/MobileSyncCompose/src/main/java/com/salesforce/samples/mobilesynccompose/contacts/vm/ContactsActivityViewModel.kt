@@ -2,14 +2,21 @@ package com.salesforce.samples.mobilesynccompose.contacts.vm
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.salesforce.samples.mobilesynccompose.contacts.events.*
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactEditModeEventHandler
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactViewModeEventHandler
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsListEventHandler
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsSearchEventHandler
 import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsState
 import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactsRepo
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 interface ContactsActivityViewModel :
     ContactsListEventHandler,
@@ -33,6 +40,7 @@ class DefaultContactsActivityViewModel(
     private val contactsRepo: ContactsRepo
 ) : ViewModel(), ContactsActivityViewModel {
 
+    private val eventMutex = Mutex()
     private val mutUiState = MutableStateFlow(
         ContactsActivityUiState(
             contacts = emptyList(),
@@ -53,12 +61,24 @@ class DefaultContactsActivityViewModel(
     }
 
     private fun onContactListUpdate(newList: List<Contact>) {
-        TODO("$TAG: onContactListUpdate(newList=$newList)")
+        viewModelScope.launch {
+            eventMutex.withLock {
+                val curState = uiState.value
+                if (curState.detailsState != null) {
+                    TODO("Contact list updates while viewing contact")
+                } else {
+                    mutUiState.value = curState.copy(contacts = newList, isSyncing = false)
+                }
+            }
+        }
     }
 
     override fun sync(syncDownOnly: Boolean) {
         viewModelScope.launch {
-            contactsRepo.sync(syncDownOnly)
+            eventMutex.withLock {
+                mutUiState.value = mutUiState.value.copy(isSyncing = true)
+                contactsRepo.sync(syncDownOnly)
+            }
         }
     }
 
@@ -79,15 +99,41 @@ class DefaultContactsActivityViewModel(
     }
 
     override fun exitSearch() {
-        TODO("Not yet implemented")
+        viewModelScope.launch {
+            eventMutex.withLock {
+                mutUiState.value = mutUiState.value.copy(
+                    contacts = contactsRepo.curUpstreamContacts,
+                    searchTerm = null
+                )
+            }
+        }
     }
 
     override fun searchClick() {
-        TODO("Not yet implemented")
+        viewModelScope.launch {
+            eventMutex.withLock {
+                mutUiState.value = mutUiState.value.copy(searchTerm = "")
+            }
+        }
     }
 
     override fun searchTermUpdated(newSearchTerm: String) {
-        TODO("Not yet implemented")
+        viewModelScope.launch {
+            eventMutex.withLock {
+                withContext(Dispatchers.Default) {
+                    val curState = mutUiState.value
+                    mutUiState.value = curState.copy(
+                        contacts = contactsRepo.curUpstreamContacts.filter {
+                            it.fullName.contains(
+                                newSearchTerm,
+                                ignoreCase = true
+                            )
+                        },
+                        searchTerm = newSearchTerm
+                    )
+                }
+            }
+        }
     }
 
     override fun detailsDeleteClick() {
