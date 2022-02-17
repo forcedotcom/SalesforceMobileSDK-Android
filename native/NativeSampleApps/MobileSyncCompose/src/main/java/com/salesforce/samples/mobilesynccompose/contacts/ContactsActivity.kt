@@ -10,15 +10,12 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
 import androidx.window.layout.WindowMetricsCalculator
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager
 import com.salesforce.androidsdk.rest.RestClient
-import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity
 import com.salesforce.androidsdk.ui.SalesforceActivityDelegate
 import com.salesforce.androidsdk.ui.SalesforceActivityInterface
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivitySharedUiEvents
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityUiEvents
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityMenuEventHandler
 import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactsActivityContent
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityViewModel
 import com.salesforce.samples.mobilesynccompose.contacts.vm.DefaultContactsActivityViewModel
@@ -27,7 +24,10 @@ import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSD
 import com.salesforce.samples.mobilesynccompose.core.ui.toWindowSizeRestrictions
 import com.salesforce.samples.mobilesynccompose.model.contacts.DefaultContactsRepo
 
-class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
+class ContactsActivity : ComponentActivity(),
+    SalesforceActivityInterface,
+    ContactsActivityMenuEventHandler {
+
     private lateinit var vm: ContactsActivityViewModel
     private lateinit var salesforceActivityDelegate: SalesforceActivityDelegate
 
@@ -43,25 +43,25 @@ class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
         }
     }
 
-    init {
-        lifecycleScope.launchWhenStarted {
-            for (event in vm.inspectDbClickEvents) {
-                startActivity(
-                    SmartStoreInspectorActivity.getIntent(
-                        this@ContactsActivity,
-                        false,
-                        null
-                    )
-                )
-            }
-        }
-
-        lifecycleScope.launchWhenStarted {
-            for (event in vm.logoutClickEvents) {
-                MobileSyncSDKManager.getInstance().logout(this@ContactsActivity)
-            }
-        }
-    }
+//    init {
+//        lifecycleScope.launchWhenStarted {
+//            for (event in vm.inspectDbClickEvents) {
+//                startActivity(
+//                    SmartStoreInspectorActivity.getIntent(
+//                        this@ContactsActivity,
+//                        false,
+//                        null
+//                    )
+//                )
+//            }
+//        }
+//
+//        lifecycleScope.launchWhenStarted {
+//            for (event in vm.logoutClickEvents) {
+//                MobileSyncSDKManager.getInstance().logout(this@ContactsActivity)
+//            }
+//        }
+//    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -88,6 +88,7 @@ class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
             SalesforceMobileSDKAndroidTheme {
                 ContactsActivityContent(
                     layoutRestrictions = LayoutRestrictions(windowSizeRestrictions),
+                    menuEventHandler = this,
                     vm = vm
                 )
             }
@@ -110,7 +111,7 @@ class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
 
     override fun onResume(client: RestClient?) {
         // TODO use this entry point as the time to launch sync operations b/c at this point the rest client is ready.
-        vm.handleEvent(ContactsActivitySharedUiEvents.SyncClick)
+        vm.sync()
     }
 
     override fun onLogoutComplete() {
@@ -120,5 +121,21 @@ class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
 
     override fun onUserSwitched() {
         salesforceActivityDelegate.onResume(true)
+    }
+
+    override fun inspectDbClicked() {
+        TODO("Not yet implemented")
+    }
+
+    override fun logoutClicked() {
+        TODO("Not yet implemented")
+    }
+
+    override fun switchUserClicked() {
+        TODO("Not yet implemented")
+    }
+
+    override fun syncClicked() {
+        TODO("Not yet implemented")
     }
 }

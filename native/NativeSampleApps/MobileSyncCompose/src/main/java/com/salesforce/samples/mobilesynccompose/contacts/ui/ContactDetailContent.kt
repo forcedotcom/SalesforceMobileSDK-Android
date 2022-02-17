@@ -1,28 +1,24 @@
 package com.salesforce.samples.mobilesynccompose.contacts.ui
 
-import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactDetailUiEvents.FieldValuesChanged
-import com.salesforce.samples.mobilesynccompose.contacts.state.*
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailEventHandler
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactEditModeEventHandler
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailFieldViewModel
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailViewModel
 import com.salesforce.samples.mobilesynccompose.core.ui.components.ToggleableEditTextField
 import com.salesforce.samples.mobilesynccompose.core.ui.safeStringResource
-import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
-import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 import kotlinx.coroutines.launch
 
 object ContactDetailContent {
@@ -34,14 +30,14 @@ object ContactDetailContent {
     }
 
     @Composable
-    fun CompactViewMode(state: ViewingContact, modifier: Modifier = Modifier) {
+    fun CompactViewMode(details: ContactDetailViewModel, modifier: Modifier = Modifier) {
         val scrollState = rememberScrollState()
         Column(
             modifier = modifier
                 .padding(horizontal = 8.dp)
                 .verticalScroll(state = scrollState)
         ) {
-            state.vmList.forEach { fieldVm ->
+            details.vmList.forEach { fieldVm ->
                 ToggleableEditTextField(
                     fieldValue = fieldVm.fieldValue,
                     isEditEnabled = false,
@@ -57,9 +53,10 @@ object ContactDetailContent {
 
     @Composable
     fun CompactEditMode(
-        state: EditMode,
-        detailEventHandler: ContactDetailEventHandler,
-        modifier: Modifier = Modifier
+        details: ContactDetailViewModel,
+        handler: ContactEditModeEventHandler,
+        modifier: Modifier = Modifier,
+        fieldToScrollTo: ContactDetailFieldViewModel? = null,
     ) {
         val scrollState = rememberScrollState()
         val scope = rememberCoroutineScope()
@@ -69,20 +66,17 @@ object ContactDetailContent {
                 .padding(horizontal = 8.dp)
                 .verticalScroll(state = scrollState)
         ) {
-            val isEditing = state is EditMode.EditingContact
-            val stateAsEditing = state as? EditMode.EditingContact
-
-            state.vmList.forEach { fieldVm ->
+            details.vmList.forEach { fieldVm ->
                 ToggleableEditTextField(
                     fieldValue = fieldVm.fieldValue,
-                    isEditEnabled = fieldVm.canBeEdited && isEditing,
+                    isEditEnabled = fieldVm.canBeEdited,
                     isError = fieldVm.isInErrorState,
                     onValueChange = { newVal ->
                         val newObj = fieldVm.onFieldValueChange(newVal)
-                        detailEventHandler.handleEvent(FieldValuesChanged(newObject = newObj))
+                        handler.onDetailsUpdated(newObj)
                     },
                     modifier = Modifier.onGloballyPositioned { layoutCoords ->
-                        if (stateAsEditing != null && fieldVm == state.vmToScrollTo) {
+                        if (fieldToScrollTo != null && fieldVm == fieldToScrollTo) {
                             scope.launch {
                                 scrollState.animateScrollTo(layoutCoords.positionInParent().y.toInt())
                             }
@@ -98,30 +92,30 @@ object ContactDetailContent {
     }
 }
 
-@Preview(showBackground = true)
-@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
-@Composable
-private fun CompactEditModePreview() {
-    var contactObject: Contact by remember {
-        mutableStateOf(
-            Contact.createNewLocal(
-                firstName = "First",
-                lastName = "Last",
-                title = "Title"
-            )
-        )
-    }
-
-    val state = EditMode.EditingContact(
-        originalContact = contactObject,
-        firstNameVm = contactObject.createFirstNameVm(),
-        lastNameVm = contactObject.createLastNameVm(),
-        titleVm = contactObject.createTitleVm(),
-    )
-
-    SalesforceMobileSDKAndroidTheme {
-        Surface {
-            ContactDetailContent.CompactEditMode(state = state, detailEventHandler = {})
-        }
-    }
-}
+//@Preview(showBackground = true)
+//@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
+//@Composable
+//private fun CompactEditModePreview() {
+//    var contactObject: Contact by remember {
+//        mutableStateOf(
+//            Contact.createNewLocal(
+//                firstName = "First",
+//                lastName = "Last",
+//                title = "Title"
+//            )
+//        )
+//    }
+//
+//    val state = EditMode.EditingContact(
+//        originalContact = contactObject,
+//        firstNameVm = contactObject.createFirstNameVm(),
+//        lastNameVm = contactObject.createLastNameVm(),
+//        titleVm = contactObject.createTitleVm(),
+//    )
+//
+//    SalesforceMobileSDKAndroidTheme {
+//        Surface {
+//            ContactDetailContent.CompactEditMode(state = state, detailEventHandler = {})
+//        }
+//    }
+//}
