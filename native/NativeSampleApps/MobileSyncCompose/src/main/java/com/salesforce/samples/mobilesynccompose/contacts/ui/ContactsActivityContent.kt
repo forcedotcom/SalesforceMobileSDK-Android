@@ -17,8 +17,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityMenuEventHandler
+import com.salesforce.samples.mobilesynccompose.contacts.state.Creating
+import com.salesforce.samples.mobilesynccompose.contacts.state.Editing
+import com.salesforce.samples.mobilesynccompose.contacts.state.Viewing
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.ListDetail
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.Single
+import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.SinglePaneContactDetails
 import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.SinglePaneContactsList
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityUiState
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityViewModel
@@ -37,8 +41,6 @@ fun ContactsActivityContent(
     vm: ContactsActivityViewModel
 ) {
     val uiState by vm.uiState.collectAsState()
-//    val detailUiState = uiState.contactDetailsUiState
-//    val listUiState = uiState.contactsListUiState
 
     when (layoutRestrictions.calculatePaneLayout()) {
         Single -> {
@@ -76,7 +78,16 @@ private fun SinglePaneScaffold(
     ) { paddingVals ->
         val fixedPadding = paddingVals.fixForMainContent()
         if (uiState.detailsState != null)
-            TODO("Main content detail pane")
+            when (uiState.detailsState) {
+                is Creating,
+                is Editing -> SinglePaneContactDetails.EditingContact(
+                    details = uiState.detailsState.uiState,
+                    isSaving = uiState.detailsState.isSaving
+                )
+                is Viewing -> SinglePaneContactDetails.ViewingContact(
+                    details = uiState.detailsState.uiState
+                )
+            }
         else
             SinglePaneContactsList.ViewingContactsList(
                 modifier = Modifier.padding(paddingValues = fixedPadding),
@@ -96,7 +107,13 @@ private fun SinglePaneTopAppBar(
     TopAppBar {
         when {
             uiState.detailsState != null -> {
-                TODO("SinglePaneScaffold detail top bar")
+                with(SinglePaneContactDetails.ScaffoldContent) {
+                    val detailsVm = uiState.detailsState.uiState
+                    TopAppBar(
+                        label = "${detailsVm.firstNameVm.fieldValue} ${detailsVm.lastNameVm.fieldValue}",
+                        handler = vm
+                    )
+                }
             }
 
             uiState.searchTerm != null -> {
@@ -121,7 +138,9 @@ private fun SinglePaneBottomAppBar(
 ) {
     BottomAppBar(cutoutShape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))) {
         when {
-            uiState.detailsState != null -> TODO("SinglePaneScaffold detail bottom bar")
+            uiState.detailsState != null -> with(SinglePaneContactDetails.ScaffoldContent) {
+                BottomAppBar(vm)
+            }
             uiState.searchTerm != null -> with(SinglePaneContactsList.ScaffoldContent) {
                 BottomAppBarSearch()
             }
@@ -135,7 +154,13 @@ private fun SinglePaneBottomAppBar(
 @Composable
 private fun SinglePaneFab(uiState: ContactsActivityUiState, vm: ContactsActivityViewModel) {
     if (uiState.detailsState != null)
-        TODO("SinglePaneFab detail")
+        with(SinglePaneContactDetails.ScaffoldContent) {
+            when (uiState.detailsState) {
+                is Creating,
+                is Editing -> EditModeFab(handler = vm)
+                is Viewing -> ViewModeFab(handler = vm)
+            }
+        }
     else
         SinglePaneContactsList.ScaffoldContent.Fab(handler = vm)
 }
@@ -308,6 +333,10 @@ private class PreviewContactsActivityViewModel(state: ContactsActivityUiState) :
     }
 
     override fun detailsDeleteClick() {
+        TODO("Not yet implemented")
+    }
+
+    override fun detailsExitClick() {
         TODO("Not yet implemented")
     }
 

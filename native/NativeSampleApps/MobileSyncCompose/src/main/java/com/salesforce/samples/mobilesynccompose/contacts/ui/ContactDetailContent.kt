@@ -16,7 +16,7 @@ import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactEditModeEventHandler
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailFieldViewModel
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailViewModel
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsUiState
 import com.salesforce.samples.mobilesynccompose.core.ui.components.ToggleableEditTextField
 import com.salesforce.samples.mobilesynccompose.core.ui.safeStringResource
 import kotlinx.coroutines.launch
@@ -30,7 +30,7 @@ object ContactDetailContent {
     }
 
     @Composable
-    fun CompactViewMode(details: ContactDetailViewModel, modifier: Modifier = Modifier) {
+    fun CompactViewMode(details: ContactDetailsUiState, modifier: Modifier = Modifier) {
         val scrollState = rememberScrollState()
         Column(
             modifier = modifier
@@ -53,7 +53,7 @@ object ContactDetailContent {
 
     @Composable
     fun CompactEditMode(
-        details: ContactDetailViewModel,
+        details: ContactDetailsUiState,
         handler: ContactEditModeEventHandler,
         modifier: Modifier = Modifier,
         fieldToScrollTo: ContactDetailFieldViewModel? = null,
