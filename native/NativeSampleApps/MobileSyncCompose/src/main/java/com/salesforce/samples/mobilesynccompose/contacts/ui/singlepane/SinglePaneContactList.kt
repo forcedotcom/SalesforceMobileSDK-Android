@@ -2,21 +2,18 @@ package com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.util.Log
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -25,8 +22,8 @@ import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsListCore
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsListEventHandler
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsSearchEventHandler
 import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactCard
+import com.salesforce.samples.mobilesynccompose.core.ui.components.LoadingOverlay
 import com.salesforce.samples.mobilesynccompose.core.ui.components.ToggleableEditTextField
-import com.salesforce.samples.mobilesynccompose.core.ui.theme.PurpleGrey40
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 
@@ -53,38 +50,6 @@ object SinglePaneContactsList {
 
         if (isSyncing) {
             LoadingOverlay()
-        }
-    }
-
-    @Composable
-    private fun LoadingOverlay() {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = PurpleGrey40.copy(alpha = 0.25f)
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                val transition = rememberInfiniteTransition()
-                val angle: Float by transition.animateFloat(
-                    initialValue = 0f,
-                    targetValue = 360f,
-                    animationSpec = infiniteRepeatable(
-                        animation = tween(
-                            durationMillis = 750,
-                            easing = LinearEasing
-                        ),
-                    )
-                )
-                Icon(
-                    Icons.Default.Refresh,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .graphicsLayer { rotationZ = angle }
-                )
-            }
         }
     }
 
