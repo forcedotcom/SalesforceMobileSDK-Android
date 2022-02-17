@@ -2,16 +2,18 @@ package com.salesforce.samples.mobilesynccompose.contacts.vm
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactEditModeEventHandler
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactViewModeEventHandler
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsListEventHandler
+import com.salesforce.samples.mobilesynccompose.contacts.events.*
+import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsState
 import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactsRepo
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 interface ContactsActivityViewModel :
     ContactsListEventHandler,
+    ContactsSearchEventHandler,
     ContactEditModeEventHandler,
     ContactViewModeEventHandler {
 
@@ -19,14 +21,40 @@ interface ContactsActivityViewModel :
     fun sync(syncDownOnly: Boolean = false)
 }
 
-object ContactsActivityUiState
+data class ContactsActivityUiState(
+    val contacts: List<Contact>,
+    val detailsState: ContactDetailsState?,
+    val searchTerm: String?,
+    val isSyncing: Boolean,
+    val showDiscardChanges: Boolean
+)
 
 class DefaultContactsActivityViewModel(
     private val contactsRepo: ContactsRepo
 ) : ViewModel(), ContactsActivityViewModel {
 
-    override val uiState: StateFlow<ContactsActivityUiState>
-        get() = TODO("Not yet implemented")
+    private val mutUiState = MutableStateFlow(
+        ContactsActivityUiState(
+            contacts = emptyList(),
+            detailsState = null,
+            searchTerm = null,
+            isSyncing = false,
+            showDiscardChanges = false
+        )
+    )
+    override val uiState: StateFlow<ContactsActivityUiState> get() = mutUiState
+
+    init {
+        viewModelScope.launch {
+            contactsRepo.contactUpdates.collect {
+                onContactListUpdate(it)
+            }
+        }
+    }
+
+    private fun onContactListUpdate(newList: List<Contact>) {
+        TODO("$TAG: onContactListUpdate(newList=$newList)")
+    }
 
     override fun sync(syncDownOnly: Boolean) {
         viewModelScope.launch {
@@ -34,19 +62,23 @@ class DefaultContactsActivityViewModel(
         }
     }
 
-    override fun contactClick(contact: Contact) {
+    override fun listContactClick(contact: Contact) {
         TODO("Not yet implemented")
     }
 
-    override fun contactCreateClick() {
+    override fun listCreateClick() {
         TODO("Not yet implemented")
     }
 
-    override fun contactDeleteClick(contact: Contact) {
+    override fun listDeleteClick(contact: Contact) {
         TODO("Not yet implemented")
     }
 
-    override fun contactEditClick(contact: Contact) {
+    override fun listEditClick(contact: Contact) {
+        TODO("Not yet implemented")
+    }
+
+    override fun exitSearch() {
         TODO("Not yet implemented")
     }
 
@@ -58,7 +90,7 @@ class DefaultContactsActivityViewModel(
         TODO("Not yet implemented")
     }
 
-    override fun deleteClick() {
+    override fun detailsDeleteClick() {
         TODO("Not yet implemented")
     }
 
@@ -70,7 +102,7 @@ class DefaultContactsActivityViewModel(
         TODO("Not yet implemented")
     }
 
-    override fun editClick() {
+    override fun detailsEditClick() {
         TODO("Not yet implemented")
     }
 

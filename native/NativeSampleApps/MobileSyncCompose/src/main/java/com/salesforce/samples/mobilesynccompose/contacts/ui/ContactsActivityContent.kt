@@ -1,21 +1,33 @@
 package com.salesforce.samples.mobilesynccompose.contacts.ui
 
+import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityMenuEventHandler
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsListEventHandler
+import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.ListDetail
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.Single
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityUiState
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityViewModel
 import com.salesforce.samples.mobilesynccompose.core.ui.LayoutRestrictions
+import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeClass
+import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeRestrictions
+import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
+import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun ContactsActivityContent(
@@ -26,33 +38,110 @@ fun ContactsActivityContent(
     val uiState by vm.uiState.collectAsState()
 //    val detailUiState = uiState.contactDetailsUiState
 //    val listUiState = uiState.contactsListUiState
-//
-//    when (layoutRestrictions.calculatePaneLayout()) {
-//        Single -> {
-//            if (detailUiState !is NoContactSelected) {
-//                SinglePaneContactDetails(
-//                    uiState = detailUiState,
-//                    activityEventHandler = vm,
-//                    sharedEventHandler = vm,
-//                    detailEventHandler = vm
-//                )
-//            } else {
-//                SinglePaneContactsList(
-//                    uiState = listUiState,
-//                    listEventHandler = vm,
-//                    sharedEventHandler = vm,
-//                    activityEventHandler = vm
-//                )
-//            }
-//        }
-//
-//        ListDetail -> TODO("ListDetail pane layout not implemented")
-//    }
+
+    when (layoutRestrictions.calculatePaneLayout()) {
+        Single -> {
+            SinglePaneScaffold(
+                layoutRestrictions = layoutRestrictions,
+                menuEventHandler = menuEventHandler,
+                vm = vm,
+                uiState = uiState
+            )
+        }
+
+        ListDetail -> TODO("ListDetail pane layout not implemented")
+    }
+}
+
+@Composable
+private fun SinglePaneScaffold(
+    layoutRestrictions: LayoutRestrictions,
+    menuEventHandler: ContactsActivityMenuEventHandler,
+    vm: ContactsActivityViewModel,
+    uiState: ContactsActivityUiState
+) {
+    Scaffold(
+        topBar = {
+            SinglePaneTopAppBar(
+                uiState = uiState,
+                vm = vm,
+                menuEventHandler = menuEventHandler
+            )
+        },
+        bottomBar = { SinglePaneBottomAppBar(uiState = uiState, vm = vm) },
+        floatingActionButtonPosition = FabPosition.Center,
+        floatingActionButton = { SinglePaneFab(uiState = uiState, vm = vm) },
+        isFloatingActionButtonDocked = true,
+    ) { paddingVals ->
+        val fixedPadding = paddingVals.fixForMainContent()
+        if (uiState.detailsState != null)
+            TODO("Main content detail pane")
+        else
+            SinglePaneContactsList.ViewingContactsList(
+                modifier = Modifier.padding(paddingValues = fixedPadding),
+                contacts = uiState.contacts,
+                isSyncing = uiState.isSyncing,
+                handler = vm
+            )
+    }
+}
+
+@Composable
+private fun SinglePaneTopAppBar(
+    uiState: ContactsActivityUiState,
+    vm: ContactsActivityViewModel,
+    menuEventHandler: ContactsActivityMenuEventHandler
+) {
+    TopAppBar {
+        when {
+            uiState.detailsState != null -> {
+                TODO("SinglePaneScaffold detail top bar")
+            }
+
+            uiState.searchTerm != null -> {
+                with(SinglePaneContactsList.ScaffoldContent) {
+                    TopAppBarSearchMode(searchTerm = uiState.searchTerm, handler = vm)
+                }
+            }
+
+            else -> {
+                with(SinglePaneContactsList.ScaffoldContent) { TopAppBar() }
+            }
+        }
+
+        ContactsActivityMenuButton(handler = menuEventHandler)
+    }
+}
+
+@Composable
+private fun SinglePaneBottomAppBar(
+    uiState: ContactsActivityUiState,
+    vm: ContactsActivityViewModel
+) {
+    BottomAppBar(cutoutShape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))) {
+        when {
+            uiState.detailsState != null -> TODO("SinglePaneScaffold detail bottom bar")
+            uiState.searchTerm != null -> with(SinglePaneContactsList.ScaffoldContent) {
+                BottomAppBarSearch()
+            }
+            else -> with(SinglePaneContactsList.ScaffoldContent) {
+                BottomAppBar(handler = vm)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SinglePaneFab(uiState: ContactsActivityUiState, vm: ContactsActivityViewModel) {
+    if (uiState.detailsState != null)
+        TODO("SinglePaneFab detail")
+    else
+        SinglePaneContactsList.ScaffoldContent.Fab(handler = vm)
 }
 
 private fun LayoutRestrictions.calculatePaneLayout(): PaneLayout = Single
 
-private enum class PaneLayout {
+enum class PaneLayout {
     Single,
     ListDetail
 }
@@ -114,36 +203,42 @@ fun ContactsActivityMenuButton(handler: ContactsActivityMenuEventHandler) {
     }
 }
 
-//@Composable
-//@Preview(showBackground = true)
-//@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
-//private fun ListPreview() {
-//    val contacts = (1..100).map {
-//        Contact.createNewLocal(
-//            firstName = "First",
-//            lastName = "Last $it",
-//            title = "Title",
-//        )
-//    }
-//    val vm = object : PreviewContactsActivityViewModel() {}.apply {
-//        mutUiState.value = ContactsActivityUiState(
-//            contactDetailsUiState = NoContactSelected,
-//            contactsListUiState = ViewingList(contacts)
-//        )
-//    }
-//    SalesforceMobileSDKAndroidTheme {
-//        ContactsActivityContent(
-//            layoutRestrictions = LayoutRestrictions(
-//                WindowSizeRestrictions(
-//                    WindowSizeClass.Compact,
-//                    WindowSizeClass.Medium
-//                )
-//            ),
-//            vm = vm
-//        )
-//    }
-//}
-//
+@Composable
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
+private fun ListPreview() {
+    val contacts = (1..100).map {
+        Contact.createNewLocal(
+            firstName = "First",
+            lastName = "Last $it",
+            title = "Title",
+        )
+    }
+
+    val vm = PreviewContactsActivityViewModel(
+        ContactsActivityUiState(
+            contacts = contacts,
+            detailsState = null,
+            searchTerm = null,
+            isSyncing = false,
+            showDiscardChanges = false
+        )
+    )
+
+    SalesforceMobileSDKAndroidTheme {
+        ContactsActivityContent(
+            layoutRestrictions = LayoutRestrictions(
+                WindowSizeRestrictions(
+                    WindowSizeClass.Compact,
+                    WindowSizeClass.Medium
+                )
+            ),
+            menuEventHandler = PreviewMenuEventHandler,
+            vm = vm
+        )
+    }
+}
+
 //@Composable
 //@Preview(showBackground = true)
 //@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
@@ -174,32 +269,75 @@ fun ContactsActivityMenuButton(handler: ContactsActivityMenuEventHandler) {
 //    }
 //}
 //
-//private abstract class PreviewContactsActivityViewModel : ContactsActivityViewModel {
-//    val mutUiState = MutableStateFlow(
-//        ContactsActivityUiState(
-//            contactDetailsUiState = NoContactSelected,
-//            contactsListUiState = Loading
-//        )
-//    )
-//    override val uiState: StateFlow<ContactsActivityUiState> get() = mutUiState
-//    override val inspectDbClickEvents: ReceiveChannel<Unit>
-//        get() = Channel()
-//    override val logoutClickEvents: ReceiveChannel<Unit>
-//        get() = Channel()
-//
-//    override fun handleEvent(event: ContactsActivityUiEvents) {
-//        /* no-op */
-//    }
-//
-//    override fun handleEvent(event: ContactsActivitySharedUiEvents) {
-//        /* no-op */
-//    }
-//
-//    override fun handleEvent(event: ContactsListUiEvents) {
-//        /* no-op */
-//    }
-//
-//    override fun handleEvent(event: ContactDetailUiEvents) {
-//        /* no-op */
-//    }
-//}
+private class PreviewContactsActivityViewModel(state: ContactsActivityUiState) :
+    ContactsActivityViewModel {
+
+    override val uiState: StateFlow<ContactsActivityUiState> = MutableStateFlow(state)
+
+    override fun sync(syncDownOnly: Boolean) {
+        TODO("Not yet implemented")
+    }
+
+    override fun searchClick() {
+        TODO("Not yet implemented")
+    }
+
+    override fun listContactClick(contact: Contact) {
+        TODO("Not yet implemented")
+    }
+
+    override fun listCreateClick() {
+        TODO("Not yet implemented")
+    }
+
+    override fun listDeleteClick(contact: Contact) {
+        TODO("Not yet implemented")
+    }
+
+    override fun listEditClick(contact: Contact) {
+        TODO("Not yet implemented")
+    }
+
+    override fun exitSearch() {
+        TODO("Not yet implemented")
+    }
+
+    override fun searchTermUpdated(newSearchTerm: String) {
+        TODO("Not yet implemented")
+    }
+
+    override fun detailsDeleteClick() {
+        TODO("Not yet implemented")
+    }
+
+    override fun onDetailsUpdated(newContact: Contact) {
+        TODO("Not yet implemented")
+    }
+
+    override fun saveClick() {
+        TODO("Not yet implemented")
+    }
+
+    override fun detailsEditClick() {
+        TODO("Not yet implemented")
+    }
+}
+
+private object PreviewMenuEventHandler : ContactsActivityMenuEventHandler {
+    override fun inspectDbClicked() {
+        TODO("Not yet implemented")
+    }
+
+    override fun logoutClicked() {
+        TODO("Not yet implemented")
+    }
+
+    override fun switchUserClicked() {
+        TODO("Not yet implemented")
+    }
+
+    override fun syncClicked() {
+        TODO("Not yet implemented")
+    }
+
+}
