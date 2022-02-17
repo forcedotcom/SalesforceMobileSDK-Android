@@ -1,26 +1,5 @@
 package com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane
 
-import android.content.res.Configuration.UI_MODE_NIGHT_YES
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CornerSize
-import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
-import com.salesforce.samples.mobilesynccompose.R
-import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactListContent
-import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactsActivityMenuButton
-import com.salesforce.samples.mobilesynccompose.contacts.ui.fixForMainContent
-import com.salesforce.samples.mobilesynccompose.core.ui.components.ToggleableEditTextField
-import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
-import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
-
 //@Composable
 //fun SinglePaneContactsList(
 //    uiState: ContactsListUiState,
