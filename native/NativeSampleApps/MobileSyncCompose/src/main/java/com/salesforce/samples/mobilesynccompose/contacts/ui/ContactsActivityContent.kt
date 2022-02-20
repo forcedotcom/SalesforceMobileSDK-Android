@@ -17,13 +17,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityMenuEventHandler
-import com.salesforce.samples.mobilesynccompose.contacts.state.Creating
-import com.salesforce.samples.mobilesynccompose.contacts.state.Editing
-import com.salesforce.samples.mobilesynccompose.contacts.state.Viewing
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.ListDetail
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.Single
 import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.SinglePaneContactDetails
 import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.SinglePaneContactsList
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsUiMode.*
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityUiState
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityViewModel
 import com.salesforce.samples.mobilesynccompose.core.ui.LayoutRestrictions
@@ -78,14 +76,15 @@ private fun SinglePaneScaffold(
     ) { paddingVals ->
         val fixedPadding = paddingVals.fixForMainContent()
         if (uiState.detailsState != null)
-            when (uiState.detailsState) {
-                is Creating,
-                is Editing -> SinglePaneContactDetails.EditingContact(
-                    details = uiState.detailsState.uiState,
-                    isSaving = uiState.detailsState.isSaving
+            when (uiState.detailsState.mode) {
+                Creating,
+                Editing -> SinglePaneContactDetails.EditingContact(
+                    details = uiState.detailsState,
+                    isSaving = uiState.detailsState.isSaving,
+                    handler = vm,
                 )
-                is Viewing -> SinglePaneContactDetails.ViewingContact(
-                    details = uiState.detailsState.uiState
+                Viewing -> SinglePaneContactDetails.ViewingContact(
+                    details = uiState.detailsState
                 )
             }
         else
@@ -108,11 +107,12 @@ private fun SinglePaneTopAppBar(
         when {
             uiState.detailsState != null -> {
                 with(SinglePaneContactDetails.ScaffoldContent) {
-                    val detailsVm = uiState.detailsState.uiState
-                    TopAppBar(
-                        label = "${detailsVm.firstNameVm.fieldValue} ${detailsVm.lastNameVm.fieldValue}",
-                        handler = vm
-                    )
+                    uiState.detailsState.let {
+                        TopAppBar(
+                            label = "${it.firstNameVm.fieldValue} ${it.lastNameVm.fieldValue}",
+                            handler = vm
+                        )
+                    }
                 }
             }
 
@@ -155,10 +155,10 @@ private fun SinglePaneBottomAppBar(
 private fun SinglePaneFab(uiState: ContactsActivityUiState, vm: ContactsActivityViewModel) {
     if (uiState.detailsState != null)
         with(SinglePaneContactDetails.ScaffoldContent) {
-            when (uiState.detailsState) {
-                is Creating,
-                is Editing -> EditModeFab(handler = vm)
-                is Viewing -> ViewModeFab(handler = vm)
+            when (uiState.detailsState.mode) {
+                Creating,
+                Editing -> EditModeFab(handler = vm)
+                Viewing -> ViewModeFab(handler = vm)
             }
         }
     else
