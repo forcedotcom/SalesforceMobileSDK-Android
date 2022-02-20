@@ -57,6 +57,7 @@ object SinglePaneContactDetails {
     fun EditingContact(
         modifier: Modifier = Modifier,
         details: ContactDetailsUiState,
+        handler: ContactEditModeEventHandler,
         isSaving: Boolean
     ) {
         val scrollState = rememberScrollState()
@@ -70,7 +71,7 @@ object SinglePaneContactDetails {
                     fieldValue = fieldVm.fieldValue,
                     isEditEnabled = fieldVm.canBeEdited,
                     isError = fieldVm.isInErrorState,
-                    onValueChange = { }, // Not editable in this mode
+                    onValueChange = { handler.onDetailsUpdated(fieldVm.onFieldValueChange(it)) },
                     label = { Text(safeStringResource(id = fieldVm.labelRes)) },
                     help = { Text(safeStringResource(id = fieldVm.helperRes)) },
                     placeholder = { Text(safeStringResource(id = fieldVm.placeholderRes)) }
@@ -164,7 +165,11 @@ private fun ContactDetailViewModePreview() {
     )
     SalesforceMobileSDKAndroidTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
-            SinglePaneContactDetails.ViewingContact(details = contact.toContactDetailsUiState())
+            SinglePaneContactDetails.ViewingContact(
+                details = contact.toContactDetailsUiState(
+                    ContactDetailsUiMode.Viewing
+                )
+            )
         }
     }
 }
@@ -190,8 +195,26 @@ private fun ContactDetailEditModePreview() {
                     origContact = origContact,
                     firstNameVm = editedContact.createFirstNameVm(),
                     lastNameVm = editedContact.createLastNameVm(),
-                    titleVm = editedContact.createTitleVm()
+                    titleVm = editedContact.createTitleVm(),
+                    mode = ContactDetailsUiMode.Editing
                 ),
+                handler = object : ContactEditModeEventHandler {
+                    override fun onDetailsUpdated(newContact: Contact) {
+                        TODO("Not yet implemented")
+                    }
+
+                    override fun saveClick() {
+                        TODO("Not yet implemented")
+                    }
+
+                    override fun detailsDeleteClick() {
+                        TODO("Not yet implemented")
+                    }
+
+                    override fun detailsExitClick() {
+                        TODO("Not yet implemented")
+                    }
+                },
                 isSaving = false
             )
         }
@@ -239,8 +262,27 @@ private fun ContactDetailEditModeSavingPreview() {
                     origContact = origContact,
                     firstNameVm = editedContact.createFirstNameVm(),
                     lastNameVm = editedContact.createLastNameVm(),
-                    titleVm = editedContact.createTitleVm()
+                    titleVm = editedContact.createTitleVm(),
+                    mode = ContactDetailsUiMode.Editing,
+                    isSaving = true
                 ),
+                handler = object : ContactEditModeEventHandler {
+                    override fun onDetailsUpdated(newContact: Contact) {
+                        TODO("Not yet implemented")
+                    }
+
+                    override fun saveClick() {
+                        TODO("Not yet implemented")
+                    }
+
+                    override fun detailsDeleteClick() {
+                        TODO("Not yet implemented")
+                    }
+
+                    override fun detailsExitClick() {
+                        TODO("Not yet implemented")
+                    }
+                },
                 isSaving = true
             )
         }
