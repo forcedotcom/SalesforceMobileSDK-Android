@@ -22,6 +22,7 @@ import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.Single
 import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.SinglePaneContactDetails
 import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.SinglePaneContactsList
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsUiMode.*
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityListUiState
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityUiState
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityViewModel
 import com.salesforce.samples.mobilesynccompose.core.ui.LayoutRestrictions
@@ -82,15 +83,17 @@ private fun SinglePaneScaffold(
                     details = uiState.detailsState,
                     isSaving = uiState.detailsState.isSaving,
                     handler = vm,
+                    discardChangesHandler = vm
                 )
                 Viewing -> SinglePaneContactDetails.ViewingContact(
-                    details = uiState.detailsState
+                    details = uiState.detailsState,
+                    handler = vm
                 )
             }
         else
             SinglePaneContactsList.ViewingContactsList(
                 modifier = Modifier.padding(paddingValues = fixedPadding),
-                contacts = uiState.contacts,
+                contacts = uiState.listState.contacts,
                 isSyncing = uiState.isSyncing,
                 handler = vm
             )
@@ -116,9 +119,9 @@ private fun SinglePaneTopAppBar(
                 }
             }
 
-            uiState.searchTerm != null -> {
+            uiState.listState.searchTerm != null -> {
                 with(SinglePaneContactsList.ScaffoldContent) {
-                    TopAppBarSearchMode(searchTerm = uiState.searchTerm, handler = vm)
+                    TopAppBarSearchMode(searchTerm = uiState.listState.searchTerm, handler = vm)
                 }
             }
 
@@ -141,7 +144,7 @@ private fun SinglePaneBottomAppBar(
             uiState.detailsState != null -> with(SinglePaneContactDetails.ScaffoldContent) {
                 BottomAppBar(vm)
             }
-            uiState.searchTerm != null -> with(SinglePaneContactsList.ScaffoldContent) {
+            uiState.listState.searchTerm != null -> with(SinglePaneContactsList.ScaffoldContent) {
                 BottomAppBarSearch()
             }
             else -> with(SinglePaneContactsList.ScaffoldContent) {
@@ -243,11 +246,12 @@ private fun ListPreview() {
 
     val vm = PreviewContactsActivityViewModel(
         ContactsActivityUiState(
-            contacts = contacts,
+            listState = ContactsActivityListUiState(
+                contacts = contacts,
+                searchTerm = null,
+            ),
             detailsState = null,
-            searchTerm = null,
             isSyncing = false,
-            showDiscardChanges = false
         )
     )
 
@@ -265,36 +269,6 @@ private fun ListPreview() {
     }
 }
 
-//@Composable
-//@Preview(showBackground = true)
-//@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
-//private fun DetailsPreview() {
-//    val contact = Contact.createNewLocal(
-//        firstName = "First",
-//        lastName = "Last",
-//        title = "Title",
-//    )
-//
-//    val vm = object : PreviewContactsActivityViewModel() {}.apply {
-//        mutUiState.value = ContactsActivityUiState(
-//            contactDetailsUiState = ViewingContact(contact),
-//            contactsListUiState = Loading
-//        )
-//    }
-//
-//    SalesforceMobileSDKAndroidTheme {
-//        ContactsActivityContent(
-//            layoutRestrictions = LayoutRestrictions(
-//                WindowSizeRestrictions(
-//                    WindowSizeClass.Compact,
-//                    WindowSizeClass.Medium
-//                )
-//            ),
-//            vm = vm
-//        )
-//    }
-//}
-//
 private class PreviewContactsActivityViewModel(state: ContactsActivityUiState) :
     ContactsActivityViewModel {
 
@@ -321,6 +295,14 @@ private class PreviewContactsActivityViewModel(state: ContactsActivityUiState) :
     }
 
     override fun listEditClick(contact: Contact) {
+        TODO("Not yet implemented")
+    }
+
+    override fun discardChanges() {
+        TODO("Not yet implemented")
+    }
+
+    override fun continueEditing() {
         TODO("Not yet implemented")
     }
 

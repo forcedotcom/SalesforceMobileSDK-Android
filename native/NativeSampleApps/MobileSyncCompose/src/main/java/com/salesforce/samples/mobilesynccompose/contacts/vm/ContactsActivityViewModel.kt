@@ -3,10 +3,7 @@ package com.salesforce.samples.mobilesynccompose.contacts.vm
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactEditModeEventHandler
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactViewModeEventHandler
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsListEventHandler
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsSearchEventHandler
+import com.salesforce.samples.mobilesynccompose.contacts.events.*
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsUiMode.*
 import com.salesforce.samples.mobilesynccompose.core.extensions.parallelFilter
 import com.salesforce.samples.mobilesynccompose.core.extensions.parallelFirstOrNull
@@ -21,6 +18,7 @@ import kotlinx.coroutines.sync.withLock
 
 interface ContactsActivityViewModel :
     ContactsListEventHandler,
+    ContactDetailsDiscardChangesEventHandler,
     ContactsSearchEventHandler,
     ContactEditModeEventHandler,
     ContactViewModeEventHandler {
@@ -30,11 +28,14 @@ interface ContactsActivityViewModel :
 }
 
 data class ContactsActivityUiState(
-    val contacts: List<Contact>,
+    val listState: ContactsActivityListUiState,
     val detailsState: ContactDetailsUiState?,
-    val searchTerm: String?,
     val isSyncing: Boolean,
-    val showDiscardChanges: Boolean
+)
+
+data class ContactsActivityListUiState(
+    val contacts: List<Contact>,
+    val searchTerm: String?,
 )
 
 class DefaultContactsActivityViewModel(
@@ -44,11 +45,9 @@ class DefaultContactsActivityViewModel(
     private val eventMutex = Mutex()
     private val mutUiState = MutableStateFlow(
         ContactsActivityUiState(
-            contacts = emptyList(),
+            listState = ContactsActivityListUiState(contacts = emptyList(), searchTerm = null),
             detailsState = null,
-            searchTerm = null,
             isSyncing = false,
-            showDiscardChanges = false
         )
     )
     override val uiState: StateFlow<ContactsActivityUiState> get() = mutUiState
@@ -82,8 +81,12 @@ class DefaultContactsActivityViewModel(
                 Viewing -> curDetail.copy(origContact = matchingContact)
             }
         }
-        mutUiState.value =
-            curState.copy(contacts = newList, isSyncing = false, detailsState = newDetail)
+        val newListState = curState.listState.copy(contacts = newList)
+        mutUiState.value = curState.copy(
+            listState = newListState,
+            isSyncing = false,
+            detailsState = newDetail
+        )
     }
 
     override fun sync(syncDownOnly: Boolean) = withEventLock {
@@ -96,7 +99,9 @@ class DefaultContactsActivityViewModel(
 
         if (curState.detailsState != null && curState.detailsState.isModified) {
             // editing contact, so ask to discard changes
-            TODO("$TAG - listContactClick show discard changes")
+            mutUiState.value = mutUiState.value.copy(
+                detailsState = curState.detailsState.copy(showDiscardChanges = true)
+            )
         } else {
             mutUiState.value = curState.copy(
                 detailsState = contact.toContactDetailsUiState(mode = Viewing),
@@ -109,7 +114,9 @@ class DefaultContactsActivityViewModel(
 
         if (curState.detailsState != null && curState.detailsState.isModified) {
             // editing contact, so ask to discard changes
-            TODO("$TAG - listCreateClick show discard changes")
+            mutUiState.value = mutUiState.value.copy(
+                detailsState = curState.detailsState.copy(showDiscardChanges = true)
+            )
         } else {
             mutUiState.value = curState.copy(
                 detailsState = Contact.createNewLocal()
@@ -127,7 +134,9 @@ class DefaultContactsActivityViewModel(
 
         if (curState.detailsState != null && curState.detailsState.isModified) {
             // editing contact, so ask to discard changes
-            TODO("$TAG - listEditClick show discard changes")
+            mutUiState.value = mutUiState.value.copy(
+                detailsState = curState.detailsState.copy(showDiscardChanges = true)
+            )
         } else {
             mutUiState.value = curState.copy(
                 detailsState = contact.toContactDetailsUiState(mode = Editing),
@@ -135,27 +144,52 @@ class DefaultContactsActivityViewModel(
         }
     }
 
+    override fun discardChanges() = withEventLock {
+        val curState = mutUiState.value
+        mutUiState.value = if (curState.detailsState?.mode != Creating) {
+            curState.copy(
+                detailsState = curState.detailsState?.origContact?.toContactDetailsUiState(
+                    mode = Viewing,
+                    showDiscardChanges = false
+                )
+            )
+        } else {
+            curState.copy(detailsState = null)
+        }
+    }
+
+    override fun continueEditing() {
+        mutUiState.value = mutUiState.value.copy(
+            detailsState = mutUiState.value.detailsState?.copy(showDiscardChanges = false)
+        )
+    }
+
     override fun exitSearch() = withEventLock {
         mutUiState.value = mutUiState.value.copy(
-            contacts = contactsRepo.curUpstreamContacts,
-            searchTerm = null
+            listState = ContactsActivityListUiState(
+                contacts = contactsRepo.curUpstreamContacts,
+                searchTerm = null
+            )
         )
     }
 
     override fun searchClick() = withEventLock {
-        mutUiState.value = mutUiState.value.copy(searchTerm = "")
+        val newListState = mutUiState.value.listState.copy(searchTerm = "")
+        mutUiState.value = mutUiState.value.copy(listState = newListState)
     }
 
     // TODO make the filtering a Job and cancel it on new UI events to avoid UI state change hanging
     override fun searchTermUpdated(newSearchTerm: String) = withEventLock {
         mutUiState.value = mutUiState.value.copy(
-            contacts = contactsRepo.curUpstreamContacts.parallelFilter {
-                it.fullName.contains(
-                    newSearchTerm,
-                    ignoreCase = true
-                )
-            },
-            searchTerm = newSearchTerm
+            listState = ContactsActivityListUiState(
+                contacts = contactsRepo.curUpstreamContacts.parallelFilter {
+                    it.fullName.contains(
+                        newSearchTerm,
+                        ignoreCase = true
+                    )
+                },
+                searchTerm = newSearchTerm
+            )
         )
 //        val upstreamContacts = contactsRepo.curUpstreamContacts
 //
@@ -195,7 +229,9 @@ class DefaultContactsActivityViewModel(
         when (curState.detailsState.mode) {
             Creating -> {
                 if (curState.detailsState.isModified) {
-                    TODO("Exit click when modified")
+                    mutUiState.value = curState.copy(
+                        detailsState = curState.detailsState.copy(showDiscardChanges = true)
+                    )
                 } else {
                     mutUiState.value = curState.copy(detailsState = null)
                 }
@@ -203,7 +239,9 @@ class DefaultContactsActivityViewModel(
 
             Editing -> {
                 if (curState.detailsState.isModified) {
-                    TODO("Exit click when modified")
+                    mutUiState.value = curState.copy(
+                        detailsState = curState.detailsState.copy(showDiscardChanges = true)
+                    )
                 } else {
                     mutUiState.value = curState.copy(
                         detailsState = curState.detailsState.copy(mode = Viewing),
