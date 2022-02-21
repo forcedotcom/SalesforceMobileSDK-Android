@@ -13,6 +13,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.window.layout.WindowMetricsCalculator
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager
 import com.salesforce.androidsdk.rest.RestClient
+import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity
 import com.salesforce.androidsdk.ui.SalesforceActivityDelegate
 import com.salesforce.androidsdk.ui.SalesforceActivityInterface
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityMenuEventHandler
@@ -42,26 +43,6 @@ class ContactsActivity : ComponentActivity(),
             ) as T
         }
     }
-
-//    init {
-//        lifecycleScope.launchWhenStarted {
-//            for (event in vm.inspectDbClickEvents) {
-//                startActivity(
-//                    SmartStoreInspectorActivity.getIntent(
-//                        this@ContactsActivity,
-//                        false,
-//                        null
-//                    )
-//                )
-//            }
-//        }
-//
-//        lifecycleScope.launchWhenStarted {
-//            for (event in vm.logoutClickEvents) {
-//                MobileSyncSDKManager.getInstance().logout(this@ContactsActivity)
-//            }
-//        }
-//    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -124,7 +105,13 @@ class ContactsActivity : ComponentActivity(),
     }
 
     override fun inspectDbClicked() {
-        TODO("Not yet implemented")
+        startActivity(
+            SmartStoreInspectorActivity.getIntent(
+                this@ContactsActivity,
+                false,
+                null
+            )
+        )
     }
 
     override fun logoutClicked() {
@@ -136,6 +123,6 @@ class ContactsActivity : ComponentActivity(),
     }
 
     override fun syncClicked() {
-        TODO("Not yet implemented")
+        vm.sync()
     }
 }

@@ -1,6 +1,7 @@
 package com.salesforce.samples.mobilesynccompose.contacts.ui
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import android.util.Log
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
@@ -40,6 +41,7 @@ fun ContactsActivityContent(
     vm: ContactsActivityViewModel
 ) {
     val uiState by vm.uiState.collectAsState()
+    Log.d("ContactsActivityContent", "uiState = $uiState")
 
     when (layoutRestrictions.calculatePaneLayout()) {
         Single -> {

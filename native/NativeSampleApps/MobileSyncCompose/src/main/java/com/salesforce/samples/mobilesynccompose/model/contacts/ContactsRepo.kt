@@ -92,6 +92,7 @@ class DefaultContactsRepo(
             result.getOrNull()?.let { updatedContact ->
                 val updatedList = mutContactListState.value
                     .replaceAll(newValue = updatedContact) { it.id == updatedContact.id }
+                mutUpstreamContacts = updatedList
                 mutContactListState.value = updatedList
             }
 
