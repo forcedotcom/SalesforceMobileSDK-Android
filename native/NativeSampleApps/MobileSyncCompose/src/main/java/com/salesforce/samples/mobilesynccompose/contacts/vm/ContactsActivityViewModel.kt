@@ -6,13 +6,12 @@ import androidx.lifecycle.viewModelScope
 import com.salesforce.samples.mobilesynccompose.contacts.events.*
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsUiMode.*
 import com.salesforce.samples.mobilesynccompose.core.extensions.parallelFilter
-import com.salesforce.samples.mobilesynccompose.core.extensions.parallelFirstOrNull
 import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactsRepo
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -62,9 +61,16 @@ class DefaultContactsActivityViewModel(
 
     private fun onContactListUpdate(newList: List<Contact>) = withEventLock {
         val curState = uiState.value
+
+        val filteredContactsDeferred = async {
+            curState.listState.searchTerm?.let { searchTerm ->
+                newList.parallelFilter { it.fullName.contains(searchTerm, ignoreCase = true) }
+            } ?: newList
+        }
+
         val newDetail = curState.detailsState?.let { curDetail ->
 
-            val matchingContact = newList.parallelFirstOrNull {
+            val matchingContact = newList.firstOrNull {
                 it.id == curState.detailsState.origContact.id
             } ?: return@let null
 
@@ -81,7 +87,9 @@ class DefaultContactsActivityViewModel(
                 Viewing -> curDetail.copy(origContact = matchingContact)
             }
         }
-        val newListState = curState.listState.copy(contacts = newList)
+
+        val newListState = curState.listState.copy(contacts = filteredContactsDeferred.await())
+
         mutUiState.value = curState.copy(
             listState = newListState,
             isSyncing = false,
@@ -178,41 +186,24 @@ class DefaultContactsActivityViewModel(
         mutUiState.value = mutUiState.value.copy(listState = newListState)
     }
 
+    private var searchJob: Job? = null
+
     // TODO make the filtering a Job and cancel it on new UI events to avoid UI state change hanging
     override fun searchTermUpdated(newSearchTerm: String) = withEventLock {
         mutUiState.value = mutUiState.value.copy(
-            listState = ContactsActivityListUiState(
-                contacts = contactsRepo.curUpstreamContacts.parallelFilter {
-                    it.fullName.contains(
-                        newSearchTerm,
-                        ignoreCase = true
-                    )
-                },
-                searchTerm = newSearchTerm
-            )
+            listState = mutUiState.value.listState.copy(searchTerm = newSearchTerm)
         )
-//        val upstreamContacts = contactsRepo.curUpstreamContacts
-//
-//        val filterBlock: () -> List<Contact> = {
-//            upstreamContacts.filter {
-//                it.fullName.contains(newSearchTerm, ignoreCase = true)
-//            }
-//        }
-//
-//        // Don't bother doing expensive context-switching unless we would get a perf benefit:
-//        if (upstreamContacts.size > 100) {
-//            withContext(Dispatchers.Default) {
-//                mutUiState.value = mutUiState.value.copy(
-//                    contacts = filterBlock(),
-//                    searchTerm = newSearchTerm
-//                )
-//            }
-//        } else {
-//            mutUiState.value = mutUiState.value.copy(
-//                contacts = filterBlock(),
-//                searchTerm = newSearchTerm
-//            )
-//        }
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            val filteredContacts = contactsRepo.curUpstreamContacts.parallelFilter {
+                ensureActive()
+                it.fullName.contains(newSearchTerm, ignoreCase = true)
+            }
+            ensureActive()
+            mutUiState.value = mutUiState.value.copy(
+                listState = mutUiState.value.listState.copy(contacts = filteredContacts)
+            )
+        }
     }
 
     override fun detailsDeleteClick() = withEventLock {
@@ -344,7 +335,7 @@ class DefaultContactsActivityViewModel(
         mutUiState.value = curUiState.copy(detailsState = newDetails)
     }
 
-    private fun withEventLock(block: suspend () -> Unit) {
+    private fun withEventLock(block: suspend CoroutineScope.() -> Unit) {
         viewModelScope.launch { eventMutex.withLock { block() } }
     }
 
