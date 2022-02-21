@@ -18,6 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactDetailsCoreEventHandler
+import com.salesforce.samples.mobilesynccompose.contacts.events.ContactDetailsDiscardChangesEventHandler
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactEditModeEventHandler
 import com.salesforce.samples.mobilesynccompose.contacts.events.ContactViewModeEventHandler
 import com.salesforce.samples.mobilesynccompose.contacts.vm.*
@@ -32,6 +33,7 @@ object SinglePaneContactDetails {
     fun ViewingContact(
         modifier: Modifier = Modifier,
         details: ContactDetailsUiState,
+        handler: ContactDetailsDiscardChangesEventHandler,
     ) {
         val scrollState = rememberScrollState()
         Column(
@@ -50,6 +52,10 @@ object SinglePaneContactDetails {
                     placeholder = { Text(safeStringResource(id = fieldVm.placeholderRes)) }
                 )
             }
+
+            if (details.showDiscardChanges) {
+                DiscardChangesDialog(handler = handler)
+            }
         }
     }
 
@@ -58,6 +64,7 @@ object SinglePaneContactDetails {
         modifier: Modifier = Modifier,
         details: ContactDetailsUiState,
         handler: ContactEditModeEventHandler,
+        discardChangesHandler: ContactDetailsDiscardChangesEventHandler,
         isSaving: Boolean
     ) {
         val scrollState = rememberScrollState()
@@ -78,9 +85,14 @@ object SinglePaneContactDetails {
                 )
             }
         }
+        when {
+            isSaving -> {
+                LoadingOverlay()
+            }
 
-        if (isSaving) {
-            LoadingOverlay()
+            details.showDiscardChanges -> {
+                DiscardChangesDialog(handler = discardChangesHandler)
+            }
         }
     }
 
@@ -135,24 +147,24 @@ object SinglePaneContactDetails {
     }
 }
 
-//@Composable
-//private fun DiscardChangesDialog(detailEventHandler: ContactDetailEventHandler) {
-//    AlertDialog(
-//        onDismissRequest = { detailEventHandler.handleEvent(ContinueEditing) },
-//        confirmButton = {
-//            TextButton(onClick = { detailEventHandler.handleEvent(DiscardChanges) }) {
-//                Text(stringResource(id = cta_discard))
-//            }
-//        },
-//        dismissButton = {
-//            TextButton(onClick = { detailEventHandler.handleEvent(ContinueEditing) }) {
-//                Text(stringResource(id = cta_continue_editing))
-//            }
-//        },
-//        title = { Text(stringResource(id = label_discard_changes)) },
-//        text = { Text(stringResource(id = body_discard_changes)) }
-//    )
-//}
+@Composable
+private fun DiscardChangesDialog(handler: ContactDetailsDiscardChangesEventHandler) {
+    AlertDialog(
+        onDismissRequest = handler::continueEditing,
+        confirmButton = {
+            TextButton(onClick = handler::discardChanges) {
+                Text(stringResource(id = cta_discard))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = handler::continueEditing) {
+                Text(stringResource(id = cta_continue_editing))
+            }
+        },
+        title = { Text(stringResource(id = label_discard_changes)) },
+        text = { Text(stringResource(id = body_discard_changes)) }
+    )
+}
 
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
@@ -168,7 +180,16 @@ private fun ContactDetailViewModePreview() {
             SinglePaneContactDetails.ViewingContact(
                 details = contact.toContactDetailsUiState(
                     ContactDetailsUiMode.Viewing
-                )
+                ),
+                handler = object : ContactDetailsDiscardChangesEventHandler {
+                    override fun discardChanges() {
+                        TODO("Not yet implemented")
+                    }
+
+                    override fun continueEditing() {
+                        TODO("Not yet implemented")
+                    }
+                }
             )
         }
     }
@@ -215,31 +236,40 @@ private fun ContactDetailEditModePreview() {
                         TODO("Not yet implemented")
                     }
                 },
+                discardChangesHandler = object : ContactDetailsDiscardChangesEventHandler {
+                    override fun discardChanges() {
+                        TODO("Not yet implemented")
+                    }
+
+                    override fun continueEditing() {
+                        TODO("Not yet implemented")
+                    }
+
+                },
                 isSaving = false
             )
         }
     }
 }
 
-//@Preview(showBackground = true)
-//@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
-//@Composable
-//private fun DiscardChangesPreview() {
-//    val contact = Contact.createNewLocal()
-//    SalesforceMobileSDKAndroidTheme {
-//        com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.SinglePaneContactDetails(
-//            uiState = EditMode.DiscardChanges(
-//                originalContact = contact,
-//                firstNameVm = contact.createFirstNameVm(),
-//                lastNameVm = contact.createLastNameVm(),
-//                titleVm = contact.createTitleVm()
-//            ),
-//            detailEventHandler = {},
-//            sharedEventHandler = {},
-//            activityEventHandler = {}
-//        )
-//    }
-//}
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
+@Composable
+private fun DiscardChangesPreview() {
+    SalesforceMobileSDKAndroidTheme {
+        Surface(modifier = Modifier.fillMaxSize()) {
+            DiscardChangesDialog(handler = object : ContactDetailsDiscardChangesEventHandler {
+                override fun discardChanges() {
+                    TODO("Not yet implemented")
+                }
+
+                override fun continueEditing() {
+                    TODO("Not yet implemented")
+                }
+            })
+        }
+    }
+}
 
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
@@ -280,6 +310,15 @@ private fun ContactDetailEditModeSavingPreview() {
                     }
 
                     override fun detailsExitClick() {
+                        TODO("Not yet implemented")
+                    }
+                },
+                discardChangesHandler = object : ContactDetailsDiscardChangesEventHandler {
+                    override fun discardChanges() {
+                        TODO("Not yet implemented")
+                    }
+
+                    override fun continueEditing() {
                         TODO("Not yet implemented")
                     }
                 },
