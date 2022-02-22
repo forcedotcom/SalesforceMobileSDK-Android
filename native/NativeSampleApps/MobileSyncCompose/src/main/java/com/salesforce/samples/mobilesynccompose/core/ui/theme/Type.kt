@@ -16,3 +16,5 @@ val Typography = Typography(
         letterSpacing = 0.5.sp
     )
 )
+
+const val ALPHA_DISABLED = 0.5f
