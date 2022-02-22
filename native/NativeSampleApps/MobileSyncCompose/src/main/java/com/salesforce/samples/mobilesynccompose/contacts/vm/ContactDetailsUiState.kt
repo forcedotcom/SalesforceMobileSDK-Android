@@ -10,7 +10,6 @@ data class ContactDetailsUiState(
     val titleVm: ContactDetailFieldViewModel,
 
     // transient state properties all have default values to make things less verbose:
-    val showDiscardChanges: Boolean = false,
     val isSaving: Boolean = false,
     val fieldToScrollTo: ContactDetailFieldViewModel? = null
 ) {
@@ -43,14 +42,13 @@ data class ContactDetailsUiState(
 
 enum class ContactDetailsUiMode {
     Creating,
-    LocallyDeleted,
     Editing,
+    LocallyDeleted,
     Viewing
 }
 
 fun Contact.toContactDetailsUiState(
     mode: ContactDetailsUiMode,
-    showDiscardChanges: Boolean = false,
     isSaving: Boolean = false,
     fieldToScrollTo: ContactDetailFieldViewModel? = null
 ) = ContactDetailsUiState(
@@ -59,7 +57,6 @@ fun Contact.toContactDetailsUiState(
     firstNameVm = createFirstNameVm(),
     lastNameVm = createLastNameVm(),
     titleVm = createTitleVm(),
-    showDiscardChanges = showDiscardChanges,
     isSaving = isSaving,
     fieldToScrollTo = fieldToScrollTo,
 )

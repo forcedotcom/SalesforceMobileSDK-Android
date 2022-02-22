@@ -1,8 +1,10 @@
 <resources>
     <string name="app_name">Mobile Sync Compose</string>
 
-    <string name="body_discard_changes">There are unsaved changes to this contact. Would you like to discard your changes?</string>
+    <string name="body_delete_confirm">Are you sure you want to delete %1$s?</string>
+    <string name="body_discard_changes">There are unsaved changes. Would you like to discard your changes?</string>
     <string name="body_locally_deleted_info">This contact has been marked for deletion on this device, but the deletion has not been synced to the server. You may undelete the contact by clicking the FAB below.</string>
+    <string name="body_undelete_confirm">Are you sure you want to undelete %1$s?</string>
 
     <string name="cta_continue_editing">Continue Editing</string>
     <string name="cta_delete">Delete</string>
@@ -22,8 +24,10 @@
     <string name="label_contact_last_name">Last Name</string>
     <string name="label_contact_name">Name</string>
     <string name="label_contact_title">Title</string>
+    <string name="label_delete_confirm">Confirm Delete?</string>
     <string name="label_discard_changes">Discard Changes?</string>
     <string name="label_locally_deleted">Locally Deleted</string>
+    <string name="label_undelete_confirm">Confirm Undelete?</string>
 
     <string name="help_cannot_be_blank">This field cannot be left blank</string>
 

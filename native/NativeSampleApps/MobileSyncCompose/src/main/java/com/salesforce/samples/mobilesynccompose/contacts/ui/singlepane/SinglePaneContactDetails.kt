@@ -1,6 +1,6 @@
 package com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane
 
-import android.R
+import android.R.string.ok
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -36,8 +36,6 @@ object SinglePaneContactDetails {
     fun ViewingContact(
         modifier: Modifier = Modifier,
         details: ContactDetailsUiState,
-        detailsContinueEditing: () -> Unit,
-        detailsDiscardChanges: () -> Unit,
     ) {
         val scrollState = rememberScrollState()
         Column(
@@ -81,13 +79,6 @@ object SinglePaneContactDetails {
                     placeholder = { Text(safeStringResource(id = fieldVm.placeholderRes)) }
                 )
             }
-
-            if (details.showDiscardChanges) {
-                DiscardChangesDialog(
-                    detailsContinueEditing = detailsContinueEditing,
-                    detailsDiscardChanges = detailsDiscardChanges
-                )
-            }
         }
     }
 
@@ -96,8 +87,6 @@ object SinglePaneContactDetails {
         modifier: Modifier = Modifier,
         details: ContactDetailsUiState,
         isSaving: Boolean,
-        detailsContinueEditing: () -> Unit,
-        detailsDiscardChanges: () -> Unit,
         onDetailsUpdated: (newContact: Contact) -> Unit
     ) {
         val scrollState = rememberScrollState()
@@ -121,13 +110,6 @@ object SinglePaneContactDetails {
         when {
             isSaving -> {
                 LoadingOverlay()
-            }
-
-            details.showDiscardChanges -> {
-                DiscardChangesDialog(
-                    detailsContinueEditing = detailsContinueEditing,
-                    detailsDiscardChanges = detailsDiscardChanges
-                )
             }
         }
     }
@@ -196,35 +178,11 @@ object SinglePaneContactDetails {
 }
 
 @Composable
-private fun DiscardChangesDialog(
-    detailsContinueEditing: () -> Unit,
-    detailsDiscardChanges: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = detailsContinueEditing,
-        confirmButton = {
-            TextButton(onClick = detailsDiscardChanges) {
-                Text(stringResource(id = cta_discard))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = detailsContinueEditing) {
-                Text(stringResource(id = cta_continue_editing))
-            }
-        },
-        title = { Text(stringResource(id = label_discard_changes)) },
-        text = { Text(stringResource(id = body_discard_changes)) }
-    )
-}
-
-@Composable
 private fun LocallyDeletedInfoDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(id = R.string.ok))
-            }
+            TextButton(onClick = onDismiss) { Text(stringResource(id = ok)) }
         },
         text = { Text(stringResource(id = body_locally_deleted_info)) }
     )
@@ -245,8 +203,6 @@ private fun ContactDetailViewModePreview() {
                 details = contact.toContactDetailsUiState(
                     ContactDetailsUiMode.Viewing
                 ),
-                detailsContinueEditing = {},
-                detailsDiscardChanges = {}
             )
         }
     }
@@ -277,23 +233,7 @@ private fun ContactDetailEditModePreview() {
                     mode = ContactDetailsUiMode.Editing
                 ),
                 isSaving = false,
-                detailsContinueEditing = {},
-                detailsDiscardChanges = {},
                 onDetailsUpdated = {}
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
-@Composable
-private fun DiscardChangesPreview() {
-    SalesforceMobileSDKAndroidTheme {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            DiscardChangesDialog(
-                detailsContinueEditing = {},
-                detailsDiscardChanges = {}
             )
         }
     }
@@ -325,8 +265,6 @@ private fun ContactDetailEditModeSavingPreview() {
                     isSaving = true
                 ),
                 isSaving = true,
-                detailsContinueEditing = {},
-                detailsDiscardChanges = {},
                 onDetailsUpdated = {}
             )
         }
@@ -342,8 +280,6 @@ private fun LocallyDeletedPreview() {
         Surface {
             SinglePaneContactDetails.ViewingContact(
                 details = contact.toContactDetailsUiState(mode = ContactDetailsUiMode.LocallyDeleted),
-                detailsContinueEditing = {},
-                detailsDiscardChanges = {}
             )
         }
     }

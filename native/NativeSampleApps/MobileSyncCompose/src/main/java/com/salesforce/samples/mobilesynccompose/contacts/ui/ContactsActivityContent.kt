@@ -28,6 +28,9 @@ import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsUiMode
 import com.salesforce.samples.mobilesynccompose.core.ui.LayoutRestrictions
 import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeClass
 import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeRestrictions
+import com.salesforce.samples.mobilesynccompose.core.ui.components.DeleteConfirmationDialog
+import com.salesforce.samples.mobilesynccompose.core.ui.components.DiscardChangesDialog
+import com.salesforce.samples.mobilesynccompose.core.ui.components.UndeleteConfirmationDialog
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -91,7 +94,7 @@ private fun SinglePaneScaffold(
         isFloatingActionButtonDocked = true,
     ) { paddingVals ->
         val fixedPadding = paddingVals.fixForMainContent()
-        if (uiState.detailsState != null)
+        if (uiState.detailsState != null) {
             when (uiState.detailsState.mode) {
                 Creating,
                 Editing -> SinglePaneContactDetails.EditingContact(
@@ -108,7 +111,7 @@ private fun SinglePaneScaffold(
                     detailsDiscardChanges = vm::detailsDiscardChanges,
                 )
             }
-        else
+        } else {
             SinglePaneContactsList.ViewingContactsList(
                 modifier = Modifier.padding(paddingValues = fixedPadding),
                 contacts = uiState.listState.contacts,
@@ -118,6 +121,30 @@ private fun SinglePaneScaffold(
                 listEditClick = vm::listEditClick,
                 listUndeleteClick = vm::listUndeleteClick
             )
+        }
+
+        when (val dialog = uiState.dialog) {
+            is DeleteConfirmation -> DeleteConfirmationDialog(
+                layoutRestrictions = layoutRestrictions,
+                onCancel = dialog.onCancelDelete,
+                onDelete = { dialog.onDeleteConfirm(dialog.contactToDelete) },
+                objectLabel = dialog.contactToDelete.fullName
+            )
+            is DiscardChanges -> DiscardChangesDialog(
+                layoutRestrictions = layoutRestrictions,
+                discardChanges = dialog.onDiscardChanges,
+                keepChanges = dialog.onKeepChanges
+            )
+            is UndeleteConfirmation -> UndeleteConfirmationDialog(
+                layoutRestrictions = layoutRestrictions,
+                onCancel = dialog.onCancelUndelete,
+                onUndelete = { dialog.onUndeleteConfirm(dialog.contactToUndelete) },
+                objectLabel = dialog.contactToUndelete.fullName
+            )
+            null -> {
+                /* clear the dialog */
+            }
+        }
     }
 }
 
@@ -294,6 +321,7 @@ private fun ListPreview() {
             ),
             detailsState = null,
             isSyncing = false,
+            dialog = null
         )
     )
 
@@ -341,7 +369,8 @@ private fun DetailsPreview() {
                         lastNameVm = contact.createLastNameVm(),
                         titleVm = contact.createTitleVm()
                     ),
-                    isSyncing = false
+                    isSyncing = false,
+                    dialog = null
                 )
             ),
             onInspectDbClick = {},
