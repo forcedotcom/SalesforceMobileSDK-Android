@@ -4,19 +4,20 @@ import com.salesforce.androidsdk.mobilesync.target.SyncTarget
 import com.salesforce.androidsdk.mobilesync.target.SyncTarget.*
 import com.salesforce.androidsdk.mobilesync.util.Constants
 import org.json.JSONObject
+import java.util.*
 
 class Contact private constructor(raw: JSONObject) {
 
     private val raw = JSONObject(raw.toString()) // new JSON obj ref to avoid mutation issues
 
-    val id: String = raw.optString(Constants.ID)
-    val firstName: String = raw.optString(KEY_FIRST_NAME)
-    val lastName: String = raw.optString(KEY_LAST_NAME)
-    val title: String = raw.optString(KEY_TITLE)
+    val id: String = this.raw.optString(Constants.ID)
+    val firstName: String = this.raw.optString(KEY_FIRST_NAME)
+    val lastName: String = this.raw.optString(KEY_LAST_NAME)
+    val title: String = this.raw.optString(KEY_TITLE)
     val fullName: String = "$firstName $lastName".ifBlank { "" }
-    private val locallyCreated: Boolean = raw.optBoolean(LOCALLY_CREATED, false)
-    private val locallyDeleted: Boolean = raw.optBoolean(LOCALLY_DELETED, false)
-    private val locallyUpdated: Boolean = raw.optBoolean(LOCALLY_UPDATED, false)
+    private val locallyCreated: Boolean = this.raw.optBoolean(LOCALLY_CREATED, false)
+    private val locallyDeleted: Boolean = this.raw.optBoolean(LOCALLY_DELETED, false)
+    private val locallyUpdated: Boolean = this.raw.optBoolean(LOCALLY_UPDATED, false)
     val local: Boolean = locallyCreated || locallyDeleted || locallyUpdated
 
     fun copy(
@@ -39,7 +40,6 @@ class Contact private constructor(raw: JSONObject) {
         locallyUpdated: Boolean = this.locallyUpdated,
     ) = Contact(
         raw
-            .putOpt(Constants.ID, id)
             .putOpt(KEY_FIRST_NAME, firstName)
             .putOpt(KEY_LAST_NAME, lastName)
             .putOpt(KEY_TITLE, title)
@@ -52,7 +52,7 @@ class Contact private constructor(raw: JSONObject) {
     fun markForDeletion() = copy(locallyDeleted = true)
     fun toJson(): JSONObject = JSONObject(raw.toString()).putOpt(Constants.NAME, fullName)
 
-    override fun equals(other: Any?): Boolean = other === this || (
+    override fun equals(other: Any?): Boolean = this === other || (
             other is Contact &&
                     other.id == this.id &&
                     other.firstName == this.firstName &&
@@ -109,16 +109,22 @@ class Contact private constructor(raw: JSONObject) {
             firstName: String = "",
             lastName: String = "",
             title: String = ""
-        ) = Contact(
-            JSONObject()
-                .putOpt(Constants.ID, SyncTarget.createLocalId())
-                .putOpt(KEY_FIRST_NAME, firstName)
-                .putOpt(KEY_LAST_NAME, lastName)
-                .putOpt(KEY_TITLE, title)
-                .putOpt(LOCALLY_CREATED, true)
-                .putOpt(LOCALLY_DELETED, false)
-                .putOpt(LOCALLY_UPDATED, false)
-                .putOpt(LOCAL, true)
-        )
+        ): Contact {
+            val attributes = JSONObject()
+                .put(Constants.TYPE.lowercase(Locale.US), Constants.CONTACT)
+
+            return Contact(
+                JSONObject()
+                    .putOpt(Constants.ID, SyncTarget.createLocalId())
+                    .putOpt(KEY_FIRST_NAME, firstName)
+                    .putOpt(KEY_LAST_NAME, lastName)
+                    .putOpt(KEY_TITLE, title)
+                    .put(Constants.ATTRIBUTES, attributes)
+                    .putOpt(LOCALLY_CREATED, true)
+                    .putOpt(LOCALLY_DELETED, false)
+                    .putOpt(LOCALLY_UPDATED, false)
+                    .putOpt(LOCAL, true)
+            )
+        }
     }
 }

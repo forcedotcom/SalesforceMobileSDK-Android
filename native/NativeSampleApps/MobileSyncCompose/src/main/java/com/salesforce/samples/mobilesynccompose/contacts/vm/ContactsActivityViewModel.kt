@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.salesforce.samples.mobilesynccompose.contacts.events.*
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsUiMode.*
+import com.salesforce.samples.mobilesynccompose.core.SealedFailure
+import com.salesforce.samples.mobilesynccompose.core.SealedSuccess
 import com.salesforce.samples.mobilesynccompose.core.extensions.parallelFilter
 import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactsRepo
@@ -61,6 +63,7 @@ class DefaultContactsActivityViewModel(
 
     private fun onContactListUpdate(newList: List<Contact>) = withEventLock {
         val curState = uiState.value
+        val curDetail = curState.detailsState
 
         val filteredContactsDeferred = async {
             curState.listState.searchTerm?.let { searchTerm ->
@@ -68,23 +71,40 @@ class DefaultContactsActivityViewModel(
             } ?: newList
         }
 
-        val newDetail = curState.detailsState?.let { curDetail ->
-
-            val matchingContact = newList.firstOrNull {
-                it.id == curState.detailsState.origContact.id
-            } ?: return@let null
-
+        val newDetail = curDetail?.let {
+            val matchingContact = newList.firstOrNull { it.id == curDetail.origContact.id }
             when (curDetail.mode) {
-                Creating -> TODO("Creating contact, but received upstream with same ID. Upstream=$matchingContact , current=${curDetail.updatedContact}")
-                Editing -> when {
-                    curDetail.isSaving -> curDetail.copy(
-                        mode = Viewing,
-                        origContact = matchingContact
-                    )
-                    else -> TODO("Conflicting contact list update while editing. Upstream=$matchingContact , current=${curDetail.updatedContact}")
+                Creating -> {
+                    if (curDetail.isSaving) {
+                        curDetail // The result of the save operation will drive details UI change
+                    } else {
+                        if (matchingContact == null) {
+                            // not saving, no matching upstream changes, so details UI state does not change:
+                            curDetail
+                        } else {
+                            TODO("$TAG - onContactListUpdate(): Creating mode and got upstream contact emission with same ID. Current detail UI state = $curDetail , upstream contact = $matchingContact")
+                        }
+                    }
                 }
-
-                Viewing -> curDetail.copy(origContact = matchingContact)
+                Editing -> {
+                    if (curDetail.isSaving) {
+                        curDetail // The result of the save operation will drive details UI change
+                    } else {
+                        /* If we are _not_ actively saving the edited contact, do merge conflict
+                         * resolution: */
+                        when (matchingContact) {
+                            null,
+                            curDetail.origContact -> curDetail
+                            else -> TODO("$TAG - onContactListUpdate(): Received contact update while editing same contact. Current detail UI state = $curDetail , upstream contact = $matchingContact")
+                        }
+                    }
+                }
+                Viewing -> {
+                    /* If we are currently viewing a contact and an updated version comes in
+                     * from the upstream, update the detail fields; otherwise, the details state
+                     * remains unchanged. */
+                    matchingContact?.toContactDetailsUiState(mode = Viewing) ?: curDetail
+                }
             }
         }
 
@@ -127,8 +147,7 @@ class DefaultContactsActivityViewModel(
             )
         } else {
             mutUiState.value = curState.copy(
-                detailsState = Contact.createNewLocal()
-                    .toContactDetailsUiState(mode = Creating),
+                detailsState = Contact.createNewLocal().toContactDetailsUiState(mode = Creating),
             )
         }
     }
@@ -186,23 +205,29 @@ class DefaultContactsActivityViewModel(
         mutUiState.value = mutUiState.value.copy(listState = newListState)
     }
 
+    @Volatile
     private var searchJob: Job? = null
 
-    // TODO make the filtering a Job and cancel it on new UI events to avoid UI state change hanging
     override fun searchTermUpdated(newSearchTerm: String) = withEventLock {
+        // Update UI before doing filtering to keep UI responsive:
         mutUiState.value = mutUiState.value.copy(
             listState = mutUiState.value.listState.copy(searchTerm = newSearchTerm)
         )
+
+        // Now do the filtering:
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             val filteredContacts = contactsRepo.curUpstreamContacts.parallelFilter {
-                ensureActive()
+                ensureActive() // Cooperative cancellation within filter loop
                 it.fullName.contains(newSearchTerm, ignoreCase = true)
             }
-            ensureActive()
-            mutUiState.value = mutUiState.value.copy(
-                listState = mutUiState.value.listState.copy(contacts = filteredContacts)
-            )
+
+            eventMutex.withLock {
+                ensureActive()
+                mutUiState.value = mutUiState.value.copy(
+                    listState = mutUiState.value.listState.copy(contacts = filteredContacts)
+                )
+            }
         }
     }
 
@@ -273,12 +298,12 @@ class DefaultContactsActivityViewModel(
             return@withEventLock
         }
 
-        val newUiState = if (!curDetail.isModified) {
+        val newDetailsState = if (!curDetail.isModified) {
             when (curDetail.mode) {
                 Creating -> {
                     // TODO Maybe add a Toast or something to inform the user why nothing happened
                     /* no-op */
-                    curState
+                    curDetail
                 }
 
                 Viewing -> {
@@ -286,41 +311,62 @@ class DefaultContactsActivityViewModel(
                         TAG,
                         "Got a saveClick event while in Viewing mode. This shouldn't happen and is probably a bug."
                     )
-                    curState
+                    curDetail
                 }
 
                 Editing -> {
-                    curState.copy(detailsState = curDetail.copy(mode = Viewing))
+                    curDetail.copy(mode = Viewing)
                 }
             }
         } else {
             when (curDetail.mode) {
-                Creating -> TODO()
+                Creating,
                 Editing -> {
-                    viewModelScope.launch {
-                        contactsRepo.saveContact(curDetail.updatedContact)
-                    }
-
-                    curState.copy(detailsState = curDetail.copy(isSaving = true))
+                    launchSave(curDetail.updatedContact)
+                    curDetail.copy(isSaving = true)
                 }
                 Viewing -> {
                     Log.w(
                         TAG,
                         "Got a saveClick event while in Viewing mode. This shouldn't happen and is probably a bug."
                     )
-                    curState
+                    curDetail
                 }
             }
         }
 
-        mutUiState.value = newUiState
+        mutUiState.value = mutUiState.value.copy(detailsState = newDetailsState)
+    }
+
+    private fun launchSave(updatedContact: Contact) {
+        viewModelScope.launch {
+            // Be careful to do the contact save _outside_ the event lock to keep things responsive
+            val saveResult = contactsRepo.saveContact(updatedContact)
+            eventMutex.withLock {
+                when (saveResult) {
+                    is SealedFailure -> TODO("$TAG - doEditingSave got save failure: ${saveResult.cause}")
+                    is SealedSuccess -> mutUiState.value = mutUiState.value.copy(
+                        detailsState = saveResult.value.toContactDetailsUiState(
+                            mode = Viewing,
+                            isSaving = false
+                        )
+                    )
+                }
+            }
+        }
     }
 
     override fun detailsEditClick() = withEventLock {
         val curUiState = mutUiState.value
         val newDetails = curUiState.detailsState?.let { curDetails ->
             when (curDetails.mode) {
-                Creating -> TODO("Discard changes")
+                Creating -> {
+                    Log.w(
+                        TAG,
+                        "Got a detailsEditClick while in Creating mode. This shouldn't happen and is probably a bug."
+                    )
+                    curDetails
+                }
                 Editing -> {
                     Log.w(
                         TAG,
