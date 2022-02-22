@@ -19,11 +19,9 @@ import kotlinx.coroutines.sync.withLock
 interface ContactsActivityViewModel {
     val uiState: StateFlow<ContactsActivityUiState>
 
-    fun detailsContinueEditing()
     fun detailsDeleteClick()
     fun detailsEditClick()
     fun detailsExitClick()
-    fun detailsDiscardChanges()
     fun detailsSaveClick()
     fun detailsUndeleteClick()
     fun onDetailsUpdated(newContact: Contact)
@@ -45,6 +43,7 @@ data class ContactsActivityUiState(
     val listState: ContactsActivityListUiState,
     val detailsState: ContactDetailsUiState?,
     val isSyncing: Boolean,
+    val dialog: ContactsActivityDialog?
 )
 
 data class ContactsActivityListUiState(
@@ -62,6 +61,7 @@ class DefaultContactsActivityViewModel(
             listState = ContactsActivityListUiState(contacts = emptyList(), searchTerm = null),
             detailsState = null,
             isSyncing = false,
+            dialog = null
         )
     )
     override val uiState: StateFlow<ContactsActivityUiState> get() = mutUiState
@@ -141,9 +141,7 @@ class DefaultContactsActivityViewModel(
 
         if (curState.detailsState != null && curState.detailsState.isModified) {
             // editing contact, so ask to discard changes
-            mutUiState.value = mutUiState.value.copy(
-                detailsState = curState.detailsState.copy(showDiscardChanges = true)
-            )
+            mutUiState.value = mutUiState.value.copy(showDiscardChanges = true)
         } else {
             mutUiState.value = curState.copy(
                 detailsState = contact.toContactDetailsUiState(mode = Viewing),
@@ -156,9 +154,7 @@ class DefaultContactsActivityViewModel(
 
         if (curState.detailsState != null && curState.detailsState.isModified) {
             // editing contact, so ask to discard changes
-            mutUiState.value = mutUiState.value.copy(
-                detailsState = curState.detailsState.copy(showDiscardChanges = true)
-            )
+            mutUiState.value = mutUiState.value.copy(showDiscardChanges = true)
         } else {
             mutUiState.value = curState.copy(
                 detailsState = Contact.createNewLocal().toContactDetailsUiState(mode = Creating),
@@ -179,9 +175,7 @@ class DefaultContactsActivityViewModel(
 
         if (curState.detailsState != null && curState.detailsState.isModified) {
             // editing contact, so ask to discard changes
-            mutUiState.value = mutUiState.value.copy(
-                detailsState = curState.detailsState.copy(showDiscardChanges = true)
-            )
+            mutUiState.value = mutUiState.value.copy(showDiscardChanges = true)
         } else {
             mutUiState.value = curState.copy(
                 detailsState = contact.toContactDetailsUiState(mode = Editing),
@@ -195,18 +189,16 @@ class DefaultContactsActivityViewModel(
             curState.copy(
                 detailsState = curState.detailsState?.origContact?.toContactDetailsUiState(
                     mode = Viewing,
-                    showDiscardChanges = false
-                )
+                ),
+                showDiscardChanges = false
             )
         } else {
-            curState.copy(detailsState = null)
+            curState.copy(detailsState = null, showDiscardChanges = false)
         }
     }
 
     override fun detailsContinueEditing() = withEventLock {
-        mutUiState.value = mutUiState.value.copy(
-            detailsState = mutUiState.value.detailsState?.copy(showDiscardChanges = false)
-        )
+        mutUiState.value = mutUiState.value.copy(showDiscardChanges = false)
     }
 
     override fun listExitSearchClick() = withEventLock {
@@ -263,9 +255,7 @@ class DefaultContactsActivityViewModel(
         when (curState.detailsState.mode) {
             Creating -> {
                 if (curState.detailsState.isModified) {
-                    mutUiState.value = curState.copy(
-                        detailsState = curState.detailsState.copy(showDiscardChanges = true)
-                    )
+                    mutUiState.value = curState.copy(showDiscardChanges = true)
                 } else {
                     mutUiState.value = curState.copy(detailsState = null)
                 }
@@ -273,9 +263,7 @@ class DefaultContactsActivityViewModel(
 
             Editing -> {
                 if (curState.detailsState.isModified) {
-                    mutUiState.value = curState.copy(
-                        detailsState = curState.detailsState.copy(showDiscardChanges = true)
-                    )
+                    mutUiState.value = curState.copy(showDiscardChanges = true)
                 } else {
                     mutUiState.value = curState.copy(
                         detailsState = curState.detailsState.copy(mode = Viewing),
