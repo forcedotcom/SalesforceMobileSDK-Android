@@ -58,6 +58,7 @@ fun Contact.toContactDetailsUiState(
     firstNameVm = createFirstNameVm(),
     lastNameVm = createLastNameVm(),
     titleVm = createTitleVm(),
+    showDiscardChanges = showDiscardChanges,
     isSaving = isSaving,
-    fieldToScrollTo = fieldToScrollTo
+    fieldToScrollTo = fieldToScrollTo,
 )

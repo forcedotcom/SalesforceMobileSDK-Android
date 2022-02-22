@@ -6,6 +6,9 @@ import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager
 import com.salesforce.androidsdk.mobilesync.util.SyncState
 import com.salesforce.androidsdk.smartstore.store.QuerySpec
+import com.salesforce.samples.mobilesynccompose.core.SealedFailure
+import com.salesforce.samples.mobilesynccompose.core.SealedResult
+import com.salesforce.samples.mobilesynccompose.core.SealedSuccess
 import com.salesforce.samples.mobilesynccompose.core.extensions.map
 import com.salesforce.samples.mobilesynccompose.core.extensions.replaceAll
 import kotlinx.coroutines.*
@@ -20,7 +23,7 @@ interface ContactsRepo {
     val contactUpdates: Flow<List<Contact>>
     val curUpstreamContacts: List<Contact>
     suspend fun sync(syncDownOnly: Boolean)
-    suspend fun saveContact(updatedContactObject: Contact): Result<Contact>
+    suspend fun saveContact(updatedContactObject: Contact): SealedResult<Contact, Exception>
 //    fun deleteContact(...)
 }
 
@@ -80,20 +83,27 @@ class DefaultContactsRepo(
         }
     }
 
-    override suspend fun saveContact(updatedContactObject: Contact): Result<Contact> =
+    override suspend fun saveContact(updatedContactObject: Contact): SealedResult<Contact, Exception> =
         withContext(ioDispatcher) {
-            val result = kotlin.runCatching {
-                Contact.coerceFromJson(
-                    // TODO Use compile-time constant for soup name
-                    store.upsert("contacts", updatedContactObject.toJson())
+            val result: SealedResult<Contact, Exception> = try {
+                SealedSuccess(
+                    Contact.coerceFromJson(
+                        // TODO Use compile-time constant for soup name
+                        store.upsert("contacts", updatedContactObject.toJson())
+                    )
                 )
+            } catch (ex: Exception) {
+                SealedFailure(ex)
             }
 
-            result.getOrNull()?.let { updatedContact ->
-                val updatedList = mutContactListState.value
-                    .replaceAll(newValue = updatedContact) { it.id == updatedContact.id }
-                mutUpstreamContacts = updatedList
-                mutContactListState.value = updatedList
+            when (result) {
+                is SealedFailure -> TODO("Got exception when upserting contact: ${result.cause}")
+                is SealedSuccess -> {
+                    val updatedList = mutContactListState.value
+                        .replaceAll(newValue = result.value) { it.id == result.value.id }
+                    mutUpstreamContacts = updatedList
+                    mutContactListState.value = updatedList
+                }
             }
 
             result
