@@ -2,7 +2,6 @@ package com.salesforce.samples.mobilesynccompose.contacts.ui
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,12 +9,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -25,6 +27,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R
 import com.salesforce.samples.mobilesynccompose.core.ui.components.ExpandoButton
+import com.salesforce.samples.mobilesynccompose.core.ui.theme.ALPHA_DISABLED
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 
@@ -35,12 +38,29 @@ fun ContactCard(
     contact: Contact,
     onCardClick: (Contact) -> Unit,
     onDeleteClick: (Contact) -> Unit,
+    onUndeleteClick: (Contact) -> Unit,
     onEditClick: (Contact) -> Unit,
     startExpanded: Boolean = false,
     elevation: Dp = 2.dp,
 ) {
     var showDropDownMenu by rememberSaveable { mutableStateOf(false) }
     var isExpanded by rememberSaveable { mutableStateOf(startExpanded) }
+    val alpha = if (contact.locallyDeleted) ALPHA_DISABLED else 1f
+    val body1TextStyle =
+        if (contact.locallyDeleted)
+            MaterialTheme.typography.body1.copy(
+                color = MaterialTheme.colors.onSurface.copy(alpha = alpha)
+            )
+        else
+            MaterialTheme.typography.body1
+
+    val body2TextStyle =
+        if (contact.locallyDeleted)
+            MaterialTheme.typography.body2.copy(
+                color = MaterialTheme.colors.onSurface.copy(alpha = alpha)
+            )
+        else
+            MaterialTheme.typography.body2
 
     Card(
         modifier = Modifier
@@ -62,29 +82,14 @@ fun ContactCard(
                 SelectionContainer(modifier = Modifier.weight(1f)) {
                     Text(
                         contact.fullName,
-                        style = MaterialTheme.typography.body1,
+                        style = body1TextStyle,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                Image(
-                    painter = painterResource(
-                        id = if (contact.local)
-                            R.drawable.sync_local
-                        else
-                            R.drawable.sync_save
-                    ),
-                    contentDescription = stringResource(
-                        id = if (contact.local)
-                            R.string.content_desc_item_saved_locally
-                        else
-                            R.string.content_desc_item_synced
-                    ),
-                    modifier = Modifier
-                        .size(48.dp)
-                        .padding(4.dp)
-                )
+                SyncImage(contact = contact, alpha = alpha)
                 ExpandoButton(
+                    modifier = Modifier.alpha(alpha = alpha),
                     startsExpanded = isExpanded,
                     isEnabled = true,
                 ) { isExpanded = it }
@@ -93,7 +98,7 @@ fun ContactCard(
                 Divider(modifier = Modifier.padding(vertical = 4.dp))
                 Row {
                     SelectionContainer {
-                        Text(contact.title, style = MaterialTheme.typography.body2)
+                        Text(contact.title, style = body2TextStyle)
                     }
                 }
             }
@@ -101,14 +106,53 @@ fun ContactCard(
                 expanded = showDropDownMenu,
                 onDismissRequest = { showDropDownMenu = false }
             ) {
-                DropdownMenuItem(onClick = { onDeleteClick(contact) }) {
-                    Text(stringResource(id = R.string.cta_delete))
+                if (contact.locallyDeleted) {
+                    DropdownMenuItem(onClick = { onUndeleteClick(contact) }) {
+                        Text(stringResource(id = R.string.cta_undelete))
+                    }
+                } else {
+                    DropdownMenuItem(onClick = { onDeleteClick(contact) }) {
+                        Text(stringResource(id = R.string.cta_delete))
+                    }
                 }
                 DropdownMenuItem(onClick = { onEditClick(contact) }) {
                     Text(stringResource(id = R.string.cta_edit))
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SyncImage(contact: Contact, alpha: Float = 1f) {
+    if (contact.locallyDeleted) {
+        Icon(
+            Icons.Default.Delete,
+            contentDescription = stringResource(id = R.string.content_desc_item_deleted_locally),
+            modifier = Modifier
+                .size(48.dp)
+                .padding(4.dp)
+                .alpha(alpha = alpha),
+        )
+    } else {
+        Icon(
+            painter = painterResource(
+                id = if (contact.local)
+                    R.drawable.sync_local
+                else
+                    R.drawable.sync_save
+            ),
+            contentDescription = stringResource(
+                id = if (contact.local)
+                    R.string.content_desc_item_saved_locally
+                else
+                    R.string.content_desc_item_synced
+            ),
+            modifier = Modifier
+                .size(48.dp)
+                .padding(4.dp)
+                .alpha(alpha = alpha),
+        )
     }
 }
 
@@ -128,7 +172,27 @@ fun PreviewContactListItem() {
                 ),
                 onCardClick = {},
                 onDeleteClick = {},
+                onUndeleteClick = {},
                 onEditClick = {},
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
+@Composable
+fun PreviewContactListItemDeleted() {
+    SalesforceMobileSDKAndroidTheme {
+        Surface {
+            ContactCard(
+                modifier = Modifier.padding(8.dp),
+                contact = mockLocallyDeletedContact(),
+                onCardClick = {},
+                onDeleteClick = {},
+                onUndeleteClick = {},
+                onEditClick = {},
+                startExpanded = true
             )
         }
     }

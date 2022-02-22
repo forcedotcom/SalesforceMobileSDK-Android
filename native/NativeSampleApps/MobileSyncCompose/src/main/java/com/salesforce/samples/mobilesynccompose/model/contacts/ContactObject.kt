@@ -15,9 +15,9 @@ class Contact private constructor(raw: JSONObject) {
     val lastName: String = this.raw.optString(KEY_LAST_NAME)
     val title: String = this.raw.optString(KEY_TITLE)
     val fullName: String = "$firstName $lastName".ifBlank { "" }
-    private val locallyCreated: Boolean = this.raw.optBoolean(LOCALLY_CREATED, false)
-    private val locallyDeleted: Boolean = this.raw.optBoolean(LOCALLY_DELETED, false)
-    private val locallyUpdated: Boolean = this.raw.optBoolean(LOCALLY_UPDATED, false)
+    val locallyCreated: Boolean = this.raw.optBoolean(LOCALLY_CREATED, false)
+    val locallyDeleted: Boolean = this.raw.optBoolean(LOCALLY_DELETED, false)
+    val locallyUpdated: Boolean = this.raw.optBoolean(LOCALLY_UPDATED, false)
     val local: Boolean = locallyCreated || locallyDeleted || locallyUpdated
 
     fun copy(
@@ -49,7 +49,7 @@ class Contact private constructor(raw: JSONObject) {
             .putOpt(LOCAL, locallyCreated || locallyDeleted || locallyUpdated)
     )
 
-    fun markForDeletion() = copy(locallyDeleted = true)
+//    fun markForDeletion() = copy(locallyDeleted = true)
     fun toJson(): JSONObject = JSONObject(raw.toString()).putOpt(Constants.NAME, fullName)
 
     override fun equals(other: Any?): Boolean = this === other || (

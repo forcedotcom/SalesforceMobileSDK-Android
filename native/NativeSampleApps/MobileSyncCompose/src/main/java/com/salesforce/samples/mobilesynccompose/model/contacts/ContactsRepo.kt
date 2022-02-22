@@ -23,8 +23,9 @@ interface ContactsRepo {
     val contactUpdates: Flow<List<Contact>>
     val curUpstreamContacts: List<Contact>
     suspend fun sync(syncDownOnly: Boolean)
-    suspend fun saveContact(updatedContactObject: Contact): SealedResult<Contact, Exception>
-//    fun deleteContact(...)
+    suspend fun locallyUpsertContact(updatedContactObject: Contact): SealedResult<Contact, Exception>
+    suspend fun locallyDeleteContact(contact: Contact): SealedResult<Contact, Exception>
+    suspend fun locallyUndeleteContact(contact: Contact): SealedResult<Contact, Exception>
 }
 
 data class SyncOperationResults(val syncUpSuccess: Boolean, val syncDownSuccess: Boolean)
@@ -83,7 +84,7 @@ class DefaultContactsRepo(
         }
     }
 
-    override suspend fun saveContact(updatedContactObject: Contact): SealedResult<Contact, Exception> =
+    override suspend fun locallyUpsertContact(updatedContactObject: Contact): SealedResult<Contact, Exception> =
         withContext(ioDispatcher) {
             val result: SealedResult<Contact, Exception> = try {
                 SealedSuccess(
@@ -107,6 +108,16 @@ class DefaultContactsRepo(
             }
 
             result
+        }
+
+    override suspend fun locallyDeleteContact(contact: Contact): SealedResult<Contact, Exception> =
+        withContext(ioDispatcher) {
+            TODO("$TAG - locallyDeleteContact: contact = $contact")
+        }
+
+    override suspend fun locallyUndeleteContact(contact: Contact): SealedResult<Contact, Exception> =
+        withContext(ioDispatcher) {
+            TODO("$TAG - locallyUndeleteContact: contact = $contact")
         }
 
     // Individual syncs cannot be cancelled, so we don't use suspendCancellableCoroutine

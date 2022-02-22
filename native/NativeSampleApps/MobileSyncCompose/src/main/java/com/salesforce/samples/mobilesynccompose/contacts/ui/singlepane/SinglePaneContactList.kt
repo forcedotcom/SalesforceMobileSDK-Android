@@ -1,7 +1,6 @@
 package com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
-import android.util.Log
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
@@ -18,9 +17,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R.string.*
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsListCoreEventHandler
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsListEventHandler
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsSearchEventHandler
 import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactCard
 import com.salesforce.samples.mobilesynccompose.core.ui.components.LoadingOverlay
 import com.salesforce.samples.mobilesynccompose.core.ui.components.ToggleableEditTextField
@@ -33,7 +29,10 @@ object SinglePaneContactsList {
         modifier: Modifier = Modifier,
         contacts: List<Contact>,
         isSyncing: Boolean,
-        handler: ContactsListCoreEventHandler
+        listContactClick: (contact: Contact) -> Unit,
+        listDeleteClick: (contact: Contact) -> Unit,
+        listEditClick: (contact: Contact) -> Unit,
+        listUndeleteClick: (contact: Contact) -> Unit,
     ) {
         LazyColumn(modifier = modifier) {
             items(items = contacts, key = { it.id }) { contact ->
@@ -41,9 +40,10 @@ object SinglePaneContactsList {
                     modifier = Modifier.padding(4.dp),
                     startExpanded = false,
                     contact = contact,
-                    onCardClick = handler::listContactClick,
-                    onDeleteClick = handler::listDeleteClick,
-                    onEditClick = handler::listEditClick,
+                    onCardClick = listContactClick,
+                    onDeleteClick = listDeleteClick,
+                    onUndeleteClick = listUndeleteClick,
+                    onEditClick = listEditClick,
                 )
             }
         }
@@ -57,9 +57,10 @@ object SinglePaneContactsList {
         @Composable
         fun RowScope.TopAppBarSearchMode(
             searchTerm: String,
-            handler: ContactsSearchEventHandler
+            listExitSearchClick: () -> Unit,
+            onSearchTermUpdated: (newSearchTerm: String) -> Unit
         ) {
-            IconButton(onClick = { handler.exitSearch() }) {
+            IconButton(onClick = listExitSearchClick) {
                 Icon(
                     Icons.Default.ArrowBack,
                     contentDescription = stringResource(id = content_desc_back)
@@ -70,7 +71,7 @@ object SinglePaneContactsList {
                 fieldValue = searchTerm,
                 isError = false, // cannot be in error state
                 isEditEnabled = true,
-                onValueChange = { handler.searchTermUpdated(it) }
+                onValueChange = onSearchTermUpdated
             )
         }
 
@@ -88,9 +89,9 @@ object SinglePaneContactsList {
         }
 
         @Composable
-        fun RowScope.BottomAppBar(handler: ContactsListEventHandler) {
+        fun RowScope.BottomAppBar(listSearchClick: () -> Unit) {
             Spacer(modifier = Modifier.weight(1f))
-            IconButton(onClick = handler::searchClick) {
+            IconButton(onClick = listSearchClick) {
                 Icon(
                     Icons.Default.Search,
                     contentDescription = stringResource(id = content_desc_search)
@@ -99,8 +100,8 @@ object SinglePaneContactsList {
         }
 
         @Composable
-        fun Fab(handler: ContactsListCoreEventHandler) {
-            FloatingActionButton(onClick = handler::listCreateClick) {
+        fun Fab(listCreateClick: () -> Unit) {
+            FloatingActionButton(onClick = listCreateClick) {
                 Icon(
                     Icons.Default.Add,
                     contentDescription = stringResource(id = content_desc_add_contact)
@@ -129,24 +130,10 @@ private fun ContactListContentPreview() {
                 modifier = Modifier.padding(4.dp),
                 contacts = contacts,
                 isSyncing = false,
-                handler = object : ContactsListCoreEventHandler {
-                    override fun listContactClick(contact: Contact) {
-                        Log.d(TAG, "Clicked: $contact")
-                    }
-
-                    override fun listCreateClick() {
-                        Log.d(TAG, "Create clicked")
-                    }
-
-                    override fun listDeleteClick(contact: Contact) {
-                        Log.d(TAG, "Delete Clicked: $contact")
-                    }
-
-                    override fun listEditClick(contact: Contact) {
-                        Log.d(TAG, "Edit Clicked: $contact")
-                    }
-
-                },
+                listContactClick = {},
+                listDeleteClick = {},
+                listEditClick = {},
+                listUndeleteClick = {}
             )
         }
     }
@@ -171,24 +158,10 @@ private fun ContactListSyncingPreview() {
                 modifier = Modifier.padding(4.dp),
                 contacts = contacts,
                 isSyncing = true,
-                handler = object : ContactsListCoreEventHandler {
-                    override fun listContactClick(contact: Contact) {
-                        Log.d(TAG, "Clicked: $contact")
-                    }
-
-                    override fun listCreateClick() {
-                        Log.d(TAG, "Create clicked")
-                    }
-
-                    override fun listDeleteClick(contact: Contact) {
-                        Log.d(TAG, "Delete Clicked: $contact")
-                    }
-
-                    override fun listEditClick(contact: Contact) {
-                        Log.d(TAG, "Edit Clicked: $contact")
-                    }
-
-                },
+                listContactClick = {},
+                listDeleteClick = {},
+                listEditClick = {},
+                listUndeleteClick = {}
             )
         }
     }
@@ -207,23 +180,10 @@ private fun ContactListLoadingPreview() {
                 modifier = Modifier.padding(4.dp),
                 contacts = contacts,
                 isSyncing = true,
-                handler = object : ContactsListCoreEventHandler {
-                    override fun listContactClick(contact: Contact) {
-                        Log.d(TAG, "Clicked: $contact")
-                    }
-
-                    override fun listCreateClick() {
-                        Log.d(TAG, "Create clicked")
-                    }
-
-                    override fun listDeleteClick(contact: Contact) {
-                        Log.d(TAG, "Delete Clicked: $contact")
-                    }
-
-                    override fun listEditClick(contact: Contact) {
-                        Log.d(TAG, "Edit Clicked: $contact")
-                    }
-                },
+                listContactClick = {},
+                listDeleteClick = {},
+                listEditClick = {},
+                listUndeleteClick = {}
             )
         }
     }

@@ -16,7 +16,6 @@ import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity
 import com.salesforce.androidsdk.ui.SalesforceActivityDelegate
 import com.salesforce.androidsdk.ui.SalesforceActivityInterface
-import com.salesforce.samples.mobilesynccompose.contacts.events.ContactsActivityMenuEventHandler
 import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactsActivityContent
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityViewModel
 import com.salesforce.samples.mobilesynccompose.contacts.vm.DefaultContactsActivityViewModel
@@ -25,9 +24,7 @@ import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSD
 import com.salesforce.samples.mobilesynccompose.core.ui.toWindowSizeRestrictions
 import com.salesforce.samples.mobilesynccompose.model.contacts.DefaultContactsRepo
 
-class ContactsActivity : ComponentActivity(),
-    SalesforceActivityInterface,
-    ContactsActivityMenuEventHandler {
+class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
 
     private lateinit var vm: ContactsActivityViewModel
     private lateinit var salesforceActivityDelegate: SalesforceActivityDelegate
@@ -69,8 +66,11 @@ class ContactsActivity : ComponentActivity(),
             SalesforceMobileSDKAndroidTheme {
                 ContactsActivityContent(
                     layoutRestrictions = LayoutRestrictions(windowSizeRestrictions),
-                    menuEventHandler = this,
-                    vm = vm
+                    vm = vm,
+                    onInspectDbClick = this::inspectDbClicked,
+                    onLogoutClick = this::logoutClicked,
+                    onSwitchUserClick = this::switchUserClicked,
+                    onSyncClick = this::syncClicked
                 )
             }
         }
@@ -104,7 +104,7 @@ class ContactsActivity : ComponentActivity(),
         salesforceActivityDelegate.onResume(true)
     }
 
-    override fun inspectDbClicked() {
+    fun inspectDbClicked() {
         startActivity(
             SmartStoreInspectorActivity.getIntent(
                 this@ContactsActivity,
@@ -114,15 +114,15 @@ class ContactsActivity : ComponentActivity(),
         )
     }
 
-    override fun logoutClicked() {
+    fun logoutClicked() {
         MobileSyncSDKManager.getInstance().logout(this)
     }
 
-    override fun switchUserClicked() {
+    fun switchUserClicked() {
         TODO("Not yet implemented")
     }
 
-    override fun syncClicked() {
+    fun syncClicked() {
         vm.sync()
     }
 }

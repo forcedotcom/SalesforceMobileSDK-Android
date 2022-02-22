@@ -3,7 +3,6 @@ package com.salesforce.samples.mobilesynccompose.contacts.vm
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.salesforce.samples.mobilesynccompose.contacts.events.*
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsUiMode.*
 import com.salesforce.samples.mobilesynccompose.core.SealedFailure
 import com.salesforce.samples.mobilesynccompose.core.SealedSuccess
@@ -17,14 +16,28 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-interface ContactsActivityViewModel :
-    ContactsListEventHandler,
-    ContactDetailsDiscardChangesEventHandler,
-    ContactsSearchEventHandler,
-    ContactEditModeEventHandler,
-    ContactViewModeEventHandler {
-
+interface ContactsActivityViewModel {
     val uiState: StateFlow<ContactsActivityUiState>
+
+    fun detailsContinueEditing()
+    fun detailsDeleteClick()
+    fun detailsEditClick()
+    fun detailsExitClick()
+    fun detailsDiscardChanges()
+    fun detailsSaveClick()
+    fun detailsUndeleteClick()
+    fun onDetailsUpdated(newContact: Contact)
+
+    fun listContactClick(contact: Contact)
+    fun listCreateClick()
+    fun listDeleteClick(contact: Contact)
+    fun listEditClick(contact: Contact)
+    fun listUndeleteClick(contact: Contact)
+
+    fun listSearchClick()
+    fun listExitSearchClick()
+    fun onSearchTermUpdated(newSearchTerm: String)
+
     fun sync(syncDownOnly: Boolean = false)
 }
 
@@ -86,6 +99,7 @@ class DefaultContactsActivityViewModel(
                         }
                     }
                 }
+                LocallyDeleted -> TODO("$TAG - onContactListUpdate(): Contact is locally deleted")
                 Editing -> {
                     if (curDetail.isSaving) {
                         curDetail // The result of the save operation will drive details UI change
@@ -153,6 +167,10 @@ class DefaultContactsActivityViewModel(
     }
 
     override fun listDeleteClick(contact: Contact) = withEventLock {
+
+    }
+
+    override fun listUndeleteClick(contact: Contact) = withEventLock {
         TODO("Not yet implemented")
     }
 
@@ -171,7 +189,7 @@ class DefaultContactsActivityViewModel(
         }
     }
 
-    override fun discardChanges() = withEventLock {
+    override fun detailsDiscardChanges() = withEventLock {
         val curState = mutUiState.value
         mutUiState.value = if (curState.detailsState?.mode != Creating) {
             curState.copy(
@@ -185,13 +203,13 @@ class DefaultContactsActivityViewModel(
         }
     }
 
-    override fun continueEditing() {
+    override fun detailsContinueEditing() = withEventLock {
         mutUiState.value = mutUiState.value.copy(
             detailsState = mutUiState.value.detailsState?.copy(showDiscardChanges = false)
         )
     }
 
-    override fun exitSearch() = withEventLock {
+    override fun listExitSearchClick() = withEventLock {
         mutUiState.value = mutUiState.value.copy(
             listState = ContactsActivityListUiState(
                 contacts = contactsRepo.curUpstreamContacts,
@@ -200,7 +218,7 @@ class DefaultContactsActivityViewModel(
         )
     }
 
-    override fun searchClick() = withEventLock {
+    override fun listSearchClick() = withEventLock {
         val newListState = mutUiState.value.listState.copy(searchTerm = "")
         mutUiState.value = mutUiState.value.copy(listState = newListState)
     }
@@ -208,7 +226,7 @@ class DefaultContactsActivityViewModel(
     @Volatile
     private var searchJob: Job? = null
 
-    override fun searchTermUpdated(newSearchTerm: String) = withEventLock {
+    override fun onSearchTermUpdated(newSearchTerm: String) = withEventLock {
         // Update UI before doing filtering to keep UI responsive:
         mutUiState.value = mutUiState.value.copy(
             listState = mutUiState.value.listState.copy(searchTerm = newSearchTerm)
@@ -265,6 +283,7 @@ class DefaultContactsActivityViewModel(
                 }
             }
 
+            LocallyDeleted,
             Viewing -> {
                 mutUiState.value = curState.copy(detailsState = null)
             }
@@ -285,7 +304,7 @@ class DefaultContactsActivityViewModel(
         )
     }
 
-    override fun saveClick() = withEventLock {
+    override fun detailsSaveClick() = withEventLock {
         val curState = mutUiState.value
         val curDetail = curState.detailsState ?: return@withEventLock
 
@@ -306,6 +325,8 @@ class DefaultContactsActivityViewModel(
                     curDetail
                 }
 
+                LocallyDeleted -> TODO("$TAG - detailsSaveClick(): Contact is locally deleted")
+
                 Viewing -> {
                     Log.w(
                         TAG,
@@ -325,6 +346,7 @@ class DefaultContactsActivityViewModel(
                     launchSave(curDetail.updatedContact)
                     curDetail.copy(isSaving = true)
                 }
+                LocallyDeleted -> TODO("$TAG - detailsSaveClick(): Contact is locally deleted")
                 Viewing -> {
                     Log.w(
                         TAG,
@@ -338,10 +360,14 @@ class DefaultContactsActivityViewModel(
         mutUiState.value = mutUiState.value.copy(detailsState = newDetailsState)
     }
 
+    override fun detailsUndeleteClick() {
+        TODO("Not yet implemented")
+    }
+
     private fun launchSave(updatedContact: Contact) {
         viewModelScope.launch {
             // Be careful to do the contact save _outside_ the event lock to keep things responsive
-            val saveResult = contactsRepo.saveContact(updatedContact)
+            val saveResult = contactsRepo.locallyUpsertContact(updatedContact)
             eventMutex.withLock {
                 when (saveResult) {
                     is SealedFailure -> TODO("$TAG - doEditingSave got save failure: ${saveResult.cause}")
@@ -374,6 +400,7 @@ class DefaultContactsActivityViewModel(
                     )
                     curDetails
                 }
+                LocallyDeleted -> TODO("$TAG - detailsEditClick(): Contact is locally deleted")
                 Viewing -> curDetails.copy(mode = Editing)
             }
         }
