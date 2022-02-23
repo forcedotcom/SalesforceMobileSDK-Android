@@ -2,6 +2,7 @@ package com.salesforce.samples.mobilesynccompose.contacts.ui
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,13 +12,9 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -46,77 +43,78 @@ fun ContactCard(
     var showDropDownMenu by rememberSaveable { mutableStateOf(false) }
     var isExpanded by rememberSaveable { mutableStateOf(startExpanded) }
     val alpha = if (contact.locallyDeleted) ALPHA_DISABLED else 1f
-    val body1TextStyle =
-        if (contact.locallyDeleted)
-            MaterialTheme.typography.body1.copy(
-                color = MaterialTheme.colors.onSurface.copy(alpha = alpha)
-            )
-        else
-            MaterialTheme.typography.body1
 
-    val body2TextStyle =
-        if (contact.locallyDeleted)
-            MaterialTheme.typography.body2.copy(
-                color = MaterialTheme.colors.onSurface.copy(alpha = alpha)
-            )
-        else
-            MaterialTheme.typography.body2
-
-    Card(
-        modifier = Modifier
-            .animateContentSize()
-            .then(modifier)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = { onCardClick(contact) },
-                    onLongPress = {
-                        android.util.Log.d("ContactListContent", "Long Click: $contact")
-                        showDropDownMenu = !showDropDownMenu
-                    }
-                )
-            },
-        elevation = elevation
-    ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            Row {
-                SelectionContainer(modifier = Modifier.weight(1f)) {
-                    Text(
-                        contact.fullName,
-                        style = body1TextStyle,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
+    CompositionLocalProvider(LocalContentAlpha provides alpha) {
+        Card(
+            modifier = Modifier
+                .animateContentSize()
+                .then(modifier)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = { onCardClick(contact) },
+                        onLongPress = {
+                            android.util.Log.d("ContactListContent", "Long Click: $contact")
+                            showDropDownMenu = true
+                        }
                     )
-                }
-                SyncImage(contact = contact, alpha = alpha)
-                ExpandoButton(
-                    modifier = Modifier.alpha(alpha = alpha),
-                    startsExpanded = isExpanded,
-                    isEnabled = true,
-                ) { isExpanded = it }
-            }
-            if (isExpanded) {
-                Divider(modifier = Modifier.padding(vertical = 4.dp))
+                },
+            elevation = elevation
+        ) {
+            Column(modifier = Modifier.padding(8.dp)) {
                 Row {
-                    SelectionContainer {
-                        Text(contact.title, style = body2TextStyle)
+                    SelectionContainer(modifier = Modifier.weight(1f)) {
+                        Text(
+                            contact.fullName,
+                            style = MaterialTheme.typography.body1,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    SyncImage(contact = contact)
+                    ExpandoButton(
+                        startsExpanded = isExpanded,
+                        isEnabled = true,
+                    ) { isExpanded = it }
+                }
+                if (isExpanded) {
+                    Divider(modifier = Modifier.padding(vertical = 4.dp))
+                    Row {
+                        SelectionContainer {
+                            Text(contact.title, style = MaterialTheme.typography.body2)
+                        }
                     }
                 }
-            }
-            DropdownMenu(
-                expanded = showDropDownMenu,
-                onDismissRequest = { showDropDownMenu = false }
-            ) {
-                if (contact.locallyDeleted) {
-                    DropdownMenuItem(onClick = { onUndeleteClick(contact) }) {
-                        Text(stringResource(id = R.string.cta_undelete))
+                DropdownMenu(
+                    expanded = showDropDownMenu,
+                    onDismissRequest = { showDropDownMenu = false }
+                ) {
+                    if (contact.locallyDeleted) {
+                        DropdownMenuItem(
+                            onClick = {
+                                showDropDownMenu = false
+                                onUndeleteClick(contact)
+                            }
+                        ) {
+                            Text(stringResource(id = R.string.cta_undelete))
+                        }
+                    } else {
+                        DropdownMenuItem(
+                            onClick = {
+                                showDropDownMenu = false
+                                onDeleteClick(contact)
+                            }
+                        ) {
+                            Text(stringResource(id = R.string.cta_delete))
+                        }
                     }
-                } else {
-                    DropdownMenuItem(onClick = { onDeleteClick(contact) }) {
-                        Text(stringResource(id = R.string.cta_delete))
+                    DropdownMenuItem(
+                        onClick = {
+                            showDropDownMenu = false
+                            onEditClick(contact)
+                        }
+                    ) {
+                        Text(stringResource(id = R.string.cta_edit))
                     }
-                }
-                DropdownMenuItem(onClick = { onEditClick(contact) }) {
-                    Text(stringResource(id = R.string.cta_edit))
                 }
             }
         }
@@ -124,7 +122,7 @@ fun ContactCard(
 }
 
 @Composable
-private fun SyncImage(contact: Contact, alpha: Float = 1f) {
+private fun SyncImage(contact: Contact) {
     if (contact.locallyDeleted) {
         Icon(
             Icons.Default.Delete,
@@ -132,10 +130,9 @@ private fun SyncImage(contact: Contact, alpha: Float = 1f) {
             modifier = Modifier
                 .size(48.dp)
                 .padding(4.dp)
-                .alpha(alpha = alpha),
         )
     } else {
-        Icon(
+        Image(
             painter = painterResource(
                 id = if (contact.local)
                     R.drawable.sync_local
@@ -151,7 +148,6 @@ private fun SyncImage(contact: Contact, alpha: Float = 1f) {
             modifier = Modifier
                 .size(48.dp)
                 .padding(4.dp)
-                .alpha(alpha = alpha),
         )
     }
 }
@@ -162,38 +158,39 @@ private fun SyncImage(contact: Contact, alpha: Float = 1f) {
 fun PreviewContactListItem() {
     SalesforceMobileSDKAndroidTheme {
         Surface {
-            ContactCard(
-                modifier = Modifier.padding(8.dp),
-                startExpanded = true,
-                contact = Contact.createNewLocal(
-                    firstName = "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirstFirst",
-                    lastName = "Last Last Last Last Last Last Last Last Last Last Last",
-                    title = "Title",
-                ),
-                onCardClick = {},
-                onDeleteClick = {},
-                onUndeleteClick = {},
-                onEditClick = {},
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
-@Composable
-fun PreviewContactListItemDeleted() {
-    SalesforceMobileSDKAndroidTheme {
-        Surface {
-            ContactCard(
-                modifier = Modifier.padding(8.dp),
-                contact = mockLocallyDeletedContact(),
-                onCardClick = {},
-                onDeleteClick = {},
-                onUndeleteClick = {},
-                onEditClick = {},
-                startExpanded = true
-            )
+            Column {
+                ContactCard(
+                    modifier = Modifier.padding(8.dp),
+                    startExpanded = true,
+                    contact = mockSyncedContact(),
+                    onCardClick = {},
+                    onDeleteClick = {},
+                    onUndeleteClick = {},
+                    onEditClick = {},
+                )
+                ContactCard(
+                    modifier = Modifier.padding(8.dp),
+                    startExpanded = true,
+                    contact = Contact.createNewLocal(
+                        firstName = "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirstFirst",
+                        lastName = "Last Last Last Last Last Last Last Last Last Last Last",
+                        title = "Title",
+                    ),
+                    onCardClick = {},
+                    onDeleteClick = {},
+                    onUndeleteClick = {},
+                    onEditClick = {},
+                )
+                ContactCard(
+                    modifier = Modifier.padding(8.dp),
+                    contact = mockLocallyDeletedContact(),
+                    onCardClick = {},
+                    onDeleteClick = {},
+                    onUndeleteClick = {},
+                    onEditClick = {},
+                    startExpanded = true
+                )
+            }
         }
     }
 }

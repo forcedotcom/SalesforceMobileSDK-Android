@@ -28,3 +28,18 @@ inline fun <reified T> JSONArray.map(mapper: (JSONObject) -> T): List<T> {
 
     return results
 }
+
+fun JSONArray.firstOrNull(): JSONObject? = if (this.length() > 0) this.getJSONObject(0) else null
+
+inline fun JSONArray.firstOrNull(predicate: (JSONObject) -> Boolean): JSONObject? {
+    var result: JSONObject? = null
+
+    this.forEach {
+        if (predicate(it)) {
+            result = it
+            return@forEach
+        }
+    }
+
+    return result
+}

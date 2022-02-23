@@ -4,16 +4,21 @@ import android.util.Log
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager
+import com.salesforce.androidsdk.mobilesync.target.SyncTarget.LOCAL
+import com.salesforce.androidsdk.mobilesync.target.SyncTarget.LOCALLY_DELETED
+import com.salesforce.androidsdk.mobilesync.util.Constants
 import com.salesforce.androidsdk.mobilesync.util.SyncState
 import com.salesforce.androidsdk.smartstore.store.QuerySpec
 import com.salesforce.samples.mobilesynccompose.core.SealedFailure
 import com.salesforce.samples.mobilesynccompose.core.SealedResult
 import com.salesforce.samples.mobilesynccompose.core.SealedSuccess
+import com.salesforce.samples.mobilesynccompose.core.extensions.addOrReplaceAll
 import com.salesforce.samples.mobilesynccompose.core.extensions.map
 import com.salesforce.samples.mobilesynccompose.core.extensions.replaceAll
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.resume
@@ -23,12 +28,10 @@ interface ContactsRepo {
     val contactUpdates: Flow<List<Contact>>
     val curUpstreamContacts: List<Contact>
     suspend fun sync(syncDownOnly: Boolean)
-    suspend fun locallyUpsertContact(updatedContactObject: Contact): SealedResult<Contact, Exception>
-    suspend fun locallyDeleteContact(contact: Contact): SealedResult<Contact, Exception>
+    suspend fun locallyUpsertContact(contact: Contact): SealedResult<Contact, Exception>
+    suspend fun locallyDeleteContact(contact: Contact): SealedResult<Contact?, Exception>
     suspend fun locallyUndeleteContact(contact: Contact): SealedResult<Contact, Exception>
 }
-
-data class SyncOperationResults(val syncUpSuccess: Boolean, val syncDownSuccess: Boolean)
 
 class DefaultContactsRepo(
     account: UserAccount?, // TODO this shouldn't be nullable. The logic whether to instantiate this object should be moved higher up, but this is a quick fix to get things testable
@@ -38,19 +41,23 @@ class DefaultContactsRepo(
     private val store = MobileSyncSDKManager.getInstance().getSmartStore(account)
     private val syncManager = SyncManager.getInstance(account)
     private val syncMutex = Mutex()
-
-    private val mutContactListState = MutableStateFlow(emptyList<Contact>())
+    private val listMutex = Mutex()
 
     @Volatile
     private var mutUpstreamContacts: List<Contact> = emptyList()
     override val curUpstreamContacts: List<Contact> get() = mutUpstreamContacts
 
-    /* Replay latest update on new `Flow.collect { }` so all new collectors get current state.
-     * We're not using StateFlow with an `emptyList()` as a starting value because this flow is
-     * about updates, and an empty list would logically indicate that there are no contacts to be
-     * found. */
-//    private val mutContactUpdates = MutableSharedFlow<List<Contact>>(replay = 1)
-    override val contactUpdates: Flow<List<Contact>> get() = mutContactListState//mutContactUpdates
+    /* Simulating StateFlow, but using SharedFlow allows emissions of the same content without
+     * conflation */
+    private val mutContactUpdates = MutableSharedFlow<List<Contact>>(
+        replay = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    override val contactUpdates: Flow<List<Contact>> get() = mutContactUpdates//mutContactUpdates
+
+    init {
+        mutContactUpdates.tryEmit(mutUpstreamContacts)
+    }
 
     override suspend fun sync(syncDownOnly: Boolean) = withContext(ioDispatcher) {
         data class SyncResults(val syncDownResult: SyncState, val syncUpResult: SyncState?)
@@ -84,36 +91,87 @@ class DefaultContactsRepo(
         }
     }
 
-    override suspend fun locallyUpsertContact(updatedContactObject: Contact): SealedResult<Contact, Exception> =
-        withContext(ioDispatcher) {
-            val result: SealedResult<Contact, Exception> = try {
-                SealedSuccess(
-                    Contact.coerceFromJson(
-                        // TODO Use compile-time constant for soup name
-                        store.upsert("contacts", updatedContactObject.toJson())
-                    )
+    override suspend fun locallyUpsertContact(contact: Contact) = withContext(ioDispatcher) {
+        val result: SealedResult<Contact, Exception> = try {
+            SealedSuccess(
+                Contact.coerceFromJson(
+                    // TODO Use compile-time constant for soup name
+                    store.upsert("contacts", contact.toJson())
                 )
-            } catch (ex: Exception) {
-                SealedFailure(ex)
-            }
+            )
+        } catch (ex: Exception) {
+            SealedFailure(ex)
+        }
 
-            when (result) {
-                is SealedFailure -> TODO("Got exception when upserting contact: ${result.cause}")
-                is SealedSuccess -> {
-                    val updatedList = mutContactListState.value
-                        .replaceAll(newValue = result.value) { it.id == result.value.id }
-                    mutUpstreamContacts = updatedList
-                    mutContactListState.value = updatedList
+        when (result) {
+            is SealedFailure -> TODO("Got exception when upserting contact: ${result.cause}")
+            is SealedSuccess -> {
+                val updatedList = listMutex.withLock {
+                    mutUpstreamContacts.addOrReplaceAll(newValue = result.value) {
+                        it.id == result.value.id
+                    }.also {
+                        mutUpstreamContacts = it
+                    }
                 }
+                mutContactUpdates.emit(updatedList)
+            }
+        }
+
+        result
+    }
+
+    override suspend fun locallyDeleteContact(contact: Contact) = withContext(ioDispatcher) {
+        val result: SealedResult<Contact?, Exception> = try {
+            val soupEntryId = store.lookupSoupEntryId("contacts", Constants.ID, contact.id)
+            if (soupEntryId < 0) {
+                throw IllegalStateException("Tried to locally delete contact, but soup ID was not found.  Contact = $contact")
             }
 
-            result
+            if (contact.locallyCreated) {
+                store.delete("contacts", soupEntryId)
+                SealedSuccess(null)
+            } else {
+                locallyDeleteUpstreamContact(contact, soupEntryId)
+            }
+        } catch (ex: Exception) {
+            SealedFailure(cause = ex)
         }
 
-    override suspend fun locallyDeleteContact(contact: Contact): SealedResult<Contact, Exception> =
-        withContext(ioDispatcher) {
-            TODO("$TAG - locallyDeleteContact: contact = $contact")
+        when (result) {
+            is SealedFailure -> TODO("Got exception when deleting contact: ${result.cause}")
+            is SealedSuccess -> {
+                val updatedList = listMutex.withLock {
+                    if (result.value == null) {
+                        mutUpstreamContacts.filterNot { it.id == contact.id }
+                    } else {
+                        mutUpstreamContacts
+                            .replaceAll(newValue = result.value) { it.id == result.value.id }
+                    }.also {
+                        mutUpstreamContacts = it
+                    }
+                }
+                mutContactUpdates.emit(updatedList)
+            }
         }
+
+        result
+    }
+
+    private fun locallyDeleteUpstreamContact(
+        upstreamContact: Contact,
+        soupEntryId: Long
+    ): SealedResult<Contact, Exception> {
+        val newContact =
+            store.update(
+                "contacts",
+                upstreamContact.toJson()
+                    .putOpt(LOCALLY_DELETED, true)
+                    .putOpt(LOCAL, true),
+                soupEntryId
+            )
+
+        return SealedSuccess(Contact.coerceFromJson(newContact))
+    }
 
     override suspend fun locallyUndeleteContact(contact: Contact): SealedResult<Contact, Exception> =
         withContext(ioDispatcher) {
@@ -173,7 +231,7 @@ class DefaultContactsRepo(
         )
         val contacts = contactResults.map { Contact.coerceFromJson(it) }
         mutUpstreamContacts = contacts
-        mutContactListState.value = contacts
+        mutContactUpdates.emit(contacts)
     }
 
     private fun onSyncDownFailed(syncDownResult: SyncState) {

@@ -74,7 +74,7 @@ class DefaultContactsActivityViewModel(
         }
     }
 
-    private fun onContactListUpdate(newList: List<Contact>) = withEventLock {
+    private fun onContactListUpdate(newList: List<Contact>) = launchWithEventLock {
         val curState = uiState.value
         val curDetail = curState.detailsState
 
@@ -131,17 +131,22 @@ class DefaultContactsActivityViewModel(
         )
     }
 
-    override fun sync(syncDownOnly: Boolean) = withEventLock {
+    override fun sync(syncDownOnly: Boolean) = launchWithEventLock {
         mutUiState.value = mutUiState.value.copy(isSyncing = true)
         contactsRepo.sync(syncDownOnly)
     }
 
-    override fun listContactClick(contact: Contact) = withEventLock {
+    override fun listContactClick(contact: Contact) = launchWithEventLock {
         val curState = mutUiState.value
 
         if (curState.detailsState != null && curState.detailsState.isModified) {
             // editing contact, so ask to discard changes
-            mutUiState.value = mutUiState.value.copy(showDiscardChanges = true)
+            mutUiState.value = mutUiState.value.copy(
+                dialog = DiscardChanges(
+                    onDiscardChanges = this@DefaultContactsActivityViewModel::detailsDiscardChanges,
+                    onKeepChanges = this@DefaultContactsActivityViewModel::detailsContinueEditing
+                )
+            )
         } else {
             mutUiState.value = curState.copy(
                 detailsState = contact.toContactDetailsUiState(mode = Viewing),
@@ -149,12 +154,17 @@ class DefaultContactsActivityViewModel(
         }
     }
 
-    override fun listCreateClick() = withEventLock {
+    override fun listCreateClick() = launchWithEventLock {
         val curState = mutUiState.value
 
         if (curState.detailsState != null && curState.detailsState.isModified) {
             // editing contact, so ask to discard changes
-            mutUiState.value = mutUiState.value.copy(showDiscardChanges = true)
+            mutUiState.value = mutUiState.value.copy(
+                dialog = DiscardChanges(
+                    onDiscardChanges = this@DefaultContactsActivityViewModel::detailsDiscardChanges,
+                    onKeepChanges = this@DefaultContactsActivityViewModel::detailsContinueEditing
+                )
+            )
         } else {
             mutUiState.value = curState.copy(
                 detailsState = Contact.createNewLocal().toContactDetailsUiState(mode = Creating),
@@ -162,20 +172,38 @@ class DefaultContactsActivityViewModel(
         }
     }
 
-    override fun listDeleteClick(contact: Contact) = withEventLock {
+    override fun listDeleteClick(contact: Contact) = launchWithEventLock {
+        val curState = mutUiState.value
 
+        // If there is currently a dialog showing, do not clobber it.
+        val newDialog = curState.dialog ?: DeleteConfirmation(
+            contactToDelete = contact,
+            onCancelDelete = this@DefaultContactsActivityViewModel::dismissCurDialog,
+            onDeleteConfirm = { contactToDelete ->
+                dismissCurDialog()
+                launchDelete(contactToDelete)
+            }
+        )
+
+        mutUiState.value = curState.copy(dialog = newDialog)
     }
 
-    override fun listUndeleteClick(contact: Contact) = withEventLock {
+    override fun listUndeleteClick(contact: Contact) = launchWithEventLock {
         TODO("Not yet implemented")
     }
 
-    override fun listEditClick(contact: Contact) = withEventLock {
+    override fun listEditClick(contact: Contact) = launchWithEventLock {
+        // TODO check for if it is locally deleted, and only go to Editing mode when it is not deleted
         val curState = mutUiState.value
 
         if (curState.detailsState != null && curState.detailsState.isModified) {
             // editing contact, so ask to discard changes
-            mutUiState.value = mutUiState.value.copy(showDiscardChanges = true)
+            mutUiState.value = mutUiState.value.copy(
+                dialog = DiscardChanges(
+                    onDiscardChanges = this@DefaultContactsActivityViewModel::detailsDiscardChanges,
+                    onKeepChanges = this@DefaultContactsActivityViewModel::detailsContinueEditing
+                )
+            )
         } else {
             mutUiState.value = curState.copy(
                 detailsState = contact.toContactDetailsUiState(mode = Editing),
@@ -183,25 +211,28 @@ class DefaultContactsActivityViewModel(
         }
     }
 
-    override fun detailsDiscardChanges() = withEventLock {
+    private fun detailsDiscardChanges() = launchWithEventLock {
         val curState = mutUiState.value
         mutUiState.value = if (curState.detailsState?.mode != Creating) {
             curState.copy(
                 detailsState = curState.detailsState?.origContact?.toContactDetailsUiState(
                     mode = Viewing,
                 ),
-                showDiscardChanges = false
+                dialog = null
             )
         } else {
-            curState.copy(detailsState = null, showDiscardChanges = false)
+            curState.copy(detailsState = null, dialog = null)
         }
     }
 
-    override fun detailsContinueEditing() = withEventLock {
-        mutUiState.value = mutUiState.value.copy(showDiscardChanges = false)
+    private fun detailsContinueEditing(): Unit = launchWithEventLock {
+        val curState = mutUiState.value
+        if (curState.dialog is DiscardChanges) {
+            mutUiState.value = curState.copy(dialog = null)
+        }
     }
 
-    override fun listExitSearchClick() = withEventLock {
+    override fun listExitSearchClick() = launchWithEventLock {
         mutUiState.value = mutUiState.value.copy(
             listState = ContactsActivityListUiState(
                 contacts = contactsRepo.curUpstreamContacts,
@@ -210,7 +241,7 @@ class DefaultContactsActivityViewModel(
         )
     }
 
-    override fun listSearchClick() = withEventLock {
+    override fun listSearchClick() = launchWithEventLock {
         val newListState = mutUiState.value.listState.copy(searchTerm = "")
         mutUiState.value = mutUiState.value.copy(listState = newListState)
     }
@@ -218,7 +249,7 @@ class DefaultContactsActivityViewModel(
     @Volatile
     private var searchJob: Job? = null
 
-    override fun onSearchTermUpdated(newSearchTerm: String) = withEventLock {
+    override fun onSearchTermUpdated(newSearchTerm: String) = launchWithEventLock {
         // Update UI before doing filtering to keep UI responsive:
         mutUiState.value = mutUiState.value.copy(
             listState = mutUiState.value.listState.copy(searchTerm = newSearchTerm)
@@ -241,21 +272,45 @@ class DefaultContactsActivityViewModel(
         }
     }
 
-    override fun detailsDeleteClick() = withEventLock {
-        TODO("Not yet implemented")
+    override fun detailsDeleteClick() = launchWithEventLock {
+        val curState = mutUiState.value
+        val curDetail = curState.detailsState ?: return@launchWithEventLock
+
+        fun onDeleteConfirm(contactToDelete: Contact) {
+            launchWithEventLock {
+                val futureState = mutUiState.value
+                mutUiState.value = futureState.copy(
+                    detailsState = futureState.detailsState?.copy(isSaving = true),
+                    dialog = null
+                )
+            }
+            launchDelete(contactToDelete)
+        }
+
+        val newDialog = curState.dialog ?: DeleteConfirmation(
+            contactToDelete = curDetail.origContact,
+            onCancelDelete = this@DefaultContactsActivityViewModel::dismissCurDialog,
+            onDeleteConfirm = ::onDeleteConfirm
+        )
+        mutUiState.value = curState.copy(dialog = newDialog)
     }
 
-    override fun detailsExitClick() = withEventLock {
+    override fun detailsExitClick() = launchWithEventLock {
         val curState = mutUiState.value
 
         if (curState.detailsState == null) {
-            return@withEventLock
+            return@launchWithEventLock
         }
 
         when (curState.detailsState.mode) {
             Creating -> {
                 if (curState.detailsState.isModified) {
-                    mutUiState.value = curState.copy(showDiscardChanges = true)
+                    mutUiState.value = curState.copy(
+                        dialog = DiscardChanges(
+                            onDiscardChanges = this@DefaultContactsActivityViewModel::detailsDiscardChanges,
+                            onKeepChanges = this@DefaultContactsActivityViewModel::detailsContinueEditing
+                        )
+                    )
                 } else {
                     mutUiState.value = curState.copy(detailsState = null)
                 }
@@ -263,7 +318,12 @@ class DefaultContactsActivityViewModel(
 
             Editing -> {
                 if (curState.detailsState.isModified) {
-                    mutUiState.value = curState.copy(showDiscardChanges = true)
+                    mutUiState.value = curState.copy(
+                        dialog = DiscardChanges(
+                            onDiscardChanges = this@DefaultContactsActivityViewModel::detailsDiscardChanges,
+                            onKeepChanges = this@DefaultContactsActivityViewModel::detailsContinueEditing
+                        )
+                    )
                 } else {
                     mutUiState.value = curState.copy(
                         detailsState = curState.detailsState.copy(mode = Viewing),
@@ -278,10 +338,10 @@ class DefaultContactsActivityViewModel(
         }
     }
 
-    override fun onDetailsUpdated(newContact: Contact) = withEventLock {
+    override fun onDetailsUpdated(newContact: Contact) = launchWithEventLock {
         val curState = mutUiState.value
         if (curState.detailsState == null)
-            return@withEventLock
+            return@launchWithEventLock
 
         mutUiState.value = curState.copy(
             detailsState = curState.detailsState.copy(
@@ -292,9 +352,9 @@ class DefaultContactsActivityViewModel(
         )
     }
 
-    override fun detailsSaveClick() = withEventLock {
+    override fun detailsSaveClick() = launchWithEventLock {
         val curState = mutUiState.value
-        val curDetail = curState.detailsState ?: return@withEventLock
+        val curDetail = curState.detailsState ?: return@launchWithEventLock
 
         if (curDetail.hasFieldsInErrorState) {
             mutUiState.value = curState.copy(
@@ -302,7 +362,7 @@ class DefaultContactsActivityViewModel(
                     fieldToScrollTo = curDetail.fieldsInErrorState.firstOrNull()
                 )
             )
-            return@withEventLock
+            return@launchWithEventLock
         }
 
         val newDetailsState = if (!curDetail.isModified) {
@@ -352,25 +412,48 @@ class DefaultContactsActivityViewModel(
         TODO("Not yet implemented")
     }
 
-    private fun launchSave(updatedContact: Contact) {
-        viewModelScope.launch {
-            // Be careful to do the contact save _outside_ the event lock to keep things responsive
-            val saveResult = contactsRepo.locallyUpsertContact(updatedContact)
-            eventMutex.withLock {
-                when (saveResult) {
-                    is SealedFailure -> TODO("$TAG - doEditingSave got save failure: ${saveResult.cause}")
-                    is SealedSuccess -> mutUiState.value = mutUiState.value.copy(
-                        detailsState = saveResult.value.toContactDetailsUiState(
-                            mode = Viewing,
-                            isSaving = false
-                        )
+    private fun launchSave(updatedContact: Contact) = viewModelScope.launch {
+        // Be careful to do the contact save _outside_ the event lock to keep things responsive
+        val saveResult = contactsRepo.locallyUpsertContact(updatedContact)
+
+        suspend fun onSaveSuccess(updatedContact: Contact) = eventMutex.withLock {
+            mutUiState.value = mutUiState.value.copy(
+                detailsState = updatedContact.toContactDetailsUiState(
+                    mode = Viewing,
+                    isSaving = false
+                )
+            )
+        }
+
+        when (saveResult) {
+            is SealedFailure -> TODO("$TAG - doEditingSave got save failure: ${saveResult.cause}")
+            is SealedSuccess -> onSaveSuccess(saveResult.value)
+        }
+    }
+
+    private fun launchDelete(contactToDelete: Contact) = viewModelScope.launch {
+        val deleteResult = contactsRepo.locallyDeleteContact(contactToDelete)
+
+        fun onDeleteSuccess(deletedContact: Contact?, curState: ContactsActivityUiState) {
+            if (curState.detailsState != null) {
+                mutUiState.value = curState.copy(
+                    detailsState = deletedContact?.toContactDetailsUiState(
+                        mode = LocallyDeleted,
+                        isSaving = false
                     )
-                }
+                )
+            }
+        }
+
+        eventMutex.withLock {
+            when (deleteResult) {
+                is SealedFailure -> TODO()
+                is SealedSuccess -> onDeleteSuccess(deleteResult.value, curState = mutUiState.value)
             }
         }
     }
 
-    override fun detailsEditClick() = withEventLock {
+    override fun detailsEditClick() = launchWithEventLock {
         val curUiState = mutUiState.value
         val newDetails = curUiState.detailsState?.let { curDetails ->
             when (curDetails.mode) {
@@ -396,7 +479,11 @@ class DefaultContactsActivityViewModel(
         mutUiState.value = curUiState.copy(detailsState = newDetails)
     }
 
-    private fun withEventLock(block: suspend CoroutineScope.() -> Unit) {
+    private fun dismissCurDialog() = launchWithEventLock {
+        mutUiState.value = mutUiState.value.copy(dialog = null)
+    }
+
+    private fun launchWithEventLock(block: suspend CoroutineScope.() -> Unit) {
         viewModelScope.launch { eventMutex.withLock { block() } }
     }
 
