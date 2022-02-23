@@ -92,7 +92,7 @@ class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
 
     override fun onResume(client: RestClient?) {
         // TODO use this entry point as the time to launch sync operations b/c at this point the rest client is ready.
-        vm.sync()
+        vm.sync(syncDownOnly = true)
     }
 
     override fun onLogoutComplete() {
@@ -104,7 +104,7 @@ class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
         salesforceActivityDelegate.onResume(true)
     }
 
-    fun inspectDbClicked() {
+    private fun inspectDbClicked() {
         startActivity(
             SmartStoreInspectorActivity.getIntent(
                 this@ContactsActivity,
@@ -114,15 +114,15 @@ class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
         )
     }
 
-    fun logoutClicked() {
+    private fun logoutClicked() {
         MobileSyncSDKManager.getInstance().logout(this)
     }
 
-    fun switchUserClicked() {
+    private fun switchUserClicked() {
         TODO("Not yet implemented")
     }
 
-    fun syncClicked() {
+    private fun syncClicked() {
         vm.sync()
     }
 }

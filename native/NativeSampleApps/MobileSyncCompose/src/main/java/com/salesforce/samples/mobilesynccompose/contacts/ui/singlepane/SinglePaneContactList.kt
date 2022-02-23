@@ -28,11 +28,11 @@ object SinglePaneContactsList {
     fun ViewingContactsList(
         modifier: Modifier = Modifier,
         contacts: List<Contact>,
-        isSyncing: Boolean,
-        listContactClick: (contact: Contact) -> Unit,
-        listDeleteClick: (contact: Contact) -> Unit,
-        listEditClick: (contact: Contact) -> Unit,
-        listUndeleteClick: (contact: Contact) -> Unit,
+        showLoadingOverlay: Boolean,
+        listContactClick: (contactId: String) -> Unit,
+        listDeleteClick: (contactId: String) -> Unit,
+        listEditClick: (contactId: String) -> Unit,
+        listUndeleteClick: (contactId: String) -> Unit,
     ) {
         LazyColumn(modifier = modifier) {
             items(items = contacts, key = { it.id }) { contact ->
@@ -48,7 +48,7 @@ object SinglePaneContactsList {
             }
         }
 
-        if (isSyncing) {
+        if (showLoadingOverlay) {
             LoadingOverlay()
         }
     }
@@ -129,7 +129,7 @@ private fun ContactListContentPreview() {
             SinglePaneContactsList.ViewingContactsList(
                 modifier = Modifier.padding(4.dp),
                 contacts = contacts,
-                isSyncing = false,
+                showLoadingOverlay = false,
                 listContactClick = {},
                 listDeleteClick = {},
                 listEditClick = {},
@@ -157,7 +157,7 @@ private fun ContactListSyncingPreview() {
             SinglePaneContactsList.ViewingContactsList(
                 modifier = Modifier.padding(4.dp),
                 contacts = contacts,
-                isSyncing = true,
+                showLoadingOverlay = true,
                 listContactClick = {},
                 listDeleteClick = {},
                 listEditClick = {},
@@ -179,7 +179,7 @@ private fun ContactListLoadingPreview() {
             SinglePaneContactsList.ViewingContactsList(
                 modifier = Modifier.padding(4.dp),
                 contacts = contacts,
-                isSyncing = true,
+                showLoadingOverlay = true,
                 listContactClick = {},
                 listDeleteClick = {},
                 listEditClick = {},
