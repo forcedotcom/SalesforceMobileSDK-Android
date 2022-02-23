@@ -100,15 +100,11 @@ private fun SinglePaneScaffold(
                 Editing -> SinglePaneContactDetails.EditingContact(
                     details = uiState.detailsState,
                     isSaving = uiState.detailsState.isSaving,
-                    detailsContinueEditing = vm::detailsContinueEditing,
-                    detailsDiscardChanges = vm::detailsDiscardChanges,
                     onDetailsUpdated = vm::onDetailsUpdated
                 )
                 LocallyDeleted,
                 Viewing -> SinglePaneContactDetails.ViewingContact(
                     details = uiState.detailsState,
-                    detailsContinueEditing = vm::detailsContinueEditing,
-                    detailsDiscardChanges = vm::detailsDiscardChanges,
                 )
             }
         } else {
@@ -414,14 +410,6 @@ private class PreviewContactsActivityViewModel(state: ContactsActivityUiState) :
         TODO("Not yet implemented")
     }
 
-    override fun detailsDiscardChanges() {
-        TODO("Not yet implemented")
-    }
-
-    override fun detailsContinueEditing() {
-        TODO("Not yet implemented")
-    }
-
     override fun listExitSearchClick() {
         TODO("Not yet implemented")
     }
@@ -454,6 +442,19 @@ private class PreviewContactsActivityViewModel(state: ContactsActivityUiState) :
         TODO("Not yet implemented")
     }
 }
+
+@TestOnly
+internal fun mockSyncedContact(): Contact = Contact.coerceFromJson(
+    JSONObject()
+        .putOpt(Constants.ID, "ID")
+        .putOpt(Contact.KEY_FIRST_NAME, "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirstFirst")
+        .putOpt(Contact.KEY_LAST_NAME, "Last Last Last Last Last Last Last Last Last Last Last")
+        .putOpt(Contact.KEY_TITLE, "Title")
+        .putOpt(SyncTarget.LOCALLY_CREATED, false)
+        .putOpt(SyncTarget.LOCALLY_DELETED, false)
+        .putOpt(SyncTarget.LOCALLY_UPDATED, false)
+        .putOpt(SyncTarget.LOCAL, false)
+)
 
 @TestOnly
 internal fun mockLocallyDeletedContact(): Contact = Contact.coerceFromJson(
