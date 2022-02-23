@@ -2,21 +2,16 @@ package com.salesforce.samples.mobilesynccompose.contacts.ui
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,10 +28,10 @@ import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 fun ContactCard(
     modifier: Modifier = Modifier,
     contact: Contact,
-    onCardClick: (Contact) -> Unit,
-    onDeleteClick: (Contact) -> Unit,
-    onUndeleteClick: (Contact) -> Unit,
-    onEditClick: (Contact) -> Unit,
+    onCardClick: (String) -> Unit,
+    onDeleteClick: (String) -> Unit,
+    onUndeleteClick: (String) -> Unit,
+    onEditClick: (String) -> Unit,
     startExpanded: Boolean = false,
     elevation: Dp = 2.dp,
 ) {
@@ -51,7 +46,7 @@ fun ContactCard(
                 .then(modifier)
                 .pointerInput(Unit) {
                     detectTapGestures(
-                        onTap = { onCardClick(contact) },
+                        onTap = { onCardClick(contact.id) },
                         onLongPress = {
                             android.util.Log.d("ContactListContent", "Long Click: $contact")
                             showDropDownMenu = true
@@ -92,7 +87,7 @@ fun ContactCard(
                         DropdownMenuItem(
                             onClick = {
                                 showDropDownMenu = false
-                                onUndeleteClick(contact)
+                                onUndeleteClick(contact.id)
                             }
                         ) {
                             Text(stringResource(id = R.string.cta_undelete))
@@ -101,7 +96,7 @@ fun ContactCard(
                         DropdownMenuItem(
                             onClick = {
                                 showDropDownMenu = false
-                                onDeleteClick(contact)
+                                onDeleteClick(contact.id)
                             }
                         ) {
                             Text(stringResource(id = R.string.cta_delete))
@@ -110,7 +105,7 @@ fun ContactCard(
                     DropdownMenuItem(
                         onClick = {
                             showDropDownMenu = false
-                            onEditClick(contact)
+                            onEditClick(contact.id)
                         }
                     ) {
                         Text(stringResource(id = R.string.cta_edit))
@@ -118,37 +113,6 @@ fun ContactCard(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun SyncImage(contact: Contact) {
-    if (contact.locallyDeleted) {
-        Icon(
-            Icons.Default.Delete,
-            contentDescription = stringResource(id = R.string.content_desc_item_deleted_locally),
-            modifier = Modifier
-                .size(48.dp)
-                .padding(4.dp)
-        )
-    } else {
-        Image(
-            painter = painterResource(
-                id = if (contact.local)
-                    R.drawable.sync_local
-                else
-                    R.drawable.sync_save
-            ),
-            contentDescription = stringResource(
-                id = if (contact.local)
-                    R.string.content_desc_item_saved_locally
-                else
-                    R.string.content_desc_item_synced
-            ),
-            modifier = Modifier
-                .size(48.dp)
-                .padding(4.dp)
-        )
     }
 }
 

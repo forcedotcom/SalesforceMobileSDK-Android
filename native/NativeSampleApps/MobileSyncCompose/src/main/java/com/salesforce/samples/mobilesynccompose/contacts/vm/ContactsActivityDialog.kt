@@ -7,7 +7,7 @@ sealed interface ContactsActivityDialog
 data class DeleteConfirmation(
     val contactToDelete: Contact,
     val onCancelDelete: () -> Unit,
-    val onDeleteConfirm: (Contact) -> Unit,
+    val onDeleteConfirm: (contactId: String) -> Unit,
 ) : ContactsActivityDialog
 
 data class DiscardChanges(
@@ -18,5 +18,5 @@ data class DiscardChanges(
 data class UndeleteConfirmation(
     val contactToUndelete: Contact,
     val onCancelUndelete: () -> Unit,
-    val onUndeleteConfirm: (Contact) -> Unit,
+    val onUndeleteConfirm: (contactId: String) -> Unit,
 ) : ContactsActivityDialog

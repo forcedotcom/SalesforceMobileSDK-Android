@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R.drawable.ic_help
 import com.salesforce.samples.mobilesynccompose.R.drawable.ic_undo
 import com.salesforce.samples.mobilesynccompose.R.string.*
+import com.salesforce.samples.mobilesynccompose.contacts.ui.SyncImage
 import com.salesforce.samples.mobilesynccompose.contacts.ui.mockLocallyDeletedContact
 import com.salesforce.samples.mobilesynccompose.contacts.vm.*
 import com.salesforce.samples.mobilesynccompose.core.ui.components.LoadingOverlay
@@ -36,6 +37,7 @@ object SinglePaneContactDetails {
     fun ViewingContact(
         modifier: Modifier = Modifier,
         details: ContactDetailsUiState,
+        showLoading: Boolean = false
     ) {
         val scrollState = rememberScrollState()
         Column(
@@ -80,13 +82,17 @@ object SinglePaneContactDetails {
                 )
             }
         }
+
+        if (showLoading) {
+            LoadingOverlay()
+        }
     }
 
     @Composable
     fun EditingContact(
         modifier: Modifier = Modifier,
         details: ContactDetailsUiState,
-        isSaving: Boolean,
+        showLoading: Boolean,
         onDetailsUpdated: (newContact: Contact) -> Unit
     ) {
         val scrollState = rememberScrollState()
@@ -108,7 +114,7 @@ object SinglePaneContactDetails {
             }
         }
         when {
-            isSaving -> {
+            showLoading -> {
                 LoadingOverlay()
             }
         }
@@ -116,7 +122,11 @@ object SinglePaneContactDetails {
 
     object ScaffoldContent {
         @Composable
-        fun RowScope.TopAppBar(label: String, detailsExitClick: () -> Unit) {
+        fun RowScope.TopAppBar(
+            label: String,
+            syncIconContent: @Composable () -> Unit,
+            detailsExitClick: () -> Unit
+        ) {
             IconButton(onClick = detailsExitClick) {
                 Icon(
                     Icons.Default.ArrowBack,
@@ -130,12 +140,14 @@ object SinglePaneContactDetails {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+
+            syncIconContent()
         }
 
         @Composable
-        fun RowScope.BottomAppBar(mode: ContactDetailsUiMode, detailsDeleteClick: () -> Unit) {
+        fun RowScope.BottomAppBar(showDelete: Boolean, detailsDeleteClick: () -> Unit) {
             Spacer(modifier = Modifier.weight(1f))
-            if (mode != ContactDetailsUiMode.LocallyDeleted) {
+            if (showDelete) {
                 IconButton(onClick = detailsDeleteClick) {
                     Icon(
                         Icons.Default.Delete,
@@ -232,7 +244,7 @@ private fun ContactDetailEditModePreview() {
                     titleVm = editedContact.createTitleVm(),
                     mode = ContactDetailsUiMode.Editing
                 ),
-                isSaving = false,
+                showLoading = false,
                 onDetailsUpdated = {}
             )
         }
@@ -264,7 +276,7 @@ private fun ContactDetailEditModeSavingPreview() {
                     mode = ContactDetailsUiMode.Editing,
                     isSaving = true
                 ),
-                isSaving = true,
+                showLoading = true,
                 onDetailsUpdated = {}
             )
         }
@@ -279,7 +291,7 @@ private fun LocallyDeletedPreview() {
     SalesforceMobileSDKAndroidTheme {
         Surface {
             SinglePaneContactDetails.ViewingContact(
-                details = contact.toContactDetailsUiState(mode = ContactDetailsUiMode.LocallyDeleted),
+                details = contact.toContactDetailsUiState(mode = ContactDetailsUiMode.Viewing),
             )
         }
     }

@@ -43,7 +43,6 @@ data class ContactDetailsUiState(
 enum class ContactDetailsUiMode {
     Creating,
     Editing,
-    LocallyDeleted,
     Viewing
 }
 

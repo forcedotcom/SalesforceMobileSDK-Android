@@ -173,10 +173,42 @@ class DefaultContactsRepo(
         return SealedSuccess(Contact.coerceFromJson(newContact))
     }
 
-    override suspend fun locallyUndeleteContact(contact: Contact): SealedResult<Contact, Exception> =
-        withContext(ioDispatcher) {
-            TODO("$TAG - locallyUndeleteContact: contact = $contact")
+    override suspend fun locallyUndeleteContact(contact: Contact) = withContext(ioDispatcher) {
+        val soupEntryId = store.lookupSoupEntryId("contacts", Constants.ID, contact.id)
+        if (soupEntryId < 0) {
+            throw IllegalStateException("Tried to locally delete contact, but soup ID was not found.  Contact = $contact")
         }
+
+        val updatedContactResult: SealedResult<Contact, Exception> = try {
+            store.update(
+                "contacts",
+                contact.toJson()
+                    .putOpt(LOCALLY_DELETED, false)
+                    .putOpt(LOCAL, contact.locallyCreated || contact.locallyUpdated),
+                soupEntryId
+            ).let {
+                SealedSuccess(value = Contact.coerceFromJson(it))
+            }
+        } catch (ex: Exception) {
+            SealedFailure(cause = ex)
+        }
+
+        when (updatedContactResult) {
+            is SealedFailure -> TODO()
+            is SealedSuccess -> {
+                val listToEmit = listMutex.withLock {
+                    mutUpstreamContacts.replaceAll(newValue = updatedContactResult.value) {
+                        it.id == updatedContactResult.value.id
+                    }.also {
+                        mutUpstreamContacts = it
+                    }
+                }
+                mutContactUpdates.emit(listToEmit)
+            }
+        }
+
+        updatedContactResult
+    }
 
     // Individual syncs cannot be cancelled, so we don't use suspendCancellableCoroutine
     private suspend fun syncDown(): SyncState = suspendCoroutine { cont ->

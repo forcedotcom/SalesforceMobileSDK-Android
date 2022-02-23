@@ -28,7 +28,8 @@ class Contact private constructor(raw: JSONObject) {
         firstName = firstName,
         lastName = lastName,
         title = title,
-        locallyUpdated = firstName != this.firstName || lastName != this.lastName || title != this.title,
+        locallyUpdated = locallyUpdated || // preserve current locallyUpdated state
+                firstName != this.firstName || lastName != this.lastName || title != this.title,
     )
 
     private fun copy(
@@ -49,7 +50,6 @@ class Contact private constructor(raw: JSONObject) {
             .putOpt(LOCAL, locallyCreated || locallyDeleted || locallyUpdated)
     )
 
-//    fun markForDeletion() = copy(locallyDeleted = true)
     fun toJson(): JSONObject = JSONObject(raw.toString()).putOpt(Constants.NAME, fullName)
 
     override fun equals(other: Any?): Boolean = this === other || (

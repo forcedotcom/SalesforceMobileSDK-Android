@@ -2,22 +2,23 @@ package com.salesforce.samples.mobilesynccompose.contacts.ui
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.util.Log
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.salesforce.androidsdk.mobilesync.target.SyncTarget
 import com.salesforce.androidsdk.mobilesync.util.Constants
+import com.salesforce.samples.mobilesynccompose.R
 import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.ListDetail
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.Single
@@ -99,19 +100,19 @@ private fun SinglePaneScaffold(
                 Creating,
                 Editing -> SinglePaneContactDetails.EditingContact(
                     details = uiState.detailsState,
-                    isSaving = uiState.detailsState.isSaving,
+                    showLoading = uiState.isSyncing || uiState.detailsState.isSaving,
                     onDetailsUpdated = vm::onDetailsUpdated
                 )
-                LocallyDeleted,
                 Viewing -> SinglePaneContactDetails.ViewingContact(
                     details = uiState.detailsState,
+                    showLoading = uiState.isSyncing
                 )
             }
         } else {
             SinglePaneContactsList.ViewingContactsList(
                 modifier = Modifier.padding(paddingValues = fixedPadding),
                 contacts = uiState.listState.contacts,
-                isSyncing = uiState.isSyncing,
+                showLoadingOverlay = uiState.isSyncing || uiState.listState.isSaving,
                 listContactClick = vm::listContactClick,
                 listDeleteClick = vm::listDeleteClick,
                 listEditClick = vm::listEditClick,
@@ -123,7 +124,7 @@ private fun SinglePaneScaffold(
             is DeleteConfirmation -> DeleteConfirmationDialog(
                 layoutRestrictions = layoutRestrictions,
                 onCancel = dialog.onCancelDelete,
-                onDelete = { dialog.onDeleteConfirm(dialog.contactToDelete) },
+                onDelete = { dialog.onDeleteConfirm(dialog.contactToDelete.id) },
                 objectLabel = dialog.contactToDelete.fullName
             )
             is DiscardChanges -> DiscardChangesDialog(
@@ -134,7 +135,7 @@ private fun SinglePaneScaffold(
             is UndeleteConfirmation -> UndeleteConfirmationDialog(
                 layoutRestrictions = layoutRestrictions,
                 onCancel = dialog.onCancelUndelete,
-                onUndelete = { dialog.onUndeleteConfirm(dialog.contactToUndelete) },
+                onUndelete = { dialog.onUndeleteConfirm(dialog.contactToUndelete.id) },
                 objectLabel = dialog.contactToUndelete.fullName
             )
             null -> {
@@ -160,7 +161,8 @@ private fun SinglePaneTopAppBar(
                     uiState.detailsState.let {
                         TopAppBar(
                             label = "${it.firstNameVm.fieldValue} ${it.lastNameVm.fieldValue}",
-                            detailsExitClick = vm::detailsExitClick
+                            detailsExitClick = vm::detailsExitClick,
+                            syncIconContent = { SyncImage(contact = uiState.detailsState.updatedContact) }
                         )
                     }
                 }
@@ -199,7 +201,7 @@ private fun SinglePaneBottomAppBar(
         when {
             uiState.detailsState != null -> with(SinglePaneContactDetails.ScaffoldContent) {
                 BottomAppBar(
-                    mode = uiState.detailsState.mode,
+                    showDelete = !uiState.detailsState.origContact.locallyDeleted,
                     detailsDeleteClick = vm::detailsDeleteClick
                 )
             }
@@ -217,11 +219,14 @@ private fun SinglePaneBottomAppBar(
 private fun SinglePaneFab(uiState: ContactsActivityUiState, vm: ContactsActivityViewModel) {
     if (uiState.detailsState != null)
         with(SinglePaneContactDetails.ScaffoldContent) {
-            when (uiState.detailsState.mode) {
-                Creating,
-                Editing -> EditModeFab(detailsSaveClick = vm::detailsSaveClick)
-                LocallyDeleted -> DeletedModeFab(detailsUndeleteClick = vm::detailsUndeleteClick)
-                Viewing -> ViewModeFab(detailsEditClick = vm::detailsEditClick)
+            if (uiState.detailsState.origContact.locallyDeleted) {
+                DeletedModeFab(detailsUndeleteClick = vm::detailsUndeleteClick)
+            } else {
+                when (uiState.detailsState.mode) {
+                    Creating,
+                    Editing -> EditModeFab(detailsSaveClick = vm::detailsSaveClick)
+                    Viewing -> ViewModeFab(detailsEditClick = vm::detailsEditClick)
+                }
             }
         }
     else
@@ -298,6 +303,37 @@ fun ContactsActivityMenuButton(
 }
 
 @Composable
+fun SyncImage(contact: Contact) {
+    if (contact.locallyDeleted) {
+        Icon(
+            Icons.Default.Delete,
+            contentDescription = stringResource(id = R.string.content_desc_item_deleted_locally),
+            modifier = Modifier
+                .size(48.dp)
+                .padding(4.dp)
+        )
+    } else {
+        Image(
+            painter = painterResource(
+                id = if (contact.local)
+                    R.drawable.sync_local
+                else
+                    R.drawable.sync_save
+            ),
+            contentDescription = stringResource(
+                id = if (contact.local)
+                    content_desc_item_saved_locally
+                else
+                    content_desc_item_synced
+            ),
+            modifier = Modifier
+                .size(48.dp)
+                .padding(4.dp)
+        )
+    }
+}
+
+@Composable
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 private fun ListPreview() {
@@ -359,7 +395,7 @@ private fun DetailsPreview() {
                         searchTerm = null
                     ),
                     detailsState = ContactDetailsUiState(
-                        mode = LocallyDeleted,
+                        mode = Viewing,
                         origContact = contact,
                         firstNameVm = contact.createFirstNameVm(),
                         lastNameVm = contact.createLastNameVm(),
@@ -390,7 +426,7 @@ private class PreviewContactsActivityViewModel(state: ContactsActivityUiState) :
         TODO("Not yet implemented")
     }
 
-    override fun listContactClick(contact: Contact) {
+    override fun listContactClick(contactId: String) {
         TODO("Not yet implemented")
     }
 
@@ -398,15 +434,15 @@ private class PreviewContactsActivityViewModel(state: ContactsActivityUiState) :
         TODO("Not yet implemented")
     }
 
-    override fun listDeleteClick(contact: Contact) {
+    override fun listDeleteClick(contactId: String) {
         TODO("Not yet implemented")
     }
 
-    override fun listEditClick(contact: Contact) {
+    override fun listEditClick(contactId: String) {
         TODO("Not yet implemented")
     }
 
-    override fun listUndeleteClick(contact: Contact) {
+    override fun listUndeleteClick(contactId: String) {
         TODO("Not yet implemented")
     }
 
