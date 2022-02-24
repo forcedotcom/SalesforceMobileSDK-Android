@@ -6,13 +6,13 @@ buildscript {
   }
 
   dependencies {
-    classpath 'com.android.tools.build:gradle:7.2.0-alpha07'
+    classpath 'com.android.tools.build:gradle:7.1.2'
     classpath 'io.github.gradle-nexus:publish-plugin:1.1.0'
   }
 }
 
 plugins {
-  id 'com.android.application' version '7.2.0-alpha07' apply false
+  id 'com.android.application' version '7.1.2' apply false
 
   /* TODO: Re-evaluate the need to have this plugin declared at the top-level build.gradle.  With
       this plugin only applied at the module-level, the Compose compiler fails with a very low level
