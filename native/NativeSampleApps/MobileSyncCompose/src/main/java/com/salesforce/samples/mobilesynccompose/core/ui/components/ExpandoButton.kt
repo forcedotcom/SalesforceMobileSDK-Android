@@ -24,6 +24,10 @@ import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 
+/**
+ * A simple icon button used to toggle between an "expanded" state and a "collapsed" state. Use its
+ * [onExpandoChangeListener] callback to drive expanded/collapsed state of parent content.
+ */
 @Composable
 fun ExpandoButton(
     modifier: Modifier = Modifier,

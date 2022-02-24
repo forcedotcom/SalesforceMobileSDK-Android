@@ -12,8 +12,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 
+/**
+ * A text field which extends the built-in [OutlinedTextField] to also have a "helper" text below
+ * the input field.
+ */
 @Composable
-fun ToggleableEditTextField(
+fun OutlinedTextFieldWithHelp(
     fieldValue: String,
     isEditEnabled: Boolean,
     isError: Boolean,
@@ -25,19 +29,6 @@ fun ToggleableEditTextField(
     help: (@Composable () -> Unit)? = null,
     maxLines: UInt = UInt.MAX_VALUE,
 ) {
-    /* TODO I'm not sure what the best way to differentiate editable from not...  It would be great
-        if the border was gone for non-editable, but then placeholder + label behavior is weird b/c
-        the label takes the place of the placeholder until the field has focus. */
-//    val colors =
-//        if (!isEditEnabled)
-//            TextFieldDefaults.outlinedTextFieldColors(
-//                disabledTextColor = LocalContentColor.current.copy(
-//                    LocalContentAlpha.current
-//                )
-//            )
-//        else
-//            TextFieldDefaults.outlinedTextFieldColors()
-
     Column(modifier = modifier) {
         OutlinedTextField(
             modifier = fieldModifier.then(Modifier.fillMaxWidth()),
@@ -49,7 +40,6 @@ fun ToggleableEditTextField(
             isError = isError,
             enabled = isEditEnabled,
             maxLines = maxLines.toInt().coerceIn(1..Int.MAX_VALUE),
-//            colors = colors,
         )
         if (help != null) {
             val localContentColor = when {
@@ -57,7 +47,6 @@ fun ToggleableEditTextField(
                 isEditEnabled -> LocalContentColor.current
                 else -> LocalContentColor.current.copy(ContentAlpha.disabled)
             }
-//                MaterialTheme.colors.onSurface.copy(alpha = 0.75f)
 
             val textStyle = MaterialTheme.typography.caption.copy(color = localContentColor)
 
@@ -80,7 +69,7 @@ private fun LabeledTextFieldPreview() {
             Column {
                 var isEditEnabled = true
                 var isError = true
-                ToggleableEditTextField(
+                OutlinedTextFieldWithHelp(
                     modifier = Modifier.padding(8.dp),
                     fieldModifier = Modifier.fillMaxWidth(),
                     fieldValue = "isEditEnabled = $isEditEnabled, isError = $isError",
@@ -94,7 +83,7 @@ private fun LabeledTextFieldPreview() {
 
                 isError = false
 
-                ToggleableEditTextField(
+                OutlinedTextFieldWithHelp(
                     modifier = Modifier.padding(8.dp),
                     fieldModifier = Modifier.fillMaxWidth(),
                     fieldValue = "isEditEnabled = $isEditEnabled, isError = $isError",
@@ -109,7 +98,7 @@ private fun LabeledTextFieldPreview() {
                 isError = true
                 isEditEnabled = false
 
-                ToggleableEditTextField(
+                OutlinedTextFieldWithHelp(
                     modifier = Modifier.padding(8.dp),
                     fieldModifier = Modifier.fillMaxWidth(),
                     fieldValue = "isEditEnabled = $isEditEnabled, isError = $isError",
@@ -123,7 +112,7 @@ private fun LabeledTextFieldPreview() {
 
                 isError = false
 
-                ToggleableEditTextField(
+                OutlinedTextFieldWithHelp(
                     modifier = Modifier.padding(8.dp),
                     fieldModifier = Modifier.fillMaxWidth(),
                     fieldValue = "isEditEnabled = $isEditEnabled, isError = $isError",
@@ -142,7 +131,7 @@ private fun LabeledTextFieldPreview() {
 @Preview(showBackground = true)
 @Composable
 private fun OverflowPreview() {
-    ToggleableEditTextField(
+    OutlinedTextFieldWithHelp(
         fieldValue = "OverflowOverflowOverflowOverflowOverflowOverflowOverflowOverflowOverflowOverflowOverflow",
         isEditEnabled = false,
         isError = false,

@@ -16,6 +16,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.PurpleGrey40
 
+/**
+ * A semi-transparent [Surface] with an animated loading indicator used to denote a loading state.
+ * The use of [Surface] effectively disables user interactions with any element behind this overlay.
+ */
 @Composable
 fun LoadingOverlay() {
     Surface(

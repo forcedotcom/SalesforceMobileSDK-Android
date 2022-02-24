@@ -4,6 +4,11 @@ import androidx.annotation.StringRes
 import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 
+/**
+ * A ViewModel for a single Contact detail text field (e.g. the "first name" field).
+ * It holds the entire state of the text field and handles content change events, encapsulating
+ * business logic for creating updated [Contact] objects when the corresponding field value changes.
+ */
 data class ContactDetailFieldViewModel(
     val fieldValue: String,
     val isInErrorState: Boolean,
@@ -15,6 +20,10 @@ data class ContactDetailFieldViewModel(
     val maxLines: UInt = 1u
 )
 
+// TODO there is a flaw in this system of capturing the Contact reference in this callback. Using a
+//  stale object can lead to inconsistent state and at bare minimum we should change this interface
+//  to emit the contact ID and which field changed. This means more concretely typing the fields so
+//  that the activity VM knows which field changed.
 fun Contact.createFirstNameVm(): ContactDetailFieldViewModel =
     ContactDetailFieldViewModel(
         fieldValue = firstName,

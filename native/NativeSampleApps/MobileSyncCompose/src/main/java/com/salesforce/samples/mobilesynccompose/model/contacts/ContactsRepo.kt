@@ -24,6 +24,10 @@ import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
+/**
+ * The Contacts Repository. It exposes upserting, deleting, and undeleting [Contact] model objects
+ * into SmartStore, and it supports the MobileSync operations.
+ */
 interface ContactsRepo {
     val contactUpdates: Flow<List<Contact>>
     val curUpstreamContacts: List<Contact>
@@ -33,6 +37,9 @@ interface ContactsRepo {
     suspend fun locallyUndeleteContact(contact: Contact): SealedResult<Contact, Exception>
 }
 
+/**
+ * The default implementation of the [ContactsRepo].
+ */
 class DefaultContactsRepo(
     account: UserAccount?, // TODO this shouldn't be nullable. The logic whether to instantiate this object should be moved higher up, but this is a quick fix to get things testable
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -53,10 +60,10 @@ class DefaultContactsRepo(
         replay = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
-    override val contactUpdates: Flow<List<Contact>> get() = mutContactUpdates//mutContactUpdates
+    override val contactUpdates: Flow<List<Contact>> get() = mutContactUpdates
 
     init {
-        mutContactUpdates.tryEmit(mutUpstreamContacts)
+        mutContactUpdates.tryEmit(mutUpstreamContacts) // tryEmit will always succeed when BufferOverflow.DROP_OLDEST is specified.
     }
 
     override suspend fun sync(syncDownOnly: Boolean) = withContext(ioDispatcher) {

@@ -1,22 +1,22 @@
-package com.salesforce.samples.mobilesynccompose.contacts.vm
+package com.salesforce.samples.mobilesynccompose.contacts.state
 
 import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 
-sealed interface ContactsActivityDialog
+sealed interface ContactsActivityDialogUiState
 
-data class DeleteConfirmation(
+data class DeleteConfirmationDialogUiState(
     val contactToDelete: Contact,
     val onCancelDelete: () -> Unit,
     val onDeleteConfirm: (contactId: String) -> Unit,
-) : ContactsActivityDialog
+) : ContactsActivityDialogUiState
 
-data class DiscardChanges(
+data class DiscardChangesDialogUiState(
     val onDiscardChanges: () -> Unit,
     val onKeepChanges: () -> Unit,
-) : ContactsActivityDialog
+) : ContactsActivityDialogUiState
 
-data class UndeleteConfirmation(
+data class UndeleteConfirmationDialogUiState(
     val contactToUndelete: Contact,
     val onCancelUndelete: () -> Unit,
     val onUndeleteConfirm: (contactId: String) -> Unit,
-) : ContactsActivityDialog
+) : ContactsActivityDialogUiState
