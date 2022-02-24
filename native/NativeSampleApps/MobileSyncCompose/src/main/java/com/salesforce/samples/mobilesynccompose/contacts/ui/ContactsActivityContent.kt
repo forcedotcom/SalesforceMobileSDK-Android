@@ -20,12 +20,15 @@ import com.salesforce.androidsdk.mobilesync.target.SyncTarget
 import com.salesforce.androidsdk.mobilesync.util.Constants
 import com.salesforce.samples.mobilesynccompose.R
 import com.salesforce.samples.mobilesynccompose.R.string.*
+import com.salesforce.samples.mobilesynccompose.contacts.state.*
+import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsUiMode.*
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.ListDetail
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.Single
-import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.SinglePaneContactDetails
-import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.SinglePaneContactsList
-import com.salesforce.samples.mobilesynccompose.contacts.vm.*
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsUiMode.*
+import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.*
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityViewModel
+import com.salesforce.samples.mobilesynccompose.contacts.vm.createFirstNameVm
+import com.salesforce.samples.mobilesynccompose.contacts.vm.createLastNameVm
+import com.salesforce.samples.mobilesynccompose.contacts.vm.createTitleVm
 import com.salesforce.samples.mobilesynccompose.core.ui.LayoutRestrictions
 import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeClass
 import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeRestrictions
@@ -39,6 +42,14 @@ import kotlinx.coroutines.flow.StateFlow
 import org.jetbrains.annotations.TestOnly
 import org.json.JSONObject
 
+/**
+ * The main entry point for all Contacts Activity UI, similar in use-case to a traditional top-level
+ * `contacts_activity_layout.xml`.
+ *
+ * This Composable does not handle configuration changes by itself, leaving it up to the owning
+ * Activity to drive the [layoutRestrictions] recomposition; however, this _will_ automatically
+ * recompose itself and its content when the [vm] UI state is updated.
+ */
 @Composable
 fun ContactsActivityContent(
     layoutRestrictions: LayoutRestrictions,
@@ -48,7 +59,7 @@ fun ContactsActivityContent(
     onSwitchUserClick: () -> Unit,
     onSyncClick: () -> Unit,
 ) {
-    val uiState by vm.uiState.collectAsState()
+    val uiState by vm.uiState.collectAsState() // this drives recomposition when the VM updates itself
     Log.d("ContactsActivityContent", "uiState = $uiState")
 
     when (layoutRestrictions.calculatePaneLayout()) {
@@ -95,21 +106,25 @@ private fun SinglePaneScaffold(
         isFloatingActionButtonDocked = true,
     ) { paddingVals ->
         val fixedPadding = paddingVals.fixForMainContent()
+
+        /* For the purposes of a Single Pane layout, the null/non-null detailsState drives whether to
+         * show the details pane as the full screen content. I.e. if the detailsState is null, show
+         * the list content, otherwise show the details content. */
         if (uiState.detailsState != null) {
             when (uiState.detailsState.mode) {
                 Creating,
-                Editing -> SinglePaneContactDetails.EditingContact(
+                Editing -> ContactDetailsEditingContactSinglePane(
                     details = uiState.detailsState,
                     showLoading = uiState.isSyncing || uiState.detailsState.isSaving,
                     onDetailsUpdated = vm::onDetailsUpdated
                 )
-                Viewing -> SinglePaneContactDetails.ViewingContact(
+                Viewing -> ContactDetailsViewingContactSinglePane(
                     details = uiState.detailsState,
                     showLoading = uiState.isSyncing
                 )
             }
         } else {
-            SinglePaneContactsList.ViewingContactsList(
+            ContactsListViewingModeSinglePane(
                 modifier = Modifier.padding(paddingValues = fixedPadding),
                 contacts = uiState.listState.contacts,
                 showLoadingOverlay = uiState.isSyncing || uiState.listState.isSaving,
@@ -120,19 +135,19 @@ private fun SinglePaneScaffold(
             )
         }
 
-        when (val dialog = uiState.dialog) {
-            is DeleteConfirmation -> DeleteConfirmationDialog(
+        when (val dialog = uiState.dialogUiState) {
+            is DeleteConfirmationDialogUiState -> DeleteConfirmationDialog(
                 layoutRestrictions = layoutRestrictions,
                 onCancel = dialog.onCancelDelete,
                 onDelete = { dialog.onDeleteConfirm(dialog.contactToDelete.id) },
                 objectLabel = dialog.contactToDelete.fullName
             )
-            is DiscardChanges -> DiscardChangesDialog(
+            is DiscardChangesDialogUiState -> DiscardChangesDialog(
                 layoutRestrictions = layoutRestrictions,
                 discardChanges = dialog.onDiscardChanges,
                 keepChanges = dialog.onKeepChanges
             )
-            is UndeleteConfirmation -> UndeleteConfirmationDialog(
+            is UndeleteConfirmationDialogUiState -> UndeleteConfirmationDialog(
                 layoutRestrictions = layoutRestrictions,
                 onCancel = dialog.onCancelUndelete,
                 onUndelete = { dialog.onUndeleteConfirm(dialog.contactToUndelete.id) },
@@ -157,29 +172,25 @@ private fun SinglePaneTopAppBar(
     TopAppBar {
         when {
             uiState.detailsState != null -> {
-                with(SinglePaneContactDetails.ScaffoldContent) {
-                    uiState.detailsState.let {
-                        TopAppBar(
-                            label = "${it.firstNameVm.fieldValue} ${it.lastNameVm.fieldValue}",
-                            detailsExitClick = vm::detailsExitClick,
-                            syncIconContent = { SyncImage(contact = uiState.detailsState.updatedContact) }
-                        )
-                    }
-                }
-            }
-
-            uiState.listState.searchTerm != null -> {
-                with(SinglePaneContactsList.ScaffoldContent) {
-                    TopAppBarSearchMode(
-                        searchTerm = uiState.listState.searchTerm,
-                        listExitSearchClick = vm::listExitSearchClick,
-                        onSearchTermUpdated = vm::onSearchTermUpdated
+                uiState.detailsState.let {
+                    ContactDetailsTopAppBarSinglePane(
+                        label = "${it.firstNameVm.fieldValue} ${it.lastNameVm.fieldValue}",
+                        detailsExitClick = vm::detailsExitClick,
+                        syncIconContent = { SyncImage(contact = uiState.detailsState.updatedContact) }
                     )
                 }
             }
 
+            uiState.listState.searchTerm != null -> {
+                ContactsListTopAppBarSearchModeSinglePane(
+                    searchTerm = uiState.listState.searchTerm,
+                    listExitSearchClick = vm::listExitSearchClick,
+                    onSearchTermUpdated = vm::onSearchTermUpdated
+                )
+            }
+
             else -> {
-                with(SinglePaneContactsList.ScaffoldContent) { TopAppBar() }
+                ContactsListTopAppBarSinglePane()
             }
         }
 
@@ -199,18 +210,13 @@ private fun SinglePaneBottomAppBar(
 ) {
     BottomAppBar(cutoutShape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))) {
         when {
-            uiState.detailsState != null -> with(SinglePaneContactDetails.ScaffoldContent) {
-                BottomAppBar(
-                    showDelete = !uiState.detailsState.origContact.locallyDeleted,
-                    detailsDeleteClick = vm::detailsDeleteClick
-                )
-            }
-            uiState.listState.searchTerm != null -> with(SinglePaneContactsList.ScaffoldContent) {
-                BottomAppBarSearch()
-            }
-            else -> with(SinglePaneContactsList.ScaffoldContent) {
-                BottomAppBar(listSearchClick = vm::listSearchClick)
-            }
+            uiState.detailsState != null -> ContactDetailsBottomAppBarSinglePane(
+                showDelete = !uiState.detailsState.origContact.locallyDeleted,
+                detailsDeleteClick = vm::detailsDeleteClick
+            )
+
+            uiState.listState.searchTerm != null -> ContactsListBottomAppBarSearchSinglePane()
+            else -> ContactsListBottomAppBarSinglePane(listSearchClick = vm::listSearchClick)
         }
     }
 }
@@ -218,26 +224,30 @@ private fun SinglePaneBottomAppBar(
 @Composable
 private fun SinglePaneFab(uiState: ContactsActivityUiState, vm: ContactsActivityViewModel) {
     if (uiState.detailsState != null)
-        with(SinglePaneContactDetails.ScaffoldContent) {
-            if (uiState.detailsState.origContact.locallyDeleted) {
-                DeletedModeFab(detailsUndeleteClick = vm::detailsUndeleteClick)
-            } else {
-                when (uiState.detailsState.mode) {
-                    Creating,
-                    Editing -> EditModeFab(detailsSaveClick = vm::detailsSaveClick)
-                    Viewing -> ViewModeFab(detailsEditClick = vm::detailsEditClick)
-                }
+        if (uiState.detailsState.origContact.locallyDeleted) {
+            ContactDetailsDeletedModeFabSinglePane(detailsUndeleteClick = vm::detailsUndeleteClick)
+        } else {
+            when (uiState.detailsState.mode) {
+                Creating,
+                Editing -> ContactDetailsEditModeFabSinglePane(detailsSaveClick = vm::detailsSaveClick)
+                Viewing -> ContactDetailsViewModeFabSinglePane(detailsEditClick = vm::detailsEditClick)
             }
         }
     else
-        SinglePaneContactsList.ScaffoldContent.Fab(vm::listCreateClick)
+        ContactsListFabSinglePane(vm::listCreateClick)
 }
 
+/**
+ * Determines which high-level layout to use using the [LayoutRestrictions].
+ *
+ * We are locking the layout to Single Pane at this time until we can develop for flexible UI.
+ */
 private fun LayoutRestrictions.calculatePaneLayout(): PaneLayout = Single
 
 enum class PaneLayout {
     Single,
     ListDetail
+    // There may be other options, TBD when flexible UI development begins.
 }
 
 @Composable
@@ -256,46 +266,30 @@ fun ContactsActivityMenuButton(
     onSyncClick: () -> Unit,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
+    fun dismissMenu() {
+        menuExpanded = false
+    }
 
     IconButton(onClick = { menuExpanded = !menuExpanded }) {
         Icon(
             Icons.Default.MoreVert,
             contentDescription = stringResource(id = content_desc_menu)
         )
+
         DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-            DropdownMenuItem(
-                onClick = {
-                    menuExpanded = false
-                    onSyncClick()
-                }
-            ) {
+            DropdownMenuItem(onClick = { dismissMenu(); onSyncClick() }) {
                 Text(stringResource(id = cta_sync))
             }
 
-            DropdownMenuItem(
-                onClick = {
-                    menuExpanded = false
-                    onSwitchUserClick()
-                }
-            ) {
+            DropdownMenuItem(onClick = { dismissMenu(); onSwitchUserClick() }) {
                 Text(stringResource(id = cta_switch_user))
             }
 
-            DropdownMenuItem(
-                onClick = {
-                    menuExpanded = false
-                    onLogoutClick()
-                }
-            ) {
+            DropdownMenuItem(onClick = { dismissMenu(); onLogoutClick() }) {
                 Text(stringResource(id = cta_logout))
             }
 
-            DropdownMenuItem(
-                onClick = {
-                    menuExpanded = false
-                    onInspectDbClick()
-                }
-            ) {
+            DropdownMenuItem(onClick = { dismissMenu(); onInspectDbClick() }) {
                 Text(stringResource(id = cta_inspect_db))
             }
         }
@@ -307,7 +301,7 @@ fun SyncImage(contact: Contact) {
     if (contact.locallyDeleted) {
         Icon(
             Icons.Default.Delete,
-            contentDescription = stringResource(id = R.string.content_desc_item_deleted_locally),
+            contentDescription = stringResource(id = content_desc_item_deleted_locally),
             modifier = Modifier
                 .size(48.dp)
                 .padding(4.dp)
@@ -353,7 +347,7 @@ private fun ListPreview() {
             ),
             detailsState = null,
             isSyncing = false,
-            dialog = null
+            dialogUiState = null
         )
     )
 
@@ -402,7 +396,7 @@ private fun DetailsPreview() {
                         titleVm = contact.createTitleVm()
                     ),
                     isSyncing = false,
-                    dialog = null
+                    dialogUiState = null
                 )
             ),
             onInspectDbClick = {},

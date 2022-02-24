@@ -1,5 +1,9 @@
-package com.salesforce.samples.mobilesynccompose.contacts.vm
+package com.salesforce.samples.mobilesynccompose.contacts.state
 
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailFieldViewModel
+import com.salesforce.samples.mobilesynccompose.contacts.vm.createFirstNameVm
+import com.salesforce.samples.mobilesynccompose.contacts.vm.createLastNameVm
+import com.salesforce.samples.mobilesynccompose.contacts.vm.createTitleVm
 import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 
 data class ContactDetailsUiState(

@@ -23,169 +23,177 @@ import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R.drawable.ic_help
 import com.salesforce.samples.mobilesynccompose.R.drawable.ic_undo
 import com.salesforce.samples.mobilesynccompose.R.string.*
-import com.salesforce.samples.mobilesynccompose.contacts.ui.SyncImage
+import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsUiMode
+import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsUiState
+import com.salesforce.samples.mobilesynccompose.contacts.state.toContactDetailsUiState
 import com.salesforce.samples.mobilesynccompose.contacts.ui.mockLocallyDeletedContact
 import com.salesforce.samples.mobilesynccompose.contacts.vm.*
 import com.salesforce.samples.mobilesynccompose.core.ui.components.LoadingOverlay
-import com.salesforce.samples.mobilesynccompose.core.ui.components.ToggleableEditTextField
+import com.salesforce.samples.mobilesynccompose.core.ui.components.OutlinedTextFieldWithHelp
 import com.salesforce.samples.mobilesynccompose.core.ui.safeStringResource
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 
-object SinglePaneContactDetails {
-    @Composable
-    fun ViewingContact(
-        modifier: Modifier = Modifier,
-        details: ContactDetailsUiState,
-        showLoading: Boolean = false
+@Composable
+fun ContactDetailsViewingContactSinglePane(
+    modifier: Modifier = Modifier,
+    details: ContactDetailsUiState,
+    showLoading: Boolean = false
+) {
+    val scrollState = rememberScrollState()
+    Column(
+        modifier = modifier
+            .padding(horizontal = 8.dp)
+            .verticalScroll(state = scrollState)
     ) {
-        val scrollState = rememberScrollState()
-        Column(
-            modifier = modifier
-                .padding(horizontal = 8.dp)
-                .verticalScroll(state = scrollState)
-        ) {
-            if (details.origContact.locallyDeleted) {
-                var infoIsExpanded by remember { mutableStateOf(false) }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { infoIsExpanded = true }
-                        .padding(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colors.error) {
-                        Text(stringResource(id = label_locally_deleted))
-                        Icon(
-                            painterResource(id = ic_help),
-                            contentDescription = stringResource(id = content_desc_help),
-                            modifier = Modifier
-                                .size(32.dp)
-                                .padding(8.dp)
-                        )
-                    }
-                }
-                if (infoIsExpanded) {
-                    LocallyDeletedInfoDialog(onDismiss = { infoIsExpanded = false })
-                }
-            }
-            details.vmList.forEach { fieldVm ->
-                ToggleableEditTextField(
-                    fieldValue = fieldVm.fieldValue,
-                    isEditEnabled = false,
-                    isError = fieldVm.isInErrorState,
-                    onValueChange = { }, // Not editable in this mode
-                    label = { Text(safeStringResource(id = fieldVm.labelRes)) },
-                    help = { Text(safeStringResource(id = fieldVm.helperRes)) },
-                    placeholder = { Text(safeStringResource(id = fieldVm.placeholderRes)) }
-                )
-            }
+        if (details.origContact.locallyDeleted) {
+            LocallyDeletedRow()
         }
 
-        if (showLoading) {
+        details.vmList.forEach { fieldVm ->
+            OutlinedTextFieldWithHelp(
+                fieldValue = fieldVm.fieldValue,
+                isEditEnabled = false,
+                isError = fieldVm.isInErrorState,
+                onValueChange = { }, // Not editable in this mode
+                label = { Text(safeStringResource(id = fieldVm.labelRes)) },
+                help = { Text(safeStringResource(id = fieldVm.helperRes)) },
+                placeholder = { Text(safeStringResource(id = fieldVm.placeholderRes)) }
+            )
+        }
+    }
+
+    if (showLoading) {
+        LoadingOverlay()
+    }
+}
+
+@Composable
+fun ContactDetailsEditingContactSinglePane(
+    modifier: Modifier = Modifier,
+    details: ContactDetailsUiState,
+    showLoading: Boolean,
+    onDetailsUpdated: (newContact: Contact) -> Unit
+) {
+    val scrollState = rememberScrollState()
+
+    Column(
+        modifier = modifier
+            .padding(horizontal = 8.dp)
+            .verticalScroll(state = scrollState)
+    ) {
+        details.vmList.forEach { fieldVm ->
+            OutlinedTextFieldWithHelp(
+                fieldValue = fieldVm.fieldValue,
+                isEditEnabled = fieldVm.canBeEdited,
+                isError = fieldVm.isInErrorState,
+                onValueChange = { onDetailsUpdated(fieldVm.onFieldValueChange(it)) },
+                label = { Text(safeStringResource(id = fieldVm.labelRes)) },
+                help = { Text(safeStringResource(id = fieldVm.helperRes)) },
+                placeholder = { Text(safeStringResource(id = fieldVm.placeholderRes)) }
+            )
+        }
+    }
+    when {
+        showLoading -> {
             LoadingOverlay()
         }
     }
+}
 
-    @Composable
-    fun EditingContact(
-        modifier: Modifier = Modifier,
-        details: ContactDetailsUiState,
-        showLoading: Boolean,
-        onDetailsUpdated: (newContact: Contact) -> Unit
-    ) {
-        val scrollState = rememberScrollState()
-        Column(
-            modifier = modifier
-                .padding(horizontal = 8.dp)
-                .verticalScroll(state = scrollState)
-        ) {
-            details.vmList.forEach { fieldVm ->
-                ToggleableEditTextField(
-                    fieldValue = fieldVm.fieldValue,
-                    isEditEnabled = fieldVm.canBeEdited,
-                    isError = fieldVm.isInErrorState,
-                    onValueChange = { onDetailsUpdated(fieldVm.onFieldValueChange(it)) },
-                    label = { Text(safeStringResource(id = fieldVm.labelRes)) },
-                    help = { Text(safeStringResource(id = fieldVm.helperRes)) },
-                    placeholder = { Text(safeStringResource(id = fieldVm.placeholderRes)) }
-                )
-            }
-        }
-        when {
-            showLoading -> {
-                LoadingOverlay()
-            }
-        }
+@Composable
+fun RowScope.ContactDetailsTopAppBarSinglePane(
+    label: String,
+    syncIconContent: @Composable () -> Unit,
+    detailsExitClick: () -> Unit
+) {
+    IconButton(onClick = detailsExitClick) {
+        Icon(
+            Icons.Default.ArrowBack,
+            contentDescription = stringResource(id = content_desc_back)
+        )
     }
 
-    object ScaffoldContent {
-        @Composable
-        fun RowScope.TopAppBar(
-            label: String,
-            syncIconContent: @Composable () -> Unit,
-            detailsExitClick: () -> Unit
-        ) {
-            IconButton(onClick = detailsExitClick) {
-                Icon(
-                    Icons.Default.ArrowBack,
-                    contentDescription = stringResource(id = content_desc_back)
-                )
-            }
+    Text(
+        label,
+        modifier = Modifier.weight(1f),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+    )
 
-            Text(
-                label,
-                modifier = Modifier.weight(1f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+    syncIconContent()
+}
+
+@Composable
+fun RowScope.ContactDetailsBottomAppBarSinglePane(
+    showDelete: Boolean,
+    detailsDeleteClick: () -> Unit
+) {
+    Spacer(modifier = Modifier.weight(1f))
+    if (showDelete) {
+        IconButton(onClick = detailsDeleteClick) {
+            Icon(
+                Icons.Default.Delete,
+                contentDescription = stringResource(id = cta_delete)
             )
-
-            syncIconContent()
         }
+    }
+}
 
-        @Composable
-        fun RowScope.BottomAppBar(showDelete: Boolean, detailsDeleteClick: () -> Unit) {
-            Spacer(modifier = Modifier.weight(1f))
-            if (showDelete) {
-                IconButton(onClick = detailsDeleteClick) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = stringResource(id = cta_delete)
-                    )
-                }
-            }
-        }
+@Composable
+fun ContactDetailsDeletedModeFabSinglePane(detailsUndeleteClick: () -> Unit) {
+    FloatingActionButton(onClick = detailsUndeleteClick) {
+        Icon(
+            painter = painterResource(id = ic_undo),
+            contentDescription = stringResource(id = cta_undelete)
+        )
+    }
+}
 
-        @Composable
-        fun DeletedModeFab(detailsUndeleteClick: () -> Unit) {
-            FloatingActionButton(onClick = detailsUndeleteClick) {
-                Icon(
-                    painter = painterResource(id = ic_undo),
-                    contentDescription = stringResource(id = cta_undelete)
-                )
-            }
-        }
+@Composable
+fun ContactDetailsEditModeFabSinglePane(detailsSaveClick: () -> Unit) {
+    FloatingActionButton(onClick = detailsSaveClick) {
+        Icon(
+            Icons.Default.Check,
+            contentDescription = stringResource(id = cta_save)
+        )
+    }
+}
 
-        @Composable
-        fun EditModeFab(detailsSaveClick: () -> Unit) {
-            FloatingActionButton(onClick = detailsSaveClick) {
-                Icon(
-                    Icons.Default.Check,
-                    contentDescription = stringResource(id = cta_save)
-                )
-            }
-        }
+@Composable
+fun ContactDetailsViewModeFabSinglePane(detailsEditClick: () -> Unit) {
+    FloatingActionButton(onClick = detailsEditClick) {
+        Icon(
+            Icons.Default.Edit,
+            contentDescription = stringResource(id = cta_edit)
+        )
+    }
+}
 
-        @Composable
-        fun ViewModeFab(detailsEditClick: () -> Unit) {
-            FloatingActionButton(onClick = detailsEditClick) {
-                Icon(
-                    Icons.Default.Edit,
-                    contentDescription = stringResource(id = cta_edit)
-                )
-            }
+@Composable
+private fun LocallyDeletedRow() {
+    var infoIsExpanded by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { infoIsExpanded = true }
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colors.error) {
+            Text(stringResource(id = label_locally_deleted))
+            Icon(
+                painterResource(id = ic_help),
+                contentDescription = stringResource(id = content_desc_help),
+                modifier = Modifier
+                    .size(32.dp)
+                    .padding(8.dp)
+            )
         }
+    }
+    if (infoIsExpanded) {
+        LocallyDeletedInfoDialog(onDismiss = { infoIsExpanded = false })
     }
 }
 
@@ -211,7 +219,7 @@ private fun ContactDetailViewModePreview() {
     )
     SalesforceMobileSDKAndroidTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
-            SinglePaneContactDetails.ViewingContact(
+            ContactDetailsViewingContactSinglePane(
                 details = contact.toContactDetailsUiState(
                     ContactDetailsUiMode.Viewing
                 ),
@@ -236,7 +244,7 @@ private fun ContactDetailEditModePreview() {
 
     SalesforceMobileSDKAndroidTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
-            SinglePaneContactDetails.EditingContact(
+            ContactDetailsEditingContactSinglePane(
                 details = ContactDetailsUiState(
                     origContact = origContact,
                     firstNameVm = editedContact.createFirstNameVm(),
@@ -267,7 +275,7 @@ private fun ContactDetailEditModeSavingPreview() {
 
     SalesforceMobileSDKAndroidTheme {
         Surface {
-            SinglePaneContactDetails.EditingContact(
+            ContactDetailsEditingContactSinglePane(
                 details = ContactDetailsUiState(
                     origContact = origContact,
                     firstNameVm = editedContact.createFirstNameVm(),
@@ -290,7 +298,7 @@ private fun LocallyDeletedPreview() {
     val contact = mockLocallyDeletedContact()
     SalesforceMobileSDKAndroidTheme {
         Surface {
-            SinglePaneContactDetails.ViewingContact(
+            ContactDetailsViewingContactSinglePane(
                 details = contact.toContactDetailsUiState(mode = ContactDetailsUiMode.Viewing),
             )
         }

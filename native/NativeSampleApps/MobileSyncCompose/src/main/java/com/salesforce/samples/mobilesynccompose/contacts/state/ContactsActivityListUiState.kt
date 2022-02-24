@@ -1,4 +1,4 @@
-package com.salesforce.samples.mobilesynccompose.contacts.vm
+package com.salesforce.samples.mobilesynccompose.contacts.state
 
 import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 

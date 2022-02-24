@@ -1,11 +1,21 @@
 package com.salesforce.samples.mobilesynccompose.model.contacts
 
+import com.salesforce.androidsdk.mobilesync.model.SalesforceObject
 import com.salesforce.androidsdk.mobilesync.target.SyncTarget
 import com.salesforce.androidsdk.mobilesync.target.SyncTarget.*
 import com.salesforce.androidsdk.mobilesync.util.Constants
 import org.json.JSONObject
 import java.util.*
 
+/**
+ * An abstraction and runtime data model representation of a Contact Salesforce Standard Object.
+ *
+ * This is not represented as a data class because there is business logic that needs to be applied
+ * to copy and de/serialization operations that do not work with data class semantics.
+ *
+ * Note how this is not a [SalesforceObject]. [SalesforceObject]s are _mutable_ which goes against
+ * Jetpack Compose guidelines to make state objects immutable.
+ */
 class Contact private constructor(raw: JSONObject) {
 
     private val raw = JSONObject(raw.toString()) // new JSON obj ref to avoid mutation issues
@@ -52,6 +62,9 @@ class Contact private constructor(raw: JSONObject) {
 
     fun toJson(): JSONObject = JSONObject(raw.toString()).putOpt(Constants.NAME, fullName)
 
+    /* This equals() method does not simply compare the raw JSONObject property because we are not
+     * interested in all the extra properties that might be in that JSON. Equality for this model
+     * representation means that only all publicly-exposed properties are equal. */
     override fun equals(other: Any?): Boolean = this === other || (
             other is Contact &&
                     other.id == this.id &&
@@ -83,6 +96,15 @@ class Contact private constructor(raw: JSONObject) {
         const val KEY_LAST_NAME = "LastName"
         const val KEY_TITLE = "Title"
 
+        /**
+         * Extracts the required properties for this contact model from the input [JSONObject] and
+         * creates a [Contact] model using these properties. Default/new values will be used if
+         * required properties are missing. The provided [JSONObject] can be safely mutated after
+         * this method returns without this [Contact] model being affected.
+         *
+         * @param json The input [JSONObject] to deserialize into a [Contact]
+         * @return The newly created [Contact] model.
+         */
         fun coerceFromJson(json: JSONObject): Contact {
             val rawCopy = JSONObject(json.toString())
             var locallyCreated = rawCopy.optBoolean(LOCALLY_CREATED, false)
@@ -105,6 +127,14 @@ class Contact private constructor(raw: JSONObject) {
             )
         }
 
+        /**
+         * Creates a new [Contact] model object from the provided properties.
+         *
+         * @param firstName The contact's first name.
+         * @param lastName The contact's last name.
+         * @param title The contact's business title.
+         * @return The newly-created [Contact] model object.
+         */
         fun createNewLocal(
             firstName: String = "",
             lastName: String = "",

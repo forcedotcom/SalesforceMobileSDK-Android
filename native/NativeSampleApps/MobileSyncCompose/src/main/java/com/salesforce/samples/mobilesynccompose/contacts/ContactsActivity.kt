@@ -1,5 +1,6 @@
 package com.salesforce.samples.mobilesynccompose.contacts
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
@@ -11,6 +12,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.window.layout.WindowMetricsCalculator
+import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity
@@ -50,17 +52,18 @@ class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
         salesforceActivityDelegate = SalesforceActivityDelegate(this).also { it.onCreate() }
 
         setContent {
-            val density = LocalDensity.current
-            val windowSizeRestrictions = remember(LocalConfiguration.current) {
-                val size = WindowMetricsCalculator.getOrCreate()
+            /* We use the fact that LocalConfiguration is updated whenever configuration changes are
+             * detected to drive the layout restrictions recomposition: */
+            val windowSize = remember(LocalConfiguration.current) {
+                WindowMetricsCalculator.getOrCreate()
                     .computeCurrentWindowMetrics(this)
                     .bounds
                     .toComposeRect()
                     .size
+            }
 
-                with(density) {
-                    size.toDpSize().toWindowSizeRestrictions()
-                }
+            val windowSizeRestrictions = with(LocalDensity.current) {
+                windowSize.toDpSize().toWindowSizeRestrictions()
             }
 
             SalesforceMobileSDKAndroidTheme {
@@ -91,7 +94,6 @@ class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
     }
 
     override fun onResume(client: RestClient?) {
-        // TODO use this entry point as the time to launch sync operations b/c at this point the rest client is ready.
         vm.sync(syncDownOnly = true)
     }
 
@@ -119,7 +121,10 @@ class ContactsActivity : ComponentActivity(), SalesforceActivityInterface {
     }
 
     private fun switchUserClicked() {
-        TODO("Not yet implemented")
+        val intent = Intent(this, SalesforceSDKManager.getInstance().accountSwitcherActivityClass)
+            .apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+
+        startActivity(intent)
     }
 
     private fun syncClicked() {

@@ -36,7 +36,6 @@ fun ContactCard(
     elevation: Dp = 2.dp,
 ) {
     var showDropDownMenu by rememberSaveable { mutableStateOf(false) }
-    var isExpanded by rememberSaveable { mutableStateOf(startExpanded) }
     val alpha = if (contact.locallyDeleted) ALPHA_DISABLED else 1f
 
     CompositionLocalProvider(LocalContentAlpha provides alpha) {
@@ -47,71 +46,86 @@ fun ContactCard(
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onTap = { onCardClick(contact.id) },
-                        onLongPress = {
-                            android.util.Log.d("ContactListContent", "Long Click: $contact")
-                            showDropDownMenu = true
-                        }
+                        onLongPress = { showDropDownMenu = true }
                     )
                 },
             elevation = elevation
         ) {
-            Column(modifier = Modifier.padding(8.dp)) {
-                Row {
-                    SelectionContainer(modifier = Modifier.weight(1f)) {
-                        Text(
-                            contact.fullName,
-                            style = MaterialTheme.typography.body1,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    SyncImage(contact = contact)
-                    ExpandoButton(
-                        startsExpanded = isExpanded,
-                        isEnabled = true,
-                    ) { isExpanded = it }
-                }
-                if (isExpanded) {
-                    Divider(modifier = Modifier.padding(vertical = 4.dp))
-                    Row {
-                        SelectionContainer {
-                            Text(contact.title, style = MaterialTheme.typography.body2)
-                        }
-                    }
-                }
-                DropdownMenu(
-                    expanded = showDropDownMenu,
-                    onDismissRequest = { showDropDownMenu = false }
-                ) {
-                    if (contact.locallyDeleted) {
-                        DropdownMenuItem(
-                            onClick = {
-                                showDropDownMenu = false
-                                onUndeleteClick(contact.id)
-                            }
-                        ) {
-                            Text(stringResource(id = R.string.cta_undelete))
-                        }
-                    } else {
-                        DropdownMenuItem(
-                            onClick = {
-                                showDropDownMenu = false
-                                onDeleteClick(contact.id)
-                            }
-                        ) {
-                            Text(stringResource(id = R.string.cta_delete))
-                        }
-                    }
-                    DropdownMenuItem(
-                        onClick = {
-                            showDropDownMenu = false
-                            onEditClick(contact.id)
-                        }
-                    ) {
-                        Text(stringResource(id = R.string.cta_edit))
-                    }
+            ContactCardInnerContent(
+                contact = contact,
+                startExpanded = startExpanded
+            )
+            ContactDropdownMenu(
+                showDropDownMenu = showDropDownMenu,
+                contact = contact,
+                onDismissMenu = { showDropDownMenu = false },
+                onDeleteClick = onDeleteClick,
+                onUndeleteClick = onUndeleteClick,
+                onEditClick = onEditClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun ContactCardInnerContent(
+    modifier: Modifier = Modifier,
+    contact: Contact,
+    startExpanded: Boolean,
+) {
+    var isExpanded by rememberSaveable { mutableStateOf(startExpanded) }
+    Column(modifier = modifier.padding(8.dp)) {
+        Row {
+            // TODO There is a bug where long-pressing on the name will both select the text and open the menu.
+            SelectionContainer(modifier = Modifier.weight(1f)) {
+                Text(
+                    contact.fullName,
+                    style = MaterialTheme.typography.body1,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+
+            SyncImage(contact = contact)
+
+            ExpandoButton(
+                startsExpanded = isExpanded,
+                isEnabled = true,
+                onExpandoChangeListener = { isExpanded = it }
+            )
+        }
+        if (isExpanded) {
+            Divider(modifier = Modifier.padding(vertical = 4.dp))
+            Row {
+                SelectionContainer {
+                    Text(contact.title, style = MaterialTheme.typography.body2)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ContactDropdownMenu(
+    showDropDownMenu: Boolean,
+    contact: Contact,
+    onDismissMenu: () -> Unit,
+    onDeleteClick: (String) -> Unit,
+    onUndeleteClick: (String) -> Unit,
+    onEditClick: (String) -> Unit,
+) {
+    DropdownMenu(expanded = showDropDownMenu, onDismissRequest = onDismissMenu) {
+        if (contact.locallyDeleted) {
+            DropdownMenuItem(onClick = { onDismissMenu(); onUndeleteClick(contact.id) }) {
+                Text(stringResource(id = R.string.cta_undelete))
+            }
+        } else {
+            DropdownMenuItem(onClick = { onDismissMenu(); onDeleteClick(contact.id) }) {
+                Text(stringResource(id = R.string.cta_delete))
+            }
+        }
+        DropdownMenuItem(onClick = { onDismissMenu(); onEditClick(contact.id) }) {
+            Text(stringResource(id = R.string.cta_edit))
         }
     }
 }

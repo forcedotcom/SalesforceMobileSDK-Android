@@ -16,9 +16,13 @@ import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeClass
 import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeRestrictions
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 
+/**
+ * [AlertDialog] which asks the user to confirm whether they want to discard unsaved changes. The
+ * user's choice is provided by invocation of either [discardChanges] or [keepChanges].
+ */
 @Composable
 fun DiscardChangesDialog(
-    layoutRestrictions: LayoutRestrictions,
+    layoutRestrictions: LayoutRestrictions, // TODO use fold restrictions to place the dialog
     discardChanges: () -> Unit,
     keepChanges: () -> Unit
 ) {
@@ -39,9 +43,13 @@ fun DiscardChangesDialog(
     )
 }
 
+/**
+ * [AlertDialog] which asks the user to confirm whether they want to delete an item. The user's
+ * choice is provided by invocation of either [onDelete] or [onCancel].
+ */
 @Composable
 fun DeleteConfirmationDialog(
-    layoutRestrictions: LayoutRestrictions,
+    layoutRestrictions: LayoutRestrictions, // TODO use fold restrictions to place the dialog
     onCancel: () -> Unit,
     onDelete: () -> Unit,
     objectLabel: String = ""
@@ -63,9 +71,13 @@ fun DeleteConfirmationDialog(
     )
 }
 
+/**
+ * [AlertDialog] which asks the user to confirm whether they want to undelete an item. The user's
+ * choice is provided by invocation of either [onUndelete] or [onCancel].
+ */
 @Composable
 fun UndeleteConfirmationDialog(
-    layoutRestrictions: LayoutRestrictions,
+    layoutRestrictions: LayoutRestrictions, // TODO use fold restrictions to place the dialog
     onCancel: () -> Unit,
     onUndelete: () -> Unit,
     objectLabel: String = ""
