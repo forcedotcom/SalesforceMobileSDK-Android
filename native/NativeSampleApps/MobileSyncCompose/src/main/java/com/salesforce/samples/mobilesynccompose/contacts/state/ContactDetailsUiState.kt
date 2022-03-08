@@ -49,6 +49,8 @@ data class ContactDetailsUiState(
         titleVm
     )
 
+    val contactId = origContact.id
+
     val updatedContact: Contact by lazy {
         origContact.copy(
             firstName = firstNameVm.fieldValue,

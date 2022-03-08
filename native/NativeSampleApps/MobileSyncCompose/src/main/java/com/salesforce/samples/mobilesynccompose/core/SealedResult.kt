@@ -34,3 +34,27 @@ package com.salesforce.samples.mobilesynccompose.core
 sealed interface SealedResult<out S, out F : Any>
 data class SealedSuccess<out S, out F : Any>(val value: S) : SealedResult<S, F>
 data class SealedFailure<out S, out F : Any>(val cause: F) : SealedResult<S, F>
+
+fun <S, F : Any, NewS> SealedResult<S, F>.mapSuccess(ifSuccess: (S) -> NewS): SealedResult<NewS, F> =
+    when (this) {
+        is SealedFailure -> SealedFailure(cause = this.cause)
+        is SealedSuccess -> SealedSuccess(value = ifSuccess(this.value))
+    }
+
+fun <S, F : Any, NewF : Any> SealedResult<S, F>.mapFailure(ifFailure: (F) -> NewF): SealedResult<S, NewF> =
+    when (this) {
+        is SealedFailure -> SealedFailure(cause = ifFailure(this.cause))
+        is SealedSuccess -> SealedSuccess(value = this.value)
+    }
+
+fun <S, F : Any, NewS> SealedResult<S, F>.switchMapSuccess(ifSuccess: (S) -> SealedResult<NewS, F>) =
+    when (this) {
+        is SealedFailure -> SealedFailure(this.cause)
+        is SealedSuccess -> ifSuccess(this.value)
+    }
+
+fun <S, F : Any, NewF : Any> SealedResult<S, F>.switchMapFailure(ifFailure: (F) -> SealedResult<S, NewF>) =
+    when (this) {
+        is SealedFailure -> ifFailure(this.cause)
+        is SealedSuccess -> SealedSuccess(this.value)
+    }

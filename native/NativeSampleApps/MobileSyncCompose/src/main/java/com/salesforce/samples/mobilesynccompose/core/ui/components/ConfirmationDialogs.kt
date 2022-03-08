@@ -37,9 +37,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.salesforce.samples.mobilesynccompose.R.string.*
-import com.salesforce.samples.mobilesynccompose.core.ui.LayoutRestrictions
-import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeClass
-import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeRestrictions
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 
 /**
@@ -48,7 +45,6 @@ import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSD
  */
 @Composable
 fun DiscardChangesDialog(
-    layoutRestrictions: LayoutRestrictions, // TODO use fold restrictions to place the dialog
     discardChanges: () -> Unit,
     keepChanges: () -> Unit
 ) {
@@ -75,10 +71,9 @@ fun DiscardChangesDialog(
  */
 @Composable
 fun DeleteConfirmationDialog(
-    layoutRestrictions: LayoutRestrictions, // TODO use fold restrictions to place the dialog
     onCancel: () -> Unit,
     onDelete: () -> Unit,
-    objectLabel: String = ""
+    objectLabel: String? = null
 ) {
     AlertDialog(
         onDismissRequest = onCancel,
@@ -93,7 +88,12 @@ fun DeleteConfirmationDialog(
             }
         },
         title = { Text(stringResource(id = label_delete_confirm)) },
-        text = { Text(stringResource(id = body_delete_confirm, objectLabel)) }
+        text = {
+            if (objectLabel == null || objectLabel.isBlank())
+                Text(stringResource(id = body_delete_confirm))
+            else
+                Text(stringResource(id = body_delete_confirm_with_name, objectLabel))
+        }
     )
 }
 
@@ -103,10 +103,9 @@ fun DeleteConfirmationDialog(
  */
 @Composable
 fun UndeleteConfirmationDialog(
-    layoutRestrictions: LayoutRestrictions, // TODO use fold restrictions to place the dialog
     onCancel: () -> Unit,
     onUndelete: () -> Unit,
-    objectLabel: String = ""
+    objectLabel: String? = null
 ) {
     AlertDialog(
         onDismissRequest = onCancel,
@@ -121,7 +120,12 @@ fun UndeleteConfirmationDialog(
             }
         },
         title = { Text(stringResource(id = label_undelete_confirm)) },
-        text = { Text(stringResource(id = body_undelete_confirm, objectLabel)) }
+        text = {
+            if (objectLabel == null || objectLabel.isBlank())
+                Text(stringResource(id = body_delete_confirm))
+            else
+                Text(stringResource(id = body_undelete_confirm_with_name, objectLabel))
+        }
     )
 }
 
@@ -132,12 +136,6 @@ private fun DiscardChangesPreview() {
     SalesforceMobileSDKAndroidTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
             DiscardChangesDialog(
-                layoutRestrictions = LayoutRestrictions(
-                    WindowSizeRestrictions(
-                        horiz = WindowSizeClass.Compact,
-                        vert = WindowSizeClass.Medium
-                    )
-                ),
                 discardChanges = {},
                 keepChanges = {}
             )

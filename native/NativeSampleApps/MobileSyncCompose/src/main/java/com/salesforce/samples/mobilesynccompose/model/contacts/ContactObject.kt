@@ -30,6 +30,9 @@ import com.salesforce.androidsdk.mobilesync.model.SalesforceObject
 import com.salesforce.androidsdk.mobilesync.target.SyncTarget
 import com.salesforce.androidsdk.mobilesync.target.SyncTarget.*
 import com.salesforce.androidsdk.mobilesync.util.Constants
+import com.salesforce.samples.mobilesynccompose.model.contacts.Contact.Companion.equals
+import com.salesforce.samples.mobilesynccompose.model.contacts.Contact.Companion.hashCode
+import org.jetbrains.annotations.TestOnly
 import org.json.JSONObject
 import java.util.*
 
@@ -182,5 +185,27 @@ class Contact private constructor(raw: JSONObject) {
                     .putOpt(LOCAL, true)
             )
         }
+
+        @TestOnly
+        internal fun mockContact(
+            id: String,
+            firstName: String,
+            lastName: String,
+            title: String,
+            locallyCreated: Boolean,
+            locallyDeleted: Boolean,
+            locallyUpdated: Boolean,
+            local: Boolean
+        ) = coerceFromJson(
+            JSONObject()
+                .putOpt(Constants.ID, id)
+                .putOpt(KEY_FIRST_NAME, firstName)
+                .putOpt(KEY_LAST_NAME, lastName)
+                .putOpt(KEY_TITLE, title)
+                .putOpt(LOCALLY_CREATED, locallyCreated)
+                .putOpt(LOCALLY_DELETED, locallyDeleted)
+                .putOpt(LOCALLY_UPDATED, locallyUpdated)
+                .putOpt(LOCAL, local)
+        )
     }
 }

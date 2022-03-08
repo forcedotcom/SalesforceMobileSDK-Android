@@ -51,10 +51,7 @@ import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsUiM
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.ListDetail
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.Single
 import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.*
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityViewModel
-import com.salesforce.samples.mobilesynccompose.contacts.vm.createFirstNameVm
-import com.salesforce.samples.mobilesynccompose.contacts.vm.createLastNameVm
-import com.salesforce.samples.mobilesynccompose.contacts.vm.createTitleVm
+import com.salesforce.samples.mobilesynccompose.contacts.vm.*
 import com.salesforce.samples.mobilesynccompose.core.ui.LayoutRestrictions
 import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeClass
 import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeRestrictions
@@ -163,21 +160,18 @@ private fun SinglePaneScaffold(
 
         when (val dialog = uiState.dialogUiState) {
             is DeleteConfirmationDialogUiState -> DeleteConfirmationDialog(
-                layoutRestrictions = layoutRestrictions,
                 onCancel = dialog.onCancelDelete,
-                onDelete = { dialog.onDeleteConfirm(dialog.contactToDelete.id) },
-                objectLabel = dialog.contactToDelete.fullName
+                onDelete = { dialog.onDeleteConfirm(dialog.contactIdToDelete) },
+                objectLabel = dialog.contactName
             )
             is DiscardChangesDialogUiState -> DiscardChangesDialog(
-                layoutRestrictions = layoutRestrictions,
                 discardChanges = dialog.onDiscardChanges,
                 keepChanges = dialog.onKeepChanges
             )
             is UndeleteConfirmationDialogUiState -> UndeleteConfirmationDialog(
-                layoutRestrictions = layoutRestrictions,
                 onCancel = dialog.onCancelUndelete,
-                onUndelete = { dialog.onUndeleteConfirm(dialog.contactToUndelete.id) },
-                objectLabel = dialog.contactToUndelete.fullName
+                onUndelete = { dialog.onUndeleteConfirm(dialog.contactIdToUndelete) },
+                objectLabel = dialog.contactName
             )
             null -> {
                 /* clear the dialog */
@@ -202,7 +196,7 @@ private fun SinglePaneTopAppBar(
                     ContactDetailsTopAppBarSinglePane(
                         label = "${it.firstNameVm.fieldValue} ${it.lastNameVm.fieldValue}",
                         detailsExitClick = vm::detailsExitClick,
-                        syncIconContent = { SyncImage(contact = uiState.detailsState.updatedContact) }
+                        syncIconContent = { SyncImage(contact = it.updatedContact) }
                     )
                 }
             }
@@ -373,7 +367,7 @@ private fun ListPreview() {
             ),
             detailsState = null,
             isSyncing = false,
-            dialogUiState = null
+            dialogUiState = null,
         )
     )
 
@@ -422,7 +416,7 @@ private fun DetailsPreview() {
                         titleVm = contact.createTitleVm()
                     ),
                     isSyncing = false,
-                    dialogUiState = null
+                    dialogUiState = null,
                 )
             ),
             onInspectDbClick = {},
@@ -439,63 +433,63 @@ private class PreviewContactsActivityViewModel(state: ContactsActivityUiState) :
     override val uiState: StateFlow<ContactsActivityUiState> = MutableStateFlow(state)
 
     override fun sync(syncDownOnly: Boolean) {
-        TODO("Not yet implemented")
+        throw NotImplementedError("sync")
     }
 
     override fun listSearchClick() {
-        TODO("Not yet implemented")
+        throw NotImplementedError("listSearchClick")
     }
 
     override fun listContactClick(contactId: String) {
-        TODO("Not yet implemented")
+        throw NotImplementedError("listContactClick")
     }
 
     override fun listCreateClick() {
-        TODO("Not yet implemented")
+        throw NotImplementedError("listCreateClick")
     }
 
     override fun listDeleteClick(contactId: String) {
-        TODO("Not yet implemented")
+        throw NotImplementedError("listDeleteClick")
     }
 
     override fun listEditClick(contactId: String) {
-        TODO("Not yet implemented")
+        throw NotImplementedError("listEditClick")
     }
 
     override fun listUndeleteClick(contactId: String) {
-        TODO("Not yet implemented")
+        throw NotImplementedError("listUndeleteClick")
     }
 
     override fun listExitSearchClick() {
-        TODO("Not yet implemented")
+        throw NotImplementedError("listExitSearchClick")
     }
 
     override fun onSearchTermUpdated(newSearchTerm: String) {
-        TODO("Not yet implemented")
+        throw NotImplementedError("onSearchTermUpdated")
     }
 
     override fun detailsDeleteClick() {
-        TODO("Not yet implemented")
+        throw NotImplementedError("detailsDeleteClick")
     }
 
     override fun detailsExitClick() {
-        TODO("Not yet implemented")
+        throw NotImplementedError("detailsExitClick")
     }
 
     override fun onDetailsUpdated(newContact: Contact) {
-        TODO("Not yet implemented")
+        throw NotImplementedError("onDetailsUpdated")
     }
 
     override fun detailsSaveClick() {
-        TODO("Not yet implemented")
+        throw NotImplementedError("detailsSaveClick")
     }
 
     override fun detailsUndeleteClick() {
-        TODO("Not yet implemented")
+        throw NotImplementedError("detailsUndeleteClick")
     }
 
     override fun detailsEditClick() {
-        TODO("Not yet implemented")
+        throw NotImplementedError("detailsEditClick")
     }
 }
 
