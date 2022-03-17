@@ -579,9 +579,16 @@ public class RestRequestTest {
 
     @Test
 	public void testGetRequestForPrimingRecords() throws Exception {
-    	RestRequest request = RestRequest.getRequestForPrimingRecords(TEST_API_VERSION);
+    	RestRequest request = RestRequest.getRequestForPrimingRecords(TEST_API_VERSION, null);
     	Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
 		Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/connect/briefcase/priming-records", request.getPath());
+	}
+
+	@Test
+	public void testGetRequestForPrimingRecordsWithRelayToken() throws Exception {
+		RestRequest request = RestRequest.getRequestForPrimingRecords(TEST_API_VERSION, "my-relay-token");
+		Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+		Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/connect/briefcase/priming-records?relayToken=my-relay-token", request.getPath());
 	}
 
     private static String bodyToString(final RestRequest request) throws IOException {

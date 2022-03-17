@@ -1071,7 +1071,7 @@ public class RestClientTest {
 
     @Test
     public void testGetPrimingRecords() throws Exception {
-        RestRequest request = RestRequest.getRequestForPrimingRecords(TestCredentials.API_VERSION);
+        RestRequest request = RestRequest.getRequestForPrimingRecords(TestCredentials.API_VERSION, null);
         RestResponse response = restClient.sendSync(request);
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
         checkKeys(response.asJSONObject(), "primingRecords", "relayToken", "ruleErrors", "stats");

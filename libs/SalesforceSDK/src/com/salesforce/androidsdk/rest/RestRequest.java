@@ -117,7 +117,8 @@ public class RestRequest {
     public static final String IF_UNMODIFIED_SINCE = "If-Unmodified-Since";
     public static final String SFORCE_QUERY_OPTIONS = "Sforce-Query-Options";
     public static final String BATCH_SIZE_OPTION = "batchSize";
-    public static final int MIN_BATCH_SIZE = 200;
+    public static final String RELAY_TOKEN = "relayToken";
+	public static final int MIN_BATCH_SIZE = 200;
     public static final int MAX_BATCH_SIZE = 2000;
     public static final int DEFAULT_BATCH_SIZE = 2000;
 
@@ -825,9 +826,13 @@ public class RestRequest {
 	 *
 	 * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.chatterapi.meta/chatterapi/connect_resources_briefcase_priming_records.htm">https://developer.salesforce.com/docs/atlas.en-us.chatterapi.meta/chatterapi/connect_resources_briefcase_priming_records.htm</a>
 	 */
-    public static RestRequest getRequestForPrimingRecords(String apiVersion) {
-		return new RestRequest(RestMethod.GET, RestAction.PRIMING_RECORDS.getPath(apiVersion));
-		// TODO add support for optional relayToken parameter
+    public static RestRequest getRequestForPrimingRecords(String apiVersion, String relayToken) throws UnsupportedEncodingException {
+    	StringBuilder path = new StringBuilder(RestAction.PRIMING_RECORDS.getPath(apiVersion));
+    	if (relayToken != null) {
+    		path.append("?relayToken=");
+    		path.append(URLEncoder.encode(relayToken, UTF_8));
+		}
+		return new RestRequest(RestMethod.GET, path.toString());
 	}
 
     /**
