@@ -549,7 +549,7 @@ public class RestRequestTest {
     }
 
     @Test
-    public void testGetNotificationRequest() throws Exception {
+    public void testGetRequestForNotification() throws Exception {
         String notificationId = "testID";
         RestRequest request = RestRequest.getRequestForNotification(TEST_API_VERSION, notificationId);
         Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
@@ -557,7 +557,7 @@ public class RestRequestTest {
     }
 
     @Test
-    public void testUpdateNotificationRequest() throws Exception {
+    public void testGetRequestForNotificationUpdate() throws Exception {
         String notificationId = "testID";
         RestRequest request = RestRequest.getRequestForNotificationUpdate(TEST_API_VERSION, notificationId, true, null);
         Assert.assertEquals("Wrong method", RestMethod.PATCH, request.getMethod());
@@ -565,7 +565,7 @@ public class RestRequestTest {
     }
 
     @Test
-    public void testUpdateNotificationsRequest() throws Exception {
+    public void testGetRequestForNotificationsUpdate() throws Exception {
         List<String> notificationIds = Arrays.asList("testID1", "testID2");
         RestRequest request =  RestRequest.getRequestForNotificationsUpdate(TEST_API_VERSION, notificationIds, null, true, null);
         Assert.assertEquals("Wrong method", RestMethod.PATCH, request.getMethod());
@@ -576,6 +576,13 @@ public class RestRequestTest {
         JSONObject actualBodyJson = new JSONObject(bodyToString(request));
         JSONTestHelper.assertSameJSON("Wrong request entity", expectedBodyJson, actualBodyJson);
     }
+
+    @Test
+	public void testGetRequestForPrimingRecords() throws Exception {
+    	RestRequest request = RestRequest.getRequestForPrimingRecords(TEST_API_VERSION);
+    	Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+		Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/connect/briefcase/priming-records", request.getPath());
+	}
 
     private static String bodyToString(final RestRequest request) throws IOException {
 		final Buffer buffer = new Buffer();

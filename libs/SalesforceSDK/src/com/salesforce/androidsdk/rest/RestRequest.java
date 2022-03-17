@@ -827,6 +827,7 @@ public class RestRequest {
 	 */
     public static RestRequest getRequestForPrimingRecords(String apiVersion) {
 		return new RestRequest(RestMethod.GET, RestAction.PRIMING_RECORDS.getPath(apiVersion));
+		// TODO add support for optional relayToken parameter
 	}
 
     /**
