@@ -170,7 +170,9 @@ public class RestRequest {
 		COMPOSITE(SERVICES_DATA + "%s/composite"),
         BATCH(SERVICES_DATA + "%s/composite/batch"),
         SOBJECT_TREE(SERVICES_DATA + "%s/composite/tree/%s"),
-        NOTIFICATIONS(SERVICES_DATA + "%s/connect/notifications/%s");
+        NOTIFICATIONS_STATUS(SERVICES_DATA + "%s/connect/notifications/status"),
+		NOTIFICATIONS(SERVICES_DATA + "%s/connect/notifications/%s"),
+		PRIMING_RECORDS(SERVICES_DATA + "%s/connect/briefcase/priming-records");
 
 		private final String pathTemplate;
 
@@ -715,9 +717,11 @@ public class RestRequest {
      * Request to get status of notifications for the user.
      *
      * @param apiVersion   Salesforce API version.
+	 *
+	 * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.chatterapi.meta/chatterapi/connect_resources_notifications_status.htm">https://developer.salesforce.com/docs/atlas.en-us.chatterapi.meta/chatterapi/connect_resources_notifications_status.htm</a>
      */
     public static RestRequest getRequestForNotificationsStatus(String apiVersion) {
-        return new RestRequest(RestMethod.GET, RestAction.NOTIFICATIONS.getPath(apiVersion, "status"));
+        return new RestRequest(RestMethod.GET, RestAction.NOTIFICATIONS_STATUS.getPath(apiVersion));
     }
 
     /**
@@ -725,6 +729,8 @@ public class RestRequest {
      *
      * @param apiVersion      Salesforce API version.
      * @param notificationId  ID of notification.
+	 *
+	 * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.chatterapi.meta/chatterapi/connect_resource_notifications_specific.htm">https://developer.salesforce.com/docs/atlas.en-us.chatterapi.meta/chatterapi/connect_resource_notifications_specific.htm</a>
      */
     public static RestRequest getRequestForNotification(String apiVersion, String notificationId) {
         return new RestRequest(RestMethod.GET, RestAction.NOTIFICATIONS.getPath(apiVersion, notificationId));
@@ -739,6 +745,8 @@ public class RestRequest {
      *                        Required if `seen` not provided.
      * @param seen            Marks notification as seen (true) or unseen (false). If null, field won't be updated.
      *                        Required if `read` not provided.
+	 *
+	 * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.chatterapi.meta/chatterapi/connect_resource_notifications_specific.htm">https://developer.salesforce.com/docs/atlas.en-us.chatterapi.meta/chatterapi/connect_resource_notifications_specific.htm</a>
      */
     public static RestRequest getRequestForNotificationUpdate(String apiVersion, String notificationId, Boolean read, Boolean seen) {
         final Map<String, Object> parameters = new HashMap<>();
@@ -759,6 +767,8 @@ public class RestRequest {
      * @param size         Number of notifications to get.
      * @param before       Get notifications occurring before the provided date. Shouldn't be used with `after`.
      * @param after        Get notifications occurring after the provided date. Shouldn't be used with `before`.
+	 *
+	 * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.chatterapi.meta/chatterapi/connect_resources_notifications_list.htm>https://developer.salesforce.com/docs/atlas.en-us.chatterapi.meta/chatterapi/connect_resources_notifications_list.htm</a>
      */
     public static RestRequest getRequestForNotifications(String apiVersion, Integer size, Date before, Date after) {
         final Map<String, String> parameters = new HashMap<>();
@@ -807,6 +817,17 @@ public class RestRequest {
         final String path = RestAction.NOTIFICATIONS.getPath(apiVersion, "");
         return new RestRequest(RestMethod.PATCH, path, new JSONObject(parameters));
     }
+
+	/**
+	 * Request for getting list of record related to offline briefcase
+	 *
+	 * @param apiVersion       Salesforce API version.
+	 *
+	 * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.chatterapi.meta/chatterapi/connect_resources_briefcase_priming_records.htm">https://developer.salesforce.com/docs/atlas.en-us.chatterapi.meta/chatterapi/connect_resources_briefcase_priming_records.htm</a>
+	 */
+    public static RestRequest getRequestForPrimingRecords(String apiVersion) {
+		return new RestRequest(RestMethod.GET, RestAction.PRIMING_RECORDS.getPath(apiVersion));
+	}
 
     /**
      * Helper method for creating conditional HTTP header.
