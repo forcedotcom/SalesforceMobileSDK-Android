@@ -650,21 +650,21 @@ public class RestRequestTest {
 		Assert.assertEquals(2, primingRecordsResponse.primingRecords.get("Account").get("012S00000009B8HIAU").size());
 		Assert.assertEquals("001S000001QEDnzIAH", primingRecordsResponse.primingRecords.get("Account").get("012S00000009B8HIAU").get(0).id);
 		Assert.assertEquals("001S000000va6rGIAQ", primingRecordsResponse.primingRecords.get("Account").get("012S00000009B8HIAU").get(1).id);
-		Assert.assertEquals(1629769352000L, primingRecordsResponse.primingRecords.get("Account").get("012S00000009B8HIAU").get(0).systemModStamp.getTime());
+		Assert.assertEquals(1629744152000L, primingRecordsResponse.primingRecords.get("Account").get("012S00000009B8HIAU").get(0).systemModStamp.getTime());
 		// We have one record type for contacts and three contacts
 		Assert.assertEquals(1, primingRecordsResponse.primingRecords.get("Contact").size());
 		Assert.assertEquals(3, primingRecordsResponse.primingRecords.get("Contact").get("012000000000000AAA").size());
 		Assert.assertEquals("003S00000129813IAA", primingRecordsResponse.primingRecords.get("Contact").get("012000000000000AAA").get(0).id);
 		Assert.assertEquals("003S0000012LUhRIAW", primingRecordsResponse.primingRecords.get("Contact").get("012000000000000AAA").get(1).id);
 		Assert.assertEquals("003S0000012hWwRIAU", primingRecordsResponse.primingRecords.get("Contact").get("012000000000000AAA").get(2).id);
-		Assert.assertEquals(1545488039000L, primingRecordsResponse.primingRecords.get("Contact").get("012000000000000AAA").get(0).systemModStamp.getTime());
+		Assert.assertEquals(1545459239000L, primingRecordsResponse.primingRecords.get("Contact").get("012000000000000AAA").get(0).systemModStamp.getTime());
 
 		// Checking relay token
 		Assert.assertEquals("fake-token", primingRecordsResponse.relayToken);
 		// Checking rule errors
 		Assert.assertEquals(2, primingRecordsResponse.ruleErrors.size());
-		Assert.assertEquals("rule-1", primingRecordsResponse.ruleErrors.get(0));
-		Assert.assertEquals("rule-2", primingRecordsResponse.ruleErrors.get(1));
+		Assert.assertEquals("rule-1", primingRecordsResponse.ruleErrors.get(0).ruleId);
+		Assert.assertEquals("rule-2", primingRecordsResponse.ruleErrors.get(1).ruleId);
 		// Checking stats
 		Assert.assertEquals(100, primingRecordsResponse.stats.recordCountServed);
 		Assert.assertEquals(200, primingRecordsResponse.stats.recordCountTotal);

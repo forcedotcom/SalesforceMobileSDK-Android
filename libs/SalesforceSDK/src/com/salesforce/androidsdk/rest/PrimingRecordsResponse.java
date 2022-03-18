@@ -36,6 +36,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -44,8 +45,14 @@ import org.json.JSONObject;
  * PrimingRecordsResponse: Class to represent response for a priming records request.
  */
 public class PrimingRecordsResponse {
-    private static final DateFormat TIMESTAMP_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
-        // XXX can't use RestRequest.ISO8601_DATE_FORMAT - we need the quotes around the Z ??
+    private static final DateFormat TIMESTAMP_FORMAT;
+    static {
+        // NB can't use RestRequest.ISO8601_DATE_FORMAT it's for timestamp of the form 2001-07-04T12:08:56.235-0700
+        TimeZone tz = TimeZone.getTimeZone("UTC");
+        TIMESTAMP_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+        TIMESTAMP_FORMAT.setTimeZone(tz);
+    }
+
     public static final String PRIMING_RECORDS = "primingRecords";
     public static final String RELAY_TOKEN = "relayToken";
     public static final String RULE_ERRORS = "ruleErrors";
