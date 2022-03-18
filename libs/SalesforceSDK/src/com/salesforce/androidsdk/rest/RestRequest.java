@@ -117,7 +117,6 @@ public class RestRequest {
     public static final String IF_UNMODIFIED_SINCE = "If-Unmodified-Since";
     public static final String SFORCE_QUERY_OPTIONS = "Sforce-Query-Options";
     public static final String BATCH_SIZE_OPTION = "batchSize";
-    public static final String RELAY_TOKEN = "relayToken";
 	public static final int MIN_BATCH_SIZE = 200;
     public static final int MAX_BATCH_SIZE = 2000;
     public static final int DEFAULT_BATCH_SIZE = 2000;

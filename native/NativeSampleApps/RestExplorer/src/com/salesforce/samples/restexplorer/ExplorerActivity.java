@@ -564,8 +564,8 @@ public class ExplorerActivity extends SalesforceActivity {
 	 *
 	 * @param v View that was clicked.
 	 */
-    public void onGetPrimingRecordsClick(View v) {
-    	RestRequest request = RestRequest.getRequestForPrimingRecords(apiVersion);
+    public void onGetPrimingRecordsClick(View v) throws UnsupportedEncodingException {
+    	RestRequest request = RestRequest.getRequestForPrimingRecords(apiVersion, null);
     	sendRequest(request);
 	}
 
