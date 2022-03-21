@@ -62,7 +62,7 @@ fun ContactCard(
     elevation: Dp = 2.dp,
 ) {
     var showDropDownMenu by rememberSaveable { mutableStateOf(false) }
-    val alpha = if (contact.locallyDeleted) ALPHA_DISABLED else 1f
+    val alpha = if (contact.localStatus.locallyDeleted) ALPHA_DISABLED else 1f
 
     CompositionLocalProvider(LocalContentAlpha provides alpha) {
         Card(
@@ -71,7 +71,7 @@ fun ContactCard(
                 .then(modifier)
                 .pointerInput(Unit) {
                     detectTapGestures(
-                        onTap = { onCardClick(contact.id) },
+                        onTap = { onCardClick(contact.serverId) },
                         onLongPress = { showDropDownMenu = true }
                     )
                 },
@@ -105,14 +105,14 @@ private fun ContactCardInnerContent(
             // TODO There is a bug where long-pressing on the name will both select the text and open the menu.
             SelectionContainer(modifier = Modifier.weight(1f)) {
                 Text(
-                    contact.fullName,
+                    contact.fullName ?: "",
                     style = MaterialTheme.typography.body1,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
 
-            SyncImage(contact = contact)
+            SyncImage(contactObjLocalStatus = contact.localStatus)
 
             ExpandoButton(
                 startsExpanded = isExpanded,
@@ -124,7 +124,7 @@ private fun ContactCardInnerContent(
             Divider(modifier = Modifier.padding(vertical = 4.dp))
             Row {
                 SelectionContainer {
-                    Text(contact.title, style = MaterialTheme.typography.body2)
+                    Text(contact.title ?: "", style = MaterialTheme.typography.body2)
                 }
             }
         }
@@ -141,16 +141,16 @@ private fun ContactDropdownMenu(
     onEditClick: (String) -> Unit,
 ) {
     DropdownMenu(expanded = showDropDownMenu, onDismissRequest = onDismissMenu) {
-        if (contact.locallyDeleted) {
-            DropdownMenuItem(onClick = { onDismissMenu(); onUndeleteClick(contact.id) }) {
+        if (contact.localStatus.locallyDeleted) {
+            DropdownMenuItem(onClick = { onDismissMenu(); onUndeleteClick(contact.serverId) }) {
                 Text(stringResource(id = R.string.cta_undelete))
             }
         } else {
-            DropdownMenuItem(onClick = { onDismissMenu(); onDeleteClick(contact.id) }) {
+            DropdownMenuItem(onClick = { onDismissMenu(); onDeleteClick(contact.serverId) }) {
                 Text(stringResource(id = R.string.cta_delete))
             }
         }
-        DropdownMenuItem(onClick = { onDismissMenu(); onEditClick(contact.id) }) {
+        DropdownMenuItem(onClick = { onDismissMenu(); onEditClick(contact.serverId) }) {
             Text(stringResource(id = R.string.cta_edit))
         }
     }

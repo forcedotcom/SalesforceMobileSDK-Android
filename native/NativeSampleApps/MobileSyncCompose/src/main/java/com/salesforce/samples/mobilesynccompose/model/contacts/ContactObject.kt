@@ -26,133 +26,72 @@
  */
 package com.salesforce.samples.mobilesynccompose.model.contacts
 
-import com.salesforce.androidsdk.mobilesync.model.SalesforceObject
-import com.salesforce.androidsdk.mobilesync.target.SyncTarget
-import com.salesforce.androidsdk.mobilesync.target.SyncTarget.*
 import com.salesforce.androidsdk.mobilesync.util.Constants
-import com.salesforce.samples.mobilesynccompose.model.contacts.Contact.Companion.equals
-import com.salesforce.samples.mobilesynccompose.model.contacts.Contact.Companion.hashCode
-import org.jetbrains.annotations.TestOnly
+import com.salesforce.samples.mobilesynccompose.core.extensions.optStringOrNull
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.*
 import org.json.JSONObject
-import java.util.*
 
-/**
- * An abstraction and runtime data model representation of a Contact Salesforce Standard Object.
- *
- * This is not represented as a data class because there is business logic that needs to be applied
- * to copy and de/serialization operations that do not work with data class semantics.
- *
- * Note how this is not a [SalesforceObject]. [SalesforceObject]s are _mutable_ which goes against
- * Jetpack Compose guidelines to make state objects immutable.
- */
-class Contact private constructor(raw: JSONObject) {
+data class ContactObject(
+    val firstName: String?,
+    val lastName: String?,
+    val title: String?,
+    val department: String?,
+    private val coreSalesforceObj: CoreSalesforceObject
+) : CoreSalesforceObject by coreSalesforceObj, ImmutableSo {
 
-    private val raw = JSONObject(raw.toString()) // new JSON obj ref to avoid mutation issues
-
-    val id: String = this.raw.optString(Constants.ID)
-    val firstName: String = this.raw.optString(KEY_FIRST_NAME)
-    val lastName: String = this.raw.optString(KEY_LAST_NAME)
-    val title: String = this.raw.optString(KEY_TITLE)
-    val fullName: String = "$firstName $lastName".ifBlank { "" }
-    val locallyCreated: Boolean = this.raw.optBoolean(LOCALLY_CREATED, false)
-    val locallyDeleted: Boolean = this.raw.optBoolean(LOCALLY_DELETED, false)
-    val locallyUpdated: Boolean = this.raw.optBoolean(LOCALLY_UPDATED, false)
-    val local: Boolean = locallyCreated || locallyDeleted || locallyUpdated
-
-    fun copy(
-        firstName: String = this.firstName,
-        lastName: String = this.lastName,
-        title: String = this.title
-    ) = copy(
-        firstName = firstName,
-        lastName = lastName,
-        title = title,
-        locallyUpdated = locallyUpdated || // preserve current locallyUpdated state
-                firstName != this.firstName || lastName != this.lastName || title != this.title,
-    )
-
-    private fun copy(
-        firstName: String = this.firstName,
-        lastName: String = this.lastName,
-        title: String = this.title,
-        locallyCreated: Boolean = this.locallyCreated,
-        locallyDeleted: Boolean = this.locallyDeleted,
-        locallyUpdated: Boolean = this.locallyUpdated,
-    ) = Contact(
-        raw
-            .putOpt(KEY_FIRST_NAME, firstName)
-            .putOpt(KEY_LAST_NAME, lastName)
-            .putOpt(KEY_TITLE, title)
-            .putOpt(LOCALLY_CREATED, locallyCreated)
-            .putOpt(LOCALLY_DELETED, locallyDeleted)
-            .putOpt(LOCALLY_UPDATED, locallyUpdated)
-            .putOpt(LOCAL, locallyCreated || locallyDeleted || locallyUpdated)
-    )
-
-    fun toJson(): JSONObject = JSONObject(raw.toString()).putOpt(Constants.NAME, fullName)
-
-    /* This equals() method does not simply compare the raw JSONObject property because we are not
-     * interested in all the extra properties that might be in that JSON. Equality for this model
-     * representation means that only all publicly-exposed properties are equal. */
-    override fun equals(other: Any?): Boolean = this === other || (
-            other is Contact &&
-                    other.id == this.id &&
-                    other.firstName == this.firstName &&
-                    other.lastName == this.lastName &&
-                    other.title == this.title &&
-                    other.locallyCreated == this.locallyCreated &&
-                    other.locallyDeleted == this.locallyDeleted &&
-                    other.locallyUpdated == this.locallyUpdated
-            )
-
-    override fun hashCode(): Int {
-        var result = id.hashCode()
-        result = 31 * result + firstName.hashCode()
-        result = 31 * result + lastName.hashCode()
-        result = 31 * result + title.hashCode()
-        result = 31 * result + locallyCreated.hashCode()
-        result = 31 * result + locallyDeleted.hashCode()
-        result = 31 * result + locallyUpdated.hashCode()
-        return result
+    val accountId: String? by lazy {
+        coreSalesforceObj.buildSafeEltCopy().optStringOrNull(KEY_ACCOUNT_ID)
     }
 
-    override fun toString(): String {
-        return "Contact(id='$id', firstName='$firstName', lastName='$lastName', title='$title', fullName='$fullName', locallyCreated=$locallyCreated, locallyDeleted=$locallyDeleted, locallyUpdated=$locallyUpdated, local=$local)"
+    val fullName =
+        if (firstName == null && this.lastName == null) null
+        else buildString {
+            if (firstName != null) append("$firstName ")
+            if (lastName != null) append(lastName)
+        }.trim()
+
+    override fun buildSafeEltCopy(): JSONObject = coreSalesforceObj.buildSafeEltCopy().apply {
+        putOpt(KEY_FIRST_NAME, firstName)
+        putOpt(KEY_LAST_NAME, lastName)
+        putOpt(KEY_TITLE, title)
+        putOpt(KEY_DEPARTMENT, department)
+        putOpt(Constants.NAME, fullName)
+        putOpt(KEY_ACCOUNT_ID, accountId)
     }
 
-    companion object {
+    override val hasUnsavedChanges: Boolean by lazy {
+        buildSafeEltCopy().run {
+            optStringOrNull(KEY_FIRST_NAME) != firstName ||
+                    optStringOrNull(KEY_LAST_NAME) != lastName ||
+                    optStringOrNull(KEY_TITLE) != title ||
+                    optStringOrNull(KEY_DEPARTMENT) != department ||
+                    optStringOrNull(KEY_ACCOUNT_ID) != accountId
+        }
+    }
+
+    companion object : SalesforceObjectDeserializer<ContactObject> {
         const val KEY_FIRST_NAME = "FirstName"
         const val KEY_LAST_NAME = "LastName"
         const val KEY_TITLE = "Title"
+        const val KEY_DEPARTMENT = "Department"
+        const val KEY_ACCOUNT_ID = "AccountId"
+        private const val OBJECT_TYPE = Constants.CONTACT
 
-        /**
-         * Extracts the required properties for this contact model from the input [JSONObject] and
-         * creates a [Contact] model using these properties. Default/new values will be used if
-         * required properties are missing. The provided [JSONObject] can be safely mutated after
-         * this method returns without this [Contact] model being affected.
-         *
-         * @param json The input [JSONObject] to deserialize into a [Contact]
-         * @return The newly created [Contact] model.
-         */
-        fun coerceFromJson(json: JSONObject): Contact {
-            val rawCopy = JSONObject(json.toString())
-            var locallyCreated = rawCopy.optBoolean(LOCALLY_CREATED, false)
+        @Throws(CoerceException::class)
+        override fun coerceFromJsonOrThrow(json: JSONObject): ContactObject {
+            val jsonCopier = JsonCopier(inJson = json)
+            val safe = jsonCopier.buildCopy()
 
-            val id = rawCopy.optString(Constants.ID).ifEmpty {
-                locallyCreated = true
-                SyncTarget.createLocalId()
-            }
-
-            val locallyDeleted = rawCopy.optBoolean(LOCALLY_DELETED, false)
-            val locallyUpdated = rawCopy.optBoolean(LOCALLY_UPDATED, false)
-
-            val local = locallyCreated || locallyDeleted || locallyUpdated
-
-            return Contact(
-                rawCopy
-                    .putOpt(Constants.ID, id)
-                    .putOpt(LOCALLY_CREATED, locallyCreated)
-                    .putOpt(LOCAL, local)
+            return ContactObject(
+                firstName = safe.optStringOrNull(KEY_FIRST_NAME),
+                lastName = safe.optStringOrNull(KEY_LAST_NAME),
+                title = safe.optStringOrNull(KEY_TITLE),
+                department = safe.optStringOrNull(KEY_DEPARTMENT),
+                accountId = safe.optStringOrNull(KEY_ACCOUNT_ID),
+                coreSalesforceObj = CoreSalesforceObjectImpl(
+                    soupEltCopier = jsonCopier,
+                    objectType = OBJECT_TYPE
+                )
             )
         }
 
@@ -162,50 +101,182 @@ class Contact private constructor(raw: JSONObject) {
          * @param firstName The contact's first name.
          * @param lastName The contact's last name.
          * @param title The contact's business title.
+         * @param department The contact's department.
+         * @param associatedAccountId (Optional) the ID of the Salesforce Standard Object Account this contact is associated with.
          * @return The newly-created [Contact] model object.
          */
         fun createNewLocal(
-            firstName: String = "",
-            lastName: String = "",
-            title: String = ""
-        ): Contact {
-            val attributes = JSONObject()
-                .put(Constants.TYPE.lowercase(Locale.US), Constants.CONTACT)
-
-            return Contact(
-                JSONObject()
-                    .putOpt(Constants.ID, SyncTarget.createLocalId())
-                    .putOpt(KEY_FIRST_NAME, firstName)
-                    .putOpt(KEY_LAST_NAME, lastName)
-                    .putOpt(KEY_TITLE, title)
-                    .put(Constants.ATTRIBUTES, attributes)
-                    .putOpt(LOCALLY_CREATED, true)
-                    .putOpt(LOCALLY_DELETED, false)
-                    .putOpt(LOCALLY_UPDATED, false)
-                    .putOpt(LOCAL, true)
+            firstName: String? = null,
+            lastName: String? = null,
+            title: String? = null,
+            department: String? = null,
+            associatedAccountId: String? = null
+        ) {
+            val baseElt = createNewSoupEltBase(OBJECT_TYPE)
+            ContactObject(
+                firstName = firstName,
+                lastName = lastName,
+                title = title,
+                department = department,
+                accountId = associatedAccountId,
+                coreSalesforceObj = CoreSalesforceObjectImpl(
+                    JsonCopier(baseElt),
+                    OBJECT_TYPE
+                )
             )
         }
-
-        @TestOnly
-        internal fun mockContact(
-            id: String,
-            firstName: String,
-            lastName: String,
-            title: String,
-            locallyCreated: Boolean,
-            locallyDeleted: Boolean,
-            locallyUpdated: Boolean,
-            local: Boolean
-        ) = coerceFromJson(
-            JSONObject()
-                .putOpt(Constants.ID, id)
-                .putOpt(KEY_FIRST_NAME, firstName)
-                .putOpt(KEY_LAST_NAME, lastName)
-                .putOpt(KEY_TITLE, title)
-                .putOpt(LOCALLY_CREATED, locallyCreated)
-                .putOpt(LOCALLY_DELETED, locallyDeleted)
-                .putOpt(LOCALLY_UPDATED, locallyUpdated)
-                .putOpt(LOCAL, local)
-        )
     }
 }
+
+/**
+ * An abstraction and runtime data model of a Contact Salesforce Standard Object.
+ *
+ * This is not represented as a data class because there is business logic that needs to be applied
+ * to copy and de/serialization operations that do not work with data class semantics.
+ *
+ * Note how this is not a [SalesforceObject]. [SalesforceObject]s are _mutable_ which goes against
+ * Jetpack Compose guidelines to make state objects immutable.
+ */
+//class Contact
+//@Throws(CoerceException::class) private constructor(
+//    val firstName: String?,
+//    val lastName: String?,
+//    val title: String?,
+//    val department: String?,
+//    val accountId: String?,
+//    startingSoupElt: JSONObject
+//) : SalesforceObjectContainer(startingSoupElt, requiredObjectType = Constants.CONTACT) {
+//
+//    @Throws(CoerceException::class)
+//    constructor(eltCopy: JsonCopy) : this(
+//        firstName = eltCopy.value.optStringOrNull(KEY_FIRST_NAME),
+//        lastName = eltCopy.value.optStringOrNull(KEY_LAST_NAME),
+//        title = eltCopy.value.optStringOrNull(KEY_TITLE),
+//        department = eltCopy.value.optStringOrNull(KEY_DEPARTMENT),
+//        accountId = eltCopy.value.optStringOrNull(KEY_ACCOUNT_ID),
+//        eltCopy.value
+//    )
+//
+//    val fullName =
+//        if (firstName == null && this.lastName == null) null
+//        else buildString {
+//            if (this@Contact.firstName != null) append("${this@Contact.firstName} ")
+//            if (this@Contact.lastName != null) append(this@Contact.lastName)
+//        }.trim()
+//
+//    override val updatedJson: JSONObject by lazy {
+//        super.updatedJson.apply {
+//            putOpt(KEY_FIRST_NAME, firstName)
+//            putOpt(KEY_LAST_NAME, lastName)
+//            putOpt(KEY_TITLE, title)
+//            putOpt(KEY_DEPARTMENT, department)
+//            putOpt(Constants.NAME, fullName)
+//            putOpt(KEY_ACCOUNT_ID, accountId)
+//        }
+//    }
+//
+//    override val isModifiedInMemory: Boolean =
+//        this.startingSoupElt.optStringOrNull(KEY_FIRST_NAME) != firstName ||
+//                this.startingSoupElt.optStringOrNull(KEY_LAST_NAME) != lastName ||
+//                this.startingSoupElt.optStringOrNull(KEY_TITLE) != title ||
+//                this.startingSoupElt.optStringOrNull(KEY_DEPARTMENT) != department ||
+//                this.startingSoupElt.optStringOrNull(KEY_ACCOUNT_ID) != accountId
+//
+//    override fun JSONObject.isModified(): Boolean {
+//        TODO("Not yet implemented")
+//    }
+//
+//    fun copy(
+//        firstName: String? = this.firstName,
+//        lastName: String? = this.lastName,
+//        title: String? = this.title,
+//        department: String? = this.department,
+//    ) = Contact(
+//        firstName = firstName,
+//        lastName = lastName,
+//        title = title,
+//        department = department,
+//        accountId = accountId,
+//        startingSoupElt = startingSoupElt
+//    )
+//
+//    override fun toString(): String {
+//        return "Contact(firstName=$firstName, lastName=$lastName, title=$title, department=$department, accountId=$accountId, fullName=$fullName) ${super.toString()}"
+//    }
+//
+//    override fun equals(other: Any?): Boolean {
+//        if (this === other) return true
+//        if (javaClass != other?.javaClass) return false
+//        if (!super.equals(other)) return false
+//
+//        other as Contact
+//
+//        if (firstName != other.firstName) return false
+//        if (lastName != other.lastName) return false
+//        if (title != other.title) return false
+//        if (department != other.department) return false
+//        if (accountId != other.accountId) return false
+//        if (fullName != other.fullName) return false
+//
+//        return true
+//    }
+//
+//    override fun hashCode(): Int {
+//        var result = super.hashCode()
+//        result = 31 * result + (firstName?.hashCode() ?: 0)
+//        result = 31 * result + (lastName?.hashCode() ?: 0)
+//        result = 31 * result + (title?.hashCode() ?: 0)
+//        result = 31 * result + (department?.hashCode() ?: 0)
+//        result = 31 * result + (accountId?.hashCode() ?: 0)
+//        result = 31 * result + (fullName?.hashCode() ?: 0)
+//        return result
+//    }
+//
+//    companion object : SalesforceObjectDeserializerBase<Contact>(objType = Constants.CONTACT) {
+//        const val KEY_FIRST_NAME = "FirstName"
+//        const val KEY_LAST_NAME = "LastName"
+//        const val KEY_TITLE = "Title"
+//        const val KEY_DEPARTMENT = "Department"
+//        const val KEY_ACCOUNT_ID = "AccountId"
+//
+//        override fun createModelInstance(verifiedJson: JSONObject) =
+//            Contact(
+//                firstName = verifiedJson.optStringOrNull(KEY_FIRST_NAME),
+//                lastName = verifiedJson.optStringOrNull(KEY_LAST_NAME),
+//                title = verifiedJson.optStringOrNull(KEY_TITLE),
+//                department = verifiedJson.optStringOrNull(KEY_DEPARTMENT),
+//                accountId = verifiedJson.optStringOrNull(KEY_ACCOUNT_ID),
+//                startingSoupElt = verifiedJson
+//            )
+//
+//        /**
+//         * Creates a new [Contact] model object from the provided properties.
+//         *
+//         * @param firstName The contact's first name.
+//         * @param lastName The contact's last name.
+//         * @param title The contact's business title.
+//         * @param department The contact's department.
+//         * @param associatedAccountId (Optional) the ID of the Salesforce Standard Object Account this contact is associated with.
+//         * @return The newly-created [Contact] model object.
+//         */
+//        fun createNewLocal(
+//            firstName: String? = null,
+//            lastName: String? = null,
+//            title: String? = null,
+//            department: String? = null,
+//            associatedAccountId: String? = null
+//        ) = Contact(
+//            firstName = firstName,
+//            lastName = lastName,
+//            title = title,
+//            department = department,
+//            accountId = associatedAccountId,
+//            startingSoupElt = createNewSoupEltBase()
+//                .putOpt(KEY_ACCOUNT_ID, associatedAccountId)
+//                .putOpt(KEY_FIRST_NAME, firstName)
+//                .putOpt(KEY_LAST_NAME, lastName)
+//                .putOpt(KEY_TITLE, title)
+//                .putOpt(KEY_DEPARTMENT, department)
+//        )
+//    }
+//}

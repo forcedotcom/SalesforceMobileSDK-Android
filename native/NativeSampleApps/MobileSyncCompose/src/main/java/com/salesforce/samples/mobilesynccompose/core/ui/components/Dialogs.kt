@@ -129,6 +129,23 @@ fun UndeleteConfirmationDialog(
     )
 }
 
+@Composable
+fun ErrorDialog(
+    onDismiss: () -> Unit,
+    message: String
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(id = cta_ok))
+            }
+        },
+        title = { Text(stringResource(id = label_error)) },
+        text = { Text(message) }
+    )
+}
+
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable

@@ -51,14 +51,14 @@ import com.salesforce.samples.mobilesynccompose.R.drawable.ic_undo
 import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsUiMode
 import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsUiState
-import com.salesforce.samples.mobilesynccompose.contacts.state.toContactDetailsUiState
 import com.salesforce.samples.mobilesynccompose.contacts.ui.mockLocallyDeletedContact
 import com.salesforce.samples.mobilesynccompose.contacts.vm.*
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.isLocallyDeleted
 import com.salesforce.samples.mobilesynccompose.core.ui.components.LoadingOverlay
 import com.salesforce.samples.mobilesynccompose.core.ui.components.OutlinedTextFieldWithHelp
 import com.salesforce.samples.mobilesynccompose.core.ui.safeStringResource
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
-import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
+import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 
 @Composable
 fun ContactDetailsViewingContactSinglePane(
@@ -72,7 +72,7 @@ fun ContactDetailsViewingContactSinglePane(
             .padding(horizontal = 8.dp)
             .verticalScroll(state = scrollState)
     ) {
-        if (details.origContact.locallyDeleted) {
+        if (details.contactObj.localStatus.isLocallyDeleted) {
             LocallyDeletedRow()
         }
 
@@ -99,7 +99,7 @@ fun ContactDetailsEditingContactSinglePane(
     modifier: Modifier = Modifier,
     details: ContactDetailsUiState,
     showLoading: Boolean,
-    onDetailsUpdated: (newContact: Contact) -> Unit
+    onDetailsUpdated: (newContact: ContactObject) -> Unit
 ) {
     val scrollState = rememberScrollState()
 
@@ -113,7 +113,10 @@ fun ContactDetailsEditingContactSinglePane(
                 fieldValue = fieldVm.fieldValue,
                 isEditEnabled = fieldVm.canBeEdited,
                 isError = fieldVm.isInErrorState,
-                onValueChange = { onDetailsUpdated(fieldVm.onFieldValueChange(it)) },
+                onValueChange = {
+                    val newValue = it.ifBlank { null }
+                    onDetailsUpdated(fieldVm.onFieldValueChange(newValue))
+                },
                 label = { Text(safeStringResource(id = fieldVm.labelRes)) },
                 help = { Text(safeStringResource(id = fieldVm.helperRes)) },
                 placeholder = { Text(safeStringResource(id = fieldVm.placeholderRes)) }
@@ -238,7 +241,7 @@ private fun LocallyDeletedInfoDialog(onDismiss: () -> Unit) {
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 private fun ContactDetailViewModePreview() {
-    val contact = Contact.createNewLocal(
+    val contact = ContactObject.createNewLocal(
         firstName = "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirst",
         lastName = "LastLastLastLastLastLastLastLastLastLastLastLastLastLastLastLast",
         title = "Titletitletitletitletitletitletitletitletitletitletitletitletitletitle"
@@ -258,7 +261,7 @@ private fun ContactDetailViewModePreview() {
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 private fun ContactDetailEditModePreview() {
-    val origContact = Contact.createNewLocal(
+    val origContact = ContactObject.createNewLocal(
         firstName = "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirst",
         lastName = "LastLastLastLastLastLastLastLastLastLastLastLastLastLastLastLast",
         title = "Titletitletitletitletitletitletitletitletitletitletitletitletitletitle"
@@ -272,10 +275,7 @@ private fun ContactDetailEditModePreview() {
         Surface(modifier = Modifier.fillMaxSize()) {
             ContactDetailsEditingContactSinglePane(
                 details = ContactDetailsUiState(
-                    origContact = origContact,
-                    firstNameVm = editedContact.createFirstNameVm(),
-                    lastNameVm = editedContact.createLastNameVm(),
-                    titleVm = editedContact.createTitleVm(),
+                    contactObj = editedContact,
                     mode = ContactDetailsUiMode.Editing
                 ),
                 showLoading = false,
@@ -289,7 +289,7 @@ private fun ContactDetailEditModePreview() {
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 private fun ContactDetailEditModeSavingPreview() {
-    val origContact = Contact.createNewLocal(
+    val origContact = ContactObject.createNewLocal(
         firstName = "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirst",
         lastName = "LastLastLastLastLastLastLastLastLastLastLastLastLastLastLastLast",
         title = "Titletitletitletitletitletitletitletitletitletitletitletitletitletitle"
@@ -303,10 +303,7 @@ private fun ContactDetailEditModeSavingPreview() {
         Surface {
             ContactDetailsEditingContactSinglePane(
                 details = ContactDetailsUiState(
-                    origContact = origContact,
-                    firstNameVm = editedContact.createFirstNameVm(),
-                    lastNameVm = editedContact.createLastNameVm(),
-                    titleVm = editedContact.createTitleVm(),
+                    contactObj = editedContact,
                     mode = ContactDetailsUiMode.Editing,
                     isSaving = true
                 ),

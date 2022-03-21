@@ -24,37 +24,30 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.mobilesynccompose.core
+package com.salesforce.samples.mobilesynccompose.core.ui.state
 
-/**
- * A data structure to encapsulate the result of an operation. A [SealedResult] can only be in one
- * of two states: [SealedSuccess] or [SealedFailure]. Using a when-clause on a [SealedResult]
- * enables easy use of either the success value or the failure cause.
- */
-sealed interface SealedResult<out S, out F : Any>
-data class SealedSuccess<out S, out F : Any>(val value: S) : SealedResult<S, F>
-data class SealedFailure<out S, out F : Any>(val cause: F) : SealedResult<S, F>
+sealed interface DialogUiState
 
-fun <S, F : Any, NewS> SealedResult<S, F>.mapSuccess(ifSuccess: (S) -> NewS): SealedResult<NewS, F> =
-    when (this) {
-        is SealedFailure -> SealedFailure(cause = this.cause)
-        is SealedSuccess -> SealedSuccess(value = ifSuccess(this.value))
-    }
+data class DeleteConfirmationDialogUiState(
+    val objIdToDelete: String,
+    val objName: String?,
+    val onCancelDelete: () -> Unit,
+    val onDeleteConfirm: (objId: String) -> Unit,
+) : DialogUiState
 
-fun <S, F : Any, NewF : Any> SealedResult<S, F>.mapFailure(ifFailure: (F) -> NewF): SealedResult<S, NewF> =
-    when (this) {
-        is SealedFailure -> SealedFailure(cause = ifFailure(this.cause))
-        is SealedSuccess -> SealedSuccess(value = this.value)
-    }
+data class DiscardChangesDialogUiState(
+    val onDiscardChanges: () -> Unit,
+    val onKeepChanges: () -> Unit,
+) : DialogUiState
 
-fun <S, F : Any, NewS> SealedResult<S, F>.switchMapSuccess(ifSuccess: (S) -> SealedResult<NewS, F>) =
-    when (this) {
-        is SealedFailure -> SealedFailure(this.cause)
-        is SealedSuccess -> ifSuccess(this.value)
-    }
+data class UndeleteConfirmationDialogUiState(
+    val objIdToUndelete: String,
+    val objName: String?,
+    val onCancelUndelete: () -> Unit,
+    val onUndeleteConfirm: (objId: String) -> Unit,
+) : DialogUiState
 
-fun <S, F : Any, NewF : Any> SealedResult<S, F>.switchMapFailure(ifFailure: (F) -> SealedResult<S, NewF>) =
-    when (this) {
-        is SealedFailure -> ifFailure(this.cause)
-        is SealedSuccess -> SealedSuccess(this.value)
-    }
+data class ErrorDialogUiState(
+    val onDismiss: () -> Unit,
+    val message: String
+) : DialogUiState

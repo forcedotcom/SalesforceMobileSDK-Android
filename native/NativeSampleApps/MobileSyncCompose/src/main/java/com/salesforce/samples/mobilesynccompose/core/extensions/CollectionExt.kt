@@ -26,11 +26,44 @@
  */
 package com.salesforce.samples.mobilesynccompose.core.extensions
 
-inline fun <reified T> List<T>.replaceAll(newValue: T, predicate: (T) -> Boolean): List<T> {
-    return map { if(predicate(it)) newValue else it }
+fun <T> List<T>.minusAll(selector: (T) -> Boolean): List<T> {
+    val results = mutableListOf<T>()
+    this.forEach {
+        if (!selector(it)) {
+            results.add(it)
+        }
+    }
+    return results
 }
 
-inline fun <reified T> List<T>.replaceAllOrAddNew(newValue: T, predicate: (T) -> Boolean): List<T> {
+data class ResultPartition<out S>(
+    val successes: List<S>,
+    val failures: List<Throwable>
+)
+
+fun <T> Iterable<Result<T>>.partitionBySuccess(): ResultPartition<T> {
+    val successes = mutableListOf<T>()
+    val failures = mutableListOf<Throwable>()
+
+    this.forEach { result ->
+        result.getOrNull()?.also {
+            successes.add(it)
+            return@forEach
+        }
+        result.exceptionOrNull()?.also {
+            failures.add(it)
+            return@forEach
+        }
+    }
+
+    return ResultPartition(successes = successes, failures = failures)
+}
+
+fun <T> List<T>.replaceAll(newValue: T, predicate: (T) -> Boolean): List<T> {
+    return map { if (predicate(it)) newValue else it }
+}
+
+fun <T> List<T>.replaceAllOrAddNew(newValue: T, predicate: (T) -> Boolean): List<T> {
     val results = mutableListOf<T>()
     var hasReplaced = false
     this.forEach {

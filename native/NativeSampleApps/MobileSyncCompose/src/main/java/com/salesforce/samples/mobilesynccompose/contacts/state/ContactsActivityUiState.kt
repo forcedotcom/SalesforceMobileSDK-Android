@@ -26,9 +26,11 @@
  */
 package com.salesforce.samples.mobilesynccompose.contacts.state
 
+import com.salesforce.samples.mobilesynccompose.core.ui.state.DialogUiState
+
 data class ContactsActivityUiState(
     val listState: ContactsActivityListUiState,
     val detailsState: ContactDetailsUiState?,
     val isSyncing: Boolean,
-    val dialogUiState: ContactsActivityDialogUiState?
+    val dialogUiState: DialogUiState?,
 )

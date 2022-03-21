@@ -3,42 +3,28 @@
     {
       "soupName": "contacts",
       "indexes": [
-        {
-          "path": "Id",
-          "type": "string"
-        },
-        {
-          "path": "FirstName",
-          "type": "string"
-        },
-        {
-          "path": "LastName",
-          "type": "string"
-        },
-        {
-          "path": "Title",
-          "type": "string"
-        },
-        {
-          "path": "__local__",
-          "type": "string"
-        },
-        {
-          "path": "__locally_created__",
-          "type": "string"
-        },
-        {
-          "path": "__locally_deleted__",
-          "type": "string"
-        },
-        {
-          "path": "__locally_updated__",
-          "type": "string"
-        },
-        {
-          "path": "__sync_id__",
-          "type": "integer"
-        }
+        { "path": "Id", "type": "string" },
+        { "path": "AccountId", "type": "string" },
+        { "path": "FirstName", "type": "string" },
+        { "path": "LastName", "type": "string" },
+        { "path": "Title", "type": "string" },
+        { "path": "__local__", "type": "string" },
+        { "path": "__locally_created__", "type": "string" },
+        { "path": "__locally_deleted__", "type": "string" },
+        { "path": "__locally_updated__", "type": "string" },
+        { "path": "__sync_id__", "type": "integer" }
+      ]
+    },
+    {
+      "soupName": "accounts",
+      "indexes": [
+        { "path": "Id", "type": "string" },
+        { "path": "Name", "type": "string" },
+        { "path": "__local__", "type": "string" },
+        { "path": "__locally_created__", "type": "string" },
+        { "path": "__locally_deleted__", "type": "string" },
+        { "path": "__locally_updated__", "type": "string" },
+        { "path": "__sync_id__", "type": "integer" }
       ]
     }
   ]

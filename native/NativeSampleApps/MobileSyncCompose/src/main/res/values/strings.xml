@@ -1,11 +1,11 @@
 <resources>
     <string name="app_name">Mobile Sync Compose</string>
 
-    <string name="body_delete_confirm">Are you sure you want to delete this contact?</string>
+    <string name="body_delete_confirm">Are you sure you want to delete this object?</string>
     <string name="body_delete_confirm_with_name">Are you sure you want to delete %1$s?</string>
     <string name="body_discard_changes">There are unsaved changes. Would you like to discard your changes?</string>
-    <string name="body_locally_deleted_info">This contact has been marked for deletion on this device, but the deletion has not been synced to the server. You may undelete the contact by clicking the FAB below.</string>
-    <string name="body_undelete_confirm">Are you sure you want to undelete this contact?</string>
+    <string name="body_locally_deleted_info">This object has been marked for deletion on this device, but the deletion has not been synced to the server. To you may undelete this object before syncing if you want to restore it.</string>
+    <string name="body_undelete_confirm">Are you sure you want to undelete this object?</string>
     <string name="body_undelete_confirm_with_name">Are you sure you want to undelete %1$s?</string>
 
     <string name="cta_continue_editing">Continue Editing</string>
@@ -14,6 +14,7 @@
     <string name="cta_edit">Edit</string>
     <string name="cta_inspect_db">Inspect DB</string>
     <string name="cta_logout">Log Out</string>
+    <string name="cta_ok">Okay</string>
     <string name="cta_save">Save</string>
     <string name="cta_switch_user">Switch User</string>
     <string name="cta_sync">Sync</string>
@@ -21,6 +22,7 @@
 
     <string name="label_contacts">Contacts</string>
     <string name="label_contact_details">Contact Details</string>
+    <string name="label_contact_department">Department</string>
     <string name="label_contact_first_name">First Name</string>
     <string name="label_contact_middle_name">Middle Name</string>
     <string name="label_contact_last_name">Last Name</string>
@@ -28,6 +30,7 @@
     <string name="label_contact_title">Title</string>
     <string name="label_delete_confirm">Confirm Delete?</string>
     <string name="label_discard_changes">Discard Changes?</string>
+    <string name="label_error">Error</string>
     <string name="label_locally_deleted">Locally Deleted</string>
     <string name="label_undelete_confirm">Confirm Undelete?</string>
 

@@ -60,7 +60,7 @@ fun ContactsListViewingModeSinglePane(
     listUndeleteClick: (contactId: String) -> Unit,
 ) {
     LazyColumn(modifier = modifier) {
-        items(items = contacts, key = { it.id }) { contact ->
+        items(items = contacts, key = { it.serverId }) { contact ->
             ContactCard(
                 modifier = Modifier.padding(4.dp),
                 startExpanded = false,

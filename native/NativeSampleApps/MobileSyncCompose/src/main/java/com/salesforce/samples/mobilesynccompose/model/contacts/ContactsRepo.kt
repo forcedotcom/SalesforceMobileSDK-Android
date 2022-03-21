@@ -26,50 +26,29 @@
  */
 package com.salesforce.samples.mobilesynccompose.model.contacts
 
-import android.util.Log
 import com.salesforce.androidsdk.accounts.UserAccount
-import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager
-import com.salesforce.androidsdk.mobilesync.manager.SyncManager
-import com.salesforce.androidsdk.mobilesync.target.SyncTarget.LOCAL
-import com.salesforce.androidsdk.mobilesync.target.SyncTarget.LOCALLY_DELETED
 import com.salesforce.androidsdk.mobilesync.util.Constants
-import com.salesforce.androidsdk.mobilesync.util.SyncState
 import com.salesforce.androidsdk.smartstore.store.QuerySpec
-import com.salesforce.samples.mobilesynccompose.core.SealedFailure
-import com.salesforce.samples.mobilesynccompose.core.SealedResult
-import com.salesforce.samples.mobilesynccompose.core.SealedSuccess
-import com.salesforce.samples.mobilesynccompose.core.extensions.firstOrNull
+import com.salesforce.androidsdk.smartstore.store.SmartStore.SOUP_ENTRY_ID
 import com.salesforce.samples.mobilesynccompose.core.extensions.map
-import com.salesforce.samples.mobilesynccompose.core.extensions.replaceAll
-import com.salesforce.samples.mobilesynccompose.core.extensions.replaceAllOrAddNew
-import com.salesforce.samples.mobilesynccompose.core.mapSuccess
-import com.salesforce.samples.mobilesynccompose.model.SyncFailure
-import com.salesforce.samples.mobilesynccompose.model.SyncNotStarted
-import com.salesforce.samples.mobilesynccompose.model.SyncDownAndUpResults
-import com.salesforce.samples.mobilesynccompose.model.SyncRuntimeFailure
+import com.salesforce.samples.mobilesynccompose.core.extensions.partitionBySuccess
+import com.salesforce.samples.mobilesynccompose.core.repos.SObjectSyncableRepoBase
+import com.salesforce.samples.mobilesynccompose.core.repos.RepoOperationException
+import com.salesforce.samples.mobilesynccompose.core.repos.SObjectSyncableRepo
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SalesforceObjectDeserializer
+import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject.Companion.KEY_ACCOUNT_ID
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 /**
  * The Contacts Repository. It exposes upserting, deleting, and undeleting [Contact] model objects
  * into SmartStore, and it supports the MobileSync operations.
  */
-interface ContactsRepo {
-    /**
-     *
-     */
-    val curContactList: StateFlow<List<Contact>>
-    suspend fun syncDownOnly(): SealedResult<Unit, SyncFailure>
-    suspend fun syncUpAndDown(): SyncDownAndUpResults
-    suspend fun syncUpOnly(): SealedResult<Unit, SyncFailure>
-    suspend fun locallyUpsertContact(contact: Contact): SealedResult<Contact, Exception>
-    suspend fun locallyDeleteContact(contactId: String): SealedResult<Contact, Exception>
-    suspend fun locallyUndeleteContact(contactId: String): SealedResult<Contact, Exception>
+interface ContactsRepo : SObjectSyncableRepo<ContactObject> {
+    @Throws(RepoOperationException::class)
+    suspend fun getContactsForAccountId(accountId: String): List<ContactObject>
+
+    @Throws(RepoOperationException::class)
+    suspend fun associateContactWithAccount(contactId: String, accountId: String): ContactObject
 }
 
 /**
@@ -77,309 +56,82 @@ interface ContactsRepo {
  */
 class DefaultContactsRepo(
     account: UserAccount?, // TODO this shouldn't be nullable. The logic whether to instantiate this object should be moved higher up, but this is a quick fix to get things testable
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) : ContactsRepo {
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+) : SObjectSyncableRepoBase<ContactObject>(
+    account = account,
+    ioDispatcher = ioDispatcher
+), ContactsRepo {
 
-    // region Public Properties
+    override val TAG: String = "DefaultContactsRepo"
+    override val deserializer: SalesforceObjectDeserializer<ContactObject> = ContactObject.Companion
+    override val soupName: String = CONTACTS_SOUP_NAME
+    override val syncDownName: String = SYNC_DOWN_CONTACTS
+    override val syncUpName: String = SYNC_UP_CONTACTS
 
-
-    private val mutCurContactList = MutableStateFlow<List<Contact>>(emptyList())
-    override val curContactList: StateFlow<List<Contact>> get() = mutCurContactList
-
-
-    // endregion
-    // region Private Properties
-
-
-    private val store = MobileSyncSDKManager.getInstance().getSmartStore(account)
-    private val syncManager = SyncManager.getInstance(account)
-    private val syncMutex = Mutex()
-    private val listMutex = Mutex()
-
-
-    // endregion
-    // region Public Sync Implementation
-
-
-    override suspend fun syncUpAndDown() = withContext(ioDispatcher) {
-        val upResult: SealedResult<SyncState, SyncFailure>?
-        val downResult: SealedResult<SyncState, SyncFailure>
-
-        syncMutex.withLock {
-            upResult = doSyncUp()
-            currentCoroutineContext().ensureActive() // cooperative cancellation before doing sync down
-            downResult = doSyncDown()
-        }
-
-        // don't cooperate with cancel at this point because we need to emit the new list of contacts
-        withContext(NonCancellable) {
-            when (downResult) {
-                is SealedFailure -> onSyncDownFailed(downResult.cause)
-                is SealedSuccess -> onSyncDownSuccess()
-            }
-        }
-
-        SyncDownAndUpResults(
-            syncDownResult = downResult.mapSuccess { Unit },
-            syncUpResult = upResult?.mapSuccess { Unit }
-        )
-    }
-
-    override suspend fun syncDownOnly() = withContext(ioDispatcher) {
-        val downResult = syncMutex.withLock {
-            doSyncDown()
-        }
-
-        // don't cooperate with cancel at this point because we need to emit the new list of contacts
-        withContext(NonCancellable) {
-            when (downResult) {
-                is SealedFailure -> onSyncDownFailed(downResult.cause)
-                is SealedSuccess -> onSyncDownSuccess()
-            }
-        }
-
-        downResult.mapSuccess { Unit }
-    }
-
-    override suspend fun syncUpOnly() = withContext(ioDispatcher) {
-        syncMutex.withLock {
-            doSyncUp().mapSuccess { Unit }
-        }
-    }
-
-
-    // endregion
-    // region Private Sync Implementation
-
-
-    private suspend fun onSyncDownSuccess() {
-        // TODO we may need to page this to support arbitrary contact lists greater than 10k
-        val contactResults = store.query(
-            QuerySpec.buildAllQuerySpec(
-                "contacts",
-                null,
-                null,
-                10_000
-            ),
-            0
-        )
-        val contacts = contactResults.map { Contact.coerceFromJson(it) }
-
-        listMutex.withLock {
-            mutCurContactList.value = contacts
-        }
-    }
-
-    private fun onSyncDownFailed(syncDownFailure: SyncFailure) {
-        Log.e(TAG, "onSyncDownFailed() syncDownResult = $syncDownFailure")
-    }
-
-    // Individual syncs cannot be cancelled, so we don't use suspendCancellableCoroutine
-    private suspend fun doSyncDown(): SealedResult<SyncState, SyncFailure> =
-        suspendCoroutine { cont ->
-            // TODO: will MobileSync use the same instance of the callback (this coroutine block) in the STOPPED -> RUNNING -> DONE flow?
-            val callback: (SyncState) -> Unit = {
-                when (it.status) {
-                    // terminal states
-                    SyncState.Status.DONE -> cont.resume(SealedSuccess(it))
-                    SyncState.Status.FAILED,
-                    SyncState.Status.STOPPED -> cont.resume(
-                        SealedFailure(cause = SyncRuntimeFailure(syncState = it))
-                    )
-
-                    // TODO are these strictly transient states for as long as this coroutine is running?
-                    SyncState.Status.NEW,
-                    SyncState.Status.RUNNING,
-                    null -> {
-                        /* no-op; suspending for terminal state */
-                    }
-                }
-            }
+    @Throws(RepoOperationException::class)
+    override suspend fun getContactsForAccountId(accountId: String): List<ContactObject> =
+        withContext(ioDispatcher) {
             try {
-                // TODO Replace this raw string with compile time constant:
-                syncManager.reSync("syncDownContacts", callback)
-            } catch (ex: Exception) {
-                cont.resume(SealedFailure(SyncNotStarted(exception = ex)))
-            }
-        }
-
-    // Individual syncs cannot be cancelled, so we don't use suspendCancellableCoroutine
-    private suspend fun doSyncUp(): SealedResult<SyncState, SyncFailure> =
-        suspendCoroutine { cont ->
-            val callback: (SyncState) -> Unit = {
-                when (it.status) {
-                    // terminal states
-                    SyncState.Status.DONE -> cont.resume(SealedSuccess(value = it))
-
-                    SyncState.Status.FAILED,
-                    SyncState.Status.STOPPED -> cont.resume(
-                        SealedFailure(cause = SyncRuntimeFailure(syncState = it))
-                    )
-
-                    SyncState.Status.NEW,
-                    SyncState.Status.RUNNING,
-                    null -> {
-                        /* no-op; suspending for terminal state */
-                    }
-                }
-            }
-
-            try {
-                // TODO Replace this raw string with compile time constant:
-                syncManager.reSync("syncUpContacts", callback)
-            } catch (ex: Exception) {
-                cont.resume(SealedFailure(cause = SyncNotStarted(exception = ex)))
-            }
-        }
-
-
-    // endregion
-    // region Local Modifications
-
-
-    override suspend fun locallyUpsertContact(contact: Contact) = withContext(ioDispatcher) {
-        val result: SealedResult<Contact, Exception> = try {
-            SealedSuccess(
-                Contact.coerceFromJson(
-                    // TODO Use compile-time constant for soup name
-                    store.upsert("contacts", contact.toJson())
+                // TODO What to do with failed parses?
+                store.query(
+                    QuerySpec.buildExactQuerySpec(
+                        soupName,
+                        KEY_ACCOUNT_ID,
+                        accountId,
+                        SOUP_ENTRY_ID,
+                        QuerySpec.Order.ascending,
+                        10_000
+                    ),
+                    0
                 )
-            )
-        } catch (ex: Exception) {
-            SealedFailure(ex)
+                    .map { runCatching { ContactObject.coerceFromJsonOrThrow(it) } }
+                    .partitionBySuccess()
+                    .successes
+            } catch (ex: Exception) {
+                throw RepoOperationException.SmartStoreOperationFailed(
+                    message = "Query for retrieving accounts failed.",
+                    cause = ex
+                )
+            }
         }
+
+    @Throws(RepoOperationException::class)
+    override suspend fun associateContactWithAccount(
+        contactId: String,
+        accountId: String
+    ): ContactObject = withContext(ioDispatcher) {
+        // WIP should we add business logic for checking if the operation would re-parent?
+        val accountRet = retrieveByIdOrThrowOperationException(accountId)
+
+        ensureActive()
+
+        val contactRet = retrieveByIdOrThrowOperationException(contactId)
+
+        ensureActive()
 
         withContext(NonCancellable) {
-            when (result) {
-                is SealedFailure -> TODO("Got exception when upserting contact: ${result.cause}")
-                is SealedSuccess -> {
-                    listMutex.withLock {
-                        mutCurContactList.value = mutCurContactList.value
-                            .replaceAllOrAddNew(newValue = result.value) { it.id == result.value.id }
-                    }
-                }
-            }
-        }
-
-        result
-    }
-
-    override suspend fun locallyDeleteContact(contactId: String) = withContext(ioDispatcher) {
-        fun saveContactDelete(
-            upstreamContact: Contact,
-            soupEntryId: Long
-        ): SealedResult<Contact, Exception> {
-            return try {
-                val updatedJson = store.update(
-                    "contacts",
-                    upstreamContact.toJson()
-                        .putOpt(LOCALLY_DELETED, true)
-                        .putOpt(LOCAL, true),
-                    soupEntryId
+            val newContactElt = try {
+                store.update(
+                    CONTACTS_SOUP_NAME,
+                    contactRet.elt.put(KEY_ACCOUNT_ID, accountRet.elt.getString(Constants.ID)),
+                    contactRet.soupId
                 )
-
-                SealedSuccess(Contact.coerceFromJson(updatedJson))
             } catch (ex: Exception) {
-                SealedFailure(cause = ex)
-            }
-        }
-
-        val result: SealedResult<Contact, Exception> = try {
-            val soupEntryId = store.lookupSoupEntryId("contacts", Constants.ID, contactId)
-            if (soupEntryId < 0) {
-                throw IllegalStateException("Tried to locally delete contact, but soup ID was not found.  Contact ID = $contactId")
-            }
-
-            val contact = store.retrieve("contacts", soupEntryId).firstOrNull()?.let {
-                Contact.coerceFromJson(it)
-            }
-
-            when {
-                contact == null -> throw IllegalStateException("Retrieving Contact with Soup ID $soupEntryId and Contact ID $contactId returned no results.")
-                contact.locallyDeleted -> SealedSuccess(contact)
-                else -> saveContactDelete(contact, soupEntryId)
-            }
-        } catch (ex: Exception) {
-            SealedFailure(cause = ex)
-        }
-
-        withContext(NonCancellable) {
-            when (result) {
-                is SealedFailure -> TODO("Got exception when deleting contact: ${result.cause}")
-                is SealedSuccess -> {
-                    listMutex.withLock {
-                        mutCurContactList.value = mutCurContactList.value
-                            .replaceAll(newValue = result.value) { it.id == result.value.id }
-                    }
-                }
-            }
-        }
-
-        result
-    }
-
-    override suspend fun locallyUndeleteContact(contactId: String) = withContext(ioDispatcher) {
-        fun saveContactUndelete(
-            upstreamContact: Contact,
-            soupEntryId: Long
-        ): SealedResult<Contact, Exception> {
-            return try {
-                val updatedJson = store.update(
-                    "contacts",
-                    upstreamContact.toJson()
-                        .putOpt(LOCALLY_DELETED, false)
-                        .putOpt(
-                            LOCAL,
-                            upstreamContact.locallyCreated || upstreamContact.locallyUpdated
-                        ),
-                    soupEntryId
+                throw RepoOperationException.SmartStoreOperationFailed(
+                    message = "Failed to update the Contact in SmartStore with the account ID.",
+                    cause = ex
                 )
-
-                SealedSuccess(Contact.coerceFromJson(updatedJson))
-            } catch (ex: Exception) {
-                SealedFailure(cause = ex)
             }
+
+            val contact = newContactElt.coerceUpdatedObjToModelOrCleanupAndThrow()
+            replaceAllOrAddNewToObjectList(newValue = contact) { it.serverId == contact.serverId }
+            contact
         }
-
-        val result: SealedResult<Contact, Exception> = try {
-            val soupEntryId = store.lookupSoupEntryId("contacts", Constants.ID, contactId)
-            if (soupEntryId < 0) {
-                throw IllegalStateException("Tried to locally delete contact, but soup ID was not found.  Contact ID = $contactId")
-            }
-
-            val contact = store.retrieve("contacts", soupEntryId).firstOrNull()?.let {
-                Contact.coerceFromJson(it)
-            }
-
-            when {
-                contact == null -> throw IllegalStateException("Retrieving Contact with Soup ID $soupEntryId and Contact ID $contactId returned no results.")
-                !contact.locallyDeleted -> SealedSuccess(contact)
-                else -> saveContactUndelete(contact, soupEntryId)
-            }
-        } catch (ex: Exception) {
-            SealedFailure(cause = ex)
-        }
-
-        withContext(NonCancellable) {
-            when (result) {
-                is SealedFailure -> TODO()
-                is SealedSuccess -> {
-                    listMutex.withLock {
-                        mutCurContactList.value = mutCurContactList.value
-                            .replaceAll(newValue = result.value) { it.id == result.value.id }
-                    }
-                }
-            }
-        }
-
-        result
     }
 
-
-    // endregion
-
-
-    private companion object {
-        private const val TAG = "DefaultContactsRepo"
+    companion object {
+        const val CONTACTS_SOUP_NAME = "contacts"
+        const val SYNC_DOWN_CONTACTS = "syncDownContacts"
+        const val SYNC_UP_CONTACTS = "syncUpContacts"
     }
 }

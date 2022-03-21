@@ -44,7 +44,7 @@ import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSD
  */
 @Composable
 fun OutlinedTextFieldWithHelp(
-    fieldValue: String,
+    fieldValue: String?,
     isEditEnabled: Boolean,
     isError: Boolean,
     onValueChange: (String) -> Unit,
@@ -58,7 +58,7 @@ fun OutlinedTextFieldWithHelp(
     Column(modifier = modifier) {
         OutlinedTextField(
             modifier = fieldModifier.then(Modifier.fillMaxWidth()),
-            value = fieldValue,
+            value = fieldValue ?: "",
             onValueChange = onValueChange,
             label = label,
             placeholder = placeholder,

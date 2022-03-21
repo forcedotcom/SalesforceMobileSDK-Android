@@ -51,13 +51,20 @@ import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsUiM
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.ListDetail
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.Single
 import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.*
-import com.salesforce.samples.mobilesynccompose.contacts.vm.*
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsViewModel
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityViewModel
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus
 import com.salesforce.samples.mobilesynccompose.core.ui.LayoutRestrictions
 import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeClass
 import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeRestrictions
 import com.salesforce.samples.mobilesynccompose.core.ui.components.DeleteConfirmationDialog
 import com.salesforce.samples.mobilesynccompose.core.ui.components.DiscardChangesDialog
+import com.salesforce.samples.mobilesynccompose.core.ui.components.ErrorDialog
 import com.salesforce.samples.mobilesynccompose.core.ui.components.UndeleteConfirmationDialog
+import com.salesforce.samples.mobilesynccompose.core.ui.state.DeleteConfirmationDialogUiState
+import com.salesforce.samples.mobilesynccompose.core.ui.state.DiscardChangesDialogUiState
+import com.salesforce.samples.mobilesynccompose.core.ui.state.ErrorDialogUiState
+import com.salesforce.samples.mobilesynccompose.core.ui.state.UndeleteConfirmationDialogUiState
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -161,8 +168,8 @@ private fun SinglePaneScaffold(
         when (val dialog = uiState.dialogUiState) {
             is DeleteConfirmationDialogUiState -> DeleteConfirmationDialog(
                 onCancel = dialog.onCancelDelete,
-                onDelete = { dialog.onDeleteConfirm(dialog.contactIdToDelete) },
-                objectLabel = dialog.contactName
+                onDelete = { dialog.onDeleteConfirm(dialog.objIdToDelete) },
+                objectLabel = dialog.objName
             )
             is DiscardChangesDialogUiState -> DiscardChangesDialog(
                 discardChanges = dialog.onDiscardChanges,
@@ -170,8 +177,12 @@ private fun SinglePaneScaffold(
             )
             is UndeleteConfirmationDialogUiState -> UndeleteConfirmationDialog(
                 onCancel = dialog.onCancelUndelete,
-                onUndelete = { dialog.onUndeleteConfirm(dialog.contactIdToUndelete) },
-                objectLabel = dialog.contactName
+                onUndelete = { dialog.onUndeleteConfirm(dialog.objIdToUndelete) },
+                objectLabel = dialog.objName
+            )
+            is ErrorDialogUiState -> ErrorDialog(
+                onDismiss = dialog.onDismiss,
+                message = dialog.message
             )
             null -> {
                 /* clear the dialog */
@@ -196,7 +207,9 @@ private fun SinglePaneTopAppBar(
                     ContactDetailsTopAppBarSinglePane(
                         label = "${it.firstNameVm.fieldValue} ${it.lastNameVm.fieldValue}",
                         detailsExitClick = vm::detailsExitClick,
-                        syncIconContent = { SyncImage(contact = it.updatedContact) }
+                        syncIconContent = {
+                            SyncImage(contactObjLocalStatus = it.contactObj.localStatus)
+                        }
                     )
                 }
             }
@@ -231,7 +244,7 @@ private fun SinglePaneBottomAppBar(
     BottomAppBar(cutoutShape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))) {
         when {
             uiState.detailsState != null -> ContactDetailsBottomAppBarSinglePane(
-                showDelete = !uiState.detailsState.origContact.locallyDeleted,
+                showDelete = !uiState.detailsState.contactObj.locallyDeleted,
                 detailsDeleteClick = vm::detailsDeleteClick
             )
 
@@ -244,7 +257,7 @@ private fun SinglePaneBottomAppBar(
 @Composable
 private fun SinglePaneFab(uiState: ContactsActivityUiState, vm: ContactsActivityViewModel) {
     if (uiState.detailsState != null)
-        if (uiState.detailsState.origContact.locallyDeleted) {
+        if (uiState.detailsState.contactObj.locallyDeleted) {
             ContactDetailsDeletedModeFabSinglePane(detailsUndeleteClick = vm::detailsUndeleteClick)
         } else {
             when (uiState.detailsState.mode) {
@@ -317,8 +330,8 @@ fun ContactsActivityMenuButton(
 }
 
 @Composable
-fun SyncImage(contact: Contact) {
-    if (contact.locallyDeleted) {
+fun SyncImage(contactObjLocalStatus: LocalStatus) {
+    if (contactObjLocalStatus.locallyDeleted) {
         Icon(
             Icons.Default.Delete,
             contentDescription = stringResource(id = content_desc_item_deleted_locally),
@@ -329,13 +342,13 @@ fun SyncImage(contact: Contact) {
     } else {
         Image(
             painter = painterResource(
-                id = if (contact.local)
+                id = if (contactObjLocalStatus.local)
                     R.drawable.sync_local
                 else
                     R.drawable.sync_save
             ),
             contentDescription = stringResource(
-                id = if (contact.local)
+                id = if (contactObjLocalStatus.local)
                     content_desc_item_saved_locally
                 else
                     content_desc_item_synced
@@ -410,10 +423,7 @@ private fun DetailsPreview() {
                     ),
                     detailsState = ContactDetailsUiState(
                         mode = Viewing,
-                        origContact = contact,
-                        firstNameVm = contact.createFirstNameVm(),
-                        lastNameVm = contact.createLastNameVm(),
-                        titleVm = contact.createTitleVm()
+                        contactObj = contact
                     ),
                     isSyncing = false,
                     dialogUiState = null,
@@ -440,7 +450,7 @@ private class PreviewContactsActivityViewModel(state: ContactsActivityUiState) :
         throw NotImplementedError("listSearchClick")
     }
 
-    override fun listContactClick(contactId: String) {
+    override fun listContactClick(contactLocalId: String) {
         throw NotImplementedError("listContactClick")
     }
 
@@ -448,15 +458,15 @@ private class PreviewContactsActivityViewModel(state: ContactsActivityUiState) :
         throw NotImplementedError("listCreateClick")
     }
 
-    override fun listDeleteClick(contactId: String) {
+    override fun listDeleteClick(contactLocalId: String) {
         throw NotImplementedError("listDeleteClick")
     }
 
-    override fun listEditClick(contactId: String) {
+    override fun listEditClick(contactLocalId: String) {
         throw NotImplementedError("listEditClick")
     }
 
-    override fun listUndeleteClick(contactId: String) {
+    override fun listUndeleteClick(contactLocalId: String) {
         throw NotImplementedError("listUndeleteClick")
     }
 
@@ -494,7 +504,7 @@ private class PreviewContactsActivityViewModel(state: ContactsActivityUiState) :
 }
 
 @TestOnly
-internal fun mockSyncedContact(): Contact = Contact.coerceFromJson(
+internal fun mockSyncedContact() = Contact.coerceFromJson(
     JSONObject()
         .putOpt(Constants.ID, "ID")
         .putOpt(Contact.KEY_FIRST_NAME, "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirstFirst")
@@ -507,10 +517,13 @@ internal fun mockSyncedContact(): Contact = Contact.coerceFromJson(
 )
 
 @TestOnly
-internal fun mockLocallyDeletedContact(): Contact = Contact.coerceFromJson(
+internal fun mockLocallyDeletedContact() = Contact.coerceFromJson(
     JSONObject()
         .putOpt(Constants.ID, "ID")
-        .putOpt(Contact.KEY_FIRST_NAME, "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirstFirst")
+        .putOpt(
+            Contact.KEY_FIRST_NAME,
+            "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirstFirst"
+        )
         .putOpt(Contact.KEY_LAST_NAME, "Last Last Last Last Last Last Last Last Last Last Last")
         .putOpt(Contact.KEY_TITLE, "Title")
         .putOpt(SyncTarget.LOCALLY_CREATED, false)

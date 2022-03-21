@@ -24,25 +24,24 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.mobilesynccompose.contacts.vm
+package com.salesforce.samples.mobilesynccompose.core.vm
 
 import androidx.annotation.StringRes
-import com.salesforce.samples.mobilesynccompose.R.string.*
-import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SalesforceObjectContainer
 
 /**
- * A ViewModel for a single Contact detail text field (e.g. the "first name" field).
+ * A ViewModel for a single text field for a Salesforce Object (e.g. the "first name" field of a Contact).
  * It holds the entire state of the text field and handles content change events, encapsulating
- * business logic for creating updated [Contact] objects when the corresponding field value changes.
+ * business logic for creating updated Salesforce Objects when the corresponding field value changes.
  */
-data class ContactDetailFieldViewModel(
-    val fieldValue: String,
+data class TextFieldViewModel<T : SalesforceObjectContainer>(
+    val fieldValue: String?,
     val isInErrorState: Boolean,
     val canBeEdited: Boolean,
     @StringRes val labelRes: Int?,
     @StringRes val helperRes: Int?,
     @StringRes val placeholderRes: Int?,
-    val onFieldValueChange: (newValue: String) -> Contact,
+    val onFieldValueChange: (newValue: String?) -> T,
     val maxLines: UInt = 1u
 )
 
@@ -50,39 +49,39 @@ data class ContactDetailFieldViewModel(
 //  stale object can lead to inconsistent state and at bare minimum we should change this interface
 //  to emit the contact ID and which field changed. This means more concretely typing the fields so
 //  that the activity VM knows which field changed.
-fun Contact.createFirstNameVm(): ContactDetailFieldViewModel =
-    ContactDetailFieldViewModel(
-        fieldValue = firstName,
-        isInErrorState = false,
-        canBeEdited = true,
-        labelRes = label_contact_first_name,
-        helperRes = null,
-        placeholderRes = label_contact_first_name,
-        onFieldValueChange = { newValue -> this.copy(firstName = newValue) }
-    )
-
-fun Contact.createLastNameVm(): ContactDetailFieldViewModel {
-    val isError = lastName.isBlank()
-    val help = if (isError) help_cannot_be_blank else null
-
-    return ContactDetailFieldViewModel(
-        fieldValue = lastName,
-        isInErrorState = isError,
-        canBeEdited = true,
-        labelRes = label_contact_last_name,
-        helperRes = help,
-        placeholderRes = label_contact_last_name,
-        onFieldValueChange = { newValue -> this.copy(lastName = newValue) }
-    )
-}
-
-fun Contact.createTitleVm(): ContactDetailFieldViewModel =
-    ContactDetailFieldViewModel(
-        fieldValue = title,
-        isInErrorState = false, // cannot be in error state
-        canBeEdited = true,
-        labelRes = label_contact_title,
-        helperRes = null,
-        placeholderRes = label_contact_title,
-        onFieldValueChange = { newValue -> this.copy(title = newValue) }
-    )
+//fun Contact.createFirstNameVm(): ContactDetailFieldViewModel =
+//    ContactDetailFieldViewModel(
+//        fieldValue = firstName,
+//        isInErrorState = false,
+//        canBeEdited = true,
+//        labelRes = label_contact_first_name,
+//        helperRes = null,
+//        placeholderRes = label_contact_first_name,
+//        onFieldValueChange = { newValue -> this.copy(firstName = newValue) }
+//    )
+//
+//fun Contact.createLastNameVm(): ContactDetailFieldViewModel {
+//    val isError = lastName.isNullOrBlank()
+//    val help = if (isError) help_cannot_be_blank else null
+//
+//    return ContactDetailFieldViewModel(
+//        fieldValue = lastName,
+//        isInErrorState = isError,
+//        canBeEdited = true,
+//        labelRes = label_contact_last_name,
+//        helperRes = help,
+//        placeholderRes = label_contact_last_name,
+//        onFieldValueChange = { newValue -> this.copy(lastName = newValue) }
+//    )
+//}
+//
+//fun Contact.createTitleVm(): ContactDetailFieldViewModel =
+//    ContactDetailFieldViewModel(
+//        fieldValue = title,
+//        isInErrorState = false, // cannot be in error state
+//        canBeEdited = true,
+//        labelRes = label_contact_title,
+//        helperRes = null,
+//        placeholderRes = label_contact_title,
+//        onFieldValueChange = { newValue -> this.copy(title = newValue) }
+//    )
