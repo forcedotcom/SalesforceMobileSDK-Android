@@ -27,14 +27,14 @@
 package com.salesforce.samples.mobilesynccompose.core.vm
 
 import androidx.annotation.StringRes
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SalesforceObjectContainer
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.So
 
 /**
  * A ViewModel for a single text field for a Salesforce Object (e.g. the "first name" field of a Contact).
  * It holds the entire state of the text field and handles content change events, encapsulating
  * business logic for creating updated Salesforce Objects when the corresponding field value changes.
  */
-data class TextFieldViewModel<T : SalesforceObjectContainer>(
+data class TextFieldViewModel<T : So>(
     val fieldValue: String?,
     val isInErrorState: Boolean,
     val canBeEdited: Boolean,

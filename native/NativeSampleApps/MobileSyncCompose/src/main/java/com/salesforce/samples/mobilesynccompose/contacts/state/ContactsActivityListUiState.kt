@@ -26,10 +26,10 @@
  */
 package com.salesforce.samples.mobilesynccompose.contacts.state
 
-import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
+import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 
 data class ContactsActivityListUiState(
-    val contacts: List<Contact>,
+    val contacts: List<ContactObject>,
     val searchTerm: String?,
     val isSaving: Boolean = false
 )

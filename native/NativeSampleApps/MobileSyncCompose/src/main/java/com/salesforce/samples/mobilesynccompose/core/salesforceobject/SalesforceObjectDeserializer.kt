@@ -68,7 +68,7 @@ interface SalesforceObjectDeserializer<T : So> {
  */
 fun createNewSoupEltBase(forObjType: String): JSONObject {
     val localId = SyncTarget.createLocalId()
-    val attributes = JSONObject().put(Constants.TYPE, forObjType)
+    val attributes = JSONObject().put(Constants.TYPE.lowercase(Locale.US), forObjType)
 
     return JSONObject()
         .put(Constants.ID, localId)
