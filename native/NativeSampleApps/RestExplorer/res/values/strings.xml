@@ -113,6 +113,9 @@
 	<string name="delete_file_share_title"><u><b>Delete File Share</b></u>\nDelete share (ContentDocumentLink).</string>
 	<string name="delete_file_share_button">Go</string>
 	<string name="share_id_hint">share_id</string>
+	<string name="priming_records_tab">Priming Records</string>
+	<string name="priming_records_title"><u><b>Priming Records</b></u>\nGet list of record related to offline briefcase.</string>
+	<string name="priming_records_button">Go</string>
 
 	<!-- REST Options -->
     <string name="encoding">UTF-8</string>

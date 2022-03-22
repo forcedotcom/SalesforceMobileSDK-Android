@@ -124,6 +124,7 @@ public class ExplorerActivity extends SalesforceActivity {
 		addTab("files_shares", R.string.file_shares_tab, R.id.file_shares_tab);
 		addTab("add_file_share", R.string.add_file_share_tab, R.id.add_file_share_tab);
 		addTab("delete_file_share", R.string.delete_file_share_tab, R.id.delete_file_share_tab);
+		addTab("priming_records", R.string.priming_records_tab, R.id.priming_records_tab);
 
 		// Makes the result area scrollable.
 		resultText = (TextView) findViewById(R.id.result_text);
@@ -557,6 +558,16 @@ public class ExplorerActivity extends SalesforceActivity {
         RestRequest request = FileRequests.deleteFileShare(shareId);
         sendRequest(request);
     }
+
+	/**
+	 * Called when the "priming records go" button is clicked.
+	 *
+	 * @param v View that was clicked.
+	 */
+    public void onGetPrimingRecordsClick(View v) throws UnsupportedEncodingException {
+    	RestRequest request = RestRequest.getRequestForPrimingRecords(apiVersion, null);
+    	sendRequest(request);
+	}
 
     private RequestBody getParamsEntity(int manualRequestParamsText)
 			throws UnsupportedEncodingException {

@@ -549,7 +549,7 @@ public class RestRequestTest {
     }
 
     @Test
-    public void testGetNotificationRequest() throws Exception {
+    public void testGetRequestForNotification() throws Exception {
         String notificationId = "testID";
         RestRequest request = RestRequest.getRequestForNotification(TEST_API_VERSION, notificationId);
         Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
@@ -557,7 +557,7 @@ public class RestRequestTest {
     }
 
     @Test
-    public void testUpdateNotificationRequest() throws Exception {
+    public void testGetRequestForNotificationUpdate() throws Exception {
         String notificationId = "testID";
         RestRequest request = RestRequest.getRequestForNotificationUpdate(TEST_API_VERSION, notificationId, true, null);
         Assert.assertEquals("Wrong method", RestMethod.PATCH, request.getMethod());
@@ -565,7 +565,7 @@ public class RestRequestTest {
     }
 
     @Test
-    public void testUpdateNotificationsRequest() throws Exception {
+    public void testGetRequestForNotificationsUpdate() throws Exception {
         List<String> notificationIds = Arrays.asList("testID1", "testID2");
         RestRequest request =  RestRequest.getRequestForNotificationsUpdate(TEST_API_VERSION, notificationIds, null, true, null);
         Assert.assertEquals("Wrong method", RestMethod.PATCH, request.getMethod());
@@ -576,6 +576,101 @@ public class RestRequestTest {
         JSONObject actualBodyJson = new JSONObject(bodyToString(request));
         JSONTestHelper.assertSameJSON("Wrong request entity", expectedBodyJson, actualBodyJson);
     }
+
+    @Test
+	public void testGetRequestForPrimingRecords() throws Exception {
+    	RestRequest request = RestRequest.getRequestForPrimingRecords(TEST_API_VERSION, null);
+    	Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+		Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/connect/briefcase/priming-records", request.getPath());
+	}
+
+	@Test
+	public void testGetRequestForPrimingRecordsWithRelayToken() throws Exception {
+		RestRequest request = RestRequest.getRequestForPrimingRecords(TEST_API_VERSION, "my-relay-token");
+		Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+		Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/connect/briefcase/priming-records?relayToken=my-relay-token", request.getPath());
+	}
+
+	@Test
+	public void testParsePrimingRecordsResponse() throws Exception {
+    	JSONObject json = new JSONObject("{\n"
+			+ "  \"primingRecords\": {\n"
+			+ "    \"Account\": {\n"
+			+ "      \"012S00000009B8HIAU\": [\n"
+			+ "        {\n"
+			+ "          \"id\": \"001S000001QEDnzIAH\",\n"
+			+ "          \"systemModstamp\": \"2021-08-23T18:42:32.000Z\"\n"
+			+ "        },\n"
+			+ "        {\n"
+			+ "          \"id\": \"001S000000va6rGIAQ\",\n"
+			+ "          \"systemModstamp\": \"2019-02-09T02:19:38.000Z\"\n"
+			+ "        }\n"
+			+ "      ]\n"
+			+ "    },\n"
+			+ "    \"Contact\": {\n"
+			+ "      \"012000000000000AAA\": [\n"
+			+ "        {\n"
+			+ "          \"id\": \"003S00000129813IAA\",\n"
+			+ "          \"systemModstamp\": \"2018-12-22T06:13:59.000Z\"\n"
+			+ "        },\n"
+			+ "        {\n"
+			+ "          \"id\": \"003S0000012LUhRIAW\",\n"
+			+ "          \"systemModstamp\": \"2019-01-12T06:13:11.000Z\"\n"
+			+ "        },\n"
+			+ "        {\n"
+			+ "          \"id\": \"003S0000012hWwRIAU\",\n"
+			+ "          \"systemModstamp\": \"2019-01-30T00:59:06.000Z\"\n"
+			+ "        }\n"
+			+ "      ]\n"
+			+ "    }\n"
+			+ "  },\n"
+			+ "  \"relayToken\": \"fake-token\",\n"
+			+ "  \"ruleErrors\": ["
+			+ "     {\n"
+			+ "       \"ruleId\": \"rule-1\"\n"
+			+ "     },\n"
+			+ "     {\n"
+			+ "       \"ruleId\": \"rule-2\"\n"
+			+ "     }\n"
+			+ "  ],\n"
+			+ "  \"stats\": {\n"
+			+ "    \"recordCountServed\": 100,\n"
+			+ "    \"recordCountTotal\": 200,\n"
+			+ "    \"ruleCountServed\": 2,\n"
+			+ "    \"ruleCountTotal\": 3\n"
+			+ "  }\n"
+			+ "}");
+		PrimingRecordsResponse primingRecordsResponse = new PrimingRecordsResponse(json);
+
+		// Checking priming records
+		// We have accounts and contacts
+		Assert.assertEquals(2, primingRecordsResponse.primingRecords.size());
+		// We have one record type for accounts and three contacts
+		Assert.assertEquals(1, primingRecordsResponse.primingRecords.get("Account").size());
+		Assert.assertEquals(2, primingRecordsResponse.primingRecords.get("Account").get("012S00000009B8HIAU").size());
+		Assert.assertEquals("001S000001QEDnzIAH", primingRecordsResponse.primingRecords.get("Account").get("012S00000009B8HIAU").get(0).id);
+		Assert.assertEquals("001S000000va6rGIAQ", primingRecordsResponse.primingRecords.get("Account").get("012S00000009B8HIAU").get(1).id);
+		Assert.assertEquals(1629744152000L, primingRecordsResponse.primingRecords.get("Account").get("012S00000009B8HIAU").get(0).systemModStamp.getTime());
+		// We have one record type for contacts and three contacts
+		Assert.assertEquals(1, primingRecordsResponse.primingRecords.get("Contact").size());
+		Assert.assertEquals(3, primingRecordsResponse.primingRecords.get("Contact").get("012000000000000AAA").size());
+		Assert.assertEquals("003S00000129813IAA", primingRecordsResponse.primingRecords.get("Contact").get("012000000000000AAA").get(0).id);
+		Assert.assertEquals("003S0000012LUhRIAW", primingRecordsResponse.primingRecords.get("Contact").get("012000000000000AAA").get(1).id);
+		Assert.assertEquals("003S0000012hWwRIAU", primingRecordsResponse.primingRecords.get("Contact").get("012000000000000AAA").get(2).id);
+		Assert.assertEquals(1545459239000L, primingRecordsResponse.primingRecords.get("Contact").get("012000000000000AAA").get(0).systemModStamp.getTime());
+
+		// Checking relay token
+		Assert.assertEquals("fake-token", primingRecordsResponse.relayToken);
+		// Checking rule errors
+		Assert.assertEquals(2, primingRecordsResponse.ruleErrors.size());
+		Assert.assertEquals("rule-1", primingRecordsResponse.ruleErrors.get(0).ruleId);
+		Assert.assertEquals("rule-2", primingRecordsResponse.ruleErrors.get(1).ruleId);
+		// Checking stats
+		Assert.assertEquals(100, primingRecordsResponse.stats.recordCountServed);
+		Assert.assertEquals(200, primingRecordsResponse.stats.recordCountTotal);
+		Assert.assertEquals(2, primingRecordsResponse.stats.ruleCountServed);
+		Assert.assertEquals(3, primingRecordsResponse.stats.ruleCountTotal);
+	}
 
     private static String bodyToString(final RestRequest request) throws IOException {
 		final Buffer buffer = new Buffer();

@@ -1069,6 +1069,27 @@ public class RestClientTest {
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
     }
 
+    @Test
+    public void testGetPrimingRecords() throws Exception {
+        RestRequest request = RestRequest.getRequestForPrimingRecords(TestCredentials.API_VERSION, null);
+        RestResponse response = restClient.sendSync(request);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
+        checkKeys(response.asJSONObject(), "primingRecords", "relayToken", "ruleErrors", "stats");
+    }
+
+    @Test
+    public void testParsePrimingRecordsResponse() throws Exception {
+        RestRequest request = RestRequest.getRequestForPrimingRecords(TestCredentials.API_VERSION, null);
+        RestResponse response = restClient.sendSync(request);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
+        try {
+            PrimingRecordsResponse primingRecordsResponse = new PrimingRecordsResponse(
+                response.asJSONObject());
+        } catch (Exception e) {
+            Assert.fail("Fail to parse priming records response: " + e.getMessage());
+        }
+    }
+
     //
     // Helper methods
     //
