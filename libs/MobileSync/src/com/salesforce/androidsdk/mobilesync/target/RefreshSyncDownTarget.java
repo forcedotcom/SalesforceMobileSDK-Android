@@ -58,17 +58,17 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
     public static final String SOBJECT_TYPE = "sobjectType";
     public static final String SOUP_NAME = "soupName";
     public static final String COUNT_IDS_PER_SOQL = "coundIdsPerSoql";
-    private List<String> fieldlist;
-    private String objectType;
-    private String soupName;
-    private int countIdsPerSoql;
-    private static final int defaultCountIdsPerSoql = 500;
+    protected List<String> fieldlist;
+    protected String objectType;
+    protected String soupName;
+    protected int countIdsPerSoql;
+    protected static final int defaultCountIdsPerSoql = 500;
 
     // NB: For each sync run - a fresh sync down target is created (by deserializing it from smartstore)
     // The following members are specific to a run
     // page will change during a run as we call start/continueFetch
-    private boolean isResync = false;
-    private int page = 0;
+    protected boolean isResync = false;
+    protected int page = 0;
 
     /**
      * Return number of ids to pack in a single SOQL call
@@ -133,15 +133,15 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         // since we expect records to have been fetched from the server and written to the soup directly outside a sync down operation
         // Instead during a reSymc, we compute maxTimeStamp from the records in the soup
         isResync = maxTimeStamp > 0;
-        return  getIdsFromSmartStoreAndFetchFromServer(syncManager);
+        return  getIdsToFetchAndFetchFromServer(syncManager);
     }
 
     @Override
     public JSONArray continueFetch(SyncManager syncManager) throws IOException, JSONException {
-        return page > 0 ? getIdsFromSmartStoreAndFetchFromServer(syncManager) : null;
+        return page > 0 ? getIdsToFetchAndFetchFromServer(syncManager) : null;
     }
 
-    private JSONArray getIdsFromSmartStoreAndFetchFromServer(SyncManager syncManager) throws IOException, JSONException {
+    protected JSONArray getIdsToFetchAndFetchFromServer(SyncManager syncManager) throws IOException, JSONException {
         // Read from smartstore
         final QuerySpec querySpec;
         final List<String> idsInSmartStore = new ArrayList<>();
@@ -195,7 +195,8 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         }
     }
 
-    private JSONArray fetchFromServer(SyncManager syncManager, List<String> ids, List<String> fieldlist, long maxTimeStamp) throws IOException, JSONException {
+    protected JSONArray fetchFromServer(SyncManager syncManager, List<String> ids,
+        List<String> fieldlist, long maxTimeStamp) throws IOException, JSONException {
         final String whereClause = ""
                 + getIdFieldName() + " IN ('" + TextUtils.join("', '", ids) + "')"
                 + (maxTimeStamp > 0 ? " AND " + getModificationDateFieldName() + " > " + Constants.TIMESTAMP_FORMAT.format(new Date(maxTimeStamp))

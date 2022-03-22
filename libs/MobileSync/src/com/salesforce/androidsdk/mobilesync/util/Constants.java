@@ -81,6 +81,11 @@ public class Constants {
     public static final String MODE_EDIT = "Edit";
 
     /**
+     * Default record type
+     */
+    public static final String DEFAULT_RECORD_TYPE = "012S00000009B8HIAU";
+
+    /**
      * Salesforce timestamp format.
      */
     public static final DateFormat TIMESTAMP_FORMAT = RestRequest.ISO8601_DATE_FORMAT;
