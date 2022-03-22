@@ -58,6 +58,7 @@ public class Constants {
     public static final String LAST_MODIFIED_DATE = "LastModifiedDate";
     public static final String CONTACTS = "Contacts";
     public static final String ACCOUNT_KEY_PREFIX = "001";
+    public static final String RECORD_TYPE_ID = "recordtypeid";
 
     /**
      * Salesforce object types.

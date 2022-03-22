@@ -26,17 +26,26 @@
  */
 package com.salesforce.androidsdk.mobilesync.target;
 
+import android.text.TextUtils;
 import com.salesforce.androidsdk.mobilesync.app.Features;
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
+import com.salesforce.androidsdk.mobilesync.util.BriefcaseObjectInfo;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
+import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
+import com.salesforce.androidsdk.mobilesync.util.SOQLBuilder;
 import com.salesforce.androidsdk.rest.PrimingRecordsResponse;
 import com.salesforce.androidsdk.rest.PrimingRecordsResponse.PrimingRecord;
 import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -44,15 +53,18 @@ import org.json.JSONObject;
 /**
  * Target for sync that downloads records using the briefcase (priming records) API
  */
-public class BriefcaseSyncDownTarget extends RefreshSyncDownTarget {
+public class BriefcaseSyncDownTarget extends SyncDownTarget {
+    private static final String TAG = "BriefcaseSyncDownTarget";
 
-    public static final String RECORD_TYPE = "recordType";
+    public static final String INFOS = "infos";
 
-    private String recordType;
+    private List<BriefcaseObjectInfo> infos;
+    private Map<String, Map<String, BriefcaseObjectInfo>> infosMap;
 
     // NB: For each sync run - a fresh sync down target is created (by deserializing it from smartstore)
     // The following members are specific to a run
-    private List<String> idsToFetch;
+    protected long maxTimeStamp = 0L;
+    protected String relayToken = null;
 
     /**
      * Construct BriefcaseSyncDownTarget from json
@@ -60,39 +72,29 @@ public class BriefcaseSyncDownTarget extends RefreshSyncDownTarget {
      * @throws JSONException
      */
     public BriefcaseSyncDownTarget(JSONObject target) throws JSONException {
-        super(target);
-        this.recordType = target.optString(RECORD_TYPE, Constants.DEFAULT_RECORD_TYPE);
-
-        this.queryType = QueryType.briefcase;
-        MobileSyncSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_RELATED_RECORDS);
+        this(BriefcaseObjectInfo.fromJSONArray(target.getJSONArray(INFOS)));
     }
 
     /**
      * Construct BriefcaseSyncDownTarget
      *
-     * @param fieldlist
-     * @param objectType
-     * @param soupName
+     * @param infos
      */
-    public BriefcaseSyncDownTarget(List<String> fieldlist, String objectType, String soupName) {
-        this(fieldlist, objectType, soupName, Constants.DEFAULT_RECORD_TYPE);
-    }
-
-    /**
-     * Construct BriefcaseSyncDownTarget
-     *
-     * @param fieldlist
-     * @param objectType
-     * @param soupName
-     * @param recordType
-     */
-    public BriefcaseSyncDownTarget(List<String> fieldlist, String objectType, String soupName, String recordType) {
-        super(fieldlist, objectType, soupName);
-        this.recordType = recordType;
-
+    public BriefcaseSyncDownTarget(List<BriefcaseObjectInfo> infos) {
+        this.infos = infos;
         this.queryType = QueryType.briefcase;
         MobileSyncSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_RELATED_RECORDS);
-    }
+
+        // Build infosMap
+        infosMap = new HashMap<>();
+        for (BriefcaseObjectInfo info : infos) {
+            if (!infosMap.containsKey(info.sobjectType)) {
+                infosMap.put(info.sobjectType, new HashMap<>());
+            }
+            Map<String, BriefcaseObjectInfo> innerMap = infosMap.get(info.sobjectType);
+            innerMap.put(info.recordType, info);
+        }
+     }
 
     /**
      * @return json representation of target
@@ -100,82 +102,159 @@ public class BriefcaseSyncDownTarget extends RefreshSyncDownTarget {
      */
     public JSONObject asJSON() throws JSONException {
         JSONObject target = super.asJSON();
-        target.put(RECORD_TYPE, recordType);
+        JSONArray infosJson = new JSONArray();
+        for (BriefcaseObjectInfo info : infos) {
+            infosJson.put(info.asJSON());
+        }
+        target.put(INFOS, infosJson);
         return target;
     }
 
-
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
-        try {
-            idsToFetch = getIdsToFetch(syncManager, maxTimeStamp);
-        } catch (Exception e) {
-            throw new IOException(e);
-        }
+        this.maxTimeStamp = maxTimeStamp;
         return getIdsToFetchAndFetchFromServer(syncManager);
     }
 
     @Override
-    protected JSONArray getIdsToFetchAndFetchFromServer(SyncManager syncManager) throws IOException, JSONException {
-        // If fetch is starting, figuring out totalSize
-        if (page == 0) {
-            totalSize = idsToFetch.size();
-        }
-
-        // Slice of interest
-        int startIndex = Math.min(countIdsPerSoql*page, totalSize);
-        int endIndex = Math.min(countIdsPerSoql*(page+1), totalSize);
-        List<String> idsForCurrentPage = idsToFetch.subList(startIndex, endIndex);
-
-        if (idsForCurrentPage.size() > 0) {
-            final JSONArray records = fetchFromServer(syncManager, idsForCurrentPage, fieldlist,
-                0 /* no need to filter here, we filtered the list that came back from the briefcase API*/);
-
-            // Increment page if there is more to fetch
-            boolean done = endIndex == totalSize;
-            page = (done ? 0 : page + 1);
-            return records;
-        }
-        else {
-            page = 0; // done
+    public JSONArray continueFetch(SyncManager syncManager) throws IOException, JSONException {
+        if (relayToken == null) {
             return null;
         }
+
+        return getIdsToFetchAndFetchFromServer(syncManager);
+    }
+
+    @Override
+    protected Set<String> getRemoteIds(SyncManager syncManager, Set<String> localIds)
+        throws IOException, JSONException {
+        // FIXME
+        return null;
     }
 
     /**
      * Method that calls the priming records API to get all the ids to fetch
+     * then use SOQL to get record fields
+     *
      * @param syncManager
-     * @param maxTimeStamp
      * @return
      */
-    private List<String> getIdsToFetch(SyncManager syncManager, long maxTimeStamp) throws Exception {
-        List<String> idsToFetch = new ArrayList<>();
-        boolean hasMore = true;
-        String relayToken = null;
-        do {
-            RestRequest request = RestRequest.getRequestForPrimingRecords(syncManager.apiVersion, relayToken);
-            PrimingRecordsResponse response = new PrimingRecordsResponse(
+    private JSONArray getIdsToFetchAndFetchFromServer(SyncManager syncManager)
+        throws IOException, JSONException {
+        JSONArray records = new JSONArray();
+
+        // Run priming record request
+        RestRequest request = RestRequest.getRequestForPrimingRecords(syncManager.apiVersion, relayToken);
+
+        PrimingRecordsResponse response = null;
+        try {
+            response = new PrimingRecordsResponse(
                 syncManager.sendSyncWithMobileSyncUserAgent(request).asJSONObject());
-            Map<String, Map<String, List<PrimingRecord>>> allPrimingRecords = response.primingRecords;
-            if (allPrimingRecords.containsKey(objectType) && allPrimingRecords.get(objectType)
-                .containsKey(recordType)) {
+        } catch (ParseException e) {
+            throw new IOException("Could not parse response from priming record API", e);
+        }
 
-                List<PrimingRecord> primingRecords = allPrimingRecords.get(objectType)
-                    .get(recordType);
+        if (relayToken == null) {
+            totalSize = response.stats.recordCountTotal;
+            // NB: it will be an overestimate during a resync since we filter by maxTimeStamp on the client
+        }
 
+        // Get records using SOQL
+        Map<String, Map<String, List<PrimingRecord>>> allPrimingRecords = response.primingRecords;
+        for (BriefcaseObjectInfo info: infos) {
+            if (allPrimingRecords.containsKey(info.sobjectType)
+                && allPrimingRecords.get(info.sobjectType).containsKey(info.recordType)) {
+
+                List<PrimingRecord> primingRecords = allPrimingRecords.get(info.sobjectType)
+                    .get(info.recordType);
+
+                List<String> idsToFetch = new ArrayList<>();
+                // Filtering by maxTimeStamp
+                // TODO Remove once 238 is GA
                 for (PrimingRecord primingRecord : primingRecords) {
                     if (primingRecord.systemModStamp.getTime() >= maxTimeStamp) {
                         idsToFetch.add(primingRecord.id);
                     }
                 }
-                relayToken = response.relayToken;
-                hasMore = relayToken != null;
-            } else {
-                hasMore = false;
+                JSONArray fetchedRecords = fetchFromServer(syncManager, info.sobjectType, info.recordType, idsToFetch, info.fieldlist);
+                for (int i=0; i<fetchedRecords.length(); i++) {
+                    records.put(fetchedRecords.getJSONObject(i));
+                }
             }
         }
-        while (hasMore);
 
-        return idsToFetch;
+        return records;
+    }
+
+    protected JSONArray fetchFromServer(SyncManager syncManager, String sobjectType, String recordType, List<String> ids,
+        List<String> fieldlist) throws IOException, JSONException {
+        ArrayList<String> fieldlistToFetch = new ArrayList<>(fieldlist);
+        if (!fieldlistToFetch.contains(Constants.RECORD_TYPE_ID)) {
+            fieldlistToFetch.add(Constants.RECORD_TYPE_ID);
+        }
+        final String whereClause = ""
+            + Constants.RECORD_TYPE_ID + " = '" + recordType + "' AND "
+            + getIdFieldName() + " IN ('" + TextUtils.join("', '", ids) + "')";
+        final String soql = SOQLBuilder.getInstanceWithFields(fieldlistToFetch).from(sobjectType).where(whereClause).build();
+        final RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, soql);
+        final RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
+        JSONObject responseJson = response.asJSONObject();
+        return responseJson.getJSONArray(Constants.RECORDS);
+    }
+
+    /**
+     * Overriding saveRecordsToLocalStore since we might want records in different soups
+     *
+     * @param syncManager
+     * @param soupName
+     * @param records
+     * @param syncId
+     * @throws JSONException
+     */
+    @Override
+    public void saveRecordsToLocalStore(SyncManager syncManager, String soupName, JSONArray records,
+        long syncId) throws JSONException {
+        SmartStore smartStore = syncManager.getSmartStore();
+        synchronized (smartStore.getDatabase()) {
+            try {
+                smartStore.beginTransaction();
+                for (int i = 0; i < records.length(); i++) {
+                    JSONObject record = records.getJSONObject(i);
+                    BriefcaseObjectInfo info = getMatchingBriefcaseInfo(record);
+                    if (info != null) {
+                        cleanAndSaveInSmartStore(smartStore, info.soupName, record,
+                            info.idFieldName,
+                            false);
+                    } else {
+                        // That should never happened
+                        MobileSyncLogger.e(TAG, String.format("No matching briefcase info - Don't know how to save record %s", record.toString()));
+                    }
+                }
+                smartStore.setTransactionSuccessful();
+            } finally {
+                smartStore.endTransaction();
+            }
+        }
+    }
+
+    String getObjectType(JSONObject record) throws JSONException {
+        JSONObject attributes = record.getJSONObject(Constants.ATTRIBUTES);
+        if (attributes != null) {
+            return attributes.getString(Constants.TYPE);
+        } else {
+            return null;
+        }
+    }
+
+    BriefcaseObjectInfo getMatchingBriefcaseInfo(JSONObject record) throws JSONException {
+        String sobjectType = getObjectType(record);
+        String recordType = record.getString(Constants.RECORD_TYPE_ID);
+        if (sobjectType != null) {
+            Map<String, BriefcaseObjectInfo> innerMap = infosMap.get(sobjectType);
+            if (innerMap != null) {
+                return innerMap.get(recordType);
+            }
+        }
+        return null;
     }
 }
