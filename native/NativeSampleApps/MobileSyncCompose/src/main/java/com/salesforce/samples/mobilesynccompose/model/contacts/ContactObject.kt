@@ -37,8 +37,9 @@ data class ContactObject(
     val title: String?,
     val department: String?,
     val accountId: String?,
-    override val serverId: String,
-    override val localId: String?,
+    override val id: SoId,
+//    override val serverId: ServerId,
+//    override val localId: LocalId?,
     override val localStatus: LocalStatus,
     private val elt: ReadOnlyJson
 ) : So {
@@ -83,9 +84,11 @@ data class ContactObject(
 
             ReadOnlySoHelper.requireSoType(elt, OBJECT_TYPE)
 
+            val serverId = ReadOnlySoHelper.getServerIdOrThrow(elt)
+            val localId = ReadOnlySoHelper.getLocalId(elt)
+
             return ContactObject(
-                serverId = ReadOnlySoHelper.getServerIdOrThrow(elt),
-                localId = ReadOnlySoHelper.getLocalId(elt),
+                id = SoId(primaryKey = serverId, localId = localId),
                 localStatus = ReadOnlySoHelper.getLocalStatus(elt),
                 elt = elt,
                 firstName = elt.optStringOrNull(KEY_FIRST_NAME),

@@ -4,8 +4,9 @@ import com.salesforce.samples.mobilesynccompose.core.ReadOnlyJson
 import org.json.JSONObject
 
 interface So {
-    val serverId: String
-    val localId: String?
+    val id: SoId
+//    val serverId: ServerId
+//    val localId: LocalId?
     val localStatus: LocalStatus
     val hasUnsavedChanges: Boolean
 
@@ -15,3 +16,5 @@ interface So {
         const val KEY_LOCAL_ID = "LocalId"
     }
 }
+
+//val So.preferredId: SoId get() = localId ?: serverId

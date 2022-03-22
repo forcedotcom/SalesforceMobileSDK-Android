@@ -44,6 +44,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactCard
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SoId
 import com.salesforce.samples.mobilesynccompose.core.ui.components.LoadingOverlay
 import com.salesforce.samples.mobilesynccompose.core.ui.components.OutlinedTextFieldWithHelp
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
@@ -54,21 +55,21 @@ fun ContactsListViewingModeSinglePane(
     modifier: Modifier = Modifier,
     contacts: List<ContactObject>,
     showLoadingOverlay: Boolean,
-    listContactClick: (contactId: String) -> Unit,
-    listDeleteClick: (contactId: String) -> Unit,
-    listEditClick: (contactId: String) -> Unit,
-    listUndeleteClick: (contactId: String) -> Unit,
+    listContactClick: (id: SoId) -> Unit,
+    listDeleteClick: (id: SoId) -> Unit,
+    listEditClick: (id: SoId) -> Unit,
+    listUndeleteClick: (id: SoId) -> Unit,
 ) {
     LazyColumn(modifier = modifier) {
-        items(items = contacts, key = { it.serverId }) { contact ->
+        items(items = contacts, key = { it.id.localId ?: it.id.primaryKey }) { contact ->
             ContactCard(
                 modifier = Modifier.padding(4.dp),
                 startExpanded = false,
                 contact = contact,
-                onCardClick = listContactClick,
-                onDeleteClick = listDeleteClick,
-                onUndeleteClick = listUndeleteClick,
-                onEditClick = listEditClick,
+                onCardClick = { listContactClick(contact.id) },
+                onDeleteClick = { listDeleteClick(contact.id) },
+                onUndeleteClick = { listUndeleteClick(contact.id) },
+                onEditClick = { listEditClick(contact.id) },
             )
         }
     }

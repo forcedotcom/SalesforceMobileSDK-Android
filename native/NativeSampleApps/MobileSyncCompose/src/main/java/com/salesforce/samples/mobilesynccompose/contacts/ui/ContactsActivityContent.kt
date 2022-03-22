@@ -46,13 +46,16 @@ import com.salesforce.androidsdk.mobilesync.target.SyncTarget
 import com.salesforce.androidsdk.mobilesync.util.Constants
 import com.salesforce.samples.mobilesynccompose.R
 import com.salesforce.samples.mobilesynccompose.R.string.*
-import com.salesforce.samples.mobilesynccompose.contacts.state.*
 import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsUiMode.*
+import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsUiState
+import com.salesforce.samples.mobilesynccompose.contacts.state.ContactsActivityListUiState
+import com.salesforce.samples.mobilesynccompose.contacts.state.ContactsActivityUiState
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.ListDetail
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.Single
 import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.*
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityViewModel
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SoId
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.isLocal
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.isLocallyDeleted
 import com.salesforce.samples.mobilesynccompose.core.ui.LayoutRestrictions
@@ -451,7 +454,7 @@ private class PreviewContactsActivityViewModel(state: ContactsActivityUiState) :
         throw NotImplementedError("listSearchClick")
     }
 
-    override fun listContactClick(contactLocalId: String) {
+    override fun listContactClick(contactId: SoId) {
         throw NotImplementedError("listContactClick")
     }
 
@@ -459,15 +462,15 @@ private class PreviewContactsActivityViewModel(state: ContactsActivityUiState) :
         throw NotImplementedError("listCreateClick")
     }
 
-    override fun listDeleteClick(contactLocalId: String) {
+    override fun listDeleteClick(contactId: SoId) {
         throw NotImplementedError("listDeleteClick")
     }
 
-    override fun listEditClick(contactLocalId: String) {
+    override fun listEditClick(contactId: SoId) {
         throw NotImplementedError("listEditClick")
     }
 
-    override fun listUndeleteClick(contactLocalId: String) {
+    override fun listUndeleteClick(contactId: SoId) {
         throw NotImplementedError("listUndeleteClick")
     }
 
@@ -508,8 +511,14 @@ private class PreviewContactsActivityViewModel(state: ContactsActivityUiState) :
 internal fun mockSyncedContact() = ContactObject.coerceFromJsonOrThrow(
     JSONObject()
         .putOpt(Constants.ID, "ID")
-        .putOpt(ContactObject.KEY_FIRST_NAME, "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirstFirst")
-        .putOpt(ContactObject.KEY_LAST_NAME, "Last Last Last Last Last Last Last Last Last Last Last")
+        .putOpt(
+            ContactObject.KEY_FIRST_NAME,
+            "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirstFirst"
+        )
+        .putOpt(
+            ContactObject.KEY_LAST_NAME,
+            "Last Last Last Last Last Last Last Last Last Last Last"
+        )
         .putOpt(ContactObject.KEY_TITLE, "Title")
         .putOpt(SyncTarget.LOCALLY_CREATED, false)
         .putOpt(SyncTarget.LOCALLY_DELETED, false)
@@ -525,7 +534,10 @@ internal fun mockLocallyDeletedContact() = ContactObject.coerceFromJsonOrThrow(
             ContactObject.KEY_FIRST_NAME,
             "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirstFirst"
         )
-        .putOpt(ContactObject.KEY_LAST_NAME, "Last Last Last Last Last Last Last Last Last Last Last")
+        .putOpt(
+            ContactObject.KEY_LAST_NAME,
+            "Last Last Last Last Last Last Last Last Last Last Last"
+        )
         .putOpt(ContactObject.KEY_TITLE, "Title")
         .putOpt(SyncTarget.LOCALLY_CREATED, false)
         .putOpt(SyncTarget.LOCALLY_DELETED, true)

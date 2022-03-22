@@ -7,8 +7,7 @@ import org.json.JSONObject
 
 data class AccountObject(
     val name: String,
-    override val serverId: String,
-    override val localId: String?,
+    override val id: SoId,
     override val localStatus: LocalStatus,
     private val elt: ReadOnlyJson
 ) : So {
@@ -29,9 +28,11 @@ data class AccountObject(
             val safeJson = ReadOnlyJson(json)
             ReadOnlySoHelper.requireSoType(safeJson, OBJECT_TYPE)
 
+            val serverId = ReadOnlySoHelper.getServerIdOrThrow(safeJson)
+            val localId = ReadOnlySoHelper.getLocalId(safeJson)
+
             return AccountObject(
-                serverId = ReadOnlySoHelper.getServerIdOrThrow(safeJson),
-                localId = ReadOnlySoHelper.getLocalId(safeJson),
+                id = SoId(primaryKey = serverId, localId = localId),
                 localStatus = ReadOnlySoHelper.getLocalStatus(safeJson),
                 elt = safeJson,
                 name = safeJson.getRequiredStringOrThrow(Constants.NAME),

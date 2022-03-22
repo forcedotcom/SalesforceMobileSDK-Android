@@ -185,12 +185,12 @@ abstract class SObjectSyncableRepoBase<T : So>(
         }
 
         val result = upsertResult.coerceUpdatedObjToModelOrCleanupAndThrow()
-        replaceAllOrAddNewToObjectList(newValue = result) { it.serverId == result.serverId }
+        replaceAllOrAddNewToObjectList(newValue = result) { it.id.primaryKey == result.id.primaryKey }
         result
     }
 
     @Throws(RepoOperationException::class)
-    override suspend fun locallyDelete(id: String) = withContext(ioDispatcher + NonCancellable) {
+    override suspend fun locallyDelete(id: SoId) = withContext(ioDispatcher + NonCancellable) {
         suspend fun saveDeleteToStore(elt: JSONObject, soupId: Long): T {
             elt
                 .putOpt(LOCALLY_DELETED, true)
@@ -227,16 +227,17 @@ abstract class SObjectSyncableRepoBase<T : So>(
         }
 
         if (result == null) {
-            removeAllFromObjectList { it.serverId == retrieved.elt.getString(Constants.ID) }
+            val retrievedId = retrieved.elt.getString(Constants.ID)
+            removeAllFromObjectList { it.id.primaryKey == retrievedId }
         } else {
-            replaceAllOrAddNewToObjectList(newValue = result) { it.serverId == result.serverId }
+            replaceAllOrAddNewToObjectList(newValue = result) { it.id.primaryKey == result.id.primaryKey }
         }
 
         result
     }
 
     @Throws(RepoOperationException::class)
-    override suspend fun locallyUndelete(id: String) = withContext(ioDispatcher + NonCancellable) {
+    override suspend fun locallyUndelete(id: SoId) = withContext(ioDispatcher + NonCancellable) {
         suspend fun saveUndeleteToStore(elt: JSONObject, soupEntryId: Long): T {
             val curLocalStatus = elt.coerceToLocalStatus()
             elt
@@ -263,7 +264,7 @@ abstract class SObjectSyncableRepoBase<T : So>(
             else
                 saveUndeleteToStore(retrieved.elt, retrieved.soupId)
 
-        replaceAllOrAddNewToObjectList(newValue = result) { it.serverId == result.serverId }
+        replaceAllOrAddNewToObjectList(newValue = result) { it.id.primaryKey == result.id.primaryKey }
         result
     }
 
@@ -298,7 +299,7 @@ abstract class SObjectSyncableRepoBase<T : So>(
         deserializer.coerceFromJsonOrThrow(this)
     } catch (ex: Exception) {
         val id = this.optStringOrNull(Constants.ID)
-        removeAllFromObjectList { it.serverId == id }
+        removeAllFromObjectList { it.id.primaryKey == id }
         throw RepoOperationException.InvalidResultObject(
             message = "SmartStore operation was successful, but failed to deserialize updated JSON. This object has been removed from the list of objects in this repo to preserve data integrity",
             cause = ex
@@ -310,8 +311,8 @@ abstract class SObjectSyncableRepoBase<T : So>(
      * or throwing the corresponding exception.
      */
     @Throws(RepoOperationException.ObjectNotFound::class)
-    protected fun retrieveByIdOrThrowOperationException(id: String) = try {
-        store.retrieveSingleById(soupName = soupName, idColName = Constants.ID, id = id)
+    protected fun retrieveByIdOrThrowOperationException(id: SoId) = try {
+        store.retrieveSingleById(soupName = soupName, idColName = Constants.ID, id = id.primaryKey)
     } catch (ex: Exception) {
         throw RepoOperationException.ObjectNotFound(id = id, soupName = soupName, cause = ex)
     }

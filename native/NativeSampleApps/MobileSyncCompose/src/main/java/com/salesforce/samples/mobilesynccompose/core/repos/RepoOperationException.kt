@@ -1,5 +1,7 @@
 package com.salesforce.samples.mobilesynccompose.core.repos
 
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SoId
+
 sealed class RepoOperationException : Exception() {
     data class InvalidResultObject(
         override val message: String?,
@@ -12,7 +14,7 @@ sealed class RepoOperationException : Exception() {
     ) : RepoOperationException()
 
     data class ObjectNotFound(
-        val id: String,
+        val id: SoId,
         val soupName: String,
         override val cause: Throwable?
     ) : RepoOperationException() {

@@ -55,10 +55,10 @@ import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 fun ContactCard(
     modifier: Modifier = Modifier,
     contact: ContactObject,
-    onCardClick: (String) -> Unit,
-    onDeleteClick: (String) -> Unit,
-    onUndeleteClick: (String) -> Unit,
-    onEditClick: (String) -> Unit,
+    onCardClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    onUndeleteClick: () -> Unit,
+    onEditClick: () -> Unit,
     startExpanded: Boolean = false,
     elevation: Dp = 2.dp,
 ) {
@@ -72,7 +72,7 @@ fun ContactCard(
                 .then(modifier)
                 .pointerInput(Unit) {
                     detectTapGestures(
-                        onTap = { onCardClick(contact.serverId) },
+                        onTap = { onCardClick() },
                         onLongPress = { showDropDownMenu = true }
                     )
                 },
@@ -137,21 +137,21 @@ private fun ContactDropdownMenu(
     showDropDownMenu: Boolean,
     contact: ContactObject,
     onDismissMenu: () -> Unit,
-    onDeleteClick: (String) -> Unit,
-    onUndeleteClick: (String) -> Unit,
-    onEditClick: (String) -> Unit,
+    onDeleteClick: () -> Unit,
+    onUndeleteClick: () -> Unit,
+    onEditClick: () -> Unit,
 ) {
     DropdownMenu(expanded = showDropDownMenu, onDismissRequest = onDismissMenu) {
         if (contact.localStatus.isLocallyDeleted) {
-            DropdownMenuItem(onClick = { onDismissMenu(); onUndeleteClick(contact.serverId) }) {
+            DropdownMenuItem(onClick = { onDismissMenu(); onUndeleteClick() }) {
                 Text(stringResource(id = R.string.cta_undelete))
             }
         } else {
-            DropdownMenuItem(onClick = { onDismissMenu(); onDeleteClick(contact.serverId) }) {
+            DropdownMenuItem(onClick = { onDismissMenu(); onDeleteClick() }) {
                 Text(stringResource(id = R.string.cta_delete))
             }
         }
-        DropdownMenuItem(onClick = { onDismissMenu(); onEditClick(contact.serverId) }) {
+        DropdownMenuItem(onClick = { onDismissMenu(); onEditClick() }) {
             Text(stringResource(id = R.string.cta_edit))
         }
     }
