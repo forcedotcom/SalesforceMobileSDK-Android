@@ -1,6 +1,7 @@
 package com.salesforce.samples.mobilesynccompose.core.salesforceobject
 
 import com.salesforce.androidsdk.mobilesync.target.SyncTarget.*
+import com.salesforce.samples.mobilesynccompose.core.ReadOnlyJson
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -11,6 +12,15 @@ fun JSONObject.getRequiredStringOrThrow(key: String): String =
         this.getString(key)
     } catch (ex: JSONException) {
         throw MissingRequiredProperty(propertyKey = key, offendingJson = this)
+    }
+
+@Throws(CoerceException::class)
+fun ReadOnlyJson.getRequiredStringOrThrow(key: String): String =
+    try {
+        this.getString(key)
+    } catch (ex: JSONException) {
+        // WIP should I change this exception to accept a string instead of a json object?
+        throw MissingRequiredProperty(propertyKey = key, offendingJson = JSONObject())
     }
 
 @Throws(CoerceException::class)
@@ -51,6 +61,15 @@ fun JSONObject.getRequiredObjectOrThrow(key: String): JSONObject =
         this.getJSONObject(key)
     } catch (ex: JSONException) {
         throw MissingRequiredProperty(propertyKey = key, offendingJson = this)
+    }
+
+@Throws(CoerceException::class)
+fun ReadOnlyJson.getRequiredObjectOrThrow(key: String): JSONObject =
+    try {
+        this.getJSONObject(key)
+    } catch (ex: JSONException) {
+        // WIP should I change this exception to accept a string instead of a json object?
+        throw MissingRequiredProperty(propertyKey = key, offendingJson = JSONObject())
     }
 
 @Throws(CoerceException::class)

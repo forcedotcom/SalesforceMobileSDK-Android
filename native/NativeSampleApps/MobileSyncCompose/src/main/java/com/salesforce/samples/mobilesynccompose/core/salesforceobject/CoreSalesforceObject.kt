@@ -4,7 +4,6 @@ import com.salesforce.androidsdk.mobilesync.target.SyncTarget.*
 import com.salesforce.androidsdk.mobilesync.util.Constants
 import com.salesforce.samples.mobilesynccompose.core.extensions.optStringOrNull
 import com.salesforce.samples.mobilesynccompose.core.extensions.putIfAbsent
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus.*
 import org.json.JSONObject
 import java.util.*
 
@@ -12,7 +11,7 @@ interface CoreSalesforceObject {
     val localId: String?
     val serverId: String
 
-//    val objectType: String
+    //    val objectType: String
     val localStatus: LocalStatus
 //    val locallyCreated: Boolean
 //    val locallyDeleted: Boolean
@@ -67,16 +66,10 @@ data class CoreSalesforceObjectImpl
 //    override val local: Boolean by localStatus::local
 
     override fun buildSafeEltCopy(): JSONObject = soupEltCopier.buildCopy().apply {
-        val locallyCreated = localStatus == LocallyCreated
-        val locallyDeleted = localStatus == LocallyDeleted
-        val locallyUpdated =
-            localStatus == LocallyUpdated || localStatus == LocallyDeletedAndLocallyUpdated
-        val local = locallyCreated || locallyDeleted || locallyUpdated
-
-        putIfAbsent(LOCALLY_CREATED, locallyCreated)
-        putIfAbsent(LOCALLY_DELETED, locallyDeleted)
-        putIfAbsent(LOCALLY_UPDATED, locallyUpdated)
-        putIfAbsent(LOCAL, local)
+        putIfAbsent(LOCALLY_CREATED, localStatus.isLocallyCreated)
+        putIfAbsent(LOCALLY_DELETED, localStatus.isLocallyDeleted)
+        putIfAbsent(LOCALLY_UPDATED, localStatus.isLocallyUpdated)
+        putIfAbsent(LOCAL, localStatus.isLocal)
 
         putIfAbsent(Constants.ID, serverId)
 

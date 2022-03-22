@@ -62,4 +62,10 @@ val LocalStatus.isLocallyUpdated: Boolean get() = when (this) {
     LocalStatus.MatchesUpstream -> false
 }
 
-
+val LocalStatus.isLocal: Boolean get() = when (this) {
+    LocalStatus.MatchesUpstream -> false
+    LocalStatus.LocallyCreated,
+    LocalStatus.LocallyDeleted,
+    LocalStatus.LocallyUpdated,
+    LocalStatus.LocallyDeletedAndLocallyUpdated -> true
+}
