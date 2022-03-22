@@ -2,11 +2,11 @@ package com.salesforce.samples.mobilesynccompose.core.salesforceobject
 
 import com.salesforce.androidsdk.mobilesync.target.SyncTarget
 import com.salesforce.androidsdk.mobilesync.util.Constants
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.CoreSalesforceObjectImpl.Companion.KEY_LOCAL_ID
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.So.Companion.KEY_LOCAL_ID
 import org.json.JSONObject
 import java.util.*
 
-interface SalesforceObjectDeserializer<T : CoreSalesforceObject> {
+interface SalesforceObjectDeserializer<T : So> {
     @Throws(CoerceException::class)
     fun coerceFromJsonOrThrow(json: JSONObject): T
 }

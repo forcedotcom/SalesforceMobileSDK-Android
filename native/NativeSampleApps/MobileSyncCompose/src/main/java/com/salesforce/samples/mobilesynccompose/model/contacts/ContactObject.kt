@@ -27,7 +27,7 @@
 package com.salesforce.samples.mobilesynccompose.model.contacts
 
 import com.salesforce.androidsdk.mobilesync.util.Constants
-import com.salesforce.samples.mobilesynccompose.core.extensions.optStringOrNull
+import com.salesforce.samples.mobilesynccompose.core.ReadOnlyJson
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.*
 import org.json.JSONObject
 
@@ -36,12 +36,12 @@ data class ContactObject(
     val lastName: String?,
     val title: String?,
     val department: String?,
-    private val coreSalesforceObj: CoreSalesforceObject
-) : CoreSalesforceObject by coreSalesforceObj, ImmutableSo {
-
-    val accountId: String? by lazy {
-        coreSalesforceObj.buildSafeEltCopy().optStringOrNull(KEY_ACCOUNT_ID)
-    }
+    val accountId: String?,
+    override val serverId: String,
+    override val localId: String?,
+    override val localStatus: LocalStatus,
+    private val elt: ReadOnlyJson
+) : So {
 
     val fullName =
         if (firstName == null && this.lastName == null) null
@@ -50,7 +50,7 @@ data class ContactObject(
             if (lastName != null) append(lastName)
         }.trim()
 
-    override fun buildSafeEltCopy(): JSONObject = coreSalesforceObj.buildSafeEltCopy().apply {
+    override fun buildUpdatedElt(): JSONObject = elt.buildMutableCopy().apply {
         putOpt(KEY_FIRST_NAME, firstName)
         putOpt(KEY_LAST_NAME, lastName)
         putOpt(KEY_TITLE, title)
@@ -60,7 +60,7 @@ data class ContactObject(
     }
 
     override val hasUnsavedChanges: Boolean by lazy {
-        buildSafeEltCopy().run {
+        with(elt) {
             optStringOrNull(KEY_FIRST_NAME) != firstName ||
                     optStringOrNull(KEY_LAST_NAME) != lastName ||
                     optStringOrNull(KEY_TITLE) != title ||
@@ -79,19 +79,20 @@ data class ContactObject(
 
         @Throws(CoerceException::class)
         override fun coerceFromJsonOrThrow(json: JSONObject): ContactObject {
-            val jsonCopier = JsonCopier(inJson = json)
-            val safe = jsonCopier.buildCopy()
+            val elt = ReadOnlyJson(json)
+
+            ReadOnlySoHelper.requireSoType(elt, OBJECT_TYPE)
 
             return ContactObject(
-                firstName = safe.optStringOrNull(KEY_FIRST_NAME),
-                lastName = safe.optStringOrNull(KEY_LAST_NAME),
-                title = safe.optStringOrNull(KEY_TITLE),
-                department = safe.optStringOrNull(KEY_DEPARTMENT),
-                accountId = safe.optStringOrNull(KEY_ACCOUNT_ID),
-                coreSalesforceObj = CoreSalesforceObjectImpl(
-                    soupEltCopier = jsonCopier,
-                    objectType = OBJECT_TYPE
-                )
+                serverId = ReadOnlySoHelper.getServerIdOrThrow(elt),
+                localId = ReadOnlySoHelper.getLocalId(elt),
+                localStatus = ReadOnlySoHelper.getLocalStatus(elt),
+                elt = elt,
+                firstName = elt.optStringOrNull(KEY_FIRST_NAME),
+                lastName = elt.optStringOrNull(KEY_LAST_NAME),
+                title = elt.optStringOrNull(KEY_TITLE),
+                department = elt.optStringOrNull(KEY_DEPARTMENT),
+                accountId = elt.optStringOrNull(KEY_ACCOUNT_ID),
             )
         }
 
@@ -111,20 +112,16 @@ data class ContactObject(
             title: String? = null,
             department: String? = null,
             associatedAccountId: String? = null
-        ) {
-            val baseElt = createNewSoupEltBase(OBJECT_TYPE)
-            ContactObject(
-                firstName = firstName,
-                lastName = lastName,
-                title = title,
-                department = department,
-                accountId = associatedAccountId,
-                coreSalesforceObj = CoreSalesforceObjectImpl(
-                    JsonCopier(baseElt),
-                    OBJECT_TYPE
-                )
-            )
-        }
+        ) = createNewSoupEltBase(forObjType = OBJECT_TYPE)
+            .apply {
+                putOpt(KEY_FIRST_NAME, firstName)
+                putOpt(KEY_LAST_NAME, lastName)
+                putOpt(KEY_TITLE, title)
+                putOpt(KEY_DEPARTMENT, department)
+                putOpt(KEY_ACCOUNT_ID, associatedAccountId)
+            }.let {
+                coerceFromJsonOrThrow(it)
+            }
     }
 }
 

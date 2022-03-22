@@ -1,39 +1,48 @@
 package com.salesforce.samples.mobilesynccompose.model.account
 
 import com.salesforce.androidsdk.mobilesync.util.Constants
-import com.salesforce.samples.mobilesynccompose.core.extensions.optStringOrNull
+import com.salesforce.samples.mobilesynccompose.core.ReadOnlyJson
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.*
 import org.json.JSONObject
 
 data class AccountObject(
     val name: String,
-    private val coreSalesforceObject: CoreSalesforceObject,
-) : ImmutableSo, CoreSalesforceObject by coreSalesforceObject {
+    override val serverId: String,
+    override val localId: String?,
+    override val localStatus: LocalStatus,
+    private val elt: ReadOnlyJson
+) : So {
 
-    override fun buildSafeEltCopy(): JSONObject = coreSalesforceObject.buildSafeEltCopy().apply {
+    override fun buildUpdatedElt(): JSONObject = elt.buildMutableCopy().apply {
         put(Constants.NAME, name)
     }
 
     override val hasUnsavedChanges: Boolean by lazy {
-        buildSafeEltCopy().optStringOrNull(Constants.NAME) != name
+        elt.optStringOrNull(Constants.NAME) != name
     }
 
     companion object : SalesforceObjectDeserializer<AccountObject> {
-        const val OBJECT_TYPE = Constants.ACCOUNT
+        private const val OBJECT_TYPE = Constants.ACCOUNT
 
         @Throws(CoerceException::class)
         override fun coerceFromJsonOrThrow(json: JSONObject): AccountObject {
-            val copier = JsonCopier(json)
-            val safe = copier.buildCopy()
+            val safeJson = ReadOnlyJson(json)
+            ReadOnlySoHelper.requireSoType(safeJson, OBJECT_TYPE)
 
-            val name = safe.getRequiredStringOrThrow(Constants.NAME)
             return AccountObject(
-                name = name,
-                coreSalesforceObject = CoreSalesforceObjectImpl(
-                    copier,
-                    objectType = OBJECT_TYPE
-                )
+                serverId = ReadOnlySoHelper.getServerIdOrThrow(safeJson),
+                localId = ReadOnlySoHelper.getLocalId(safeJson),
+                localStatus = ReadOnlySoHelper.getLocalStatus(safeJson),
+                elt = safeJson,
+                name = safeJson.getRequiredStringOrThrow(Constants.NAME),
             )
         }
+
+        fun createNewLocal(name: String) = createNewSoupEltBase(forObjType = OBJECT_TYPE)
+            .apply {
+                put(Constants.NAME, name)
+            }.let {
+                coerceFromJsonOrThrow(it)
+            }
     }
 }

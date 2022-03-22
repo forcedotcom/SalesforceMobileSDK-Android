@@ -47,12 +47,12 @@ import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactCard
 import com.salesforce.samples.mobilesynccompose.core.ui.components.LoadingOverlay
 import com.salesforce.samples.mobilesynccompose.core.ui.components.OutlinedTextFieldWithHelp
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
-import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
+import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 
 @Composable
 fun ContactsListViewingModeSinglePane(
     modifier: Modifier = Modifier,
-    contacts: List<Contact>,
+    contacts: List<ContactObject>,
     showLoadingOverlay: Boolean,
     listContactClick: (contactId: String) -> Unit,
     listDeleteClick: (contactId: String) -> Unit,
@@ -138,7 +138,7 @@ fun ContactsListFabSinglePane(listCreateClick: () -> Unit) {
 @Composable
 private fun ContactListContentPreview() {
     val contacts = (0..100).map {
-        Contact.createNewLocal(
+        ContactObject.createNewLocal(
             firstName = "Contact",
             lastName = "$it",
             title = "Title $it",
@@ -165,7 +165,7 @@ private fun ContactListContentPreview() {
 @Composable
 private fun ContactListSyncingPreview() {
     val contacts = (0..100).map {
-        Contact.createNewLocal(
+        ContactObject.createNewLocal(
             firstName = "Contact",
             lastName = "$it",
             title = "Title $it",
@@ -191,7 +191,7 @@ private fun ContactListSyncingPreview() {
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 private fun ContactListLoadingPreview() {
-    val contacts = emptyList<Contact>()
+    val contacts = emptyList<ContactObject>()
 
     SalesforceMobileSDKAndroidTheme {
         Surface {

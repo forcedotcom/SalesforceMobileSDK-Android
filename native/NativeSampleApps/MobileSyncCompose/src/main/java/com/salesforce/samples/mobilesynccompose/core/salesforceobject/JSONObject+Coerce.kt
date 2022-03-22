@@ -11,7 +11,7 @@ fun JSONObject.getRequiredStringOrThrow(key: String): String =
     try {
         this.getString(key)
     } catch (ex: JSONException) {
-        throw MissingRequiredProperty(propertyKey = key, offendingJson = this)
+        throw MissingRequiredProperty(propertyKey = key, offendingJsonString = this.toString())
     }
 
 @Throws(CoerceException::class)
@@ -20,7 +20,7 @@ fun ReadOnlyJson.getRequiredStringOrThrow(key: String): String =
         this.getString(key)
     } catch (ex: JSONException) {
         // WIP should I change this exception to accept a string instead of a json object?
-        throw MissingRequiredProperty(propertyKey = key, offendingJson = JSONObject())
+        throw MissingRequiredProperty(propertyKey = key, offendingJsonString = this.toString())
     }
 
 @Throws(CoerceException::class)
@@ -28,7 +28,7 @@ fun JSONObject.getRequiredIntOrThrow(key: String): Int =
     try {
         this.getInt(key)
     } catch (ex: JSONException) {
-        throw MissingRequiredProperty(propertyKey = key, offendingJson = this)
+        throw MissingRequiredProperty(propertyKey = key, offendingJsonString = this.toString())
     }
 
 @Throws(CoerceException::class)
@@ -36,7 +36,7 @@ fun JSONObject.getRequiredLongOrThrow(key: String): Long =
     try {
         this.getLong(key)
     } catch (ex: JSONException) {
-        throw MissingRequiredProperty(propertyKey = key, offendingJson = this)
+        throw MissingRequiredProperty(propertyKey = key, offendingJsonString = this.toString())
     }
 
 @Throws(CoerceException::class)
@@ -44,7 +44,7 @@ fun JSONObject.getRequiredDoubleOrThrow(key: String): Double =
     try {
         this.getDouble(key)
     } catch (ex: JSONException) {
-        throw MissingRequiredProperty(propertyKey = key, offendingJson = this)
+        throw MissingRequiredProperty(propertyKey = key, offendingJsonString = this.toString())
     }
 
 @Throws(CoerceException::class)
@@ -52,7 +52,7 @@ fun JSONObject.getRequiredBooleanOrThrow(key: String): Boolean =
     try {
         this.getBoolean(key)
     } catch (ex: JSONException) {
-        throw MissingRequiredProperty(propertyKey = key, offendingJson = this)
+        throw MissingRequiredProperty(propertyKey = key, offendingJsonString = this.toString())
     }
 
 @Throws(CoerceException::class)
@@ -60,7 +60,7 @@ fun JSONObject.getRequiredObjectOrThrow(key: String): JSONObject =
     try {
         this.getJSONObject(key)
     } catch (ex: JSONException) {
-        throw MissingRequiredProperty(propertyKey = key, offendingJson = this)
+        throw MissingRequiredProperty(propertyKey = key, offendingJsonString = this.toString())
     }
 
 @Throws(CoerceException::class)
@@ -69,7 +69,7 @@ fun ReadOnlyJson.getRequiredObjectOrThrow(key: String): JSONObject =
         this.getJSONObject(key)
     } catch (ex: JSONException) {
         // WIP should I change this exception to accept a string instead of a json object?
-        throw MissingRequiredProperty(propertyKey = key, offendingJson = JSONObject())
+        throw MissingRequiredProperty(propertyKey = key, offendingJsonString = this.toString())
     }
 
 @Throws(CoerceException::class)
@@ -77,7 +77,7 @@ fun JSONObject.getRequiredArrayOrThrow(key: String): JSONArray =
     try {
         this.getJSONArray(key)
     } catch (ex: JSONException) {
-        throw MissingRequiredProperty(propertyKey = key, offendingJson = this)
+        throw MissingRequiredProperty(propertyKey = key, offendingJsonString = this.toString())
     }
 
 //@Throws(CoerceException::class)

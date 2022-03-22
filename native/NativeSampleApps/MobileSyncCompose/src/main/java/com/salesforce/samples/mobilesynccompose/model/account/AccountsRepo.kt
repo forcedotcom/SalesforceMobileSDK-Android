@@ -13,7 +13,6 @@ class DefaultAccountsRepo(
     account = account,
     ioDispatcher = ioDispatcher
 ) {
-
     override val deserializer: SalesforceObjectDeserializer<AccountObject> = AccountObject.Companion
     override val soupName: String = ACCOUNTS_SOUP_NAME
     override val syncDownName: String = SYNC_DOWN_ACCOUNTS

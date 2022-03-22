@@ -10,7 +10,6 @@ import com.salesforce.androidsdk.mobilesync.util.SyncState
 import com.salesforce.androidsdk.smartstore.store.QuerySpec
 import com.salesforce.samples.mobilesynccompose.core.extensions.*
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.*
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +20,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
-abstract class SObjectSyncableRepoBase<T : CoreSalesforceObject>(
+abstract class SObjectSyncableRepoBase<T : So>(
     account: UserAccount?,// TODO this shouldn't be nullable. The logic whether to instantiate this object should be moved higher up, but this is a quick fix to get things testable
     protected val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : SObjectSyncableRepo<T> {
@@ -177,7 +176,7 @@ abstract class SObjectSyncableRepoBase<T : CoreSalesforceObject>(
     @Throws(RepoOperationException::class)
     override suspend fun locallyUpsert(so: T) = withContext(ioDispatcher + NonCancellable) {
         val upsertResult = try {
-            store.upsert(soupName, so.buildSafeEltCopy())
+            store.upsert(soupName, so.buildUpdatedElt())
         } catch (ex: Exception) {
             throw RepoOperationException.SmartStoreOperationFailed(
                 message = "Failed to upsert the object in SmartStore.",
@@ -212,7 +211,7 @@ abstract class SObjectSyncableRepoBase<T : CoreSalesforceObject>(
         val retrieved = retrieveByIdOrThrowOperationException(id)
         val localStatus = retrieved.elt.coerceToLocalStatus()
         val result: T? = when {
-            localStatus == LocallyCreated -> {
+            localStatus.isLocallyCreated -> {
                 try {
                     store.delete(soupName, retrieved.soupId)
                 } catch (ex: Exception) {

@@ -435,7 +435,7 @@ class DefaultContactsActivityViewModel(
         // TODO check for if it is locally deleted, and only go to Editing mode when it is not deleted
         val curState = mutUiState.value
 
-        if (curState.detailsState != null && curState.detailsState.contactObj.isModifiedInMemory) {
+        if (curState.detailsState != null && curState.detailsState.contactObj.hasUnsavedChanges) {
             // editing contact, so ask to discard changes
             val newDialog = mutUiState.value.dialogUiState ?: DiscardChangesDialogUiState(
                 onDiscardChanges = ::onDetailsDiscardChangesFromDialog,

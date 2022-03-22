@@ -1,9 +1,9 @@
 package com.salesforce.samples.mobilesynccompose.core.repos
 
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SalesforceObjectContainer
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.So
 import kotlinx.coroutines.flow.StateFlow
 
-interface SObjectSyncableRepo<T : SalesforceObjectContainer> {
+interface SObjectSyncableRepo<T : So> {
     val curSObjectList: StateFlow<List<T>>
 
     @Throws(RepoSyncException.SyncDownException::class)

@@ -51,6 +51,7 @@ import com.salesforce.samples.mobilesynccompose.R.drawable.ic_undo
 import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsUiMode
 import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsUiState
+import com.salesforce.samples.mobilesynccompose.contacts.state.toContactDetailsUiState
 import com.salesforce.samples.mobilesynccompose.contacts.ui.mockLocallyDeletedContact
 import com.salesforce.samples.mobilesynccompose.contacts.vm.*
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.isLocallyDeleted

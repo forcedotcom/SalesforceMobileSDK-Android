@@ -44,16 +44,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.isLocallyDeleted
 import com.salesforce.samples.mobilesynccompose.core.ui.components.ExpandoButton
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.ALPHA_DISABLED
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
-import com.salesforce.samples.mobilesynccompose.model.contacts.Contact
+import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 
 @Composable
 /* TODO How to put in profile pic?  Glide lib? */
 fun ContactCard(
     modifier: Modifier = Modifier,
-    contact: Contact,
+    contact: ContactObject,
     onCardClick: (String) -> Unit,
     onDeleteClick: (String) -> Unit,
     onUndeleteClick: (String) -> Unit,
@@ -62,7 +63,7 @@ fun ContactCard(
     elevation: Dp = 2.dp,
 ) {
     var showDropDownMenu by rememberSaveable { mutableStateOf(false) }
-    val alpha = if (contact.localStatus.locallyDeleted) ALPHA_DISABLED else 1f
+    val alpha = if (contact.localStatus.isLocallyDeleted) ALPHA_DISABLED else 1f
 
     CompositionLocalProvider(LocalContentAlpha provides alpha) {
         Card(
@@ -96,7 +97,7 @@ fun ContactCard(
 @Composable
 private fun ContactCardInnerContent(
     modifier: Modifier = Modifier,
-    contact: Contact,
+    contact: ContactObject,
     startExpanded: Boolean,
 ) {
     var isExpanded by rememberSaveable { mutableStateOf(startExpanded) }
@@ -134,14 +135,14 @@ private fun ContactCardInnerContent(
 @Composable
 private fun ContactDropdownMenu(
     showDropDownMenu: Boolean,
-    contact: Contact,
+    contact: ContactObject,
     onDismissMenu: () -> Unit,
     onDeleteClick: (String) -> Unit,
     onUndeleteClick: (String) -> Unit,
     onEditClick: (String) -> Unit,
 ) {
     DropdownMenu(expanded = showDropDownMenu, onDismissRequest = onDismissMenu) {
-        if (contact.localStatus.locallyDeleted) {
+        if (contact.localStatus.isLocallyDeleted) {
             DropdownMenuItem(onClick = { onDismissMenu(); onUndeleteClick(contact.serverId) }) {
                 Text(stringResource(id = R.string.cta_undelete))
             }
@@ -175,7 +176,7 @@ fun PreviewContactListItem() {
                 ContactCard(
                     modifier = Modifier.padding(8.dp),
                     startExpanded = true,
-                    contact = Contact.createNewLocal(
+                    contact = ContactObject.createNewLocal(
                         firstName = "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirstFirst",
                         lastName = "Last Last Last Last Last Last Last Last Last Last Last",
                         title = "Title",
