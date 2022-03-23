@@ -3,12 +3,11 @@ package com.salesforce.samples.mobilesynccompose.core.salesforceobject
 import com.salesforce.samples.mobilesynccompose.core.ReadOnlyJson
 import org.json.JSONObject
 
-interface So {
-    val id: SoId
-//    val serverId: ServerId
-//    val localId: LocalId?
+interface SObject {
+    val id: SObjectId
     val localStatus: LocalStatus
-    val hasUnsavedChanges: Boolean
+    val curPropertiesAreModifiedFromOriginal: Boolean
+    val originalElt: ReadOnlyJson
 
     fun buildUpdatedElt(): JSONObject
 
@@ -16,5 +15,3 @@ interface So {
         const val KEY_LOCAL_ID = "LocalId"
     }
 }
-
-//val So.preferredId: SoId get() = localId ?: serverId

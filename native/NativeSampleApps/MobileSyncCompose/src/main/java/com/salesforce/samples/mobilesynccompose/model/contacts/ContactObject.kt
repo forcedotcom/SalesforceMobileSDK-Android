@@ -37,12 +37,12 @@ data class ContactObject(
     val title: String?,
     val department: String?,
     val accountId: String?,
-    override val id: SoId,
+    override val id: SObjectId,
 //    override val serverId: ServerId,
 //    override val localId: LocalId?,
     override val localStatus: LocalStatus,
-    private val elt: ReadOnlyJson
-) : So {
+    override val originalElt: ReadOnlyJson
+) : SObject {
 
     val fullName =
         if (firstName == null && this.lastName == null) null
@@ -51,7 +51,7 @@ data class ContactObject(
             if (lastName != null) append(lastName)
         }.trim()
 
-    override fun buildUpdatedElt(): JSONObject = elt.buildMutableCopy().apply {
+    override fun buildUpdatedElt(): JSONObject = originalElt.buildMutableCopy().apply {
         putOpt(KEY_FIRST_NAME, firstName)
         putOpt(KEY_LAST_NAME, lastName)
         putOpt(KEY_TITLE, title)
@@ -60,8 +60,8 @@ data class ContactObject(
         putOpt(KEY_ACCOUNT_ID, accountId)
     }
 
-    override val hasUnsavedChanges: Boolean by lazy {
-        with(elt) {
+    override val curPropertiesAreModifiedFromOriginal: Boolean by lazy {
+        with(originalElt) {
             optStringOrNull(KEY_FIRST_NAME) != firstName ||
                     optStringOrNull(KEY_LAST_NAME) != lastName ||
                     optStringOrNull(KEY_TITLE) != title ||
@@ -88,9 +88,9 @@ data class ContactObject(
             val localId = ReadOnlySoHelper.getLocalId(elt)
 
             return ContactObject(
-                id = SoId(primaryKey = serverId, localId = localId),
+                id = SObjectId(primaryKey = serverId, localId = localId),
                 localStatus = ReadOnlySoHelper.getLocalStatus(elt),
-                elt = elt,
+                originalElt = elt,
                 firstName = elt.optStringOrNull(KEY_FIRST_NAME),
                 lastName = elt.optStringOrNull(KEY_LAST_NAME),
                 title = elt.optStringOrNull(KEY_TITLE),

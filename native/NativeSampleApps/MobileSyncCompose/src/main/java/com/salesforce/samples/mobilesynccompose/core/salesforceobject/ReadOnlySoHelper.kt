@@ -2,7 +2,7 @@ package com.salesforce.samples.mobilesynccompose.core.salesforceobject
 
 import com.salesforce.androidsdk.mobilesync.util.Constants
 import com.salesforce.samples.mobilesynccompose.core.ReadOnlyJson
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.So.Companion.KEY_LOCAL_ID
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObject.Companion.KEY_LOCAL_ID
 import java.util.*
 
 object ReadOnlySoHelper {

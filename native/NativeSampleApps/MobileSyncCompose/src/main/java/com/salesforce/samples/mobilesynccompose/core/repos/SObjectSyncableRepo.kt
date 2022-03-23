@@ -1,10 +1,10 @@
 package com.salesforce.samples.mobilesynccompose.core.repos
 
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.So
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SoId
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObject
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectId
 import kotlinx.coroutines.flow.StateFlow
 
-interface SObjectSyncableRepo<T : So> {
+interface SObjectSyncableRepo<T : SObject> {
     val curSObjectList: StateFlow<List<T>>
 
     @Throws(RepoSyncException.SyncDownException::class)
@@ -20,8 +20,8 @@ interface SObjectSyncableRepo<T : So> {
     suspend fun locallyUpsert(so: T): T
 
     @Throws(RepoOperationException::class)
-    suspend fun locallyDelete(id: SoId): T?
+    suspend fun locallyDelete(id: SObjectId): T?
 
     @Throws(RepoOperationException::class)
-    suspend fun locallyUndelete(id: SoId): T
+    suspend fun locallyUndelete(id: SObjectId): T
 }

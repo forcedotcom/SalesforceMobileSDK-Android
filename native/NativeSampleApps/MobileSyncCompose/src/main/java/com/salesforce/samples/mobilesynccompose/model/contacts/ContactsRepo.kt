@@ -36,7 +36,7 @@ import com.salesforce.samples.mobilesynccompose.core.repos.SObjectSyncableRepoBa
 import com.salesforce.samples.mobilesynccompose.core.repos.RepoOperationException
 import com.salesforce.samples.mobilesynccompose.core.repos.SObjectSyncableRepo
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SalesforceObjectDeserializer
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SoId
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectId
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject.Companion.KEY_ACCOUNT_ID
 import kotlinx.coroutines.*
 
@@ -46,10 +46,10 @@ import kotlinx.coroutines.*
  */
 interface ContactsRepo : SObjectSyncableRepo<ContactObject> {
     @Throws(RepoOperationException::class)
-    suspend fun getContactsForAccountId(accountId: SoId): List<ContactObject>
+    suspend fun getContactsForAccountId(accountId: SObjectId): List<ContactObject>
 
     @Throws(RepoOperationException::class)
-    suspend fun associateContactWithAccount(contactId: SoId, accountId: SoId): ContactObject
+    suspend fun associateContactWithAccount(contactId: SObjectId, accountId: SObjectId): ContactObject
 }
 
 /**
@@ -70,7 +70,7 @@ class DefaultContactsRepo(
     override val syncUpName: String = SYNC_UP_CONTACTS
 
     @Throws(RepoOperationException::class)
-    override suspend fun getContactsForAccountId(accountId: SoId): List<ContactObject> =
+    override suspend fun getContactsForAccountId(accountId: SObjectId): List<ContactObject> =
         withContext(ioDispatcher) {
             try {
                 // TODO What to do with failed parses?
@@ -98,8 +98,8 @@ class DefaultContactsRepo(
 
     @Throws(RepoOperationException::class)
     override suspend fun associateContactWithAccount(
-        contactId: SoId,
-        accountId: SoId
+        contactId: SObjectId,
+        accountId: SObjectId
     ): ContactObject = withContext(ioDispatcher) {
         // WIP should we add business logic for checking if the operation would re-parent?
         val accountRet = retrieveByIdOrThrowOperationException(accountId)

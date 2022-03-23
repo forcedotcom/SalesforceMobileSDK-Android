@@ -44,7 +44,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactCard
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SoId
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectId
 import com.salesforce.samples.mobilesynccompose.core.ui.components.LoadingOverlay
 import com.salesforce.samples.mobilesynccompose.core.ui.components.OutlinedTextFieldWithHelp
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
@@ -55,10 +55,10 @@ fun ContactsListViewingModeSinglePane(
     modifier: Modifier = Modifier,
     contacts: List<ContactObject>,
     showLoadingOverlay: Boolean,
-    listContactClick: (id: SoId) -> Unit,
-    listDeleteClick: (id: SoId) -> Unit,
-    listEditClick: (id: SoId) -> Unit,
-    listUndeleteClick: (id: SoId) -> Unit,
+    listContactClick: (id: SObjectId) -> Unit,
+    listDeleteClick: (id: SObjectId) -> Unit,
+    listEditClick: (id: SObjectId) -> Unit,
+    listUndeleteClick: (id: SObjectId) -> Unit,
 ) {
     LazyColumn(modifier = modifier) {
         items(items = contacts, key = { it.id.localId ?: it.id.primaryKey }) { contact ->

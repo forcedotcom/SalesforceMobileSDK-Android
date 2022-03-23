@@ -26,15 +26,15 @@
  */
 package com.salesforce.samples.mobilesynccompose.core.ui.state
 
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SoId
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectId
 
 sealed interface DialogUiState
 
 data class DeleteConfirmationDialogUiState(
-    val objIdToDelete: SoId,
+    val objIdToDelete: SObjectId,
     val objName: String?,
     val onCancelDelete: () -> Unit,
-    val onDeleteConfirm: (objId: SoId) -> Unit,
+    val onDeleteConfirm: (objId: SObjectId) -> Unit,
 ) : DialogUiState
 
 data class DiscardChangesDialogUiState(
@@ -43,10 +43,10 @@ data class DiscardChangesDialogUiState(
 ) : DialogUiState
 
 data class UndeleteConfirmationDialogUiState(
-    val objIdToUndelete: SoId,
+    val objIdToUndelete: SObjectId,
     val objName: String?,
     val onCancelUndelete: () -> Unit,
-    val onUndeleteConfirm: (objId: SoId) -> Unit,
+    val onUndeleteConfirm: (objId: SObjectId) -> Unit,
 ) : DialogUiState
 
 data class ErrorDialogUiState(

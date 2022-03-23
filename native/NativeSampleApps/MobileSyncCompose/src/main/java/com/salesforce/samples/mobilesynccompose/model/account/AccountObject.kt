@@ -7,17 +7,17 @@ import org.json.JSONObject
 
 data class AccountObject(
     val name: String,
-    override val id: SoId,
+    override val id: SObjectId,
     override val localStatus: LocalStatus,
-    private val elt: ReadOnlyJson
-) : So {
+    override val originalElt: ReadOnlyJson
+) : SObject {
 
-    override fun buildUpdatedElt(): JSONObject = elt.buildMutableCopy().apply {
+    override fun buildUpdatedElt(): JSONObject = originalElt.buildMutableCopy().apply {
         put(Constants.NAME, name)
     }
 
-    override val hasUnsavedChanges: Boolean by lazy {
-        elt.optStringOrNull(Constants.NAME) != name
+    override val curPropertiesAreModifiedFromOriginal: Boolean by lazy {
+        originalElt.optStringOrNull(Constants.NAME) != name
     }
 
     companion object : SalesforceObjectDeserializer<AccountObject> {
@@ -32,9 +32,9 @@ data class AccountObject(
             val localId = ReadOnlySoHelper.getLocalId(safeJson)
 
             return AccountObject(
-                id = SoId(primaryKey = serverId, localId = localId),
+                id = SObjectId(primaryKey = serverId, localId = localId),
                 localStatus = ReadOnlySoHelper.getLocalStatus(safeJson),
-                elt = safeJson,
+                originalElt = safeJson,
                 name = safeJson.getRequiredStringOrThrow(Constants.NAME),
             )
         }

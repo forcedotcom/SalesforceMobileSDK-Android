@@ -55,7 +55,7 @@ import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.Single
 import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.*
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityViewModel
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SoId
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectId
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.isLocal
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.isLocallyDeleted
 import com.salesforce.samples.mobilesynccompose.core.ui.LayoutRestrictions
@@ -209,7 +209,7 @@ private fun SinglePaneTopAppBar(
             uiState.detailsState != null -> {
                 uiState.detailsState.let {
                     ContactDetailsTopAppBarSinglePane(
-                        label = "${it.firstNameVm.fieldValue} ${it.lastNameVm.fieldValue}",
+                        label = it.contactObj.fullName ?: "",
                         detailsExitClick = vm::detailsExitClick,
                         syncIconContent = {
                             SyncImage(contactObjLocalStatus = it.contactObj.localStatus)
@@ -454,7 +454,7 @@ private class PreviewContactsActivityViewModel(state: ContactsActivityUiState) :
         throw NotImplementedError("listSearchClick")
     }
 
-    override fun listContactClick(contactId: SoId) {
+    override fun listContactClick(contactId: SObjectId) {
         throw NotImplementedError("listContactClick")
     }
 
@@ -462,15 +462,15 @@ private class PreviewContactsActivityViewModel(state: ContactsActivityUiState) :
         throw NotImplementedError("listCreateClick")
     }
 
-    override fun listDeleteClick(contactId: SoId) {
+    override fun listDeleteClick(contactId: SObjectId) {
         throw NotImplementedError("listDeleteClick")
     }
 
-    override fun listEditClick(contactId: SoId) {
+    override fun listEditClick(contactId: SObjectId) {
         throw NotImplementedError("listEditClick")
     }
 
-    override fun listUndeleteClick(contactId: SoId) {
+    override fun listUndeleteClick(contactId: SObjectId) {
         throw NotImplementedError("listUndeleteClick")
     }
 

@@ -20,7 +20,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
-abstract class SObjectSyncableRepoBase<T : So>(
+abstract class SObjectSyncableRepoBase<T : SObject>(
     account: UserAccount?,// TODO this shouldn't be nullable. The logic whether to instantiate this object should be moved higher up, but this is a quick fix to get things testable
     protected val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : SObjectSyncableRepo<T> {
@@ -190,7 +190,7 @@ abstract class SObjectSyncableRepoBase<T : So>(
     }
 
     @Throws(RepoOperationException::class)
-    override suspend fun locallyDelete(id: SoId) = withContext(ioDispatcher + NonCancellable) {
+    override suspend fun locallyDelete(id: SObjectId) = withContext(ioDispatcher + NonCancellable) {
         suspend fun saveDeleteToStore(elt: JSONObject, soupId: Long): T {
             elt
                 .putOpt(LOCALLY_DELETED, true)
@@ -237,7 +237,7 @@ abstract class SObjectSyncableRepoBase<T : So>(
     }
 
     @Throws(RepoOperationException::class)
-    override suspend fun locallyUndelete(id: SoId) = withContext(ioDispatcher + NonCancellable) {
+    override suspend fun locallyUndelete(id: SObjectId) = withContext(ioDispatcher + NonCancellable) {
         suspend fun saveUndeleteToStore(elt: JSONObject, soupEntryId: Long): T {
             val curLocalStatus = elt.coerceToLocalStatus()
             elt
@@ -311,7 +311,7 @@ abstract class SObjectSyncableRepoBase<T : So>(
      * or throwing the corresponding exception.
      */
     @Throws(RepoOperationException.ObjectNotFound::class)
-    protected fun retrieveByIdOrThrowOperationException(id: SoId) = try {
+    protected fun retrieveByIdOrThrowOperationException(id: SObjectId) = try {
         store.retrieveSingleById(soupName = soupName, idColName = Constants.ID, id = id.primaryKey)
     } catch (ex: Exception) {
         throw RepoOperationException.ObjectNotFound(id = id, soupName = soupName, cause = ex)
