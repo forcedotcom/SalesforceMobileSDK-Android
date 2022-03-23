@@ -65,8 +65,8 @@ public class BriefcaseObjectInfo {
     public BriefcaseObjectInfo(JSONObject json) throws JSONException {
         this(
             json.getString(SOUP_NAME),
-            json.getString(SOBJECT_TYPE),
-            json.getString(RECORD_TYPE),
+            json.optString(SOBJECT_TYPE),
+            JSONObjectHelper.optString(json, RECORD_TYPE),
             JSONObjectHelper.toList(json.getJSONArray(FIELD_LIST)),
             JSONObjectHelper.optString(json, ID_FIELD_NAME),
             JSONObjectHelper.optString(json, MODIFICATION_DATE_FIELD_NAME)
