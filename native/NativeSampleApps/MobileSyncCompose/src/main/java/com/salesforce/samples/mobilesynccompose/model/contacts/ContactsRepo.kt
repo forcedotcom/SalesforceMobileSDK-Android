@@ -37,20 +37,13 @@ import com.salesforce.samples.mobilesynccompose.core.repos.RepoOperationExceptio
 import com.salesforce.samples.mobilesynccompose.core.repos.SObjectSyncableRepo
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SalesforceObjectDeserializer
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectId
-import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject.Companion.KEY_ACCOUNT_ID
 import kotlinx.coroutines.*
 
 /**
  * The Contacts Repository. It exposes upserting, deleting, and undeleting [Contact] model objects
  * into SmartStore, and it supports the MobileSync operations.
  */
-interface ContactsRepo : SObjectSyncableRepo<ContactObject> {
-    @Throws(RepoOperationException::class)
-    suspend fun getContactsForAccountId(accountId: SObjectId): List<ContactObject>
-
-    @Throws(RepoOperationException::class)
-    suspend fun associateContactWithAccount(contactId: SObjectId, accountId: SObjectId): ContactObject
-}
+interface ContactsRepo : SObjectSyncableRepo<ContactObject>
 
 /**
  * The default implementation of the [ContactsRepo].
@@ -68,67 +61,6 @@ class DefaultContactsRepo(
     override val soupName: String = CONTACTS_SOUP_NAME
     override val syncDownName: String = SYNC_DOWN_CONTACTS
     override val syncUpName: String = SYNC_UP_CONTACTS
-
-    @Throws(RepoOperationException::class)
-    override suspend fun getContactsForAccountId(accountId: SObjectId): List<ContactObject> =
-        withContext(ioDispatcher) {
-            try {
-                // TODO What to do with failed parses?
-                store.query(
-                    QuerySpec.buildExactQuerySpec(
-                        soupName,
-                        KEY_ACCOUNT_ID,
-                        accountId.primaryKey,
-                        SOUP_ENTRY_ID,
-                        QuerySpec.Order.ascending,
-                        10_000
-                    ),
-                    0
-                )
-                    .map { runCatching { ContactObject.coerceFromJsonOrThrow(it) } }
-                    .partitionBySuccess()
-                    .successes
-            } catch (ex: Exception) {
-                throw RepoOperationException.SmartStoreOperationFailed(
-                    message = "Query for retrieving accounts failed.",
-                    cause = ex
-                )
-            }
-        }
-
-    @Throws(RepoOperationException::class)
-    override suspend fun associateContactWithAccount(
-        contactId: SObjectId,
-        accountId: SObjectId
-    ): ContactObject = withContext(ioDispatcher) {
-        // WIP should we add business logic for checking if the operation would re-parent?
-        val accountRet = retrieveByIdOrThrowOperationException(accountId)
-
-        ensureActive()
-
-        val contactRet = retrieveByIdOrThrowOperationException(contactId)
-
-        ensureActive()
-
-        withContext(NonCancellable) {
-            val newContactElt = try {
-                store.update(
-                    CONTACTS_SOUP_NAME,
-                    contactRet.elt.put(KEY_ACCOUNT_ID, accountRet.elt.getString(Constants.ID)),
-                    contactRet.soupId
-                )
-            } catch (ex: Exception) {
-                throw RepoOperationException.SmartStoreOperationFailed(
-                    message = "Failed to update the Contact in SmartStore with the account ID.",
-                    cause = ex
-                )
-            }
-
-            val contact = newContactElt.coerceUpdatedObjToModelOrCleanupAndThrow()
-            replaceAllOrAddNewToObjectList(newValue = contact) { it.id.primaryKey == contact.id.primaryKey }
-            contact
-        }
-    }
 
     companion object {
         const val CONTACTS_SOUP_NAME = "contacts"

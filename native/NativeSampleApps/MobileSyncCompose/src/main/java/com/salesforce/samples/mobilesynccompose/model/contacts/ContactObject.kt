@@ -45,7 +45,6 @@ data class ContactObject(
     val lastName: String?,
     val title: String?,
     val department: String?,
-    val accountPrimaryKey: String?,
     override val id: SObjectId,
     override val localStatus: LocalStatus,
     override val originalElt: ReadOnlyJson
@@ -64,7 +63,6 @@ data class ContactObject(
         putOpt(KEY_TITLE, title)
         putOpt(KEY_DEPARTMENT, department)
         putOpt(Constants.NAME, fullName)
-        putOpt(KEY_ACCOUNT_ID, accountPrimaryKey)
     }
 
     override val curPropertiesAreModifiedFromOriginal: Boolean by lazy {
@@ -72,8 +70,7 @@ data class ContactObject(
             optStringOrNull(KEY_FIRST_NAME) != firstName ||
                     optStringOrNull(KEY_LAST_NAME) != lastName ||
                     optStringOrNull(KEY_TITLE) != title ||
-                    optStringOrNull(KEY_DEPARTMENT) != department ||
-                    optStringOrNull(KEY_ACCOUNT_ID) != accountPrimaryKey
+                    optStringOrNull(KEY_DEPARTMENT) != department
         }
     }
 
@@ -82,7 +79,6 @@ data class ContactObject(
         const val KEY_LAST_NAME = "LastName"
         const val KEY_TITLE = "Title"
         const val KEY_DEPARTMENT = "Department"
-        const val KEY_ACCOUNT_ID = "AccountId"
         private const val OBJECT_TYPE = Constants.CONTACT
 
         @Throws(CoerceException::class)
@@ -102,7 +98,6 @@ data class ContactObject(
                 lastName = elt.optStringOrNull(KEY_LAST_NAME),
                 title = elt.optStringOrNull(KEY_TITLE),
                 department = elt.optStringOrNull(KEY_DEPARTMENT),
-                accountPrimaryKey = elt.optStringOrNull(KEY_ACCOUNT_ID),
             )
         }
 
@@ -128,7 +123,6 @@ data class ContactObject(
                 putOpt(KEY_LAST_NAME, lastName)
                 putOpt(KEY_TITLE, title)
                 putOpt(KEY_DEPARTMENT, department)
-                putOpt(KEY_ACCOUNT_ID, associatedAccountId)
             }.let {
                 coerceFromJsonOrThrow(it)
             }
