@@ -19,7 +19,6 @@ fun ReadOnlyJson.getRequiredStringOrThrow(key: String): String =
     try {
         this.getString(key)
     } catch (ex: JSONException) {
-        // WIP should I change this exception to accept a string instead of a json object?
         throw MissingRequiredProperty(propertyKey = key, offendingJsonString = this.toString())
     }
 
@@ -68,7 +67,6 @@ fun ReadOnlyJson.getRequiredObjectOrThrow(key: String): JSONObject =
     try {
         this.getJSONObject(key)
     } catch (ex: JSONException) {
-        // WIP should I change this exception to accept a string instead of a json object?
         throw MissingRequiredProperty(propertyKey = key, offendingJsonString = this.toString())
     }
 

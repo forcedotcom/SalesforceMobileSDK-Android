@@ -53,7 +53,8 @@ import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsUiM
 import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsUiState
 import com.salesforce.samples.mobilesynccompose.contacts.state.toContactDetailsUiState
 import com.salesforce.samples.mobilesynccompose.contacts.ui.mockLocallyDeletedContact
-import com.salesforce.samples.mobilesynccompose.contacts.vm.*
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactObjectFieldChangeHandler
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectId
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.isLocallyDeleted
 import com.salesforce.samples.mobilesynccompose.core.ui.components.LoadingOverlay
 import com.salesforce.samples.mobilesynccompose.core.ui.components.OutlinedTextFieldWithHelp
@@ -100,7 +101,6 @@ fun ContactDetailsEditingContactSinglePane(
     modifier: Modifier = Modifier,
     details: ContactDetailsUiState,
     showLoading: Boolean,
-    onDetailsUpdated: (newContact: ContactObject) -> Unit
 ) {
     val scrollState = rememberScrollState()
 
@@ -114,10 +114,7 @@ fun ContactDetailsEditingContactSinglePane(
                 fieldValue = fieldVm.fieldValue,
                 isEditEnabled = fieldVm.canBeEdited,
                 isError = fieldVm.isInErrorState,
-                onValueChange = {
-                    val newValue = it.ifBlank { null }
-                    onDetailsUpdated(fieldVm.onFieldValueChange(newValue))
-                },
+                onValueChange = fieldVm.onFieldValueChange,
                 label = { Text(safeStringResource(id = fieldVm.labelRes)) },
                 help = { Text(safeStringResource(id = fieldVm.helperRes)) },
                 placeholder = { Text(safeStringResource(id = fieldVm.placeholderRes)) }
@@ -251,7 +248,8 @@ private fun ContactDetailViewModePreview() {
         Surface(modifier = Modifier.fillMaxSize()) {
             ContactDetailsViewingContactSinglePane(
                 details = contact.toContactDetailsUiState(
-                    ContactDetailsUiMode.Viewing
+                    ContactDetailsUiMode.Viewing,
+                    fieldValueChangeHandler = PREVIEW_CONTACT_FIELD_CHANGE_HANDLER
                 ),
             )
         }
@@ -277,10 +275,10 @@ private fun ContactDetailEditModePreview() {
             ContactDetailsEditingContactSinglePane(
                 details = ContactDetailsUiState(
                     contactObj = editedContact,
-                    mode = ContactDetailsUiMode.Editing
+                    mode = ContactDetailsUiMode.Editing,
+                    fieldValueChangeHandler = PREVIEW_CONTACT_FIELD_CHANGE_HANDLER
                 ),
                 showLoading = false,
-                onDetailsUpdated = {}
             )
         }
     }
@@ -306,10 +304,10 @@ private fun ContactDetailEditModeSavingPreview() {
                 details = ContactDetailsUiState(
                     contactObj = editedContact,
                     mode = ContactDetailsUiMode.Editing,
+                    fieldValueChangeHandler = PREVIEW_CONTACT_FIELD_CHANGE_HANDLER,
                     isSaving = true
                 ),
                 showLoading = true,
-                onDetailsUpdated = {}
             )
         }
     }
@@ -323,8 +321,18 @@ private fun LocallyDeletedPreview() {
     SalesforceMobileSDKAndroidTheme {
         Surface {
             ContactDetailsViewingContactSinglePane(
-                details = contact.toContactDetailsUiState(mode = ContactDetailsUiMode.Viewing),
+                details = contact.toContactDetailsUiState(
+                    mode = ContactDetailsUiMode.Viewing,
+                    fieldValueChangeHandler = PREVIEW_CONTACT_FIELD_CHANGE_HANDLER
+                ),
             )
         }
     }
+}
+
+val PREVIEW_CONTACT_FIELD_CHANGE_HANDLER = object : ContactObjectFieldChangeHandler {
+    override fun onFirstNameChange(id: SObjectId, newFirstName: String?) {}
+    override fun onLastNameChange(id: SObjectId, newLastName: String?) {}
+    override fun onTitleChange(id: SObjectId, newTitle: String?) {}
+    override fun onDepartmentChange(id: SObjectId, newDepartment: String?) {}
 }

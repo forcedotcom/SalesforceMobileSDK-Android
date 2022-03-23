@@ -31,15 +31,22 @@ import com.salesforce.samples.mobilesynccompose.core.ReadOnlyJson
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.*
 import org.json.JSONObject
 
+/**
+ * An abstraction and runtime data model of a Contact Salesforce Standard Object.
+ *
+ * This is not represented as a data class because there is business logic that needs to be applied
+ * to copy and de/serialization operations that do not work with data class semantics.
+ *
+ * Note how this is not a [SalesforceObject]. [SalesforceObject]s are _mutable_ which goes against
+ * Jetpack Compose guidelines to make state objects immutable.
+ */
 data class ContactObject(
     val firstName: String?,
     val lastName: String?,
     val title: String?,
     val department: String?,
-    val accountId: String?,
+    val accountPrimaryKey: String?,
     override val id: SObjectId,
-//    override val serverId: ServerId,
-//    override val localId: LocalId?,
     override val localStatus: LocalStatus,
     override val originalElt: ReadOnlyJson
 ) : SObject {
@@ -57,7 +64,7 @@ data class ContactObject(
         putOpt(KEY_TITLE, title)
         putOpt(KEY_DEPARTMENT, department)
         putOpt(Constants.NAME, fullName)
-        putOpt(KEY_ACCOUNT_ID, accountId)
+        putOpt(KEY_ACCOUNT_ID, accountPrimaryKey)
     }
 
     override val curPropertiesAreModifiedFromOriginal: Boolean by lazy {
@@ -66,7 +73,7 @@ data class ContactObject(
                     optStringOrNull(KEY_LAST_NAME) != lastName ||
                     optStringOrNull(KEY_TITLE) != title ||
                     optStringOrNull(KEY_DEPARTMENT) != department ||
-                    optStringOrNull(KEY_ACCOUNT_ID) != accountId
+                    optStringOrNull(KEY_ACCOUNT_ID) != accountPrimaryKey
         }
     }
 
@@ -95,7 +102,7 @@ data class ContactObject(
                 lastName = elt.optStringOrNull(KEY_LAST_NAME),
                 title = elt.optStringOrNull(KEY_TITLE),
                 department = elt.optStringOrNull(KEY_DEPARTMENT),
-                accountId = elt.optStringOrNull(KEY_ACCOUNT_ID),
+                accountPrimaryKey = elt.optStringOrNull(KEY_ACCOUNT_ID),
             )
         }
 
@@ -127,156 +134,3 @@ data class ContactObject(
             }
     }
 }
-
-/**
- * An abstraction and runtime data model of a Contact Salesforce Standard Object.
- *
- * This is not represented as a data class because there is business logic that needs to be applied
- * to copy and de/serialization operations that do not work with data class semantics.
- *
- * Note how this is not a [SalesforceObject]. [SalesforceObject]s are _mutable_ which goes against
- * Jetpack Compose guidelines to make state objects immutable.
- */
-//class Contact
-//@Throws(CoerceException::class) private constructor(
-//    val firstName: String?,
-//    val lastName: String?,
-//    val title: String?,
-//    val department: String?,
-//    val accountId: String?,
-//    startingSoupElt: JSONObject
-//) : SalesforceObjectContainer(startingSoupElt, requiredObjectType = Constants.CONTACT) {
-//
-//    @Throws(CoerceException::class)
-//    constructor(eltCopy: JsonCopy) : this(
-//        firstName = eltCopy.value.optStringOrNull(KEY_FIRST_NAME),
-//        lastName = eltCopy.value.optStringOrNull(KEY_LAST_NAME),
-//        title = eltCopy.value.optStringOrNull(KEY_TITLE),
-//        department = eltCopy.value.optStringOrNull(KEY_DEPARTMENT),
-//        accountId = eltCopy.value.optStringOrNull(KEY_ACCOUNT_ID),
-//        eltCopy.value
-//    )
-//
-//    val fullName =
-//        if (firstName == null && this.lastName == null) null
-//        else buildString {
-//            if (this@Contact.firstName != null) append("${this@Contact.firstName} ")
-//            if (this@Contact.lastName != null) append(this@Contact.lastName)
-//        }.trim()
-//
-//    override val updatedJson: JSONObject by lazy {
-//        super.updatedJson.apply {
-//            putOpt(KEY_FIRST_NAME, firstName)
-//            putOpt(KEY_LAST_NAME, lastName)
-//            putOpt(KEY_TITLE, title)
-//            putOpt(KEY_DEPARTMENT, department)
-//            putOpt(Constants.NAME, fullName)
-//            putOpt(KEY_ACCOUNT_ID, accountId)
-//        }
-//    }
-//
-//    override val isModifiedInMemory: Boolean =
-//        this.startingSoupElt.optStringOrNull(KEY_FIRST_NAME) != firstName ||
-//                this.startingSoupElt.optStringOrNull(KEY_LAST_NAME) != lastName ||
-//                this.startingSoupElt.optStringOrNull(KEY_TITLE) != title ||
-//                this.startingSoupElt.optStringOrNull(KEY_DEPARTMENT) != department ||
-//                this.startingSoupElt.optStringOrNull(KEY_ACCOUNT_ID) != accountId
-//
-//    override fun JSONObject.isModified(): Boolean {
-//        TODO("Not yet implemented")
-//    }
-//
-//    fun copy(
-//        firstName: String? = this.firstName,
-//        lastName: String? = this.lastName,
-//        title: String? = this.title,
-//        department: String? = this.department,
-//    ) = Contact(
-//        firstName = firstName,
-//        lastName = lastName,
-//        title = title,
-//        department = department,
-//        accountId = accountId,
-//        startingSoupElt = startingSoupElt
-//    )
-//
-//    override fun toString(): String {
-//        return "Contact(firstName=$firstName, lastName=$lastName, title=$title, department=$department, accountId=$accountId, fullName=$fullName) ${super.toString()}"
-//    }
-//
-//    override fun equals(other: Any?): Boolean {
-//        if (this === other) return true
-//        if (javaClass != other?.javaClass) return false
-//        if (!super.equals(other)) return false
-//
-//        other as Contact
-//
-//        if (firstName != other.firstName) return false
-//        if (lastName != other.lastName) return false
-//        if (title != other.title) return false
-//        if (department != other.department) return false
-//        if (accountId != other.accountId) return false
-//        if (fullName != other.fullName) return false
-//
-//        return true
-//    }
-//
-//    override fun hashCode(): Int {
-//        var result = super.hashCode()
-//        result = 31 * result + (firstName?.hashCode() ?: 0)
-//        result = 31 * result + (lastName?.hashCode() ?: 0)
-//        result = 31 * result + (title?.hashCode() ?: 0)
-//        result = 31 * result + (department?.hashCode() ?: 0)
-//        result = 31 * result + (accountId?.hashCode() ?: 0)
-//        result = 31 * result + (fullName?.hashCode() ?: 0)
-//        return result
-//    }
-//
-//    companion object : SalesforceObjectDeserializerBase<Contact>(objType = Constants.CONTACT) {
-//        const val KEY_FIRST_NAME = "FirstName"
-//        const val KEY_LAST_NAME = "LastName"
-//        const val KEY_TITLE = "Title"
-//        const val KEY_DEPARTMENT = "Department"
-//        const val KEY_ACCOUNT_ID = "AccountId"
-//
-//        override fun createModelInstance(verifiedJson: JSONObject) =
-//            Contact(
-//                firstName = verifiedJson.optStringOrNull(KEY_FIRST_NAME),
-//                lastName = verifiedJson.optStringOrNull(KEY_LAST_NAME),
-//                title = verifiedJson.optStringOrNull(KEY_TITLE),
-//                department = verifiedJson.optStringOrNull(KEY_DEPARTMENT),
-//                accountId = verifiedJson.optStringOrNull(KEY_ACCOUNT_ID),
-//                startingSoupElt = verifiedJson
-//            )
-//
-//        /**
-//         * Creates a new [Contact] model object from the provided properties.
-//         *
-//         * @param firstName The contact's first name.
-//         * @param lastName The contact's last name.
-//         * @param title The contact's business title.
-//         * @param department The contact's department.
-//         * @param associatedAccountId (Optional) the ID of the Salesforce Standard Object Account this contact is associated with.
-//         * @return The newly-created [Contact] model object.
-//         */
-//        fun createNewLocal(
-//            firstName: String? = null,
-//            lastName: String? = null,
-//            title: String? = null,
-//            department: String? = null,
-//            associatedAccountId: String? = null
-//        ) = Contact(
-//            firstName = firstName,
-//            lastName = lastName,
-//            title = title,
-//            department = department,
-//            accountId = associatedAccountId,
-//            startingSoupElt = createNewSoupEltBase()
-//                .putOpt(KEY_ACCOUNT_ID, associatedAccountId)
-//                .putOpt(KEY_FIRST_NAME, firstName)
-//                .putOpt(KEY_LAST_NAME, lastName)
-//                .putOpt(KEY_TITLE, title)
-//                .putOpt(KEY_DEPARTMENT, department)
-//        )
-//    }
-//}

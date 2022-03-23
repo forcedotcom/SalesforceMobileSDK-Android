@@ -53,6 +53,7 @@ import com.salesforce.samples.mobilesynccompose.contacts.state.ContactsActivityU
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.ListDetail
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.Single
 import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.*
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactObjectFieldChangeHandler
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityViewModel
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectId
@@ -150,7 +151,6 @@ private fun SinglePaneScaffold(
                 Editing -> ContactDetailsEditingContactSinglePane(
                     details = uiState.detailsState,
                     showLoading = uiState.isSyncing || uiState.detailsState.isSaving,
-                    onDetailsUpdated = vm::onDetailsUpdated
                 )
                 Viewing -> ContactDetailsViewingContactSinglePane(
                     details = uiState.detailsState,
@@ -427,6 +427,7 @@ private fun DetailsPreview() {
                     ),
                     detailsState = ContactDetailsUiState(
                         mode = Viewing,
+                        fieldValueChangeHandler = PREVIEW_CONTACT_FIELD_CHANGE_HANDLER,
                         contactObj = contact
                     ),
                     isSyncing = false,
@@ -442,7 +443,8 @@ private fun DetailsPreview() {
 }
 
 private class PreviewContactsActivityViewModel(state: ContactsActivityUiState) :
-    ContactsActivityViewModel {
+    ContactsActivityViewModel,
+    ContactObjectFieldChangeHandler by PREVIEW_CONTACT_FIELD_CHANGE_HANDLER {
 
     override val uiState: StateFlow<ContactsActivityUiState> = MutableStateFlow(state)
 
@@ -488,10 +490,6 @@ private class PreviewContactsActivityViewModel(state: ContactsActivityUiState) :
 
     override fun detailsExitClick() {
         throw NotImplementedError("detailsExitClick")
-    }
-
-    override fun onDetailsUpdated(newContact: ContactObject) {
-        throw NotImplementedError("onDetailsUpdated")
     }
 
     override fun detailsSaveClick() {

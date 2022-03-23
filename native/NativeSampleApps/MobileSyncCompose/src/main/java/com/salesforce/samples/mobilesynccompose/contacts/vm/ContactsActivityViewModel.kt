@@ -46,7 +46,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-interface ContactsActivityViewModel {
+interface ContactsActivityViewModel : ContactObjectFieldChangeHandler {
     val uiState: StateFlow<ContactsActivityUiState>
 
     fun listContactClick(contactId: SObjectId)
@@ -67,7 +67,6 @@ interface ContactsActivityViewModel {
 
     fun detailsExitClick()
     fun detailsSaveClick()
-    fun onDetailsUpdated(newContact: ContactObject)
 
     fun sync(syncDownOnly: Boolean = false)
 }
@@ -167,7 +166,10 @@ class DefaultContactsActivityViewModel(
 
         mutUiState.value = curState.copy(
             listState = curListState.copy(contacts = filteredContactsDeferred.await()),
-            detailsState = matchingContact?.toContactDetailsUiState(mode = Viewing) ?: curDetail
+            detailsState = matchingContact?.toContactDetailsUiState(
+                mode = Viewing,
+                fieldValueChangeHandler = this@DefaultContactsActivityViewModel
+            ) ?: curDetail
         )
     }
 
@@ -226,7 +228,10 @@ class DefaultContactsActivityViewModel(
             mutUiState.value = mutUiState.value.copy(dialogUiState = newDialog)
         } else {
             mutUiState.value = curState.copy(
-                detailsState = contact.toContactDetailsUiState(mode = Viewing),
+                detailsState = contact.toContactDetailsUiState(
+                    mode = Viewing,
+                    fieldValueChangeHandler = this@DefaultContactsActivityViewModel
+                ),
             )
         }
     }
@@ -244,7 +249,10 @@ class DefaultContactsActivityViewModel(
         } else {
             mutUiState.value = curState.copy(
                 detailsState = ContactObject.createNewLocal()
-                    .toContactDetailsUiState(mode = Creating),
+                    .toContactDetailsUiState(
+                        mode = Creating,
+                        fieldValueChangeHandler = this@DefaultContactsActivityViewModel
+                    ),
             )
         }
     }
@@ -325,6 +333,7 @@ class DefaultContactsActivityViewModel(
                 mutUiState.value = curState.copy(
                     detailsState = deletedContact?.toContactDetailsUiState(
                         mode = Viewing,
+                        fieldValueChangeHandler = this@DefaultContactsActivityViewModel,
                         isSaving = false
                     )
                 )
@@ -396,7 +405,10 @@ class DefaultContactsActivityViewModel(
             val curState = mutUiState.value
             val newDetail =
                 if (curState.detailsState == null) null
-                else undeletedContact.toContactDetailsUiState(mode = Viewing)
+                else undeletedContact.toContactDetailsUiState(
+                    mode = Viewing,
+                    fieldValueChangeHandler = this@DefaultContactsActivityViewModel
+                )
 
             mutUiState.value = curState.copy(detailsState = newDetail)
         }
@@ -457,7 +469,10 @@ class DefaultContactsActivityViewModel(
             mutUiState.value = mutUiState.value.copy(dialogUiState = newDialog)
         } else {
             mutUiState.value = curState.copy(
-                detailsState = contact.toContactDetailsUiState(mode = Editing),
+                detailsState = contact.toContactDetailsUiState(
+                    mode = Editing,
+                    fieldValueChangeHandler = this@DefaultContactsActivityViewModel
+                ),
             )
         }
     }
@@ -475,7 +490,10 @@ class DefaultContactsActivityViewModel(
                     curContactsByLocalId[contact.id.localId]
                         ?: curContactsByPrimaryKey[contact.id.primaryKey]
                 }
-                originalContact?.toContactDetailsUiState(mode = Viewing)
+                originalContact?.toContactDetailsUiState(
+                    mode = Viewing,
+                    fieldValueChangeHandler = this@DefaultContactsActivityViewModel
+                )
             } else {
                 null
             }
@@ -574,13 +592,67 @@ class DefaultContactsActivityViewModel(
         }
     }
 
-    override fun onDetailsUpdated(newContact: ContactObject) = launchWithEventLock {
+    override fun onFirstNameChange(id: SObjectId, newFirstName: String?) = launchWithEventLock {
         val curState = mutUiState.value
         if (curState.detailsState == null)
             return@launchWithEventLock
 
+        val contact = curContactsByLocalId[id.localId]
+            ?: curContactsByPrimaryKey[id.primaryKey]
+            ?: return@launchWithEventLock
+
         mutUiState.value = curState.copy(
-            detailsState = curState.detailsState.copy(contactObj = newContact)
+            detailsState = curState.detailsState.copy(
+                contactObj = contact.copy(firstName = newFirstName)
+            )
+        )
+    }
+
+    override fun onLastNameChange(id: SObjectId, newLastName: String?) = launchWithEventLock {
+        val curState = mutUiState.value
+        if (curState.detailsState == null)
+            return@launchWithEventLock
+
+        val contact = curContactsByLocalId[id.localId]
+            ?: curContactsByPrimaryKey[id.primaryKey]
+            ?: return@launchWithEventLock
+
+        mutUiState.value = curState.copy(
+            detailsState = curState.detailsState.copy(
+                contactObj = contact.copy(lastName = newLastName)
+            )
+        )
+    }
+
+    override fun onTitleChange(id: SObjectId, newTitle: String?) = launchWithEventLock {
+        val curState = mutUiState.value
+        if (curState.detailsState == null)
+            return@launchWithEventLock
+
+        val contact = curContactsByLocalId[id.localId]
+            ?: curContactsByPrimaryKey[id.primaryKey]
+            ?: return@launchWithEventLock
+
+        mutUiState.value = curState.copy(
+            detailsState = curState.detailsState.copy(
+                contactObj = contact.copy(title = newTitle)
+            )
+        )
+    }
+
+    override fun onDepartmentChange(id: SObjectId, newDepartment: String?) = launchWithEventLock {
+        val curState = mutUiState.value
+        if (curState.detailsState == null)
+            return@launchWithEventLock
+
+        val contact = curContactsByLocalId[id.localId]
+            ?: curContactsByPrimaryKey[id.primaryKey]
+            ?: return@launchWithEventLock
+
+        mutUiState.value = curState.copy(
+            detailsState = curState.detailsState.copy(
+                contactObj = contact.copy(department = newDepartment)
+            )
         )
     }
 
@@ -647,6 +719,7 @@ class DefaultContactsActivityViewModel(
             mutUiState.value = mutUiState.value.copy(
                 detailsState = updatedContact.toContactDetailsUiState(
                     mode = Viewing,
+                    fieldValueChangeHandler = this@DefaultContactsActivityViewModel,
                     isSaving = false
                 )
             )
