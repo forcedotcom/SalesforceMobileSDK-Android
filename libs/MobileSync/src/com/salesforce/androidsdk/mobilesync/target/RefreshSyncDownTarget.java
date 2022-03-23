@@ -63,6 +63,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
     private String soupName;
     private int countIdsPerSoql;
     private static final int defaultCountIdsPerSoql = 500;
+    private static final int MAX_COUNT_IDS_PER_SOQL = 2000;
 
     // NB: For each sync run - a fresh sync down target is created (by deserializing it from smartstore)
     // The following members are specific to a run
@@ -78,13 +79,14 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
     }
 
     /**
-     * Set the number of ids to pack in a single SOQL call
-     * SOQL query size limit is 10,000 characters (so ~500 ids)
+     * Set the number of ids to pack in a single SOQL call (not to exceed 2000)
+     * SOQL query size limit is 100,000 characters (so ~5000 should not exceed the query size limit)
+     * However the code fetching fields from the server expect a single response per requesst
      * This setter is to be used by tests primarily
      * @param count
      */
     public void setCountIdsPerSoql(int count) {
-        countIdsPerSoql = count;
+        countIdsPerSoql = Math.max(count, MAX_COUNT_IDS_PER_SOQL);
     }
 
     /**
@@ -97,7 +99,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         this.fieldlist = JSONObjectHelper.toList(target.getJSONArray(FIELDLIST));
         this.objectType = target.getString(SOBJECT_TYPE);
         this.soupName = target.getString(SOUP_NAME);
-        this.countIdsPerSoql = target.optInt(COUNT_IDS_PER_SOQL, defaultCountIdsPerSoql);
+        setCountIdsPerSoql(target.optInt(COUNT_IDS_PER_SOQL, defaultCountIdsPerSoql));
     }
 
     /**
@@ -111,7 +113,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         this.fieldlist = fieldlist;
         this.objectType = objectType;
         this.soupName = soupName;
-        this.countIdsPerSoql = defaultCountIdsPerSoql;
+        setCountIdsPerSoql(defaultCountIdsPerSoql);
     }
 
     /**

@@ -195,6 +195,11 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
         final String whereClause = ""
             + Constants.RECORD_TYPE_ID + " = '" + recordType + "' AND "
             + getIdFieldName() + " IN ('" + TextUtils.join("', '", ids) + "')";
+
+        // SOQL query size limit is 100,000 characters (so ~5000 ids)
+        // See https://developer.salesforce.com/docs/atlas.en-us.salesforce_app_limits_cheatsheet.meta/salesforce_app_limits_cheatsheet/salesforce_app_limits_platform_soslsoql.htm
+        // We won't get that many returned in one response from the priming record API so we don't need to chunk them in multiple requests
+
         final String soql = SOQLBuilder.getInstanceWithFields(fieldlistToFetch).from(sobjectType).where(whereClause).build();
         final RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, soql);
         final RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
