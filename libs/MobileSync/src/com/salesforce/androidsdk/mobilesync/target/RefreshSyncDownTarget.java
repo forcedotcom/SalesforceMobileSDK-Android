@@ -58,17 +58,17 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
     public static final String SOBJECT_TYPE = "sobjectType";
     public static final String SOUP_NAME = "soupName";
     public static final String COUNT_IDS_PER_SOQL = "coundIdsPerSoql";
-    protected List<String> fieldlist;
-    protected String objectType;
-    protected String soupName;
-    protected int countIdsPerSoql;
-    protected static final int defaultCountIdsPerSoql = 500;
+    private List<String> fieldlist;
+    private String objectType;
+    private String soupName;
+    private int countIdsPerSoql;
+    private static final int defaultCountIdsPerSoql = 500;
 
     // NB: For each sync run - a fresh sync down target is created (by deserializing it from smartstore)
     // The following members are specific to a run
     // page will change during a run as we call start/continueFetch
-    protected boolean isResync = false;
-    protected int page = 0;
+    private boolean isResync = false;
+    private int page = 0;
 
     /**
      * Return number of ids to pack in a single SOQL call
@@ -133,15 +133,15 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         // since we expect records to have been fetched from the server and written to the soup directly outside a sync down operation
         // Instead during a reSymc, we compute maxTimeStamp from the records in the soup
         isResync = maxTimeStamp > 0;
-        return  getIdsToFetchAndFetchFromServer(syncManager);
+        return  getIdsFromSmartStoreAndFetchFromServer(syncManager);
     }
 
     @Override
     public JSONArray continueFetch(SyncManager syncManager) throws IOException, JSONException {
-        return page > 0 ? getIdsToFetchAndFetchFromServer(syncManager) : null;
+        return page > 0 ? getIdsFromSmartStoreAndFetchFromServer(syncManager) : null;
     }
 
-    protected JSONArray getIdsToFetchAndFetchFromServer(SyncManager syncManager) throws IOException, JSONException {
+    private JSONArray getIdsFromSmartStoreAndFetchFromServer(SyncManager syncManager) throws IOException, JSONException {
         // Read from smartstore
         final QuerySpec querySpec;
         final List<String> idsInSmartStore = new ArrayList<>();
@@ -162,7 +162,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         }
         else {
             querySpec = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":" + getIdFieldName()
-                    + "} FROM {" + soupName + "} ORDER BY {" + soupName + ":" + getIdFieldName() + "} ASC", getCountIdsPerSoql());
+                + "} FROM {" + soupName + "} ORDER BY {" + soupName + ":" + getIdFieldName() + "} ASC", getCountIdsPerSoql());
             JSONArray result = syncManager.getSmartStore().query(querySpec, page);
 
             // Not a resync
@@ -195,12 +195,11 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         }
     }
 
-    protected JSONArray fetchFromServer(SyncManager syncManager, List<String> ids,
-        List<String> fieldlist, long maxTimeStamp) throws IOException, JSONException {
+    private JSONArray fetchFromServer(SyncManager syncManager, List<String> ids, List<String> fieldlist, long maxTimeStamp) throws IOException, JSONException {
         final String whereClause = ""
-                + getIdFieldName() + " IN ('" + TextUtils.join("', '", ids) + "')"
-                + (maxTimeStamp > 0 ? " AND " + getModificationDateFieldName() + " > " + Constants.TIMESTAMP_FORMAT.format(new Date(maxTimeStamp))
-                : "");
+            + getIdFieldName() + " IN ('" + TextUtils.join("', '", ids) + "')"
+            + (maxTimeStamp > 0 ? " AND " + getModificationDateFieldName() + " > " + Constants.TIMESTAMP_FORMAT.format(new Date(maxTimeStamp))
+            : "");
         final String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(objectType).where(whereClause).build();
         final RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, soql);
         final RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
