@@ -86,7 +86,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
      * @param count
      */
     public void setCountIdsPerSoql(int count) {
-        countIdsPerSoql = Math.max(count, MAX_COUNT_IDS_PER_SOQL);
+        countIdsPerSoql = Math.min(count, MAX_COUNT_IDS_PER_SOQL);
     }
 
     /**
