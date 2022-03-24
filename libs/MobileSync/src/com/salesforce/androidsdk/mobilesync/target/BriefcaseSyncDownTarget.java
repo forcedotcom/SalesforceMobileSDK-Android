@@ -42,6 +42,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -154,11 +155,6 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
             throw new IOException("Could not parse response from priming record API", e);
         }
 
-        if (relayToken == null) {
-            totalSize = response.stats.recordCountTotal;
-            // NB: it will be an overestimate during a resync since we filter by maxTimeStamp on the client
-        }
-
         // Get records using SOQL
         Map<String, Map<String, List<PrimingRecord>>> allPrimingRecords = response.primingRecords;
         for (BriefcaseObjectInfo info: infos) {
@@ -176,11 +172,27 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
                         idsToFetch.add(primingRecord.id);
                     }
                 }
-                JSONArray fetchedRecords = fetchFromServer(syncManager, info.sobjectType, info.recordType, idsToFetch, info.fieldlist);
+
+                ArrayList<String> fieldlistToFetch = new ArrayList<>(info.fieldlist);
+                for (String fieldName: Arrays.asList(getIdFieldName(), getModificationDateFieldName(), Constants.RECORD_TYPE_ID)) {
+                    if (!fieldlistToFetch.contains(fieldName)) {
+                        fieldlistToFetch.add(fieldName);
+                    }
+                }
+                JSONArray fetchedRecords = fetchFromServer(syncManager, info.sobjectType, info.recordType, idsToFetch, fieldlistToFetch);
                 for (int i=0; i<fetchedRecords.length(); i++) {
                     records.put(fetchedRecords.getJSONObject(i));
                 }
             }
+        }
+
+        if (relayToken == null) {
+            // FIXME
+            //  - this will only be correct if there is only one "page" of results
+            //  - using response.stats.recordCountTotal would only be correct if the filtering by
+            //  timestamp did not exclude any results
+            //  - also in 236, response.stats.recordCountTotal seems wrong (it says 1000 all the time)
+            totalSize = records.length();
         }
 
         return records;
@@ -188,10 +200,6 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
 
     protected JSONArray fetchFromServer(SyncManager syncManager, String sobjectType, String recordType, List<String> ids,
         List<String> fieldlist) throws IOException, JSONException {
-        ArrayList<String> fieldlistToFetch = new ArrayList<>(fieldlist);
-        if (!fieldlistToFetch.contains(Constants.RECORD_TYPE_ID)) {
-            fieldlistToFetch.add(Constants.RECORD_TYPE_ID);
-        }
         final String whereClause = ""
             + Constants.RECORD_TYPE_ID + " = '" + recordType + "' AND "
             + getIdFieldName() + " IN ('" + TextUtils.join("', '", ids) + "')";
@@ -200,7 +208,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
         // See https://developer.salesforce.com/docs/atlas.en-us.salesforce_app_limits_cheatsheet.meta/salesforce_app_limits_cheatsheet/salesforce_app_limits_platform_soslsoql.htm
         // We won't get that many returned in one response from the priming record API so we don't need to chunk them in multiple requests
 
-        final String soql = SOQLBuilder.getInstanceWithFields(fieldlistToFetch).from(sobjectType).where(whereClause).build();
+        final String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(sobjectType).where(whereClause).build();
         final RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, soql);
         final RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
         JSONObject responseJson = response.asJSONObject();
@@ -245,7 +253,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
     String getObjectType(JSONObject record) throws JSONException {
         JSONObject attributes = record.getJSONObject(Constants.ATTRIBUTES);
         if (attributes != null) {
-            return attributes.getString(Constants.TYPE);
+            return attributes.getString(Constants.LTYPE);
         } else {
             return null;
         }

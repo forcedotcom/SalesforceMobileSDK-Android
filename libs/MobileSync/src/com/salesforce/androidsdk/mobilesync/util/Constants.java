@@ -27,10 +27,7 @@
 package com.salesforce.androidsdk.mobilesync.util;
 
 import com.salesforce.androidsdk.rest.RestRequest;
-
 import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Locale;
 
 /**
  * This class contains commonly used constants, such as field names,
@@ -47,6 +44,7 @@ public class Constants {
     public static final String LAST_NAME = "LastName";
     public static final String DESCRIPTION = "Description";
     public static final String TYPE = "Type";
+    public static final String LTYPE = "type"; // lower case type in attributes map
     public static final String ATTRIBUTES = "attributes";
     public static final String RECENTLY_VIEWED = "RecentlyViewed";
     public static final String RECORDS = "records";
@@ -58,7 +56,7 @@ public class Constants {
     public static final String LAST_MODIFIED_DATE = "LastModifiedDate";
     public static final String CONTACTS = "Contacts";
     public static final String ACCOUNT_KEY_PREFIX = "001";
-    public static final String RECORD_TYPE_ID = "recordtypeid";
+    public static final String RECORD_TYPE_ID = "RecordTypeId";
 
     /**
      * Salesforce object types.
