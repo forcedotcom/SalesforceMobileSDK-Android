@@ -184,7 +184,13 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         }
         if (idsInSmartStore.size() > 0) {
             // Get records from server that have changed after maxTimeStamp
-            final JSONArray records = fetchFromServer(syncManager, idsInSmartStore, fieldlist, maxTimeStamp);
+            final ArrayList<String> fieldlistToFetch = new ArrayList<>(fieldlist);
+            for (String fieldName: Arrays.asList(getIdFieldName(), getModificationDateFieldName())) {
+                if (!fieldlistToFetch.contains(fieldName)) {
+                    fieldlistToFetch.add(fieldName);
+                }
+            }
+            final JSONArray records = fetchFromServer(syncManager, idsInSmartStore, fieldlistToFetch, maxTimeStamp);
 
             // Increment page if there is more to fetch
             boolean done = getCountIdsPerSoql() * (page + 1) >= totalSize;
