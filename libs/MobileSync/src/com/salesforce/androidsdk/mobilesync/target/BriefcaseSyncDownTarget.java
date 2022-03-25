@@ -43,12 +43,13 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Collector;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -112,77 +113,92 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
         this.maxTimeStamp = maxTimeStamp;
-        return getIdsToFetchAndFetchFromServer(syncManager);
+        this.relayToken = null;
+        this.totalSize = -1;
+        return getIdsFromBriefcasesAndFetchFromServer(syncManager);
     }
 
     @Override
     public JSONArray continueFetch(SyncManager syncManager) throws IOException, JSONException {
         if (relayToken == null) {
             return null;
+        } else {
+            return getIdsFromBriefcasesAndFetchFromServer(syncManager);
+        }
+    }
+
+    @Override
+    public int cleanGhosts(SyncManager syncManager, String soupName, long syncId) throws JSONException, IOException {
+        int countGhosts = 0;
+
+        // Get all ids
+        Map<String, List<String>> objectTypeToIds = new HashMap<>();
+        String relayToken = null;
+        do {
+            relayToken = getIdsFromBriefcases(syncManager, objectTypeToIds, relayToken, 0);
+        } while (relayToken != null);
+
+        // Cleaning up ghosts one object type at a time
+        for (Entry<String, List<String>> entry : objectTypeToIds.entrySet()) {
+            String objectType = entry.getKey();
+            BriefcaseObjectInfo info = infosMap.get(objectType);
+            SortedSet<String> remoteIds = new TreeSet<>(entry.getValue());
+            SortedSet<String> localIds = getNonDirtyRecordIds(syncManager, info.soupName, info.idFieldName,
+                buildSyncIdPredicateIfIndexed(syncManager, info.soupName, syncId));
+            localIds.removeAll(remoteIds);
+            int localIdSize = localIds.size();
+            if (localIdSize > 0) {
+                deleteRecordsFromLocalStore(syncManager, info.soupName, localIds, info.idFieldName);
+            }
+            countGhosts += localIdSize;
         }
 
-        return getIdsToFetchAndFetchFromServer(syncManager);
+        return countGhosts;
     }
 
     @Override
     protected Set<String> getRemoteIds(SyncManager syncManager, Set<String> localIds)
         throws IOException, JSONException {
-        // FIXME
+        // Not used - we are overriding cleanGhosts entirely since we could have multiple soups
         return null;
     }
 
     /**
-     * Method that calls the priming records API to get all the ids to fetch
+     * Method that calls the priming records API to get ids to fetch
      * then use SOQL to get record fields
      *
      * @param syncManager
      * @return
      */
-    private JSONArray getIdsToFetchAndFetchFromServer(SyncManager syncManager)
+    private JSONArray getIdsFromBriefcasesAndFetchFromServer(SyncManager syncManager)
         throws IOException, JSONException {
         JSONArray records = new JSONArray();
 
         // Run priming record request
-        RestRequest request = RestRequest.getRequestForPrimingRecords(syncManager.apiVersion, relayToken);
+        Map<String, List<String>> objectTypeToIds = new HashMap<>();
+        relayToken = getIdsFromBriefcases(syncManager, objectTypeToIds, relayToken, maxTimeStamp);
 
-        PrimingRecordsResponse response = null;
-        try {
-            response = new PrimingRecordsResponse(
-                syncManager.sendSyncWithMobileSyncUserAgent(request).asJSONObject());
-        } catch (ParseException e) {
-            throw new IOException("Could not parse response from priming record API", e);
-        }
-
-        // Get records using SOQL
-        Map<String, Map<String, List<PrimingRecord>>> allPrimingRecords = response.primingRecords;
-        for (BriefcaseObjectInfo info: infos) {
-            if (allPrimingRecords.containsKey(info.sobjectType)) {
-                List<PrimingRecord> primingRecords = new ArrayList<>();
-                allPrimingRecords.get(info.sobjectType).values().forEach(primingRecords::addAll);
-
-                List<String> idsToFetch = new ArrayList<>();
-                // Filtering by maxTimeStamp
-                // TODO Remove once 238 is GA
-                for (PrimingRecord primingRecord : primingRecords) {
-                    if (primingRecord.systemModStamp.getTime() > maxTimeStamp) {
-                        idsToFetch.add(primingRecord.id);
-                    }
-                }
+        // Get records using SOQL one object type at a time
+        for (Entry<String, List<String>> entry : objectTypeToIds.entrySet()) {
+            String objectType = entry.getKey();
+            List<String> idsToFetch = entry.getValue();
+            if (idsToFetch.size() > 0) {
+                BriefcaseObjectInfo info = infosMap.get(objectType);
 
                 ArrayList<String> fieldlistToFetch = new ArrayList<>(info.fieldlist);
-                for (String fieldName: Arrays.asList(getIdFieldName(), getModificationDateFieldName())) {
+                for (String fieldName : Arrays.asList(info.idFieldName, info.modificationDateFieldName)) {
                     if (!fieldlistToFetch.contains(fieldName)) {
                         fieldlistToFetch.add(fieldName);
                     }
                 }
                 JSONArray fetchedRecords = fetchFromServer(syncManager, info.sobjectType, idsToFetch, fieldlistToFetch);
-                for (int i=0; i<fetchedRecords.length(); i++) {
+                for (int i = 0; i < fetchedRecords.length(); i++) {
                     records.put(fetchedRecords.getJSONObject(i));
                 }
             }
         }
 
-        if (relayToken == null) {
+        if (totalSize == -1) {
             // FIXME once 238 is GA
             //  - this will only be correct if there is only one "page" of results
             //  - using response.stats.recordCountTotal would only be correct if the filtering by
@@ -192,6 +208,52 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
         }
 
         return records;
+    }
+
+    /**
+     * Go to the priming record API and return ids (grouped by object type)
+     *
+     * @param syncManager
+     * @param objectTypeToIds - gets populated from the response to the priming records API
+     * @param relayToken
+     * @param maxTimeStamp - only ids with a greater time stamp are returned
+     * @return new relay token
+     * @throws JSONException
+     * @throws IOException
+     */
+    protected String getIdsFromBriefcases(SyncManager syncManager, Map<String, List<String>> objectTypeToIds, String relayToken, long maxTimeStamp)
+        throws JSONException, IOException {
+        RestRequest request = RestRequest.getRequestForPrimingRecords(syncManager.apiVersion, relayToken);
+
+        PrimingRecordsResponse response;
+        try {
+            response = new PrimingRecordsResponse(
+                syncManager.sendSyncWithMobileSyncUserAgent(request).asJSONObject());
+        } catch (ParseException e) {
+            throw new IOException("Could not parse response from priming record API", e);
+        }
+
+        Map<String, Map<String, List<PrimingRecord>>> allPrimingRecords = response.primingRecords;
+        for (BriefcaseObjectInfo info : infos) {
+            if (objectTypeToIds.get(info.sobjectType) == null) {
+                objectTypeToIds.put(info.sobjectType, new ArrayList<>());
+            }
+
+            if (allPrimingRecords.containsKey(info.sobjectType)) {
+                for (List<PrimingRecord> primingRecords : allPrimingRecords.get(info.sobjectType)
+                    .values()) {
+                    for (PrimingRecord primingRecord : primingRecords) {
+                        // Filtering by maxTimeStamp
+                        // TODO Remove once 238 is GA (filtering will happen on server)
+                        if (primingRecord.systemModStamp.getTime() > maxTimeStamp) {
+                            objectTypeToIds.get(info.sobjectType).add(primingRecord.id);
+                        }
+                    }
+                }
+            }
+        }
+
+        return response.relayToken;
     }
 
     protected JSONArray fetchFromServer(SyncManager syncManager, String sobjectType, List<String> ids, List<String> fieldlist) throws IOException, JSONException {
@@ -244,7 +306,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
         }
     }
 
-    String getObjectType(JSONObject record) throws JSONException {
+    protected String getObjectType(JSONObject record) throws JSONException {
         JSONObject attributes = record.getJSONObject(Constants.ATTRIBUTES);
         if (attributes != null) {
             return attributes.getString(Constants.LTYPE);
@@ -253,7 +315,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
         }
     }
 
-    BriefcaseObjectInfo getMatchingBriefcaseInfo(JSONObject record) throws JSONException {
+    protected BriefcaseObjectInfo getMatchingBriefcaseInfo(JSONObject record) throws JSONException {
         String sobjectType = getObjectType(record);
         if (sobjectType != null) {
             return infosMap.get(sobjectType);

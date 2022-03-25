@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -83,7 +84,7 @@ public class PrimingRecordsResponse {
         }
 
         // Getting relay token
-        relayToken = responseJson.getString(RELAY_TOKEN);
+        relayToken = JSONObjectHelper.optString(responseJson, RELAY_TOKEN);
 
         // Parsing rule errors
         JSONArray ruleErrorsJson = responseJson.getJSONArray(RULE_ERRORS);
