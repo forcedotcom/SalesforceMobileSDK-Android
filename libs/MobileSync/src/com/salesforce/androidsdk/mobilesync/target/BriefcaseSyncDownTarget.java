@@ -291,6 +291,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
                     JSONObject record = records.getJSONObject(i);
                     BriefcaseObjectInfo info = getMatchingBriefcaseInfo(record);
                     if (info != null) {
+                        addSyncId(record, syncId);
                         cleanAndSaveInSmartStore(smartStore, info.soupName, record,
                             info.idFieldName,
                             false);

@@ -163,7 +163,7 @@ public class BriefcaseSyncDownTargetTest extends SyncManagerTestCase {
     // Run a sync with a BriefcaseSyncDownTarget that is only interested in accounts
     // Make sure we get the created accounts in the database
     @Test
-    public void testBriefcaseSyncDownFetchingOneObjectType() throws Exception {
+    public void testSyncDownFetchingOneObjectType() throws Exception {
         final int numberAccounts = 12;
         final Map<String, String> accounts = createRecordsOnServer(numberAccounts, Constants.ACCOUNT);
         Assert.assertEquals("Wrong number of accounts created", numberAccounts, accounts.size());
@@ -185,11 +185,62 @@ public class BriefcaseSyncDownTargetTest extends SyncManagerTestCase {
         checkDbExist(ACCOUNTS_SOUP, accountIds, Constants.ID);
     }
 
+    // Create accounts on server
+    // Run a sync with a BriefcaseSyncDownTarget that is only interested in accounts
+    // Make sure we get the created accounts in the database
+    // Delete some accounts from server
+    // Create some accounts locally
+    // Run a cleanGhosts
+    // Make sure the remotely deleted accounts are gone from the database
+    // but other synced accounts and locally created accounts are still there
+    //
+    @Test
+    public void testCleanGhostsOneObjectType() throws Exception {
+        final int numberAccounts = 4;
+        final Map<String, String> accounts = createRecordsOnServer(numberAccounts, Constants.ACCOUNT);
+        Assert.assertEquals("Wrong number of accounts created", numberAccounts, accounts.size());
+        final String[] accountIds = accounts.keySet().toArray(new String[0]);
+
+        // Builds briefcase sync down target to fetch the accounts
+        BriefcaseSyncDownTarget target = new BriefcaseSyncDownTarget(
+            Arrays.asList(new BriefcaseObjectInfo(
+                ACCOUNTS_SOUP,
+                Constants.ACCOUNT,
+                Arrays.asList(Constants.NAME, Constants.DESCRIPTION)
+            ))
+        );
+
+        // Run sync
+        long syncId = trySyncDown(MergeMode.LEAVE_IF_CHANGED, target, ACCOUNTS_SOUP, accounts.size(), 1, null);
+
+        // Check database
+        checkDbExist(ACCOUNTS_SOUP, accountIds, Constants.ID);
+
+        // Deleting some accounts
+        deleteRecordsByIdOnServer(Arrays.asList(accountIds[0], accountIds[1]), Constants.ACCOUNT);
+
+        // Create some accounts locally
+        JSONObject[] localAccounts = createAccountsLocally(new String[]{"local-1", "local-2"});
+
+        // Clean ghosts
+        tryCleanResyncGhosts(syncId);
+
+        // Check database
+        // Ghosts should be gone
+        checkDbDeleted(ACCOUNTS_SOUP, new String[] {  accountIds[0], accountIds[1] }, Constants.ID);
+        // Other synced records should still be there
+        checkDbExist(ACCOUNTS_SOUP, new String[] { accountIds[2], accountIds[3] }, Constants.ID);
+        // Locally created records should still be there
+        checkDbExist(ACCOUNTS_SOUP, new String[] {localAccounts[0].getString(Constants.ID), localAccounts[1].getString(Constants.ID)}, Constants.ID);
+
+
+    }
+
     // Create accounts and contacts on server
     // Run a sync with a BriefcaseSyncDownTarget that is interested in accounts and contacts
     // Make sure we get the created accounts and contacts in the database
     @Test
-    public void testBriefcaseSyncDownFetchingTwoObjectTypes() throws Exception {
+    public void testSyncDownFetchingTwoObjectTypes() throws Exception {
         final int numberAccounts = 12;
         final Map<String, String> accounts = createRecordsOnServer(numberAccounts, Constants.ACCOUNT);
         Assert.assertEquals("Wrong number of accounts created", numberAccounts, accounts.size());
