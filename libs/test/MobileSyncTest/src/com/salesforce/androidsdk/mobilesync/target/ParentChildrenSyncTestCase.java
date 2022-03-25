@@ -64,9 +64,6 @@ import java.util.SortedSet;
  */
 public class ParentChildrenSyncTestCase extends SyncManagerTestCase {
 
-    protected static final String CONTACTS_SOUP = "contacts";
-    protected static final String ACCOUNT_ID = "AccountId";
-
     protected Map<String, Map<String, Object>> accountIdToFields;
     protected Map<String, Map<String, Map<String, Object>>> accountIdContactIdToFields;
 
@@ -85,12 +82,12 @@ public class ParentChildrenSyncTestCase extends SyncManagerTestCase {
 
         // accountIdToFields and accountIdContactIdToFields are not used by all tests
         if (accountIdToFields != null) {
-            deleteRecordsOnServer(accountIdToFields.keySet(), Constants.ACCOUNT);
+            deleteRecordsByIdOnServer(accountIdToFields.keySet(), Constants.ACCOUNT);
         }
         if (accountIdContactIdToFields != null) {
             for (String accountId : accountIdContactIdToFields.keySet()) {
                 Map<String, Map<String, Object>> contactIdToFields = accountIdContactIdToFields.get(accountId);
-                deleteRecordsOnServer(contactIdToFields.keySet(), Constants.CONTACT);
+                deleteRecordsByIdOnServer(contactIdToFields.keySet(), Constants.CONTACT);
             }
         }
     }
@@ -181,7 +178,7 @@ public class ParentChildrenSyncTestCase extends SyncManagerTestCase {
                 remoteUpdatesAccount = updateRecordOnServer(Constants.ACCOUNT, accountId, accountFields);
                 break;
             case DELETE:
-                deleteRecordsOnServer(Collections.singleton(accountId), Constants.ACCOUNT);
+                deleteRecordsByIdOnServer(Collections.singleton(accountId), Constants.ACCOUNT);
                 break;
         }
 
@@ -194,7 +191,7 @@ public class ParentChildrenSyncTestCase extends SyncManagerTestCase {
                     remoteUpdatesContact = updateRecordOnServer(Constants.CONTACT, contactId, contactFields);
                     break;
                 case DELETE:
-                    deleteRecordsOnServer(Collections.singleton(contactId), Constants.CONTACT);
+                    deleteRecordsByIdOnServer(Collections.singleton(contactId), Constants.CONTACT);
                     break;
             }
         }
@@ -366,9 +363,9 @@ public class ParentChildrenSyncTestCase extends SyncManagerTestCase {
         }
         finally {
             // Cleaning "recreated" records
-            if (newAccountId != null) deleteRecordsOnServer(Collections.singleton(newAccountId), Constants.ACCOUNT);
-            if (newContactId != null) deleteRecordsOnServer(Collections.singleton(newContactId), Constants.CONTACT);
-            if (newOtherContactId != null) deleteRecordsOnServer(Collections.singleton(newOtherContactId), Constants.CONTACT);
+            if (newAccountId != null) deleteRecordsByIdOnServer(Collections.singleton(newAccountId), Constants.ACCOUNT);
+            if (newContactId != null) deleteRecordsByIdOnServer(Collections.singleton(newContactId), Constants.CONTACT);
+            if (newOtherContactId != null) deleteRecordsByIdOnServer(Collections.singleton(newOtherContactId), Constants.CONTACT);
         }
     }
 
@@ -517,8 +514,8 @@ public class ParentChildrenSyncTestCase extends SyncManagerTestCase {
         checkServer(contactIdToFieldsCreated, Constants.CONTACT);
 
         // Cleanup
-        deleteRecordsOnServer(accountIdToFieldsCreated.keySet(), Constants.ACCOUNT);
-        deleteRecordsOnServer(contactIdToFieldsCreated.keySet(), Constants.CONTACT);
+        deleteRecordsByIdOnServer(accountIdToFieldsCreated.keySet(), Constants.ACCOUNT);
+        deleteRecordsByIdOnServer(contactIdToFieldsCreated.keySet(), Constants.CONTACT);
     }
 
     protected void tryGetDirtyRecordIds(JSONObject[] expectedRecords) throws JSONException {
@@ -551,21 +548,6 @@ public class ParentChildrenSyncTestCase extends SyncManagerTestCase {
         record.put(SyncTarget.LOCALLY_UPDATED, false);
         record.put(SyncTarget.LOCALLY_DELETED, false);
         syncManager.getSmartStore().upsert(soupName, record);
-    }
-
-    private void createContactsSoup() {
-        final IndexSpec[] contactsIndexSpecs = {
-                new IndexSpec(Constants.ID, SmartStore.Type.string),
-                new IndexSpec(Constants.LAST_NAME, SmartStore.Type.string),
-                new IndexSpec(SyncTarget.LOCAL, SmartStore.Type.string),
-                new IndexSpec(SyncTarget.SYNC_ID, SmartStore.Type.integer),
-                new IndexSpec(ACCOUNT_ID, SmartStore.Type.string)
-        };
-        smartStore.registerSoup(CONTACTS_SOUP, contactsIndexSpecs);
-    }
-
-    private void dropContactsSoup() {
-        smartStore.dropSoup(CONTACTS_SOUP);
     }
 
     protected ParentChildrenSyncDownTarget getAccountContactsSyncDownTarget() {

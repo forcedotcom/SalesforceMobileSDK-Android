@@ -69,6 +69,8 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
     protected static final int TOTAL_SIZE_UNKNOWN = -2;
     protected static final String REMOTELY_UPDATED = "_r_upd";
     protected static final String LOCALLY_UPDATED = "_l_upd";
+    protected static final String CONTACTS_SOUP = "contacts";
+    protected static final String ACCOUNT_ID = "AccountId";
 
     @Override
     public void tearDown() throws Exception {
@@ -104,6 +106,21 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
 
     protected void dropAccountsSoup(String soupName) {
         smartStore.dropSoup(soupName);
+    }
+
+    protected void createContactsSoup() {
+        final IndexSpec[] contactsIndexSpecs = {
+            new IndexSpec(Constants.ID, SmartStore.Type.string),
+            new IndexSpec(Constants.LAST_NAME, SmartStore.Type.string),
+            new IndexSpec(SyncTarget.LOCAL, SmartStore.Type.string),
+            new IndexSpec(SyncTarget.SYNC_ID, SmartStore.Type.integer),
+            new IndexSpec(ACCOUNT_ID, SmartStore.Type.string)
+        };
+        smartStore.registerSoup(CONTACTS_SOUP, contactsIndexSpecs);
+    }
+
+    protected void dropContactsSoup() {
+        smartStore.dropSoup(CONTACTS_SOUP);
     }
 
     /**

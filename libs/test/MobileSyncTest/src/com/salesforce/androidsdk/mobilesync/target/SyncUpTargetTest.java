@@ -70,7 +70,7 @@ public class SyncUpTargetTest extends SyncManagerTestCase {
 
     @After
     public void tearDown() throws Exception {
-        deleteRecordsOnServer(idToFields.keySet(), Constants.ACCOUNT);
+        deleteRecordsByIdOnServer(idToFields.keySet(), Constants.ACCOUNT);
         dropAccountsSoup();
         super.tearDown();
     }
@@ -492,7 +492,7 @@ public class SyncUpTargetTest extends SyncManagerTestCase {
         deleteRecordsLocally(ACCOUNTS_SOUP, idsLocallyDeleted);
 
         // Delete same records on server
-        deleteRecordsOnServer(idToFields.keySet(), Constants.ACCOUNT);
+        deleteRecordsByIdOnServer(idToFields.keySet(), Constants.ACCOUNT);
 
         // Sync up
         trySyncUp(3, SyncState.MergeMode.OVERWRITE);
@@ -517,7 +517,7 @@ public class SyncUpTargetTest extends SyncManagerTestCase {
 
         // Delete record on server
         String remotelyDeletedId = idToFieldsLocallyUpdated.keySet().toArray(new String[0])[0];
-        deleteRecordsOnServer(new HashSet<String>(Arrays.asList(remotelyDeletedId)), Constants.ACCOUNT);
+        deleteRecordsByIdOnServer(new HashSet<String>(Arrays.asList(remotelyDeletedId)), Constants.ACCOUNT);
 
         // Name of locally recorded record that was deleted on server
         String locallyUpdatedRemotelyDeletedName = (String) idToFieldsLocallyUpdated.get(remotelyDeletedId).get(Constants.NAME);
@@ -570,7 +570,7 @@ public class SyncUpTargetTest extends SyncManagerTestCase {
 
         // Delete record on server
         String remotelyDeletedId = idToFieldsLocallyUpdated.keySet().toArray(new String[0])[0];
-        deleteRecordsOnServer(new HashSet<String>(Arrays.asList(remotelyDeletedId)), Constants.ACCOUNT);
+        deleteRecordsByIdOnServer(new HashSet<String>(Arrays.asList(remotelyDeletedId)), Constants.ACCOUNT);
 
         // Sync up
         trySyncUp(3, SyncState.MergeMode.LEAVE_IF_CHANGED);

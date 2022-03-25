@@ -73,7 +73,7 @@ import java.util.Map;
  */
 abstract public class ManagerTestCase {
 
-	private static final String[] TEST_SCOPES = new String[] {"web"};
+    private static final String[] TEST_SCOPES = new String[] {"web"};
 	private static final String TEST_CALLBACK_URL = "test://callback";
 	private static final String TEST_AUTH_TOKEN = "test_auth_token";
     private static final String LID = "id"; // lower case id in create response
@@ -246,7 +246,7 @@ abstract public class ManagerTestCase {
      * @param ids
      * @throws Exception
      */
-    protected void deleteRecordsOnServer(Collection<String> ids, String objectType) throws Exception {
+    protected void deleteRecordsByIdOnServer(Collection<String> ids, String objectType) throws Exception {
         List<RestRequest> requests = new ArrayList<>();
         for (String id : ids) {
             requests.add(RestRequest.getRequestForDelete(apiVersion, objectType, id));
@@ -275,4 +275,33 @@ abstract public class ManagerTestCase {
         RestResponse response = restClient.sendSync(RestRequest.getBatchRequest(apiVersion, false, requests));
         Assert.assertTrue("Updates failed", response.isSuccess() && !response.asJSONObject().getBoolean("hasErrors"));
     }
-}
+
+    /**
+     * Get ids of records on server matching criteria
+     *
+     * @param objectType
+     * @param criteria criteria to use in where clause
+     */
+    protected List<String> getIdsOnServer(String objectType, String criteria) throws Exception {
+        String query = String.format("SELECT Id FROM %s WHERE %s", objectType, criteria);
+        RestRequest request = RestRequest.getRequestForQuery(apiVersion, query);
+        RestResponse response = restClient.sendSync(request);
+        JSONArray records = response.asJSONObject().getJSONArray(Constants.RECORDS);
+        List<String> ids = new ArrayList<>();
+        for (int i=0; i<records.length(); i++) {
+            ids.add(records.getJSONObject(i).getString("Id"));
+        }
+        return ids;
+    }
+
+    /**
+     * Delete records on server matching criteria
+     *
+     * @param objectType
+     * @param criteria criteria to use in where clause
+     */
+    protected void deleteRecordsByCriteriaFromServer(String objectType, String criteria) throws Exception {
+        List<String> ids = getIdsOnServer(objectType, criteria);
+        deleteRecordsByIdOnServer(ids, objectType);
+    }
+  }
