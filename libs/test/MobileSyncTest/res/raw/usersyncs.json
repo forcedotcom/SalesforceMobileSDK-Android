@@ -137,7 +137,6 @@
           },
           {
             "sobjectType": "Contact",
-            "recordType": "some-record-type-id",
             "fieldlist": ["FirstName"],
             "idFieldName" : "IdX",
             "modificationDateFieldName": "LastModifiedDateX",

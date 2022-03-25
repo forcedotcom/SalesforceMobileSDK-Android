@@ -56,7 +56,6 @@ public class Constants {
     public static final String LAST_MODIFIED_DATE = "LastModifiedDate";
     public static final String CONTACTS = "Contacts";
     public static final String ACCOUNT_KEY_PREFIX = "001";
-    public static final String RECORD_TYPE_ID = "RecordTypeId";
 
     /**
      * Salesforce object types.
@@ -78,11 +77,6 @@ public class Constants {
     public static final String LAYOUT_TYPE_COMPACT = "Compact";
     public static final String FORM_FACTOR_MEDIUM = "Medium";
     public static final String MODE_EDIT = "Edit";
-
-    /**
-     * Default record type
-     */
-    public static final String DEFAULT_RECORD_TYPE = "012S00000009B8HIAU";
 
     /**
      * Salesforce timestamp format.

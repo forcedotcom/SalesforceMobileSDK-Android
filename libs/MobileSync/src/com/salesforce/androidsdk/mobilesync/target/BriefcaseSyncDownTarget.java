@@ -43,10 +43,12 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collector;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -60,7 +62,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
     public static final String INFOS = "infos";
 
     private List<BriefcaseObjectInfo> infos;
-    private Map<String, Map<String, BriefcaseObjectInfo>> infosMap;
+    private Map<String, BriefcaseObjectInfo> infosMap;
 
     // NB: For each sync run - a fresh sync down target is created (by deserializing it from smartstore)
     // The following members are specific to a run
@@ -89,11 +91,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
         // Build infosMap
         infosMap = new HashMap<>();
         for (BriefcaseObjectInfo info : infos) {
-            if (!infosMap.containsKey(info.sobjectType)) {
-                infosMap.put(info.sobjectType, new HashMap<>());
-            }
-            Map<String, BriefcaseObjectInfo> innerMap = infosMap.get(info.sobjectType);
-            innerMap.put(info.recordType, info);
+            infosMap.put(info.sobjectType, info);
         }
      }
 
@@ -158,28 +156,26 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
         // Get records using SOQL
         Map<String, Map<String, List<PrimingRecord>>> allPrimingRecords = response.primingRecords;
         for (BriefcaseObjectInfo info: infos) {
-            if (allPrimingRecords.containsKey(info.sobjectType)
-                && allPrimingRecords.get(info.sobjectType).containsKey(info.recordType)) {
-
-                List<PrimingRecord> primingRecords = allPrimingRecords.get(info.sobjectType)
-                    .get(info.recordType);
+            if (allPrimingRecords.containsKey(info.sobjectType)) {
+                List<PrimingRecord> primingRecords = new ArrayList<>();
+                allPrimingRecords.get(info.sobjectType).values().forEach(primingRecords::addAll);
 
                 List<String> idsToFetch = new ArrayList<>();
                 // Filtering by maxTimeStamp
                 // TODO Remove once 238 is GA
                 for (PrimingRecord primingRecord : primingRecords) {
-                    if (primingRecord.systemModStamp.getTime() >= maxTimeStamp) {
+                    if (primingRecord.systemModStamp.getTime() > maxTimeStamp) {
                         idsToFetch.add(primingRecord.id);
                     }
                 }
 
                 ArrayList<String> fieldlistToFetch = new ArrayList<>(info.fieldlist);
-                for (String fieldName: Arrays.asList(getIdFieldName(), getModificationDateFieldName(), Constants.RECORD_TYPE_ID)) {
+                for (String fieldName: Arrays.asList(getIdFieldName(), getModificationDateFieldName())) {
                     if (!fieldlistToFetch.contains(fieldName)) {
                         fieldlistToFetch.add(fieldName);
                     }
                 }
-                JSONArray fetchedRecords = fetchFromServer(syncManager, info.sobjectType, info.recordType, idsToFetch, fieldlistToFetch);
+                JSONArray fetchedRecords = fetchFromServer(syncManager, info.sobjectType, idsToFetch, fieldlistToFetch);
                 for (int i=0; i<fetchedRecords.length(); i++) {
                     records.put(fetchedRecords.getJSONObject(i));
                 }
@@ -187,7 +183,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
         }
 
         if (relayToken == null) {
-            // FIXME
+            // FIXME once 238 is GA
             //  - this will only be correct if there is only one "page" of results
             //  - using response.stats.recordCountTotal would only be correct if the filtering by
             //  timestamp did not exclude any results
@@ -198,10 +194,8 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
         return records;
     }
 
-    protected JSONArray fetchFromServer(SyncManager syncManager, String sobjectType, String recordType, List<String> ids,
-        List<String> fieldlist) throws IOException, JSONException {
+    protected JSONArray fetchFromServer(SyncManager syncManager, String sobjectType, List<String> ids, List<String> fieldlist) throws IOException, JSONException {
         final String whereClause = ""
-            + Constants.RECORD_TYPE_ID + " = '" + recordType + "' AND "
             + getIdFieldName() + " IN ('" + TextUtils.join("', '", ids) + "')";
 
         // SOQL query size limit is 100,000 characters (so ~5000 ids)
@@ -261,12 +255,8 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
 
     BriefcaseObjectInfo getMatchingBriefcaseInfo(JSONObject record) throws JSONException {
         String sobjectType = getObjectType(record);
-        String recordType = record.getString(Constants.RECORD_TYPE_ID);
         if (sobjectType != null) {
-            Map<String, BriefcaseObjectInfo> innerMap = infosMap.get(sobjectType);
-            if (innerMap != null) {
-                return innerMap.get(recordType);
-            }
+            return infosMap.get(sobjectType);
         }
         return null;
     }

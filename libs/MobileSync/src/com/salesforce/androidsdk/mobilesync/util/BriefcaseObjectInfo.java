@@ -40,7 +40,6 @@ public class BriefcaseObjectInfo {
 
     // Constants
     public static final String SOBJECT_TYPE = "sobjectType";
-    public static final String RECORD_TYPE = "recordType";
     public static final String SOUP_NAME = "soupName";
     public static final String FIELD_LIST = "fieldlist";
     public static final String ID_FIELD_NAME = "idFieldName";
@@ -48,7 +47,6 @@ public class BriefcaseObjectInfo {
 
     // Fields
     public final String sobjectType;
-    public final String recordType;
     public final List<String> fieldlist;
     public final String idFieldName;
     public final String modificationDateFieldName;
@@ -66,7 +64,6 @@ public class BriefcaseObjectInfo {
         this(
             json.getString(SOUP_NAME),
             json.optString(SOBJECT_TYPE),
-            JSONObjectHelper.optString(json, RECORD_TYPE),
             JSONObjectHelper.toList(json.getJSONArray(FIELD_LIST)),
             JSONObjectHelper.optString(json, ID_FIELD_NAME),
             JSONObjectHelper.optString(json, MODIFICATION_DATE_FIELD_NAME)
@@ -74,13 +71,13 @@ public class BriefcaseObjectInfo {
     }
 
     public BriefcaseObjectInfo(String soupName, String sobjectType, List<String> fieldlist) {
-        this(soupName, sobjectType, null, fieldlist, null, null);
+        this(soupName, sobjectType, fieldlist, null, null);
     }
 
-    public BriefcaseObjectInfo(String soupName, String sobjectType, String recordType, List<String> fieldlist, String idFieldName, String modificationDateFieldName) {
+    public BriefcaseObjectInfo(String soupName, String sobjectType,
+        List<String> fieldlist, String idFieldName, String modificationDateFieldName) {
         this.soupName = soupName;
         this.sobjectType = sobjectType;
-        this.recordType = recordType != null ? recordType : Constants.DEFAULT_RECORD_TYPE;
         this.fieldlist = fieldlist;
         this.idFieldName = idFieldName != null ? idFieldName : Constants.ID;
         this.modificationDateFieldName = modificationDateFieldName != null ? modificationDateFieldName : Constants.LAST_MODIFIED_DATE;
@@ -90,7 +87,6 @@ public class BriefcaseObjectInfo {
         JSONObject json = new JSONObject();
         json.put(SOUP_NAME, soupName);
         json.put(SOBJECT_TYPE, sobjectType);
-        json.put(RECORD_TYPE, recordType);
         json.put(FIELD_LIST, new JSONArray(fieldlist));
         json.put(ID_FIELD_NAME, idFieldName);
         json.put(MODIFICATION_DATE_FIELD_NAME, modificationDateFieldName);

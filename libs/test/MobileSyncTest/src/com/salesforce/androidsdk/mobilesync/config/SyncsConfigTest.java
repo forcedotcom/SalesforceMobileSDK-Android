@@ -49,9 +49,7 @@ import com.salesforce.androidsdk.mobilesync.util.ParentInfo;
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
 import com.salesforce.androidsdk.mobilesync.util.SyncState.MergeMode;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import org.json.JSONException;
 import org.junit.After;
 import org.junit.Assert;
@@ -243,7 +241,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
             new BriefcaseSyncDownTarget(
                 Arrays.asList(
                     new BriefcaseObjectInfo("accounts", "Account", Arrays.asList("Name", "Description")),
-                    new BriefcaseObjectInfo("contacts", "Contact", "some-record-type-id", Arrays.asList("FirstName"), "IdX", "LastModifiedDateX")
+                    new BriefcaseObjectInfo("contacts", "Contact", Arrays.asList("FirstName"), "IdX", "LastModifiedDateX")
                 )
             ),
             SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE),
