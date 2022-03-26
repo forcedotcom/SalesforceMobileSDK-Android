@@ -756,6 +756,40 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         return fields;
     }
 
+    protected Map<JSONObject, JSONObject[]> createAccountsAndContactsLocally(String[] names, int numberOfContactsPerAccount) throws JSONException {
+        JSONObject[] accounts = createAccountsLocally(names);
+        String[] accountIds = JSONObjectHelper.pluck(accounts, Constants.ID).toArray(new String[0]);
+        Map<String, JSONObject[]> accountIdsToContacts = createContactsForAccountsLocally(numberOfContactsPerAccount, accountIds);
+        Map<JSONObject, JSONObject[]> accountToContacts = new HashMap<>();
+        for (JSONObject account : accounts) {
+            accountToContacts.put(account, accountIdsToContacts.get(account.getString(Constants.ID)));
+        }
+        return accountToContacts;
+    }
+
+    protected Map<String, JSONObject[]> createContactsForAccountsLocally(int numberOfContactsPerAccount, String... accountIds) throws JSONException {
+        Map<String, JSONObject[]> accountIdToContacts = new HashMap<>();
+        JSONObject attributes = new JSONObject();
+        attributes.put(TYPE, Constants.CONTACT);
+        for (String accountId : accountIds) {
+            JSONObject[] contacts = new JSONObject[numberOfContactsPerAccount];
+            for (int i = 0; i < numberOfContactsPerAccount; i++) {
+                JSONObject contact = new JSONObject();
+                contact.put(Constants.ID, SyncTarget.createLocalId());
+                contact.put(Constants.LAST_NAME, createRecordName(Constants.CONTACT));
+                contact.put(Constants.ATTRIBUTES, attributes);
+                contact.put(SyncTarget.LOCAL, true);
+                contact.put(SyncTarget.LOCALLY_CREATED, true);
+                contact.put(SyncTarget.LOCALLY_DELETED, false);
+                contact.put(SyncTarget.LOCALLY_UPDATED, false);
+                contact.put(ACCOUNT_ID, accountId);
+                contacts[i] = smartStore.create(CONTACTS_SOUP, contact);
+            }
+            accountIdToContacts.put(accountId, contacts);
+        }
+        return accountIdToContacts;
+    }
+
     /**
      * Class use to customize json object
      */
