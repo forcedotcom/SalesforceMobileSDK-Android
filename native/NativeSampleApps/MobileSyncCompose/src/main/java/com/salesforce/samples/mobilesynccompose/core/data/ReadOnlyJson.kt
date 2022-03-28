@@ -1,12 +1,13 @@
-package com.salesforce.samples.mobilesynccompose.core
+package com.salesforce.samples.mobilesynccompose.core.data
 
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.coerceToLocalStatus
 import org.json.JSONObject
 
-class ReadOnlyJson(inJson: JSONObject) {
-    private val rawString: String = inJson.toString()
-    private val safeCopy: JSONObject by lazy { JSONObject(rawString) }
+class ReadOnlyJson private constructor(
+    private val rawString: String,
+    private val safeCopy: JSONObject
+) {
     private val hashCode: Int by lazy { safeCopy.hashCode() }
 
     fun getBoolean(name: String): Boolean = safeCopy.getBoolean(name)
@@ -38,7 +39,15 @@ class ReadOnlyJson(inJson: JSONObject) {
     fun opt(name: String?): Any? = safeCopy.opt(name)
 
     fun coerceToLocalStatus(): LocalStatus = safeCopy.coerceToLocalStatus()
-    fun buildMutableCopy(): JSONObject = JSONObject(safeCopy.toString())
+
+    fun buildMutableCopy(modifierBlock: JSONObject.() -> Unit = {}): JSONObject =
+        JSONObject(rawString).apply(modifierBlock)
+
+    fun copy(modifierBlock: JSONObject.() -> Unit): ReadOnlyJson {
+        val safeCopy = buildMutableCopy().apply(modifierBlock)
+        val rawString = safeCopy.toString()
+        return ReadOnlyJson(rawString = rawString, safeCopy = safeCopy)
+    }
 
     override fun toString(): String = rawString
 
@@ -48,10 +57,16 @@ class ReadOnlyJson(inJson: JSONObject) {
 
         other as ReadOnlyJson
 
+        // TODO Will this actually evaluate to true if the fields are all the same but in a different order?
         if (safeCopy != other.safeCopy) return false
 
         return true
     }
 
     override fun hashCode(): Int = hashCode
+
+    companion object {
+        fun from(inJson: JSONObject) =
+            inJson.toString().let { ReadOnlyJson(rawString = it, safeCopy = JSONObject(it)) }
+    }
 }

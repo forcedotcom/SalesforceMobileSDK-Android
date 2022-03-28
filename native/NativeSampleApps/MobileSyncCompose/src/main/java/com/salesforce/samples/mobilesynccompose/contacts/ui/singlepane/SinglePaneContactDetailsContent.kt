@@ -53,6 +53,7 @@ import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsUiM
 import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsUiState
 import com.salesforce.samples.mobilesynccompose.contacts.state.toContactDetailsUiState
 import com.salesforce.samples.mobilesynccompose.contacts.ui.mockLocallyDeletedContact
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsUiState2
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactObjectFieldChangeHandler
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectId
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.isLocallyDeleted
@@ -65,7 +66,7 @@ import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 @Composable
 fun ContactDetailsViewingContactSinglePane(
     modifier: Modifier = Modifier,
-    details: ContactDetailsUiState,
+    details: ContactDetailsUiState2,
     showLoading: Boolean = false
 ) {
     val scrollState = rememberScrollState()
@@ -74,7 +75,7 @@ fun ContactDetailsViewingContactSinglePane(
             .padding(horizontal = 8.dp)
             .verticalScroll(state = scrollState)
     ) {
-        if (details.contactObj.localStatus.isLocallyDeleted) {
+        if (details.contactObjLocalStatus.isLocallyDeleted) {
             LocallyDeletedRow()
         }
 
@@ -99,7 +100,7 @@ fun ContactDetailsViewingContactSinglePane(
 @Composable
 fun ContactDetailsEditingContactSinglePane(
     modifier: Modifier = Modifier,
-    details: ContactDetailsUiState,
+    details: ContactDetailsUiState2,
     showLoading: Boolean,
 ) {
     val scrollState = rememberScrollState()

@@ -27,8 +27,6 @@
 package com.salesforce.samples.mobilesynccompose.core.vm
 
 import androidx.annotation.StringRes
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObject
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectId
 
 /**
  * A ViewModel for a single text field. It holds the entire state of the text field and delegates

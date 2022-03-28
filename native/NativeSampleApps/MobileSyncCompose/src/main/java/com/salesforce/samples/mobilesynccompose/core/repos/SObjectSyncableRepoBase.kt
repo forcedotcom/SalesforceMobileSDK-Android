@@ -8,8 +8,14 @@ import com.salesforce.androidsdk.mobilesync.target.SyncTarget.LOCALLY_DELETED
 import com.salesforce.androidsdk.mobilesync.util.Constants
 import com.salesforce.androidsdk.mobilesync.util.SyncState
 import com.salesforce.androidsdk.smartstore.store.QuerySpec
-import com.salesforce.samples.mobilesynccompose.core.extensions.*
+import com.salesforce.androidsdk.smartstore.store.SmartStore
+import com.salesforce.samples.mobilesynccompose.core.data.ReadOnlyJson
+import com.salesforce.samples.mobilesynccompose.core.extensions.map
+import com.salesforce.samples.mobilesynccompose.core.extensions.optStringOrNull
+import com.salesforce.samples.mobilesynccompose.core.extensions.partitionBySuccess
+import com.salesforce.samples.mobilesynccompose.core.extensions.retrieveSingleById
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.*
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObject.Companion.KEY_LOCAL_ID
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,13 +31,24 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
     protected val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : SObjectSyncableRepo<T> {
 
-    private val mutCurList = MutableStateFlow(emptyList<T>())
-    override val curSObjectList: StateFlow<List<T>> get() = mutCurList
-
-    protected val store = MobileSyncSDKManager.getInstance().getSmartStore(account)
-    protected val syncManager = SyncManager.getInstance(account)
     private val syncMutex = Mutex()
     private val listMutex = Mutex()
+
+    private val mutContactsByPrimaryKey = mutableMapOf<String, T>()
+    private val mutContactsByLocalId = mutableMapOf<String, T>()
+    private val mutState = MutableStateFlow(
+        SObjectsByIds(
+            byPrimaryKey = mutContactsByPrimaryKey.toMap(),
+            byLocalId = mutContactsByLocalId.toMap()
+        )
+    )
+//    private val mutStateByLocalId = MutableStateFlow(mutContactsByLocalId.toMap())
+
+    override val curSObjects: StateFlow<SObjectsByIds<T>> get() = mutState
+//    override val curSObjectListByLocalId: StateFlow<Map<String, T>> get() = mutStateByLocalId
+
+    protected val store: SmartStore = MobileSyncSDKManager.getInstance().getSmartStore(account)
+    protected val syncManager: SyncManager = SyncManager.getInstance(account)
 
     protected abstract val soupName: String
     protected abstract val syncDownName: String
@@ -97,11 +114,23 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
 
         // TODO What to do with parse failures?  Swallow them?
         val (parseSuccesses, parseFailures) = queryResults
-            .map { runCatching { deserializer.coerceFromJsonOrThrow(it) } }
+            .map { runCatching { deserializer.coerceFromJsonOrThrow(ReadOnlyJson.from(it)) } }
             .partitionBySuccess()
 
+        mutContactsByPrimaryKey.clear()
+        mutContactsByLocalId.clear()
+
+        parseSuccesses.forEach { contact ->
+            mutContactsByPrimaryKey[contact.id.primaryKey] = contact
+            contact.id.localId?.let { mutContactsByLocalId[it] = contact }
+        }
+
         listMutex.withLock {
-            mutCurList.value = parseSuccesses
+            mutState.value = SObjectsByIds(
+                byPrimaryKey = mutContactsByPrimaryKey.toMap(),
+                byLocalId = mutContactsByLocalId.toMap()
+            )
+//            mutStateByLocalId.value = mutContactsByLocalId.toMap()
         }
     }
 
@@ -176,7 +205,9 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
     @Throws(RepoOperationException::class)
     override suspend fun locallyUpsert(so: T) = withContext(ioDispatcher + NonCancellable) {
         val upsertResult = try {
-            store.upsert(soupName, so.buildUpdatedElt())
+            ReadOnlyJson.from(
+                store.upsert(soupName, so.eltWithInMemoryChangesApplied.buildMutableCopy())
+            )
         } catch (ex: Exception) {
             throw RepoOperationException.SmartStoreOperationFailed(
                 message = "Failed to upsert the object in SmartStore.",
@@ -185,7 +216,7 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
         }
 
         val result = upsertResult.coerceUpdatedObjToModelOrCleanupAndThrow()
-        replaceAllOrAddNewToObjectList(newValue = result) { it.id.primaryKey == result.id.primaryKey }
+        updateStateWithObject(result)
         result
     }
 
@@ -205,7 +236,7 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
                 )
             }
 
-            return updatedJson.coerceUpdatedObjToModelOrCleanupAndThrow()
+            return ReadOnlyJson.from(updatedJson).coerceUpdatedObjToModelOrCleanupAndThrow()
         }
 
         val retrieved = retrieveByIdOrThrowOperationException(id)
@@ -222,70 +253,93 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
                 }
                 null
             }
-            localStatus.isLocallyDeleted -> retrieved.elt.coerceUpdatedObjToModelOrCleanupAndThrow()
+            localStatus.isLocallyDeleted -> ReadOnlyJson.from(retrieved.elt)
+                .coerceUpdatedObjToModelOrCleanupAndThrow()
+
             else -> saveDeleteToStore(elt = retrieved.elt, soupId = retrieved.soupId)
         }
 
         if (result == null) {
-            val retrievedId = retrieved.elt.getString(Constants.ID)
-            removeAllFromObjectList { it.id.primaryKey == retrievedId }
+            val retrievedPrimaryKey = retrieved.elt.getString(Constants.ID)
+            val retrievedLocalId = retrieved.elt.optStringOrNull(KEY_LOCAL_ID)
+            removeAllFromObjectList(primaryKey = retrievedPrimaryKey, localId = retrievedLocalId)
         } else {
-            replaceAllOrAddNewToObjectList(newValue = result) { it.id.primaryKey == result.id.primaryKey }
+            updateStateWithObject(result)
         }
 
         result
     }
 
     @Throws(RepoOperationException::class)
-    override suspend fun locallyUndelete(id: SObjectId) = withContext(ioDispatcher + NonCancellable) {
-        suspend fun saveUndeleteToStore(elt: JSONObject, soupEntryId: Long): T {
-            val curLocalStatus = elt.coerceToLocalStatus()
-            elt
-                .putOpt(LOCALLY_DELETED, false)
-                .putOpt(LOCAL, curLocalStatus.isLocallyCreated || curLocalStatus.isLocallyUpdated)
+    override suspend fun locallyUndelete(id: SObjectId) =
+        withContext(ioDispatcher + NonCancellable) {
+            suspend fun saveUndeleteToStore(elt: JSONObject, soupEntryId: Long): T {
+                val curLocalStatus = elt.coerceToLocalStatus()
+                elt
+                    .putOpt(LOCALLY_DELETED, false)
+                    .putOpt(
+                        LOCAL,
+                        curLocalStatus.isLocallyCreated || curLocalStatus.isLocallyUpdated
+                    )
 
-            val updatedJson = try {
-                store.update(soupName, elt, soupEntryId)
-            } catch (ex: Exception) {
-                throw RepoOperationException.SmartStoreOperationFailed(
-                    message = "Locally-undelete operation failed. Could not save the updated object in SmartStore.",
-                    cause = ex
-                )
+                val updatedJson = try {
+                    ReadOnlyJson.from(store.update(soupName, elt, soupEntryId))
+                } catch (ex: Exception) {
+                    throw RepoOperationException.SmartStoreOperationFailed(
+                        message = "Locally-undelete operation failed. Could not save the updated object in SmartStore.",
+                        cause = ex
+                    )
+                }
+
+                return updatedJson.coerceUpdatedObjToModelOrCleanupAndThrow()
             }
 
-            return updatedJson.coerceUpdatedObjToModelOrCleanupAndThrow()
+            val retrieved = retrieveByIdOrThrowOperationException(id)
+
+            val result: T =
+                if (!retrieved.elt.coerceToLocalStatus().isLocallyDeleted)
+                    ReadOnlyJson.from(retrieved.elt).coerceUpdatedObjToModelOrCleanupAndThrow()
+                else
+                    saveUndeleteToStore(retrieved.elt, retrieved.soupId)
+
+            updateStateWithObject(result)
+
+            result
         }
-
-        val retrieved = retrieveByIdOrThrowOperationException(id)
-
-        val result: T =
-            if (!retrieved.elt.coerceToLocalStatus().isLocallyDeleted)
-                retrieved.elt.coerceUpdatedObjToModelOrCleanupAndThrow()
-            else
-                saveUndeleteToStore(retrieved.elt, retrieved.soupId)
-
-        replaceAllOrAddNewToObjectList(newValue = result) { it.id.primaryKey == result.id.primaryKey }
-        result
-    }
 
     /**
      * Convenience method for running an object list update procedure while under the Mutex for said
      * list. Also eliminates the need for subclasses to handle Mutexes themselves.
      */
-    protected suspend fun replaceAllOrAddNewToObjectList(newValue: T, predicate: (T) -> Boolean) {
-        listMutex.withLock {
-            mutCurList.value = mutCurList.value
-                .replaceAllOrAddNew(newValue = newValue, predicate = predicate)
-        }
+    protected suspend fun updateStateWithObject(obj: T): Unit = listMutex.withLock {
+        mutContactsByPrimaryKey[obj.id.primaryKey] = obj
+        obj.id.localId?.let { mutContactsByLocalId[it] = obj }
+
+        mutState.value = SObjectsByIds(
+            byPrimaryKey = mutContactsByPrimaryKey.toMap(),
+            byLocalId = mutContactsByLocalId.toMap()
+        )
     }
+//    protected suspend fun replaceAllOrAddNewToObjectList(newValue: T, predicate: (T) -> Boolean) {
+//        listMutex.withLock {
+//            mutContactsByPrimaryKey.value = mutContactsByPrimaryKey.value
+//                .replaceAllOrAddNew(newValue = newValue, predicate = predicate)
+//        }
+//    }
 
     /**
      * Convenience method for running an object list update procedure while under the Mutex for said
      * list. Also eliminates the need for subclasses to handle Mutexes themselves.
      */
-    protected suspend fun removeAllFromObjectList(predicate: (T) -> Boolean) {
+    protected suspend fun removeAllFromObjectList(primaryKey: String?, localId: String?) {
         listMutex.withLock {
-            mutCurList.value = mutCurList.value.minusAll(predicate)
+            primaryKey?.let { mutContactsByPrimaryKey.remove(it) }
+            localId?.let { mutContactsByLocalId.remove(it) }
+
+            mutState.value = SObjectsByIds(
+                byPrimaryKey = mutContactsByPrimaryKey.toMap(),
+                byLocalId = mutContactsByLocalId.toMap()
+            )
         }
     }
 
@@ -295,11 +349,14 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
      * to maintain data integrity.
      */
     @Throws(RepoOperationException.InvalidResultObject::class)
-    protected suspend fun JSONObject.coerceUpdatedObjToModelOrCleanupAndThrow() = try {
+    protected suspend fun ReadOnlyJson.coerceUpdatedObjToModelOrCleanupAndThrow() = try {
         deserializer.coerceFromJsonOrThrow(this)
     } catch (ex: Exception) {
-        val id = this.optStringOrNull(Constants.ID)
-        removeAllFromObjectList { it.id.primaryKey == id }
+        val primaryKey = this.optStringOrNull(Constants.ID)
+        val localId = this.optStringOrNull(KEY_LOCAL_ID)
+
+        removeAllFromObjectList(primaryKey = primaryKey, localId = localId)
+
         throw RepoOperationException.InvalidResultObject(
             message = "SmartStore operation was successful, but failed to deserialize updated JSON. This object has been removed from the list of objects in this repo to preserve data integrity",
             cause = ex

@@ -33,12 +33,13 @@ import com.salesforce.samples.mobilesynccompose.contacts.state.*
 import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsUiMode.*
 import com.salesforce.samples.mobilesynccompose.core.repos.RepoOperationException
 import com.salesforce.samples.mobilesynccompose.core.repos.RepoSyncException
+import com.salesforce.samples.mobilesynccompose.core.repos.SObjectSyncableRepo
+import com.salesforce.samples.mobilesynccompose.core.repos.SObjectsByIds
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectId
 import com.salesforce.samples.mobilesynccompose.core.ui.state.DeleteConfirmationDialogUiState
 import com.salesforce.samples.mobilesynccompose.core.ui.state.DiscardChangesDialogUiState
 import com.salesforce.samples.mobilesynccompose.core.ui.state.UndeleteConfirmationDialogUiState
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
-import com.salesforce.samples.mobilesynccompose.model.contacts.ContactsRepo
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -72,7 +73,7 @@ interface ContactsActivityViewModel : ContactObjectFieldChangeHandler {
 }
 
 class DefaultContactsActivityViewModel(
-    private val contactsRepo: ContactsRepo
+    private val contactsRepo: SObjectSyncableRepo<ContactObject>
 ) : ViewModel(), ContactsActivityViewModel {
 
     // region Class Properties Definitions
@@ -99,12 +100,15 @@ class DefaultContactsActivityViewModel(
      * accessing a particular [Contact] by its ID. The only caveat is that it must only be accessed
      * under the lock of the [eventMutex] to keep things deterministic.
      */
-    private val curContactsByPrimaryKey = mutableMapOf<String, ContactObject>()
-    private val curContactsByLocalId = mutableMapOf<String, ContactObject>()
+    @Volatile
+    private var curContactsByPrimaryKey = mapOf<String, ContactObject>()
+
+    @Volatile
+    private var curContactsByLocalId = mapOf<String, ContactObject>()
 
     init {
         viewModelScope.launch {
-            contactsRepo.curSObjectList.collect {
+            contactsRepo.curSObjects.collect {
                 onContactListUpdate(it)
             }
         }
@@ -115,31 +119,36 @@ class DefaultContactsActivityViewModel(
     // region Data Event Handling
 
 
-    private fun onContactListUpdate(newList: List<ContactObject>) = launchWithEventLock {
-        // Shallow copy b/c we can't guarantee the provided newList object is immutable:
-        val safeNewList: List<ContactObject> = ArrayList(newList)
-        val curState = uiState.value
-        val curListState = curState.listState
-        val curDetail = curState.detailsState
+    private fun onContactListUpdate(newObjects: SObjectsByIds<ContactObject>) =
+        launchWithEventLock {
+            // Shallow copy b/c we can't guarantee the provided newList object is immutable:
+            val curState = uiState.value
+            val curListState = curState.listState
+            val curDetail = curState.detailsState
 
-        // Parallelize the iteration operations over the list b/c it may be very large:
-        val filteredContactsDeferred = async(Dispatchers.Default) {
-            curState.listState.searchTerm?.let { searchTerm ->
-                safeNewList.filter { it.fullName?.contains(searchTerm, ignoreCase = true) == true }
-            } ?: safeNewList
-        }
+            // Parallelize the iteration operations over the list b/c it may be very large:
+            val filteredContactsDeferred = async(Dispatchers.Default) {
+                curState.listState.searchTerm?.let { searchTerm ->
+                    newObjects.byPrimaryKey.values.filter {
+                        it.fullName?.contains(
+                            searchTerm,
+                            ignoreCase = true
+                        ) == true
+                    }
+                } ?: newObjects.byPrimaryKey.values.toList()
+            }
 
-        curContactsByPrimaryKey.clear()
-        curContactsByLocalId.clear()
+            curContactsByPrimaryKey = newObjects.byPrimaryKey
+            curContactsByLocalId = newObjects.byLocalId
 //        curContactsBySoupId.clear()
 
-        withContext(Dispatchers.Default) {
-            safeNewList.forEach {
-                curContactsByPrimaryKey[it.id.primaryKey] = it
-                if (it.id.localId != null) {
-                    curContactsByLocalId[it.id.localId] = it
-                }
-            }
+//            withContext(Dispatchers.Default) {
+//                safeNewList.forEach {
+//                    curContactsByPrimaryKey[it.id.primaryKey] = it
+//                    if (it.id.localId != null) {
+//                        curContactsByLocalId[it.id.localId] = it
+//                    }
+//                }
 //            safeNewList.forEach { contact ->
 //                contact.accept {
 //                    ifInMemoryOnly { so -> curContactsByLocalId[so.id] = so }
@@ -150,28 +159,28 @@ class DefaultContactsActivityViewModel(
 //                    }
 //                }
 //            }
-        }
+//            }
 
-        if (curDetail == null || curDetail.mode != Viewing) {
-            mutUiState.value = mutUiState.value.copy(
-                listState = curListState.copy(contacts = filteredContactsDeferred.await())
+            if (curDetail == null || curDetail.mode != Viewing) {
+                mutUiState.value = mutUiState.value.copy(
+                    listState = curListState.copy(contacts = filteredContactsDeferred.await())
+                )
+                return@launchWithEventLock
+            }
+
+            // Check for matching contact in Viewing mode to update the properties of the contact the user is viewing.
+            val matchingContact: ContactObject? =
+                curContactsByLocalId[curDetail.contactObj.id.localId]
+                    ?: curContactsByPrimaryKey[curDetail.contactObj.id.primaryKey]
+
+            mutUiState.value = curState.copy(
+                listState = curListState.copy(contacts = filteredContactsDeferred.await()),
+                detailsState = matchingContact?.toContactDetailsUiState(
+                    mode = Viewing,
+                    fieldValueChangeHandler = this@DefaultContactsActivityViewModel
+                ) ?: curDetail
             )
-            return@launchWithEventLock
         }
-
-        // Check for matching contact in Viewing mode to update the properties of the contact the user is viewing.
-        val matchingContact: ContactObject? =
-            curContactsByLocalId[curDetail.contactObj.id.localId]
-                ?: curContactsByPrimaryKey[curDetail.contactObj.id.primaryKey]
-
-        mutUiState.value = curState.copy(
-            listState = curListState.copy(contacts = filteredContactsDeferred.await()),
-            detailsState = matchingContact?.toContactDetailsUiState(
-                mode = Viewing,
-                fieldValueChangeHandler = this@DefaultContactsActivityViewModel
-            ) ?: curDetail
-        )
-    }
 
     override fun sync(syncDownOnly: Boolean) {
         viewModelScope.launch {
@@ -460,7 +469,21 @@ class DefaultContactsActivityViewModel(
         // TODO check for if it is locally deleted, and only go to Editing mode when it is not deleted
         val curState = mutUiState.value
 
-        if (curState.detailsState != null && curState.detailsState.contactObj.curPropertiesAreModifiedFromOriginal) {
+        if (curState.detailsState == null) {
+            mutUiState.value = curState.copy(
+                detailsState = contact.toContactDetailsUiState(
+                    mode = Editing,
+                    fieldValueChangeHandler = this@DefaultContactsActivityViewModel
+                ),
+            )
+            return@launchWithEventLock
+        }
+
+        val curDetailContact = curState.detailsState.contactObj.id.let {
+            curContactsByLocalId[it.localId] ?: curContactsByPrimaryKey[it.primaryKey]
+        }
+
+        if (curState.detailsState.contactObj != curDetailContact) {
             // editing contact, so ask to discard changes
             val newDialog = mutUiState.value.dialogUiState ?: DiscardChangesDialogUiState(
                 onDiscardChanges = ::onDetailsDiscardChangesFromDialog,
@@ -557,9 +580,13 @@ class DefaultContactsActivityViewModel(
             return@launchWithEventLock
         }
 
+        val curDetailsContact = curState.detailsState.contactObj
+        val matchingContact = curContactsByLocalId[curDetailsContact.id.localId]
+            ?: curContactsByPrimaryKey[curDetailsContact.id.primaryKey]
+
         when (curState.detailsState.mode) {
             Creating -> {
-                if (curState.detailsState.contactObj.curPropertiesAreModifiedFromOriginal) {
+                if (curDetailsContact != matchingContact) {
                     mutUiState.value = curState.copy(
                         dialogUiState = DiscardChangesDialogUiState(
                             onDiscardChanges = ::onDetailsDiscardChangesFromDialog,
@@ -572,7 +599,7 @@ class DefaultContactsActivityViewModel(
             }
 
             Editing -> {
-                if (curState.detailsState.contactObj.curPropertiesAreModifiedFromOriginal) {
+                if (curDetailsContact != matchingContact) {
                     mutUiState.value = curState.copy(
                         dialogUiState = DiscardChangesDialogUiState(
                             onDiscardChanges = ::onDetailsDiscardChangesFromDialog,

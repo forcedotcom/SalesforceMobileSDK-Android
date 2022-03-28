@@ -27,7 +27,7 @@
 package com.salesforce.samples.mobilesynccompose.model.contacts
 
 import com.salesforce.androidsdk.mobilesync.util.Constants
-import com.salesforce.samples.mobilesynccompose.core.ReadOnlyJson
+import com.salesforce.samples.mobilesynccompose.core.data.ReadOnlyJson
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.*
 import org.json.JSONObject
 
@@ -42,35 +42,26 @@ import org.json.JSONObject
  */
 data class ContactObject(
     val firstName: String?,
-    val lastName: String?,
+    val lastName: String,
     val title: String?,
     val department: String?,
     override val id: SObjectId,
     override val localStatus: LocalStatus,
-    override val originalElt: ReadOnlyJson
+    private val originalElt: ReadOnlyJson,
 ) : SObject {
 
-    val fullName =
-        if (firstName == null && this.lastName == null) null
-        else buildString {
-            if (firstName != null) append("$firstName ")
-            if (lastName != null) append(lastName)
-        }.trim()
+    val fullName = buildString {
+        if (firstName != null) append("$firstName ")
+        append(lastName)
+    }.trim()
 
-    override fun buildUpdatedElt(): JSONObject = originalElt.buildMutableCopy().apply {
-        putOpt(KEY_FIRST_NAME, firstName)
-        putOpt(KEY_LAST_NAME, lastName)
-        putOpt(KEY_TITLE, title)
-        putOpt(KEY_DEPARTMENT, department)
-        putOpt(Constants.NAME, fullName)
-    }
-
-    override val curPropertiesAreModifiedFromOriginal: Boolean by lazy {
-        with(originalElt) {
-            optStringOrNull(KEY_FIRST_NAME) != firstName ||
-                    optStringOrNull(KEY_LAST_NAME) != lastName ||
-                    optStringOrNull(KEY_TITLE) != title ||
-                    optStringOrNull(KEY_DEPARTMENT) != department
+    override val eltWithInMemoryChangesApplied: ReadOnlyJson by lazy {
+        originalElt.copy {
+            putOpt(KEY_FIRST_NAME, firstName)
+            putOpt(KEY_LAST_NAME, lastName)
+            putOpt(KEY_TITLE, title)
+            putOpt(KEY_DEPARTMENT, department)
+            putOpt(Constants.NAME, fullName)
         }
     }
 
@@ -82,49 +73,31 @@ data class ContactObject(
         private const val OBJECT_TYPE = Constants.CONTACT
 
         @Throws(CoerceException::class)
-        override fun coerceFromJsonOrThrow(json: JSONObject): ContactObject {
-            val elt = ReadOnlyJson(json)
+        override fun coerceFromJsonOrThrow(json: ReadOnlyJson): ContactObject {
+            ReadOnlySoHelper.requireSoType(json, OBJECT_TYPE)
 
-            ReadOnlySoHelper.requireSoType(elt, OBJECT_TYPE)
-
-            val serverId = ReadOnlySoHelper.getServerIdOrThrow(elt)
-            val localId = ReadOnlySoHelper.getLocalId(elt)
+            val serverId = ReadOnlySoHelper.getServerIdOrThrow(json)
+            val localId = ReadOnlySoHelper.getLocalId(json)
+            val lastName = json.getRequiredStringOrThrow(KEY_LAST_NAME, valueCanBeBlank = false)
 
             return ContactObject(
                 id = SObjectId(primaryKey = serverId, localId = localId),
-                localStatus = ReadOnlySoHelper.getLocalStatus(elt),
-                originalElt = elt,
-                firstName = elt.optStringOrNull(KEY_FIRST_NAME),
-                lastName = elt.optStringOrNull(KEY_LAST_NAME),
-                title = elt.optStringOrNull(KEY_TITLE),
-                department = elt.optStringOrNull(KEY_DEPARTMENT),
+                localStatus = ReadOnlySoHelper.getLocalStatus(json),
+                originalElt = json,
+                firstName = json.optStringOrNull(KEY_FIRST_NAME),
+                lastName = lastName,
+                title = json.optStringOrNull(KEY_TITLE),
+                department = json.optStringOrNull(KEY_DEPARTMENT),
             )
         }
 
-        /**
-         * Creates a new [Contact] model object from the provided properties.
-         *
-         * @param firstName The contact's first name.
-         * @param lastName The contact's last name.
-         * @param title The contact's business title.
-         * @param department The contact's department.
-         * @param associatedAccountId (Optional) the ID of the Salesforce Standard Object Account this contact is associated with.
-         * @return The newly-created [Contact] model object.
-         */
-        fun createNewLocal(
-            firstName: String? = null,
-            lastName: String? = null,
-            title: String? = null,
-            department: String? = null,
-            associatedAccountId: String? = null
-        ) = createNewSoupEltBase(forObjType = OBJECT_TYPE)
-            .apply {
-                putOpt(KEY_FIRST_NAME, firstName)
-                putOpt(KEY_LAST_NAME, lastName)
-                putOpt(KEY_TITLE, title)
-                putOpt(KEY_DEPARTMENT, department)
-            }.let {
-                coerceFromJsonOrThrow(it)
-            }
+        fun buildModifier(
+            firstName: String?,
+            lastName: String,
+            title: String?,
+            department: String?,
+        ): JSONObject.() -> Unit {
+
+        }
     }
 }

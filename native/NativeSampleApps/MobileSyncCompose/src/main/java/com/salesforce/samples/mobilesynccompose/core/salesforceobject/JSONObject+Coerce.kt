@@ -1,23 +1,45 @@
 package com.salesforce.samples.mobilesynccompose.core.salesforceobject
 
 import com.salesforce.androidsdk.mobilesync.target.SyncTarget.*
-import com.salesforce.samples.mobilesynccompose.core.ReadOnlyJson
+import com.salesforce.samples.mobilesynccompose.core.data.ReadOnlyJson
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 
 @Throws(CoerceException::class)
-fun JSONObject.getRequiredStringOrThrow(key: String): String =
+fun JSONObject.getRequiredStringOrThrow(key: String, valueCanBeBlank: Boolean = true): String =
     try {
-        this.getString(key)
+        val value = this.getString(key)
+        if (!valueCanBeBlank) {
+            value.ifBlank {
+                throw InvalidPropertyValue(
+                    propertyKey = key,
+                    allowedValuesDescription = "$key must not be blank.",
+                    offendingJsonString = this.toString()
+                )
+            }
+        }
+
+        value
     } catch (ex: JSONException) {
         throw MissingRequiredProperty(propertyKey = key, offendingJsonString = this.toString())
     }
 
 @Throws(CoerceException::class)
-fun ReadOnlyJson.getRequiredStringOrThrow(key: String): String =
+fun ReadOnlyJson.getRequiredStringOrThrow(key: String, valueCanBeBlank: Boolean = true): String =
     try {
-        this.getString(key)
+        val value = this.getString(key)
+        if (!valueCanBeBlank) {
+            value.ifBlank {
+                throw InvalidPropertyValue(
+                    propertyKey = key,
+                    allowedValuesDescription = "$key must not be blank.",
+                    offendingJsonString = this.toString()
+                )
+            }
+        }
+
+        value
     } catch (ex: JSONException) {
         throw MissingRequiredProperty(propertyKey = key, offendingJsonString = this.toString())
     }
@@ -35,6 +57,14 @@ fun JSONObject.getRequiredLongOrThrow(key: String): Long =
     try {
         this.getLong(key)
     } catch (ex: JSONException) {
+        throw MissingRequiredProperty(propertyKey = key, offendingJsonString = this.toString())
+    }
+
+@Throws(CoerceException::class)
+fun ReadOnlyJson.getRequiredLongOrThrow(key: String): Long =
+    try {
+        this.getLong(name = key)
+    } catch (ex: Exception) {
         throw MissingRequiredProperty(propertyKey = key, offendingJsonString = this.toString())
     }
 

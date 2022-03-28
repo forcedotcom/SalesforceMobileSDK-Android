@@ -27,23 +27,14 @@
 package com.salesforce.samples.mobilesynccompose.model.contacts
 
 import com.salesforce.androidsdk.accounts.UserAccount
-import com.salesforce.androidsdk.mobilesync.util.Constants
-import com.salesforce.androidsdk.smartstore.store.QuerySpec
-import com.salesforce.androidsdk.smartstore.store.SmartStore.SOUP_ENTRY_ID
-import com.salesforce.samples.mobilesynccompose.core.extensions.map
-import com.salesforce.samples.mobilesynccompose.core.extensions.partitionBySuccess
 import com.salesforce.samples.mobilesynccompose.core.repos.SObjectSyncableRepoBase
-import com.salesforce.samples.mobilesynccompose.core.repos.RepoOperationException
-import com.salesforce.samples.mobilesynccompose.core.repos.SObjectSyncableRepo
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SalesforceObjectDeserializer
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectId
 import kotlinx.coroutines.*
 
 /**
  * The Contacts Repository. It exposes upserting, deleting, and undeleting [Contact] model objects
  * into SmartStore, and it supports the MobileSync operations.
  */
-interface ContactsRepo : SObjectSyncableRepo<ContactObject>
 
 /**
  * The default implementation of the [ContactsRepo].
@@ -54,7 +45,7 @@ class DefaultContactsRepo(
 ) : SObjectSyncableRepoBase<ContactObject>(
     account = account,
     ioDispatcher = ioDispatcher
-), ContactsRepo {
+) {
 
     override val TAG: String = "DefaultContactsRepo"
     override val deserializer: SalesforceObjectDeserializer<ContactObject> = ContactObject.Companion

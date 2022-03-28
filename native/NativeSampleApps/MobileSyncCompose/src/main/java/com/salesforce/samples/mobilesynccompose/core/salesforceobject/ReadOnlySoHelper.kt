@@ -1,20 +1,13 @@
 package com.salesforce.samples.mobilesynccompose.core.salesforceobject
 
 import com.salesforce.androidsdk.mobilesync.util.Constants
-import com.salesforce.samples.mobilesynccompose.core.ReadOnlyJson
+import com.salesforce.samples.mobilesynccompose.core.data.ReadOnlyJson
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObject.Companion.KEY_LOCAL_ID
 import java.util.*
 
 object ReadOnlySoHelper {
     fun getServerIdOrThrow(json: ReadOnlyJson): String = json
-        .getRequiredStringOrThrow(Constants.ID)
-        .ifBlank {
-            throw InvalidPropertyValue(
-                propertyKey = Constants.ID,
-                allowedValuesDescription = "ID must not be blank.",
-                offendingJsonString = json.toString()
-            )
-        }
+        .getRequiredStringOrThrow(Constants.ID, valueCanBeBlank = false)
 
     fun requireSoType(json: ReadOnlyJson, requiredObjType: String) {
         val attributes = json.getRequiredObjectOrThrow(Constants.ATTRIBUTES)

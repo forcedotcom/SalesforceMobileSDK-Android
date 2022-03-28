@@ -2,13 +2,16 @@ package com.salesforce.samples.mobilesynccompose.core.salesforceobject
 
 import com.salesforce.androidsdk.mobilesync.target.SyncTarget
 import com.salesforce.androidsdk.mobilesync.util.Constants
+import com.salesforce.samples.mobilesynccompose.core.data.ReadOnlyJson
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObject.Companion.KEY_LOCAL_ID
 import org.json.JSONObject
 import java.util.*
 
 interface SalesforceObjectDeserializer<T : SObject> {
     @Throws(CoerceException::class)
-    fun coerceFromJsonOrThrow(json: JSONObject): T
+    fun coerceFromJsonOrThrow(json: ReadOnlyJson): T
+
+    val modifier: JSONObject.() -> Unit
 }
 
 //abstract class SalesforceObjectDeserializerBase<T : SalesforceObjectContainer>(
@@ -66,16 +69,16 @@ interface SalesforceObjectDeserializer<T : SObject> {
  * This will create a local ID, add the correct object type, and set the correct combination of
  * local flags on the returned JSON, leaving the rest of the customization to the subclasses to implement.
  */
-fun createNewSoupEltBase(forObjType: String): JSONObject {
-    val localId = SyncTarget.createLocalId()
+fun createNewSoupEltBase(forObjType: String, objId: SObjectId): JSONObject {
     val attributes = JSONObject().put(Constants.TYPE.lowercase(Locale.US), forObjType)
 
-    return JSONObject()
-        .put(Constants.ID, localId)
-        .put(KEY_LOCAL_ID, localId)
-        .put(Constants.ATTRIBUTES, attributes)
-        .put(SyncTarget.LOCALLY_CREATED, true)
-        .put(SyncTarget.LOCALLY_DELETED, false)
-        .put(SyncTarget.LOCALLY_UPDATED, false)
-        .put(SyncTarget.LOCAL, true)
+    return JSONObject().apply {
+        put(Constants.ID, objId.primaryKey)
+        objId.localId?.let { put(KEY_LOCAL_ID, it) }
+        put(Constants.ATTRIBUTES, attributes)
+        put(SyncTarget.LOCALLY_CREATED, true)
+        put(SyncTarget.LOCALLY_DELETED, false)
+        put(SyncTarget.LOCALLY_UPDATED, false)
+        put(SyncTarget.LOCAL, true)
+    }
 }
