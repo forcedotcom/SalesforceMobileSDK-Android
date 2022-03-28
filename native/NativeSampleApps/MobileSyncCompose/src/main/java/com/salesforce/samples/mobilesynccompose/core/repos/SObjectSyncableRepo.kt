@@ -1,11 +1,12 @@
 package com.salesforce.samples.mobilesynccompose.core.repos
 
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObject
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectId
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalId
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.PrimaryKey
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectModel
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord
 import kotlinx.coroutines.flow.StateFlow
-import org.json.JSONObject
 
-interface SObjectSyncableRepo<T : SObject> {
+interface SObjectSyncableRepo<T : SObjectModel> {
     val curSObjects: StateFlow<SObjectsByIds<T>>
 
     @Throws(RepoSyncException.SyncDownException::class)
@@ -18,22 +19,19 @@ interface SObjectSyncableRepo<T : SObject> {
     suspend fun syncUpOnly()
 
     @Throws(RepoOperationException::class)
-    suspend fun locallyUpsert(so: T): T
+    suspend fun locallyUpdate(id: PrimaryKey, so: T): SObjectRecord<T>
 
     @Throws(RepoOperationException::class)
-    suspend fun locallyUpdate(id: SObjectId, modifier: JSONObject.() -> Unit): T
+    suspend fun locallyCreate(so: T): SObjectRecord<T>
 
     @Throws(RepoOperationException::class)
-    suspend fun createNewLocal(modifier: JSONObject.() -> Unit): T
+    suspend fun locallyDelete(id: PrimaryKey): SObjectRecord<T>?
 
     @Throws(RepoOperationException::class)
-    suspend fun locallyDelete(id: SObjectId): T?
-
-    @Throws(RepoOperationException::class)
-    suspend fun locallyUndelete(id: SObjectId): T
+    suspend fun locallyUndelete(id: PrimaryKey): SObjectRecord<T>
 }
 
-data class SObjectsByIds<T : SObject>(
-    val byPrimaryKey: Map<String, T>,
-    val byLocalId: Map<String, T>
+data class SObjectsByIds<T : SObjectModel>(
+    val byPrimaryKey: Map<PrimaryKey, SObjectRecord<T>>,
+    val byLocalId: Map<LocalId, SObjectRecord<T>>
 )

@@ -2,12 +2,13 @@ package com.salesforce.samples.mobilesynccompose.core.salesforceobject
 
 import com.salesforce.androidsdk.mobilesync.util.Constants
 import com.salesforce.samples.mobilesynccompose.core.data.ReadOnlyJson
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObject.Companion.KEY_LOCAL_ID
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.StoreRecordMetadata.Companion.KEY_LOCAL_ID
 import java.util.*
 
 object ReadOnlySoHelper {
-    fun getServerIdOrThrow(json: ReadOnlyJson): String = json
+    fun getPrimaryKeyOrThrow(json: ReadOnlyJson): PrimaryKey = json
         .getRequiredStringOrThrow(Constants.ID, valueCanBeBlank = false)
+        .let { PrimaryKey(it) }
 
     fun requireSoType(json: ReadOnlyJson, requiredObjType: String) {
         val attributes = json.getRequiredObjectOrThrow(Constants.ATTRIBUTES)
@@ -22,6 +23,8 @@ object ReadOnlySoHelper {
         }
     }
 
-    fun getLocalId(json: ReadOnlyJson): String? = json.optStringOrNull(KEY_LOCAL_ID)
+    fun getLocalId(json: ReadOnlyJson): LocalId? =
+        json.optStringOrNull(KEY_LOCAL_ID)?.let { LocalId(it) }
+
     fun getLocalStatus(json: ReadOnlyJson): LocalStatus = json.coerceToLocalStatus()
 }

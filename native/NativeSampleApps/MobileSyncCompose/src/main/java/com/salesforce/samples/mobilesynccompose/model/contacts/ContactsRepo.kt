@@ -28,7 +28,7 @@ package com.salesforce.samples.mobilesynccompose.model.contacts
 
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.samples.mobilesynccompose.core.repos.SObjectSyncableRepoBase
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SalesforceObjectDeserializer
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectDeserializer
 import kotlinx.coroutines.*
 
 /**
@@ -48,7 +48,7 @@ class DefaultContactsRepo(
 ) {
 
     override val TAG: String = "DefaultContactsRepo"
-    override val deserializer: SalesforceObjectDeserializer<ContactObject> = ContactObject.Companion
+    override val deserializer: SObjectDeserializer<ContactObject> = ContactObject.Companion
     override val soupName: String = CONTACTS_SOUP_NAME
     override val syncDownName: String = SYNC_DOWN_CONTACTS
     override val syncUpName: String = SYNC_UP_CONTACTS

@@ -45,27 +45,22 @@ data class ContactObject(
     val lastName: String,
     val title: String?,
     val department: String?,
-    override val id: SObjectId,
-    override val localStatus: LocalStatus,
-    private val originalElt: ReadOnlyJson,
-) : SObject {
+) : SObjectModel {
 
     val fullName = buildString {
         if (firstName != null) append("$firstName ")
         append(lastName)
     }.trim()
 
-    override val eltWithInMemoryChangesApplied: ReadOnlyJson by lazy {
-        originalElt.copy {
-            putOpt(KEY_FIRST_NAME, firstName)
-            putOpt(KEY_LAST_NAME, lastName)
-            putOpt(KEY_TITLE, title)
-            putOpt(KEY_DEPARTMENT, department)
-            putOpt(Constants.NAME, fullName)
-        }
+    override fun JSONObject.applyMemoryModelProperties() = this.apply {
+        putOpt(KEY_FIRST_NAME, firstName)
+        putOpt(KEY_LAST_NAME, lastName)
+        putOpt(KEY_TITLE, title)
+        putOpt(KEY_DEPARTMENT, department)
+        putOpt(Constants.NAME, fullName)
     }
 
-    companion object : SalesforceObjectDeserializer<ContactObject> {
+    companion object : SObjectDeserializer<ContactObject> {
         const val KEY_FIRST_NAME = "FirstName"
         const val KEY_LAST_NAME = "LastName"
         const val KEY_TITLE = "Title"
@@ -73,31 +68,28 @@ data class ContactObject(
         private const val OBJECT_TYPE = Constants.CONTACT
 
         @Throws(CoerceException::class)
-        override fun coerceFromJsonOrThrow(json: ReadOnlyJson): ContactObject {
+        override fun coerceFromJsonOrThrow(json: ReadOnlyJson): SObjectRecord<ContactObject> {
             ReadOnlySoHelper.requireSoType(json, OBJECT_TYPE)
 
-            val serverId = ReadOnlySoHelper.getServerIdOrThrow(json)
+            val primaryKey = ReadOnlySoHelper.getPrimaryKeyOrThrow(json)
             val localId = ReadOnlySoHelper.getLocalId(json)
             val lastName = json.getRequiredStringOrThrow(KEY_LAST_NAME, valueCanBeBlank = false)
 
-            return ContactObject(
-                id = SObjectId(primaryKey = serverId, localId = localId),
-                localStatus = ReadOnlySoHelper.getLocalStatus(json),
-                originalElt = json,
+            val model = ContactObject(
                 firstName = json.optStringOrNull(KEY_FIRST_NAME),
                 lastName = lastName,
                 title = json.optStringOrNull(KEY_TITLE),
                 department = json.optStringOrNull(KEY_DEPARTMENT),
             )
+
+            return SObjectRecord(
+                primaryKey = primaryKey,
+                localId = localId,
+                localStatus = json.coerceToLocalStatus(),
+                model = model
+            )
         }
 
-        fun buildModifier(
-            firstName: String?,
-            lastName: String,
-            title: String?,
-            department: String?,
-        ): JSONObject.() -> Unit {
-
-        }
+        override val objectType: String = OBJECT_TYPE
     }
 }
