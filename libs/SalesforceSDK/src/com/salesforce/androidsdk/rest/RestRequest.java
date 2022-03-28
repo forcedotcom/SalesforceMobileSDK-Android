@@ -822,6 +822,8 @@ public class RestRequest {
 	 * Request for getting list of record related to offline briefcase
 	 *
 	 * @param apiVersion       Salesforce API version.
+	 * @param relayToken       Relay token (to get next page of results)
+	 *
 	 *
 	 * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.chatterapi.meta/chatterapi/connect_resources_briefcase_priming_records.htm">https://developer.salesforce.com/docs/atlas.en-us.chatterapi.meta/chatterapi/connect_resources_briefcase_priming_records.htm</a>
 	 */
