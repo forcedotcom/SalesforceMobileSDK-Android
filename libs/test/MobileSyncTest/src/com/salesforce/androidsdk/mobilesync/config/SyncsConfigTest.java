@@ -32,6 +32,7 @@ import androidx.test.filters.SmallTest;
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManagerTestCase;
 import com.salesforce.androidsdk.mobilesync.target.BatchSyncUpTarget;
+import com.salesforce.androidsdk.mobilesync.target.BriefcaseSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.LayoutSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.MetadataSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.MruSyncDownTarget;
@@ -42,6 +43,7 @@ import com.salesforce.androidsdk.mobilesync.target.RefreshSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.SoqlSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.SoslSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget;
+import com.salesforce.androidsdk.mobilesync.util.BriefcaseObjectInfo;
 import com.salesforce.androidsdk.mobilesync.util.ChildrenInfo;
 import com.salesforce.androidsdk.mobilesync.util.ParentInfo;
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
@@ -104,6 +106,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
         Assert.assertFalse(syncManager.hasSyncWithName("layoutSyncDown"));
         Assert.assertFalse(syncManager.hasSyncWithName("metadataSyncDown"));
         Assert.assertFalse(syncManager.hasSyncWithName("parentChildrenSyncDown"));
+        Assert.assertFalse(syncManager.hasSyncWithName("briefcaseSyncDown"));
         Assert.assertFalse(syncManager.hasSyncWithName("noBatchSyncUp"));
         Assert.assertFalse(syncManager.hasSyncWithName("batchSyncUp"));
         Assert.assertFalse(syncManager.hasSyncWithName("parentChildrenSyncUp"));
@@ -119,6 +122,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
         Assert.assertTrue(syncManager.hasSyncWithName("layoutSyncDown"));
         Assert.assertTrue(syncManager.hasSyncWithName("metadataSyncDown"));
         Assert.assertTrue(syncManager.hasSyncWithName("parentChildrenSyncDown"));
+        Assert.assertTrue(syncManager.hasSyncWithName("briefcaseSyncDown"));
         Assert.assertTrue(syncManager.hasSyncWithName("noBatchSyncUp"));
         Assert.assertTrue(syncManager.hasSyncWithName("batchSyncUp"));
         Assert.assertTrue(syncManager.hasSyncWithName("parentChildrenSyncUp"));
@@ -225,6 +229,23 @@ public class SyncsConfigTest extends SyncManagerTestCase {
                 SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE),
                 SyncState.Status.NEW, 0);
 
+    }
+
+    @Test
+    public void testBriefcaseSyncDownFromConfig() throws JSONException {
+        MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
+
+        SyncState sync = syncManager.getSyncStatus("briefcaseSyncDown");
+
+        checkStatus(sync, SyncState.Type.syncDown, sync.getId(),
+            new BriefcaseSyncDownTarget(
+                Arrays.asList(
+                    new BriefcaseObjectInfo("accounts", "Account", Arrays.asList("Name", "Description")),
+                    new BriefcaseObjectInfo("contacts", "Contact", Arrays.asList("FirstName"), "IdX", "LastModifiedDateX")
+                )
+            ),
+            SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE),
+            SyncState.Status.NEW, 0);
     }
 
     @Test

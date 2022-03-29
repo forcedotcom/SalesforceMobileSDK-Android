@@ -78,6 +78,7 @@ public abstract class SyncDownTarget extends SyncTarget {
         case parent_children: return new ParentChildrenSyncDownTarget(target);
         case metadata: return new MetadataSyncDownTarget(target);
         case layout: return new LayoutSyncDownTarget(target);
+        case briefcase: return new BriefcaseSyncDownTarget(target);
         case custom:
         default:
             try {
@@ -303,7 +304,8 @@ public abstract class SyncDownTarget extends SyncTarget {
         parent_children,
         custom,
         metadata,
-        layout
+        layout,
+        briefcase
     }
 
     /**

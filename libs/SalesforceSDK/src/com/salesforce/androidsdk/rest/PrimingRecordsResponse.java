@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -61,7 +62,7 @@ public class PrimingRecordsResponse {
     public final Map<String, Map<String, List<PrimingRecord>>> primingRecords = new HashMap<>();
     public final String relayToken;
     public final List<PrimingRuleError> ruleErrors = new ArrayList<>();
-    public final PrimingRecordStats stats;
+    public final PrimingStats stats;
 
     public PrimingRecordsResponse(JSONObject responseJson) throws JSONException, ParseException {
         // Parsing priming records
@@ -83,7 +84,7 @@ public class PrimingRecordsResponse {
         }
 
         // Getting relay token
-        relayToken = responseJson.getString(RELAY_TOKEN);
+        relayToken = JSONObjectHelper.optString(responseJson, RELAY_TOKEN);
 
         // Parsing rule errors
         JSONArray ruleErrorsJson = responseJson.getJSONArray(RULE_ERRORS);
@@ -92,7 +93,7 @@ public class PrimingRecordsResponse {
         }
 
         // Parsing stats
-        stats = new PrimingRecordStats(responseJson.getJSONObject(STATS));
+        stats = new PrimingStats(responseJson.getJSONObject(STATS));
     }
 
     public static class PrimingRecord {
@@ -100,11 +101,11 @@ public class PrimingRecordsResponse {
         public static final String SYSTEM_MODSTAMP = "systemModstamp";
 
         public final String id;
-        public final Date systemModStamp;
+        public final Date systemModstamp;
 
         public PrimingRecord(JSONObject json) throws JSONException, ParseException {
             id = json.getString(ID);
-            systemModStamp = TIMESTAMP_FORMAT.parse(json.getString(SYSTEM_MODSTAMP));
+            systemModstamp = TIMESTAMP_FORMAT.parse(json.getString(SYSTEM_MODSTAMP));
         }
     }
 
@@ -118,7 +119,7 @@ public class PrimingRecordsResponse {
         }
     }
 
-    public static class PrimingRecordStats {
+    public static class PrimingStats {
         public static final String RULE_COUNT_TOTAL = "ruleCountTotal";
         public static final String RECORD_COUNT_TOTAL = "recordCountTotal";
         public static final String RULE_COUNT_SERVED = "ruleCountServed";
@@ -129,7 +130,7 @@ public class PrimingRecordsResponse {
         public int ruleCountServed;
         public int recordCountServed;
 
-        public PrimingRecordStats(JSONObject json) throws JSONException {
+        public PrimingStats(JSONObject json) throws JSONException {
             ruleCountTotal = json.getInt(RULE_COUNT_TOTAL);
             recordCountTotal = json.getInt(RECORD_COUNT_TOTAL);
             ruleCountServed = json.getInt(RULE_COUNT_SERVED);

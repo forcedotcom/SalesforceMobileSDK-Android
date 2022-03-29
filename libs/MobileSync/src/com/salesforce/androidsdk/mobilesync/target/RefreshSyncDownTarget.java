@@ -63,6 +63,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
     private String soupName;
     private int countIdsPerSoql;
     private static final int defaultCountIdsPerSoql = 500;
+    private static final int MAX_COUNT_IDS_PER_SOQL = 2000;
 
     // NB: For each sync run - a fresh sync down target is created (by deserializing it from smartstore)
     // The following members are specific to a run
@@ -78,13 +79,14 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
     }
 
     /**
-     * Set the number of ids to pack in a single SOQL call
-     * SOQL query size limit is 10,000 characters (so ~500 ids)
+     * Set the number of ids to pack in a single SOQL call (not to exceed 2000)
+     * SOQL query size limit is 100,000 characters (so ~5000 should not exceed the query size limit)
+     * However the code fetching fields from the server expect a single response per requesst
      * This setter is to be used by tests primarily
      * @param count
      */
     public void setCountIdsPerSoql(int count) {
-        countIdsPerSoql = count;
+        countIdsPerSoql = Math.min(count, MAX_COUNT_IDS_PER_SOQL);
     }
 
     /**
@@ -97,7 +99,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         this.fieldlist = JSONObjectHelper.toList(target.getJSONArray(FIELDLIST));
         this.objectType = target.getString(SOBJECT_TYPE);
         this.soupName = target.getString(SOUP_NAME);
-        this.countIdsPerSoql = target.optInt(COUNT_IDS_PER_SOQL, defaultCountIdsPerSoql);
+        setCountIdsPerSoql(target.optInt(COUNT_IDS_PER_SOQL, defaultCountIdsPerSoql));
     }
 
     /**
@@ -111,7 +113,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         this.fieldlist = fieldlist;
         this.objectType = objectType;
         this.soupName = soupName;
-        this.countIdsPerSoql = defaultCountIdsPerSoql;
+        setCountIdsPerSoql(defaultCountIdsPerSoql);
     }
 
     /**
@@ -162,7 +164,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         }
         else {
             querySpec = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":" + getIdFieldName()
-                    + "} FROM {" + soupName + "} ORDER BY {" + soupName + ":" + getIdFieldName() + "} ASC", getCountIdsPerSoql());
+                + "} FROM {" + soupName + "} ORDER BY {" + soupName + ":" + getIdFieldName() + "} ASC", getCountIdsPerSoql());
             JSONArray result = syncManager.getSmartStore().query(querySpec, page);
 
             // Not a resync
@@ -182,7 +184,13 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         }
         if (idsInSmartStore.size() > 0) {
             // Get records from server that have changed after maxTimeStamp
-            final JSONArray records = fetchFromServer(syncManager, idsInSmartStore, fieldlist, maxTimeStamp);
+            final ArrayList<String> fieldlistToFetch = new ArrayList<>(fieldlist);
+            for (String fieldName: Arrays.asList(getIdFieldName(), getModificationDateFieldName())) {
+                if (!fieldlistToFetch.contains(fieldName)) {
+                    fieldlistToFetch.add(fieldName);
+                }
+            }
+            final JSONArray records = fetchFromServer(syncManager, idsInSmartStore, fieldlistToFetch, maxTimeStamp);
 
             // Increment page if there is more to fetch
             boolean done = getCountIdsPerSoql() * (page + 1) >= totalSize;
@@ -197,9 +205,9 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
 
     private JSONArray fetchFromServer(SyncManager syncManager, List<String> ids, List<String> fieldlist, long maxTimeStamp) throws IOException, JSONException {
         final String whereClause = ""
-                + getIdFieldName() + " IN ('" + TextUtils.join("', '", ids) + "')"
-                + (maxTimeStamp > 0 ? " AND " + getModificationDateFieldName() + " > " + Constants.TIMESTAMP_FORMAT.format(new Date(maxTimeStamp))
-                : "");
+            + getIdFieldName() + " IN ('" + TextUtils.join("', '", ids) + "')"
+            + (maxTimeStamp > 0 ? " AND " + getModificationDateFieldName() + " > " + Constants.TIMESTAMP_FORMAT.format(new Date(maxTimeStamp))
+            : "");
         final String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(objectType).where(whereClause).build();
         final RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, soql);
         final RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
