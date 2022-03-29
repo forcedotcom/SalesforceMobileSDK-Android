@@ -245,7 +245,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
                     for (PrimingRecord primingRecord : primingRecords) {
                         // Filtering by maxTimeStamp
                         // TODO Remove once 238 is GA (filtering will happen on server)
-                        if (primingRecord.systemModStamp.getTime() > maxTimeStamp) {
+                        if (primingRecord.systemModstamp.getTime() > maxTimeStamp) {
                             objectTypeToIds.get(info.sobjectType).add(primingRecord.id);
                         }
                     }

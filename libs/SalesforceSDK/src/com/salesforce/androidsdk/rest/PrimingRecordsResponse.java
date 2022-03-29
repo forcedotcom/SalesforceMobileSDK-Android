@@ -101,11 +101,11 @@ public class PrimingRecordsResponse {
         public static final String SYSTEM_MODSTAMP = "systemModstamp";
 
         public final String id;
-        public final Date systemModStamp;
+        public final Date systemModstamp;
 
         public PrimingRecord(JSONObject json) throws JSONException, ParseException {
             id = json.getString(ID);
-            systemModStamp = TIMESTAMP_FORMAT.parse(json.getString(SYSTEM_MODSTAMP));
+            systemModstamp = TIMESTAMP_FORMAT.parse(json.getString(SYSTEM_MODSTAMP));
         }
     }
 

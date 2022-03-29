@@ -645,19 +645,21 @@ public class RestRequestTest {
 		// Checking priming records
 		// We have accounts and contacts
 		Assert.assertEquals(2, primingRecordsResponse.primingRecords.size());
-		// We have one record type for accounts and three contacts
+		// We have one record type for accounts and two accounts
 		Assert.assertEquals(1, primingRecordsResponse.primingRecords.get("Account").size());
 		Assert.assertEquals(2, primingRecordsResponse.primingRecords.get("Account").get("012S00000009B8HIAU").size());
 		Assert.assertEquals("001S000001QEDnzIAH", primingRecordsResponse.primingRecords.get("Account").get("012S00000009B8HIAU").get(0).id);
 		Assert.assertEquals("001S000000va6rGIAQ", primingRecordsResponse.primingRecords.get("Account").get("012S00000009B8HIAU").get(1).id);
-		Assert.assertEquals(1629744152000L, primingRecordsResponse.primingRecords.get("Account").get("012S00000009B8HIAU").get(0).systemModStamp.getTime());
+		Assert.assertEquals(1629744152000L, primingRecordsResponse.primingRecords.get("Account").get("012S00000009B8HIAU").get(0).systemModstamp
+			.getTime());
 		// We have one record type for contacts and three contacts
 		Assert.assertEquals(1, primingRecordsResponse.primingRecords.get("Contact").size());
 		Assert.assertEquals(3, primingRecordsResponse.primingRecords.get("Contact").get("012000000000000AAA").size());
 		Assert.assertEquals("003S00000129813IAA", primingRecordsResponse.primingRecords.get("Contact").get("012000000000000AAA").get(0).id);
 		Assert.assertEquals("003S0000012LUhRIAW", primingRecordsResponse.primingRecords.get("Contact").get("012000000000000AAA").get(1).id);
 		Assert.assertEquals("003S0000012hWwRIAU", primingRecordsResponse.primingRecords.get("Contact").get("012000000000000AAA").get(2).id);
-		Assert.assertEquals(1545459239000L, primingRecordsResponse.primingRecords.get("Contact").get("012000000000000AAA").get(0).systemModStamp.getTime());
+		Assert.assertEquals(1545459239000L, primingRecordsResponse.primingRecords.get("Contact").get("012000000000000AAA").get(0).systemModstamp
+			.getTime());
 
 		// Checking relay token
 		Assert.assertEquals("fake-token", primingRecordsResponse.relayToken);
