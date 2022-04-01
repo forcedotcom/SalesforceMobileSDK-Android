@@ -60,6 +60,7 @@ public class EventStoreManager {
     private final Book book;
     private boolean isLoggingEnabled = true;
     private int maxEvents = 10000;
+    private Integer countEvents = null; // null means not calculated yet
 
     /**
      * Parameterized constructor.
@@ -89,7 +90,11 @@ public class EventStoreManager {
         if (!shouldStoreEvent()) {
             return;
         }
+
         book.write(event.getEventId(), encrypt(event.toJson().toString()));
+        // getNumStoredEvents() returns countEvents if known
+        // otherwise it counts the keys in the book (and store the count in countEvents)
+        countEvents = getNumStoredEvents() + 1;
     }
 
     /**
@@ -194,7 +199,15 @@ public class EventStoreManager {
      */
     public boolean deleteEvent(String eventId) {
         book.delete(eventId);
-        return !book.contains(eventId);
+        boolean successfullyDeleted = !book.contains(eventId);
+
+        if (successfullyDeleted) {
+            // getNumStoredEvents() returns countEvents if known
+            // otherwise it counts the keys in the book (and store the count in countEvents)
+            countEvents = getNumStoredEvents() - 1;
+        }
+
+        return successfullyDeleted;
     }
 
     /**
@@ -215,6 +228,7 @@ public class EventStoreManager {
      */
     public void deleteAllEvents() {
         book.destroy();
+        countEvents = 0;
     }
 
     /**
@@ -257,10 +271,16 @@ public class EventStoreManager {
     /**
      * Returns number of stored events.
      *
+     * Counts the keys in the book (and store the count in countEvents) if countEvents if null.
+     * Returns countEvents directly if known (i.e. not null)
+     *
      * @return Number of stored events.
      */
     public int getNumStoredEvents() {
-        return book.getAllKeys().size();
+        if (countEvents == null) {
+            countEvents = book.getAllKeys().size();
+        }
+        return countEvents;
     }
 
     private boolean shouldStoreEvent() {
