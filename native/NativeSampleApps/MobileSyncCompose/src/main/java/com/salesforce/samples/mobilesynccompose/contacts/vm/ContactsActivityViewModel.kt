@@ -35,7 +35,7 @@ import com.salesforce.samples.mobilesynccompose.core.repos.RepoOperationExceptio
 import com.salesforce.samples.mobilesynccompose.core.repos.RepoSyncException
 import com.salesforce.samples.mobilesynccompose.core.repos.SObjectSyncableRepo
 import com.salesforce.samples.mobilesynccompose.core.repos.SObjectsByIds
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectId
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.PrimaryKey
 import com.salesforce.samples.mobilesynccompose.core.ui.state.DeleteConfirmationDialogUiState
 import com.salesforce.samples.mobilesynccompose.core.ui.state.DiscardChangesDialogUiState
 import com.salesforce.samples.mobilesynccompose.core.ui.state.UndeleteConfirmationDialogUiState
@@ -47,27 +47,17 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-interface ContactsActivityViewModel : ContactObjectFieldChangeHandler {
+interface ContactsActivityViewModel {
     val uiState: StateFlow<ContactsActivityUiState>
 
-    fun listContactClick(contactId: SObjectId)
+    fun listContactClick(contactId: PrimaryKey)
     fun listCreateClick()
-
-    fun detailsDeleteClick()
-    fun listDeleteClick(contactId: SObjectId)
-
-    fun detailsUndeleteClick()
-    fun listUndeleteClick(contactId: SObjectId)
-
-    fun detailsEditClick()
-    fun listEditClick(contactId: SObjectId)
-
+    fun listDeleteClick(contactId: PrimaryKey)
+    fun listUndeleteClick(contactId: PrimaryKey)
+    fun listEditClick(contactId: PrimaryKey)
     fun listSearchClick()
     fun listExitSearchClick()
     fun onSearchTermUpdated(newSearchTerm: String)
-
-    fun detailsExitClick()
-    fun detailsSaveClick()
 
     fun sync(syncDownOnly: Boolean = false)
 }
@@ -108,7 +98,7 @@ class DefaultContactsActivityViewModel(
 
     init {
         viewModelScope.launch {
-            contactsRepo.curSObjects.collect {
+            contactsRepo.records.collect {
                 onContactListUpdate(it)
             }
         }
@@ -221,9 +211,9 @@ class DefaultContactsActivityViewModel(
     // region List UI Interaction Handling
 
 
-    override fun listContactClick(contactId: SObjectId) = launchWithEventLock {
-        val contact = curContactsByLocalId[contactId.localId]
-            ?: curContactsByPrimaryKey[contactId.primaryKey]
+    override fun listContactClick(id: SObjectId) = launchWithEventLock {
+        val contact = curContactsByLocalId[id.localId]
+            ?: curContactsByPrimaryKey[id.primaryKey]
             ?: return@launchWithEventLock
 
         val curState = mutUiState.value
@@ -271,28 +261,28 @@ class DefaultContactsActivityViewModel(
     // region Delete Handling
 
 
-    override fun detailsDeleteClick() = launchWithEventLock {
-        val curState = mutUiState.value
-        val curDetail = curState.detailsState ?: return@launchWithEventLock
+//    override fun detailsDeleteClick() = launchWithEventLock {
+//        val curState = mutUiState.value
+//        val curDetail = curState.detailsState ?: return@launchWithEventLock
+//
+//        fun onDeleteConfirm(contactIdToDelete: SObjectId) = launchWithEventLock {
+//            val futureState = mutUiState.value
+//            val newDetails = futureState.detailsState?.copy(isSaving = true)
+//
+//            mutUiState.value = futureState.copy(detailsState = newDetails, dialogUiState = null)
+//            launchDelete(contactIdToDelete)
+//        }
+//
+//        val newDialog = curState.dialogUiState ?: DeleteConfirmationDialogUiState(
+//            objIdToDelete = curDetail.contactObj.id,
+//            objName = curDetail.contactObj.fullName,
+//            onCancelDelete = ::dismissCurDialog,
+//            onDeleteConfirm = ::onDeleteConfirm
+//        )
+//        mutUiState.value = curState.copy(dialogUiState = newDialog)
+//    }
 
-        fun onDeleteConfirm(contactIdToDelete: SObjectId) = launchWithEventLock {
-            val futureState = mutUiState.value
-            val newDetails = futureState.detailsState?.copy(isSaving = true)
-
-            mutUiState.value = futureState.copy(detailsState = newDetails, dialogUiState = null)
-            launchDelete(contactIdToDelete)
-        }
-
-        val newDialog = curState.dialogUiState ?: DeleteConfirmationDialogUiState(
-            objIdToDelete = curDetail.contactObj.id,
-            objName = curDetail.contactObj.fullName,
-            onCancelDelete = ::dismissCurDialog,
-            onDeleteConfirm = ::onDeleteConfirm
-        )
-        mutUiState.value = curState.copy(dialogUiState = newDialog)
-    }
-
-    override fun listDeleteClick(contactId: SObjectId) {
+    override fun listDeleteClick(contactId: PrimaryKey) {
         viewModelScope.launch {
             val contact = curContactsByLocalId[contactId.localId]
                 ?: curContactsByPrimaryKey[contactId.primaryKey]
@@ -350,7 +340,7 @@ class DefaultContactsActivityViewModel(
         } catch (ex: RepoOperationException) {
             val toastMessage = when (ex) {
                 is RepoOperationException.InvalidResultObject -> TODO()
-                is RepoOperationException.ObjectNotFound -> TODO()
+                is RepoOperationException.RecordNotFound -> TODO()
                 is RepoOperationException.SmartStoreOperationFailed -> TODO()
             }
         }

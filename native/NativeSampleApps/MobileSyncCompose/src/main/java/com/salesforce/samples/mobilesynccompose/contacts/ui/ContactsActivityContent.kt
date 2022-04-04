@@ -27,7 +27,6 @@
 package com.salesforce.samples.mobilesynccompose.contacts.ui
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
@@ -53,6 +52,8 @@ import com.salesforce.samples.mobilesynccompose.contacts.state.ContactsActivityU
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.ListDetail
 import com.salesforce.samples.mobilesynccompose.contacts.ui.PaneLayout.Single
 import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.*
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsUiState2
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsViewModel
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactObjectFieldChangeHandler
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityViewModel
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus
@@ -89,13 +90,16 @@ import org.json.JSONObject
 fun ContactsActivityContent(
     layoutRestrictions: LayoutRestrictions,
     vm: ContactsActivityViewModel,
+    detailsVm: ContactDetailsViewModel,
     onInspectDbClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onSwitchUserClick: () -> Unit,
     onSyncClick: () -> Unit,
 ) {
-    val uiState by vm.uiState.collectAsState() // this drives recomposition when the VM updates itself
-    Log.d("ContactsActivityContent", "uiState = $uiState")
+    // this drives recomposition when the VM updates itself:
+    val detailsUiState = detailsVm.uiState.collectAsState()
+    val uiState by vm.uiState.collectAsState()
+//    Log.d("ContactsActivityContent", "uiState = $uiState")
 
     when (layoutRestrictions.calculatePaneLayout()) {
         Single -> {
@@ -117,8 +121,9 @@ fun ContactsActivityContent(
 @Composable
 private fun SinglePaneScaffold(
     layoutRestrictions: LayoutRestrictions,
+    listState: ContactsActivityListUiState,
+    detailsUiState: ContactDetailsUiState2,
     vm: ContactsActivityViewModel,
-    uiState: ContactsActivityUiState,
     onInspectDbClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onSwitchUserClick: () -> Unit,
@@ -126,16 +131,31 @@ private fun SinglePaneScaffold(
 ) {
     Scaffold(
         topBar = {
-            SinglePaneTopAppBar(
-                uiState = uiState,
-                vm = vm,
-                onInspectDbClick = onInspectDbClick,
-                onLogoutClick = onLogoutClick,
-                onSwitchUserClick = onSwitchUserClick,
-                onSyncClick = onSyncClick,
-            )
+            if (detailsUiState is ContactDetailsUiState2.HasContact) {
+                SinglePaneTopAppBarDetails(
+                    detailsUiState = detailsUiState,
+                    detailsExitClick = { /*TODO*/ },
+                    onInspectDbClick = onInspectDbClick,
+                    onLogoutClick = onLogoutClick,
+                    onSwitchUserClick = onSwitchUserClick,
+                    onSyncClick = onSyncClick
+                )
+            } else {
+                SinglePaneTopAppBarList(
+                    listUiState = listState,
+                    onListExitSearchClick = vm::listExitSearchClick,
+                    onSearchTermUpdated = vm::onSearchTermUpdated,
+                    onInspectDbClick = onInspectDbClick,
+                    onLogoutClick = onLogoutClick,
+                    onSwitchUserClick = onSwitchUserClick,
+                    onSyncClick = onSyncClick
+                )
+            }
         },
-        bottomBar = { SinglePaneBottomAppBar(uiState = uiState, vm = vm) },
+        bottomBar = {
+            if (detailsUiState is )
+            SinglePaneBottomAppBar(uiState = uiState, vm = vm)
+        },
         floatingActionButtonPosition = FabPosition.Center,
         floatingActionButton = { SinglePaneFab(uiState = uiState, vm = vm) },
         isFloatingActionButtonDocked = true,
@@ -152,7 +172,7 @@ private fun SinglePaneScaffold(
                     details = uiState.detailsState,
                     showLoading = uiState.isSyncing || uiState.detailsState.isSaving,
                 )
-                Viewing -> ContactDetailsViewingContactSinglePane(
+                Viewing -> ContactDetailsSinglePaneContent(
                     details = uiState.detailsState,
                     showLoading = uiState.isSyncing
                 )
@@ -196,39 +216,51 @@ private fun SinglePaneScaffold(
 }
 
 @Composable
-private fun SinglePaneTopAppBar(
-    uiState: ContactsActivityUiState,
-    vm: ContactsActivityViewModel,
+private fun SinglePaneTopAppBarDetails(
+    detailsUiState: ContactDetailsUiState2.HasContact,
+    detailsExitClick: () -> Unit,
     onInspectDbClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onSwitchUserClick: () -> Unit,
     onSyncClick: () -> Unit,
 ) {
     TopAppBar {
-        when {
-            uiState.detailsState != null -> {
-                uiState.detailsState.let {
-                    ContactDetailsTopAppBarSinglePane(
-                        label = it.contactObj.fullName ?: "",
-                        detailsExitClick = vm::detailsExitClick,
-                        syncIconContent = {
-                            SyncImage(contactObjLocalStatus = it.contactObj.localStatus)
-                        }
-                    )
-                }
-            }
+        ContactDetailsTopAppBarSinglePane(
+            label = detailsUiState.personalInfoFields.fullName,
+            syncIconContent = {
+                SyncImage(contactObjLocalStatus = detailsUiState.contactObjLocalStatus)
+            },
+            detailsExitClick = detailsExitClick
+        )
 
-            uiState.listState.searchTerm != null -> {
-                ContactsListTopAppBarSearchModeSinglePane(
-                    searchTerm = uiState.listState.searchTerm,
-                    listExitSearchClick = vm::listExitSearchClick,
-                    onSearchTermUpdated = vm::onSearchTermUpdated
-                )
-            }
+        ContactsActivityMenuButton(
+            onInspectDbClick = onInspectDbClick,
+            onLogoutClick = onLogoutClick,
+            onSwitchUserClick = onSwitchUserClick,
+            onSyncClick = onSyncClick
+        )
+    }
+}
 
-            else -> {
-                ContactsListTopAppBarSinglePane()
-            }
+@Composable
+private fun SinglePaneTopAppBarList(
+    listUiState: ContactsActivityListUiState,
+    onListExitSearchClick: () -> Unit,
+    onSearchTermUpdated: (String) -> Unit,
+    onInspectDbClick: () -> Unit,
+    onLogoutClick: () -> Unit,
+    onSwitchUserClick: () -> Unit,
+    onSyncClick: () -> Unit,
+) {
+    TopAppBar {
+        if (listUiState.searchTerm != null) {
+            ContactsListTopAppBarSearchModeSinglePane(
+                searchTerm = listUiState.searchTerm,
+                listExitSearchClick = onListExitSearchClick,
+                onSearchTermUpdated = onSearchTermUpdated
+            )
+        } else {
+            ContactsListTopAppBarSinglePane()
         }
 
         ContactsActivityMenuButton(
@@ -241,20 +273,34 @@ private fun SinglePaneTopAppBar(
 }
 
 @Composable
-private fun SinglePaneBottomAppBar(
-    uiState: ContactsActivityUiState,
+private fun SinglePaneBottomAppBarDetails(
+    uiState: ContactDetailsUiState2,
+    deleteClick: () -> Unit
+) {
+    BottomAppBar(cutoutShape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))) {
+        when (uiState) {
+            is ContactDetailsUiState2.HasContact -> ContactDetailsBottomAppBarSinglePane(
+                showDelete = !uiState.contactObjLocalStatus.isLocallyDeleted,
+                detailsDeleteClick = deleteClick
+            )
+
+            // No content
+            ContactDetailsUiState2.InitialLoad -> {}
+            ContactDetailsUiState2.NoContactSelected -> {}
+        }
+    }
+}
+
+@Composable
+private fun SinglePaneBottomAppBarList(
+    uiState: ContactsActivityListUiState,
     vm: ContactsActivityViewModel
 ) {
     BottomAppBar(cutoutShape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))) {
-        when {
-            uiState.detailsState != null -> ContactDetailsBottomAppBarSinglePane(
-                showDelete = !uiState.detailsState.contactObj.localStatus.isLocallyDeleted,
-                detailsDeleteClick = vm::detailsDeleteClick
-            )
-
-            uiState.listState.searchTerm != null -> ContactsListBottomAppBarSearchSinglePane()
-            else -> ContactsListBottomAppBarSinglePane(listSearchClick = vm::listSearchClick)
-        }
+        if (uiState.searchTerm != null)
+            ContactsListBottomAppBarSearchSinglePane()
+        else
+            ContactsListBottomAppBarSinglePane(listSearchClick = vm::listSearchClick)
     }
 }
 
@@ -456,7 +502,7 @@ private class PreviewContactsActivityViewModel(state: ContactsActivityUiState) :
         throw NotImplementedError("listSearchClick")
     }
 
-    override fun listContactClick(contactId: SObjectId) {
+    override fun listContactClick(id: SObjectId) {
         throw NotImplementedError("listContactClick")
     }
 

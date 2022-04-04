@@ -40,12 +40,16 @@ import org.json.JSONObject
  * Note how this is not a [SalesforceObject]. [SalesforceObject]s are _mutable_ which goes against
  * Jetpack Compose guidelines to make state objects immutable.
  */
-data class ContactObject(
+data class ContactObject
+@Throws(ContactValidationException::class) constructor(
     val firstName: String?,
     val lastName: String,
     val title: String?,
     val department: String?,
 ) : SObjectModel {
+    init {
+        validateLastName(lastName)
+    }
 
     val fullName = buildString {
         if (firstName != null) append("$firstName ")
@@ -60,36 +64,38 @@ data class ContactObject(
         putOpt(Constants.NAME, fullName)
     }
 
-    companion object : SObjectDeserializer<ContactObject> {
+    companion object : SObjectDeserializerBase<ContactObject>(objectType = Constants.CONTACT) {
         const val KEY_FIRST_NAME = "FirstName"
         const val KEY_LAST_NAME = "LastName"
         const val KEY_TITLE = "Title"
         const val KEY_DEPARTMENT = "Department"
-        private const val OBJECT_TYPE = Constants.CONTACT
 
         @Throws(CoerceException::class)
-        override fun coerceFromJsonOrThrow(json: ReadOnlyJson): SObjectRecord<ContactObject> {
-            ReadOnlySoHelper.requireSoType(json, OBJECT_TYPE)
-
-            val primaryKey = ReadOnlySoHelper.getPrimaryKeyOrThrow(json)
-            val localId = ReadOnlySoHelper.getLocalId(json)
-            val lastName = json.getRequiredStringOrThrow(KEY_LAST_NAME, valueCanBeBlank = false)
-
-            val model = ContactObject(
-                firstName = json.optStringOrNull(KEY_FIRST_NAME),
-                lastName = lastName,
-                title = json.optStringOrNull(KEY_TITLE),
-                department = json.optStringOrNull(KEY_DEPARTMENT),
+        override fun buildModel(fromJson: ReadOnlyJson): ContactObject = try {
+            ContactObject(
+                firstName = fromJson.optStringOrNull(KEY_FIRST_NAME),
+                lastName = fromJson.optString(KEY_LAST_NAME),
+                title = fromJson.optStringOrNull(KEY_TITLE),
+                department = fromJson.optStringOrNull(KEY_DEPARTMENT),
             )
-
-            return SObjectRecord(
-                primaryKey = primaryKey,
-                localId = localId,
-                localStatus = json.coerceToLocalStatus(),
-                model = model
-            )
+        } catch (ex: ContactValidationException) {
+            when (ex) {
+                ContactValidationException.LastNameCannotBeBlank -> throw InvalidPropertyValue(
+                    propertyKey = KEY_LAST_NAME,
+                    allowedValuesDescription = "Contact Last Name cannot be blank",
+                    offendingJsonString = fromJson.toString()
+                )
+            }
         }
 
-        override val objectType: String = OBJECT_TYPE
+        @Throws(ContactValidationException.LastNameCannotBeBlank::class)
+        fun validateLastName(lastName: String?) {
+            if (lastName.isNullOrBlank())
+                throw ContactValidationException.LastNameCannotBeBlank
+        }
     }
+}
+
+sealed class ContactValidationException(override val message: String?) : Exception() {
+    object LastNameCannotBeBlank : ContactValidationException("Contact Last Name cannot be blank")
 }

@@ -31,13 +31,11 @@ import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,25 +47,108 @@ import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R.drawable.ic_help
 import com.salesforce.samples.mobilesynccompose.R.drawable.ic_undo
 import com.salesforce.samples.mobilesynccompose.R.string.*
-import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsUiMode
-import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsUiState
-import com.salesforce.samples.mobilesynccompose.contacts.state.toContactDetailsUiState
+import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactsActivityMenuButton
+import com.salesforce.samples.mobilesynccompose.contacts.ui.SyncImage
 import com.salesforce.samples.mobilesynccompose.contacts.ui.mockLocallyDeletedContact
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsField
+import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsUiEventHandler
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsUiState2
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactObjectFieldChangeHandler
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectId
+import com.salesforce.samples.mobilesynccompose.core.extensions.takeIfInstance
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.isLocallyDeleted
+import com.salesforce.samples.mobilesynccompose.core.ui.LayoutRestrictions
+import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeClass
+import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeRestrictions
 import com.salesforce.samples.mobilesynccompose.core.ui.components.LoadingOverlay
 import com.salesforce.samples.mobilesynccompose.core.ui.components.OutlinedTextFieldWithHelp
 import com.salesforce.samples.mobilesynccompose.core.ui.safeStringResource
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
+import com.salesforce.samples.mobilesynccompose.core.vm.EditableFieldUiState
+import com.salesforce.samples.mobilesynccompose.core.vm.EditableTextFieldUiState
+import com.salesforce.samples.mobilesynccompose.core.vm.FieldUiState
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 
 @Composable
-fun ContactDetailsViewingContactSinglePane(
+fun ContactDetailsSinglePaneComponent(
+    layoutRestrictions: LayoutRestrictions,
+    details: ContactDetailsUiState2,
+    componentUiEventHandler: ContactDetailsUiEventHandler,
+    onInspectDbClick: () -> Unit,
+    onLogoutClick: () -> Unit,
+    onSwitchUserClick: () -> Unit,
+    onSyncClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    contentModifier: Modifier = Modifier
+) {
+    val contactDetailsUi = details.takeIfInstance<ContactDetailsUiState2.HasContact>()
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar {
+                ContactDetailsTopAppBarSinglePane(
+                    label = contactDetailsUi?.personalInfoFields?.fullName ?: "",
+                    syncIconContent = {
+                        contactDetailsUi?.let {
+                            SyncImage(contactObjLocalStatus = it.contactObjLocalStatus)
+                        }
+                    },
+                    detailsExitClick = componentUiEventHandler::exitClick
+                )
+
+                ContactsActivityMenuButton(
+                    onInspectDbClick = onInspectDbClick,
+                    onLogoutClick = onLogoutClick,
+                    onSwitchUserClick = onSwitchUserClick,
+                    onSyncClick = onSyncClick
+                )
+            }
+        },
+
+        bottomBar = {
+            BottomAppBar(cutoutShape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))) {
+                if (contactDetailsUi != null) {
+                    ContactDetailsBottomAppBarSinglePane(
+                        showDelete = !contactDetailsUi.contactObjLocalStatus.isLocallyDeleted,
+                        detailsDeleteClick = componentUiEventHandler::deleteClick
+                    )
+                }
+            }
+        },
+        floatingActionButtonPosition = FabPosition.Center,
+        floatingActionButton = {
+            ContactDetailsFab(uiState2 = details, handler = componentUiEventHandler)
+        },
+        isFloatingActionButtonDocked = true
+    ) { paddingValues ->
+        ContactDetailsSinglePaneContent(
+            modifier = Modifier
+                .padding(paddingValues)
+                .then(contentModifier),
+            details = details
+        )
+    }
+}
+
+@Composable
+fun ContactDetailsSinglePaneContent(
     modifier: Modifier = Modifier,
     details: ContactDetailsUiState2,
-    showLoading: Boolean = false
+) {
+    when (details) {
+        is ContactDetailsUiState2.HasContact -> ContactDetailsWithContact(
+            modifier = modifier,
+            details = details
+        )
+        ContactDetailsUiState2.InitialLoad -> LoadingOverlay()
+        ContactDetailsUiState2.NoContactSelected -> {}
+    }
+}
+
+@Composable
+private fun ContactDetailsWithContact(
+    modifier: Modifier = Modifier,
+    details: ContactDetailsUiState2.HasContact
 ) {
     val scrollState = rememberScrollState()
     Column(
@@ -79,55 +160,69 @@ fun ContactDetailsViewingContactSinglePane(
             LocallyDeletedRow()
         }
 
-        details.vmList.forEach { fieldVm ->
+        details.personalInfoFields.allFields.forEach { field ->
             OutlinedTextFieldWithHelp(
-                fieldValue = fieldVm.fieldValue,
-                isEditEnabled = false,
-                isError = fieldVm.isInErrorState,
-                onValueChange = { }, // Not editable in this mode
-                label = { Text(safeStringResource(id = fieldVm.labelRes)) },
-                help = { Text(safeStringResource(id = fieldVm.helperRes)) },
-                placeholder = { Text(safeStringResource(id = fieldVm.placeholderRes)) }
+                fieldValue = field.fieldValue,
+                isEditEnabled = details.isEditingEnabled && field.canBeEdited,
+                isError = field.isInErrorState,
+                onValueChange = { TODO() },
+                label = { Text(safeStringResource(id = field.labelRes)) },
+                help = { Text(safeStringResource(id = field.helperRes)) },
+                placeholder = { Text(safeStringResource(id = field.placeholderRes)) }
             )
+        }
+        details.businessFields.allFields.forEach { field ->
+            when (field) {
+                is EditableFieldUiState ->
+                    OutlinedTextFieldWithHelp(
+                        fieldValue = field.fieldValue,
+                        isEditEnabled = details.isEditingEnabled && field.isEnabled,
+                        isError = field.isInErrorState,
+                        onValueChange = field.onValueChange,
+                        label = { Text(safeStringResource(id = field.labelRes)) },
+                        help = { Text(safeStringResource(id = field.helperRes)) },
+                        placeholder = { Text(safeStringResource(id = field.placeholderRes)) }
+                    )
+            }
         }
     }
 
-    if (showLoading) {
+    if (details.dataOperationIsActive) {
         LoadingOverlay()
     }
 }
 
-@Composable
-fun ContactDetailsEditingContactSinglePane(
-    modifier: Modifier = Modifier,
-    details: ContactDetailsUiState2,
-    showLoading: Boolean,
-) {
-    val scrollState = rememberScrollState()
-
-    Column(
-        modifier = modifier
-            .padding(horizontal = 8.dp)
-            .verticalScroll(state = scrollState)
-    ) {
-        details.vmList.forEach { fieldVm ->
-            OutlinedTextFieldWithHelp(
-                fieldValue = fieldVm.fieldValue,
-                isEditEnabled = fieldVm.canBeEdited,
-                isError = fieldVm.isInErrorState,
-                onValueChange = fieldVm.onFieldValueChange,
-                label = { Text(safeStringResource(id = fieldVm.labelRes)) },
-                help = { Text(safeStringResource(id = fieldVm.helperRes)) },
-                placeholder = { Text(safeStringResource(id = fieldVm.placeholderRes)) }
-            )
-        }
-    }
-    when {
-        showLoading -> {
-            LoadingOverlay()
-        }
-    }
-}
+//@Composable
+//fun ContactDetailsEditingContactSinglePane(
+//    modifier: Modifier = Modifier,
+//    details: ContactDetailsUiState2,
+//    showLoading: Boolean,
+//) {
+//    val scrollState = rememberScrollState()
+//
+//    Column(
+//        modifier = modifier
+//            .padding(horizontal = 8.dp)
+//            .verticalScroll(state = scrollState)
+//    ) {
+//        details.vmList.forEach { fieldVm ->
+//            OutlinedTextFieldWithHelp(
+//                fieldValue = fieldVm.fieldValue,
+//                isEditEnabled = fieldVm.canBeEdited,
+//                isError = fieldVm.isInErrorState,
+//                onValueChange = fieldVm.onFieldValueChange,
+//                label = { Text(safeStringResource(id = fieldVm.labelRes)) },
+//                help = { Text(safeStringResource(id = fieldVm.helperRes)) },
+//                placeholder = { Text(safeStringResource(id = fieldVm.placeholderRes)) }
+//            )
+//        }
+//    }
+//    when {
+//        showLoading -> {
+//            LoadingOverlay()
+//        }
+//    }
+//}
 
 @Composable
 fun RowScope.ContactDetailsTopAppBarSinglePane(
@@ -169,34 +264,90 @@ fun RowScope.ContactDetailsBottomAppBarSinglePane(
 }
 
 @Composable
-fun ContactDetailsDeletedModeFabSinglePane(detailsUndeleteClick: () -> Unit) {
-    FloatingActionButton(onClick = detailsUndeleteClick) {
-        Icon(
-            painter = painterResource(id = ic_undo),
-            contentDescription = stringResource(id = cta_undelete)
-        )
+fun ContactDetailsFab(
+    modifier: Modifier = Modifier,
+    uiState2: ContactDetailsUiState2,
+    handler: ContactDetailsUiEventHandler
+) {
+    when (uiState2) {
+        is ContactDetailsUiState2.HasContact -> {
+            when {
+                uiState2.contactObjLocalStatus.isLocallyDeleted ->
+                    FloatingActionButton(
+                        onClick = handler::undeleteClick,
+                        modifier = modifier
+                    ) {
+                        Icon(
+                            painter = painterResource(id = ic_undo),
+                            contentDescription = stringResource(id = cta_undelete)
+                        )
+                    }
+
+                uiState2.isEditingEnabled ->
+                    FloatingActionButton(
+                        onClick = handler::saveClick,
+                        modifier = modifier
+                    ) {
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = stringResource(id = cta_save)
+                        )
+                    }
+
+                else ->
+                    FloatingActionButton(
+                        onClick = handler::editClick,
+                        modifier = modifier
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = stringResource(id = cta_edit)
+                        )
+                    }
+            }
+        }
+        ContactDetailsUiState2.InitialLoad -> {}
+        ContactDetailsUiState2.NoContactSelected -> FloatingActionButton(
+            onClick = handler::createClick,
+            modifier = modifier
+        ) {
+            Icon(
+                Icons.Default.Add,
+                contentDescription = stringResource(id = content_desc_add_contact)
+            )
+        }
     }
 }
 
-@Composable
-fun ContactDetailsEditModeFabSinglePane(detailsSaveClick: () -> Unit) {
-    FloatingActionButton(onClick = detailsSaveClick) {
-        Icon(
-            Icons.Default.Check,
-            contentDescription = stringResource(id = cta_save)
-        )
-    }
-}
-
-@Composable
-fun ContactDetailsViewModeFabSinglePane(detailsEditClick: () -> Unit) {
-    FloatingActionButton(onClick = detailsEditClick) {
-        Icon(
-            Icons.Default.Edit,
-            contentDescription = stringResource(id = cta_edit)
-        )
-    }
-}
+//@Composable
+//fun ContactDetailsDeletedModeFabSinglePane(detailsUndeleteClick: () -> Unit) {
+//    FloatingActionButton(onClick = detailsUndeleteClick) {
+//        Icon(
+//            painter = painterResource(id = ic_undo),
+//            contentDescription = stringResource(id = cta_undelete)
+//        )
+//    }
+//}
+//
+//@Composable
+//fun ContactDetailsEditModeFabSinglePane(detailsSaveClick: () -> Unit) {
+//    FloatingActionButton(onClick = detailsSaveClick) {
+//        Icon(
+//            Icons.Default.Check,
+//            contentDescription = stringResource(id = cta_save)
+//        )
+//    }
+//}
+//
+//@Composable
+//fun ContactDetailsViewModeFabSinglePane(detailsEditClick: () -> Unit) {
+//    FloatingActionButton(onClick = detailsEditClick) {
+//        Icon(
+//            Icons.Default.Edit,
+//            contentDescription = stringResource(id = cta_edit)
+//        )
+//    }
+//}
 
 @Composable
 private fun LocallyDeletedRow() {
@@ -240,18 +391,34 @@ private fun LocallyDeletedInfoDialog(onDismiss: () -> Unit) {
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 private fun ContactDetailViewModePreview() {
-    val contact = ContactObject.createNewLocal(
+    val contact = ContactObject(
         firstName = "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirst",
         lastName = "LastLastLastLastLastLastLastLastLastLastLastLastLastLastLastLast",
-        title = "Titletitletitletitletitletitletitletitletitletitletitletitletitletitle"
+        title = "Titletitletitletitletitletitletitletitletitletitletitletitletitletitle",
+        department = "DepartmentDepartmentDepartmentDepartmentDepartmentDepartmentDepartmentDepartmentDepartmentDepartment"
     )
     SalesforceMobileSDKAndroidTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
-            ContactDetailsViewingContactSinglePane(
-                details = contact.toContactDetailsUiState(
-                    ContactDetailsUiMode.Viewing,
-                    fieldValueChangeHandler = PREVIEW_CONTACT_FIELD_CHANGE_HANDLER
+            ContactDetailsSinglePaneComponent(
+                layoutRestrictions = LayoutRestrictions(
+                    sizeRestrictions = WindowSizeRestrictions(
+                        horiz = WindowSizeClass.Compact,
+                        vert = WindowSizeClass.Extended
+                    )
                 ),
+                details = ContactDetailsUiState2.HasContact(
+                    personalInfoFields = ContactDetailsUiState2.PersonalInfoFields(
+                        firstNameField = ContactDetailsField.FirstName(fieldValue = contact.firstName),
+                        lastNameField = ContactDetailsField.LastName(fieldValue = contact.lastName),
+                    ),
+                    businessFields = ContactDetailsUiState2.BusinessInfoFields(
+                        titleField = ContactDetailsField.Title(fieldValue = contact.title),
+                        departmentField = ContactDetailsField.Department(fieldValue = contact.department)
+                    ),
+                    contactObjLocalStatus = LocalStatus.LocallyCreated,
+                    isEditingEnabled = false
+                ),
+                componentUiEventHandler =
             )
         }
     }
@@ -261,19 +428,16 @@ private fun ContactDetailViewModePreview() {
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 private fun ContactDetailEditModePreview() {
-    val origContact = ContactObject.createNewLocal(
+    val origContact = ContactObject(
         firstName = "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirst",
         lastName = "LastLastLastLastLastLastLastLastLastLastLastLastLastLastLastLast",
-        title = "Titletitletitletitletitletitletitletitletitletitletitletitletitletitle"
-    )
-    val editedContact = origContact.copy(
-        firstName = "First EditedFirst EditedFirst EditedFirst EditedFirst EditedFirst EditedFirst EditedFirst Edited",
-        title = "Title EditedTitle EditedTitle EditedTitle EditedTitle EditedTitle EditedTitle EditedTitle EditedTitle Edited"
+        title = "Titletitletitletitletitletitletitletitletitletitletitletitletitletitle",
+        department = "DepartmentDepartmentDepartmentDepartmentDepartmentDepartment"
     )
 
     SalesforceMobileSDKAndroidTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
-            ContactDetailsEditingContactSinglePane(
+            ContactDetailsSinglePaneContent(
                 details = ContactDetailsUiState(
                     contactObj = editedContact,
                     mode = ContactDetailsUiMode.Editing,
@@ -321,7 +485,7 @@ private fun LocallyDeletedPreview() {
     val contact = mockLocallyDeletedContact()
     SalesforceMobileSDKAndroidTheme {
         Surface {
-            ContactDetailsViewingContactSinglePane(
+            ContactDetailsSinglePaneContent(
                 details = contact.toContactDetailsUiState(
                     mode = ContactDetailsUiMode.Viewing,
                     fieldValueChangeHandler = PREVIEW_CONTACT_FIELD_CHANGE_HANDLER

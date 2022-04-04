@@ -14,6 +14,28 @@ interface SObjectDeserializer<T : SObjectModel> {
     val objectType: String
 }
 
+abstract class SObjectDeserializerBase<T : SObjectModel>(override val objectType: String) :
+    SObjectDeserializer<T> {
+
+    @Throws(CoerceException::class)
+    override fun coerceFromJsonOrThrow(json: ReadOnlyJson): SObjectRecord<T> {
+        ReadOnlySoHelper.requireSoType(json, objectType)
+
+        val primaryKey = ReadOnlySoHelper.getPrimaryKeyOrThrow(json)
+        val localId = ReadOnlySoHelper.getLocalId(json)
+
+        return SObjectRecord(
+            primaryKey = primaryKey,
+            localId = localId,
+            localStatus = json.coerceToLocalStatus(),
+            model = buildModel(fromJson = json),
+        )
+    }
+
+    @Throws(CoerceException::class)
+    protected abstract fun buildModel(fromJson: ReadOnlyJson): T
+}
+
 /**
  * Convenience method for setting up a JSON with the properties required for all Salesforce Objects.
  *

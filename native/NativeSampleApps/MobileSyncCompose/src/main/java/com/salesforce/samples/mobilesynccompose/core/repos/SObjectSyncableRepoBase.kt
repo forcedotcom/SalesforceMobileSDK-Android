@@ -10,15 +10,14 @@ import com.salesforce.androidsdk.mobilesync.util.SyncState
 import com.salesforce.androidsdk.smartstore.store.QuerySpec
 import com.salesforce.androidsdk.smartstore.store.SmartStore
 import com.salesforce.samples.mobilesynccompose.core.data.ReadOnlyJson
-import com.salesforce.samples.mobilesynccompose.core.extensions.map
-import com.salesforce.samples.mobilesynccompose.core.extensions.optStringOrNull
-import com.salesforce.samples.mobilesynccompose.core.extensions.partitionBySuccess
-import com.salesforce.samples.mobilesynccompose.core.extensions.retrieveSingleById
+import com.salesforce.samples.mobilesynccompose.core.extensions.*
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.*
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.StoreRecordMetadata.Companion.KEY_LOCAL_ID
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.json.JSONObject
@@ -31,21 +30,20 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
     protected val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : SObjectSyncableRepo<T> {
 
+    // region Public and Private Properties
+
+
     private val syncMutex = Mutex()
     private val listMutex = Mutex()
 
     private val mutRecordsByPrimaryKey = mutableMapOf<PrimaryKey, SObjectRecord<T>>()
     private val mutRecordsByLocalId = mutableMapOf<LocalId, SObjectRecord<T>>()
-    private val mutState = MutableStateFlow(
-        SObjectsByIds(
-            byPrimaryKey = mutRecordsByPrimaryKey.toMap(),
-            byLocalId = mutRecordsByLocalId.toMap()
-        )
+    private val mutState = MutableSharedFlow<SObjectsByIds<T>>(
+        replay = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
-//    private val mutStateByLocalId = MutableStateFlow(mutContactsByLocalId.toMap())
 
-    override val curSObjects: StateFlow<SObjectsByIds<T>> get() = mutState
-//    override val curSObjectListByLocalId: StateFlow<Map<String, T>> get() = mutStateByLocalId
+    override val records: Flow<SObjectsByIds<T>> = mutState.distinctUntilChanged()
 
     protected val store: SmartStore = MobileSyncSDKManager.getInstance().getSmartStore(account)
     protected val syncManager: SyncManager = SyncManager.getInstance(account)
@@ -70,7 +68,7 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
         }
 
         // don't cooperate with cancel at this point because we need to emit the new list of objects
-        withContext(NonCancellable) { refreshObjectList() }
+        withContext(NonCancellable) { refreshRecordsList() }
     }
 
     @Throws(RepoSyncException.SyncDownException::class, RepoOperationException::class)
@@ -78,7 +76,7 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
         syncMutex.withLock { doSyncDown() }
 
         // don't cooperate with cancel at this point because we need to emit the new list of objects
-        withContext(NonCancellable) { refreshObjectList() }
+        withContext(NonCancellable) { refreshRecordsList() }
     }
 
     @Throws(RepoSyncException.SyncUpException::class, RepoOperationException::class)
@@ -91,47 +89,6 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
     // endregion
     // region Private Sync Implementation
 
-
-    @Throws(RepoOperationException::class)
-    protected suspend fun refreshObjectList() {
-        val queryResults = try {
-            // TODO we may need to page this to support arbitrary lists greater than 10k
-            store.query(
-                QuerySpec.buildAllQuerySpec(
-                    soupName,
-                    null,
-                    null,
-                    10_000
-                ),
-                0
-            )
-        } catch (ex: Exception) {
-            throw RepoOperationException.SmartStoreOperationFailed(
-                message = "Failed to refresh the repo objects list. The objects list may be out of date with SmartStore.",
-                cause = ex
-            )
-        }
-
-        // TODO What to do with parse failures?  Swallow them?
-        val (parseSuccesses, parseFailures) = queryResults
-            .map { runCatching { deserializer.coerceFromJsonOrThrow(ReadOnlyJson.from(it)) } }
-            .partitionBySuccess()
-
-        mutRecordsByPrimaryKey.clear()
-        mutRecordsByLocalId.clear()
-
-        parseSuccesses.forEach { obj ->
-            mutRecordsByPrimaryKey[obj.primaryKey] = obj
-            obj.localId?.let { mutRecordsByLocalId[it] = obj }
-        }
-
-        listMutex.withLock {
-            mutState.value = SObjectsByIds(
-                byPrimaryKey = mutRecordsByPrimaryKey.toMap(),
-                byLocalId = mutRecordsByLocalId.toMap()
-            )
-        }
-    }
 
     @Throws(RepoSyncException.SyncDownException::class)
     private suspend fun doSyncDown(): SyncState = suspendCoroutine { cont ->
@@ -206,13 +163,9 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
         withContext(ioDispatcher + NonCancellable) {
             val updateResult = try {
                 val elt = with(so) {
-//                    if (id == null) {
-//                        createNewSoupEltBase(forObjType = deserializer.objectType)
-//                            .applyMemoryModelProperties()
-//                    } else {
-                    retrieveByIdOrThrowOperationException(id = id).elt
+                    retrieveByIdOrThrowOperationException(id = id)
+                        .elt
                         .applyMemoryModelProperties()
-//                    }
                 }
 
                 ReadOnlyJson.from(store.upsert(soupName, elt))
@@ -349,6 +302,66 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
             result
         }
 
+
+    // endregion
+    // region Protected Store Operations
+
+
+    @Throws(RepoOperationException::class)
+    protected suspend fun refreshRecordsList(): Unit = withContext(ioDispatcher) {
+        val (parseSuccesses, parseFailures) = runFetchAllQuery()
+        setRecordsList(parseSuccesses)
+    }
+
+    protected suspend fun setRecordsList(records: List<SObjectRecord<T>>) = listMutex.withLock {
+        mutRecordsByPrimaryKey.clear()
+        mutRecordsByLocalId.clear()
+
+        records.forEach { record ->
+            mutRecordsByPrimaryKey[record.primaryKey] = record
+            record.localId?.let { mutRecordsByLocalId[it] = record }
+        }
+
+        mutState.emit(
+            SObjectsByIds(
+                byPrimaryKey = mutRecordsByPrimaryKey.toMap(),
+                byLocalId = mutRecordsByLocalId.toMap()
+            )
+        )
+    }
+
+    @Throws(RepoOperationException::class)
+    protected suspend fun runFetchAllQuery(): ResultPartition<SObjectRecord<T>> =
+        withContext(ioDispatcher) {
+            val queryResults = try {
+                // TODO we may need to page this to support arbitrary lists greater than 10k
+                store.query(
+                    QuerySpec.buildAllQuerySpec(
+                        soupName,
+                        null,
+                        null,
+                        10_000
+                    ),
+                    0
+                )
+            } catch (ex: Exception) {
+                throw RepoOperationException.SmartStoreOperationFailed(
+                    message = "Failed to refresh the repo objects list. The objects list may be out of date with SmartStore.",
+                    cause = ex
+                )
+            }
+
+            // TODO What to do with parse failures?  Swallow them?
+            queryResults
+                .map { runCatching { deserializer.coerceFromJsonOrThrow(ReadOnlyJson.from(it)) } }
+                .partitionBySuccess()
+        }
+
+
+    // endregion
+    // region Convenience Methods
+
+
     /**
      * Convenience method for running an object list update procedure while under the Mutex for said
      * list. Also eliminates the need for subclasses to handle Mutexes themselves.
@@ -358,17 +371,13 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
             mutRecordsByPrimaryKey[obj.primaryKey] = obj
             obj.localId?.let { mutRecordsByLocalId[it] = obj }
 
-            mutState.value = SObjectsByIds(
-                byPrimaryKey = mutRecordsByPrimaryKey.toMap(),
-                byLocalId = mutRecordsByLocalId.toMap()
+            mutState.emit(
+                SObjectsByIds(
+                    byPrimaryKey = mutRecordsByPrimaryKey.toMap(),
+                    byLocalId = mutRecordsByLocalId.toMap()
+                )
             )
         }
-//    protected suspend fun replaceAllOrAddNewToObjectList(newValue: T, predicate: (T) -> Boolean) {
-//        listMutex.withLock {
-//            mutContactsByPrimaryKey.value = mutContactsByPrimaryKey.value
-//                .replaceAllOrAddNew(newValue = newValue, predicate = predicate)
-//        }
-//    }
 
     /**
      * Convenience method for running an object list update procedure while under the Mutex for said
@@ -379,9 +388,11 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
             primaryKey?.let { mutRecordsByPrimaryKey.remove(it) }
             localId?.let { mutRecordsByLocalId.remove(it) }
 
-            mutState.value = SObjectsByIds(
-                byPrimaryKey = mutRecordsByPrimaryKey.toMap(),
-                byLocalId = mutRecordsByLocalId.toMap()
+            mutState.emit(
+                SObjectsByIds(
+                    byPrimaryKey = mutRecordsByPrimaryKey.toMap(),
+                    byLocalId = mutRecordsByLocalId.toMap()
+                )
             )
         }
     }
@@ -410,10 +421,13 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
      * Convenience method for the common procedure of trying to retrieve a single object by its ID
      * or throwing the corresponding exception.
      */
-    @Throws(RepoOperationException.ObjectNotFound::class)
+    @Throws(RepoOperationException.RecordNotFound::class)
     protected fun retrieveByIdOrThrowOperationException(id: PrimaryKey) = try {
         store.retrieveSingleById(soupName = soupName, idColName = Constants.ID, id = id.value)
     } catch (ex: Exception) {
-        throw RepoOperationException.ObjectNotFound(id = id, soupName = soupName, cause = ex)
+        throw RepoOperationException.RecordNotFound(id = id, soupName = soupName, cause = ex)
     }
+
+
+    // endregion
 }

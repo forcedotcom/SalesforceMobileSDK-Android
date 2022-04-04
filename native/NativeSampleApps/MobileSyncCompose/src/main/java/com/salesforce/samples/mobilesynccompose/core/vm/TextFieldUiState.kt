@@ -26,19 +26,14 @@
  */
 package com.salesforce.samples.mobilesynccompose.core.vm
 
-import androidx.annotation.StringRes
+/**
+ * Non-editable UI state for a text field.
+ */
+interface TextFieldUiState : FieldUiState {
+    val maxLines: UInt
+}
 
 /**
- * A ViewModel for a single text field. It holds the entire state of the text field and delegates
- * content change events.
+ * Editable UI state for a text field.
  */
-data class TextFieldViewModel(
-    val fieldValue: String?,
-    val isInErrorState: Boolean,
-    val canBeEdited: Boolean,
-    @StringRes val labelRes: Int?,
-    @StringRes val helperRes: Int?,
-    @StringRes val placeholderRes: Int?,
-    val onFieldValueChange: (newValue: String) -> Unit,
-    val maxLines: UInt = 1u
-)
+interface EditableTextFieldUiState : TextFieldUiState, EditableFieldUiState

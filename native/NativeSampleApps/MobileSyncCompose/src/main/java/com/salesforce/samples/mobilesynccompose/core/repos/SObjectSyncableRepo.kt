@@ -4,10 +4,10 @@ import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalId
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.PrimaryKey
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectModel
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.Flow
 
 interface SObjectSyncableRepo<T : SObjectModel> {
-    val curSObjects: StateFlow<SObjectsByIds<T>>
+    val records: Flow<SObjectsByIds<T>>
 
     @Throws(RepoSyncException.SyncDownException::class)
     suspend fun syncDownOnly()
