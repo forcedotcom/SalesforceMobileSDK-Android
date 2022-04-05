@@ -1,16 +1,17 @@
 package com.salesforce.samples.mobilesynccompose.core.salesforceobject
 
 import com.salesforce.androidsdk.mobilesync.util.Constants
-import com.salesforce.samples.mobilesynccompose.core.data.ReadOnlyJson
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.StoreRecordMetadata.Companion.KEY_LOCAL_ID
+import com.salesforce.samples.mobilesynccompose.core.extensions.optStringOrNull
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord.Companion.KEY_LOCAL_ID
+import org.json.JSONObject
 import java.util.*
 
-object ReadOnlySoHelper {
-    fun getPrimaryKeyOrThrow(json: ReadOnlyJson): PrimaryKey = json
+object SObjectDeserializerHelper {
+    fun getPrimaryKeyOrThrow(json: JSONObject): PrimaryKey = json
         .getRequiredStringOrThrow(Constants.ID, valueCanBeBlank = false)
         .let { PrimaryKey(it) }
 
-    fun requireSoType(json: ReadOnlyJson, requiredObjType: String) {
+    fun requireSoType(json: JSONObject, requiredObjType: String) {
         val attributes = json.getRequiredObjectOrThrow(Constants.ATTRIBUTES)
 
         val type = attributes.optString(Constants.TYPE.lowercase(Locale.US))
@@ -23,8 +24,6 @@ object ReadOnlySoHelper {
         }
     }
 
-    fun getLocalId(json: ReadOnlyJson): LocalId? =
-        json.optStringOrNull(KEY_LOCAL_ID)?.let { LocalId(it) }
-
-    fun getLocalStatus(json: ReadOnlyJson): LocalStatus = json.coerceToLocalStatus()
+    fun getLocalId(json: JSONObject): LocallyCreatedId? =
+        json.optStringOrNull(KEY_LOCAL_ID)?.let { LocallyCreatedId(it) }
 }

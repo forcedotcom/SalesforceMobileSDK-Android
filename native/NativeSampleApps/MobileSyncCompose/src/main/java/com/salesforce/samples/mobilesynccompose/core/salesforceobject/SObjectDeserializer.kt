@@ -3,37 +3,35 @@ package com.salesforce.samples.mobilesynccompose.core.salesforceobject
 import com.salesforce.androidsdk.mobilesync.target.SyncTarget
 import com.salesforce.androidsdk.mobilesync.util.Constants
 import com.salesforce.samples.mobilesynccompose.core.data.ReadOnlyJson
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.StoreRecordMetadata.Companion.KEY_LOCAL_ID
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord.Companion.KEY_LOCAL_ID
 import org.json.JSONObject
 import java.util.*
 
-interface SObjectDeserializer<T : SObjectModel> {
+interface SObjectDeserializer<T : SObject> {
     @Throws(CoerceException::class)
-    fun coerceFromJsonOrThrow(json: ReadOnlyJson): SObjectRecord<T>
-
-    val objectType: String
+    fun coerceFromJsonOrThrow(json: JSONObject): SObjectRecord<T>
 }
 
-abstract class SObjectDeserializerBase<T : SObjectModel>(override val objectType: String) :
+abstract class SObjectDeserializerBase<T : SObject>(val objectType: String) :
     SObjectDeserializer<T> {
 
     @Throws(CoerceException::class)
-    override fun coerceFromJsonOrThrow(json: ReadOnlyJson): SObjectRecord<T> {
-        ReadOnlySoHelper.requireSoType(json, objectType)
+    override fun coerceFromJsonOrThrow(json: JSONObject): SObjectRecord<T> {
+        SObjectDeserializerHelper.requireSoType(json, objectType)
 
-        val primaryKey = ReadOnlySoHelper.getPrimaryKeyOrThrow(json)
-        val localId = ReadOnlySoHelper.getLocalId(json)
+        val primaryKey = SObjectDeserializerHelper.getPrimaryKeyOrThrow(json)
+        val localId = SObjectDeserializerHelper.getLocalId(json)
 
         return SObjectRecord(
             primaryKey = primaryKey,
-            localId = localId,
+            locallyCreatedId = localId,
             localStatus = json.coerceToLocalStatus(),
-            model = buildModel(fromJson = json),
+            sObject = buildModel(fromJson = json),
         )
     }
 
     @Throws(CoerceException::class)
-    protected abstract fun buildModel(fromJson: ReadOnlyJson): T
+    protected abstract fun buildModel(fromJson: JSONObject): T
 }
 
 /**

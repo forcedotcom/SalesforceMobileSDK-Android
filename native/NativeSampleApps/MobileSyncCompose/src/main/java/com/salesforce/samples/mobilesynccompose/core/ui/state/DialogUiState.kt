@@ -26,30 +26,125 @@
  */
 package com.salesforce.samples.mobilesynccompose.core.ui.state
 
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectId
+import androidx.compose.material.AlertDialog
+import androidx.compose.material.Text
+import androidx.compose.material.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.salesforce.samples.mobilesynccompose.R.string.*
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectCombinedId
 
-sealed interface DialogUiState
+interface DialogUiState {
+    @Composable
+    fun RenderDialog(modifier: Modifier = Modifier)
+}
 
 data class DeleteConfirmationDialogUiState(
-    val objIdToDelete: SObjectId,
+    val objIdToDelete: SObjectCombinedId,
     val objName: String?,
     val onCancelDelete: () -> Unit,
-    val onDeleteConfirm: (objId: SObjectId) -> Unit,
-) : DialogUiState
+    val onDeleteConfirm: (objId: SObjectCombinedId) -> Unit,
+) : DialogUiState {
+    @Composable
+    override fun RenderDialog(modifier: Modifier) {
+        AlertDialog(
+            onDismissRequest = onCancelDelete,
+            confirmButton = {
+                TextButton(onClick = { onDeleteConfirm(objIdToDelete) }) {
+                    Text(stringResource(id = cta_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onCancelDelete) {
+                    Text(stringResource(id = android.R.string.cancel))
+                }
+            },
+            title = { Text(stringResource(id = label_delete_confirm)) },
+            text = {
+                if (objName.isNullOrBlank())
+                    Text(stringResource(id = body_delete_confirm))
+                else
+                    Text(stringResource(id = body_delete_confirm_with_name, objName))
+            },
+            modifier = modifier
+        )
+    }
+}
 
 data class DiscardChangesDialogUiState(
     val onDiscardChanges: () -> Unit,
     val onKeepChanges: () -> Unit,
-) : DialogUiState
+) : DialogUiState {
+    @Composable
+    override fun RenderDialog(modifier: Modifier) {
+        AlertDialog(
+            onDismissRequest = onKeepChanges,
+            confirmButton = {
+                TextButton(onClick = onDiscardChanges) {
+                    Text(stringResource(id = cta_discard))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onKeepChanges) {
+                    Text(stringResource(id = cta_continue_editing))
+                }
+            },
+            title = { Text(stringResource(id = label_discard_changes)) },
+            text = { Text(stringResource(id = body_discard_changes)) },
+            modifier = modifier
+        )
+    }
+}
 
 data class UndeleteConfirmationDialogUiState(
-    val objIdToUndelete: SObjectId,
+    val objIdToUndelete: SObjectCombinedId,
     val objName: String?,
     val onCancelUndelete: () -> Unit,
-    val onUndeleteConfirm: (objId: SObjectId) -> Unit,
-) : DialogUiState
+    val onUndeleteConfirm: (objId: SObjectCombinedId) -> Unit,
+) : DialogUiState {
+    @Composable
+    override fun RenderDialog(modifier: Modifier) {
+        AlertDialog(
+            onDismissRequest = onCancelUndelete,
+            confirmButton = {
+                TextButton(onClick = { onUndeleteConfirm(objIdToUndelete) }) {
+                    Text(stringResource(id = cta_undelete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onCancelUndelete) {
+                    Text(stringResource(id = android.R.string.cancel))
+                }
+            },
+            title = { Text(stringResource(id = label_undelete_confirm)) },
+            text = {
+                if (objName.isNullOrBlank())
+                    Text(stringResource(id = body_delete_confirm))
+                else
+                    Text(stringResource(id = body_undelete_confirm_with_name, objName))
+            },
+            modifier = modifier
+        )
+    }
+}
 
 data class ErrorDialogUiState(
     val onDismiss: () -> Unit,
     val message: String
-) : DialogUiState
+) : DialogUiState {
+    @Composable
+    override fun RenderDialog(modifier: Modifier) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            confirmButton = {
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(id = cta_ok))
+                }
+            },
+            title = { Text(stringResource(id = label_error)) },
+            text = { Text(message) },
+            modifier = modifier
+        )
+    }
+}

@@ -27,7 +27,7 @@
 package com.salesforce.samples.mobilesynccompose.model.contacts
 
 import com.salesforce.androidsdk.mobilesync.util.Constants
-import com.salesforce.samples.mobilesynccompose.core.data.ReadOnlyJson
+import com.salesforce.samples.mobilesynccompose.core.extensions.optStringOrNull
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.*
 import org.json.JSONObject
 
@@ -46,17 +46,16 @@ data class ContactObject
     val lastName: String,
     val title: String?,
     val department: String?,
-) : SObjectModel {
+) : SObject {
     init {
         validateLastName(lastName)
     }
 
-    val fullName = buildString {
-        if (firstName != null) append("$firstName ")
-        append(lastName)
-    }.trim()
+    override val objectType: String = Constants.CONTACT
 
-    override fun JSONObject.applyMemoryModelProperties() = this.apply {
+    val fullName = formatFullName(firstName = firstName, lastName = lastName)
+
+    override fun JSONObject.applyObjProperties() = this.apply {
         putOpt(KEY_FIRST_NAME, firstName)
         putOpt(KEY_LAST_NAME, lastName)
         putOpt(KEY_TITLE, title)
@@ -71,7 +70,7 @@ data class ContactObject
         const val KEY_DEPARTMENT = "Department"
 
         @Throws(CoerceException::class)
-        override fun buildModel(fromJson: ReadOnlyJson): ContactObject = try {
+        override fun buildModel(fromJson: JSONObject): ContactObject = try {
             ContactObject(
                 firstName = fromJson.optStringOrNull(KEY_FIRST_NAME),
                 lastName = fromJson.optString(KEY_LAST_NAME),
@@ -80,12 +79,12 @@ data class ContactObject
             )
         } catch (ex: ContactValidationException) {
             when (ex) {
-                ContactValidationException.LastNameCannotBeBlank -> throw InvalidPropertyValue(
+                ContactValidationException.LastNameCannotBeBlank -> InvalidPropertyValue(
                     propertyKey = KEY_LAST_NAME,
                     allowedValuesDescription = "Contact Last Name cannot be blank",
                     offendingJsonString = fromJson.toString()
                 )
-            }
+            }.let { throw it } // exhaustive when
         }
 
         @Throws(ContactValidationException.LastNameCannotBeBlank::class)
@@ -93,6 +92,11 @@ data class ContactObject
             if (lastName.isNullOrBlank())
                 throw ContactValidationException.LastNameCannotBeBlank
         }
+
+        fun formatFullName(firstName: String?, lastName: String?) = buildString {
+            if (firstName != null) append("$firstName ")
+            if (lastName != null) append(lastName)
+        }.trim()
     }
 }
 

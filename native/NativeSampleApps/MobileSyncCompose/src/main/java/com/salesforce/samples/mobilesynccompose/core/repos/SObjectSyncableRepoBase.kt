@@ -9,10 +9,9 @@ import com.salesforce.androidsdk.mobilesync.util.Constants
 import com.salesforce.androidsdk.mobilesync.util.SyncState
 import com.salesforce.androidsdk.smartstore.store.QuerySpec
 import com.salesforce.androidsdk.smartstore.store.SmartStore
-import com.salesforce.samples.mobilesynccompose.core.data.ReadOnlyJson
 import com.salesforce.samples.mobilesynccompose.core.extensions.*
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.*
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.StoreRecordMetadata.Companion.KEY_LOCAL_ID
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord.Companion.KEY_LOCAL_ID
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
@@ -25,7 +24,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
-abstract class SObjectSyncableRepoBase<T : SObjectModel>(
+abstract class SObjectSyncableRepoBase<T : SObject>(
     account: UserAccount?,// TODO this shouldn't be nullable. The logic whether to instantiate this object should be moved higher up, but this is a quick fix to get things testable
     protected val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : SObjectSyncableRepo<T> {
@@ -37,13 +36,13 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
     private val listMutex = Mutex()
 
     private val mutRecordsByPrimaryKey = mutableMapOf<PrimaryKey, SObjectRecord<T>>()
-    private val mutRecordsByLocalId = mutableMapOf<LocalId, SObjectRecord<T>>()
-    private val mutState = MutableSharedFlow<SObjectsByIds<T>>(
+    private val mutRecordsByLocalId = mutableMapOf<LocallyCreatedId, SObjectRecord<T>>()
+    private val mutState = MutableSharedFlow<SObjectRecordsByIds<T>>(
         replay = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
 
-    override val records: Flow<SObjectsByIds<T>> = mutState.distinctUntilChanged()
+    override val records: Flow<SObjectRecordsByIds<T>> = mutState.distinctUntilChanged()
 
     protected val store: SmartStore = MobileSyncSDKManager.getInstance().getSmartStore(account)
     protected val syncManager: SyncManager = SyncManager.getInstance(account)
@@ -165,10 +164,10 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
                 val elt = with(so) {
                     retrieveByIdOrThrowOperationException(id = id)
                         .elt
-                        .applyMemoryModelProperties()
+                        .applyObjProperties()
                 }
 
-                ReadOnlyJson.from(store.upsert(soupName, elt))
+                store.upsert(soupName, elt)
             } catch (ex: Exception) {
                 throw RepoOperationException.SmartStoreOperationFailed(
                     message = "Failed to upsert the object in SmartStore.",
@@ -186,11 +185,11 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
         withContext(ioDispatcher + NonCancellable) {
             val createResult = try {
                 val elt = with(so) {
-                    createNewSoupEltBase(forObjType = deserializer.objectType)
-                        .applyMemoryModelProperties()
+                    createNewSoupEltBase(forObjType = objectType)
+                        .applyObjProperties()
                 }
 
-                ReadOnlyJson.from(store.upsert(soupName, elt))
+                store.upsert(soupName, elt)
             } catch (ex: Exception) {
                 throw RepoOperationException.SmartStoreOperationFailed(
                     message = "Failed to create the object in SmartStore.",
@@ -220,7 +219,7 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
                     )
                 }
 
-                return ReadOnlyJson.from(updatedJson).coerceUpdatedObjToModelOrCleanupAndThrow()
+                return updatedJson.coerceUpdatedObjToModelOrCleanupAndThrow()
             }
 
             val retrieved = retrieveByIdOrThrowOperationException(id)
@@ -237,7 +236,7 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
                     }
                     null
                 }
-                localStatus.isLocallyDeleted -> ReadOnlyJson.from(retrieved.elt)
+                localStatus.isLocallyDeleted -> retrieved.elt
                     .coerceUpdatedObjToModelOrCleanupAndThrow()
 
                 else -> saveDeleteToStore(elt = retrieved.elt, soupId = retrieved.soupId)
@@ -248,11 +247,11 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
                     ?.let { PrimaryKey(it) }
 
                 val retrievedLocalId = retrieved.elt.optStringOrNull(KEY_LOCAL_ID)
-                    ?.let { LocalId(it) }
+                    ?.let { LocallyCreatedId(it) }
 
                 removeAllFromObjectList(
                     primaryKey = retrievedPrimaryKey,
-                    localId = retrievedLocalId
+                    locallyCreatedId = retrievedLocalId
                 )
             } else {
                 updateStateWithObject(result)
@@ -278,7 +277,7 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
                     )
 
                 val updatedJson = try {
-                    ReadOnlyJson.from(store.update(soupName, elt, soupEntryId))
+                    store.update(soupName, elt, soupEntryId)
                 } catch (ex: Exception) {
                     throw RepoOperationException.SmartStoreOperationFailed(
                         message = "Locally-undelete operation failed. Could not save the updated object in SmartStore.",
@@ -293,7 +292,7 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
 
             val result: SObjectRecord<T> =
                 if (!retrieved.elt.coerceToLocalStatus().isLocallyDeleted)
-                    ReadOnlyJson.from(retrieved.elt).coerceUpdatedObjToModelOrCleanupAndThrow()
+                    retrieved.elt.coerceUpdatedObjToModelOrCleanupAndThrow()
                 else
                     saveUndeleteToStore(retrieved.elt, retrieved.soupId)
 
@@ -319,13 +318,13 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
 
         records.forEach { record ->
             mutRecordsByPrimaryKey[record.primaryKey] = record
-            record.localId?.let { mutRecordsByLocalId[it] = record }
+            record.locallyCreatedId?.let { mutRecordsByLocalId[it] = record }
         }
 
         mutState.emit(
-            SObjectsByIds(
+            SObjectRecordsByIds(
                 byPrimaryKey = mutRecordsByPrimaryKey.toMap(),
-                byLocalId = mutRecordsByLocalId.toMap()
+                byLocallyCreatedId = mutRecordsByLocalId.toMap()
             )
         )
     }
@@ -353,7 +352,7 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
 
             // TODO What to do with parse failures?  Swallow them?
             queryResults
-                .map { runCatching { deserializer.coerceFromJsonOrThrow(ReadOnlyJson.from(it)) } }
+                .map { runCatching { deserializer.coerceFromJsonOrThrow(it) } }
                 .partitionBySuccess()
         }
 
@@ -369,12 +368,12 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
     protected suspend fun updateStateWithObject(obj: SObjectRecord<T>): Unit =
         listMutex.withLock {
             mutRecordsByPrimaryKey[obj.primaryKey] = obj
-            obj.localId?.let { mutRecordsByLocalId[it] = obj }
+            obj.locallyCreatedId?.let { mutRecordsByLocalId[it] = obj }
 
             mutState.emit(
-                SObjectsByIds(
+                SObjectRecordsByIds(
                     byPrimaryKey = mutRecordsByPrimaryKey.toMap(),
-                    byLocalId = mutRecordsByLocalId.toMap()
+                    byLocallyCreatedId = mutRecordsByLocalId.toMap()
                 )
             )
         }
@@ -383,15 +382,15 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
      * Convenience method for running an object list update procedure while under the Mutex for said
      * list. Also eliminates the need for subclasses to handle Mutexes themselves.
      */
-    protected suspend fun removeAllFromObjectList(primaryKey: PrimaryKey?, localId: LocalId?) {
+    protected suspend fun removeAllFromObjectList(primaryKey: PrimaryKey?, locallyCreatedId: LocallyCreatedId?) {
         listMutex.withLock {
             primaryKey?.let { mutRecordsByPrimaryKey.remove(it) }
-            localId?.let { mutRecordsByLocalId.remove(it) }
+            locallyCreatedId?.let { mutRecordsByLocalId.remove(it) }
 
             mutState.emit(
-                SObjectsByIds(
+                SObjectRecordsByIds(
                     byPrimaryKey = mutRecordsByPrimaryKey.toMap(),
-                    byLocalId = mutRecordsByLocalId.toMap()
+                    byLocallyCreatedId = mutRecordsByLocalId.toMap()
                 )
             )
         }
@@ -403,13 +402,13 @@ abstract class SObjectSyncableRepoBase<T : SObjectModel>(
      * to maintain data integrity.
      */
     @Throws(RepoOperationException.InvalidResultObject::class)
-    protected suspend fun ReadOnlyJson.coerceUpdatedObjToModelOrCleanupAndThrow() = try {
+    protected suspend fun JSONObject.coerceUpdatedObjToModelOrCleanupAndThrow() = try {
         deserializer.coerceFromJsonOrThrow(this)
     } catch (ex: Exception) {
         val primaryKey = this.optStringOrNull(Constants.ID)?.let { PrimaryKey(it) }
-        val localId = this.optStringOrNull(KEY_LOCAL_ID)?.let { LocalId(it) }
+        val localId = this.optStringOrNull(KEY_LOCAL_ID)?.let { LocallyCreatedId(it) }
 
-        removeAllFromObjectList(primaryKey = primaryKey, localId = localId)
+        removeAllFromObjectList(primaryKey = primaryKey, locallyCreatedId = localId)
 
         throw RepoOperationException.InvalidResultObject(
             message = "SmartStore operation was successful, but failed to deserialize updated JSON. This object has been removed from the list of objects in this repo to preserve data integrity",

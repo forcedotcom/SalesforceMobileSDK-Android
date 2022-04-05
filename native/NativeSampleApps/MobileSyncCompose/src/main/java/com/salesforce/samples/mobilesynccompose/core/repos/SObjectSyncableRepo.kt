@@ -1,13 +1,13 @@
 package com.salesforce.samples.mobilesynccompose.core.repos
 
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalId
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocallyCreatedId
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.PrimaryKey
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectModel
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObject
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord
 import kotlinx.coroutines.flow.Flow
 
-interface SObjectSyncableRepo<T : SObjectModel> {
-    val records: Flow<SObjectsByIds<T>>
+interface SObjectSyncableRepo<T : SObject> {
+    val records: Flow<SObjectRecordsByIds<T>>
 
     @Throws(RepoSyncException.SyncDownException::class)
     suspend fun syncDownOnly()
@@ -31,7 +31,7 @@ interface SObjectSyncableRepo<T : SObjectModel> {
     suspend fun locallyUndelete(id: PrimaryKey): SObjectRecord<T>
 }
 
-data class SObjectsByIds<T : SObjectModel>(
+data class SObjectRecordsByIds<T : SObject>(
     val byPrimaryKey: Map<PrimaryKey, SObjectRecord<T>>,
-    val byLocalId: Map<LocalId, SObjectRecord<T>>
+    val byLocallyCreatedId: Map<LocallyCreatedId, SObjectRecord<T>>
 )

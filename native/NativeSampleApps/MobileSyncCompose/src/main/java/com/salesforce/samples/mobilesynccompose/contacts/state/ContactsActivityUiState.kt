@@ -30,7 +30,13 @@ import com.salesforce.samples.mobilesynccompose.core.ui.state.DialogUiState
 
 data class ContactsActivityUiState(
     val listState: ContactsActivityListUiState,
-    val detailsState: ContactDetailsUiState?,
     val isSyncing: Boolean,
     val dialogUiState: DialogUiState?,
 )
+
+interface ContactsActivityMenuHandler {
+    fun onInspectDbClick()
+    fun onLogoutClick()
+    fun onSwitchUserClick()
+    fun onSyncClick()
+}

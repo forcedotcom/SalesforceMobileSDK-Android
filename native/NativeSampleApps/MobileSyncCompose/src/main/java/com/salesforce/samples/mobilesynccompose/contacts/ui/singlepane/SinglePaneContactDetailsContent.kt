@@ -47,9 +47,9 @@ import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R.drawable.ic_help
 import com.salesforce.samples.mobilesynccompose.R.drawable.ic_undo
 import com.salesforce.samples.mobilesynccompose.R.string.*
+import com.salesforce.samples.mobilesynccompose.contacts.state.ContactsActivityMenuHandler
 import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactsActivityMenuButton
 import com.salesforce.samples.mobilesynccompose.contacts.ui.SyncImage
-import com.salesforce.samples.mobilesynccompose.contacts.ui.mockLocallyDeletedContact
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsField
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsUiEventHandler
 import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsUiState2
@@ -57,27 +57,18 @@ import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactObjectFieldCh
 import com.salesforce.samples.mobilesynccompose.core.extensions.takeIfInstance
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.isLocallyDeleted
-import com.salesforce.samples.mobilesynccompose.core.ui.LayoutRestrictions
-import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeClass
-import com.salesforce.samples.mobilesynccompose.core.ui.WindowSizeRestrictions
 import com.salesforce.samples.mobilesynccompose.core.ui.components.LoadingOverlay
 import com.salesforce.samples.mobilesynccompose.core.ui.components.OutlinedTextFieldWithHelp
-import com.salesforce.samples.mobilesynccompose.core.ui.safeStringResource
+import com.salesforce.samples.mobilesynccompose.core.ui.components.ShowOrClearDialog
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
-import com.salesforce.samples.mobilesynccompose.core.vm.EditableFieldUiState
 import com.salesforce.samples.mobilesynccompose.core.vm.EditableTextFieldUiState
-import com.salesforce.samples.mobilesynccompose.core.vm.FieldUiState
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 
 @Composable
 fun ContactDetailsSinglePaneComponent(
-    layoutRestrictions: LayoutRestrictions,
     details: ContactDetailsUiState2,
     componentUiEventHandler: ContactDetailsUiEventHandler,
-    onInspectDbClick: () -> Unit,
-    onLogoutClick: () -> Unit,
-    onSwitchUserClick: () -> Unit,
-    onSyncClick: () -> Unit,
+    menuHandler: ContactsActivityMenuHandler,
     modifier: Modifier = Modifier,
     contentModifier: Modifier = Modifier
 ) {
@@ -87,7 +78,7 @@ fun ContactDetailsSinglePaneComponent(
         topBar = {
             TopAppBar {
                 ContactDetailsTopAppBarSinglePane(
-                    label = contactDetailsUi?.personalInfoFields?.fullName ?: "",
+                    label = contactDetailsUi?.fullName ?: "",
                     syncIconContent = {
                         contactDetailsUi?.let {
                             SyncImage(contactObjLocalStatus = it.contactObjLocalStatus)
@@ -96,12 +87,7 @@ fun ContactDetailsSinglePaneComponent(
                     detailsExitClick = componentUiEventHandler::exitClick
                 )
 
-                ContactsActivityMenuButton(
-                    onInspectDbClick = onInspectDbClick,
-                    onLogoutClick = onLogoutClick,
-                    onSwitchUserClick = onSwitchUserClick,
-                    onSyncClick = onSyncClick
-                )
+                ContactsActivityMenuButton(menuHandler = menuHandler)
             }
         },
 
@@ -121,7 +107,7 @@ fun ContactDetailsSinglePaneComponent(
         },
         isFloatingActionButtonDocked = true
     ) { paddingValues ->
-        ContactDetailsSinglePaneContent(
+        ContactDetailsContent(
             modifier = Modifier
                 .padding(paddingValues)
                 .then(contentModifier),
@@ -131,17 +117,17 @@ fun ContactDetailsSinglePaneComponent(
 }
 
 @Composable
-fun ContactDetailsSinglePaneContent(
-    modifier: Modifier = Modifier,
+fun ContactDetailsContent(
     details: ContactDetailsUiState2,
+    modifier: Modifier = Modifier,
 ) {
     when (details) {
         is ContactDetailsUiState2.HasContact -> ContactDetailsWithContact(
             modifier = modifier,
             details = details
         )
-        ContactDetailsUiState2.InitialLoad -> LoadingOverlay()
-        ContactDetailsUiState2.NoContactSelected -> {}
+        is ContactDetailsUiState2.InitialLoad -> LoadingOverlay()
+        is ContactDetailsUiState2.NoContactSelected -> {}
     }
 }
 
@@ -160,36 +146,30 @@ private fun ContactDetailsWithContact(
             LocallyDeletedRow()
         }
 
-        details.personalInfoFields.allFields.forEach { field ->
-            OutlinedTextFieldWithHelp(
-                fieldValue = field.fieldValue,
-                isEditEnabled = details.isEditingEnabled && field.canBeEdited,
-                isError = field.isInErrorState,
-                onValueChange = { TODO() },
-                label = { Text(safeStringResource(id = field.labelRes)) },
-                help = { Text(safeStringResource(id = field.helperRes)) },
-                placeholder = { Text(safeStringResource(id = field.placeholderRes)) }
-            )
-        }
-        details.businessFields.allFields.forEach { field ->
-            when (field) {
-                is EditableFieldUiState ->
-                    OutlinedTextFieldWithHelp(
-                        fieldValue = field.fieldValue,
-                        isEditEnabled = details.isEditingEnabled && field.isEnabled,
-                        isError = field.isInErrorState,
-                        onValueChange = field.onValueChange,
-                        label = { Text(safeStringResource(id = field.labelRes)) },
-                        help = { Text(safeStringResource(id = field.helperRes)) },
-                        placeholder = { Text(safeStringResource(id = field.placeholderRes)) }
-                    )
-            }
-        }
+        details.firstNameField.OutlinedTextFieldWithHelp(isEditingEnabled = details.isEditingEnabled)
+        details.lastNameField.OutlinedTextFieldWithHelp(isEditingEnabled = details.isEditingEnabled)
+        details.titleField.OutlinedTextFieldWithHelp(isEditingEnabled = details.isEditingEnabled)
+        details.departmentField.OutlinedTextFieldWithHelp(isEditingEnabled = details.isEditingEnabled)
     }
 
     if (details.dataOperationIsActive) {
         LoadingOverlay()
     }
+
+    ShowOrClearDialog(details.curDialogUiState)
+}
+
+@Composable
+private fun EditableTextFieldUiState.OutlinedTextFieldWithHelp(isEditingEnabled: Boolean) {
+    OutlinedTextFieldWithHelp(
+        fieldValue = fieldValue,
+        isEditEnabled = isEditingEnabled && fieldIsEnabled,
+        isError = isInErrorState,
+        onValueChange = onValueChange,
+        label = { labelRes?.let { Text(stringResource(id = it)) } },
+        help = { helperRes?.let { Text(stringResource(id = it)) } },
+        placeholder = { placeholderRes?.let { Text(stringResource(id = it)) } }
+    )
 }
 
 //@Composable
@@ -306,8 +286,8 @@ fun ContactDetailsFab(
                     }
             }
         }
-        ContactDetailsUiState2.InitialLoad -> {}
-        ContactDetailsUiState2.NoContactSelected -> FloatingActionButton(
+        is ContactDetailsUiState2.InitialLoad -> {}
+        is ContactDetailsUiState2.NoContactSelected -> FloatingActionButton(
             onClick = handler::createClick,
             modifier = modifier
         ) {
@@ -397,107 +377,128 @@ private fun ContactDetailViewModePreview() {
         title = "Titletitletitletitletitletitletitletitletitletitletitletitletitletitle",
         department = "DepartmentDepartmentDepartmentDepartmentDepartmentDepartmentDepartmentDepartmentDepartmentDepartment"
     )
+
     SalesforceMobileSDKAndroidTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
             ContactDetailsSinglePaneComponent(
-                layoutRestrictions = LayoutRestrictions(
-                    sizeRestrictions = WindowSizeRestrictions(
-                        horiz = WindowSizeClass.Compact,
-                        vert = WindowSizeClass.Extended
-                    )
-                ),
                 details = ContactDetailsUiState2.HasContact(
-                    personalInfoFields = ContactDetailsUiState2.PersonalInfoFields(
-                        firstNameField = ContactDetailsField.FirstName(fieldValue = contact.firstName),
-                        lastNameField = ContactDetailsField.LastName(fieldValue = contact.lastName),
+                    firstNameField = ContactDetailsField.FirstName(
+                        fieldValue = contact.firstName,
+                        onValueChange = {}
                     ),
-                    businessFields = ContactDetailsUiState2.BusinessInfoFields(
-                        titleField = ContactDetailsField.Title(fieldValue = contact.title),
-                        departmentField = ContactDetailsField.Department(fieldValue = contact.department)
+                    lastNameField = ContactDetailsField.LastName(
+                        fieldValue = contact.lastName,
+                        onValueChange = {}
+                    ),
+                    titleField = ContactDetailsField.Title(
+                        fieldValue = contact.title,
+                        onValueChange = {}
+                    ),
+                    departmentField = ContactDetailsField.Department(
+                        fieldValue = contact.department,
+                        onValueChange = {}
                     ),
                     contactObjLocalStatus = LocalStatus.LocallyCreated,
                     isEditingEnabled = false
                 ),
-                componentUiEventHandler =
+                componentUiEventHandler = PREVIEW_CONTACT_DETAILS_UI_HANDLER,
+                menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER,
             )
         }
     }
 }
 
-@Preview(showBackground = true)
-@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
-@Composable
-private fun ContactDetailEditModePreview() {
-    val origContact = ContactObject(
-        firstName = "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirst",
-        lastName = "LastLastLastLastLastLastLastLastLastLastLastLastLastLastLastLast",
-        title = "Titletitletitletitletitletitletitletitletitletitletitletitletitletitle",
-        department = "DepartmentDepartmentDepartmentDepartmentDepartmentDepartment"
-    )
+//@Preview(showBackground = true)
+//@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
+//@Composable
+//private fun ContactDetailEditModePreview() {
+//    val origContact = ContactObject(
+//        firstName = "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirst",
+//        lastName = "LastLastLastLastLastLastLastLastLastLastLastLastLastLastLastLast",
+//        title = "Titletitletitletitletitletitletitletitletitletitletitletitletitletitle",
+//        department = "DepartmentDepartmentDepartmentDepartmentDepartmentDepartment"
+//    )
+//
+//    SalesforceMobileSDKAndroidTheme {
+//        Surface(modifier = Modifier.fillMaxSize()) {
+//            ContactDetailsSinglePaneContent(
+//                details = ContactDetailsUiState(
+//                    contactObj = editedContact,
+//                    mode = ContactDetailsUiMode.Editing,
+//                    fieldValueChangeHandler = PREVIEW_CONTACT_FIELD_CHANGE_HANDLER
+//                ),
+//                showLoading = false,
+//            )
+//        }
+//    }
+//}
+//
+//@Preview(showBackground = true)
+//@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
+//@Composable
+//private fun ContactDetailEditModeSavingPreview() {
+//    val origContact = ContactObject.createNewLocal(
+//        firstName = "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirst",
+//        lastName = "LastLastLastLastLastLastLastLastLastLastLastLastLastLastLastLast",
+//        title = "Titletitletitletitletitletitletitletitletitletitletitletitletitletitle"
+//    )
+//    val editedContact = origContact.copy(
+//        firstName = "First EditedFirst EditedFirst EditedFirst EditedFirst EditedFirst EditedFirst EditedFirst Edited",
+//        title = "Title EditedTitle EditedTitle EditedTitle EditedTitle EditedTitle EditedTitle EditedTitle EditedTitle Edited"
+//    )
+//
+//    SalesforceMobileSDKAndroidTheme {
+//        Surface {
+//            ContactDetailsEditingContactSinglePane(
+//                details = ContactDetailsUiState(
+//                    contactObj = editedContact,
+//                    mode = ContactDetailsUiMode.Editing,
+//                    fieldValueChangeHandler = PREVIEW_CONTACT_FIELD_CHANGE_HANDLER,
+//                    isSaving = true
+//                ),
+//                showLoading = true,
+//            )
+//        }
+//    }
+//}
+//
+//@Preview(showBackground = true)
+//@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
+//@Composable
+//private fun LocallyDeletedPreview() {
+//    val contact = mockLocallyDeletedContact()
+//    SalesforceMobileSDKAndroidTheme {
+//        Surface {
+//            ContactDetailsSinglePaneContent(
+//                details = contact.toContactDetailsUiState(
+//                    mode = ContactDetailsUiMode.Viewing,
+//                    fieldValueChangeHandler = PREVIEW_CONTACT_FIELD_CHANGE_HANDLER
+//                ),
+//            )
+//        }
+//    }
+//}
+//
 
-    SalesforceMobileSDKAndroidTheme {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            ContactDetailsSinglePaneContent(
-                details = ContactDetailsUiState(
-                    contactObj = editedContact,
-                    mode = ContactDetailsUiMode.Editing,
-                    fieldValueChangeHandler = PREVIEW_CONTACT_FIELD_CHANGE_HANDLER
-                ),
-                showLoading = false,
-            )
-        }
-    }
+val PREVIEW_CONTACT_DETAILS_UI_HANDLER = object : ContactDetailsUiEventHandler {
+    override fun createClick() {}
+    override fun deleteClick() {}
+    override fun undeleteClick() {}
+    override fun editClick() {}
+    override fun exitClick() {}
+    override fun saveClick() {}
+
 }
-
-@Preview(showBackground = true)
-@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
-@Composable
-private fun ContactDetailEditModeSavingPreview() {
-    val origContact = ContactObject.createNewLocal(
-        firstName = "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirst",
-        lastName = "LastLastLastLastLastLastLastLastLastLastLastLastLastLastLastLast",
-        title = "Titletitletitletitletitletitletitletitletitletitletitletitletitletitle"
-    )
-    val editedContact = origContact.copy(
-        firstName = "First EditedFirst EditedFirst EditedFirst EditedFirst EditedFirst EditedFirst EditedFirst Edited",
-        title = "Title EditedTitle EditedTitle EditedTitle EditedTitle EditedTitle EditedTitle EditedTitle EditedTitle Edited"
-    )
-
-    SalesforceMobileSDKAndroidTheme {
-        Surface {
-            ContactDetailsEditingContactSinglePane(
-                details = ContactDetailsUiState(
-                    contactObj = editedContact,
-                    mode = ContactDetailsUiMode.Editing,
-                    fieldValueChangeHandler = PREVIEW_CONTACT_FIELD_CHANGE_HANDLER,
-                    isSaving = true
-                ),
-                showLoading = true,
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
-@Composable
-private fun LocallyDeletedPreview() {
-    val contact = mockLocallyDeletedContact()
-    SalesforceMobileSDKAndroidTheme {
-        Surface {
-            ContactDetailsSinglePaneContent(
-                details = contact.toContactDetailsUiState(
-                    mode = ContactDetailsUiMode.Viewing,
-                    fieldValueChangeHandler = PREVIEW_CONTACT_FIELD_CHANGE_HANDLER
-                ),
-            )
-        }
-    }
-}
-
 val PREVIEW_CONTACT_FIELD_CHANGE_HANDLER = object : ContactObjectFieldChangeHandler {
-    override fun onFirstNameChange(id: SObjectId, newFirstName: String?) {}
-    override fun onLastNameChange(id: SObjectId, newLastName: String?) {}
-    override fun onTitleChange(id: SObjectId, newTitle: String?) {}
-    override fun onDepartmentChange(id: SObjectId, newDepartment: String?) {}
+    override fun onFirstNameChange(newFirstName: String) {}
+    override fun onLastNameChange(newLastName: String) {}
+    override fun onTitleChange(newTitle: String) {}
+    override fun onDepartmentChange(newDepartment: String) {}
+}
+
+val PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER = object : ContactsActivityMenuHandler {
+    override fun onInspectDbClick() {}
+    override fun onLogoutClick() {}
+    override fun onSwitchUserClick() {}
+    override fun onSyncClick() {}
 }

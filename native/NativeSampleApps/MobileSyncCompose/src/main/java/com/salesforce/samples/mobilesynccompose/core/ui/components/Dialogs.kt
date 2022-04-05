@@ -28,16 +28,42 @@ package com.salesforce.samples.mobilesynccompose.core.ui.components
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.AlertDialog
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.window.DialogProperties
 import com.salesforce.samples.mobilesynccompose.R.string.*
+import com.salesforce.samples.mobilesynccompose.core.ui.state.*
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
+
+@Composable
+fun ShowOrClearDialog(dialog: DialogUiState?) = when (dialog) {
+    is DeleteConfirmationDialogUiState -> DeleteConfirmationDialog(
+        onCancel = dialog.onCancelDelete,
+        onDelete = { dialog.onDeleteConfirm(dialog.objIdToDelete) },
+        objectLabel = dialog.objName
+    )
+    is DiscardChangesDialogUiState -> DiscardChangesDialog(
+        discardChanges = dialog.onDiscardChanges,
+        keepChanges = dialog.onKeepChanges
+    )
+    is UndeleteConfirmationDialogUiState -> UndeleteConfirmationDialog(
+        onCancel = dialog.onCancelUndelete,
+        onUndelete = { dialog.onUndeleteConfirm(dialog.objIdToUndelete) },
+        objectLabel = dialog.objName
+    )
+    is ErrorDialogUiState -> ErrorDialog(
+        onDismiss = dialog.onDismiss,
+        message = dialog.message
+    )
+    null -> {
+        /* clear the dialog */
+    }
+}
 
 /**
  * [AlertDialog] which asks the user to confirm whether they want to discard unsaved changes. The

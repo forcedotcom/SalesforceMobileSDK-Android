@@ -44,7 +44,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.isLocallyDeleted
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.*
 import com.salesforce.samples.mobilesynccompose.core.ui.components.ExpandoButton
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.ALPHA_DISABLED
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
@@ -54,7 +54,8 @@ import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 /* TODO How to put in profile pic?  Glide lib? */
 fun ContactCard(
     modifier: Modifier = Modifier,
-    contact: ContactObject,
+    model: ContactObject,
+    localStatus: LocalStatus,
     onCardClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onUndeleteClick: () -> Unit,
@@ -63,7 +64,7 @@ fun ContactCard(
     elevation: Dp = 2.dp,
 ) {
     var showDropDownMenu by rememberSaveable { mutableStateOf(false) }
-    val alpha = if (contact.localStatus.isLocallyDeleted) ALPHA_DISABLED else 1f
+    val alpha = if (localStatus.isLocallyDeleted) ALPHA_DISABLED else 1f
 
     CompositionLocalProvider(LocalContentAlpha provides alpha) {
         Card(
@@ -79,12 +80,13 @@ fun ContactCard(
             elevation = elevation
         ) {
             ContactCardInnerContent(
-                contact = contact,
+                model = model,
+                localStatus = localStatus,
                 startExpanded = startExpanded
             )
             ContactDropdownMenu(
                 showDropDownMenu = showDropDownMenu,
-                contact = contact,
+                isLocallyDeleted = localStatus.isLocallyDeleted,
                 onDismissMenu = { showDropDownMenu = false },
                 onDeleteClick = onDeleteClick,
                 onUndeleteClick = onUndeleteClick,
@@ -97,7 +99,8 @@ fun ContactCard(
 @Composable
 private fun ContactCardInnerContent(
     modifier: Modifier = Modifier,
-    contact: ContactObject,
+    model: ContactObject,
+    localStatus: LocalStatus,
     startExpanded: Boolean,
 ) {
     var isExpanded by rememberSaveable { mutableStateOf(startExpanded) }
@@ -106,14 +109,14 @@ private fun ContactCardInnerContent(
             // TODO There is a bug where long-pressing on the name will both select the text and open the menu.
             SelectionContainer(modifier = Modifier.weight(1f)) {
                 Text(
-                    contact.fullName ?: "",
+                    model.fullName,
                     style = MaterialTheme.typography.body1,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
 
-            SyncImage(contactObjLocalStatus = contact.localStatus)
+            SyncImage(contactObjLocalStatus = localStatus)
 
             ExpandoButton(
                 startsExpanded = isExpanded,
@@ -125,7 +128,10 @@ private fun ContactCardInnerContent(
             Divider(modifier = Modifier.padding(vertical = 4.dp))
             Row {
                 SelectionContainer {
-                    Text(contact.title ?: "", style = MaterialTheme.typography.body2)
+                    Text(model.title ?: "", style = MaterialTheme.typography.body2)
+                }
+                SelectionContainer {
+                    Text(model.department ?: "", style = MaterialTheme.typography.body2)
                 }
             }
         }
@@ -135,14 +141,14 @@ private fun ContactCardInnerContent(
 @Composable
 private fun ContactDropdownMenu(
     showDropDownMenu: Boolean,
-    contact: ContactObject,
+    isLocallyDeleted: Boolean,
     onDismissMenu: () -> Unit,
     onDeleteClick: () -> Unit,
     onUndeleteClick: () -> Unit,
     onEditClick: () -> Unit,
 ) {
     DropdownMenu(expanded = showDropDownMenu, onDismissRequest = onDismissMenu) {
-        if (contact.localStatus.isLocallyDeleted) {
+        if (isLocallyDeleted) {
             DropdownMenuItem(onClick = { onDismissMenu(); onUndeleteClick() }) {
                 Text(stringResource(id = R.string.cta_undelete))
             }
@@ -167,7 +173,13 @@ fun PreviewContactListItem() {
                 ContactCard(
                     modifier = Modifier.padding(8.dp),
                     startExpanded = true,
-                    contact = mockSyncedContact(),
+                    model = ContactObject(
+                        firstName = "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirstFirst",
+                        lastName = "Last Last Last Last Last Last Last Last Last Last Last",
+                        title = "Title",
+                        department = "DepartmentDepartmentDepartmentDepartmentDepartment"
+                    ),
+                    localStatus = LocalStatus.MatchesUpstream,
                     onCardClick = {},
                     onDeleteClick = {},
                     onUndeleteClick = {},
@@ -176,11 +188,13 @@ fun PreviewContactListItem() {
                 ContactCard(
                     modifier = Modifier.padding(8.dp),
                     startExpanded = true,
-                    contact = ContactObject.createNewLocal(
+                    model = ContactObject(
                         firstName = "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirstFirst",
                         lastName = "Last Last Last Last Last Last Last Last Last Last Last",
                         title = "Title",
+                        department = "DepartmentDepartmentDepartmentDepartmentDepartment"
                     ),
+                    localStatus = LocalStatus.LocallyCreated,
                     onCardClick = {},
                     onDeleteClick = {},
                     onUndeleteClick = {},
@@ -188,7 +202,13 @@ fun PreviewContactListItem() {
                 )
                 ContactCard(
                     modifier = Modifier.padding(8.dp),
-                    contact = mockLocallyDeletedContact(),
+                    model = ContactObject(
+                        firstName = "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirstFirst",
+                        lastName = "Last Last Last Last Last Last Last Last Last Last Last",
+                        title = "Title",
+                        department = "DepartmentDepartmentDepartmentDepartmentDepartment"
+                    ),
+                    localStatus = LocalStatus.LocallyDeletedAndLocallyUpdated,
                     onCardClick = {},
                     onDeleteClick = {},
                     onUndeleteClick = {},

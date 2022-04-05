@@ -34,7 +34,7 @@ import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsUiM
 import com.salesforce.samples.mobilesynccompose.core.repos.RepoOperationException
 import com.salesforce.samples.mobilesynccompose.core.repos.RepoSyncException
 import com.salesforce.samples.mobilesynccompose.core.repos.SObjectSyncableRepo
-import com.salesforce.samples.mobilesynccompose.core.repos.SObjectsByIds
+import com.salesforce.samples.mobilesynccompose.core.repos.SObjectRecordsByIds
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.PrimaryKey
 import com.salesforce.samples.mobilesynccompose.core.ui.state.DeleteConfirmationDialogUiState
 import com.salesforce.samples.mobilesynccompose.core.ui.state.DiscardChangesDialogUiState
@@ -49,6 +49,7 @@ import kotlinx.coroutines.sync.withLock
 
 interface ContactsActivityViewModel {
     val uiState: StateFlow<ContactsActivityUiState>
+    val detailsVm: ContactDetailsViewModel
 
     fun listContactClick(contactId: PrimaryKey)
     fun listCreateClick()
@@ -109,7 +110,7 @@ class DefaultContactsActivityViewModel(
     // region Data Event Handling
 
 
-    private fun onContactListUpdate(newObjects: SObjectsByIds<ContactObject>) =
+    private fun onContactListUpdate(newRecords: SObjectRecordsByIds<ContactObject>) =
         launchWithEventLock {
             // Shallow copy b/c we can't guarantee the provided newList object is immutable:
             val curState = uiState.value
@@ -119,17 +120,17 @@ class DefaultContactsActivityViewModel(
             // Parallelize the iteration operations over the list b/c it may be very large:
             val filteredContactsDeferred = async(Dispatchers.Default) {
                 curState.listState.searchTerm?.let { searchTerm ->
-                    newObjects.byPrimaryKey.values.filter {
+                    newRecords.byPrimaryKey.values.filter {
                         it.fullName?.contains(
                             searchTerm,
                             ignoreCase = true
                         ) == true
                     }
-                } ?: newObjects.byPrimaryKey.values.toList()
+                } ?: newRecords.byPrimaryKey.values.toList()
             }
 
-            curContactsByPrimaryKey = newObjects.byPrimaryKey
-            curContactsByLocalId = newObjects.byLocalId
+            curContactsByPrimaryKey = newRecords.byPrimaryKey
+            curContactsByLocalId = newRecords.byLocallyCreatedId
 //        curContactsBySoupId.clear()
 
 //            withContext(Dispatchers.Default) {

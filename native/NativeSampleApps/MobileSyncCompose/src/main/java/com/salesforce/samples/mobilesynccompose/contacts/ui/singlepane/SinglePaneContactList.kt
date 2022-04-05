@@ -44,7 +44,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactCard
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectId
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.*
 import com.salesforce.samples.mobilesynccompose.core.ui.components.LoadingOverlay
 import com.salesforce.samples.mobilesynccompose.core.ui.components.OutlinedTextFieldWithHelp
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
@@ -53,23 +53,25 @@ import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 @Composable
 fun ContactsListViewingModeSinglePane(
     modifier: Modifier = Modifier,
-    contacts: List<ContactObject>,
+    contactRecords: List<SObjectRecord<ContactObject>>,
     showLoadingOverlay: Boolean,
-    listContactClick: (id: SObjectId) -> Unit,
-    listDeleteClick: (id: SObjectId) -> Unit,
-    listEditClick: (id: SObjectId) -> Unit,
-    listUndeleteClick: (id: SObjectId) -> Unit,
+    listContactClick: (id: SObjectCombinedId) -> Unit,
+    listDeleteClick: (id: SObjectCombinedId) -> Unit,
+    listEditClick: (id: SObjectCombinedId) -> Unit,
+    listUndeleteClick: (id: SObjectCombinedId) -> Unit,
 ) {
     LazyColumn(modifier = modifier) {
-        items(items = contacts, key = { it.id.localId ?: it.id.primaryKey }) { contact ->
+        items(items = contactRecords, key = { it.locallyCreatedId ?: it.primaryKey }) { record ->
+            val combinedId = record.buildCombinedId()
             ContactCard(
                 modifier = Modifier.padding(4.dp),
                 startExpanded = false,
-                contact = contact,
-                onCardClick = { listContactClick(contact.id) },
-                onDeleteClick = { listDeleteClick(contact.id) },
-                onUndeleteClick = { listUndeleteClick(contact.id) },
-                onEditClick = { listEditClick(contact.id) },
+                model = record.sObject,
+                localStatus = record.localStatus,
+                onCardClick = { listContactClick(combinedId) },
+                onDeleteClick = { listDeleteClick(combinedId) },
+                onUndeleteClick = { listUndeleteClick(combinedId) },
+                onEditClick = { listEditClick(combinedId) },
             )
         }
     }
@@ -138,19 +140,27 @@ fun ContactsListFabSinglePane(listCreateClick: () -> Unit) {
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 private fun ContactListContentPreview() {
-    val contacts = (0..100).map {
-        ContactObject.createNewLocal(
-            firstName = "Contact",
-            lastName = "$it",
-            title = "Title $it",
-        )
-    }
+    val contacts = (0..100)
+        .map { it.toString() }
+        .map {
+            SObjectRecord(
+                primaryKey = PrimaryKey(it),
+                locallyCreatedId = LocallyCreatedId(it),
+                localStatus = LocalStatus.LocallyCreated,
+                sObject = ContactObject(
+                    firstName = "Contact",
+                    lastName = it,
+                    title = "Title $it",
+                    department = "Department $it"
+                )
+            )
+        }
 
     SalesforceMobileSDKAndroidTheme {
         Surface {
             ContactsListViewingModeSinglePane(
                 modifier = Modifier.padding(4.dp),
-                contacts = contacts,
+                contactRecords = contacts,
                 showLoadingOverlay = false,
                 listContactClick = {},
                 listDeleteClick = {},
@@ -165,11 +175,17 @@ private fun ContactListContentPreview() {
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 private fun ContactListSyncingPreview() {
-    val contacts = (0..100).map {
-        ContactObject.createNewLocal(
-            firstName = "Contact",
-            lastName = "$it",
-            title = "Title $it",
+    val contacts = (0..100).map { it.toString() }.map {
+        SObjectRecord(
+            primaryKey = PrimaryKey(it),
+            locallyCreatedId = LocallyCreatedId(it),
+            localStatus = LocalStatus.LocallyCreated,
+            sObject = ContactObject(
+                firstName = "Contact",
+                lastName = it,
+                title = "Title $it",
+                department = "Department $it"
+            )
         )
     }
 
@@ -177,7 +193,7 @@ private fun ContactListSyncingPreview() {
         Surface {
             ContactsListViewingModeSinglePane(
                 modifier = Modifier.padding(4.dp),
-                contacts = contacts,
+                contactRecords = contacts,
                 showLoadingOverlay = true,
                 listContactClick = {},
                 listDeleteClick = {},
@@ -192,13 +208,13 @@ private fun ContactListSyncingPreview() {
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 private fun ContactListLoadingPreview() {
-    val contacts = emptyList<ContactObject>()
+    val contacts = emptyList<SObjectRecord<ContactObject>>()
 
     SalesforceMobileSDKAndroidTheme {
         Surface {
             ContactsListViewingModeSinglePane(
                 modifier = Modifier.padding(4.dp),
-                contacts = contacts,
+                contactRecords = contacts,
                 showLoadingOverlay = true,
                 listContactClick = {},
                 listDeleteClick = {},
