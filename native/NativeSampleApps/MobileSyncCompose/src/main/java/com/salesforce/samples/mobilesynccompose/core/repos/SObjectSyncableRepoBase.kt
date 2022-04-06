@@ -12,7 +12,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec
 import com.salesforce.androidsdk.smartstore.store.SmartStore
 import com.salesforce.samples.mobilesynccompose.core.extensions.*
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.*
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecordCreatedDuringThisLoginSession.Companion.KEY_LOCAL_ID
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord.Companion.KEY_LOCAL_ID
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
@@ -36,15 +36,13 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
     private val syncMutex = Mutex()
     private val listMutex = Mutex()
 
-    private val mutUpstreamRecordsById = mutableMapOf<String, UpstreamSObjectRecord<T>>()
-    private val mutLocallyCreatedRecordsById =
-        mutableMapOf<String, SObjectRecordCreatedDuringThisLoginSession<T>>()
-    private val mutState = MutableSharedFlow<SObjectRecordsByIds<T>>(
+    private val mutRecordsById = mutableMapOf<String, SObjectRecord<T>>()
+    private val mutState = MutableSharedFlow<Map<String, SObjectRecord<T>>>(
         replay = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
 
-    override val records: Flow<SObjectRecordsByIds<T>> = mutState.distinctUntilChanged()
+    override val recordsById: Flow<Map<String, SObjectRecord<T>>> = mutState.distinctUntilChanged()
 
     protected val store: SmartStore = MobileSyncSDKManager.getInstance().getSmartStore(account)
     protected val syncManager: SyncManager = SyncManager.getInstance(account)
@@ -250,7 +248,7 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
 
                 removeAllFromObjectList(
                     primaryKey = retrievedPrimaryKey,
-                    locallyCreatedId = retrievedLocalId
+                    localId = retrievedLocalId
                 )
             } else {
                 updateStateWithObject(result)
@@ -312,25 +310,9 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
     }
 
     protected suspend fun setRecordsList(records: List<SObjectRecord<T>>) = listMutex.withLock {
-        mutUpstreamRecordsById.clear()
-        mutLocallyCreatedRecordsById.clear()
-
-        records.forEach { record ->
-            when (record) {
-                is SObjectRecordCreatedDuringThisLoginSession ->
-                    mutLocallyCreatedRecordsById[record.id] = record
-
-                is UpstreamSObjectRecord ->
-                    mutUpstreamRecordsById[record.id] = record
-            }
-        }
-
-        mutState.emit(
-            SObjectRecordsByIds(
-                upstreamRecords = mutUpstreamRecordsById.toMap(), // shallow copy
-                locallyCreatedRecords = mutLocallyCreatedRecordsById.toMap() // shallow copy
-            )
-        )
+        mutRecordsById.clear()
+        records.associateByTo(mutRecordsById) { it.id }
+        mutState.emit(mutRecordsById.toMap())
     }
 
     @Throws(RepoOperationException::class)
@@ -371,37 +353,19 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
      */
     protected suspend fun updateStateWithObject(obj: SObjectRecord<T>): Unit =
         listMutex.withLock {
-            when (obj) {
-                is SObjectRecordCreatedDuringThisLoginSession -> mutLocallyCreatedRecordsById[obj.id] = obj
-                is UpstreamSObjectRecord -> mutUpstreamRecordsById[obj.id] = obj
-            }
-
-            mutState.emit(
-                SObjectRecordsByIds(
-                    upstreamRecords = mutUpstreamRecordsById.toMap(), // shallow copy
-                    locallyCreatedRecords = mutLocallyCreatedRecordsById.toMap() // shallow copy
-                )
-            )
+            mutRecordsById[obj.id] = obj
+            mutState.emit(mutRecordsById.toMap())
         }
 
     /**
      * Convenience method for running an object list update procedure while under the Mutex for said
      * list. Also eliminates the need for subclasses to handle Mutexes themselves.
      */
-    protected suspend fun removeAllFromObjectList(
-        primaryKey: String?,
-        locallyCreatedId: String?
-    ) {
+    protected suspend fun removeAllFromObjectList(primaryKey: String?, localId: String?) {
         listMutex.withLock {
-            primaryKey?.let { mutUpstreamRecordsById.remove(it) }
-            locallyCreatedId?.let { mutLocallyCreatedRecordsById.remove(it) }
-
-            mutState.emit(
-                SObjectRecordsByIds(
-                    upstreamRecords = mutUpstreamRecordsById.toMap(),
-                    locallyCreatedRecords = mutLocallyCreatedRecordsById.toMap()
-                )
-            )
+            primaryKey?.let { mutRecordsById.remove(it) }
+            localId?.let { mutRecordsById.remove(it) }
+            mutState.emit(mutRecordsById.toMap())
         }
     }
 
@@ -417,7 +381,7 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
         val primaryKey = this.optStringOrNull(Constants.ID)
         val localId = this.optStringOrNull(KEY_LOCAL_ID)
 
-        removeAllFromObjectList(primaryKey = primaryKey, locallyCreatedId = localId)
+        removeAllFromObjectList(primaryKey, localId)
 
         throw RepoOperationException.InvalidResultObject(
             message = "SmartStore operation was successful, but failed to deserialize updated JSON. This object has been removed from the list of objects in this repo to preserve data integrity",

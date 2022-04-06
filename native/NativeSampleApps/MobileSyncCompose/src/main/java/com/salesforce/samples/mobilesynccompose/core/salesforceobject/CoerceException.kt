@@ -39,13 +39,13 @@ data class InvalidPropertyValue(
     }
 )
 
-data class MissingRequiredProperty(
-    val propertyKey: String,
+class MissingRequiredProperties(
     override val offendingJsonString: String,
+    vararg val propertyKeys: String,
 ) : CoerceException(
     buildString {
         appendLine("CoerceException - MissingRequiredProperty")
-        appendLine("This JSON was missing the required property: '$propertyKey'")
+        appendLine("This JSON was missing one or more of the required properties: $propertyKeys")
         appendLine("Offending JSON = '$offendingJsonString'")
     }
 )

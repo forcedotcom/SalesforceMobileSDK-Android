@@ -2,7 +2,7 @@ package com.salesforce.samples.mobilesynccompose.core.salesforceobject
 
 import com.salesforce.androidsdk.mobilesync.target.SyncTarget
 import com.salesforce.androidsdk.mobilesync.util.Constants
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecordCreatedDuringThisLoginSession.Companion.KEY_LOCAL_ID
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord.Companion.KEY_LOCAL_ID
 import org.json.JSONObject
 import java.util.*
 
@@ -18,24 +18,11 @@ abstract class SObjectDeserializerBase<T : SObject>(val objectType: String) :
     override fun coerceFromJsonOrThrow(json: JSONObject): SObjectRecord<T> {
         SObjectDeserializerHelper.requireSoType(json, objectType)
 
-        val primaryKey = SObjectDeserializerHelper.getPrimaryKeyOrThrow(json)
-        val localId = SObjectDeserializerHelper.getLocalId(json)
+        val id = SObjectDeserializerHelper.getIdOrThrow(json)
         val localStatus = json.coerceToLocalStatus()
         val model = buildModel(fromJson = json)
 
-        return if (localId != null) {
-            SObjectRecordCreatedDuringThisLoginSession(
-                id = localId,
-                localStatus = localStatus,
-                sObject = model
-            )
-        } else {
-            UpstreamSObjectRecord(
-                id = primaryKey,
-                localStatus = localStatus,
-                sObject = model
-            )
-        }
+        return SObjectRecord(id = id, localStatus = localStatus, sObject = model)
     }
 
     @Throws(CoerceException::class)

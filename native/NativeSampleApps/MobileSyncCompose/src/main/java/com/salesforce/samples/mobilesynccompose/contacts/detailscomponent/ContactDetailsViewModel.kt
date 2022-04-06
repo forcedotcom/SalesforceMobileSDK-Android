@@ -5,7 +5,6 @@ import com.salesforce.samples.mobilesynccompose.core.repos.SObjectSyncableRepo
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.PrimaryKey
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectCombinedId
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.isLocallyDeleted
 import com.salesforce.samples.mobilesynccompose.core.ui.state.DialogUiState
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactValidationException
@@ -50,7 +49,7 @@ class DefaultContactDetailsViewModel(
 
     private val initJob = parentScope.launch(Dispatchers.Default, start = CoroutineStart.LAZY) {
         val upstreamRecord = if (startingIds != null) {
-            val initialEmission = contactsRepo.records.first()
+            val initialEmission = contactsRepo.recordsById.first()
 
             initialEmission.locallyCreatedRecords[startingIds.locallyCreatedId]
                 ?: initialEmission.upstreamRecords[startingIds.primaryKey]
@@ -71,7 +70,7 @@ class DefaultContactDetailsViewModel(
     init {
         parentScope.launch(Dispatchers.Default) {
             initJob.join()
-            contactsRepo.records.collect { onNewRecords(it) }
+            contactsRepo.recordsById.collect { onNewRecords(it) }
         }
     }
 

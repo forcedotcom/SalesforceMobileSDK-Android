@@ -99,7 +99,7 @@ class DefaultContactsActivityViewModel(
 
     init {
         viewModelScope.launch {
-            contactsRepo.records.collect {
+            contactsRepo.recordsById.collect {
                 onContactListUpdate(it)
             }
         }
