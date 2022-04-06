@@ -1,6 +1,5 @@
 package com.salesforce.samples.mobilesynccompose.contacts.vm
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material.AlertDialog
@@ -11,20 +10,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.DialogProperties
 import com.salesforce.samples.mobilesynccompose.R.string.*
-import com.salesforce.samples.mobilesynccompose.core.extensions.takeIfInstance
 import com.salesforce.samples.mobilesynccompose.core.repos.SObjectSyncableRepo
-import com.salesforce.samples.mobilesynccompose.core.repos.SObjectRecordsByIds
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.*
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.PrimaryKey
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectCombinedId
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.isLocallyDeleted
 import com.salesforce.samples.mobilesynccompose.core.ui.state.DialogUiState
 import com.salesforce.samples.mobilesynccompose.core.vm.EditableTextFieldUiState
 import com.salesforce.samples.mobilesynccompose.core.vm.FieldUiState
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactValidationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -36,7 +38,7 @@ interface ContactDetailsViewModel : ContactObjectFieldChangeHandler, ContactDeta
     suspend fun clearContactObj()
 
     @Throws(HasUnsavedChangesException::class)
-    suspend fun setContact(record: SObjectRecord<ContactObject>, startWithEditingEnabled: Boolean)
+    suspend fun setContact(recordIds: SObjectCombinedId, startWithEditingEnabled: Boolean)
 
     val hasUnsavedChanges: Boolean
 }
@@ -78,10 +80,9 @@ data class DiscardChangesOrUndeleteDialogUiState(
     }
 }
 
-enum class RecordStatus
-
 sealed interface ContactDetailsUiState2 {
     val curDialogUiState: DialogUiState?
+    val dataOperationIsActive: Boolean
 
     data class HasContact(
         val firstNameField: ContactDetailsField.FirstName,
@@ -89,9 +90,8 @@ sealed interface ContactDetailsUiState2 {
         val titleField: ContactDetailsField.Title,
         val departmentField: ContactDetailsField.Department,
 
-        val contactObjLocalStatus: LocalStatus?,
         val isEditingEnabled: Boolean,
-        val dataOperationIsActive: Boolean = false,
+        override val dataOperationIsActive: Boolean = false,
         val shouldScrollToErrorField: Boolean = false,
         override val curDialogUiState: DialogUiState? = null
     ) : ContactDetailsUiState2 {
@@ -101,134 +101,121 @@ sealed interface ContactDetailsUiState2 {
         )
     }
 
-    data class InitialLoad(override val curDialogUiState: DialogUiState? = null) :
-        ContactDetailsUiState2
-
-    data class NoContactSelected(override val curDialogUiState: DialogUiState? = null) :
-        ContactDetailsUiState2
+    data class NoContactSelected(
+        override val dataOperationIsActive: Boolean = false,
+        override val curDialogUiState: DialogUiState? = null
+    ) : ContactDetailsUiState2
 }
 
 class DefaultContactDetailsViewModel(
     private val parentScope: CoroutineScope,
     private val contactsRepo: SObjectSyncableRepo<ContactObject>,
     startingIds: SObjectCombinedId? = null,
-//    startingPrimaryKey: PrimaryKey? = null,
-//    startingLocalId: LocalId? = null,
 ) : ContactDetailsViewModel {
 
     private val eventMutex = Mutex()
 
-    @Volatile
-    private var upstreamIds: SObjectCombinedId? = startingIds
-
-//    @Volatile
-//    private var upstreamPrimaryKey: PrimaryKey? = startingPrimaryKey
-//
-//    @Volatile
-//    private var upstreamLocalId: LocalId? = startingLocalId
-
     private val mutUiState: MutableStateFlow<ContactDetailsUiState2> = MutableStateFlow(
-        ContactDetailsUiState2.InitialLoad()
+        ContactDetailsUiState2.NoContactSelected(dataOperationIsActive = true)
     )
 
     override val uiState: StateFlow<ContactDetailsUiState2> get() = mutUiState
 
-    init {
-        parentScope.launch(Dispatchers.Default) {
-            contactsRepo.records.collect { onContactListUpdate(it) }
-        }
-    }
+    @Volatile
+    private var upstreamRecord: SObjectRecord<ContactObject>? = null
 
-    private suspend fun onContactListUpdate(newRecords: SObjectRecordsByIds<ContactObject>) {
-        fun handleInitialLoadingState(newRecords: SObjectRecordsByIds<ContactObject>) {
-            val upstreamIds = this.upstreamIds
-            if (upstreamIds == null) {
-                mutUiState.value is ContactDetailsUiState2.NoContactSelected
-                return
-            }
+    private val initJob = parentScope.launch(Dispatchers.Default, start = CoroutineStart.LAZY) {
+        val upstreamRecord = if (startingIds != null) {
+            val initialEmission = contactsRepo.records.first()
 
-            val matchingContact = upstreamIds.locallyCreatedId?.let { newRecords.byLocallyCreatedId[it] }
-                ?: newRecords.byPrimaryKey[upstreamIds.primaryKey]
-
-            if (matchingContact == null) {
-                Log.w(
-                    TAG,
-                    "Could not find record for starting id: $upstreamIds"
-                )
-                this.upstreamIds = null
-                return
-            }
-
-            this.upstreamIds = matchingContact.buildCombinedId()
-
-            mutUiState.value = ContactDetailsUiState2.HasContact(
-                firstNameField = matchingContact.sObject.buildFirstNameField(),
-                lastNameField = matchingContact.sObject.buildLastNameField(),
-                titleField = matchingContact.sObject.buildTitleField(),
-                departmentField = matchingContact.sObject.buildDepartmentField(),
-                contactObjLocalStatus = matchingContact.localStatus,
-                isEditingEnabled = false,
-            )
-        }
-
-        fun updateUiWithNewRecords(
-            newRecords: SObjectRecordsByIds<ContactObject>,
-            curState: ContactDetailsUiState2.HasContact,
-            curIds: SObjectCombinedId
-        ) {
-
-            val matchingContact = curIds.locallyCreatedId?.let { newRecords.byLocallyCreatedId[it] }
-                ?: newRecords.byPrimaryKey[curIds.primaryKey]
-
-            upstreamPrimaryKey = matchingContact.primaryKey
-            upstreamLocalId = matchingContact.locallyCreatedId
-
-            mutUiState.value = when {
-                // not editing, so simply update all fields to match upstream emission:
-                !curState.isEditingEnabled -> curState.copy(
-                    firstNameField = matchingContact.sObject.buildFirstNameField(),
-                    lastNameField = matchingContact.sObject.buildLastNameField(),
-                    titleField = matchingContact.sObject.buildTitleField(),
-                    departmentField = matchingContact.sObject.buildDepartmentField(),
-                    contactObjLocalStatus = matchingContact.localStatus
-                )
-
-                // Upstream was deleted, but we have unsaved changes. Ask the user what they want to do:
-                matchingContact.localStatus.isLocallyDeleted && hasUnsavedChanges -> curState.copy(
-                    curDialogUiState = DiscardChangesOrUndeleteDialogUiState(
-                        onDiscardChanges = { TODO() },
-                        onUndelete = { TODO() }
-                    )
-                )
-
-                else -> curState
-            }
+            initialEmission.byLocallyCreatedId[startingIds.locallyCreatedId]
+                ?: initialEmission.byPrimaryKey[startingIds.primaryKey]
+        } else {
+            null
         }
 
         eventMutex.withLock {
-            when (val curState = uiState.value) {
-                is ContactDetailsUiState2.HasContact -> updateUiWithNewRecords(newRecords, curState)
-                is ContactDetailsUiState2.InitialLoad -> handleInitialLoadingState(newRecords)
-                is ContactDetailsUiState2.NoContactSelected -> return@withLock
+            this@DefaultContactDetailsViewModel.upstreamRecord = upstreamRecord
+
+            mutUiState.value = upstreamRecord?.sObject?.buildHasContactUiState(
+                dataOperationIsActive = false,
+                isEditingEnabled = false
+            ) ?: ContactDetailsUiState2.NoContactSelected(dataOperationIsActive = false)
+        }
+    }
+
+    init {
+        parentScope.launch(Dispatchers.Default) {
+            initJob.join()
+
+            contactsRepo.records.collect { newRecords ->
+                eventMutex.withLock {
+                    val curState = uiState.value as? ContactDetailsUiState2.HasContact
+                        ?: return@withLock
+
+                    val matchingRecord = upstreamRecord?.let {
+                        it.locallyCreatedId?.let { newRecords.byLocallyCreatedId[it] }
+                            ?: newRecords.byPrimaryKey[it.primaryKey]
+                    } ?: return@withLock
+
+                    upstreamRecord = matchingRecord
+
+                    mutUiState.value = when {
+                        // not editing, so simply update all fields to match upstream emission:
+                        !curState.isEditingEnabled -> curState.copy(
+                            firstNameField = matchingRecord.sObject.buildFirstNameField(),
+                            lastNameField = matchingRecord.sObject.buildLastNameField(),
+                            titleField = matchingRecord.sObject.buildTitleField(),
+                            departmentField = matchingRecord.sObject.buildDepartmentField(),
+                        )
+
+                        // Upstream was deleted, but we have unsaved changes. Ask the user what they want to do:
+                        matchingRecord.localStatus.isLocallyDeleted && hasUnsavedChanges -> curState.copy(
+                            curDialogUiState = DiscardChangesOrUndeleteDialogUiState(
+                                onDiscardChanges = { TODO() },
+                                onUndelete = { TODO() }
+                            )
+                        )
+
+                        // user is editing and there is no incompatible state, so no changes to state:
+                        else -> curState
+                    }
+                }
             }
         }
     }
 
     @Throws(HasUnsavedChangesException::class)
     override suspend fun clearContactObj() {
+        if (initJob.isActive) {
+            initJob.cancel()
+        }
         TODO("Not yet implemented")
     }
 
     @Throws(HasUnsavedChangesException::class)
     override suspend fun setContact(
-        record: SObjectRecord<ContactObject>,
+        recordIds: SObjectCombinedId,
         startWithEditingEnabled: Boolean
     ) {
+        if (initJob.isActive) {
+            initJob.cancel()
+        }
         TODO("Not yet implemented")
     }
 
     override val hasUnsavedChanges: Boolean
-        get() = TODO("Not yet implemented")
+        get() = when (val curState = uiState.value) {
+            is ContactDetailsUiState2.HasContact -> upstreamRecord?.let {
+                try {
+                    curState.toSObjectOrThrow() == it.sObject
+                } catch (ex: ContactValidationException) {
+                    // invalid field values means there are unsaved changes
+                    true
+                }
+            } ?: true
+            is ContactDetailsUiState2.NoContactSelected -> false
+        }
 
     override fun createClick() {
         TODO("Not yet implemented")
@@ -256,22 +243,13 @@ class DefaultContactDetailsViewModel(
             val updatedRecord = contactsRepo.locallyUpdate(id = id, so = so)
 
             eventMutex.withLock {
-                /* First check if the local ID of the updated record matches the current local ID,
-                 * and then fall back to the primary key. This is because the primary key can change
-                 * after a locally-created record is synced up. */
-                val updatedMatchesId =
-                    (updatedRecord.locallyCreatedId != null && updatedRecord.locallyCreatedId == upstreamLocalId)
-                            || updatedRecord.primaryKey == upstreamPrimaryKey
+                mutUiState.value = when (val curState = uiState.value) {
+                    is ContactDetailsUiState2.HasContact -> {
+                        val updatedRecordMatchesCurId =
+                            upstreamRecord?.locallyCreatedId == updatedRecord.locallyCreatedId
+                                    || upstreamRecord?.primaryKey == updatedRecord.primaryKey
 
-                // Sync the current record IDs if we found a match
-                if (updatedMatchesId) {
-                    upstreamPrimaryKey = updatedRecord.primaryKey
-                    upstreamLocalId = updatedRecord.locallyCreatedId
-                }
-
-                when (val curState = uiState.value) {
-                    is ContactDetailsUiState2.HasContact ->
-                        if (updatedMatchesId) {
+                        if (updatedRecordMatchesCurId) {
                             curState.copy(
                                 firstNameField = updatedRecord.sObject.buildFirstNameField(),
                                 lastNameField = updatedRecord.sObject.buildLastNameField(),
@@ -280,13 +258,12 @@ class DefaultContactDetailsViewModel(
                                 dataOperationIsActive = false
                             )
                         } else {
-                            curState.copy(dataOperationIsActive = false)
+                            // Different record in this VM than what was returned from update operation, so assume that the contact was changed while update was running:
+                            curState
                         }
+                    }
 
-                    is ContactDetailsUiState2.InitialLoad,
                     is ContactDetailsUiState2.NoContactSelected -> curState
-                }.let {
-                    mutUiState.value = it
                 }
             }
         }
@@ -296,15 +273,11 @@ class DefaultContactDetailsViewModel(
             val createdRecord = contactsRepo.locallyCreate(so = so)
 
             eventMutex.withLock {
-                val shouldUpdateUi = upstreamPrimaryKey == null && upstreamLocalId == null
-                if (shouldUpdateUi) {
-                    upstreamPrimaryKey = createdRecord.primaryKey
-                    upstreamLocalId = createdRecord.locallyCreatedId
-                }
-
-                when (val curState = uiState.value) {
+                mutUiState.value = when (val curState = uiState.value) {
                     is ContactDetailsUiState2.HasContact ->
-                        if (shouldUpdateUi)
+                        if (upstreamRecord == null) {
+                            upstreamRecord = createdRecord
+
                             curState.copy(
                                 firstNameField = createdRecord.sObject.buildFirstNameField(),
                                 lastNameField = createdRecord.sObject.buildLastNameField(),
@@ -312,56 +285,53 @@ class DefaultContactDetailsViewModel(
                                 departmentField = createdRecord.sObject.buildDepartmentField(),
                                 dataOperationIsActive = false
                             )
-                        else
+                        } else {
                             curState.copy(dataOperationIsActive = false)
+                        }
 
-                    is ContactDetailsUiState2.InitialLoad,
                     is ContactDetailsUiState2.NoContactSelected -> curState
-
-                }.let {
-                    mutUiState.value = it
                 }
             }
         }
 
         parentScope.launch {
             eventMutex.withLock {
-                val curState = uiState.value.takeIfInstance<ContactDetailsUiState2.HasContact>()
+                val curState = uiState.value as? ContactDetailsUiState2.HasContact
                     ?: return@withLock
 
-                val so = curState.buildSoFromUiState().getOrNull()
-                if (so == null) {
+                val so = try {
+                    curState.toSObjectOrThrow()
+                } catch (ex: Exception) {
                     mutUiState.value = curState.copy(shouldScrollToErrorField = true)
                     return@withLock
                 }
 
-                val primaryKey = upstreamPrimaryKey
-                if (primaryKey == null) {
-                    // Creating
-                    mutUiState.value = curState.copy(dataOperationIsActive = true)
-                    launchCreate(so = so)
-                } else {
-                    // Updating
-                    mutUiState.value = curState.copy(dataOperationIsActive = true)
-                    launchUpdate(id = primaryKey, so = so)
+                upstreamRecord.also {
+                    if (it == null) {
+                        // Creating
+                        mutUiState.value = curState.copy(dataOperationIsActive = true)
+                        launchCreate(so = so)
+                    } else {
+                        // Updating
+                        mutUiState.value = curState.copy(dataOperationIsActive = true)
+                        launchUpdate(id = it.primaryKey, so = so)
+                    }
                 }
             }
         }
     }
 
-    private fun ContactDetailsUiState2.HasContact.buildSoFromUiState() = runCatching {
-        ContactObject(
-            firstName = firstNameField.fieldValue,
-            lastName = lastNameField.fieldValue ?: "",
-            title = titleField.fieldValue,
-            department = departmentField.fieldValue
-        )
-    }
+    private fun ContactDetailsUiState2.HasContact.toSObjectOrThrow() = ContactObject(
+        firstName = firstNameField.fieldValue,
+        lastName = lastNameField.fieldValue ?: "",
+        title = titleField.fieldValue,
+        department = departmentField.fieldValue
+    )
 
     override fun onFirstNameChange(newFirstName: String) {
         parentScope.launch {
             eventMutex.withLock {
-                val curState = uiState.value.takeIfInstance<ContactDetailsUiState2.HasContact>()
+                val curState = uiState.value as? ContactDetailsUiState2.HasContact
                     ?: return@withLock
 
                 mutUiState.value = curState.copy(
@@ -374,7 +344,7 @@ class DefaultContactDetailsViewModel(
     override fun onLastNameChange(newLastName: String) {
         parentScope.launch {
             eventMutex.withLock {
-                val curState = uiState.value.takeIfInstance<ContactDetailsUiState2.HasContact>()
+                val curState = uiState.value as? ContactDetailsUiState2.HasContact
                     ?: return@withLock
 
                 mutUiState.value = curState.copy(
@@ -387,7 +357,7 @@ class DefaultContactDetailsViewModel(
     override fun onTitleChange(newTitle: String) {
         parentScope.launch {
             eventMutex.withLock {
-                val curState = uiState.value.takeIfInstance<ContactDetailsUiState2.HasContact>()
+                val curState = uiState.value as? ContactDetailsUiState2.HasContact
                     ?: return@withLock
 
                 mutUiState.value = curState.copy(
@@ -400,7 +370,7 @@ class DefaultContactDetailsViewModel(
     override fun onDepartmentChange(newDepartment: String) {
         parentScope.launch {
             eventMutex.withLock {
-                val curState = uiState.value.takeIfInstance<ContactDetailsUiState2.HasContact>()
+                val curState = uiState.value as? ContactDetailsUiState2.HasContact
                     ?: return@withLock
 
                 mutUiState.value = curState.copy(
@@ -409,6 +379,22 @@ class DefaultContactDetailsViewModel(
             }
         }
     }
+
+    private fun ContactObject.buildHasContactUiState(
+        isEditingEnabled: Boolean,
+        dataOperationIsActive: Boolean = false,
+        shouldScrollToErrorField: Boolean = false,
+        curDialogUiState: DialogUiState? = null
+    ) = ContactDetailsUiState2.HasContact(
+        firstNameField = buildFirstNameField(),
+        lastNameField = buildLastNameField(),
+        titleField = buildTitleField(),
+        departmentField = buildDepartmentField(),
+        isEditingEnabled = isEditingEnabled,
+        dataOperationIsActive = dataOperationIsActive,
+        shouldScrollToErrorField = shouldScrollToErrorField,
+        curDialogUiState = curDialogUiState,
+    )
 
     private fun ContactObject.buildFirstNameField() = ContactDetailsField.FirstName(
         fieldValue = firstName,
@@ -458,23 +444,18 @@ sealed interface ContactDetailsField : FieldUiState {
         override val helperRes: Int?
 
         init {
-            var isInErrorStateProxy: Boolean
-            var helperResProxy: Int?
+            val validateException = runCatching { ContactObject.validateLastName(fieldValue) }
+                .exceptionOrNull() as ContactValidationException?
 
-            try {
-                ContactObject.validateLastName(fieldValue)
-
-                isInErrorStateProxy = false
-                helperResProxy = null
-            } catch (ex: ContactValidationException) {
-                isInErrorStateProxy = true
-                helperResProxy = when (ex) {
+            if (validateException == null) {
+                isInErrorState = false
+                helperRes = null
+            } else {
+                isInErrorState = true
+                helperRes = when (validateException) {
                     ContactValidationException.LastNameCannotBeBlank -> help_cannot_be_blank
                 }
             }
-
-            isInErrorState = isInErrorStateProxy
-            helperRes = helperResProxy
         }
 
         override val labelRes: Int = label_contact_last_name
