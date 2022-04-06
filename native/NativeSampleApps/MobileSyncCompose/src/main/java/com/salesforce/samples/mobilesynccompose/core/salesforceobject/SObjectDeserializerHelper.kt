@@ -2,14 +2,13 @@ package com.salesforce.samples.mobilesynccompose.core.salesforceobject
 
 import com.salesforce.androidsdk.mobilesync.util.Constants
 import com.salesforce.samples.mobilesynccompose.core.extensions.optStringOrNull
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord.Companion.KEY_LOCAL_ID
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecordCreatedDuringThisLoginSession.Companion.KEY_LOCAL_ID
 import org.json.JSONObject
 import java.util.*
 
 object SObjectDeserializerHelper {
-    fun getPrimaryKeyOrThrow(json: JSONObject): PrimaryKey = json
+    fun getPrimaryKeyOrThrow(json: JSONObject): String = json
         .getRequiredStringOrThrow(Constants.ID, valueCanBeBlank = false)
-        .let { PrimaryKey(it) }
 
     fun requireSoType(json: JSONObject, requiredObjType: String) {
         val attributes = json.getRequiredObjectOrThrow(Constants.ATTRIBUTES)
@@ -24,6 +23,5 @@ object SObjectDeserializerHelper {
         }
     }
 
-    fun getLocalId(json: JSONObject): LocallyCreatedId? =
-        json.optStringOrNull(KEY_LOCAL_ID)?.let { LocallyCreatedId(it) }
+    fun getLocalId(json: JSONObject): String? = json.optStringOrNull(KEY_LOCAL_ID)
 }

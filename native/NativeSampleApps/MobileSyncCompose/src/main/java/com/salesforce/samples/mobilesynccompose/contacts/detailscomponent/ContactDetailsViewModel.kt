@@ -52,8 +52,8 @@ class DefaultContactDetailsViewModel(
         val upstreamRecord = if (startingIds != null) {
             val initialEmission = contactsRepo.records.first()
 
-            initialEmission.byLocallyCreatedId[startingIds.locallyCreatedId]
-                ?: initialEmission.byPrimaryKey[startingIds.primaryKey]
+            initialEmission.locallyCreatedRecords[startingIds.locallyCreatedId]
+                ?: initialEmission.upstreamRecords[startingIds.primaryKey]
         } else {
             null
         }
@@ -86,8 +86,8 @@ class DefaultContactDetailsViewModel(
             ?: return@withLock
 
         val matchingRecord =
-            upstreamRecord.locallyCreatedId?.let { newRecords.byLocallyCreatedId[it] }
-                ?: newRecords.byPrimaryKey[upstreamRecord.primaryKey]
+            upstreamRecord.locallyCreatedId?.let { newRecords.locallyCreatedRecords[it] }
+                ?: newRecords.upstreamRecords[upstreamRecord.primaryKey]
                 ?: return@withLock
 
         this.upstreamRecord = matchingRecord

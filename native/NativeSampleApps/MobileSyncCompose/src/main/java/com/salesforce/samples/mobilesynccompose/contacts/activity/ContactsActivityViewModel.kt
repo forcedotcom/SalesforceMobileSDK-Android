@@ -120,17 +120,17 @@ class DefaultContactsActivityViewModel(
             // Parallelize the iteration operations over the list b/c it may be very large:
             val filteredContactsDeferred = async(Dispatchers.Default) {
                 curState.listState.searchTerm?.let { searchTerm ->
-                    newRecords.byPrimaryKey.values.filter {
+                    newRecords.upstreamRecords.values.filter {
                         it.fullName?.contains(
                             searchTerm,
                             ignoreCase = true
                         ) == true
                     }
-                } ?: newRecords.byPrimaryKey.values.toList()
+                } ?: newRecords.upstreamRecords.values.toList()
             }
 
-            curContactsByPrimaryKey = newRecords.byPrimaryKey
-            curContactsByLocalId = newRecords.byLocallyCreatedId
+            curContactsByPrimaryKey = newRecords.upstreamRecords
+            curContactsByLocalId = newRecords.locallyCreatedRecords
 //        curContactsBySoupId.clear()
 
 //            withContext(Dispatchers.Default) {

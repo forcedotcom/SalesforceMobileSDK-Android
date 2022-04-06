@@ -3,6 +3,7 @@ package com.salesforce.samples.mobilesynccompose.core.repos
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager
+import com.salesforce.androidsdk.mobilesync.target.SyncTarget
 import com.salesforce.androidsdk.mobilesync.target.SyncTarget.LOCAL
 import com.salesforce.androidsdk.mobilesync.target.SyncTarget.LOCALLY_DELETED
 import com.salesforce.androidsdk.mobilesync.util.Constants
@@ -11,7 +12,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec
 import com.salesforce.androidsdk.smartstore.store.SmartStore
 import com.salesforce.samples.mobilesynccompose.core.extensions.*
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.*
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord.Companion.KEY_LOCAL_ID
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecordCreatedDuringThisLoginSession.Companion.KEY_LOCAL_ID
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
@@ -35,8 +36,9 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
     private val syncMutex = Mutex()
     private val listMutex = Mutex()
 
-    private val mutRecordsByPrimaryKey = mutableMapOf<PrimaryKey, SObjectRecord<T>>()
-    private val mutRecordsByLocalId = mutableMapOf<LocallyCreatedId, SObjectRecord<T>>()
+    private val mutUpstreamRecordsById = mutableMapOf<String, UpstreamSObjectRecord<T>>()
+    private val mutLocallyCreatedRecordsById =
+        mutableMapOf<String, SObjectRecordCreatedDuringThisLoginSession<T>>()
     private val mutState = MutableSharedFlow<SObjectRecordsByIds<T>>(
         replay = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
@@ -158,7 +160,7 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
 
 
     @Throws(RepoOperationException::class)
-    override suspend fun locallyUpdate(id: PrimaryKey, so: T) =
+    override suspend fun locallyUpdate(id: String, so: T) =
         withContext(ioDispatcher + NonCancellable) {
             val updateResult = try {
                 val elt = with(so) {
@@ -203,7 +205,7 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
         }
 
     @Throws(RepoOperationException::class)
-    override suspend fun locallyDelete(id: PrimaryKey) =
+    override suspend fun locallyDelete(id: String) =
         withContext(ioDispatcher + NonCancellable) {
             suspend fun saveDeleteToStore(elt: JSONObject, soupId: Long): SObjectRecord<T> {
                 elt
@@ -244,10 +246,7 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
 
             if (result == null) {
                 val retrievedPrimaryKey = retrieved.elt.optStringOrNull(Constants.ID)
-                    ?.let { PrimaryKey(it) }
-
                 val retrievedLocalId = retrieved.elt.optStringOrNull(KEY_LOCAL_ID)
-                    ?.let { LocallyCreatedId(it) }
 
                 removeAllFromObjectList(
                     primaryKey = retrievedPrimaryKey,
@@ -261,7 +260,7 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
         }
 
     @Throws(RepoOperationException::class)
-    override suspend fun locallyUndelete(id: PrimaryKey) =
+    override suspend fun locallyUndelete(id: String) =
         withContext(ioDispatcher + NonCancellable) {
             suspend fun saveUndeleteToStore(
                 elt: JSONObject,
@@ -313,18 +312,23 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
     }
 
     protected suspend fun setRecordsList(records: List<SObjectRecord<T>>) = listMutex.withLock {
-        mutRecordsByPrimaryKey.clear()
-        mutRecordsByLocalId.clear()
+        mutUpstreamRecordsById.clear()
+        mutLocallyCreatedRecordsById.clear()
 
         records.forEach { record ->
-            mutRecordsByPrimaryKey[record.primaryKey] = record
-            record.locallyCreatedId?.let { mutRecordsByLocalId[it] = record }
+            when (record) {
+                is SObjectRecordCreatedDuringThisLoginSession ->
+                    mutLocallyCreatedRecordsById[record.id] = record
+
+                is UpstreamSObjectRecord ->
+                    mutUpstreamRecordsById[record.id] = record
+            }
         }
 
         mutState.emit(
             SObjectRecordsByIds(
-                byPrimaryKey = mutRecordsByPrimaryKey.toMap(),
-                byLocallyCreatedId = mutRecordsByLocalId.toMap()
+                upstreamRecords = mutUpstreamRecordsById.toMap(), // shallow copy
+                locallyCreatedRecords = mutLocallyCreatedRecordsById.toMap() // shallow copy
             )
         )
     }
@@ -367,13 +371,15 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
      */
     protected suspend fun updateStateWithObject(obj: SObjectRecord<T>): Unit =
         listMutex.withLock {
-            mutRecordsByPrimaryKey[obj.primaryKey] = obj
-            obj.locallyCreatedId?.let { mutRecordsByLocalId[it] = obj }
+            when (obj) {
+                is SObjectRecordCreatedDuringThisLoginSession -> mutLocallyCreatedRecordsById[obj.id] = obj
+                is UpstreamSObjectRecord -> mutUpstreamRecordsById[obj.id] = obj
+            }
 
             mutState.emit(
                 SObjectRecordsByIds(
-                    byPrimaryKey = mutRecordsByPrimaryKey.toMap(),
-                    byLocallyCreatedId = mutRecordsByLocalId.toMap()
+                    upstreamRecords = mutUpstreamRecordsById.toMap(), // shallow copy
+                    locallyCreatedRecords = mutLocallyCreatedRecordsById.toMap() // shallow copy
                 )
             )
         }
@@ -382,15 +388,18 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
      * Convenience method for running an object list update procedure while under the Mutex for said
      * list. Also eliminates the need for subclasses to handle Mutexes themselves.
      */
-    protected suspend fun removeAllFromObjectList(primaryKey: PrimaryKey?, locallyCreatedId: LocallyCreatedId?) {
+    protected suspend fun removeAllFromObjectList(
+        primaryKey: String?,
+        locallyCreatedId: String?
+    ) {
         listMutex.withLock {
-            primaryKey?.let { mutRecordsByPrimaryKey.remove(it) }
-            locallyCreatedId?.let { mutRecordsByLocalId.remove(it) }
+            primaryKey?.let { mutUpstreamRecordsById.remove(it) }
+            locallyCreatedId?.let { mutLocallyCreatedRecordsById.remove(it) }
 
             mutState.emit(
                 SObjectRecordsByIds(
-                    byPrimaryKey = mutRecordsByPrimaryKey.toMap(),
-                    byLocallyCreatedId = mutRecordsByLocalId.toMap()
+                    upstreamRecords = mutUpstreamRecordsById.toMap(),
+                    locallyCreatedRecords = mutLocallyCreatedRecordsById.toMap()
                 )
             )
         }
@@ -405,8 +414,8 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
     protected suspend fun JSONObject.coerceUpdatedObjToModelOrCleanupAndThrow() = try {
         deserializer.coerceFromJsonOrThrow(this)
     } catch (ex: Exception) {
-        val primaryKey = this.optStringOrNull(Constants.ID)?.let { PrimaryKey(it) }
-        val localId = this.optStringOrNull(KEY_LOCAL_ID)?.let { LocallyCreatedId(it) }
+        val primaryKey = this.optStringOrNull(Constants.ID)
+        val localId = this.optStringOrNull(KEY_LOCAL_ID)
 
         removeAllFromObjectList(primaryKey = primaryKey, locallyCreatedId = localId)
 
@@ -421,8 +430,12 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
      * or throwing the corresponding exception.
      */
     @Throws(RepoOperationException.RecordNotFound::class)
-    protected fun retrieveByIdOrThrowOperationException(id: PrimaryKey) = try {
-        store.retrieveSingleById(soupName = soupName, idColName = Constants.ID, id = id.value)
+    protected fun retrieveByIdOrThrowOperationException(id: String) = try {
+        if (SyncTarget.isLocalId(id)) {
+            store.retrieveSingleById(soupName = soupName, idColName = KEY_LOCAL_ID, id = id)
+        } else {
+            store.retrieveSingleById(soupName = soupName, idColName = Constants.ID, id = id)
+        }
     } catch (ex: Exception) {
         throw RepoOperationException.RecordNotFound(id = id, soupName = soupName, cause = ex)
     }

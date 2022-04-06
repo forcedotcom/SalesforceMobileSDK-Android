@@ -2,8 +2,7 @@ package com.salesforce.samples.mobilesynccompose.core.salesforceobject
 
 import com.salesforce.androidsdk.mobilesync.target.SyncTarget
 import com.salesforce.androidsdk.mobilesync.util.Constants
-import com.salesforce.samples.mobilesynccompose.core.data.ReadOnlyJson
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord.Companion.KEY_LOCAL_ID
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecordCreatedDuringThisLoginSession.Companion.KEY_LOCAL_ID
 import org.json.JSONObject
 import java.util.*
 
@@ -21,13 +20,22 @@ abstract class SObjectDeserializerBase<T : SObject>(val objectType: String) :
 
         val primaryKey = SObjectDeserializerHelper.getPrimaryKeyOrThrow(json)
         val localId = SObjectDeserializerHelper.getLocalId(json)
+        val localStatus = json.coerceToLocalStatus()
+        val model = buildModel(fromJson = json)
 
-        return SObjectRecord(
-            primaryKey = primaryKey,
-            locallyCreatedId = localId,
-            localStatus = json.coerceToLocalStatus(),
-            sObject = buildModel(fromJson = json),
-        )
+        return if (localId != null) {
+            SObjectRecordCreatedDuringThisLoginSession(
+                id = localId,
+                localStatus = localStatus,
+                sObject = model
+            )
+        } else {
+            UpstreamSObjectRecord(
+                id = primaryKey,
+                localStatus = localStatus,
+                sObject = model
+            )
+        }
     }
 
     @Throws(CoerceException::class)

@@ -1,9 +1,7 @@
 package com.salesforce.samples.mobilesynccompose.core.repos
 
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocallyCreatedId
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.PrimaryKey
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObject
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord
+import com.salesforce.androidsdk.mobilesync.target.SyncTarget
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.*
 import kotlinx.coroutines.flow.Flow
 
 interface SObjectSyncableRepo<T : SObject> {
@@ -19,19 +17,45 @@ interface SObjectSyncableRepo<T : SObject> {
     suspend fun syncUpOnly()
 
     @Throws(RepoOperationException::class)
-    suspend fun locallyUpdate(id: PrimaryKey, so: T): SObjectRecord<T>
+    suspend fun locallyUpdate(id: String, so: T): SObjectRecord<T>
 
     @Throws(RepoOperationException::class)
     suspend fun locallyCreate(so: T): SObjectRecord<T>
 
     @Throws(RepoOperationException::class)
-    suspend fun locallyDelete(id: PrimaryKey): SObjectRecord<T>?
+    suspend fun locallyDelete(id: String): SObjectRecord<T>?
 
     @Throws(RepoOperationException::class)
-    suspend fun locallyUndelete(id: PrimaryKey): SObjectRecord<T>
+    suspend fun locallyUndelete(id: String): SObjectRecord<T>
 }
 
-data class SObjectRecordsByIds<T : SObject>(
-    val byPrimaryKey: Map<PrimaryKey, SObjectRecord<T>>,
-    val byLocallyCreatedId: Map<LocallyCreatedId, SObjectRecord<T>>
-)
+class SObjectRecordsByIds<T : SObject>(
+    private val upstreamRecords: Map<String, UpstreamSObjectRecord<T>>,
+    private val locallyCreatedRecords: Map<String, SObjectRecordCreatedDuringThisLoginSession<T>>
+) {
+    operator fun get(key: String): SObjectRecord<T>? {
+        return if (SyncTarget.isLocalId(key)) {
+            locallyCreatedRecords[key]
+        } else {
+            upstreamRecords[key]
+        }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as SObjectRecordsByIds<*>
+
+        if (upstreamRecords != other.upstreamRecords) return false
+        if (locallyCreatedRecords != other.locallyCreatedRecords) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = upstreamRecords.hashCode()
+        result = 31 * result + locallyCreatedRecords.hashCode()
+        return result
+    }
+}
