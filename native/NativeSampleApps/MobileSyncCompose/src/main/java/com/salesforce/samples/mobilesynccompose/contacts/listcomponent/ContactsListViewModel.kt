@@ -1,4 +1,4 @@
-package com.salesforce.samples.mobilesynccompose.contacts.vm
+package com.salesforce.samples.mobilesynccompose.contacts.listcomponent
 
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectCombinedId
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord

@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.mobilesynccompose.contacts
+package com.salesforce.samples.mobilesynccompose.contacts.activity
 
 import android.content.Intent
 import android.os.Bundle
@@ -39,10 +39,6 @@ import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity
 import com.salesforce.androidsdk.ui.SalesforceActivityDelegate
 import com.salesforce.androidsdk.ui.SalesforceActivityInterface
-import com.salesforce.samples.mobilesynccompose.contacts.state.ContactsActivityMenuHandler
-import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactsActivityContent
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactsActivityViewModel
-import com.salesforce.samples.mobilesynccompose.contacts.vm.DefaultContactsActivityViewModel
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 import com.salesforce.samples.mobilesynccompose.model.contacts.DefaultContactsRepo
 

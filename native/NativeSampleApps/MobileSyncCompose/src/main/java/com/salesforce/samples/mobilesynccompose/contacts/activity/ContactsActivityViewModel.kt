@@ -24,13 +24,13 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.mobilesynccompose.contacts.vm
+package com.salesforce.samples.mobilesynccompose.contacts.activity
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.salesforce.samples.mobilesynccompose.contacts.state.*
-import com.salesforce.samples.mobilesynccompose.contacts.state.ContactDetailsUiMode.*
+import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.ContactDetailsViewModel
+import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsActivityListUiState
 import com.salesforce.samples.mobilesynccompose.core.repos.RepoOperationException
 import com.salesforce.samples.mobilesynccompose.core.repos.RepoSyncException
 import com.salesforce.samples.mobilesynccompose.core.repos.SObjectSyncableRepo

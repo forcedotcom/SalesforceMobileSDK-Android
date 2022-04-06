@@ -24,8 +24,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.mobilesynccompose.contacts.state
+package com.salesforce.samples.mobilesynccompose.contacts.activity
 
+import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsActivityListUiState
 import com.salesforce.samples.mobilesynccompose.core.ui.state.DialogUiState
 
 data class ContactsActivityUiState(

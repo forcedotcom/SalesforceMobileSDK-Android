@@ -1,6 +1,6 @@
-package com.salesforce.samples.mobilesynccompose.contacts.vm
+package com.salesforce.samples.mobilesynccompose.contacts.detailscomponent
 
-interface ContactObjectFieldChangeHandler {
+interface ContactDetailsFieldChangeHandler {
     fun onFirstNameChange(newFirstName: String)
     fun onLastNameChange(newLastName: String)
     fun onTitleChange(newTitle: String)

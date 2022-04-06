@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.mobilesynccompose.contacts.state
+package com.salesforce.samples.mobilesynccompose.contacts.listcomponent
 
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 

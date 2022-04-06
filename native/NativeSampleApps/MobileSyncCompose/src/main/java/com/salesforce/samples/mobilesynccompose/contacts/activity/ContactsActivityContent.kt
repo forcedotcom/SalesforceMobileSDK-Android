@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.mobilesynccompose.contacts.ui
+package com.salesforce.samples.mobilesynccompose.contacts.activity
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -40,8 +40,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R
 import com.salesforce.samples.mobilesynccompose.R.string.*
-import com.salesforce.samples.mobilesynccompose.contacts.state.ContactsActivityMenuHandler
-import com.salesforce.samples.mobilesynccompose.contacts.state.ContactsActivityUiState
+import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.ContactDetailsSinglePaneComponent
+import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.ContactDetailsUiEventHandler
+import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.ContactDetailsUiState
+import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.ContactDetailsViewModel
 import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.*
 import com.salesforce.samples.mobilesynccompose.contacts.vm.*
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus
@@ -81,13 +83,13 @@ fun ContactsActivityContent(
 @Composable
 private fun SinglePane(
     activityUiState: ContactsActivityUiState,
-    detailsUiState: ContactDetailsUiState2,
+    detailsUiState: ContactDetailsUiState,
     detailsUiEventHandler: ContactDetailsUiEventHandler,
     menuHandler: ContactsActivityMenuHandler,
 ) {
     when (detailsUiState) {
-        is ContactDetailsUiState2.HasContact,
-        is ContactDetailsUiState2.InitialLoad -> ContactDetailsSinglePaneComponent(
+        is ContactDetailsUiState.ViewingContactDetails,
+        is ContactDetailsUiState.InitialLoad -> ContactDetailsSinglePaneComponent(
             details = detailsUiState,
             componentUiEventHandler = detailsUiEventHandler,
             menuHandler = menuHandler

@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane
+package com.salesforce.samples.mobilesynccompose.contacts.detailscomponent
 
 import android.R.string.ok
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -47,16 +47,11 @@ import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R.drawable.ic_help
 import com.salesforce.samples.mobilesynccompose.R.drawable.ic_undo
 import com.salesforce.samples.mobilesynccompose.R.string.*
-import com.salesforce.samples.mobilesynccompose.contacts.state.ContactsActivityMenuHandler
-import com.salesforce.samples.mobilesynccompose.contacts.ui.ContactsActivityMenuButton
-import com.salesforce.samples.mobilesynccompose.contacts.ui.SyncImage
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsField
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsUiEventHandler
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactDetailsUiState2
-import com.salesforce.samples.mobilesynccompose.contacts.vm.ContactObjectFieldChangeHandler
+import com.salesforce.samples.mobilesynccompose.contacts.activity.ContactsActivityMenuHandler
+import com.salesforce.samples.mobilesynccompose.contacts.activity.ContactsActivityMenuButton
+import com.salesforce.samples.mobilesynccompose.contacts.activity.SyncImage
 import com.salesforce.samples.mobilesynccompose.core.extensions.takeIfInstance
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.isLocallyDeleted
 import com.salesforce.samples.mobilesynccompose.core.ui.components.LoadingOverlay
 import com.salesforce.samples.mobilesynccompose.core.ui.components.OutlinedTextFieldWithHelp
 import com.salesforce.samples.mobilesynccompose.core.ui.components.ShowOrClearDialog
@@ -66,13 +61,13 @@ import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 
 @Composable
 fun ContactDetailsSinglePaneComponent(
-    details: ContactDetailsUiState2,
+    details: ContactDetailsUiState,
     componentUiEventHandler: ContactDetailsUiEventHandler,
     menuHandler: ContactsActivityMenuHandler,
     modifier: Modifier = Modifier,
     contentModifier: Modifier = Modifier
 ) {
-    val contactDetailsUi = details.takeIfInstance<ContactDetailsUiState2.HasContact>()
+    val contactDetailsUi = details.takeIfInstance<ContactDetailsUiState.ViewingContactDetails>()
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -103,7 +98,7 @@ fun ContactDetailsSinglePaneComponent(
         },
         floatingActionButtonPosition = FabPosition.Center,
         floatingActionButton = {
-            ContactDetailsFab(uiState2 = details, handler = componentUiEventHandler)
+            ContactDetailsFab(uiState = details, handler = componentUiEventHandler)
         },
         isFloatingActionButtonDocked = true
     ) { paddingValues ->
@@ -118,23 +113,23 @@ fun ContactDetailsSinglePaneComponent(
 
 @Composable
 fun ContactDetailsContent(
-    details: ContactDetailsUiState2,
+    details: ContactDetailsUiState,
     modifier: Modifier = Modifier,
 ) {
     when (details) {
-        is ContactDetailsUiState2.HasContact -> ContactDetailsWithContact(
+        is ContactDetailsUiState.ViewingContactDetails -> ContactDetailsWithContact(
             modifier = modifier,
             details = details
         )
-        is ContactDetailsUiState2.InitialLoad -> LoadingOverlay()
-        is ContactDetailsUiState2.NoContactSelected -> {}
+        is ContactDetailsUiState.InitialLoad -> LoadingOverlay()
+        is ContactDetailsUiState.NoContactSelected -> {}
     }
 }
 
 @Composable
 private fun ContactDetailsWithContact(
     modifier: Modifier = Modifier,
-    details: ContactDetailsUiState2.HasContact
+    details: ContactDetailsUiState.ViewingContactDetails
 ) {
     val scrollState = rememberScrollState()
     Column(
@@ -246,13 +241,13 @@ fun RowScope.ContactDetailsBottomAppBarSinglePane(
 @Composable
 fun ContactDetailsFab(
     modifier: Modifier = Modifier,
-    uiState2: ContactDetailsUiState2,
+    uiState: ContactDetailsUiState,
     handler: ContactDetailsUiEventHandler
 ) {
-    when (uiState2) {
-        is ContactDetailsUiState2.HasContact -> {
+    when (uiState) {
+        is ContactDetailsUiState.ViewingContactDetails -> {
             when {
-                uiState2.contactObjLocalStatus.isLocallyDeleted ->
+                uiState.contactObjLocalStatus.isLocallyDeleted ->
                     FloatingActionButton(
                         onClick = handler::undeleteClick,
                         modifier = modifier
@@ -263,7 +258,7 @@ fun ContactDetailsFab(
                         )
                     }
 
-                uiState2.isEditingEnabled ->
+                uiState.isEditingEnabled ->
                     FloatingActionButton(
                         onClick = handler::saveClick,
                         modifier = modifier
@@ -286,8 +281,8 @@ fun ContactDetailsFab(
                     }
             }
         }
-        is ContactDetailsUiState2.InitialLoad -> {}
-        is ContactDetailsUiState2.NoContactSelected -> FloatingActionButton(
+        is ContactDetailsUiState.InitialLoad -> {}
+        is ContactDetailsUiState.NoContactSelected -> FloatingActionButton(
             onClick = handler::createClick,
             modifier = modifier
         ) {
@@ -381,7 +376,7 @@ private fun ContactDetailViewModePreview() {
     SalesforceMobileSDKAndroidTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
             ContactDetailsSinglePaneComponent(
-                details = ContactDetailsUiState2.HasContact(
+                details = ContactDetailsUiState.ViewingContactDetails(
                     firstNameField = ContactDetailsField.FirstName(
                         fieldValue = contact.firstName,
                         onValueChange = {}
@@ -489,7 +484,7 @@ val PREVIEW_CONTACT_DETAILS_UI_HANDLER = object : ContactDetailsUiEventHandler {
     override fun saveClick() {}
 
 }
-val PREVIEW_CONTACT_FIELD_CHANGE_HANDLER = object : ContactObjectFieldChangeHandler {
+val PREVIEW_CONTACT_FIELD_CHANGE_HANDLER = object : ContactDetailsFieldChangeHandler {
     override fun onFirstNameChange(newFirstName: String) {}
     override fun onLastNameChange(newLastName: String) {}
     override fun onTitleChange(newTitle: String) {}

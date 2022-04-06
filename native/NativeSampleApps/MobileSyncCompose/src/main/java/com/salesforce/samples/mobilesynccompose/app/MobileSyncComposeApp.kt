@@ -28,7 +28,7 @@ package com.salesforce.samples.mobilesynccompose.app
 
 import android.app.Application
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager
-import com.salesforce.samples.mobilesynccompose.contacts.ContactsActivity
+import com.salesforce.samples.mobilesynccompose.contacts.activity.ContactsActivity
 
 class MobileSyncComposeApp : Application() {
     override fun onCreate() {
