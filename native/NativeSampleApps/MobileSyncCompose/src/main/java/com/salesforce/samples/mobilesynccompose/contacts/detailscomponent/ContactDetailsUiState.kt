@@ -30,3 +30,16 @@ sealed interface ContactDetailsUiState {
     ) : ContactDetailsUiState
 }
 
+fun ContactDetailsUiState.copy(
+    dataOperationIsActive: Boolean = this.dataOperationIsActive,
+    curDialogUiState: DialogUiState? = this.curDialogUiState
+) = when (this) {
+        is ContactDetailsUiState.NoContactSelected -> this.copy(
+            dataOperationIsActive = dataOperationIsActive,
+            curDialogUiState = curDialogUiState
+        )
+        is ContactDetailsUiState.ViewingContactDetails -> this.copy(
+            dataOperationIsActive = dataOperationIsActive,
+            curDialogUiState = curDialogUiState
+        )
+    }
