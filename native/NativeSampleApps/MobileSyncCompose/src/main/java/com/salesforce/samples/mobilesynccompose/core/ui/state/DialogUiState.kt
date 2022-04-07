@@ -33,7 +33,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.salesforce.samples.mobilesynccompose.R.string.*
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectCombinedId
 
 interface DialogUiState {
     @Composable
@@ -41,10 +40,10 @@ interface DialogUiState {
 }
 
 data class DeleteConfirmationDialogUiState(
-    val objIdToDelete: SObjectCombinedId,
+    val objIdToDelete: String,
     val objName: String?,
     val onCancelDelete: () -> Unit,
-    val onDeleteConfirm: (objId: SObjectCombinedId) -> Unit,
+    val onDeleteConfirm: (objId: String) -> Unit,
 ) : DialogUiState {
     @Composable
     override fun RenderDialog(modifier: Modifier) {
@@ -98,10 +97,10 @@ data class DiscardChangesDialogUiState(
 }
 
 data class UndeleteConfirmationDialogUiState(
-    val objIdToUndelete: SObjectCombinedId,
+    val objIdToUndelete: String,
     val objName: String?,
     val onCancelUndelete: () -> Unit,
-    val onUndeleteConfirm: (objId: SObjectCombinedId) -> Unit,
+    val onUndeleteConfirm: (objId: String) -> Unit,
 ) : DialogUiState {
     @Composable
     override fun RenderDialog(modifier: Modifier) {

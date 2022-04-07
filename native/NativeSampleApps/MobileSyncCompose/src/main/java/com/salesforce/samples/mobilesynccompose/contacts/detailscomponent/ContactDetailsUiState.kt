@@ -14,9 +14,9 @@ sealed interface ContactDetailsUiState {
         val departmentField: ContactDetailsField.Department,
 
         val isEditingEnabled: Boolean,
-        override val dataOperationIsActive: Boolean = false,
-        val shouldScrollToErrorField: Boolean = false,
-        override val curDialogUiState: DialogUiState? = null
+        override val dataOperationIsActive: Boolean,
+        val shouldScrollToErrorField: Boolean,
+        override val curDialogUiState: DialogUiState?
     ) : ContactDetailsUiState {
         val fullName = ContactObject.formatFullName(
             firstName = firstNameField.fieldValue,
@@ -25,8 +25,8 @@ sealed interface ContactDetailsUiState {
     }
 
     data class NoContactSelected(
-        override val dataOperationIsActive: Boolean = false,
-        override val curDialogUiState: DialogUiState? = null
+        override val dataOperationIsActive: Boolean,
+        override val curDialogUiState: DialogUiState?
     ) : ContactDetailsUiState
 }
 
