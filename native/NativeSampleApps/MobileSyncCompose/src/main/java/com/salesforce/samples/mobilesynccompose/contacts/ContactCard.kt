@@ -32,6 +32,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -45,7 +46,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R
 import com.salesforce.samples.mobilesynccompose.contacts.activity.SyncImage
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.*
 import com.salesforce.samples.mobilesynccompose.core.ui.components.ExpandoButton
 import com.salesforce.samples.mobilesynccompose.core.ui.state.SObjectUiSyncState
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.ALPHA_DISABLED
@@ -118,7 +118,12 @@ private fun ContactCardInnerContent(
                 )
             }
 
-            SyncImage(uiState = syncState)
+            SyncImage(
+                modifier = Modifier
+                    .size(48.dp)
+                    .padding(4.dp),
+                uiState = syncState
+            )
 
             ExpandoButton(
                 startsExpanded = isExpanded,
@@ -130,10 +135,22 @@ private fun ContactCardInnerContent(
             Divider(modifier = Modifier.padding(vertical = 4.dp))
             Row {
                 SelectionContainer {
-                    Text(model.title ?: "", style = MaterialTheme.typography.body2)
+                    Text(
+                        model.title ?: "",
+                        style = MaterialTheme.typography.body2,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
+            }
+            Row {
                 SelectionContainer {
-                    Text(model.department ?: "", style = MaterialTheme.typography.body2)
+                    Text(
+                        model.department ?: "",
+                        style = MaterialTheme.typography.body2,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
         }
