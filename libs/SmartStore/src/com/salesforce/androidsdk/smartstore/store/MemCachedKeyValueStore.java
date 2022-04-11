@@ -54,7 +54,6 @@ public class MemCachedKeyValueStore implements KeyValueStore {
         if (value == null) {
             value = keyValueStore.getValue(key);
             if (value != null) {
-                keyValueStore.saveValue(key, value);
                 memCache.put(key, value);
             }
         }
