@@ -40,30 +40,30 @@ import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.core.ui.state.*
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 
-@Composable
-fun ShowOrClearDialog(dialog: DialogUiState?) = when (dialog) {
-    is DeleteConfirmationDialogUiState -> DeleteConfirmationDialog(
-        onCancel = dialog.onCancelDelete,
-        onDelete = { dialog.onDeleteConfirm(dialog.objIdToDelete) },
-        objectLabel = dialog.objName
-    )
-    is DiscardChangesDialogUiState -> DiscardChangesDialog(
-        discardChanges = dialog.onDiscardChanges,
-        keepChanges = dialog.onKeepChanges
-    )
-    is UndeleteConfirmationDialogUiState -> UndeleteConfirmationDialog(
-        onCancel = dialog.onCancelUndelete,
-        onUndelete = { dialog.onUndeleteConfirm(dialog.objIdToUndelete) },
-        objectLabel = dialog.objName
-    )
-    is ErrorDialogUiState -> ErrorDialog(
-        onDismiss = dialog.onDismiss,
-        message = dialog.message
-    )
-    null -> {
-        /* clear the dialog */
-    }
-}
+//@Composable
+//fun ShowOrClearDialog(dialog: DialogUiState) = when (dialog) {
+//    is DeleteConfirmationDialogUiState -> DeleteConfirmationDialog(
+//        onCancel = dialog.onCancelDelete,
+//        onDelete = { dialog.onDeleteConfirm(dialog.objIdToDelete) },
+//        objectLabel = dialog.objName
+//    )
+//    is DiscardChangesDialogUiState -> DiscardChangesDialog(
+//        discardChanges = dialog.onDiscardChanges,
+//        keepChanges = dialog.onKeepChanges
+//    )
+//    is UndeleteConfirmationDialogUiState -> UndeleteConfirmationDialog(
+//        onCancel = dialog.onCancelUndelete,
+//        onUndelete = { dialog.onUndeleteConfirm(dialog.objIdToUndelete) },
+//        objectLabel = dialog.objName
+//    )
+//    is ErrorDialogUiState -> ErrorDialog(
+//        onDismiss = dialog.onDismiss,
+//        message = dialog.message
+//    )
+//    null -> {
+//        /* clear the dialog */
+//    }
+//}
 
 /**
  * [AlertDialog] which asks the user to confirm whether they want to discard unsaved changes. The

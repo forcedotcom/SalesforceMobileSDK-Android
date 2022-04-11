@@ -53,7 +53,6 @@ import com.salesforce.samples.mobilesynccompose.contacts.activity.SyncImage
 import com.salesforce.samples.mobilesynccompose.core.extensions.takeIfInstance
 import com.salesforce.samples.mobilesynccompose.core.ui.components.LoadingOverlay
 import com.salesforce.samples.mobilesynccompose.core.ui.components.OutlinedTextFieldWithHelp
-import com.salesforce.samples.mobilesynccompose.core.ui.components.ShowOrClearDialog
 import com.salesforce.samples.mobilesynccompose.core.ui.state.SObjectUiSyncState
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 import com.salesforce.samples.mobilesynccompose.core.vm.EditableTextFieldUiState
@@ -151,7 +150,7 @@ private fun ContactDetailsViewingContact(
         LoadingOverlay()
     }
 
-    ShowOrClearDialog(details.curDialogUiState)
+    details.curDialogUiState?.RenderDialog(modifier = Modifier)
 }
 
 @Composable

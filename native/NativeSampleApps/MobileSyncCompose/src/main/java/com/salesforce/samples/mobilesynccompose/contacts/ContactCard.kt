@@ -47,6 +47,7 @@ import com.salesforce.samples.mobilesynccompose.R
 import com.salesforce.samples.mobilesynccompose.contacts.activity.SyncImage
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.*
 import com.salesforce.samples.mobilesynccompose.core.ui.components.ExpandoButton
+import com.salesforce.samples.mobilesynccompose.core.ui.state.SObjectUiSyncState
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.ALPHA_DISABLED
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
@@ -56,7 +57,7 @@ import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 fun ContactCard(
     modifier: Modifier = Modifier,
     model: ContactObject,
-    localStatus: LocalStatus,
+    syncState: SObjectUiSyncState,
     onCardClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onUndeleteClick: () -> Unit,
@@ -65,7 +66,7 @@ fun ContactCard(
     elevation: Dp = 2.dp,
 ) {
     var showDropDownMenu by rememberSaveable { mutableStateOf(false) }
-    val alpha = if (localStatus.isLocallyDeleted) ALPHA_DISABLED else 1f
+    val alpha = if (syncState == SObjectUiSyncState.Deleted) ALPHA_DISABLED else 1f
 
     CompositionLocalProvider(LocalContentAlpha provides alpha) {
         Card(
@@ -82,12 +83,12 @@ fun ContactCard(
         ) {
             ContactCardInnerContent(
                 model = model,
-                localStatus = localStatus,
-                startExpanded = startExpanded
+                syncState = syncState,
+                startExpanded = startExpanded,
             )
             ContactDropdownMenu(
                 showDropDownMenu = showDropDownMenu,
-                isLocallyDeleted = localStatus.isLocallyDeleted,
+                syncState = syncState,
                 onDismissMenu = { showDropDownMenu = false },
                 onDeleteClick = onDeleteClick,
                 onUndeleteClick = onUndeleteClick,
@@ -101,7 +102,7 @@ fun ContactCard(
 private fun ContactCardInnerContent(
     modifier: Modifier = Modifier,
     model: ContactObject,
-    localStatus: LocalStatus,
+    syncState: SObjectUiSyncState,
     startExpanded: Boolean,
 ) {
     var isExpanded by rememberSaveable { mutableStateOf(startExpanded) }
@@ -117,7 +118,7 @@ private fun ContactCardInnerContent(
                 )
             }
 
-            SyncImage(contactObjLocalStatus = localStatus)
+            SyncImage(uiState = syncState)
 
             ExpandoButton(
                 startsExpanded = isExpanded,
@@ -142,14 +143,14 @@ private fun ContactCardInnerContent(
 @Composable
 private fun ContactDropdownMenu(
     showDropDownMenu: Boolean,
-    isLocallyDeleted: Boolean,
+    syncState: SObjectUiSyncState,
     onDismissMenu: () -> Unit,
     onDeleteClick: () -> Unit,
     onUndeleteClick: () -> Unit,
     onEditClick: () -> Unit,
 ) {
     DropdownMenu(expanded = showDropDownMenu, onDismissRequest = onDismissMenu) {
-        if (isLocallyDeleted) {
+        if (syncState == SObjectUiSyncState.Deleted) {
             DropdownMenuItem(onClick = { onDismissMenu(); onUndeleteClick() }) {
                 Text(stringResource(id = R.string.cta_undelete))
             }
@@ -180,7 +181,7 @@ fun PreviewContactListItem() {
                         title = "Title",
                         department = "DepartmentDepartmentDepartmentDepartmentDepartment"
                     ),
-                    localStatus = LocalStatus.MatchesUpstream,
+                    syncState = SObjectUiSyncState.Synced,
                     onCardClick = {},
                     onDeleteClick = {},
                     onUndeleteClick = {},
@@ -195,7 +196,7 @@ fun PreviewContactListItem() {
                         title = "Title",
                         department = "DepartmentDepartmentDepartmentDepartmentDepartment"
                     ),
-                    localStatus = LocalStatus.LocallyCreated,
+                    syncState = SObjectUiSyncState.Updated,
                     onCardClick = {},
                     onDeleteClick = {},
                     onUndeleteClick = {},
@@ -209,7 +210,7 @@ fun PreviewContactListItem() {
                         title = "Title",
                         department = "DepartmentDepartmentDepartmentDepartmentDepartment"
                     ),
-                    localStatus = LocalStatus.LocallyDeletedAndLocallyUpdated,
+                    syncState = SObjectUiSyncState.Deleted,
                     onCardClick = {},
                     onDeleteClick = {},
                     onUndeleteClick = {},

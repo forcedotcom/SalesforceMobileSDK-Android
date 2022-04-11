@@ -473,7 +473,7 @@ private sealed interface DetailsDataEvent {
     value class Create(val so: ContactObject) : DetailsDataEvent
 }
 
-private fun LocalStatus.toUiSyncState(): SObjectUiSyncState = when (this) {
+fun LocalStatus.toUiSyncState(): SObjectUiSyncState = when (this) {
     LocalStatus.LocallyDeleted,
     LocalStatus.LocallyDeletedAndLocallyUpdated -> SObjectUiSyncState.Deleted
 

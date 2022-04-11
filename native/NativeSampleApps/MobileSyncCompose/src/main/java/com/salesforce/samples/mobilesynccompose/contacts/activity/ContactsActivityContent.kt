@@ -41,8 +41,6 @@ import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R
 import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.*
-import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.*
-import com.salesforce.samples.mobilesynccompose.contacts.vm.*
 import com.salesforce.samples.mobilesynccompose.core.ui.components.*
 import com.salesforce.samples.mobilesynccompose.core.ui.state.*
 
@@ -71,7 +69,7 @@ fun ContactsActivityContent(
         menuHandler = menuHandler
     )
 
-    ShowOrClearDialog(uiState.dialogUiState)
+    uiState.dialogUiState?.RenderDialog(modifier = Modifier)
 }
 
 @Composable
@@ -82,8 +80,7 @@ private fun SinglePane(
     menuHandler: ContactsActivityMenuHandler,
 ) {
     when (detailsUiState) {
-        is ContactDetailsUiState.ViewingContactDetails,
-        is ContactDetailsUiState.InitialLoad -> ContactDetailsSinglePaneComponent(
+        is ContactDetailsUiState.ViewingContactDetails -> ContactDetailsSinglePaneComponent(
             details = detailsUiState,
             componentUiEventHandler = detailsUiEventHandler,
             menuHandler = menuHandler

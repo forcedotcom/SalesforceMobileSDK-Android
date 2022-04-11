@@ -1,16 +1,15 @@
 package com.salesforce.samples.mobilesynccompose.contacts.listcomponent
 
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectCombinedId
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 import kotlinx.coroutines.flow.StateFlow
 
 interface ContactsListUiEventHandler {
-    fun contactClick(contactId: SObjectCombinedId)
+    fun contactClick(contactId: String)
     fun createClick()
-    fun deleteClick(contactId: SObjectCombinedId)
-    fun editClick(contactId: SObjectCombinedId)
-    fun undeleteClick(contactId: SObjectCombinedId)
+    fun deleteClick(contactId: String)
+    fun editClick(contactId: String)
+    fun undeleteClick(contactId: String)
 
     fun searchClick()
     fun exitSearchClick()
@@ -26,16 +25,16 @@ sealed interface ContactsListUiState {
 
     sealed class Loaded : ContactsListUiState {
         abstract val contacts: List<SObjectRecord<ContactObject>>
-        abstract val curSelectedContactId: SObjectCombinedId?
+        abstract val curSelectedContactId: String?
 
         data class ViewingList(
             override val contacts: List<SObjectRecord<ContactObject>>,
-            override val curSelectedContactId: SObjectCombinedId?
+            override val curSelectedContactId: String?
         ) : Loaded()
 
         data class Searching(
             override val contacts: List<SObjectRecord<ContactObject>>,
-            override val curSelectedContactId: SObjectCombinedId?
+            override val curSelectedContactId: String?
         ) : Loaded()
     }
 }
@@ -44,7 +43,7 @@ class DefaultContactsListViewModel() : ContactsListViewModel {
     override val uiState: StateFlow<ContactsListUiState>
         get() = TODO("Not yet implemented")
 
-    override fun contactClick(contactId: SObjectCombinedId) {
+    override fun contactClick(contactId: String) {
         TODO("Not yet implemented")
     }
 
@@ -52,15 +51,15 @@ class DefaultContactsListViewModel() : ContactsListViewModel {
         TODO("Not yet implemented")
     }
 
-    override fun deleteClick(contactId: SObjectCombinedId) {
+    override fun deleteClick(contactId: String) {
         TODO("Not yet implemented")
     }
 
-    override fun editClick(contactId: SObjectCombinedId) {
+    override fun editClick(contactId: String) {
         TODO("Not yet implemented")
     }
 
-    override fun undeleteClick(contactId: SObjectCombinedId) {
+    override fun undeleteClick(contactId: String) {
         TODO("Not yet implemented")
     }
 

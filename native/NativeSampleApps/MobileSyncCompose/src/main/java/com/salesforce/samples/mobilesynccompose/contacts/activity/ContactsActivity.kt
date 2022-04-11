@@ -55,9 +55,9 @@ class ContactsActivity
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             // TODO Use Hilt to inject this
             return DefaultContactsActivityViewModel(
-                DefaultContactsRepo(
-                    MobileSyncSDKManager.getInstance().userAccountManager.currentUser
-                )
+//                DefaultContactsRepo(
+//                    MobileSyncSDKManager.getInstance().userAccountManager.currentUser
+//                )
             ) as T
         }
     }

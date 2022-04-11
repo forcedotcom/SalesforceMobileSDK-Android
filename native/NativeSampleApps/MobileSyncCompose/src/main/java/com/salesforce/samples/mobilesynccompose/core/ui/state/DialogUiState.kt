@@ -36,7 +36,7 @@ import com.salesforce.samples.mobilesynccompose.R.string.*
 
 interface DialogUiState {
     @Composable
-    fun RenderDialog(modifier: Modifier = Modifier)
+    fun RenderDialog(modifier: Modifier)
 }
 
 data class DeleteConfirmationDialogUiState(
