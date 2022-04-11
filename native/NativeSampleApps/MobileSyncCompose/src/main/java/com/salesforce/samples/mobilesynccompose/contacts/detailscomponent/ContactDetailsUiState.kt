@@ -1,6 +1,7 @@
 package com.salesforce.samples.mobilesynccompose.contacts.detailscomponent
 
 import com.salesforce.samples.mobilesynccompose.core.ui.state.DialogUiState
+import com.salesforce.samples.mobilesynccompose.core.ui.state.SObjectUiSyncState
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 
 sealed interface ContactDetailsUiState {
@@ -12,6 +13,8 @@ sealed interface ContactDetailsUiState {
         val lastNameField: ContactDetailsField.LastName,
         val titleField: ContactDetailsField.Title,
         val departmentField: ContactDetailsField.Department,
+
+        val uiSyncState: SObjectUiSyncState,
 
         val isEditingEnabled: Boolean,
         override val dataOperationIsActive: Boolean,

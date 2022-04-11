@@ -47,14 +47,14 @@ import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R.drawable.ic_help
 import com.salesforce.samples.mobilesynccompose.R.drawable.ic_undo
 import com.salesforce.samples.mobilesynccompose.R.string.*
-import com.salesforce.samples.mobilesynccompose.contacts.activity.ContactsActivityMenuHandler
 import com.salesforce.samples.mobilesynccompose.contacts.activity.ContactsActivityMenuButton
+import com.salesforce.samples.mobilesynccompose.contacts.activity.ContactsActivityMenuHandler
 import com.salesforce.samples.mobilesynccompose.contacts.activity.SyncImage
 import com.salesforce.samples.mobilesynccompose.core.extensions.takeIfInstance
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus
 import com.salesforce.samples.mobilesynccompose.core.ui.components.LoadingOverlay
 import com.salesforce.samples.mobilesynccompose.core.ui.components.OutlinedTextFieldWithHelp
 import com.salesforce.samples.mobilesynccompose.core.ui.components.ShowOrClearDialog
+import com.salesforce.samples.mobilesynccompose.core.ui.state.SObjectUiSyncState
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 import com.salesforce.samples.mobilesynccompose.core.vm.EditableTextFieldUiState
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
@@ -76,7 +76,7 @@ fun ContactDetailsSinglePaneComponent(
                     label = contactDetailsUi?.fullName ?: "",
                     syncIconContent = {
                         contactDetailsUi?.let {
-                            SyncImage(contactObjLocalStatus = it.contactObjLocalStatus)
+                            SyncImage(uiState = contactDetailsUi.uiSyncState)
                         }
                     },
                     detailsExitClick = componentUiEventHandler::exitClick
@@ -90,7 +90,7 @@ fun ContactDetailsSinglePaneComponent(
             BottomAppBar(cutoutShape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))) {
                 if (contactDetailsUi != null) {
                     ContactDetailsBottomAppBarSinglePane(
-                        showDelete = !contactDetailsUi.contactObjLocalStatus.isLocallyDeleted,
+                        showDelete = contactDetailsUi.uiSyncState != SObjectUiSyncState.Deleted,
                         detailsDeleteClick = componentUiEventHandler::deleteClick
                     )
                 }
@@ -117,17 +117,17 @@ fun ContactDetailsContent(
     modifier: Modifier = Modifier,
 ) {
     when (details) {
-        is ContactDetailsUiState.ViewingContactDetails -> ContactDetailsWithContact(
+        is ContactDetailsUiState.ViewingContactDetails -> ContactDetailsViewingContact(
             modifier = modifier,
             details = details
         )
-        is ContactDetailsUiState.InitialLoad -> LoadingOverlay()
+//        is ContactDetailsUiState.InitialLoad -> LoadingOverlay()
         is ContactDetailsUiState.NoContactSelected -> {}
     }
 }
 
 @Composable
-private fun ContactDetailsWithContact(
+private fun ContactDetailsViewingContact(
     modifier: Modifier = Modifier,
     details: ContactDetailsUiState.ViewingContactDetails
 ) {
@@ -137,7 +137,7 @@ private fun ContactDetailsWithContact(
             .padding(horizontal = 8.dp)
             .verticalScroll(state = scrollState)
     ) {
-        if (details.contactObjLocalStatus.isLocallyDeleted) {
+        if (details.uiSyncState == SObjectUiSyncState.Deleted) {
             LocallyDeletedRow()
         }
 
@@ -247,7 +247,7 @@ fun ContactDetailsFab(
     when (uiState) {
         is ContactDetailsUiState.ViewingContactDetails -> {
             when {
-                uiState.contactObjLocalStatus.isLocallyDeleted ->
+                uiState.uiSyncState == SObjectUiSyncState.Deleted ->
                     FloatingActionButton(
                         onClick = handler::undeleteClick,
                         modifier = modifier
@@ -281,7 +281,6 @@ fun ContactDetailsFab(
                     }
             }
         }
-        is ContactDetailsUiState.InitialLoad -> {}
         is ContactDetailsUiState.NoContactSelected -> FloatingActionButton(
             onClick = handler::createClick,
             modifier = modifier
@@ -393,8 +392,11 @@ private fun ContactDetailViewModePreview() {
                         fieldValue = contact.department,
                         onValueChange = {}
                     ),
-                    contactObjLocalStatus = LocalStatus.LocallyCreated,
-                    isEditingEnabled = false
+                    uiSyncState = SObjectUiSyncState.Updated,
+                    isEditingEnabled = false,
+                    dataOperationIsActive = false,
+                    shouldScrollToErrorField = false,
+                    curDialogUiState = null
                 ),
                 componentUiEventHandler = PREVIEW_CONTACT_DETAILS_UI_HANDLER,
                 menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER,

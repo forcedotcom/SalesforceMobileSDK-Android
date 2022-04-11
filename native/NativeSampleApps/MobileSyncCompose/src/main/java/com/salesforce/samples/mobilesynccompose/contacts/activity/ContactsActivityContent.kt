@@ -40,15 +40,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R
 import com.salesforce.samples.mobilesynccompose.R.string.*
-import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.ContactDetailsSinglePaneComponent
-import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.ContactDetailsUiEventHandler
-import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.ContactDetailsUiState
-import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.ContactDetailsViewModel
+import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.*
 import com.salesforce.samples.mobilesynccompose.contacts.ui.singlepane.*
 import com.salesforce.samples.mobilesynccompose.contacts.vm.*
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.isLocal
-import com.salesforce.samples.mobilesynccompose.core.salesforceobject.isLocallyDeleted
 import com.salesforce.samples.mobilesynccompose.core.ui.components.*
 import com.salesforce.samples.mobilesynccompose.core.ui.state.*
 
@@ -341,26 +335,23 @@ fun ContactsActivityMenuButton(menuHandler: ContactsActivityMenuHandler) {
 }
 
 @Composable
-fun SyncImage(contactObjLocalStatus: LocalStatus?) {
-    val modifier = Modifier
-        .size(48.dp)
-        .padding(4.dp)
+fun SyncImage( modifier: Modifier = Modifier, uiState: SObjectUiSyncState) {
+    when (uiState) {
+        SObjectUiSyncState.NotSaved -> TODO("New Icon")
 
-    when {
-        contactObjLocalStatus == null -> TODO("no local status known")
-        contactObjLocalStatus.isLocallyDeleted -> Icon(
+        SObjectUiSyncState.Deleted -> Icon(
             Icons.Default.Delete,
             contentDescription = stringResource(id = content_desc_item_deleted_locally),
             modifier = modifier
         )
 
-        contactObjLocalStatus.isLocal -> Image(
+        SObjectUiSyncState.Updated -> Image(
             painter = painterResource(id = R.drawable.sync_local),
             contentDescription = stringResource(id = content_desc_item_saved_locally),
             modifier = modifier
         )
 
-        else -> Image(
+        SObjectUiSyncState.Synced -> Image(
             painter = painterResource(id = R.drawable.sync_save),
             contentDescription = stringResource(id = content_desc_item_synced),
             modifier = modifier

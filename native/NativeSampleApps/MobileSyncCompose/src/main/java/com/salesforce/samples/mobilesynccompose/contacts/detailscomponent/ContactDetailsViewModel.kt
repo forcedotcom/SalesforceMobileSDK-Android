@@ -3,9 +3,11 @@ package com.salesforce.samples.mobilesynccompose.contacts.detailscomponent
 import com.salesforce.samples.mobilesynccompose.core.extensions.requireIsLocked
 import com.salesforce.samples.mobilesynccompose.core.repos.RepoOperationException
 import com.salesforce.samples.mobilesynccompose.core.repos.SObjectSyncableRepo
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord
 import com.salesforce.samples.mobilesynccompose.core.ui.state.DeleteConfirmationDialogUiState
 import com.salesforce.samples.mobilesynccompose.core.ui.state.DiscardChangesDialogUiState
+import com.salesforce.samples.mobilesynccompose.core.ui.state.SObjectUiSyncState
 import com.salesforce.samples.mobilesynccompose.core.ui.state.UndeleteConfirmationDialogUiState
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactValidationException
@@ -69,6 +71,7 @@ class DefaultContactDetailsViewModel(
         mutUiState.value = when (val curState = uiState.value) {
             is ContactDetailsUiState.NoContactSelected -> {
                 matchingRecord.sObject.buildViewingContactUiState(
+                    uiSyncState = matchingRecord.localStatus.toUiSyncState(),
                     isEditingEnabled = false,
                     shouldScrollToErrorField = false,
                 )
@@ -141,6 +144,7 @@ class DefaultContactDetailsViewModel(
 
         mutUiState.value = when (val curState = uiState.value) {
             is ContactDetailsUiState.NoContactSelected -> newRecord.sObject.buildViewingContactUiState(
+                uiSyncState = newRecord.localStatus.toUiSyncState(),
                 isEditingEnabled = startWithEditingEnabled,
                 shouldScrollToErrorField = false,
             )
@@ -148,7 +152,9 @@ class DefaultContactDetailsViewModel(
                 firstNameField = newRecord.sObject.buildFirstNameField(),
                 lastNameField = newRecord.sObject.buildLastNameField(),
                 titleField = newRecord.sObject.buildTitleField(),
-                departmentField = newRecord.sObject.buildDepartmentField()
+                departmentField = newRecord.sObject.buildDepartmentField(),
+                isEditingEnabled = startWithEditingEnabled,
+                shouldScrollToErrorField = false
             )
         }
     }
@@ -197,6 +203,8 @@ class DefaultContactDetailsViewModel(
                 fieldValue = null,
                 onValueChange = ::onDepartmentChange
             ),
+
+            uiSyncState = SObjectUiSyncState.NotSaved,
 
             isEditingEnabled = true,
             dataOperationIsActive = dataOpDelegate.dataOperationIsActive,
@@ -316,6 +324,7 @@ class DefaultContactDetailsViewModel(
     )
 
     private fun ContactObject.buildViewingContactUiState(
+        uiSyncState: SObjectUiSyncState,
         isEditingEnabled: Boolean,
         shouldScrollToErrorField: Boolean,
     ): ContactDetailsUiState.ViewingContactDetails {
@@ -326,6 +335,7 @@ class DefaultContactDetailsViewModel(
             lastNameField = buildLastNameField(),
             titleField = buildTitleField(),
             departmentField = buildDepartmentField(),
+            uiSyncState = uiSyncState,
             isEditingEnabled = isEditingEnabled,
             dataOperationIsActive = dataOpDelegate.dataOperationIsActive,
             shouldScrollToErrorField = shouldScrollToErrorField,
@@ -392,9 +402,13 @@ class DefaultContactDetailsViewModel(
 
             stateMutex.withLock {
                 mutUiState.value = updatedRecord?.sObject?.buildViewingContactUiState(
+                    uiSyncState = SObjectUiSyncState.Deleted,
                     isEditingEnabled = false,
                     shouldScrollToErrorField = false
-                ) ?: uiState.value.copy(dataOperationIsActive = false)
+                ) ?: ContactDetailsUiState.NoContactSelected(
+                    dataOperationIsActive = false,
+                    curDialogUiState = uiState.value.curDialogUiState
+                )
             }
         }
 
@@ -409,6 +423,7 @@ class DefaultContactDetailsViewModel(
 
             stateMutex.withLock {
                 mutUiState.value = updatedRecord.sObject.buildViewingContactUiState(
+                    uiSyncState = updatedRecord.localStatus.toUiSyncState(),
                     isEditingEnabled = false,
                     shouldScrollToErrorField = false
                 )
@@ -436,6 +451,7 @@ class DefaultContactDetailsViewModel(
             // changes to the VM can happen while this data operation is running.
             stateMutex.withLock {
                 mutUiState.value = record.sObject.buildViewingContactUiState(
+                    uiSyncState = record.localStatus.toUiSyncState(),
                     isEditingEnabled = false,
                     shouldScrollToErrorField = false,
                 )
@@ -457,3 +473,12 @@ private sealed interface DetailsDataEvent {
     value class Create(val so: ContactObject) : DetailsDataEvent
 }
 
+private fun LocalStatus.toUiSyncState(): SObjectUiSyncState = when (this) {
+    LocalStatus.LocallyDeleted,
+    LocalStatus.LocallyDeletedAndLocallyUpdated -> SObjectUiSyncState.Deleted
+
+    LocalStatus.LocallyCreated,
+    LocalStatus.LocallyUpdated -> SObjectUiSyncState.Updated
+
+    LocalStatus.MatchesUpstream -> SObjectUiSyncState.Synced
+}
