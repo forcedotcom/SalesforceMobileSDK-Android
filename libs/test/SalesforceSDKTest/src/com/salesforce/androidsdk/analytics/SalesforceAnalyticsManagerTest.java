@@ -86,6 +86,7 @@ public class SalesforceAnalyticsManagerTest {
         assertEquals(3, manager.getEventStoreManager().getNumStoredEvents());
         assertEquals(1, TestPublisher.publishedEvents.size());
         assertEquals(2, TestPublisher.publishedEvents.get(0).length());
+        manager.getEventStoreManager().deleteAllEvents();
     }
 
     private void storeEvents(int count) {
