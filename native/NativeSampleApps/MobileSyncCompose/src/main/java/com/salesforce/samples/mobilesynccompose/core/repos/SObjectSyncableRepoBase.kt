@@ -113,7 +113,7 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
         try {
             syncManager.reSync(syncDownName, callback)
         } catch (ex: CancellationException) {
-            // swallow cancellations since individual syncs cannot be cancelled
+            // make this coroutine non-cancellable since individual syncs cannot be cancelled
         } catch (ex: Exception) {
             cont.resumeWithException(
                 RepoSyncException.SyncDownException(finalSyncState = null, cause = ex)
@@ -144,7 +144,7 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
         try {
             syncManager.reSync(syncUpName, callback)
         } catch (ex: CancellationException) {
-            // swallow cancellations since individual syncs cannot be cancelled
+            // make this coroutine non-cancellable since individual syncs cannot be cancelled
         } catch (ex: Exception) {
             cont.resumeWithException(
                 RepoSyncException.SyncUpException(finalSyncState = null, cause = ex)
@@ -161,16 +161,10 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
     override suspend fun locallyUpdate(id: String, so: T) =
         withContext(ioDispatcher + NonCancellable) {
             val updateResult = try {
-                val elt = with(so) {
-                    retrieveByIdOrThrowOperationException(id = id)
-                        .elt
-                        .applyObjProperties()
-                }
-
-                store.upsert(soupName, elt)
+                doUpdateBlocking(id = id, so = so)
             } catch (ex: Exception) {
                 throw RepoOperationException.SmartStoreOperationFailed(
-                    message = "Failed to upsert the object in SmartStore.",
+                    message = "Failed to update the object in SmartStore.",
                     cause = ex
                 )
             }
@@ -179,6 +173,34 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
             updateStateWithObject(result)
             result
         }
+
+    @Throws(RepoOperationException::class)
+    private fun doUpdateBlocking(id: String, so: T): JSONObject = synchronized(store.database) {
+        store.beginTransaction()
+
+        try {
+            val elt = with(so) {
+                retrieveByIdOrThrowOperationException(id = id)
+                    .elt
+                    .applyObjProperties()
+            }
+
+            val result = try {
+                store.upsert(soupName, elt)
+            } catch (ex: Exception) {
+               throw RepoOperationException.SmartStoreOperationFailed(
+                   message = "Failed to update the object in SmartStore.",
+                   cause = ex
+               )
+            }
+
+            store.setTransactionSuccessful()
+
+            result
+        } finally {
+            store.endTransaction()
+        }
+    }
 
     @Throws(RepoOperationException::class)
     override suspend fun locallyCreate(so: T): SObjectRecord<T> =
@@ -205,26 +227,28 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
     @Throws(RepoOperationException::class)
     override suspend fun locallyDelete(id: String) =
         withContext(ioDispatcher + NonCancellable) {
-            suspend fun saveDeleteToStore(elt: JSONObject, soupId: Long): SObjectRecord<T> {
-                elt
-                    .putOpt(LOCALLY_DELETED, true)
-                    .putOpt(LOCAL, true)
 
-                val updatedJson = try {
-                    store.update(soupName, elt, soupId)
-                } catch (ex: Exception) {
-                    throw RepoOperationException.SmartStoreOperationFailed(
-                        message = "Locally-delete operation failed. Could not save the updated object in SmartStore.",
-                        cause = ex
-                    )
-                }
+            val so = doDeleteBlocking(id = id)
+                ?.coerceUpdatedObjToModelOrCleanupAndThrow()
 
-                return updatedJson.coerceUpdatedObjToModelOrCleanupAndThrow()
+            if (so == null) {
+                removeAllFromObjectList(listOf(id))
+            } else {
+                updateStateWithObject(so)
             }
 
+            so
+        }
+
+    @Throws(RepoOperationException::class)
+    private fun doDeleteBlocking(id: String): JSONObject? = synchronized(store.database) {
+        store.beginTransaction()
+
+        try {
             val retrieved = retrieveByIdOrThrowOperationException(id)
             val localStatus = retrieved.elt.coerceToLocalStatus()
-            val result: SObjectRecord<T>? = when {
+
+            val result = when {
                 localStatus.isLocallyCreated -> {
                     try {
                         store.delete(soupName, retrieved.soupId)
@@ -236,67 +260,78 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
                     }
                     null
                 }
+
                 localStatus.isLocallyDeleted -> retrieved.elt
-                    .coerceUpdatedObjToModelOrCleanupAndThrow()
 
-                else -> saveDeleteToStore(elt = retrieved.elt, soupId = retrieved.soupId)
+                else -> {
+                    retrieved.elt
+                        .putOpt(LOCALLY_DELETED, true)
+                        .putOpt(LOCAL, true)
+
+                    try {
+                        store.update(soupName, retrieved.elt, retrieved.soupId)
+                    } catch (ex: Exception) {
+                        throw RepoOperationException.SmartStoreOperationFailed(
+                            message = "Locally-delete operation failed. Could not save the updated object in SmartStore.",
+                            cause = ex
+                        )
+                    }
+                }
             }
 
-            if (result == null) {
-                val retrievedPrimaryKey = retrieved.elt.optStringOrNull(Constants.ID)
-                val retrievedLocalId = retrieved.elt.optStringOrNull(KEY_LOCAL_ID)
+            store.setTransactionSuccessful()
+            result
+        } finally {
+            store.endTransaction()
+        }
+    }
 
-                removeAllFromObjectList(
-                    primaryKey = retrievedPrimaryKey,
-                    localId = retrievedLocalId
-                )
-            } else {
-                updateStateWithObject(result)
-            }
+    @Throws(RepoOperationException::class)
+    override suspend fun locallyUndelete(id: String) =
+        withContext(ioDispatcher + NonCancellable) {
+
+            val updatedJson = doUndeleteBlocking(id = id)
+
+            val result = updatedJson.coerceUpdatedObjToModelOrCleanupAndThrow()
+            updateStateWithObject(result)
 
             result
         }
 
     @Throws(RepoOperationException::class)
-    override suspend fun locallyUndelete(id: String) =
-        withContext(ioDispatcher + NonCancellable) {
-            suspend fun saveUndeleteToStore(
-                elt: JSONObject,
-                soupEntryId: Long
-            ): SObjectRecord<T> {
+    private fun doUndeleteBlocking(id: String): JSONObject = synchronized(store.database) {
+        store.beginTransaction()
 
-                val curLocalStatus = elt.coerceToLocalStatus()
-                elt
-                    .putOpt(LOCALLY_DELETED, false)
-                    .putOpt(
-                        LOCAL,
-                        curLocalStatus.isLocallyCreated || curLocalStatus.isLocallyUpdated
-                    )
+        try {
+            val retrieved = retrieveByIdOrThrowOperationException(id)
+            val curLocalStatus = retrieved.elt.coerceToLocalStatus()
 
-                val updatedJson = try {
-                    store.update(soupName, elt, soupEntryId)
-                } catch (ex: Exception) {
-                    throw RepoOperationException.SmartStoreOperationFailed(
-                        message = "Locally-undelete operation failed. Could not save the updated object in SmartStore.",
-                        cause = ex
-                    )
-                }
-
-                return updatedJson.coerceUpdatedObjToModelOrCleanupAndThrow()
+            if (!curLocalStatus.isLocallyDeleted) {
+                store.setTransactionSuccessful()
+                return@synchronized retrieved.elt
             }
 
-            val retrieved = retrieveByIdOrThrowOperationException(id)
+            retrieved.elt
+                .putOpt(LOCALLY_DELETED, false)
+                .putOpt(
+                    LOCAL,
+                    curLocalStatus.isLocallyCreated || curLocalStatus.isLocallyUpdated
+                )
 
-            val result: SObjectRecord<T> =
-                if (!retrieved.elt.coerceToLocalStatus().isLocallyDeleted)
-                    retrieved.elt.coerceUpdatedObjToModelOrCleanupAndThrow()
-                else
-                    saveUndeleteToStore(retrieved.elt, retrieved.soupId)
-
-            updateStateWithObject(result)
-
-            result
+            try {
+                val result = store.update(soupName, retrieved.elt, retrieved.soupId)
+                store.setTransactionSuccessful()
+                result
+            } catch (ex: Exception) {
+                throw RepoOperationException.SmartStoreOperationFailed(
+                    message = "Locally-undelete operation failed. Could not save the updated object in SmartStore.",
+                    cause = ex
+                )
+            }
+        } finally {
+            store.endTransaction()
         }
+    }
 
 
     // endregion
@@ -361,10 +396,11 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
      * Convenience method for running an object list update procedure while under the Mutex for said
      * list. Also eliminates the need for subclasses to handle Mutexes themselves.
      */
-    protected suspend fun removeAllFromObjectList(primaryKey: String?, localId: String?) {
+    protected suspend fun removeAllFromObjectList(ids: List<String>) {
         listMutex.withLock {
-            primaryKey?.let { mutRecordsById.remove(it) }
-            localId?.let { mutRecordsById.remove(it) }
+            for (id in ids) {
+                mutRecordsById.remove(id)
+            }
             mutState.emit(mutRecordsById.toMap())
         }
     }
@@ -378,10 +414,11 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
     protected suspend fun JSONObject.coerceUpdatedObjToModelOrCleanupAndThrow() = try {
         deserializer.coerceFromJsonOrThrow(this)
     } catch (ex: Exception) {
-        val primaryKey = this.optStringOrNull(Constants.ID)
-        val localId = this.optStringOrNull(KEY_LOCAL_ID)
+        val ids = mutableListOf<String>()
+        this.optStringOrNull(Constants.ID)?.also { ids.add(it) }
+        this.optStringOrNull(KEY_LOCAL_ID)?.also { ids.add(it) }
 
-        removeAllFromObjectList(primaryKey, localId)
+        removeAllFromObjectList(ids)
 
         throw RepoOperationException.InvalidResultObject(
             message = "SmartStore operation was successful, but failed to deserialize updated JSON. This object has been removed from the list of objects in this repo to preserve data integrity",
@@ -400,7 +437,7 @@ abstract class SObjectSyncableRepoBase<T : SObject>(
         } else {
             store.retrieveSingleById(soupName = soupName, idColName = Constants.ID, id = id)
         }
-    } catch (ex: Exception) {
+    } catch (ex: NoSuchElementException) {
         throw RepoOperationException.RecordNotFound(id = id, soupName = soupName, cause = ex)
     }
 

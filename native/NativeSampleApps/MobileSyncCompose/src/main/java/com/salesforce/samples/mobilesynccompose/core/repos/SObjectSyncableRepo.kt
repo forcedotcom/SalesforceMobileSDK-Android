@@ -3,6 +3,12 @@ package com.salesforce.samples.mobilesynccompose.core.repos
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.*
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * This interface purposefully does not expose a "get by ID" API. The emissions via [recordsById]
+ * represent the current snapshot of the records in SmartStore and should be responded to in a
+ * reactive manner.  In highly parallel environments it is possible that the "get by ID" API would
+ * return inconsistent results.
+ */
 interface SObjectSyncableRepo<T : SObject> {
     val recordsById: Flow<Map<String, SObjectRecord<T>>>
 
@@ -27,34 +33,3 @@ interface SObjectSyncableRepo<T : SObject> {
     @Throws(RepoOperationException::class)
     suspend fun locallyUndelete(id: String): SObjectRecord<T>
 }
-
-//class SObjectRecordsByIds<T : SObject>(
-//    private val upstreamRecords: Map<String, UpstreamSObjectRecord<T>>,
-//    private val locallyCreatedRecords: Map<String, SObjectRecordCreatedDuringThisLoginSession<T>>
-//) {
-//    operator fun get(key: String): SObjectRecord<T>? {
-//        return if (SyncTarget.isLocalId(key)) {
-//            locallyCreatedRecords[key]
-//        } else {
-//            upstreamRecords[key]
-//        }
-//    }
-//
-//    override fun equals(other: Any?): Boolean {
-//        if (this === other) return true
-//        if (javaClass != other?.javaClass) return false
-//
-//        other as SObjectRecordsByIds<*>
-//
-//        if (upstreamRecords != other.upstreamRecords) return false
-//        if (locallyCreatedRecords != other.locallyCreatedRecords) return false
-//
-//        return true
-//    }
-//
-//    override fun hashCode(): Int {
-//        var result = upstreamRecords.hashCode()
-//        result = 31 * result + locallyCreatedRecords.hashCode()
-//        return result
-//    }
-//}
