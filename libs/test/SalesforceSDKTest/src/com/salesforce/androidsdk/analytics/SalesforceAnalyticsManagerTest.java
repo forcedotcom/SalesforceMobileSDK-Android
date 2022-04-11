@@ -72,6 +72,7 @@ public class SalesforceAnalyticsManagerTest {
         assertEquals(2, TestPublisher.publishedEvents.size());
         assertEquals(2, TestPublisher.publishedEvents.get(0).length());
         assertEquals(1, TestPublisher.publishedEvents.get(1).length());
+        manager.getEventStoreManager().deleteAllEvents();
     }
 
     @Test
