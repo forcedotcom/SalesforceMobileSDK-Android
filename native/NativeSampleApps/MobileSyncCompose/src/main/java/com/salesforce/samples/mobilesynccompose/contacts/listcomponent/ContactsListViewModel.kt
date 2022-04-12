@@ -21,22 +21,22 @@ interface ContactsListViewModel : ContactsListUiEventHandler {
 }
 
 sealed interface ContactsListUiState {
-    object InitialLoad : ContactsListUiState
+    val contacts: List<SObjectRecord<ContactObject>>
+    val curSelectedContactId: String?
+    val showLoadingOverlay: Boolean
 
-    sealed class Loaded : ContactsListUiState {
-        abstract val contacts: List<SObjectRecord<ContactObject>>
-        abstract val curSelectedContactId: String?
+    data class ViewingList(
+        override val contacts: List<SObjectRecord<ContactObject>>,
+        override val curSelectedContactId: String?,
+        override val showLoadingOverlay: Boolean
+    ) : ContactsListUiState
 
-        data class ViewingList(
-            override val contacts: List<SObjectRecord<ContactObject>>,
-            override val curSelectedContactId: String?
-        ) : Loaded()
-
-        data class Searching(
-            override val contacts: List<SObjectRecord<ContactObject>>,
-            override val curSelectedContactId: String?
-        ) : Loaded()
-    }
+    data class Searching(
+        override val contacts: List<SObjectRecord<ContactObject>>,
+        override val curSelectedContactId: String?,
+        override val showLoadingOverlay: Boolean,
+        val curSearchTerm: String
+    ) : ContactsListUiState
 }
 
 class DefaultContactsListViewModel() : ContactsListViewModel {

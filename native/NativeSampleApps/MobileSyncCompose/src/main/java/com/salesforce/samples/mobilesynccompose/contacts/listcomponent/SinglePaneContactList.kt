@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -53,7 +54,56 @@ import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSD
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 
 @Composable
-fun ContactsListViewingModeSinglePane(
+fun ContactsListSinglePaneComponent(
+    modifier: Modifier = Modifier,
+    contentModifier: Modifier = Modifier,
+    uiState: ContactsListUiState,
+    uiEventHandler: ContactsListUiEventHandler,
+) {
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar {
+                when (uiState) {
+                    is ContactsListUiState.Searching -> ContactsListTopAppBarSearchModeSinglePane(
+                        searchTerm = uiState.curSearchTerm,
+                        listExitSearchClick = uiEventHandler::exitSearchClick,
+                        onSearchTermUpdated = uiEventHandler::onSearchTermUpdated
+                    )
+                    is ContactsListUiState.ViewingList -> ContactsListTopAppBarSinglePane()
+                }
+            }
+        },
+        bottomBar = {
+            BottomAppBar(cutoutShape = MaterialTheme.shapes.small.copy(all = CornerSize(percent = 50))) {
+                when (uiState) {
+                    is ContactsListUiState.Searching -> ContactsListBottomAppBarSearchSinglePane()
+                    is ContactsListUiState.ViewingList -> ContactsListBottomAppBarSinglePane(
+                        listSearchClick = uiEventHandler::searchClick
+                    )
+                }
+            }
+        },
+        floatingActionButton = { ContactsListFabSinglePane(listCreateClick = uiEventHandler::createClick) },
+        floatingActionButtonPosition = FabPosition.Center,
+        isFloatingActionButtonDocked = true,
+    ) {
+        ContactsListContent(
+            modifier = Modifier
+                .padding(it)
+                .then(contentModifier),
+            contactRecords = uiState.contacts,
+            showLoadingOverlay = uiState.showLoadingOverlay,
+            listContactClick = uiEventHandler::contactClick,
+            listDeleteClick = uiEventHandler::deleteClick,
+            listEditClick = uiEventHandler::editClick,
+            listUndeleteClick = uiEventHandler::undeleteClick
+        )
+    }
+}
+
+@Composable
+fun ContactsListContent(
     modifier: Modifier = Modifier,
     contactRecords: List<SObjectRecord<ContactObject>>,
     showLoadingOverlay: Boolean,
@@ -158,14 +208,14 @@ private fun ContactListContentPreview() {
 
     SalesforceMobileSDKAndroidTheme {
         Surface {
-            ContactsListViewingModeSinglePane(
+            ContactsListSinglePaneComponent(
                 modifier = Modifier.padding(4.dp),
-                contactRecords = contacts,
-                showLoadingOverlay = false,
-                listContactClick = {},
-                listDeleteClick = {},
-                listEditClick = {},
-                listUndeleteClick = {}
+                uiState = ContactsListUiState.ViewingList(
+                    contacts = contacts,
+                    curSelectedContactId = null,
+                    showLoadingOverlay = false
+                ),
+                uiEventHandler = PREVIEW_LIST_UI_EVENT_HANDLER
             )
         }
     }
@@ -192,14 +242,14 @@ private fun ContactListSyncingPreview() {
 
     SalesforceMobileSDKAndroidTheme {
         Surface {
-            ContactsListViewingModeSinglePane(
+            ContactsListSinglePaneComponent(
                 modifier = Modifier.padding(4.dp),
-                contactRecords = contacts,
-                showLoadingOverlay = true,
-                listContactClick = {},
-                listDeleteClick = {},
-                listEditClick = {},
-                listUndeleteClick = {}
+                uiState = ContactsListUiState.ViewingList(
+                    contacts = contacts,
+                    curSelectedContactId = null,
+                    showLoadingOverlay = true
+                ),
+                uiEventHandler = PREVIEW_LIST_UI_EVENT_HANDLER
             )
         }
     }
@@ -213,15 +263,26 @@ private fun ContactListLoadingPreview() {
 
     SalesforceMobileSDKAndroidTheme {
         Surface {
-            ContactsListViewingModeSinglePane(
+            ContactsListSinglePaneComponent(
                 modifier = Modifier.padding(4.dp),
-                contactRecords = contacts,
-                showLoadingOverlay = true,
-                listContactClick = {},
-                listDeleteClick = {},
-                listEditClick = {},
-                listUndeleteClick = {}
+                uiState = ContactsListUiState.ViewingList(
+                    contacts = emptyList(),
+                    curSelectedContactId = null,
+                    showLoadingOverlay = true
+                ),
+                uiEventHandler = PREVIEW_LIST_UI_EVENT_HANDLER
             )
         }
     }
+}
+
+private val PREVIEW_LIST_UI_EVENT_HANDLER = object : ContactsListUiEventHandler {
+    override fun contactClick(contactId: String) {}
+    override fun createClick() {}
+    override fun deleteClick(contactId: String) {}
+    override fun editClick(contactId: String) {}
+    override fun undeleteClick(contactId: String) {}
+    override fun searchClick() {}
+    override fun exitSearchClick() {}
+    override fun onSearchTermUpdated(newSearchTerm: String) {}
 }
