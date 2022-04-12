@@ -47,6 +47,7 @@ aliases:
       sudo npm install -g typescript
       cordova telemetry off
       ./install.sh
+      sudo chmod -R a+w /var/lib/gems/ && sudo chmod -R a+w /usr/local/bin
       gem install bundler
       gem install danger
       gem install danger-junit
@@ -89,6 +90,7 @@ jobs:
           name: Setup Environment
           command: |
             ./install.sh
+            sudo chmod -R a+w /var/lib/gems/ && sudo chmod -R a+w /usr/local/bin
             gem install bundler
             gem install danger
             gem install danger-junit
