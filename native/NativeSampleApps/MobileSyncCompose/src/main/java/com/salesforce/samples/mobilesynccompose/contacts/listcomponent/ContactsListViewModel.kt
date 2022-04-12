@@ -11,20 +11,6 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-interface ContactsListItemClickHandler {
-    fun contactClick(contactId: String)
-    fun createClick()
-    fun deleteClick(contactId: String)
-    fun editClick(contactId: String)
-    fun undeleteClick(contactId: String)
-}
-
-interface ContactsListSearchEventHandler {
-    fun searchClick()
-    fun exitSearchClick()
-    fun onSearchTermUpdated(newSearchTerm: String)
-}
-
 interface ContactsListViewModel
     : ContactsListSearchEventHandler,
     ContactsListItemClickHandler {
@@ -34,26 +20,6 @@ interface ContactsListViewModel
     fun setSelectedContact(id: String?)
     fun setSearchModeEnabled(isEnabled: Boolean)
     fun setSearchTerm(newSearchTerm: String)
-}
-
-// TODO break this out into its own file
-sealed interface ContactsListUiState {
-    val contacts: List<SObjectRecord<ContactObject>>
-    val curSelectedContactId: String?
-    val showLoadingOverlay: Boolean
-
-    data class ViewingList(
-        override val contacts: List<SObjectRecord<ContactObject>>,
-        override val curSelectedContactId: String?,
-        override val showLoadingOverlay: Boolean
-    ) : ContactsListUiState
-
-    data class Searching(
-        override val contacts: List<SObjectRecord<ContactObject>>,
-        override val curSelectedContactId: String?,
-        override val showLoadingOverlay: Boolean,
-        val curSearchTerm: String
-    ) : ContactsListUiState
 }
 
 class DefaultContactsListViewModel(
