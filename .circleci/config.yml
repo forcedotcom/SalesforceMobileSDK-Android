@@ -77,6 +77,8 @@ executors:
     working_directory: ~/SalesforceMobileSDK-Android
     docker:
       - image: cimg/android:2022.03.1-node
+    environment:
+      - GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'
 
 jobs:
   static-analysis:
