@@ -230,7 +230,8 @@ private fun ContactsListSinglePaneComponentPreview() {
 
 @Preview(showBackground = true)
 @Composable
-private fun ContactListSyncingPreview() {
+private fun ContactListSyncingAndSearchingPreview() {
+    val curSearchTerm = "9"
     val contacts = (0..100)
         .map { it.toString() }
         .map {
@@ -245,15 +246,19 @@ private fun ContactListSyncingPreview() {
                 )
             )
         }
+        .filter {
+            it.sObject.fullName.contains(curSearchTerm)
+        }
 
     SalesforceMobileSDKAndroidTheme {
         Surface {
             ContactsListSinglePaneComponent(
                 modifier = Modifier.padding(4.dp),
-                uiState = ContactsListUiState.ViewingList(
+                uiState = ContactsListUiState.Searching(
                     contacts = contacts,
                     curSelectedContactId = null,
-                    showLoadingOverlay = true
+                    showLoadingOverlay = true,
+                    curSearchTerm = "9"
                 ),
                 uiEventHandler = PREVIEW_LIST_UI_EVENT_HANDLER,
                 menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
