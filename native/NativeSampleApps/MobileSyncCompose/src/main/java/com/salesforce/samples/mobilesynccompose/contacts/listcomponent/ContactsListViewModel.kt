@@ -13,7 +13,8 @@ import kotlinx.coroutines.sync.withLock
 
 interface ContactsListViewModel
     : ContactsListSearchEventHandler,
-    ContactsListItemClickHandler {
+    ContactsListItemClickHandler,
+    ContactsListDataOpHandler {
 
     val uiState: StateFlow<ContactsListUiState>
 
@@ -26,6 +27,7 @@ class DefaultContactsListViewModel(
     private val contactsRepo: ContactsRepo,
     private val parentScope: CoroutineScope,
     private val itemClickDelegate: ContactsListItemClickHandler?,
+    private val dataOpDelegate: ContactsListDataOpHandler?,
     private val searchEventDelegate: ContactsListSearchEventHandler?
 ) : ContactsListViewModel {
     private val stateMutex = Mutex()
@@ -89,8 +91,8 @@ class DefaultContactsListViewModel(
     }
 
     override fun deleteClick(contactId: String) {
-        if (itemClickDelegate != null) {
-            itemClickDelegate.deleteClick(contactId = contactId)
+        if (dataOpDelegate != null) {
+            dataOpDelegate.deleteClick(contactId = contactId)
             return
         }
         TODO("Not yet implemented")
@@ -105,8 +107,8 @@ class DefaultContactsListViewModel(
     }
 
     override fun undeleteClick(contactId: String) {
-        if (itemClickDelegate != null) {
-            itemClickDelegate.undeleteClick(contactId = contactId)
+        if (dataOpDelegate != null) {
+            dataOpDelegate.undeleteClick(contactId = contactId)
             return
         }
         TODO("Not yet implemented")

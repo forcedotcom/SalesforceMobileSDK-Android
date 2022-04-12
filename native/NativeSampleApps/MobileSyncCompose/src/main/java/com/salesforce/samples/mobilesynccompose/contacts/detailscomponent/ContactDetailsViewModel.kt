@@ -25,10 +25,10 @@ interface ContactDetailsViewModel : ContactDetailsFieldChangeHandler, ContactDet
     val uiState: StateFlow<ContactDetailsUiState>
 
     @Throws(ContactDetailsException::class)
-    suspend fun clearContactObj()
+    suspend fun clearContactOrThrow()
 
     @Throws(ContactDetailsException::class)
-    suspend fun setContact(recordId: String, startWithEditingEnabled: Boolean)
+    suspend fun setContactOrThrow(recordId: String, startWithEditingEnabled: Boolean)
 }
 
 class DefaultContactDetailsViewModel(
@@ -108,7 +108,7 @@ class DefaultContactDetailsViewModel(
     }
 
     @Throws(ContactDetailsException::class)
-    override suspend fun clearContactObj() = launchWithStateLock {
+    override suspend fun clearContactOrThrow() = launchWithStateLock {
         if (dataOpDelegate.dataOperationIsActive)
             throw DataOperationActiveException(
                 message = "Cannot change details content while there are data operations active."
@@ -124,7 +124,7 @@ class DefaultContactDetailsViewModel(
     }
 
     @Throws(ContactDetailsException::class)
-    override suspend fun setContact(
+    override suspend fun setContactOrThrow(
         recordId: String,
         startWithEditingEnabled: Boolean
     ) = launchWithStateLock {
@@ -243,7 +243,8 @@ class DefaultContactDetailsViewModel(
         )
     }
 
-    private fun dismissCurDialog() = launchWithStateLock {
+    private fun dismissCurDialog() {
+        stateMutex.requireIsLocked()
         mutUiState.value = uiState.value.copy(curDialogUiState = null)
     }
 

@@ -62,6 +62,7 @@ fun ContactsListSinglePaneComponent(
     contentModifier: Modifier = Modifier,
     uiState: ContactsListUiState,
     listItemClickHandler: ContactsListItemClickHandler,
+    dataOpHandler: ContactsListDataOpHandler,
     searchEventHandler: ContactsListSearchEventHandler,
     menuHandler: ContactsActivityMenuHandler
 ) {
@@ -102,9 +103,9 @@ fun ContactsListSinglePaneComponent(
             contactRecords = uiState.contacts,
             showLoadingOverlay = uiState.showLoadingOverlay,
             listContactClick = listItemClickHandler::contactClick,
-            listDeleteClick = listItemClickHandler::deleteClick,
+            listDeleteClick = dataOpHandler::deleteClick,
             listEditClick = listItemClickHandler::editClick,
-            listUndeleteClick = listItemClickHandler::undeleteClick
+            listUndeleteClick = dataOpHandler::undeleteClick
         )
     }
 }
@@ -223,6 +224,7 @@ private fun ContactsListSinglePaneComponentPreview() {
                     showLoadingOverlay = false
                 ),
                 listItemClickHandler = PREVIEW_LIST_ITEM_CLICK_HANDLER,
+                dataOpHandler = PREVIEW_LIST_DATA_OP_HANDLER,
                 searchEventHandler = PREVIEW_LIST_SEARCH_EVENT_HANDLER,
                 menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
             )
@@ -263,6 +265,7 @@ private fun ContactListSyncingAndSearchingPreview() {
                     curSearchTerm = "9"
                 ),
                 listItemClickHandler = PREVIEW_LIST_ITEM_CLICK_HANDLER,
+                dataOpHandler = PREVIEW_LIST_DATA_OP_HANDLER,
                 searchEventHandler = PREVIEW_LIST_SEARCH_EVENT_HANDLER,
                 menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
             )
@@ -285,6 +288,7 @@ private fun ContactListLoadingPreview() {
                     showLoadingOverlay = true
                 ),
                 listItemClickHandler = PREVIEW_LIST_ITEM_CLICK_HANDLER,
+                dataOpHandler = PREVIEW_LIST_DATA_OP_HANDLER,
                 searchEventHandler = PREVIEW_LIST_SEARCH_EVENT_HANDLER,
                 menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
             )
@@ -295,8 +299,11 @@ private fun ContactListLoadingPreview() {
 private val PREVIEW_LIST_ITEM_CLICK_HANDLER = object : ContactsListItemClickHandler {
     override fun contactClick(contactId: String) {}
     override fun createClick() {}
-    override fun deleteClick(contactId: String) {}
     override fun editClick(contactId: String) {}
+}
+
+private val PREVIEW_LIST_DATA_OP_HANDLER = object : ContactsListDataOpHandler {
+    override fun deleteClick(contactId: String) {}
     override fun undeleteClick(contactId: String) {}
 }
 

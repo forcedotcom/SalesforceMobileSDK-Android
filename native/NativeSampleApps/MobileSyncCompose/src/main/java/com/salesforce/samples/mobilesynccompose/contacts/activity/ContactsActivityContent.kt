@@ -74,6 +74,7 @@ fun ContactsActivityContent(
         detailsUiEventHandler = vm.detailsVm,
         listUiState = listUiState,
         listItemClickHandler = vm.listVm,
+        listDataOpHandler = vm.listVm,
         listSearchEventHandler = vm.listVm,
         menuHandler = menuHandler
     )
@@ -88,6 +89,7 @@ private fun SinglePane(
     detailsUiEventHandler: ContactDetailsUiEventHandler,
     listUiState: ContactsListUiState,
     listItemClickHandler: ContactsListItemClickHandler,
+    listDataOpHandler: ContactsListDataOpHandler,
     listSearchEventHandler: ContactsListSearchEventHandler,
     menuHandler: ContactsActivityMenuHandler,
 ) {
@@ -100,6 +102,7 @@ private fun SinglePane(
         else -> ContactsListSinglePaneComponent(
             uiState = listUiState,
             listItemClickHandler = listItemClickHandler,
+            dataOpHandler = listDataOpHandler,
             searchEventHandler = listSearchEventHandler,
             menuHandler = menuHandler
         )
@@ -280,8 +283,9 @@ private class PreviewDetailsVm(uiState: ContactDetailsUiState) : ContactDetailsV
     override val uiState: StateFlow<ContactDetailsUiState> = MutableStateFlow(uiState)
     val uiStateValue get() = this.uiState.value
 
-    override suspend fun clearContactObj() {}
-    override suspend fun setContact(recordId: String, startWithEditingEnabled: Boolean) {}
+    override suspend fun clearContactOrThrow() {}
+    override suspend fun setContactOrThrow(recordId: String, startWithEditingEnabled: Boolean) {}
+
     override fun onFirstNameChange(newFirstName: String) {}
     override fun onLastNameChange(newLastName: String) {}
     override fun onTitleChange(newTitle: String) {}

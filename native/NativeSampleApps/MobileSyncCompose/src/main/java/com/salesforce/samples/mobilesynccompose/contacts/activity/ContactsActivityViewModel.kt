@@ -28,11 +28,13 @@ package com.salesforce.samples.mobilesynccompose.contacts.activity
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.ContactDetailsViewModel
-import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.DefaultContactDetailsViewModel
+import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.*
+import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListDataOpHandler
 import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListItemClickHandler
 import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListViewModel
 import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.DefaultContactsListViewModel
+import com.salesforce.samples.mobilesynccompose.core.extensions.requireIsLocked
+import com.salesforce.samples.mobilesynccompose.core.ui.state.DiscardChangesDialogUiState
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactsRepo
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,6 +66,7 @@ class DefaultContactsActivityViewModel(
             parentScope = viewModelScope,
             contactsRepo = contactsRepo,
             itemClickDelegate = ListClickDelegate(),
+            dataOpDelegate = ListDataOpDelegate(),
             searchEventDelegate = null
         )
     }
@@ -89,18 +92,44 @@ class DefaultContactsActivityViewModel(
 
     private inner class ListClickDelegate : ContactsListItemClickHandler {
         override fun contactClick(contactId: String) {
-            TODO("Not yet implemented")
+            viewModelScope.launch {
+                try {
+                    detailsVm.setContactOrThrow(
+                        recordId = contactId,
+                        startWithEditingEnabled = false
+                    )
+                    listVm.setSelectedContact(id = contactId)
+                } catch (ex: ContactDetailsException) {
+                    onDetailsSetFail(ex)
+                }
+            }
         }
 
         override fun createClick() {
             TODO("Not yet implemented")
         }
 
-        override fun deleteClick(contactId: String) {
+        override fun editClick(contactId: String) {
             TODO("Not yet implemented")
         }
 
-        override fun editClick(contactId: String) {
+        private suspend fun onDetailsSetFail(ex: ContactDetailsException) = stateMutex.withLock {
+            when (ex) {
+                is DataOperationActiveException -> TODO()
+                is HasUnsavedChangesException -> uiState.value.copy(
+                    dialogUiState = DiscardChangesDialogUiState(
+                        onDiscardChanges = { TODO("set selected contact in list and discard changes in details") },
+                        onKeepChanges = this@DefaultContactsActivityViewModel::dismissCurDialog
+                    )
+                )
+            }.also {
+                mutUiState.value = it
+            }
+        }
+    }
+
+    private inner class ListDataOpDelegate : ContactsListDataOpHandler {
+        override fun deleteClick(contactId: String) {
             TODO("Not yet implemented")
         }
 
@@ -422,20 +451,21 @@ class DefaultContactsActivityViewModel(
     /**
      * Convenience method to wrap a method body in a coroutine which acquires the event mutex lock
      * before executing the [block]. Because this launches a new coroutine, it is okay to nest
-     * invocations of this method within other [launchWithEventLock] blocks without worrying about
+     * invocations of this method within other [launchWithStateLock] blocks without worrying about
      * deadlocks.
      *
-     * Note! If you nest [launchWithEventLock] calls, the outer [launchWithEventLock] [block]
+     * Note! If you nest [launchWithStateLock] calls, the outer [launchWithStateLock] [block]
      * will run to completion _before_ the nested [block] is invoked since the outer [block] already
      * has the event lock.
      */
-//    private fun launchWithEventLock(block: suspend CoroutineScope.() -> Unit) {
-//        viewModelScope.launch { stateMutex.withLock { block() } }
-//    }
-//
-//    private fun dismissCurDialog() = launchWithEventLock {
-//        mutUiState.value = mutUiState.value.copy(dialogUiState = null)
-//    }
+    private fun launchWithStateLock(block: suspend CoroutineScope.() -> Unit) {
+        viewModelScope.launch { stateMutex.withLock { block() } }
+    }
+
+    private fun dismissCurDialog() {
+        stateMutex.requireIsLocked()
+        mutUiState.value = mutUiState.value.copy(dialogUiState = null)
+    }
 
     private companion object {
         private const val TAG = "DefaultContactsActivityViewModel"
