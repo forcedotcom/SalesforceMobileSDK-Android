@@ -47,6 +47,7 @@ aliases:
       sudo npm install -g typescript
       cordova telemetry off
       ./install.sh
+      sudo chmod -R a+w /var/lib/gems/ && sudo chmod -R a+w /usr/local/bin
       gem install bundler
       gem install danger
       gem install danger-junit
@@ -75,9 +76,8 @@ executors:
   linux:
     working_directory: ~/SalesforceMobileSDK-Android
     docker:
-      - image: circleci/android:api-29-node
+      - image: cimg/android:2022.03.1-node
     environment:
-      - TERM: "dumb"
       - GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'
 
 jobs:
@@ -92,11 +92,13 @@ jobs:
           name: Setup Environment
           command: |
             ./install.sh
+            sudo chmod -R a+w /var/lib/gems/ && sudo chmod -R a+w /usr/local/bin
             gem install bundler
             gem install danger
             gem install danger-junit
             gem install danger-android_lint
             gem install danger-jacoco
+            echo $TEST_CREDENTIALS > ./shared/test/test_credentials.json
       - run:
           name: Run Android Lint
           command:  ./gradlew lint
