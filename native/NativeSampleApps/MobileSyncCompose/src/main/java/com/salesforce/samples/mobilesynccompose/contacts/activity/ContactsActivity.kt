@@ -40,7 +40,6 @@ import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity
 import com.salesforce.androidsdk.ui.SalesforceActivityDelegate
 import com.salesforce.androidsdk.ui.SalesforceActivityInterface
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
-import com.salesforce.samples.mobilesynccompose.model.contacts.DefaultContactsRepo
 
 class ContactsActivity
     : ComponentActivity(),
@@ -72,12 +71,7 @@ class ContactsActivity
 
         setContent {
             SalesforceMobileSDKAndroidTheme {
-                ContactsActivityContent(
-                    vm = vm,
-                    detailsVm = vm.detailsVm,
-                    listVm = vm.listVm,
-                    menuHandler = this
-                )
+                ContactsActivityContent(vm = vm, menuHandler = this)
             }
         }
     }

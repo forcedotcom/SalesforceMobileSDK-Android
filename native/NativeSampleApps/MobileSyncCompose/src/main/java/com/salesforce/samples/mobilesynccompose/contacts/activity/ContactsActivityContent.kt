@@ -64,21 +64,19 @@ import kotlinx.coroutines.flow.StateFlow
 @Composable
 fun ContactsActivityContent(
     vm: ContactsActivityViewModel,
-    detailsVm: ContactDetailsViewModel,
-    listVm: ContactsListViewModel,
     menuHandler: ContactsActivityMenuHandler,
 ) {
     // this drives recomposition when the VM updates itself:
-    val detailsUiState by detailsVm.uiState.collectAsState()
-    val listUiState by listVm.uiState.collectAsState()
+    val detailsUiState by vm.detailsVm.uiState.collectAsState()
+    val listUiState by vm.listVm.uiState.collectAsState()
     val uiState by vm.uiState.collectAsState()
 
     SinglePane(
         activityUiState = uiState,
         detailsUiState = detailsUiState,
-        detailsUiEventHandler = detailsVm,
+        detailsUiEventHandler = vm.detailsVm,
         listUiState = listUiState,
-        listUiEventHandler = listVm,
+        listUiEventHandler = vm.listVm,
         menuHandler = menuHandler
     )
 
@@ -221,8 +219,6 @@ private fun SinglePaneListPreview() {
         Surface {
             ContactsActivityContent(
                 vm = vm,
-                detailsVm = detailsVm,
-                listVm = listVm,
                 menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
             )
         }
@@ -273,8 +269,6 @@ private fun SinglePaneDetailsPreview() {
         Surface {
             ContactsActivityContent(
                 vm = vm,
-                detailsVm = vm.detailsVm,
-                listVm = vm.listVm,
                 menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
             )
         }
