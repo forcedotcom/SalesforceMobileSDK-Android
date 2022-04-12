@@ -96,12 +96,33 @@ class DefaultContactsActivityViewModel(
                 try {
                     detailsVm.setContactOrThrow(
                         recordId = contactId,
-                        startWithEditingEnabled = false
+                        isEditing = false
                     )
                     listVm.setSelectedContact(id = contactId)
                 } catch (ex: ContactDetailsException) {
-                    onDetailsSetFail(ex)
+                    when (ex) {
+                        is DataOperationActiveException -> TODO("data op active in contactClick()")
+                        is HasUnsavedChangesException -> uiState.value.copy(
+                            dialogUiState = DiscardChangesDialogUiState(
+                                onDiscardChanges = { forceSetContact(contactId = contactId) },
+                                onKeepChanges = ::dismissCurDialog
+                            )
+                        )
+                    }.also {
+                        mutUiState.value = it
+                    }
                 }
+            }
+        }
+
+        private fun forceSetContact(contactId: String) = viewModelScope.launch {
+            try {
+                detailsVm.discardChangesAndSetContactOrThrow(
+                    recordId = contactId,
+                    isEditing = false,
+                )
+            } catch (ex: DataOperationActiveException) {
+                TODO("data op is active in forceSetContact")
             }
         }
 
@@ -111,20 +132,6 @@ class DefaultContactsActivityViewModel(
 
         override fun editClick(contactId: String) {
             TODO("Not yet implemented")
-        }
-
-        private suspend fun onDetailsSetFail(ex: ContactDetailsException) = stateMutex.withLock {
-            when (ex) {
-                is DataOperationActiveException -> TODO()
-                is HasUnsavedChangesException -> uiState.value.copy(
-                    dialogUiState = DiscardChangesDialogUiState(
-                        onDiscardChanges = { TODO("set selected contact in list and discard changes in details") },
-                        onKeepChanges = this@DefaultContactsActivityViewModel::dismissCurDialog
-                    )
-                )
-            }.also {
-                mutUiState.value = it
-            }
         }
     }
 

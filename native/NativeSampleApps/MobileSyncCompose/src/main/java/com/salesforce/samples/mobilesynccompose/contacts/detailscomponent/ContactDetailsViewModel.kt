@@ -25,10 +25,10 @@ interface ContactDetailsViewModel : ContactDetailsFieldChangeHandler, ContactDet
     val uiState: StateFlow<ContactDetailsUiState>
 
     @Throws(ContactDetailsException::class)
-    suspend fun clearContactOrThrow()
+    fun setContactOrThrow(recordId: String?, isEditing: Boolean)
 
-    @Throws(ContactDetailsException::class)
-    suspend fun setContactOrThrow(recordId: String, startWithEditingEnabled: Boolean)
+    @Throws(DataOperationActiveException::class)
+    fun discardChangesAndSetContactOrThrow(recordId: String?, isEditing: Boolean)
 }
 
 class DefaultContactDetailsViewModel(
@@ -108,25 +108,20 @@ class DefaultContactDetailsViewModel(
     }
 
     @Throws(ContactDetailsException::class)
-    override suspend fun clearContactOrThrow() = launchWithStateLock {
-        if (dataOpDelegate.dataOperationIsActive)
-            throw DataOperationActiveException(
-                message = "Cannot change details content while there are data operations active."
-            )
+    override fun setContactOrThrow(recordId: String?, isEditing: Boolean) {
+        setContactOrThrow(recordId = recordId, isEditing = isEditing, forceDiscardChanges = false)
+    }
 
-        if (hasUnsavedChanges)
-            throw HasUnsavedChangesException()
-
-        mutUiState.value = ContactDetailsUiState.NoContactSelected(
-            dataOperationIsActive = dataOpDelegate.dataOperationIsActive,
-            curDialogUiState = uiState.value.curDialogUiState
-        )
+    @Throws(DataOperationActiveException::class)
+    override fun discardChangesAndSetContactOrThrow(recordId: String?, isEditing: Boolean) {
+        setContactOrThrow(recordId = recordId, isEditing = isEditing, forceDiscardChanges = true)
     }
 
     @Throws(ContactDetailsException::class)
-    override suspend fun setContactOrThrow(
-        recordId: String,
-        startWithEditingEnabled: Boolean
+    private fun setContactOrThrow(
+        recordId: String?,
+        isEditing: Boolean,
+        forceDiscardChanges: Boolean
     ) = launchWithStateLock {
         if (!this@DefaultContactDetailsViewModel::upstreamRecords.isInitialized
             || dataOpDelegate.dataOperationIsActive
@@ -136,26 +131,36 @@ class DefaultContactDetailsViewModel(
             )
         }
 
-        if (hasUnsavedChanges) {
+        if (!forceDiscardChanges && hasUnsavedChanges) {
             throw HasUnsavedChangesException()
         }
 
-        val newRecord = upstreamRecords[recordId] ?: TODO("Did not find record with ID $recordId")
+        curRecordId = recordId
 
-        mutUiState.value = when (val curState = uiState.value) {
-            is ContactDetailsUiState.NoContactSelected -> newRecord.sObject.buildViewingContactUiState(
-                uiSyncState = newRecord.localStatus.toUiSyncState(),
-                isEditingEnabled = startWithEditingEnabled,
-                shouldScrollToErrorField = false,
+        if (recordId == null) {
+            mutUiState.value = ContactDetailsUiState.NoContactSelected(
+                dataOperationIsActive = dataOpDelegate.dataOperationIsActive,
+                curDialogUiState = uiState.value.curDialogUiState
             )
-            is ContactDetailsUiState.ViewingContactDetails -> curState.copy(
-                firstNameField = newRecord.sObject.buildFirstNameField(),
-                lastNameField = newRecord.sObject.buildLastNameField(),
-                titleField = newRecord.sObject.buildTitleField(),
-                departmentField = newRecord.sObject.buildDepartmentField(),
-                isEditingEnabled = startWithEditingEnabled,
-                shouldScrollToErrorField = false
-            )
+        } else {
+            val newRecord = upstreamRecords[recordId]
+                ?: TODO("Did not find record with ID $recordId")
+
+            mutUiState.value = when (val curState = uiState.value) {
+                is ContactDetailsUiState.NoContactSelected -> newRecord.sObject.buildViewingContactUiState(
+                    uiSyncState = newRecord.localStatus.toUiSyncState(),
+                    isEditingEnabled = isEditing,
+                    shouldScrollToErrorField = false,
+                )
+                is ContactDetailsUiState.ViewingContactDetails -> curState.copy(
+                    firstNameField = newRecord.sObject.buildFirstNameField(),
+                    lastNameField = newRecord.sObject.buildLastNameField(),
+                    titleField = newRecord.sObject.buildTitleField(),
+                    departmentField = newRecord.sObject.buildDepartmentField(),
+                    isEditingEnabled = isEditing,
+                    shouldScrollToErrorField = false
+                )
+            }
         }
     }
 

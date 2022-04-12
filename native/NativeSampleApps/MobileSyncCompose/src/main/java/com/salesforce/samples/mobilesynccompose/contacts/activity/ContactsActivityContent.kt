@@ -281,10 +281,10 @@ private fun SinglePaneDetailsPreview() {
 
 private class PreviewDetailsVm(uiState: ContactDetailsUiState) : ContactDetailsViewModel {
     override val uiState: StateFlow<ContactDetailsUiState> = MutableStateFlow(uiState)
-    val uiStateValue get() = this.uiState.value
+    override fun setContactOrThrow(recordId: String?, isEditing: Boolean) {}
+    override fun discardChangesAndSetContactOrThrow(recordId: String?, isEditing: Boolean) {}
 
-    override suspend fun clearContactOrThrow() {}
-    override suspend fun setContactOrThrow(recordId: String, startWithEditingEnabled: Boolean) {}
+    val uiStateValue get() = this.uiState.value
 
     override fun onFirstNameChange(newFirstName: String) {}
     override fun onLastNameChange(newLastName: String) {}

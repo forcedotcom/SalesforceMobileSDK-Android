@@ -63,11 +63,16 @@ class DefaultContactsListViewModel(
 
     private fun onContactListUpdate(newRecords: Map<String, SObjectRecord<ContactObject>>) =
         launchWithStateMutex {
+            val shouldClobberLoading = !::curRecords.isInitialized
+
             curRecords = newRecords
 
             when (val curState = uiState.value) {
                 is ContactsListUiState.Searching -> TODO()
-                is ContactsListUiState.ViewingList -> curState.copy(contacts = curRecords.values.toList()) // TODO how should we sort this?
+                is ContactsListUiState.ViewingList -> curState.copy(
+                    contacts = curRecords.values.toList(), // TODO how should we sort this?
+                    showLoadingOverlay = if (shouldClobberLoading) false else curState.showLoadingOverlay
+                )
             }.let {
                 mutUiState.value = it
             }
