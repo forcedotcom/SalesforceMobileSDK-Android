@@ -27,6 +27,7 @@
 package com.salesforce.samples.mobilesynccompose.model.contacts
 
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.samples.mobilesynccompose.core.repos.SObjectSyncableRepo
 import com.salesforce.samples.mobilesynccompose.core.repos.SObjectSyncableRepoBase
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectDeserializer
 import kotlinx.coroutines.*
@@ -59,3 +60,5 @@ class DefaultContactsRepo(
         const val SYNC_UP_CONTACTS = "syncUpContacts"
     }
 }
+
+typealias ContactsRepo = SObjectSyncableRepo<ContactObject>

@@ -6,7 +6,7 @@ import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 
 sealed interface ContactDetailsUiState {
     val curDialogUiState: DialogUiState?
-    val dataOperationIsActive: Boolean
+    val dataOperationIsActive: Boolean // TODO it may be a good idea to break this up into discrete flags for the different types of data operations, and then the UI just shows the spinner if any of the flags are true.
 
     data class ViewingContactDetails(
         val firstNameField: ContactDetailsField.FirstName,

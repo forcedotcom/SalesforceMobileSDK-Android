@@ -365,7 +365,7 @@ class DefaultContactDetailsViewModel(
 
     private fun launchWithStateLock(block: suspend CoroutineScope.() -> Unit) {
         parentScope.launch {
-            stateMutex.withLock { block() }
+            stateMutex.withLock { this.block() }
         }
     }
 

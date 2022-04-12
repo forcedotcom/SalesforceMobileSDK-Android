@@ -26,17 +26,13 @@
  */
 package com.salesforce.samples.mobilesynccompose.contacts.activity
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.ContactDetailsViewModel
+import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.DefaultContactDetailsViewModel
 import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListViewModel
-import com.salesforce.samples.mobilesynccompose.core.repos.RepoOperationException
-import com.salesforce.samples.mobilesynccompose.core.repos.RepoSyncException
-import com.salesforce.samples.mobilesynccompose.core.ui.state.DeleteConfirmationDialogUiState
-import com.salesforce.samples.mobilesynccompose.core.ui.state.DiscardChangesDialogUiState
-import com.salesforce.samples.mobilesynccompose.core.ui.state.UndeleteConfirmationDialogUiState
-import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
+import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.DefaultContactsListViewModel
+import com.salesforce.samples.mobilesynccompose.model.contacts.ContactsRepo
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,18 +47,41 @@ interface ContactsActivityViewModel {
     fun sync(syncDownOnly: Boolean = false)
 }
 
-class DefaultContactsActivityViewModel : ViewModel(), ContactsActivityViewModel {
-    override val detailsVm: ContactDetailsViewModel
-        get() = TODO("Not yet implemented")
+class DefaultContactsActivityViewModel(
+    private val contactsRepo: ContactsRepo
+) : ViewModel(), ContactsActivityViewModel {
 
-    override val listVm: ContactsListViewModel
-        get() = TODO("Not yet implemented")
+    override val detailsVm: ContactDetailsViewModel by lazy {
+        DefaultContactDetailsViewModel(
+            parentScope = viewModelScope,
+            contactsRepo = contactsRepo
+        )
+    }
 
-    override val uiState: StateFlow<ContactsActivityUiState>
-        get() = TODO("Not yet implemented")
+    override val listVm: ContactsListViewModel by lazy {
+        DefaultContactsListViewModel(
+            parentScope = viewModelScope,
+            contactsRepo = contactsRepo
+        )
+    }
+
+    private val stateMutex = Mutex()
+    private val mutUiState = MutableStateFlow(
+        ContactsActivityUiState(isSyncing = false, dialogUiState = null)
+    )
+
+    override val uiState: StateFlow<ContactsActivityUiState> get() = mutUiState
 
     override fun sync(syncDownOnly: Boolean) {
-        TODO("Not yet implemented")
+        viewModelScope.launch {
+            stateMutex.withLock { mutUiState.value = uiState.value.copy(isSyncing = true) }
+            if (syncDownOnly) {
+                contactsRepo.syncDownOnly()
+            } else {
+                contactsRepo.syncUpAndDown()
+            }
+            stateMutex.withLock { mutUiState.value = uiState.value.copy(isSyncing = false) }
+        }
     }
     // region Class Properties Definitions
 
@@ -384,7 +403,7 @@ class DefaultContactsActivityViewModel : ViewModel(), ContactsActivityViewModel 
      * has the event lock.
      */
 //    private fun launchWithEventLock(block: suspend CoroutineScope.() -> Unit) {
-//        viewModelScope.launch { eventMutex.withLock { block() } }
+//        viewModelScope.launch { stateMutex.withLock { block() } }
 //    }
 //
 //    private fun dismissCurDialog() = launchWithEventLock {

@@ -103,3 +103,5 @@ data class ContactObject
 sealed class ContactValidationException(override val message: String?) : Exception() {
     object LastNameCannotBeBlank : ContactValidationException("Contact Last Name cannot be blank")
 }
+
+typealias ContactRecord = SObjectRecord<ContactObject>
