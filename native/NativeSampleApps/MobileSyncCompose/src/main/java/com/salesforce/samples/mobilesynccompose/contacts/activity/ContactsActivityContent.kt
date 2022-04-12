@@ -100,7 +100,8 @@ private fun SinglePane(
         )
         else -> ContactsListSinglePaneComponent(
             uiState = listUiState,
-            uiEventHandler = listUiEventHandler
+            uiEventHandler = listUiEventHandler,
+            menuHandler = menuHandler
         )
     }
 

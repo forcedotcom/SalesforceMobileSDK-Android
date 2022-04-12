@@ -45,6 +45,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.contacts.ContactCard
+import com.salesforce.samples.mobilesynccompose.contacts.activity.ContactsActivityMenuButton
+import com.salesforce.samples.mobilesynccompose.contacts.activity.ContactsActivityMenuHandler
+import com.salesforce.samples.mobilesynccompose.contacts.activity.PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
 import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.toUiSyncState
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord
@@ -59,6 +62,7 @@ fun ContactsListSinglePaneComponent(
     contentModifier: Modifier = Modifier,
     uiState: ContactsListUiState,
     uiEventHandler: ContactsListUiEventHandler,
+    menuHandler: ContactsActivityMenuHandler
 ) {
     Scaffold(
         modifier = modifier,
@@ -72,6 +76,8 @@ fun ContactsListSinglePaneComponent(
                     )
                     is ContactsListUiState.ViewingList -> ContactsListTopAppBarSinglePane()
                 }
+
+                ContactsActivityMenuButton(menuHandler = menuHandler)
             }
         },
         bottomBar = {
@@ -215,7 +221,8 @@ private fun ContactsListSinglePaneComponentPreview() {
                     curSelectedContactId = null,
                     showLoadingOverlay = false
                 ),
-                uiEventHandler = PREVIEW_LIST_UI_EVENT_HANDLER
+                uiEventHandler = PREVIEW_LIST_UI_EVENT_HANDLER,
+                menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
             )
         }
     }
@@ -248,7 +255,8 @@ private fun ContactListSyncingPreview() {
                     curSelectedContactId = null,
                     showLoadingOverlay = true
                 ),
-                uiEventHandler = PREVIEW_LIST_UI_EVENT_HANDLER
+                uiEventHandler = PREVIEW_LIST_UI_EVENT_HANDLER,
+                menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
             )
         }
     }
@@ -268,7 +276,8 @@ private fun ContactListLoadingPreview() {
                     curSelectedContactId = null,
                     showLoadingOverlay = true
                 ),
-                uiEventHandler = PREVIEW_LIST_UI_EVENT_HANDLER
+                uiEventHandler = PREVIEW_LIST_UI_EVENT_HANDLER,
+                menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
             )
         }
     }
