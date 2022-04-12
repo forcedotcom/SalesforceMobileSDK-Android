@@ -26,8 +26,11 @@
  */
 package com.salesforce.samples.mobilesynccompose.contacts.activity
 
+import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -37,35 +40,45 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R
 import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.*
-import com.salesforce.samples.mobilesynccompose.core.ui.components.*
-import com.salesforce.samples.mobilesynccompose.core.ui.state.*
+import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListSinglePaneComponent
+import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListUiEventHandler
+import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListUiState
+import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListViewModel
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord
+import com.salesforce.samples.mobilesynccompose.core.ui.state.SObjectUiSyncState
+import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
+import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * The main entry point for all Contacts Activity UI, similar in use-case to a traditional top-level
  * `contacts_activity_layout.xml`.
- *
- * This Composable does not handle configuration changes by itself, leaving it up to the owning
- * Activity to drive the [layoutRestrictions] recomposition; however, this _will_ automatically
- * recompose itself and its content when the [vm] UI state is updated.
  */
 @Composable
 fun ContactsActivityContent(
     vm: ContactsActivityViewModel,
     detailsVm: ContactDetailsViewModel,
+    listVm: ContactsListViewModel,
     menuHandler: ContactsActivityMenuHandler,
 ) {
     // this drives recomposition when the VM updates itself:
     val detailsUiState by detailsVm.uiState.collectAsState()
+    val listUiState by listVm.uiState.collectAsState()
     val uiState by vm.uiState.collectAsState()
 
     SinglePane(
         activityUiState = uiState,
         detailsUiState = detailsUiState,
         detailsUiEventHandler = detailsVm,
+        listUiState = listUiState,
+        listUiEventHandler = listVm,
         menuHandler = menuHandler
     )
 
@@ -77,6 +90,8 @@ private fun SinglePane(
     activityUiState: ContactsActivityUiState,
     detailsUiState: ContactDetailsUiState,
     detailsUiEventHandler: ContactDetailsUiEventHandler,
+    listUiState: ContactsListUiState,
+    listUiEventHandler: ContactsListUiEventHandler,
     menuHandler: ContactsActivityMenuHandler,
 ) {
     when (detailsUiState) {
@@ -85,210 +100,15 @@ private fun SinglePane(
             componentUiEventHandler = detailsUiEventHandler,
             menuHandler = menuHandler
         )
-        else -> TODO("Single pane list view")
+        else -> ContactsListSinglePaneComponent(
+            uiState = listUiState,
+            uiEventHandler = listUiEventHandler
+        )
     }
+
+
+    activityUiState.dialogUiState?.RenderDialog(modifier = Modifier)
 }
-
-//@Composable
-//private fun SinglePaneScaffold(
-//    listState: ContactsActivityListUiState,
-//    detailsUiState: ContactDetailsUiState2,
-//    vm: ContactsActivityViewModel,
-//    onInspectDbClick: () -> Unit,
-//    onLogoutClick: () -> Unit,
-//    onSwitchUserClick: () -> Unit,
-//    onSyncClick: () -> Unit,
-//) {
-//    Scaffold(
-//        topBar = {
-//            if (detailsUiState is ContactDetailsUiState2.HasContact) {
-//                SinglePaneTopAppBarDetails(
-//                    detailsUiState = detailsUiState,
-//                    detailsExitClick = { /*TODO*/ },
-//                    onInspectDbClick = onInspectDbClick,
-//                    onLogoutClick = onLogoutClick,
-//                    onSwitchUserClick = onSwitchUserClick,
-//                    onSyncClick = onSyncClick
-//                )
-//            } else {
-//                SinglePaneTopAppBarList(
-//                    listUiState = listState,
-//                    onListExitSearchClick = vm::listExitSearchClick,
-//                    onSearchTermUpdated = vm::onSearchTermUpdated,
-//                    onInspectDbClick = onInspectDbClick,
-//                    onLogoutClick = onLogoutClick,
-//                    onSwitchUserClick = onSwitchUserClick,
-//                    onSyncClick = onSyncClick
-//                )
-//            }
-//        },
-//        bottomBar = {
-//            if (detailsUiState is)
-//                SinglePaneBottomAppBar(uiState = uiState, vm = vm)
-//        },
-//        floatingActionButtonPosition = FabPosition.Center,
-//        floatingActionButton = { SinglePaneFab(uiState = uiState, vm = vm) },
-//        isFloatingActionButtonDocked = true,
-//    ) { paddingVals ->
-//        val fixedPadding = paddingVals.fixForMainContent()
-//
-//        /* For the purposes of a Single Pane layout, the null/non-null detailsState drives whether to
-//         * show the details pane as the full screen content. I.e. if the detailsState is null, show
-//         * the list content, otherwise show the details content. */
-//        if (uiState.detailsState != null) {
-//            when (uiState.detailsState.mode) {
-//                Creating,
-//                Editing -> ContactDetailsEditingContactSinglePane(
-//                    details = uiState.detailsState,
-//                    showLoading = uiState.isSyncing || uiState.detailsState.isSaving,
-//                )
-//                Viewing -> ContactDetailsContent(
-//                    details = uiState.detailsState,
-//                    showLoading = uiState.isSyncing
-//                )
-//            }
-//        } else {
-//            ContactsListViewingModeSinglePane(
-//                modifier = Modifier.padding(paddingValues = fixedPadding),
-//                contacts = uiState.listState.contacts,
-//                showLoadingOverlay = uiState.isSyncing || uiState.listState.isSaving,
-//                listContactClick = vm::listContactClick,
-//                listDeleteClick = vm::listDeleteClick,
-//                listEditClick = vm::listEditClick,
-//                listUndeleteClick = vm::listUndeleteClick
-//            )
-//        }
-//
-//        when (val dialog = uiState.dialogUiState) {
-//            is DeleteConfirmationDialogUiState -> DeleteConfirmationDialog(
-//                onCancel = dialog.onCancelDelete,
-//                onDelete = { dialog.onDeleteConfirm(dialog.objIdToDelete) },
-//                objectLabel = dialog.objName
-//            )
-//            is DiscardChangesDialogUiState -> DiscardChangesDialog(
-//                discardChanges = dialog.onDiscardChanges,
-//                keepChanges = dialog.onKeepChanges
-//            )
-//            is UndeleteConfirmationDialogUiState -> UndeleteConfirmationDialog(
-//                onCancel = dialog.onCancelUndelete,
-//                onUndelete = { dialog.onUndeleteConfirm(dialog.objIdToUndelete) },
-//                objectLabel = dialog.objName
-//            )
-//            is ErrorDialogUiState -> ErrorDialog(
-//                onDismiss = dialog.onDismiss,
-//                message = dialog.message
-//            )
-//            null -> {
-//                /* clear the dialog */
-//            }
-//        }
-//    }
-//}
-
-//@Composable
-//private fun SinglePaneTopAppBarDetails(
-//    detailsUiState: ContactDetailsUiState2.HasContact,
-//    detailsExitClick: () -> Unit,
-//    onInspectDbClick: () -> Unit,
-//    onLogoutClick: () -> Unit,
-//    onSwitchUserClick: () -> Unit,
-//    onSyncClick: () -> Unit,
-//) {
-//    TopAppBar {
-//        ContactDetailsTopAppBarSinglePane(
-//            label = detailsUiState.personalInfoFields.fullName,
-//            syncIconContent = {
-//                SyncImage(contactObjLocalStatus = detailsUiState.contactObjLocalStatus)
-//            },
-//            detailsExitClick = detailsExitClick
-//        )
-//
-//        ContactsActivityMenuButton(
-//            onInspectDbClick = onInspectDbClick,
-//            onLogoutClick = onLogoutClick,
-//            onSwitchUserClick = onSwitchUserClick,
-//            onSyncClick = onSyncClick
-//        )
-//    }
-//}
-
-//@Composable
-//private fun SinglePaneTopAppBarList(
-//    listUiState: ContactsActivityListUiState,
-//    onListExitSearchClick: () -> Unit,
-//    onSearchTermUpdated: (String) -> Unit,
-//    onInspectDbClick: () -> Unit,
-//    onLogoutClick: () -> Unit,
-//    onSwitchUserClick: () -> Unit,
-//    onSyncClick: () -> Unit,
-//) {
-//    TopAppBar {
-//        if (listUiState.searchTerm != null) {
-//            ContactsListTopAppBarSearchModeSinglePane(
-//                searchTerm = listUiState.searchTerm,
-//                listExitSearchClick = onListExitSearchClick,
-//                onSearchTermUpdated = onSearchTermUpdated
-//            )
-//        } else {
-//            ContactsListTopAppBarSinglePane()
-//        }
-//
-//        ContactsActivityMenuButton(
-//            onInspectDbClick = onInspectDbClick,
-//            onLogoutClick = onLogoutClick,
-//            onSwitchUserClick = onSwitchUserClick,
-//            onSyncClick = onSyncClick
-//        )
-//    }
-//}
-
-//@Composable
-//private fun SinglePaneBottomAppBarDetails(
-//    uiState: ContactDetailsUiState2,
-//    deleteClick: () -> Unit
-//) {
-//    BottomAppBar(cutoutShape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))) {
-//        when (uiState) {
-//            is ContactDetailsUiState2.HasContact -> ContactDetailsBottomAppBarSinglePane(
-//                showDelete = !uiState.contactObjLocalStatus.isLocallyDeleted,
-//                detailsDeleteClick = deleteClick
-//            )
-//
-//            // No content
-//            ContactDetailsUiState2.InitialLoad -> {}
-//            ContactDetailsUiState2.NoContactSelected -> {}
-//        }
-//    }
-//}
-
-//@Composable
-//private fun SinglePaneBottomAppBarList(
-//    uiState: ContactsActivityListUiState,
-//    vm: ContactsActivityViewModel
-//) {
-//    BottomAppBar(cutoutShape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))) {
-//        if (uiState.searchTerm != null)
-//            ContactsListBottomAppBarSearchSinglePane()
-//        else
-//            ContactsListBottomAppBarSinglePane(listSearchClick = vm::listSearchClick)
-//    }
-//}
-
-//@Composable
-//private fun SinglePaneFab(uiState: ContactsActivityUiState, vm: ContactsActivityViewModel) {
-//    if (uiState.detailsState != null)
-//        if (uiState.detailsState.contactObj.localStatus.isLocallyDeleted) {
-//            ContactDetailsDeletedModeFabSinglePane(detailsUndeleteClick = vm::detailsUndeleteClick)
-//        } else {
-//            when (uiState.detailsState.mode) {
-//                Creating,
-//                Editing -> ContactDetailsEditModeFabSinglePane(detailsSaveClick = vm::detailsSaveClick)
-//                Viewing -> ContactDetailsViewModeFabSinglePane(detailsEditClick = vm::detailsEditClick)
-//            }
-//        }
-//    else
-//        ContactsListFabSinglePane(vm::listCreateClick)
-//}
 
 @Composable
 fun PaddingValues.fixForMainContent() = PaddingValues(
@@ -332,7 +152,7 @@ fun ContactsActivityMenuButton(menuHandler: ContactsActivityMenuHandler) {
 }
 
 @Composable
-fun SyncImage( modifier: Modifier = Modifier, uiState: SObjectUiSyncState) {
+fun SyncImage(modifier: Modifier = Modifier, uiState: SObjectUiSyncState) {
     when (uiState) {
         SObjectUiSyncState.NotSaved -> TODO("New Icon")
 
@@ -356,181 +176,160 @@ fun SyncImage( modifier: Modifier = Modifier, uiState: SObjectUiSyncState) {
     }
 }
 
-//@Composable
-//@Preview(showBackground = true)
-//@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
-//private fun ListPreview() {
-//    val contacts = (1..100).map {
-//        ContactObject.createNewLocal(
-//            firstName = "First",
-//            lastName = "Last $it",
-//            title = "Title",
-//        )
-//    }
-//
-//    val vm = PreviewContactsActivityViewModel(
-//        ContactsActivityUiState(
-//            listState = ContactsActivityListUiState(
-//                contacts = contacts,
-//                searchTerm = null,
-//            ),
-//            detailsState = null,
-//            isSyncing = false,
-//            dialogUiState = null,
-//        )
-//    )
-//
-//    SalesforceMobileSDKAndroidTheme {
-//        ContactsActivityContent(
-//            layoutRestrictions = LayoutRestrictions(
-//                WindowSizeRestrictions(
-//                    WindowSizeClass.Compact,
-//                    WindowSizeClass.Medium
-//                )
-//            ),
-//            vm = vm,
-//            onInspectDbClick = {},
-//            onLogoutClick = {},
-//            onSwitchUserClick = {},
-//            onSyncClick = {}
-//        )
-//    }
-//}
-//
-//@Composable
-//@Preview(showBackground = true)
-//@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
-//private fun DetailsPreview() {
-//    val contact = mockLocallyDeletedContact()
-//
-//    SalesforceMobileSDKAndroidTheme {
-//        ContactsActivityContent(
-//            layoutRestrictions = LayoutRestrictions(
-//                WindowSizeRestrictions(
-//                    WindowSizeClass.Compact,
-//                    WindowSizeClass.Medium
-//                )
-//            ),
-//            vm = PreviewContactsActivityViewModel(
-//                ContactsActivityUiState(
-//                    listState = ContactsActivityListUiState(
-//                        contacts = listOf(contact),
-//                        searchTerm = null
-//                    ),
-//                    detailsState = ContactDetailsUiState(
-//                        mode = Viewing,
-//                        fieldValueChangeHandler = PREVIEW_CONTACT_FIELD_CHANGE_HANDLER,
-//                        contactObj = contact
-//                    ),
-//                    isSyncing = false,
-//                    dialogUiState = null,
-//                )
-//            ),
-//            onInspectDbClick = {},
-//            onLogoutClick = {},
-//            onSwitchUserClick = {},
-//            onSyncClick = {}
-//        )
-//    }
-//}
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
+@Composable
+private fun SinglePaneListPreview() {
+    val contacts = (1..100).map { it.toString() }.map {
+        SObjectRecord(
+            id = it,
+            localStatus = LocalStatus.MatchesUpstream,
+            sObject = ContactObject(
+                firstName = "First $it",
+                lastName = "Last $it",
+                title = "Title $it",
+                department = "Department $it"
+            )
+        )
+    }
 
-//private class PreviewContactsActivityViewModel(state: ContactsActivityUiState) :
-//    ContactsActivityViewModel,
-//    ContactObjectFieldChangeHandler by PREVIEW_CONTACT_FIELD_CHANGE_HANDLER {
-//
-//    override val uiState: StateFlow<ContactsActivityUiState> = MutableStateFlow(state)
-//
-//    override fun sync(syncDownOnly: Boolean) {
-//        throw NotImplementedError("sync")
-//    }
-//
-//    override fun listSearchClick() {
-//        throw NotImplementedError("listSearchClick")
-//    }
-//
-//    override fun listContactClick(id: SObjectId) {
-//        throw NotImplementedError("listContactClick")
-//    }
-//
-//    override fun listCreateClick() {
-//        throw NotImplementedError("listCreateClick")
-//    }
-//
-//    override fun listDeleteClick(contactId: SObjectId) {
-//        throw NotImplementedError("listDeleteClick")
-//    }
-//
-//    override fun listEditClick(contactId: SObjectId) {
-//        throw NotImplementedError("listEditClick")
-//    }
-//
-//    override fun listUndeleteClick(contactId: SObjectId) {
-//        throw NotImplementedError("listUndeleteClick")
-//    }
-//
-//    override fun listExitSearchClick() {
-//        throw NotImplementedError("listExitSearchClick")
-//    }
-//
-//    override fun onSearchTermUpdated(newSearchTerm: String) {
-//        throw NotImplementedError("onSearchTermUpdated")
-//    }
-//
-//    override fun detailsDeleteClick() {
-//        throw NotImplementedError("detailsDeleteClick")
-//    }
-//
-//    override fun detailsExitClick() {
-//        throw NotImplementedError("detailsExitClick")
-//    }
-//
-//    override fun detailsSaveClick() {
-//        throw NotImplementedError("detailsSaveClick")
-//    }
-//
-//    override fun detailsUndeleteClick() {
-//        throw NotImplementedError("detailsUndeleteClick")
-//    }
-//
-//    override fun detailsEditClick() {
-//        throw NotImplementedError("detailsEditClick")
-//    }
-//}
+    val detailsVm = PreviewDetailsVm(
+        uiState = ContactDetailsUiState.NoContactSelected(
+            dataOperationIsActive = false,
+            curDialogUiState = null
+        )
+    )
 
-//@TestOnly
-//internal fun mockSyncedContact() = ContactObject.coerceFromJsonOrThrow(
-//    JSONObject()
-//        .putOpt(Constants.ID, "ID")
-//        .putOpt(
-//            ContactObject.KEY_FIRST_NAME,
-//            "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirstFirst"
-//        )
-//        .putOpt(
-//            ContactObject.KEY_LAST_NAME,
-//            "Last Last Last Last Last Last Last Last Last Last Last"
-//        )
-//        .putOpt(ContactObject.KEY_TITLE, "Title")
-//        .putOpt(SyncTarget.LOCALLY_CREATED, false)
-//        .putOpt(SyncTarget.LOCALLY_DELETED, false)
-//        .putOpt(SyncTarget.LOCALLY_UPDATED, false)
-//        .putOpt(SyncTarget.LOCAL, false)
-//)
-//
-//@TestOnly
-//internal fun mockLocallyDeletedContact() = ContactObject.coerceFromJsonOrThrow(
-//    JSONObject()
-//        .putOpt(Constants.ID, "ID")
-//        .putOpt(
-//            ContactObject.KEY_FIRST_NAME,
-//            "FirstFirstFirstFirstFirstFirstFirstFirstFirstFirstFirst"
-//        )
-//        .putOpt(
-//            ContactObject.KEY_LAST_NAME,
-//            "Last Last Last Last Last Last Last Last Last Last Last"
-//        )
-//        .putOpt(ContactObject.KEY_TITLE, "Title")
-//        .putOpt(SyncTarget.LOCALLY_CREATED, false)
-//        .putOpt(SyncTarget.LOCALLY_DELETED, true)
-//        .putOpt(SyncTarget.LOCALLY_UPDATED, false)
-//        .putOpt(SyncTarget.LOCAL, true)
-//)
+    val listVm = PreviewListVm(
+        uiState = ContactsListUiState.ViewingList(
+            contacts = contacts,
+            curSelectedContactId = null,
+            showLoadingOverlay = false
+        )
+    )
+
+    val vm = PreviewActivityVm(
+        activityState = ContactsActivityUiState(
+            isSyncing = false,
+            dialogUiState = null
+        ),
+        detailsState = detailsVm.uiStateValue,
+        listState = listVm.uiStateValue
+    )
+
+    SalesforceMobileSDKAndroidTheme {
+        Surface {
+            ContactsActivityContent(
+                vm = vm,
+                detailsVm = detailsVm,
+                listVm = listVm,
+                menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
+@Composable
+private fun SinglePaneDetailsPreview() {
+    val contacts = (1..100).map { it.toString() }.map {
+        SObjectRecord(
+            id = it,
+            localStatus = LocalStatus.MatchesUpstream,
+            sObject = ContactObject(
+                firstName = "First $it",
+                lastName = "Last $it",
+                title = "Title $it",
+                department = "Department $it"
+            )
+        )
+    }
+
+    val selectedContact = contacts[3]
+
+    val detailsVm = PreviewDetailsVm(
+        uiState = selectedContact.sObject.toPreviewViewingContactDetails()
+    )
+
+    val listVm = PreviewListVm(
+        uiState = ContactsListUiState.ViewingList(
+            contacts = contacts,
+            curSelectedContactId = selectedContact.id,
+            showLoadingOverlay = false
+        )
+    )
+
+    val vm = PreviewActivityVm(
+        activityState = ContactsActivityUiState(
+            isSyncing = false,
+            dialogUiState = null
+        ),
+        detailsState = detailsVm.uiStateValue,
+        listState = listVm.uiStateValue
+    )
+
+    SalesforceMobileSDKAndroidTheme {
+        Surface {
+            ContactsActivityContent(
+                vm = vm,
+                detailsVm = vm.detailsVm,
+                listVm = vm.listVm,
+                menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
+            )
+        }
+    }
+}
+
+private class PreviewDetailsVm(uiState: ContactDetailsUiState) : ContactDetailsViewModel {
+    override val uiState: StateFlow<ContactDetailsUiState> = MutableStateFlow(uiState)
+    val uiStateValue get() = this.uiState.value
+
+    override suspend fun clearContactObj() {}
+    override suspend fun setContact(recordId: String, startWithEditingEnabled: Boolean) {}
+    override fun onFirstNameChange(newFirstName: String) {}
+    override fun onLastNameChange(newLastName: String) {}
+    override fun onTitleChange(newTitle: String) {}
+    override fun onDepartmentChange(newDepartment: String) {}
+    override fun createClick() {}
+    override fun deleteClick() {}
+    override fun undeleteClick() {}
+    override fun editClick() {}
+    override fun exitClick() {}
+    override fun saveClick() {}
+}
+
+private class PreviewListVm(uiState: ContactsListUiState) : ContactsListViewModel {
+    override val uiState: StateFlow<ContactsListUiState> = MutableStateFlow(uiState)
+    val uiStateValue get() = this.uiState.value
+
+    override fun contactClick(contactId: String) {}
+    override fun createClick() {}
+    override fun deleteClick(contactId: String) {}
+    override fun editClick(contactId: String) {}
+    override fun undeleteClick(contactId: String) {}
+    override fun searchClick() {}
+    override fun exitSearchClick() {}
+    override fun onSearchTermUpdated(newSearchTerm: String) {}
+
+}
+
+private class PreviewActivityVm(
+    activityState: ContactsActivityUiState,
+    detailsState: ContactDetailsUiState,
+    listState: ContactsListUiState
+) : ContactsActivityViewModel {
+    override val uiState: StateFlow<ContactsActivityUiState> = MutableStateFlow(activityState)
+    val uiStateValue get() = uiState.value
+    override val detailsVm: ContactDetailsViewModel = PreviewDetailsVm(detailsState)
+    override val listVm: ContactsListViewModel = PreviewListVm(listState)
+
+    override fun sync(syncDownOnly: Boolean) {}
+}
+
+val PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER = object : ContactsActivityMenuHandler {
+    override fun onInspectDbClick() {}
+    override fun onLogoutClick() {}
+    override fun onSwitchUserClick() {}
+    override fun onSyncClick() {}
+}

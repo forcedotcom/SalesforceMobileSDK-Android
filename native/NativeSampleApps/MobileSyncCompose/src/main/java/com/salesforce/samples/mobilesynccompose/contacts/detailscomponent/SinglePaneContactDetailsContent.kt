@@ -49,14 +49,17 @@ import com.salesforce.samples.mobilesynccompose.R.drawable.ic_undo
 import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.contacts.activity.ContactsActivityMenuButton
 import com.salesforce.samples.mobilesynccompose.contacts.activity.ContactsActivityMenuHandler
+import com.salesforce.samples.mobilesynccompose.contacts.activity.PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
 import com.salesforce.samples.mobilesynccompose.contacts.activity.SyncImage
 import com.salesforce.samples.mobilesynccompose.core.extensions.takeIfInstance
 import com.salesforce.samples.mobilesynccompose.core.ui.components.LoadingOverlay
 import com.salesforce.samples.mobilesynccompose.core.ui.components.OutlinedTextFieldWithHelp
+import com.salesforce.samples.mobilesynccompose.core.ui.state.DialogUiState
 import com.salesforce.samples.mobilesynccompose.core.ui.state.SObjectUiSyncState
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 import com.salesforce.samples.mobilesynccompose.core.vm.EditableTextFieldUiState
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
+import org.jetbrains.annotations.TestOnly
 
 @Composable
 fun ContactDetailsSinglePaneComponent(
@@ -374,35 +377,44 @@ private fun ContactDetailViewModePreview() {
     SalesforceMobileSDKAndroidTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
             ContactDetailsSinglePaneComponent(
-                details = ContactDetailsUiState.ViewingContactDetails(
-                    firstNameField = ContactDetailsField.FirstName(
-                        fieldValue = contact.firstName,
-                        onValueChange = {}
-                    ),
-                    lastNameField = ContactDetailsField.LastName(
-                        fieldValue = contact.lastName,
-                        onValueChange = {}
-                    ),
-                    titleField = ContactDetailsField.Title(
-                        fieldValue = contact.title,
-                        onValueChange = {}
-                    ),
-                    departmentField = ContactDetailsField.Department(
-                        fieldValue = contact.department,
-                        onValueChange = {}
-                    ),
-                    uiSyncState = SObjectUiSyncState.Updated,
-                    isEditingEnabled = false,
-                    dataOperationIsActive = false,
-                    shouldScrollToErrorField = false,
-                    curDialogUiState = null
-                ),
+                details = contact.toPreviewViewingContactDetails(),
                 componentUiEventHandler = PREVIEW_CONTACT_DETAILS_UI_HANDLER,
                 menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER,
             )
         }
     }
 }
+
+@TestOnly
+fun ContactObject.toPreviewViewingContactDetails(
+    uiSyncState: SObjectUiSyncState = SObjectUiSyncState.Updated,
+    isEditingEnabled: Boolean = false,
+    dataOperationIsActive: Boolean = false,
+    shouldScrollToErrorField: Boolean = false,
+    curDialogUiState: DialogUiState? = null
+) = ContactDetailsUiState.ViewingContactDetails(
+    firstNameField = ContactDetailsField.FirstName(
+        fieldValue = firstName,
+        onValueChange = {}
+    ),
+    lastNameField = ContactDetailsField.LastName(
+        fieldValue = lastName,
+        onValueChange = {}
+    ),
+    titleField = ContactDetailsField.Title(
+        fieldValue = title,
+        onValueChange = {}
+    ),
+    departmentField = ContactDetailsField.Department(
+        fieldValue = department,
+        onValueChange = {}
+    ),
+    uiSyncState = uiSyncState,
+    isEditingEnabled = isEditingEnabled,
+    dataOperationIsActive = dataOperationIsActive,
+    shouldScrollToErrorField = shouldScrollToErrorField,
+    curDialogUiState = curDialogUiState
+)
 
 //@Preview(showBackground = true)
 //@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
@@ -484,17 +496,4 @@ val PREVIEW_CONTACT_DETAILS_UI_HANDLER = object : ContactDetailsUiEventHandler {
     override fun exitClick() {}
     override fun saveClick() {}
 
-}
-val PREVIEW_CONTACT_FIELD_CHANGE_HANDLER = object : ContactDetailsFieldChangeHandler {
-    override fun onFirstNameChange(newFirstName: String) {}
-    override fun onLastNameChange(newLastName: String) {}
-    override fun onTitleChange(newTitle: String) {}
-    override fun onDepartmentChange(newDepartment: String) {}
-}
-
-val PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER = object : ContactsActivityMenuHandler {
-    override fun onInspectDbClick() {}
-    override fun onLogoutClick() {}
-    override fun onSwitchUserClick() {}
-    override fun onSyncClick() {}
 }

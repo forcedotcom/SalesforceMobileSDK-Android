@@ -75,6 +75,7 @@ class ContactsActivity
                 ContactsActivityContent(
                     vm = vm,
                     detailsVm = vm.detailsVm,
+                    listVm = vm.listVm,
                     menuHandler = this
                 )
             }
