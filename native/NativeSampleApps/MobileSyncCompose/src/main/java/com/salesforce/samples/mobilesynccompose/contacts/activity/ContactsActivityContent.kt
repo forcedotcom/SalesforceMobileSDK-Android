@@ -28,13 +28,12 @@ package com.salesforce.samples.mobilesynccompose.contacts.activity
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -48,7 +47,7 @@ import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.*
 import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.*
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord
-import com.salesforce.samples.mobilesynccompose.core.ui.state.SObjectUiSyncState
+import com.salesforce.samples.mobilesynccompose.core.ui.state.*
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -62,29 +61,40 @@ import kotlinx.coroutines.flow.StateFlow
 fun ContactsActivityContent(
     vm: ContactsActivityViewModel,
     menuHandler: ContactsActivityMenuHandler,
+    windowSizeClasses: WindowSizeClasses
 ) {
     // this drives recomposition when the VM updates itself:
     val detailsUiState by vm.detailsVm.uiState.collectAsState()
     val listUiState by vm.listVm.uiState.collectAsState()
     val uiState by vm.uiState.collectAsState()
 
-    SinglePane(
-        activityUiState = uiState,
-        detailsUiState = detailsUiState,
-        detailsUiEventHandler = vm.detailsVm,
-        listUiState = listUiState,
-        listItemClickHandler = vm.listVm,
-        listDataOpHandler = vm.listVm,
-        listSearchEventHandler = vm.listVm,
-        menuHandler = menuHandler
-    )
+    when (windowSizeClasses.toContactsActivityContentLayout()) {
+        ContactsActivityContentLayout.SinglePane -> SinglePane(
+            detailsUiState = detailsUiState,
+            detailsUiEventHandler = vm.detailsVm,
+            listUiState = listUiState,
+            listItemClickHandler = vm.listVm,
+            listDataOpHandler = vm.listVm,
+            listSearchEventHandler = vm.listVm,
+            menuHandler = menuHandler
+        )
+        ContactsActivityContentLayout.MasterDetail -> MasterDetail(
+            detailsUiState = detailsUiState,
+            detailsUiEventHandler = vm.detailsVm,
+            listUiState = listUiState,
+            listItemClickHandler = vm.listVm,
+            listDataOpHandler = vm.listVm,
+            listSearchEventHandler = vm.listVm,
+            menuHandler = menuHandler,
+            windowSizeClasses = windowSizeClasses
+        )
+    }
 
     uiState.dialogUiState?.RenderDialog(modifier = Modifier)
 }
 
 @Composable
 private fun SinglePane(
-    activityUiState: ContactsActivityUiState,
     detailsUiState: ContactDetailsUiState,
     detailsUiEventHandler: ContactDetailsUiEventHandler,
     listUiState: ContactsListUiState,
@@ -107,9 +117,66 @@ private fun SinglePane(
             menuHandler = menuHandler
         )
     }
+}
 
+@Composable
+private fun MasterDetail(
+    detailsUiState: ContactDetailsUiState,
+    detailsUiEventHandler: ContactDetailsUiEventHandler,
+    listUiState: ContactsListUiState,
+    listItemClickHandler: ContactsListItemClickHandler,
+    listDataOpHandler: ContactsListDataOpHandler,
+    listSearchEventHandler: ContactsListSearchEventHandler,
+    menuHandler: ContactsActivityMenuHandler,
+    windowSizeClasses: WindowSizeClasses
+) {
+    // TODO What is the ui with FAB in master/detail?
+    Scaffold(
+        topBar = {
+            TopAppBar {
+                Text(stringResource(id = label_contacts), modifier = Modifier.weight(1f))
+                ContactsActivityMenuButton(menuHandler = menuHandler)
+            }
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { /*TODO*/ }) {
+                Icon(Icons.Default.Star, contentDescription = "TODO")
+            }
+        },
+        floatingActionButtonPosition = FabPosition.End,
+        isFloatingActionButtonDocked = false
+    ) {
+        val evenSplit = windowSizeClasses.horiz != WindowSizeClass.Expanded
 
-    activityUiState.dialogUiState?.RenderDialog(modifier = Modifier)
+        Row(modifier = Modifier.fillMaxSize()) {
+            val listModifier: Modifier
+            val detailModifier: Modifier
+
+            if (evenSplit) {
+                listModifier = Modifier.weight(0.5f)
+                detailModifier = Modifier.weight(0.5f)
+            } else {
+                listModifier = Modifier.width(300.dp)
+                detailModifier = Modifier.weight(1f)
+            }
+
+            Column(modifier = listModifier) {
+                ContactsListContent(
+                    modifier = Modifier.fillMaxSize(),
+                    contactRecords = listUiState.contacts,
+                    showLoadingOverlay = listUiState.showLoadingOverlay,
+                    listContactClick = listItemClickHandler::contactClick,
+                    listDeleteClick = listDataOpHandler::deleteClick,
+                    listEditClick = listItemClickHandler::editClick,
+                    listUndeleteClick = listDataOpHandler::undeleteClick
+                )
+            }
+
+            Column(modifier = detailModifier) {
+                ContactDetailsContent(details = detailsUiState)
+            }
+        }
+    }
 }
 
 @Composable
@@ -178,6 +245,17 @@ fun SyncImage(modifier: Modifier = Modifier, uiState: SObjectUiSyncState) {
     }
 }
 
+enum class ContactsActivityContentLayout {
+    SinglePane,
+    MasterDetail
+}
+
+fun WindowSizeClasses.toContactsActivityContentLayout() = when (horiz) {
+    WindowSizeClass.Compact -> ContactsActivityContentLayout.SinglePane
+    WindowSizeClass.Medium,
+    WindowSizeClass.Expanded -> ContactsActivityContentLayout.MasterDetail
+}
+
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
@@ -223,7 +301,11 @@ private fun SinglePaneListPreview() {
         Surface {
             ContactsActivityContent(
                 vm = vm,
-                menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
+                menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER,
+                windowSizeClasses = WindowSizeClasses(
+                    horiz = WindowSizeClass.Compact,
+                    vert = WindowSizeClass.Expanded
+                )
             )
         }
     }
@@ -273,7 +355,121 @@ private fun SinglePaneDetailsPreview() {
         Surface {
             ContactsActivityContent(
                 vm = vm,
-                menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
+                menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER,
+                windowSizeClasses = WindowSizeClasses(
+                    horiz = WindowSizeClass.Compact,
+                    vert = WindowSizeClass.Expanded
+                )
+            )
+        }
+    }
+}
+
+@Preview(
+    showBackground = true,
+    widthDp = WINDOW_SIZE_COMPACT_CUTOFF_DP,
+    heightDp = WINDOW_SIZE_MEDIUM_CUTOFF_DP
+)
+@Preview(
+    showBackground = true,
+    widthDp = WINDOW_SIZE_COMPACT_CUTOFF_DP,
+    heightDp = WINDOW_SIZE_MEDIUM_CUTOFF_DP,
+    uiMode = UI_MODE_NIGHT_YES
+)
+@Composable
+private fun MasterDetailMediumPreview() {
+    val contacts = (1..100).map { it.toString() }.map {
+        SObjectRecord(
+            id = it,
+            localStatus = LocalStatus.MatchesUpstream,
+            sObject = ContactObject(
+                firstName = "First $it",
+                lastName = "Last $it",
+                title = "Title $it",
+                department = "Department $it"
+            )
+        )
+    }
+
+    val selectedContact = contacts[3]
+
+    val detailsVm = PreviewDetailsVm(
+        uiState = selectedContact.sObject.toPreviewViewingContactDetails()
+    )
+
+    val listVm = PreviewListVm(
+        uiState = ContactsListUiState.ViewingList(
+            contacts = contacts,
+            curSelectedContactId = selectedContact.id,
+            showLoadingOverlay = false
+        )
+    )
+    SalesforceMobileSDKAndroidTheme {
+        Surface {
+            MasterDetail(
+                detailsUiState = detailsVm.uiStateValue,
+                detailsUiEventHandler = detailsVm,
+                listUiState = listVm.uiStateValue,
+                listItemClickHandler = listVm,
+                listDataOpHandler = listVm,
+                listSearchEventHandler = listVm,
+                menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER,
+                WindowSizeClasses(horiz = WindowSizeClass.Medium, vert = WindowSizeClass.Expanded)
+            )
+        }
+    }
+}
+
+@Preview(
+    showBackground = true,
+    widthDp = WINDOW_SIZE_MEDIUM_CUTOFF_DP,
+    heightDp = WINDOW_SIZE_MEDIUM_CUTOFF_DP
+)
+@Preview(
+    showBackground = true,
+    widthDp = WINDOW_SIZE_MEDIUM_CUTOFF_DP,
+    heightDp = WINDOW_SIZE_MEDIUM_CUTOFF_DP,
+    uiMode = UI_MODE_NIGHT_YES
+)
+@Composable
+private fun MasterDetailExpandedPreview() {
+    val contacts = (1..100).map { it.toString() }.map {
+        SObjectRecord(
+            id = it,
+            localStatus = LocalStatus.MatchesUpstream,
+            sObject = ContactObject(
+                firstName = "First $it",
+                lastName = "Last $it",
+                title = "Title $it",
+                department = "Department $it"
+            )
+        )
+    }
+
+    val selectedContact = contacts[3]
+
+    val detailsVm = PreviewDetailsVm(
+        uiState = selectedContact.sObject.toPreviewViewingContactDetails()
+    )
+
+    val listVm = PreviewListVm(
+        uiState = ContactsListUiState.ViewingList(
+            contacts = contacts,
+            curSelectedContactId = selectedContact.id,
+            showLoadingOverlay = false
+        )
+    )
+    SalesforceMobileSDKAndroidTheme {
+        Surface {
+            MasterDetail(
+                detailsUiState = detailsVm.uiStateValue,
+                detailsUiEventHandler = detailsVm,
+                listUiState = listVm.uiStateValue,
+                listItemClickHandler = listVm,
+                listDataOpHandler = listVm,
+                listSearchEventHandler = listVm,
+                menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER,
+                WindowSizeClasses(horiz = WindowSizeClass.Expanded, vert = WindowSizeClass.Expanded)
             )
         }
     }

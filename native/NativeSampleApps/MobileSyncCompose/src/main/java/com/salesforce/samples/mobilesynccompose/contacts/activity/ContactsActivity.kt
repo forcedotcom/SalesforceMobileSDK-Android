@@ -31,14 +31,20 @@ import android.os.Bundle
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.toComposeRect
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.window.layout.WindowMetricsCalculator
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity
 import com.salesforce.androidsdk.ui.SalesforceActivityDelegate
 import com.salesforce.androidsdk.ui.SalesforceActivityInterface
+import com.salesforce.samples.mobilesynccompose.core.ui.state.toWindowSizeClasses
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 import com.salesforce.samples.mobilesynccompose.model.contacts.DefaultContactsRepo
 
@@ -71,8 +77,24 @@ class ContactsActivity
         salesforceActivityDelegate = SalesforceActivityDelegate(this).also { it.onCreate() }
 
         setContent {
+            val windowSize = remember(LocalConfiguration.current) {
+                WindowMetricsCalculator.getOrCreate()
+                    .computeCurrentWindowMetrics(this)
+                    .bounds
+                    .toComposeRect()
+                    .size
+            }
+
+            val windowSizeClasses = with(LocalDensity.current) {
+                windowSize.toDpSize().toWindowSizeClasses()
+            }
+
             SalesforceMobileSDKAndroidTheme {
-                ContactsActivityContent(vm = vm, menuHandler = this)
+                ContactsActivityContent(
+                    vm = vm,
+                    menuHandler = this,
+                    windowSizeClasses = windowSizeClasses
+                )
             }
         }
     }

@@ -170,7 +170,7 @@ class DefaultContactDetailsViewModel(
             return when (val curState = uiState.value) {
                 is ContactDetailsUiState.ViewingContactDetails -> curRecordId?.let {
                     try {
-                        curState.toSObjectOrThrow() == upstreamRecords[it]?.sObject
+                        curState.toSObjectOrThrow() != upstreamRecords[it]?.sObject
                     } catch (ex: ContactValidationException) {
                         // invalid field values means there are unsaved changes
                         true
