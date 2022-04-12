@@ -190,7 +190,7 @@ fun ContactsListFabSinglePane(listCreateClick: () -> Unit) {
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
-private fun ContactListContentPreview() {
+private fun ContactsListSinglePaneComponentPreview() {
     val contacts = (0..100)
         .map { it.toString() }
         .map {
@@ -222,7 +222,6 @@ private fun ContactListContentPreview() {
 }
 
 @Preview(showBackground = true)
-@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 private fun ContactListSyncingPreview() {
     val contacts = (0..100)
@@ -256,7 +255,6 @@ private fun ContactListSyncingPreview() {
 }
 
 @Preview(showBackground = true)
-@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 private fun ContactListLoadingPreview() {
     val contacts = emptyList<SObjectRecord<ContactObject>>()
