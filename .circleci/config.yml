@@ -75,10 +75,7 @@ executors:
   linux:
     working_directory: ~/SalesforceMobileSDK-Android
     docker:
-      - image: circleci/android:api-29-node
-    environment:
-      - TERM: "dumb"
-      - GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'
+      - image: cimg/android:2022.03.1-node
 
 jobs:
   static-analysis:
@@ -97,6 +94,7 @@ jobs:
             gem install danger-junit
             gem install danger-android_lint
             gem install danger-jacoco
+            echo $TEST_CREDENTIALS > ./shared/test/test_credentials.json
       - run:
           name: Run Android Lint
           command:  ./gradlew lint
