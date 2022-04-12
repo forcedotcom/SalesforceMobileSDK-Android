@@ -30,6 +30,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.ContactDetailsViewModel
 import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.DefaultContactDetailsViewModel
+import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListItemClickHandler
 import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListViewModel
 import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.DefaultContactsListViewModel
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactsRepo
@@ -61,7 +62,9 @@ class DefaultContactsActivityViewModel(
     override val listVm: ContactsListViewModel by lazy {
         DefaultContactsListViewModel(
             parentScope = viewModelScope,
-            contactsRepo = contactsRepo
+            contactsRepo = contactsRepo,
+            itemClickDelegate = ListClickDelegate(),
+            searchEventDelegate = null
         )
     }
 
@@ -83,6 +86,30 @@ class DefaultContactsActivityViewModel(
             stateMutex.withLock { mutUiState.value = uiState.value.copy(isSyncing = false) }
         }
     }
+
+    private inner class ListClickDelegate : ContactsListItemClickHandler {
+        override fun contactClick(contactId: String) {
+            TODO("Not yet implemented")
+        }
+
+        override fun createClick() {
+            TODO("Not yet implemented")
+        }
+
+        override fun deleteClick(contactId: String) {
+            TODO("Not yet implemented")
+        }
+
+        override fun editClick(contactId: String) {
+            TODO("Not yet implemented")
+        }
+
+        override fun undeleteClick(contactId: String) {
+            TODO("Not yet implemented")
+        }
+    }
+
+
     // region Class Properties Definitions
 
 

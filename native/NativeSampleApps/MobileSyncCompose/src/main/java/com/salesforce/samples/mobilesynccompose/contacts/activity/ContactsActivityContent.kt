@@ -45,10 +45,7 @@ import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R
 import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.*
-import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListSinglePaneComponent
-import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListUiEventHandler
-import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListUiState
-import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListViewModel
+import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.*
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord
 import com.salesforce.samples.mobilesynccompose.core.ui.state.SObjectUiSyncState
@@ -76,7 +73,8 @@ fun ContactsActivityContent(
         detailsUiState = detailsUiState,
         detailsUiEventHandler = vm.detailsVm,
         listUiState = listUiState,
-        listUiEventHandler = vm.listVm,
+        listItemClickHandler = vm.listVm,
+        listSearchEventHandler = vm.listVm,
         menuHandler = menuHandler
     )
 
@@ -89,7 +87,8 @@ private fun SinglePane(
     detailsUiState: ContactDetailsUiState,
     detailsUiEventHandler: ContactDetailsUiEventHandler,
     listUiState: ContactsListUiState,
-    listUiEventHandler: ContactsListUiEventHandler,
+    listItemClickHandler: ContactsListItemClickHandler,
+    listSearchEventHandler: ContactsListSearchEventHandler,
     menuHandler: ContactsActivityMenuHandler,
 ) {
     when (detailsUiState) {
@@ -100,7 +99,8 @@ private fun SinglePane(
         )
         else -> ContactsListSinglePaneComponent(
             uiState = listUiState,
-            uiEventHandler = listUiEventHandler,
+            listItemClickHandler = listItemClickHandler,
+            searchEventHandler = listSearchEventHandler,
             menuHandler = menuHandler
         )
     }
@@ -307,6 +307,9 @@ private class PreviewListVm(uiState: ContactsListUiState) : ContactsListViewMode
     override fun exitSearchClick() {}
     override fun onSearchTermUpdated(newSearchTerm: String) {}
 
+    override fun setSelectedContact(id: String?) {}
+    override fun setSearchModeEnabled(isEnabled: Boolean) {}
+    override fun setSearchTerm(newSearchTerm: String) {}
 }
 
 private class PreviewActivityVm(

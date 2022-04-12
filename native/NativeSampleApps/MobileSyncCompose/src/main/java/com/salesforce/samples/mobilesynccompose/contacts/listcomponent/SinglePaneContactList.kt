@@ -61,7 +61,8 @@ fun ContactsListSinglePaneComponent(
     modifier: Modifier = Modifier,
     contentModifier: Modifier = Modifier,
     uiState: ContactsListUiState,
-    uiEventHandler: ContactsListUiEventHandler,
+    listItemClickHandler: ContactsListItemClickHandler,
+    searchEventHandler: ContactsListSearchEventHandler,
     menuHandler: ContactsActivityMenuHandler
 ) {
     Scaffold(
@@ -71,8 +72,8 @@ fun ContactsListSinglePaneComponent(
                 when (uiState) {
                     is ContactsListUiState.Searching -> ContactsListTopAppBarSearchModeSinglePane(
                         searchTerm = uiState.curSearchTerm,
-                        listExitSearchClick = uiEventHandler::exitSearchClick,
-                        onSearchTermUpdated = uiEventHandler::onSearchTermUpdated
+                        listExitSearchClick = searchEventHandler::exitSearchClick,
+                        onSearchTermUpdated = searchEventHandler::onSearchTermUpdated
                     )
                     is ContactsListUiState.ViewingList -> ContactsListTopAppBarSinglePane()
                 }
@@ -85,12 +86,12 @@ fun ContactsListSinglePaneComponent(
                 when (uiState) {
                     is ContactsListUiState.Searching -> ContactsListBottomAppBarSearchSinglePane()
                     is ContactsListUiState.ViewingList -> ContactsListBottomAppBarSinglePane(
-                        listSearchClick = uiEventHandler::searchClick
+                        listSearchClick = searchEventHandler::searchClick
                     )
                 }
             }
         },
-        floatingActionButton = { ContactsListFabSinglePane(listCreateClick = uiEventHandler::createClick) },
+        floatingActionButton = { ContactsListFabSinglePane(listCreateClick = listItemClickHandler::createClick) },
         floatingActionButtonPosition = FabPosition.Center,
         isFloatingActionButtonDocked = true,
     ) {
@@ -100,10 +101,10 @@ fun ContactsListSinglePaneComponent(
                 .then(contentModifier),
             contactRecords = uiState.contacts,
             showLoadingOverlay = uiState.showLoadingOverlay,
-            listContactClick = uiEventHandler::contactClick,
-            listDeleteClick = uiEventHandler::deleteClick,
-            listEditClick = uiEventHandler::editClick,
-            listUndeleteClick = uiEventHandler::undeleteClick
+            listContactClick = listItemClickHandler::contactClick,
+            listDeleteClick = listItemClickHandler::deleteClick,
+            listEditClick = listItemClickHandler::editClick,
+            listUndeleteClick = listItemClickHandler::undeleteClick
         )
     }
 }
@@ -221,7 +222,8 @@ private fun ContactsListSinglePaneComponentPreview() {
                     curSelectedContactId = null,
                     showLoadingOverlay = false
                 ),
-                uiEventHandler = PREVIEW_LIST_UI_EVENT_HANDLER,
+                listItemClickHandler = PREVIEW_LIST_ITEM_CLICK_HANDLER,
+                searchEventHandler = PREVIEW_LIST_SEARCH_EVENT_HANDLER,
                 menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
             )
         }
@@ -260,7 +262,8 @@ private fun ContactListSyncingAndSearchingPreview() {
                     showLoadingOverlay = true,
                     curSearchTerm = "9"
                 ),
-                uiEventHandler = PREVIEW_LIST_UI_EVENT_HANDLER,
+                listItemClickHandler = PREVIEW_LIST_ITEM_CLICK_HANDLER,
+                searchEventHandler = PREVIEW_LIST_SEARCH_EVENT_HANDLER,
                 menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
             )
         }
@@ -281,19 +284,23 @@ private fun ContactListLoadingPreview() {
                     curSelectedContactId = null,
                     showLoadingOverlay = true
                 ),
-                uiEventHandler = PREVIEW_LIST_UI_EVENT_HANDLER,
+                listItemClickHandler = PREVIEW_LIST_ITEM_CLICK_HANDLER,
+                searchEventHandler = PREVIEW_LIST_SEARCH_EVENT_HANDLER,
                 menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
             )
         }
     }
 }
 
-private val PREVIEW_LIST_UI_EVENT_HANDLER = object : ContactsListUiEventHandler {
+private val PREVIEW_LIST_ITEM_CLICK_HANDLER = object : ContactsListItemClickHandler {
     override fun contactClick(contactId: String) {}
     override fun createClick() {}
     override fun deleteClick(contactId: String) {}
     override fun editClick(contactId: String) {}
     override fun undeleteClick(contactId: String) {}
+}
+
+private val PREVIEW_LIST_SEARCH_EVENT_HANDLER = object : ContactsListSearchEventHandler {
     override fun searchClick() {}
     override fun exitSearchClick() {}
     override fun onSearchTermUpdated(newSearchTerm: String) {}
