@@ -66,7 +66,16 @@ class DefaultContactDetailsViewModel(
         upstreamRecords = newRecords
 
         val curId = curRecordId ?: return@withLock
-        val matchingRecord = newRecords[curId] ?: return@withLock
+        val matchingRecord = newRecords[curId]
+
+        // TODO This whole onNewRecords is buggy. I think a refactor is necessary, maybe having an internal state which includes the corresponding UI state so that the [curRecordId] doesn't get out of sync with the ui state?
+        if (matchingRecord == null) {
+            mutUiState.value = ContactDetailsUiState.NoContactSelected(
+                dataOperationIsActive = dataOpDelegate.dataOperationIsActive,
+                curDialogUiState = uiState.value.curDialogUiState
+            )
+            return@withLock
+        }
 
         mutUiState.value = when (val curState = uiState.value) {
             is ContactDetailsUiState.NoContactSelected -> {
@@ -471,6 +480,8 @@ class DefaultContactDetailsViewModel(
             // This clobbers the UI regardless of what state it is in b/c we are assuming that no
             // changes to the VM can happen while this data operation is running.
             stateMutex.withLock {
+                curRecordId = record.id
+
                 mutUiState.value = record.sObject.buildViewingContactUiState(
                     uiSyncState = record.localStatus.toUiSyncState(),
                     isEditingEnabled = false,
