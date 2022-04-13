@@ -34,7 +34,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -84,7 +83,7 @@ fun ContactsActivityContent(
             listUiState = listUiState,
             listItemClickHandler = vm.listVm,
             listDataOpHandler = vm.listVm,
-            listSearchEventHandler = vm.listVm,
+            onSearchTermUpdated = vm.listVm::onSearchTermUpdated,
             menuHandler = menuHandler
         )
         ContactsActivityContentLayout.MasterDetail -> MasterDetail(
@@ -93,7 +92,7 @@ fun ContactsActivityContent(
             listUiState = listUiState,
             listItemClickHandler = vm.listVm,
             listDataOpHandler = vm.listVm,
-            listSearchEventHandler = vm.listVm,
+            onSearchTermUpdated = vm.listVm::onSearchTermUpdated,
             menuHandler = menuHandler,
             windowSizeClasses = windowSizeClasses
         )
@@ -109,7 +108,7 @@ private fun SinglePane(
     listUiState: ContactsListUiState,
     listItemClickHandler: ContactsListItemClickHandler,
     listDataOpHandler: ContactsListDataOpHandler,
-    listSearchEventHandler: ContactsListSearchEventHandler,
+    onSearchTermUpdated: (newSearchTerm: String) -> Unit,
     menuHandler: ContactsActivityMenuHandler,
 ) {
     when (detailsUiState) {
@@ -122,7 +121,7 @@ private fun SinglePane(
             uiState = listUiState,
             listItemClickHandler = listItemClickHandler,
             dataOpHandler = listDataOpHandler,
-            searchEventHandler = listSearchEventHandler,
+            onSearchTermUpdated = onSearchTermUpdated,
             menuHandler = menuHandler
         )
     }
@@ -135,7 +134,7 @@ private fun MasterDetail(
     listUiState: ContactsListUiState,
     listItemClickHandler: ContactsListItemClickHandler,
     listDataOpHandler: ContactsListDataOpHandler,
-    listSearchEventHandler: ContactsListSearchEventHandler,
+    onSearchTermUpdated: (newSearchTerm: String) -> Unit,
     menuHandler: ContactsActivityMenuHandler,
     windowSizeClasses: WindowSizeClasses
 ) {
@@ -157,14 +156,6 @@ private fun MasterDetail(
         },
         bottomBar = {
             BottomAppBar {
-                if (listUiState !is ContactsListUiState.Searching) {
-                    IconButton(onClick = listSearchEventHandler::searchClick) {
-                        Icon(
-                            Icons.Default.Search,
-                            contentDescription = stringResource(id = content_desc_search)
-                        )
-                    }
-                }
                 Spacer(modifier = Modifier.weight(1f))
                 ContactsActivityMenuButton(menuHandler = menuHandler)
             }
@@ -190,19 +181,17 @@ private fun MasterDetail(
                 listModifier = Modifier.weight(0.5f)
                 detailModifier = Modifier.weight(0.5f)
             } else {
-                listModifier = Modifier.width(300.dp)
+                listModifier = Modifier.width((WINDOW_SIZE_COMPACT_CUTOFF_DP / 2).dp)
                 detailModifier = Modifier.weight(1f)
             }
 
             Column(modifier = listModifier) {
                 ContactsListContent(
                     modifier = Modifier.fillMaxSize(),
-                    contactRecords = listUiState.contacts,
-                    showLoadingOverlay = listUiState.showLoadingOverlay,
-                    listContactClick = listItemClickHandler::contactClick,
-                    listDeleteClick = listDataOpHandler::deleteClick,
-                    listEditClick = listItemClickHandler::editClick,
-                    listUndeleteClick = listDataOpHandler::undeleteClick
+                    uiState = listUiState,
+                    listItemClickHandler = listItemClickHandler,
+                    dataOpHandler = listDataOpHandler,
+                    onSearchTermUpdated = onSearchTermUpdated
                 )
             }
 
@@ -314,10 +303,10 @@ private fun SinglePaneListPreview() {
     )
 
     val listVm = PreviewListVm(
-        uiState = ContactsListUiState.ViewingList(
+        uiState = ContactsListUiState(
             contacts = contacts,
             curSelectedContactId = null,
-            showLoadingOverlay = false
+            isDoingInitialLoad = false,
         )
     )
 
@@ -367,10 +356,10 @@ private fun SinglePaneDetailsPreview() {
     )
 
     val listVm = PreviewListVm(
-        uiState = ContactsListUiState.ViewingList(
+        uiState = ContactsListUiState(
             contacts = contacts,
             curSelectedContactId = selectedContact.id,
-            showLoadingOverlay = false
+            isDoingInitialLoad = false
         )
     )
 
@@ -424,10 +413,10 @@ private fun MasterDetailMediumPreview() {
     )
 
     val listVm = PreviewListVm(
-        uiState = ContactsListUiState.ViewingList(
+        uiState = ContactsListUiState(
             contacts = contacts,
             curSelectedContactId = selectedContact.id,
-            showLoadingOverlay = false
+            isDoingInitialLoad = false
         )
     )
     SalesforceMobileSDKAndroidTheme {
@@ -438,7 +427,7 @@ private fun MasterDetailMediumPreview() {
                 listUiState = listVm.uiStateValue,
                 listItemClickHandler = listVm,
                 listDataOpHandler = listVm,
-                listSearchEventHandler = listVm,
+                onSearchTermUpdated = listVm::onSearchTermUpdated,
                 menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER,
                 WindowSizeClasses(horiz = WindowSizeClass.Medium, vert = WindowSizeClass.Expanded)
             )
@@ -475,10 +464,10 @@ private fun MasterDetailNoContactSearchingPreview() {
     )
 
     val listVm = PreviewListVm(
-        uiState = ContactsListUiState.Searching(
+        uiState = ContactsListUiState(
             contacts = contacts,
             curSelectedContactId = null,
-            showLoadingOverlay = false,
+            isDoingInitialLoad = false,
             curSearchTerm = curSearchTerm
         )
     )
@@ -490,7 +479,7 @@ private fun MasterDetailNoContactSearchingPreview() {
                 listUiState = listVm.uiStateValue,
                 listItemClickHandler = listVm,
                 listDataOpHandler = listVm,
-                listSearchEventHandler = listVm,
+                onSearchTermUpdated = listVm::onSearchTermUpdated,
                 menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER,
                 WindowSizeClasses(horiz = WindowSizeClass.Medium, vert = WindowSizeClass.Expanded)
             )
@@ -531,10 +520,10 @@ private fun MasterDetailExpandedPreview() {
     )
 
     val listVm = PreviewListVm(
-        uiState = ContactsListUiState.ViewingList(
+        uiState = ContactsListUiState(
             contacts = contacts,
             curSelectedContactId = selectedContact.id,
-            showLoadingOverlay = false
+            isDoingInitialLoad = false
         )
     )
     SalesforceMobileSDKAndroidTheme {
@@ -545,7 +534,7 @@ private fun MasterDetailExpandedPreview() {
                 listUiState = listVm.uiStateValue,
                 listItemClickHandler = listVm,
                 listDataOpHandler = listVm,
-                listSearchEventHandler = listVm,
+                onSearchTermUpdated = listVm::onSearchTermUpdated,
                 menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER,
                 WindowSizeClasses(horiz = WindowSizeClass.Expanded, vert = WindowSizeClass.Expanded)
             )
@@ -553,7 +542,7 @@ private fun MasterDetailExpandedPreview() {
     }
 }
 
-private class PreviewDetailsVm(uiState: ContactDetailsUiState) : ContactDetailsViewModel {
+class PreviewDetailsVm(uiState: ContactDetailsUiState) : ContactDetailsViewModel {
     override val uiState: StateFlow<ContactDetailsUiState> = MutableStateFlow(uiState)
     override fun setContactOrThrow(recordId: String?, isEditing: Boolean) {}
     override fun discardChangesAndSetContactOrThrow(recordId: String?, isEditing: Boolean) {}
@@ -572,7 +561,7 @@ private class PreviewDetailsVm(uiState: ContactDetailsUiState) : ContactDetailsV
     override fun saveClick() {}
 }
 
-private class PreviewListVm(uiState: ContactsListUiState) : ContactsListViewModel {
+class PreviewListVm(uiState: ContactsListUiState) : ContactsListViewModel {
     override val uiState: StateFlow<ContactsListUiState> = MutableStateFlow(uiState)
     val uiStateValue get() = this.uiState.value
 
@@ -581,16 +570,13 @@ private class PreviewListVm(uiState: ContactsListUiState) : ContactsListViewMode
     override fun deleteClick(contactId: String) {}
     override fun editClick(contactId: String) {}
     override fun undeleteClick(contactId: String) {}
-    override fun searchClick() {}
-    override fun exitSearchClick() {}
     override fun onSearchTermUpdated(newSearchTerm: String) {}
 
     override fun setSelectedContact(id: String?) {}
-    override fun setSearchModeEnabled(isEnabled: Boolean) {}
     override fun setSearchTerm(newSearchTerm: String) {}
 }
 
-private class PreviewActivityVm(
+class PreviewActivityVm(
     activityState: ContactsActivityUiState,
     detailsState: ContactDetailsUiState,
     listState: ContactsListUiState

@@ -16,6 +16,7 @@
     <string name="cta_logout">Log Out</string>
     <string name="cta_ok">Okay</string>
     <string name="cta_save">Save</string>
+    <string name="cta_search">Search</string>
     <string name="cta_switch_user">Switch User</string>
     <string name="cta_sync">Sync</string>
     <string name="cta_undelete">Undelete</string>
@@ -37,6 +38,7 @@
     <string name="help_cannot_be_blank">This field cannot be left blank</string>
 
     <string name="content_desc_add_contact">Create New Contact</string>
+    <string name="content_desc_cancel_search">Cancel Searching</string>
     <string name="content_desc_item_deleted_locally">Item is locally deleted</string>
     <string name="content_desc_item_synced">Item is synced</string>
     <string name="content_desc_item_saved_locally">Item is only saved locally</string>

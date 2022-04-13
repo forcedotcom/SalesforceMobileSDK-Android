@@ -67,7 +67,7 @@ class DefaultContactsActivityViewModel(
             contactsRepo = contactsRepo,
             itemClickDelegate = ListClickDelegate(),
             dataOpDelegate = ListDataOpDelegate(),
-            searchEventDelegate = null
+            searchTermUpdatedDelegate = null
         )
     }
 

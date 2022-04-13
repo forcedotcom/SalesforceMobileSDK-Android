@@ -28,14 +28,11 @@ package com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ui
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -47,13 +44,12 @@ import com.salesforce.samples.mobilesynccompose.contacts.activity.ContactsActivi
 import com.salesforce.samples.mobilesynccompose.contacts.activity.PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
 import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListDataOpHandler
 import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListItemClickHandler
-import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListSearchEventHandler
 import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListUiState
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord
-import com.salesforce.samples.mobilesynccompose.core.ui.components.OutlinedTextFieldWithHelp
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
+import com.salesforce.samples.mobilesynccompose.model.contacts.ContactRecord
 
 @Composable
 fun ContactsListSinglePaneComponent(
@@ -62,34 +58,21 @@ fun ContactsListSinglePaneComponent(
     uiState: ContactsListUiState,
     listItemClickHandler: ContactsListItemClickHandler,
     dataOpHandler: ContactsListDataOpHandler,
-    searchEventHandler: ContactsListSearchEventHandler,
+    onSearchTermUpdated: (newSearchTerm: String) -> Unit,
     menuHandler: ContactsActivityMenuHandler
 ) {
     Scaffold(
         modifier = modifier,
         topBar = {
             TopAppBar {
-                when (uiState) {
-                    is ContactsListUiState.Searching -> ContactsListTopAppBarSearchModeSinglePane(
-                        searchTerm = uiState.curSearchTerm,
-                        listExitSearchClick = searchEventHandler::exitSearchClick,
-                        onSearchTermUpdated = searchEventHandler::onSearchTermUpdated
-                    )
-                    is ContactsListUiState.ViewingList -> ContactsListTopAppBarSinglePane()
-                }
-
+                ContactsListTopAppBarSinglePane()
                 ContactsActivityMenuButton(menuHandler = menuHandler)
             }
         },
         bottomBar = {
-            BottomAppBar(cutoutShape = MaterialTheme.shapes.small.copy(all = CornerSize(percent = 50))) {
-                when (uiState) {
-                    is ContactsListUiState.Searching -> ContactsListBottomAppBarSearchSinglePane()
-                    is ContactsListUiState.ViewingList -> ContactsListBottomAppBarSinglePane(
-                        listSearchClick = searchEventHandler::searchClick
-                    )
-                }
-            }
+            BottomAppBar(
+                cutoutShape = MaterialTheme.shapes.small.copy(all = CornerSize(percent = 50))
+            ) {}
         },
         floatingActionButton = { ContactsListFabSinglePane(listCreateClick = listItemClickHandler::createClick) },
         floatingActionButtonPosition = FabPosition.Center,
@@ -99,35 +82,12 @@ fun ContactsListSinglePaneComponent(
             modifier = Modifier
                 .padding(it)
                 .then(contentModifier),
-            contactRecords = uiState.contacts,
-            showLoadingOverlay = uiState.showLoadingOverlay,
-            listContactClick = listItemClickHandler::contactClick,
-            listDeleteClick = dataOpHandler::deleteClick,
-            listEditClick = listItemClickHandler::editClick,
-            listUndeleteClick = dataOpHandler::undeleteClick
+            uiState = uiState,
+            listItemClickHandler = listItemClickHandler,
+            dataOpHandler = dataOpHandler,
+            onSearchTermUpdated = onSearchTermUpdated
         )
     }
-}
-
-@Composable
-private fun RowScope.ContactsListTopAppBarSearchModeSinglePane(
-    searchTerm: String,
-    listExitSearchClick: () -> Unit,
-    onSearchTermUpdated: (newSearchTerm: String) -> Unit
-) {
-    IconButton(onClick = listExitSearchClick) {
-        Icon(
-            Icons.Default.ArrowBack,
-            contentDescription = stringResource(id = content_desc_back)
-        )
-    }
-    OutlinedTextFieldWithHelp(
-        modifier = Modifier.weight(1f),
-        fieldValue = searchTerm,
-        isError = false, // cannot be in error state
-        isEditEnabled = true,
-        onValueChange = onSearchTermUpdated
-    )
 }
 
 @Composable
@@ -136,22 +96,6 @@ private fun RowScope.ContactsListTopAppBarSinglePane() {
         stringResource(id = label_contacts),
         modifier = Modifier.weight(1f)
     )
-}
-
-@Composable
-private fun ContactsListBottomAppBarSearchSinglePane() {
-    // no content
-}
-
-@Composable
-private fun RowScope.ContactsListBottomAppBarSinglePane(listSearchClick: () -> Unit) {
-    Spacer(modifier = Modifier.weight(1f))
-    IconButton(onClick = listSearchClick) {
-        Icon(
-            Icons.Default.Search,
-            contentDescription = stringResource(id = content_desc_search)
-        )
-    }
 }
 
 @Composable
@@ -187,15 +131,15 @@ private fun ContactsListSinglePaneComponentPreview() {
         Surface {
             ContactsListSinglePaneComponent(
                 modifier = Modifier.padding(4.dp),
-                uiState = ContactsListUiState.ViewingList(
+                uiState = ContactsListUiState(
                     contacts = contacts,
                     curSelectedContactId = null,
-                    showLoadingOverlay = false
+                    isDoingInitialLoad = false,
                 ),
                 listItemClickHandler = PREVIEW_LIST_ITEM_CLICK_HANDLER,
                 dataOpHandler = PREVIEW_LIST_DATA_OP_HANDLER,
-                searchEventHandler = PREVIEW_LIST_SEARCH_EVENT_HANDLER,
-                menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
+                menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER,
+                onSearchTermUpdated = {}
             )
         }
     }
@@ -227,16 +171,16 @@ private fun ContactListSyncingAndSearchingPreview() {
         Surface {
             ContactsListSinglePaneComponent(
                 modifier = Modifier.padding(4.dp),
-                uiState = ContactsListUiState.Searching(
+                uiState = ContactsListUiState(
                     contacts = contacts,
                     curSelectedContactId = null,
-                    showLoadingOverlay = true,
-                    curSearchTerm = "9"
+                    isDoingInitialLoad = false,
+                    curSearchTerm = curSearchTerm
                 ),
                 listItemClickHandler = PREVIEW_LIST_ITEM_CLICK_HANDLER,
                 dataOpHandler = PREVIEW_LIST_DATA_OP_HANDLER,
-                searchEventHandler = PREVIEW_LIST_SEARCH_EVENT_HANDLER,
-                menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
+                menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER,
+                onSearchTermUpdated = {}
             )
         }
     }
@@ -245,21 +189,21 @@ private fun ContactListSyncingAndSearchingPreview() {
 @Preview(showBackground = true)
 @Composable
 private fun ContactListLoadingPreview() {
-    val contacts = emptyList<SObjectRecord<ContactObject>>()
+    val contacts = emptyList<ContactRecord>()
 
     SalesforceMobileSDKAndroidTheme {
         Surface {
             ContactsListSinglePaneComponent(
                 modifier = Modifier.padding(4.dp),
-                uiState = ContactsListUiState.ViewingList(
-                    contacts = emptyList(),
+                uiState = ContactsListUiState(
+                    contacts = contacts,
                     curSelectedContactId = null,
-                    showLoadingOverlay = true
+                    isDoingInitialLoad = true,
                 ),
                 listItemClickHandler = PREVIEW_LIST_ITEM_CLICK_HANDLER,
                 dataOpHandler = PREVIEW_LIST_DATA_OP_HANDLER,
-                searchEventHandler = PREVIEW_LIST_SEARCH_EVENT_HANDLER,
-                menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
+                menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER,
+                onSearchTermUpdated = {}
             )
         }
     }
@@ -274,10 +218,4 @@ private val PREVIEW_LIST_ITEM_CLICK_HANDLER = object : ContactsListItemClickHand
 private val PREVIEW_LIST_DATA_OP_HANDLER = object : ContactsListDataOpHandler {
     override fun deleteClick(contactId: String) {}
     override fun undeleteClick(contactId: String) {}
-}
-
-private val PREVIEW_LIST_SEARCH_EVENT_HANDLER = object : ContactsListSearchEventHandler {
-    override fun searchClick() {}
-    override fun exitSearchClick() {}
-    override fun onSearchTermUpdated(newSearchTerm: String) {}
 }
