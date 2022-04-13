@@ -544,8 +544,8 @@ private fun MasterDetailExpandedPreview() {
 
 class PreviewDetailsVm(uiState: ContactDetailsUiState) : ContactDetailsViewModel {
     override val uiState: StateFlow<ContactDetailsUiState> = MutableStateFlow(uiState)
-    override fun setContactOrThrow(recordId: String?, isEditing: Boolean) {}
-    override fun discardChangesAndSetContactOrThrow(recordId: String?, isEditing: Boolean) {}
+    override suspend fun setContactOrThrow(recordId: String?, isEditing: Boolean) {}
+    override suspend fun discardChangesAndSetContactOrThrow(recordId: String?, isEditing: Boolean) {}
 
     val uiStateValue get() = this.uiState.value
 

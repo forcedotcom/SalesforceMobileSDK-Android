@@ -24,11 +24,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 interface ContactDetailsViewModel : ContactDetailsFieldChangeHandler, ContactDetailsUiEventHandler {
     val uiState: StateFlow<ContactDetailsUiState>
 
+    // TODO this api could be improved by encapsulating all the "set" operations in sealed data classes.
     @Throws(ContactDetailsException::class)
-    fun setContactOrThrow(recordId: String?, isEditing: Boolean)
+    suspend fun setContactOrThrow(recordId: String?, isEditing: Boolean)
 
     @Throws(DataOperationActiveException::class)
-    fun discardChangesAndSetContactOrThrow(recordId: String?, isEditing: Boolean)
+    suspend fun discardChangesAndSetContactOrThrow(recordId: String?, isEditing: Boolean)
 }
 
 class DefaultContactDetailsViewModel(
@@ -117,21 +118,24 @@ class DefaultContactDetailsViewModel(
     }
 
     @Throws(ContactDetailsException::class)
-    override fun setContactOrThrow(recordId: String?, isEditing: Boolean) {
+    override suspend fun setContactOrThrow(recordId: String?, isEditing: Boolean) {
         setContactOrThrow(recordId = recordId, isEditing = isEditing, forceDiscardChanges = false)
     }
 
     @Throws(DataOperationActiveException::class)
-    override fun discardChangesAndSetContactOrThrow(recordId: String?, isEditing: Boolean) {
+    override suspend fun discardChangesAndSetContactOrThrow(recordId: String?, isEditing: Boolean) {
         setContactOrThrow(recordId = recordId, isEditing = isEditing, forceDiscardChanges = true)
     }
 
+    /**
+     * This must not use launch if the thrown exceptions are to be correctly caught by the caller.
+     */
     @Throws(ContactDetailsException::class)
-    private fun setContactOrThrow(
+    private suspend fun setContactOrThrow(
         recordId: String?,
         isEditing: Boolean,
         forceDiscardChanges: Boolean
-    ) = launchWithStateLock {
+    ) = stateMutex.withLock {
         if (!this@DefaultContactDetailsViewModel::upstreamRecords.isInitialized
             || dataOpDelegate.dataOperationIsActive
         ) {

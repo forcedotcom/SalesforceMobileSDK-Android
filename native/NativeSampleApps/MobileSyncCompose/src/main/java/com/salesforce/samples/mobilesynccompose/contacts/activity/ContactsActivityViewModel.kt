@@ -90,48 +90,95 @@ class DefaultContactsActivityViewModel(
         }
     }
 
+    /* If you look closely, you will see that this class' click handlers are running suspending setter
+     * methods _within_ the state locks. This should be alarming because this can lead to unresponsive
+     * UI, but in this case it is necessary.
+     *
+     * The user expects atomic operations when they perform a UI action that would change the state
+     * of multiple coupled components. If we allow more than one action to contend for the components'
+     * setters, it opens up the possibility of inconsistent state, which is deemed here to be worse
+     * than "dropping clicks."
+     *
+     * Note that the UI _thread_ is not locked up during this. All suspending APIs are main-safe, so
+     * the UI thread can continue to render and there will be no ANRs. The fact of the matter is:
+     * if a component is locked up and cannot finish the set operation, the user must wait until
+     * that component cooperates with the setter until they are allowed to take another action.
+     *
+     * In almost all cases, this will not even be an issue. */
     private inner class ListClickDelegate : ContactsListItemClickHandler {
-        override fun contactClick(contactId: String) {
-            viewModelScope.launch {
-                try {
-                    detailsVm.setContactOrThrow(
-                        recordId = contactId,
-                        isEditing = false
-                    )
-                    listVm.setSelectedContact(id = contactId)
-                } catch (ex: ContactDetailsException) {
-                    when (ex) {
-                        is DataOperationActiveException -> TODO("data op active in contactClick()")
-                        is HasUnsavedChangesException -> uiState.value.copy(
-                            dialogUiState = DiscardChangesDialogUiState(
-                                onDiscardChanges = { forceSetContact(contactId = contactId) },
-                                onKeepChanges = ::dismissCurDialog
-                            )
+        override fun contactClick(contactId: String) = launchWithStateLock {
+            try {
+                detailsVm.setContactOrThrow(recordId = contactId, isEditing = false)
+                listVm.setSelectedContact(id = contactId)
+            } catch (ex: ContactDetailsException) {
+                mutUiState.value = when (ex) {
+                    is DataOperationActiveException -> TODO("data op active in contactClick()")
+                    is HasUnsavedChangesException -> uiState.value.copy(
+                        dialogUiState = DiscardChangesDialogUiState(
+                            onDiscardChanges = {
+                                forceSetContact(contactId = contactId, isEditing = false)
+                                launchWithStateLock { dismissCurDialog() }
+                            },
+                            onKeepChanges = { launchWithStateLock { dismissCurDialog() } }
                         )
-                    }.also {
-                        mutUiState.value = it
-                    }
+                    )
                 }
             }
         }
 
-        private fun forceSetContact(contactId: String) = viewModelScope.launch {
+        private fun forceSetContact(contactId: String?, isEditing: Boolean) = launchWithStateLock {
             try {
                 detailsVm.discardChangesAndSetContactOrThrow(
                     recordId = contactId,
-                    isEditing = false,
+                    isEditing = isEditing,
                 )
             } catch (ex: DataOperationActiveException) {
                 TODO("data op is active in forceSetContact")
             }
         }
 
-        override fun createClick() {
-            TODO("Not yet implemented")
+        override fun createClick() = launchWithStateLock {
+            try {
+                detailsVm.setContactOrThrow(recordId = null, isEditing = true)
+                listVm.setSelectedContact(id = null)
+            } catch (ex: ContactDetailsException) {
+                stateMutex.withLock {
+                    mutUiState.value = when (ex) {
+                        is DataOperationActiveException -> TODO("data op active in createClick()")
+                        is HasUnsavedChangesException -> uiState.value.copy(
+                            dialogUiState = DiscardChangesDialogUiState(
+                                onDiscardChanges = {
+                                    forceSetContact(contactId = null, isEditing = true)
+                                    launchWithStateLock { dismissCurDialog() }
+                                },
+                                onKeepChanges = { launchWithStateLock { dismissCurDialog() } }
+                            )
+                        )
+                    }
+                }
+            }
         }
 
-        override fun editClick(contactId: String) {
-            TODO("Not yet implemented")
+        override fun editClick(contactId: String) = launchWithStateLock {
+            try {
+                detailsVm.setContactOrThrow(recordId = contactId, isEditing = true)
+                listVm.setSelectedContact(id = contactId)
+            } catch (ex: ContactDetailsException) {
+                stateMutex.withLock {
+                    mutUiState.value = when (ex) {
+                        is DataOperationActiveException -> TODO("data op active in editClick()")
+                        is HasUnsavedChangesException -> uiState.value.copy(
+                            dialogUiState = DiscardChangesDialogUiState(
+                                onDiscardChanges = {
+                                    forceSetContact(contactId = contactId, isEditing = true)
+                                    launchWithStateLock { dismissCurDialog() }
+                                },
+                                onKeepChanges = { launchWithStateLock { dismissCurDialog() } }
+                            )
+                        )
+                    }
+                }
+            }
         }
     }
 
