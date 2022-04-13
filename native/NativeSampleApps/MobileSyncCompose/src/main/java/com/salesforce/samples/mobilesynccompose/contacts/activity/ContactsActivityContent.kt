@@ -161,7 +161,7 @@ private fun MasterDetail(
             }
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { /*TODO*/ }) {
+            FloatingActionButton(onClick = detailsUiEventHandler::createClick) {
                 Icon(
                     Icons.Default.Add,
                     contentDescription = stringResource(id = content_desc_add_contact)

@@ -184,12 +184,25 @@ class DefaultContactDetailsViewModel(
         if (hasUnsavedChanges) {
             mutUiState.value = uiState.value.copy(
                 curDialogUiState = DiscardChangesDialogUiState(
-                    onDiscardChanges = { TODO("createClick() onDiscardChanges") },
-                    onKeepChanges = ::dismissCurDialog
+                    onDiscardChanges = {
+                        launchWithStateLock {
+                            setStateForCreateNew()
+                            dismissCurDialog()
+                        }
+                    },
+                    onKeepChanges = { launchWithStateLock { dismissCurDialog() } }
                 )
             )
             return@launchWithStateLock
         }
+
+        setStateForCreateNew()
+    }
+
+    private fun setStateForCreateNew() {
+        stateMutex.requireIsLocked()
+
+        curRecordId = null
 
         mutUiState.value = ContactDetailsUiState.ViewingContactDetails(
             firstNameField = ContactDetailsField.FirstName(
@@ -225,9 +238,10 @@ class DefaultContactDetailsViewModel(
             curDialogUiState = DeleteConfirmationDialogUiState(
                 objIdToDelete = targetRecordId,
                 objName = upstreamRecords[targetRecordId]?.sObject?.fullName,
-                onCancelDelete = ::dismissCurDialog,
+                onCancelDelete = { launchWithStateLock { dismissCurDialog() } },
                 onDeleteConfirm = {
                     dataOpDelegate.handleDataEvent(event = DetailsDataEvent.Delete(it))
+                    launchWithStateLock { dismissCurDialog() }
                 }
             )
         )
@@ -240,9 +254,10 @@ class DefaultContactDetailsViewModel(
             curDialogUiState = UndeleteConfirmationDialogUiState(
                 objIdToUndelete = targetRecordId,
                 objName = upstreamRecords[targetRecordId]?.sObject?.fullName,
-                onCancelUndelete = ::dismissCurDialog,
+                onCancelUndelete = { launchWithStateLock { dismissCurDialog() } },
                 onUndeleteConfirm = {
                     dataOpDelegate.handleDataEvent(event = DetailsDataEvent.Undelete(it))
+                    launchWithStateLock { dismissCurDialog() }
                 },
             )
         )
