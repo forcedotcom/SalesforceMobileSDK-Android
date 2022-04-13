@@ -77,7 +77,7 @@ fun ContactDetailsContentSinglePane(
                             SyncImage(uiState = contactDetailsUi.uiSyncState)
                         }
                     },
-                    detailsExitClick = componentUiEventHandler::exitClick
+                    detailsExitClick = componentUiEventHandler::exitEditClick
                 )
 
                 ContactsActivityMenuButton(menuHandler = menuHandler)
@@ -262,6 +262,6 @@ val PREVIEW_CONTACT_DETAILS_UI_HANDLER = object : ContactDetailsUiEventHandler {
     override fun deleteClick() {}
     override fun undeleteClick() {}
     override fun editClick() {}
-    override fun exitClick() {}
+    override fun exitEditClick() {}
     override fun saveClick() {}
 }

@@ -288,8 +288,38 @@ class DefaultContactDetailsViewModel(
         }
     }
 
-    override fun exitClick() {
-        TODO("Not yet implemented")
+    override fun exitEditClick() = launchWithStateLock {
+        mutUiState.value = when (val curState = uiState.value) {
+            is ContactDetailsUiState.NoContactSelected -> curState
+            is ContactDetailsUiState.ViewingContactDetails -> {
+                if (hasUnsavedChanges) {
+                    uiState.value.copy(
+                        curDialogUiState = DiscardChangesDialogUiState(
+                            onDiscardChanges = {
+                                launchWithStateLock {
+                                    val record = curRecordId?.let { upstreamRecords[it] }
+                                    mutUiState.value = record
+                                        ?.sObject
+                                        ?.buildViewingContactUiState(
+                                            uiSyncState = record.localStatus.toUiSyncState(),
+                                            isEditingEnabled = false,
+                                            shouldScrollToErrorField = false
+                                        )
+                                        ?: ContactDetailsUiState.NoContactSelected(
+                                            dataOperationIsActive = curState.dataOperationIsActive,
+                                            curDialogUiState = null
+                                        )
+                                    dismissCurDialog()
+                                }
+                            },
+                            onKeepChanges = { launchWithStateLock { dismissCurDialog() } }
+                        )
+                    )
+                } else {
+                    curState.copy(isEditingEnabled = false)
+                }
+            }
+        }
     }
 
     override fun saveClick() = launchWithStateLock {

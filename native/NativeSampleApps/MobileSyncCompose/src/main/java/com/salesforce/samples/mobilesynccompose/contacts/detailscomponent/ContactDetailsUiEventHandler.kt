@@ -5,6 +5,6 @@ interface ContactDetailsUiEventHandler {
     fun deleteClick()
     fun undeleteClick()
     fun editClick()
-    fun exitClick()
+    fun exitEditClick()
     fun saveClick()
 }
