@@ -52,6 +52,8 @@ import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.ui.Con
 import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.ui.ContactDetailsTopBarContentExpanded
 import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.ui.toPreviewViewingContactDetails
 import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.*
+import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ui.ContactsListContent
+import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ui.ContactsListSinglePaneComponent
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord
 import com.salesforce.samples.mobilesynccompose.core.ui.state.*

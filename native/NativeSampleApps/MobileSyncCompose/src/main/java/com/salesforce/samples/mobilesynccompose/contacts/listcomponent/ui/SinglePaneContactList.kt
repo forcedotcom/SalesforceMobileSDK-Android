@@ -24,14 +24,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.mobilesynccompose.contacts.listcomponent
+package com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ui
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -44,14 +42,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R.string.*
-import com.salesforce.samples.mobilesynccompose.contacts.ContactCard
 import com.salesforce.samples.mobilesynccompose.contacts.activity.ContactsActivityMenuButton
 import com.salesforce.samples.mobilesynccompose.contacts.activity.ContactsActivityMenuHandler
 import com.salesforce.samples.mobilesynccompose.contacts.activity.PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER
-import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.toUiSyncState
+import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListDataOpHandler
+import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListItemClickHandler
+import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListSearchEventHandler
+import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListUiState
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord
-import com.salesforce.samples.mobilesynccompose.core.ui.components.LoadingOverlay
 import com.salesforce.samples.mobilesynccompose.core.ui.components.OutlinedTextFieldWithHelp
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
@@ -111,37 +110,7 @@ fun ContactsListSinglePaneComponent(
 }
 
 @Composable
-fun ContactsListContent(
-    modifier: Modifier = Modifier,
-    contactRecords: List<SObjectRecord<ContactObject>>,
-    showLoadingOverlay: Boolean,
-    listContactClick: (id: String) -> Unit,
-    listDeleteClick: (id: String) -> Unit,
-    listEditClick: (id: String) -> Unit,
-    listUndeleteClick: (id: String) -> Unit,
-) {
-    LazyColumn(modifier = modifier) {
-        items(items = contactRecords, key = { it.id }) { record ->
-            ContactCard(
-                modifier = Modifier.padding(4.dp),
-                startExpanded = false,
-                model = record.sObject,
-                syncState = record.localStatus.toUiSyncState(),
-                onCardClick = { listContactClick(record.id) },
-                onDeleteClick = { listDeleteClick(record.id) },
-                onUndeleteClick = { listUndeleteClick(record.id) },
-                onEditClick = { listEditClick(record.id) },
-            )
-        }
-    }
-
-    if (showLoadingOverlay) {
-        LoadingOverlay()
-    }
-}
-
-@Composable
-fun RowScope.ContactsListTopAppBarSearchModeSinglePane(
+private fun RowScope.ContactsListTopAppBarSearchModeSinglePane(
     searchTerm: String,
     listExitSearchClick: () -> Unit,
     onSearchTermUpdated: (newSearchTerm: String) -> Unit
@@ -162,7 +131,7 @@ fun RowScope.ContactsListTopAppBarSearchModeSinglePane(
 }
 
 @Composable
-fun RowScope.ContactsListTopAppBarSinglePane() {
+private fun RowScope.ContactsListTopAppBarSinglePane() {
     Text(
         stringResource(id = label_contacts),
         modifier = Modifier.weight(1f)
@@ -170,12 +139,12 @@ fun RowScope.ContactsListTopAppBarSinglePane() {
 }
 
 @Composable
-fun ContactsListBottomAppBarSearchSinglePane() {
+private fun ContactsListBottomAppBarSearchSinglePane() {
     // no content
 }
 
 @Composable
-fun RowScope.ContactsListBottomAppBarSinglePane(listSearchClick: () -> Unit) {
+private fun RowScope.ContactsListBottomAppBarSinglePane(listSearchClick: () -> Unit) {
     Spacer(modifier = Modifier.weight(1f))
     IconButton(onClick = listSearchClick) {
         Icon(
@@ -186,7 +155,7 @@ fun RowScope.ContactsListBottomAppBarSinglePane(listSearchClick: () -> Unit) {
 }
 
 @Composable
-fun ContactsListFabSinglePane(listCreateClick: () -> Unit) {
+private fun ContactsListFabSinglePane(listCreateClick: () -> Unit) {
     FloatingActionButton(onClick = listCreateClick) {
         Icon(
             Icons.Default.Add,

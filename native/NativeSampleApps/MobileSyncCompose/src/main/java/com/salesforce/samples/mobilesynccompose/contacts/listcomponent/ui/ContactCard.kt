@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.mobilesynccompose.contacts
+package com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ui
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.animation.animateContentSize
