@@ -660,6 +660,7 @@ class PreviewDetailsVm(uiState: ContactDetailsUiState) : ContactDetailsViewModel
     override fun createClick() {}
     override fun deleteClick() {}
     override fun undeleteClick() {}
+    override fun deselectContact() {}
     override fun editClick() {}
     override fun exitEditClick() {}
     override fun saveClick() {}

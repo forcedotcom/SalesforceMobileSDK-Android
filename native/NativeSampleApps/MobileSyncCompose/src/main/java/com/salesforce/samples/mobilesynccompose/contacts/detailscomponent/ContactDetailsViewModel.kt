@@ -288,12 +288,40 @@ class DefaultContactDetailsViewModel(
         }
     }
 
+    override fun deselectContact() = launchWithStateLock {
+        mutUiState.value = when (val curState = uiState.value) {
+            is ContactDetailsUiState.NoContactSelected -> curState
+            is ContactDetailsUiState.ViewingContactDetails -> {
+                if (hasUnsavedChanges) {
+                    curState.copy(
+                        curDialogUiState = DiscardChangesDialogUiState(
+                            onDiscardChanges = {
+                                launchWithStateLock {
+                                    mutUiState.value = ContactDetailsUiState.NoContactSelected(
+                                        dataOperationIsActive = dataOpDelegate.dataOperationIsActive,
+                                        curDialogUiState = null
+                                    )
+                                }
+                            },
+                            onKeepChanges = { launchWithStateLock { dismissCurDialog() } }
+                        )
+                    )
+                } else {
+                    ContactDetailsUiState.NoContactSelected(
+                        dataOperationIsActive = dataOpDelegate.dataOperationIsActive,
+                        curDialogUiState = curState.curDialogUiState
+                    )
+                }
+            }
+        }
+    }
+
     override fun exitEditClick() = launchWithStateLock {
         mutUiState.value = when (val curState = uiState.value) {
             is ContactDetailsUiState.NoContactSelected -> curState
             is ContactDetailsUiState.ViewingContactDetails -> {
                 if (hasUnsavedChanges) {
-                    uiState.value.copy(
+                    curState.copy(
                         curDialogUiState = DiscardChangesDialogUiState(
                             onDiscardChanges = {
                                 launchWithStateLock {

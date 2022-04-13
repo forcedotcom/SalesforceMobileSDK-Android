@@ -77,7 +77,11 @@ fun ContactDetailsContentSinglePane(
                             SyncImage(uiState = contactDetailsUi.uiSyncState)
                         }
                     },
-                    detailsExitClick = componentUiEventHandler::exitEditClick
+                    onUpClick =
+                    if (contactDetailsUi?.isEditingEnabled == true)
+                        componentUiEventHandler::exitEditClick
+                    else
+                        componentUiEventHandler::deselectContact
                 )
 
                 ContactsActivityMenuButton(menuHandler = menuHandler)
@@ -114,9 +118,9 @@ fun ContactDetailsContentSinglePane(
 private fun RowScope.ContactDetailsTopAppBarSinglePane(
     label: String,
     syncIconContent: @Composable () -> Unit,
-    detailsExitClick: () -> Unit
+    onUpClick: () -> Unit
 ) {
-    IconButton(onClick = detailsExitClick) {
+    IconButton(onClick = onUpClick) {
         Icon(
             Icons.Default.ArrowBack,
             contentDescription = stringResource(id = content_desc_back)
@@ -261,6 +265,7 @@ val PREVIEW_CONTACT_DETAILS_UI_HANDLER = object : ContactDetailsUiEventHandler {
     override fun createClick() {}
     override fun deleteClick() {}
     override fun undeleteClick() {}
+    override fun deselectContact() {}
     override fun editClick() {}
     override fun exitEditClick() {}
     override fun saveClick() {}
