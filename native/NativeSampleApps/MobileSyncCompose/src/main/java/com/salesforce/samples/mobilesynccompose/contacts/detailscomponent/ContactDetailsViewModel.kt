@@ -151,10 +151,14 @@ class DefaultContactDetailsViewModel(
         curRecordId = recordId
 
         if (recordId == null) {
-            mutUiState.value = ContactDetailsUiState.NoContactSelected(
-                dataOperationIsActive = dataOpDelegate.dataOperationIsActive,
-                curDialogUiState = uiState.value.curDialogUiState
-            )
+            if (isEditing) {
+                setStateForCreateNew()
+            } else {
+                mutUiState.value = ContactDetailsUiState.NoContactSelected(
+                    dataOperationIsActive = dataOpDelegate.dataOperationIsActive,
+                    curDialogUiState = uiState.value.curDialogUiState
+                )
+            }
         } else {
             val newRecord = upstreamRecords[recordId]
                 ?: TODO("Did not find record with ID $recordId")

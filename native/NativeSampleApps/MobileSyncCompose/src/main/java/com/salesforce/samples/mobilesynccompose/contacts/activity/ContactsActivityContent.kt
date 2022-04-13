@@ -35,10 +35,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -296,7 +293,10 @@ fun ContactsActivityMenuButton(menuHandler: ContactsActivityMenuHandler) {
 @Composable
 fun SyncImage(modifier: Modifier = Modifier, uiState: SObjectUiSyncState) {
     when (uiState) {
-        SObjectUiSyncState.NotSaved -> TODO("New Icon")
+        SObjectUiSyncState.NotSaved -> Icon(
+            Icons.Default.Star,
+            contentDescription = "Not yet saved" // TODO use string res
+        )
 
         SObjectUiSyncState.Deleted -> Icon(
             Icons.Default.Delete,
