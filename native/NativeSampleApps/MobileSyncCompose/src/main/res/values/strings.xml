@@ -28,6 +28,7 @@
     <string name="label_contact_middle_name">Middle Name</string>
     <string name="label_contact_last_name">Last Name</string>
     <string name="label_contact_name">Name</string>
+    <string name="label_nothing_selected">Nothing selected</string>
     <string name="label_contact_title">Title</string>
     <string name="label_delete_confirm">Confirm Delete?</string>
     <string name="label_discard_changes">Discard Changes?</string>
@@ -38,6 +39,7 @@
     <string name="help_cannot_be_blank">This field cannot be left blank</string>
 
     <string name="content_desc_add_contact">Create New Contact</string>
+    <string name="content_desc_cancel_edit">Cancel editing</string>
     <string name="content_desc_cancel_search">Cancel Searching</string>
     <string name="content_desc_item_deleted_locally">Item is locally deleted</string>
     <string name="content_desc_item_synced">Item is synced</string>
@@ -45,6 +47,7 @@
     <string name="content_desc_back">Go Back</string>
     <string name="content_desc_help">Help</string>
     <string name="content_desc_menu">Menu</string>
+    <string name="content_desc_not_saved">This item has not been saved</string>
     <string name="content_desc_search">Search</string>
     <string name="content_desc_show_more">Show more</string>
 </resources>

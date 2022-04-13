@@ -39,7 +39,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -242,8 +241,10 @@ private fun ListDetailContactDetailsContent(
                 elevation = 4.dp,
             ) {
                 IconButton(onClick = onExitClick) {
-                    // TODO use string res
-                    Icon(Icons.Default.Close, contentDescription = "Cancel Edit")
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = stringResource(id = content_desc_cancel_edit)
+                    )
                 }
             }
         }
@@ -288,7 +289,7 @@ fun SyncImage(modifier: Modifier = Modifier, uiState: SObjectUiSyncState) {
     when (uiState) {
         SObjectUiSyncState.NotSaved -> Icon(
             Icons.Default.Star,
-            contentDescription = "Not yet saved" // TODO use string res
+            contentDescription = stringResource(id = content_desc_not_saved)
         )
 
         SObjectUiSyncState.Deleted -> Icon(

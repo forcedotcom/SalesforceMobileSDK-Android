@@ -11,7 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.salesforce.samples.mobilesynccompose.R
+import com.salesforce.samples.mobilesynccompose.R.drawable.ic_help
+import com.salesforce.samples.mobilesynccompose.R.string.*
 import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.ContactDetailsUiState
 import com.salesforce.samples.mobilesynccompose.core.ui.components.LoadingOverlay
 import com.salesforce.samples.mobilesynccompose.core.ui.state.SObjectUiSyncState
@@ -61,9 +62,11 @@ private fun ContactDetailsViewingContact(
 
 @Composable
 private fun ContactDetailsNoContactSelected() {
-    // TODO use string res for "no contact selected"
     Box(modifier = Modifier.fillMaxSize()) {
-        Text(text = "No contact selected.", modifier = Modifier.align(Alignment.Center))
+        Text(
+            text = stringResource(id = label_nothing_selected),
+            modifier = Modifier.align(Alignment.Center)
+        )
     }
 }
 
@@ -92,10 +95,10 @@ private fun LocallyDeletedRow() {
         verticalAlignment = Alignment.CenterVertically
     ) {
         CompositionLocalProvider(LocalContentColor provides MaterialTheme.colors.error) {
-            Text(stringResource(id = R.string.label_locally_deleted))
+            Text(stringResource(id = label_locally_deleted))
             Icon(
-                painterResource(id = R.drawable.ic_help),
-                contentDescription = stringResource(id = R.string.content_desc_help),
+                painterResource(id = ic_help),
+                contentDescription = stringResource(id = content_desc_help),
                 modifier = Modifier
                     .size(32.dp)
                     .padding(8.dp)
@@ -114,6 +117,6 @@ private fun LocallyDeletedInfoDialog(onDismiss: () -> Unit) {
         confirmButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(id = android.R.string.ok)) }
         },
-        text = { Text(stringResource(id = R.string.body_locally_deleted_info)) }
+        text = { Text(stringResource(id = body_locally_deleted_info)) }
     )
 }
