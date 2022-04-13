@@ -54,6 +54,7 @@ import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 
 @Composable
 /* TODO How to put in profile pic?  Glide lib? */
+/* TODO If not in single pane, don't show expando. It's not helping the user in any way in that case, and arguably makes things more confusing */
 fun ContactCard(
     modifier: Modifier = Modifier,
     model: ContactObject,
