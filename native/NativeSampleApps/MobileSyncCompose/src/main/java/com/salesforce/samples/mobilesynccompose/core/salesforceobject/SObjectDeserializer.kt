@@ -37,7 +37,7 @@ abstract class SObjectDeserializerBase<T : SObject>(val objectType: String) :
  */
 fun createNewSoupEltBase(forObjType: String): JSONObject {
     val attributes = JSONObject().put(Constants.TYPE.lowercase(Locale.US), forObjType)
-    val id = SyncTarget.createLocalId()//.let { SObjectId(primaryKey = it, localId = it) }
+    val id = SyncTarget.createLocalId()
 
     return JSONObject().apply {
         put(Constants.ID, id)

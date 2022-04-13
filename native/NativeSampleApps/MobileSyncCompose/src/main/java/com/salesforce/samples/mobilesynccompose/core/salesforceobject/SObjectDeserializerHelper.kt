@@ -7,8 +7,6 @@ import org.json.JSONObject
 import java.util.*
 
 object SObjectDeserializerHelper {
-//    fun getPrimaryKeyOrThrow(json: JSONObject): String = json
-//        .getRequiredStringOrThrow(Constants.ID, valueCanBeBlank = false)
 
     fun requireSoType(json: JSONObject, requiredObjType: String) {
         val attributes = json.getRequiredObjectOrThrow(Constants.ATTRIBUTES)
@@ -24,6 +22,9 @@ object SObjectDeserializerHelper {
     }
 
     fun getIdOrThrow(json: JSONObject): String {
+        // Prefer LocalId if we have it since LocalId is stable for the duration of the login session.
+        // Repos will lookup by local prefix to do relationship operations, so it shouldn't matter
+        // that this is giving local ID.
         val localId = json.optStringOrNull(KEY_LOCAL_ID)
 
         if (localId != null) {

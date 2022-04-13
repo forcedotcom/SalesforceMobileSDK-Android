@@ -16,16 +16,6 @@ data class IncorrectObjectType(
     }
 )
 
-data class InvalidJsonString(
-    override val offendingJsonString: String
-) : CoerceException(
-    buildString {
-        appendLine("Coerce Exception - InvalidJsonString")
-        appendLine("Supplied JSON was not valid.")
-        appendLine("Offending JSON = '$offendingJsonString'")
-    }
-)
-
 data class InvalidPropertyValue(
     val propertyKey: String,
     val allowedValuesDescription: String,

@@ -50,7 +50,6 @@ import com.salesforce.samples.mobilesynccompose.contacts.activity.SyncImage
 import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.ContactDetailsField
 import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.ContactDetailsUiEventHandler
 import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.ContactDetailsUiState
-import com.salesforce.samples.mobilesynccompose.core.extensions.takeIfInstance
 import com.salesforce.samples.mobilesynccompose.core.ui.state.DialogUiState
 import com.salesforce.samples.mobilesynccompose.core.ui.state.SObjectUiSyncState
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
@@ -65,7 +64,7 @@ fun ContactDetailsContentSinglePane(
     modifier: Modifier = Modifier,
     contentModifier: Modifier = Modifier
 ) {
-    val contactDetailsUi = details.takeIfInstance<ContactDetailsUiState.ViewingContactDetails>()
+    val contactDetailsUi = details as? ContactDetailsUiState.ViewingContactDetails
     Scaffold(
         modifier = modifier,
         topBar = {

@@ -33,11 +33,6 @@ import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectDes
 import kotlinx.coroutines.*
 
 /**
- * The Contacts Repository. It exposes upserting, deleting, and undeleting [Contact] model objects
- * into SmartStore, and it supports the MobileSync operations.
- */
-
-/**
  * The default implementation of the [ContactsRepo].
  */
 class DefaultContactsRepo(

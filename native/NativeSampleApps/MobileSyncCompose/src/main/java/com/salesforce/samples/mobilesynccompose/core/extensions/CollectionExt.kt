@@ -26,16 +26,6 @@
  */
 package com.salesforce.samples.mobilesynccompose.core.extensions
 
-fun <T> List<T>.minusAll(selector: (T) -> Boolean): List<T> {
-    val results = mutableListOf<T>()
-    this.forEach {
-        if (!selector(it)) {
-            results.add(it)
-        }
-    }
-    return results
-}
-
 data class ResultPartition<out S>(
     val successes: List<S>,
     val failures: List<Throwable>
@@ -57,27 +47,4 @@ fun <T> Iterable<Result<T>>.partitionBySuccess(): ResultPartition<T> {
     }
 
     return ResultPartition(successes = successes, failures = failures)
-}
-
-fun <T> List<T>.replaceAll(newValue: T, predicate: (T) -> Boolean): List<T> {
-    return map { if (predicate(it)) newValue else it }
-}
-
-fun <T> List<T>.replaceAllOrAddNew(newValue: T, predicate: (T) -> Boolean): List<T> {
-    val results = mutableListOf<T>()
-    var hasReplaced = false
-    this.forEach {
-
-        if (predicate(it)) {
-            hasReplaced = true
-            results.add(newValue)
-        } else {
-            results.add(it)
-        }
-    }
-    if (!hasReplaced) {
-        results.add(newValue)
-    }
-
-    return results
 }

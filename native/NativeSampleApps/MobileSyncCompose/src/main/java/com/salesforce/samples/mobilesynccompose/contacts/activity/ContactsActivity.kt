@@ -91,7 +91,7 @@ class ContactsActivity
 
             SalesforceMobileSDKAndroidTheme {
                 ContactsActivityContent(
-                    vm = vm,
+                    activityVm = vm,
                     menuHandler = this,
                     windowSizeClasses = windowSizeClasses
                 )

@@ -70,19 +70,11 @@ class DefaultContactsListViewModel(
         }
 
     override fun contactClick(contactId: String) {
-        if (itemClickDelegate != null) {
-            itemClickDelegate.contactClick(contactId = contactId)
-            return
-        }
-        TODO("Not yet implemented")
+        itemClickDelegate?.contactClick(contactId = contactId)
     }
 
     override fun createClick() {
-        if (itemClickDelegate != null) {
-            itemClickDelegate.createClick()
-            return
-        }
-        TODO("Not yet implemented")
+        itemClickDelegate?.createClick()
     }
 
     override fun deleteClick(contactId: String) {
@@ -94,11 +86,7 @@ class DefaultContactsListViewModel(
     }
 
     override fun editClick(contactId: String) {
-        if (itemClickDelegate != null) {
-            itemClickDelegate.editClick(contactId = contactId)
-            return
-        }
-        TODO("Not yet implemented")
+        itemClickDelegate?.editClick(contactId = contactId)
     }
 
     override fun undeleteClick(contactId: String) {

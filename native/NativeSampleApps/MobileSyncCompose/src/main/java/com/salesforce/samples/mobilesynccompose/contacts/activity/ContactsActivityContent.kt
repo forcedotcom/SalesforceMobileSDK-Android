@@ -68,43 +68,41 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * The main entry point for all Contacts Activity UI, similar in use-case to a traditional top-level
- * `contacts_activity_layout.xml`.
+ * The main entry point for all Contacts Activity UI.
  */
 @Composable
 fun ContactsActivityContent(
-    vm: ContactsActivityViewModel,
+    activityVm: ContactsActivityViewModel,
     menuHandler: ContactsActivityMenuHandler,
     windowSizeClasses: WindowSizeClasses
 ) {
-    // this drives recomposition when the VM updates itself:
-    val detailsUiState by vm.detailsVm.uiState.collectAsState()
-    val listUiState by vm.listVm.uiState.collectAsState()
-    val uiState by vm.uiState.collectAsState()
+    val detailsUiState by activityVm.detailsVm.uiState.collectAsState()
+    val listUiState by activityVm.listVm.uiState.collectAsState()
+    val activityUiState by activityVm.uiState.collectAsState()
 
     when (windowSizeClasses.toContactsActivityContentLayout()) {
         ContactsActivityContentLayout.SinglePane -> SinglePane(
             detailsUiState = detailsUiState,
-            detailsUiEventHandler = vm.detailsVm,
+            detailsUiEventHandler = activityVm.detailsVm,
             listUiState = listUiState,
-            listItemClickHandler = vm.listVm,
-            listDataOpHandler = vm.listVm,
-            onSearchTermUpdated = vm.listVm::onSearchTermUpdated,
+            listItemClickHandler = activityVm.listVm,
+            listDataOpHandler = activityVm.listVm,
+            onSearchTermUpdated = activityVm.listVm::onSearchTermUpdated,
             menuHandler = menuHandler
         )
         ContactsActivityContentLayout.ListDetail -> ListDetail(
             detailsUiState = detailsUiState,
-            detailsUiEventHandler = vm.detailsVm,
+            detailsUiEventHandler = activityVm.detailsVm,
             listUiState = listUiState,
-            listItemClickHandler = vm.listVm,
-            listDataOpHandler = vm.listVm,
-            onSearchTermUpdated = vm.listVm::onSearchTermUpdated,
+            listItemClickHandler = activityVm.listVm,
+            listDataOpHandler = activityVm.listVm,
+            onSearchTermUpdated = activityVm.listVm::onSearchTermUpdated,
             menuHandler = menuHandler,
             windowSizeClasses = windowSizeClasses
         )
     }
 
-    uiState.dialogUiState?.RenderDialog(modifier = Modifier)
+    activityUiState.dialogUiState?.RenderDialog(modifier = Modifier)
 }
 
 @Composable
@@ -117,6 +115,8 @@ private fun SinglePane(
     onSearchTermUpdated: (newSearchTerm: String) -> Unit,
     menuHandler: ContactsActivityMenuHandler,
 ) {
+    // In single pane mode, if the user is viewing contact details then only show the details component;
+    // else show the list component
     when (detailsUiState) {
         is ContactDetailsUiState.ViewingContactDetails -> ContactDetailsContentSinglePane(
             details = detailsUiState,
@@ -202,7 +202,7 @@ private fun ListDetail(
             }
 
             Column(modifier = detailModifier) {
-                ListDetailDetailsContent(
+                ListDetailContactDetailsContent(
                     detailsUiState = detailsUiState,
                     onExitClick = detailsUiEventHandler::exitEditClick
                 )
@@ -212,7 +212,7 @@ private fun ListDetail(
 }
 
 @Composable
-private fun ListDetailDetailsContent(
+private fun ListDetailContactDetailsContent(
     detailsUiState: ContactDetailsUiState,
     onExitClick: () -> Unit
 ) {
@@ -236,6 +236,7 @@ private fun ListDetailDetailsContent(
                 .padding(8.dp)
                 .align(Alignment.TopEnd)
         ) {
+            // This is similar to FloatingActionButton but constrained to the size of an icon button:
             Surface(
                 shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50)),
                 elevation = 4.dp,
@@ -248,14 +249,6 @@ private fun ListDetailDetailsContent(
         }
     }
 }
-
-@Composable
-fun PaddingValues.fixForMainContent() = PaddingValues(
-    start = calculateStartPadding(LocalLayoutDirection.current) + 4.dp,
-    top = calculateTopPadding() + 4.dp,
-    end = calculateEndPadding(LocalLayoutDirection.current) + 4.dp,
-    bottom = calculateBottomPadding() + 4.dp
-)
 
 @Composable
 fun ContactsActivityMenuButton(menuHandler: ContactsActivityMenuHandler) {
@@ -332,6 +325,7 @@ private fun WindowSizeClasses.toContactsActivityContentLayout() = when (horiz) {
 @Preview(showBackground = true)
 @Composable
 private fun SinglePaneListPreview() {
+    // TODO these previews have a lot of duplicated code and could probably be simplified a lot
     val contacts = (1..100).map { it.toString() }.map {
         SObjectRecord(
             id = it,
@@ -372,7 +366,7 @@ private fun SinglePaneListPreview() {
     SalesforceMobileSDKAndroidTheme {
         Surface {
             ContactsActivityContent(
-                vm = vm,
+                activityVm = vm,
                 menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER,
                 windowSizeClasses = WindowSizeClasses(
                     horiz = WindowSizeClass.Compact,
@@ -425,7 +419,7 @@ private fun SinglePaneDetailsPreview() {
     SalesforceMobileSDKAndroidTheme {
         Surface {
             ContactsActivityContent(
-                vm = vm,
+                activityVm = vm,
                 menuHandler = PREVIEW_CONTACTS_ACTIVITY_MENU_HANDLER,
                 windowSizeClasses = WindowSizeClasses(
                     horiz = WindowSizeClass.Compact,

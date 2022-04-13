@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import com.salesforce.samples.mobilesynccompose.R.string.content_desc_cancel_search
 import com.salesforce.samples.mobilesynccompose.R.string.cta_search
 import com.salesforce.samples.mobilesynccompose.contacts.activity.PreviewListVm
-import com.salesforce.samples.mobilesynccompose.contacts.detailscomponent.toUiSyncState
 import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListDataOpHandler
 import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListItemClickHandler
 import com.salesforce.samples.mobilesynccompose.contacts.listcomponent.ContactsListUiState
@@ -28,6 +27,7 @@ import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatu
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord
 import com.salesforce.samples.mobilesynccompose.core.ui.components.FloatingTextEntryBar
 import com.salesforce.samples.mobilesynccompose.core.ui.components.LoadingOverlay
+import com.salesforce.samples.mobilesynccompose.core.ui.state.toUiSyncState
 import com.salesforce.samples.mobilesynccompose.core.ui.theme.SalesforceMobileSDKAndroidTheme
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 

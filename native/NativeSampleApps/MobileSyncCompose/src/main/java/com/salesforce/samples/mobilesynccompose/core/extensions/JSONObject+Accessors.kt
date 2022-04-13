@@ -23,23 +23,3 @@ fun JSONObject.optStringOrNull(key: String): String? =
     else null
 
 fun JSONObject.isNotNull(key: String) = !isNull(key)
-
-fun JSONObject.putIfAbsent(key: String, value: Boolean): JSONObject =
-    if (!this.has(key)) put(key, value)
-    else this
-
-fun JSONObject.putIfAbsent(key: String, value: Int): JSONObject =
-    if (!this.has(key)) put(key, value)
-    else this
-
-fun JSONObject.putIfAbsent(key: String, value: Long): JSONObject =
-    if (!this.has(key)) put(key, value)
-    else this
-
-fun JSONObject.putIfAbsent(key: String, value: Double): JSONObject =
-    if (!this.has(key)) put(key, value)
-    else this
-
-fun JSONObject.putIfAbsent(key: String, value: Any?): JSONObject =
-    if (!this.has(key)) put(key, value)
-    else this

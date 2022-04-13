@@ -72,44 +72,10 @@ fun JSONObject.getRequiredArrayOrThrow(key: String): JSONArray =
         throw MissingRequiredProperties(propertyKeys = arrayOf(key), offendingJsonString = this.toString())
     }
 
-//@Throws(CoerceException::class)
 fun JSONObject.coerceToLocalStatus(): LocalStatus {
     val locallyCreated: Boolean = optBoolean(LOCALLY_CREATED, false)
     val locallyDeleted: Boolean = optBoolean(LOCALLY_DELETED, false)
     val locallyUpdated: Boolean = optBoolean(LOCALLY_UPDATED, false)
-
-//    if (local) {
-//        if (!(locallyDeleted || locallyCreated || locallyUpdated)) {
-//            throw InvalidPropertyValue(
-//                propertyKey = LOCAL,
-//                allowedValuesDescription = "Cannot be local=true if no other local flags are set to true.",
-//                this.toString()
-//            )
-//        }
-//    } else {
-//        if (locallyDeleted || locallyCreated || locallyUpdated) {
-//            throw InvalidPropertyValue(
-//                propertyKey = LOCAL,
-//                allowedValuesDescription = "Cannot be local=false if other local flags are set to true",
-//                this.toString()
-//            )
-//        }
-//    }
-//
-//    if (locallyCreated && locallyDeleted) {
-//        throw InvalidPropertyValue(
-//            propertyKey = "$LOCALLY_CREATED + $LOCALLY_DELETED",
-//            allowedValuesDescription = "Cannot be both locally-deleted and locally-created.",
-//            this.toString()
-//        )
-//    }
-//
-//    if (locallyCreated && locallyUpdated) {
-//        throw InvalidPropertyValue(
-//            propertyKey = "$LOCALLY_CREATED + $LOCALLY_UPDATED",
-//            allowedValuesDescription = "Cannot be both locally-created and locally-updated."
-//        )
-//    }
 
     return when {
         locallyDeleted -> {

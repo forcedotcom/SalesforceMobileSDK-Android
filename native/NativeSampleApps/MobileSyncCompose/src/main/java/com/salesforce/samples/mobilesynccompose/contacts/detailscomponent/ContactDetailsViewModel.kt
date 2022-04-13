@@ -5,10 +5,8 @@ import com.salesforce.samples.mobilesynccompose.core.repos.RepoOperationExceptio
 import com.salesforce.samples.mobilesynccompose.core.repos.SObjectSyncableRepo
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.LocalStatus
 import com.salesforce.samples.mobilesynccompose.core.salesforceobject.SObjectRecord
-import com.salesforce.samples.mobilesynccompose.core.ui.state.DeleteConfirmationDialogUiState
-import com.salesforce.samples.mobilesynccompose.core.ui.state.DiscardChangesDialogUiState
-import com.salesforce.samples.mobilesynccompose.core.ui.state.SObjectUiSyncState
-import com.salesforce.samples.mobilesynccompose.core.ui.state.UndeleteConfirmationDialogUiState
+import com.salesforce.samples.mobilesynccompose.core.salesforceobject.isLocallyDeleted
+import com.salesforce.samples.mobilesynccompose.core.ui.state.*
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactObject
 import com.salesforce.samples.mobilesynccompose.model.contacts.ContactValidationException
 import kotlinx.coroutines.CoroutineScope
@@ -97,18 +95,12 @@ class DefaultContactDetailsViewModel(
                         departmentField = matchingRecord.sObject.buildDepartmentField(),
                     )
 
-                    // Upstream was deleted, but we have unsaved changes. Ask the user what they want to do:
-                    // TODO DO NOT DO THIS.  You cannot trigger a dialog from a data event.  There must
-                    //  be a different approach...
-                    /* Ideas: create a "snapshot" of the SO as soon as they begin editing, and only
-                     * upon clicking save: if the upstream record doesn't equal the snapshot, prompt
-                     * for choice. */
-//                    matchingRecord.localStatus.isLocallyDeleted && hasUnsavedChanges -> curState.copy(
-//                        curDialogUiState = DiscardChangesOrUndeleteDialogUiState(
-//                            onDiscardChanges = { TODO() },
-//                            onUndelete = { TODO() }
-//                        )
-//                    )
+                    /* TODO figure out how to reconcile when upstream was locally deleted but the user has
+                        unsaved changes. Also applies to if upstream is permanently deleted. Reminder,
+                        showing dialogs from data events is not allowed.
+                        Idea: create a "snapshot" of the SO as soon as they begin editing, and only
+                        prompt for choice upon clicking save. */
+                    matchingRecord.localStatus.isLocallyDeleted && hasUnsavedChanges -> TODO()
 
                     // user is editing and there is no incompatible state, so no changes to state:
                     else -> curState
@@ -136,9 +128,8 @@ class DefaultContactDetailsViewModel(
         isEditing: Boolean,
         forceDiscardChanges: Boolean
     ) = stateMutex.withLock {
-        if (!this@DefaultContactDetailsViewModel::upstreamRecords.isInitialized
-            || dataOpDelegate.dataOperationIsActive
-        ) {
+
+        if (!this@DefaultContactDetailsViewModel::upstreamRecords.isInitialized || dataOpDelegate.dataOperationIsActive) {
             throw DataOperationActiveException(
                 message = "Cannot change details content while there are data operations active."
             )
@@ -201,13 +192,19 @@ class DefaultContactDetailsViewModel(
         if (hasUnsavedChanges) {
             mutUiState.value = uiState.value.copy(
                 curDialogUiState = DiscardChangesDialogUiState(
+
                     onDiscardChanges = {
                         launchWithStateLock {
                             setStateForCreateNew()
                             dismissCurDialog()
                         }
                     },
-                    onKeepChanges = { launchWithStateLock { dismissCurDialog() } }
+
+                    onKeepChanges = {
+                        launchWithStateLock {
+                            dismissCurDialog()
+                        }
+                    }
                 )
             )
             return@launchWithStateLock
@@ -293,65 +290,74 @@ class DefaultContactDetailsViewModel(
     }
 
     override fun deselectContact() = launchWithStateLock {
-        mutUiState.value = when (val curState = uiState.value) {
-            is ContactDetailsUiState.NoContactSelected -> curState
-            is ContactDetailsUiState.ViewingContactDetails -> {
-                if (hasUnsavedChanges) {
-                    curState.copy(
-                        curDialogUiState = DiscardChangesDialogUiState(
-                            onDiscardChanges = {
-                                launchWithStateLock {
-                                    mutUiState.value = ContactDetailsUiState.NoContactSelected(
-                                        dataOperationIsActive = dataOpDelegate.dataOperationIsActive,
-                                        curDialogUiState = null
-                                    )
-                                }
-                            },
-                            onKeepChanges = { launchWithStateLock { dismissCurDialog() } }
-                        )
-                    )
-                } else {
-                    ContactDetailsUiState.NoContactSelected(
-                        dataOperationIsActive = dataOpDelegate.dataOperationIsActive,
-                        curDialogUiState = curState.curDialogUiState
-                    )
-                }
-            }
+        val viewingDetailsState = uiState.value as? ContactDetailsUiState.ViewingContactDetails
+            ?: return@launchWithStateLock // already have no contact
+
+        if (!hasUnsavedChanges) {
+            mutUiState.value = ContactDetailsUiState.NoContactSelected(
+                dataOperationIsActive = dataOpDelegate.dataOperationIsActive,
+                curDialogUiState = viewingDetailsState.curDialogUiState
+            )
+            return@launchWithStateLock
         }
+
+        mutUiState.value = viewingDetailsState.copy(
+            curDialogUiState = DiscardChangesDialogUiState(
+                onDiscardChanges = {
+                    launchWithStateLock {
+                        mutUiState.value = ContactDetailsUiState.NoContactSelected(
+                            dataOperationIsActive = dataOpDelegate.dataOperationIsActive,
+                            curDialogUiState = null
+                        )
+                    }
+                },
+                onKeepChanges = {
+                    launchWithStateLock {
+                        dismissCurDialog()
+                    }
+                }
+            )
+        )
     }
 
     override fun exitEditClick() = launchWithStateLock {
-        mutUiState.value = when (val curState = uiState.value) {
-            is ContactDetailsUiState.NoContactSelected -> curState
-            is ContactDetailsUiState.ViewingContactDetails -> {
-                if (hasUnsavedChanges) {
-                    curState.copy(
-                        curDialogUiState = DiscardChangesDialogUiState(
-                            onDiscardChanges = {
-                                launchWithStateLock {
-                                    val record = curRecordId?.let { upstreamRecords[it] }
-                                    mutUiState.value = record
-                                        ?.sObject
-                                        ?.buildViewingContactUiState(
-                                            uiSyncState = record.localStatus.toUiSyncState(),
-                                            isEditingEnabled = false,
-                                            shouldScrollToErrorField = false
-                                        )
-                                        ?: ContactDetailsUiState.NoContactSelected(
-                                            dataOperationIsActive = curState.dataOperationIsActive,
-                                            curDialogUiState = null
-                                        )
-                                    dismissCurDialog()
-                                }
-                            },
-                            onKeepChanges = { launchWithStateLock { dismissCurDialog() } }
+        val viewingContactDetails = uiState.value as? ContactDetailsUiState.ViewingContactDetails
+            ?: return@launchWithStateLock // not editing, so nothing to do
+
+        if (!hasUnsavedChanges) {
+            mutUiState.value = viewingContactDetails.copy(isEditingEnabled = false)
+            return@launchWithStateLock
+        }
+
+        val discardChangesDialog = DiscardChangesDialogUiState(
+            onDiscardChanges = {
+                launchWithStateLock {
+                    val record = curRecordId?.let { upstreamRecords[it] }
+                    mutUiState.value = record
+                        ?.sObject
+                        ?.buildViewingContactUiState(
+                            uiSyncState = record.localStatus.toUiSyncState(),
+                            isEditingEnabled = false,
+                            shouldScrollToErrorField = false
                         )
-                    )
-                } else {
-                    curState.copy(isEditingEnabled = false)
+                        ?: ContactDetailsUiState.NoContactSelected(
+                            dataOperationIsActive = uiState.value.dataOperationIsActive,
+                            curDialogUiState = null
+                        )
+                    dismissCurDialog()
+                }
+            },
+
+            onKeepChanges = {
+                launchWithStateLock {
+                    dismissCurDialog()
                 }
             }
-        }
+        )
+
+        mutUiState.value = viewingContactDetails.copy(
+            curDialogUiState = discardChangesDialog
+        )
     }
 
     override fun saveClick() = launchWithStateLock {
@@ -569,14 +575,4 @@ private sealed interface DetailsDataEvent {
 
     @JvmInline
     value class Create(val so: ContactObject) : DetailsDataEvent
-}
-
-fun LocalStatus.toUiSyncState(): SObjectUiSyncState = when (this) {
-    LocalStatus.LocallyDeleted,
-    LocalStatus.LocallyDeletedAndLocallyUpdated -> SObjectUiSyncState.Deleted
-
-    LocalStatus.LocallyCreated,
-    LocalStatus.LocallyUpdated -> SObjectUiSyncState.Updated
-
-    LocalStatus.MatchesUpstream -> SObjectUiSyncState.Synced
 }
