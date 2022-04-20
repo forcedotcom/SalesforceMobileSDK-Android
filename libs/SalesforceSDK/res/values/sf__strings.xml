@@ -21,7 +21,7 @@
 
 	<!-- Login -->
 	<string name="sf__login_title">Login</string>
-	<string name="sf__pick_server">Change Server</string>
+	<string name="sf__pick_server">Select District</string>
 	<string name="sf__clear_cookies">Clear Cookies</string>
 	<string name="sf__reload">Reload</string>
 	<string name="sf__launch_idp">Launch IDP App</string>
@@ -36,7 +36,7 @@
 	<string name="sf__server_url_default_cancel">Cancel</string>
 	<string name="sf__server_url_default_apply">Apply</string>
 	<string name="sf__server_url_reset">Reset</string>
-	<string name="sf__server_picker_title">Change Server</string>
+	<string name="sf__server_picker_title">Select District</string>
 	
 	<!-- Passcode entry screen -->
 	<string name="sf__passcode_create_title">Passcode</string>
