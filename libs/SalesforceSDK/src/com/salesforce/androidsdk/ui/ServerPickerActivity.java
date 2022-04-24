@@ -36,6 +36,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
 import android.widget.Toast;
@@ -66,6 +67,7 @@ public class ServerPickerActivity extends Activity implements
     private LoginServerManager loginServerManager;
     private boolean shouldUncheckItems = false;
     private boolean optionChanged = false;
+    private ProgressBar progressBar;
 
     /**
      * Clears any custom URLs that may have been set.
@@ -83,8 +85,9 @@ public class ServerPickerActivity extends Activity implements
     @Override
     public void onBackPressed() {
         if (shouldUncheckItems && !optionChanged) {
-            Toast.makeText(this, R.string.sf__server_not_selected, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.sf__server_not_selected, Toast.LENGTH_SHORT).show();
         } else {
+            progressBar.setVisibility(View.VISIBLE);
             (new AuthConfigTask(this)).execute();
         }
     }
@@ -142,6 +145,7 @@ public class ServerPickerActivity extends Activity implements
         actionBar.setTitle(R.string.sf__server_picker_title);
         actionBar.setDisplayHomeAsUpEnabled(true);
 
+        progressBar = findViewById(R.id.progressBar);
         /*
          * Hides the 'Add Connection' button if the MDM variable to disable
          * adding of custom hosts is set.
@@ -269,6 +273,7 @@ public class ServerPickerActivity extends Activity implements
         final SharedPreferences.Editor ed = sp.edit();
         ed.putBoolean(LoginActivity.DISTRICT_SELECTED, true);
         ed.commit();
+        progressBar.setVisibility(View.GONE);
         final Intent changeServerIntent = new Intent(CHANGE_SERVER_INTENT);
         sendBroadcast(changeServerIntent);
         finish();
