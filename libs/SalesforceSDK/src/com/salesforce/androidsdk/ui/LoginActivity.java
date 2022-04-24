@@ -59,6 +59,8 @@ import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity;
 import com.salesforce.androidsdk.auth.idp.IDPInititatedLoginReceiver;
 import com.salesforce.androidsdk.auth.idp.SPRequestHandler;
+import com.salesforce.androidsdk.config.LoginServerManager;
+import com.salesforce.androidsdk.config.LoginServerManager.LoginServer;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
@@ -86,7 +88,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
     public static final int PICK_SERVER_REQUEST_CODE = 10;
     private static final String TAG = "LoginActivity";
     public static final String DISTRICT_SELECTED = "district_selected";
-    public static final String SEVER_SETTINGS = "sever_settings";
+    public static final String SERVER_SETTINGS = "server_settings";
     public static final String SHOULD_UNCHECK_ITEMS = "should_uncheck_items";
 
     private boolean wasBackgrounded;
@@ -333,7 +335,16 @@ public class LoginActivity extends AccountAuthenticatorActivity
     public void loadingLoginPage(String loginUrl) {
         final ActionBar ab = getActionBar();
         if (ab != null) {
-            ab.setTitle(loginUrl);
+            final LoginServerManager loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
+            final List<LoginServer> servers = loginServerManager.getLoginServers();
+            String serverName = null;
+            for (LoginServer server: servers) {
+                if (loginUrl != null && loginUrl.equals(server.url)) {
+                    serverName = server.name;
+                    break;
+                }
+            }
+            ab.setTitle(serverName != null ? serverName : loginUrl);
         }
     }
 
@@ -514,7 +525,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
     }
 
     private void showSelectDistrictViewIfNeed() {
-        final SharedPreferences sp = getSharedPreferences(SEVER_SETTINGS, MODE_PRIVATE);
+        final SharedPreferences sp = getSharedPreferences(SERVER_SETTINGS, MODE_PRIVATE);
         final boolean isDistrictSelected = sp.getBoolean(DISTRICT_SELECTED, false);
         if (!isDistrictSelected) {
             final Intent i = new Intent(this, ServerPickerActivity.class);

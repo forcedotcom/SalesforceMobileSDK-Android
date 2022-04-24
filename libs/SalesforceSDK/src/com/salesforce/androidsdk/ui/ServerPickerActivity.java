@@ -269,7 +269,7 @@ public class ServerPickerActivity extends Activity implements
     @Override
     public void onAuthConfigFetched() {
         setResult(Activity.RESULT_OK, null);
-        final SharedPreferences sp = getSharedPreferences(LoginActivity.SEVER_SETTINGS, MODE_PRIVATE);
+        final SharedPreferences sp = getSharedPreferences(LoginActivity.SERVER_SETTINGS, MODE_PRIVATE);
         final SharedPreferences.Editor ed = sp.edit();
         ed.putBoolean(LoginActivity.DISTRICT_SELECTED, true);
         ed.commit();
