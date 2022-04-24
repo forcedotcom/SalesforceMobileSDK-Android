@@ -30,6 +30,7 @@ import android.app.ActionBar;
 import android.app.Activity;
 import android.app.FragmentManager;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -37,6 +38,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
+import android.widget.Toast;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -62,13 +64,15 @@ public class ServerPickerActivity extends Activity implements
 
     private CustomServerUrlEditor urlEditDialog;
     private LoginServerManager loginServerManager;
+    private boolean shouldUncheckItems = false;
+    private boolean optionChanged = false;
 
     /**
      * Clears any custom URLs that may have been set.
      */
     private void clearCustomUrlSetting() {
-    	loginServerManager.reset();
-    	rebuildDisplay();
+        loginServerManager.reset();
+        rebuildDisplay();
         urlEditDialog = new CustomServerUrlEditor();
     }
 
@@ -78,21 +82,26 @@ public class ServerPickerActivity extends Activity implements
      */
     @Override
     public void onBackPressed() {
-        (new AuthConfigTask(this)).execute();
+        if (shouldUncheckItems && !optionChanged) {
+            Toast.makeText(this, R.string.sf__server_not_selected, Toast.LENGTH_LONG).show();
+        } else {
+            (new AuthConfigTask(this)).execute();
+        }
     }
 
     @Override
     public void onCheckedChanged(RadioGroup group, int checkedId) {
-    	if (group != null) {
-    		final SalesforceServerRadioButton rb = group.findViewById(checkedId);
-    		if (rb != null) {
-    			final String name = rb.getName();
-    			final String url = rb.getUrl();
-    			boolean isCustom = rb.isCustom();
-    			loginServerManager.setSelectedLoginServer(new LoginServer(name,
-    					url, isCustom));
-    		}
-    	}
+        if (group != null) {
+            final SalesforceServerRadioButton rb = group.findViewById(checkedId);
+            if (rb != null) {
+                final String name = rb.getName();
+                final String url = rb.getUrl();
+                boolean isCustom = rb.isCustom();
+                loginServerManager.setSelectedLoginServer(new LoginServer(name,
+                        url, isCustom));
+            }
+        }
+        optionChanged = true;
     }
 
     @Override
@@ -121,7 +130,7 @@ public class ServerPickerActivity extends Activity implements
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-    	super.onCreate(savedInstanceState);
+        super.onCreate(savedInstanceState);
         boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark : R.style.SalesforceSDK);
         // This makes the navigation bar visible on light themes.
@@ -143,14 +152,17 @@ public class ServerPickerActivity extends Activity implements
         }
         final RadioGroup radioGroup = findViewById(getServerListGroupId());
         radioGroup.setOnCheckedChangeListener(this);
-    	urlEditDialog = new CustomServerUrlEditor();
-    	urlEditDialog.setRetainInstance(true);
+        urlEditDialog = new CustomServerUrlEditor();
+        urlEditDialog.setRetainInstance(true);
+
+        Intent i = getIntent();
+        shouldUncheckItems = i.getBooleanExtra(LoginActivity.SHOULD_UNCHECK_ITEMS, false);
     }
 
     @Override
     public void onResume() {
-    	super.onResume();
-    	rebuildDisplay();
+        super.onResume();
+        rebuildDisplay();
     }
 
     @Override
@@ -178,7 +190,7 @@ public class ServerPickerActivity extends Activity implements
      * @param v View.
      */
     public void showCustomUrlDialog(View v) {
-    	final FragmentManager fragMgr = getFragmentManager();
+        final FragmentManager fragMgr = getFragmentManager();
 
         // Adds fragment only if it has not been added already.
         if (!urlEditDialog.isAdded()) {
@@ -202,13 +214,13 @@ public class ServerPickerActivity extends Activity implements
      * @param server Login server.
      */
     private void setRadioState(RadioGroup radioGroup, LoginServer server) {
-    	final SalesforceServerRadioButton rb = new SalesforceServerRadioButton(this,
-    			server.name, server.url, server.isCustom);
+        final SalesforceServerRadioButton rb = new SalesforceServerRadioButton(this,
+                server.name, server.url, server.isCustom);
         boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         int textColor = getResources().getColor(isDarkTheme ? R.color.sf__text_color_dark : R.color.sf__text_color);
-    	rb.setTextColor(textColor);
-    	rb.getButtonDrawable().setTint(getResources().getColor(R.color.sf__primary_color));
-    	radioGroup.addView(rb);
+        rb.setTextColor(textColor);
+        rb.getButtonDrawable().setTint(getResources().getColor(R.color.sf__primary_color));
+        radioGroup.addView(rb);
         ((ScrollView) radioGroup.getParent()).scrollTo(0, radioGroup.getBottom());
     }
 
@@ -233,6 +245,9 @@ public class ServerPickerActivity extends Activity implements
         radioGroup.removeAllViews();
         setupRadioButtons();
 
+        if (shouldUncheckItems) {
+            return;
+        }
         // Sets selected server.
         final LoginServer selectedServer = loginServerManager.getSelectedLoginServer();
         int numServers = radioGroup.getChildCount();
@@ -250,6 +265,10 @@ public class ServerPickerActivity extends Activity implements
     @Override
     public void onAuthConfigFetched() {
         setResult(Activity.RESULT_OK, null);
+        final SharedPreferences sp = getSharedPreferences(LoginActivity.SEVER_SETTINGS, MODE_PRIVATE);
+        final SharedPreferences.Editor ed = sp.edit();
+        ed.putBoolean(LoginActivity.DISTRICT_SELECTED, true);
+        ed.commit();
         final Intent changeServerIntent = new Intent(CHANGE_SERVER_INTENT);
         sendBroadcast(changeServerIntent);
         finish();
