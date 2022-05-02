@@ -241,6 +241,8 @@ public class SmartStore  {
      * Get database size
      */
     public int getDatabaseSize() {
+		// With WAL enabled we must force a WAL checkpoint if we want the actual DB file size.
+		getDatabase().query("PRAGMA wal_checkpoint(FULL);").moveToNext();
     	int size =  (int) (new File(getDatabase().getPath()).length()); // XXX That cast will be trouble if the file is more than 2GB
     	if (dbOpenHelper instanceof DBOpenHelper) {
     		size += ((DBOpenHelper) dbOpenHelper).getSizeOfDir(null);
