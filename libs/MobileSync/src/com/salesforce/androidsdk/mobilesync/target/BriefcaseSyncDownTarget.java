@@ -62,7 +62,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
     private static final String TAG = "BriefcaseSyncDownTarget";
 
     public static final String INFOS = "infos";
-    public static final String COUNT_IDS_PER_SOQL = "coundIdsPerSoql";
+    public static final String COUNT_IDS_PER_SOQL = "countIdsPerSoql";
 
     private List<BriefcaseObjectInfo> infos;
     private Map<String, BriefcaseObjectInfo> infosMap;
@@ -74,7 +74,6 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
 
     // Number of records to fetch per SOQL call (with ids obtained from priming record api)
     private int countIdsPerSoql;
-    private static final int defaultCountIdsPerSoql = 500;
     private static final int MAX_COUNT_IDS_PER_SOQL = 2000;
 
 
@@ -86,7 +85,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
     public BriefcaseSyncDownTarget(JSONObject target) throws JSONException {
         this(
             BriefcaseObjectInfo.fromJSONArray(target.getJSONArray(INFOS)),
-            target.optInt(COUNT_IDS_PER_SOQL, defaultCountIdsPerSoql)
+            target.optInt(COUNT_IDS_PER_SOQL, MAX_COUNT_IDS_PER_SOQL)
         );
     }
 
@@ -96,7 +95,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
      * @param infos
      */
     public BriefcaseSyncDownTarget(List<BriefcaseObjectInfo> infos) {
-        this(infos, defaultCountIdsPerSoql);
+        this(infos, MAX_COUNT_IDS_PER_SOQL);
     }
 
     BriefcaseSyncDownTarget(List<BriefcaseObjectInfo> infos, int countIdsPerSoql) {
