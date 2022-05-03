@@ -72,7 +72,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
     protected long maxTimeStamp = 0L;
     protected String relayToken = null;
 
-    // Number of records to fetch using SOQL (with ids obtained from priming record api)
+    // Number of records to fetch per SOQL call (with ids obtained from priming record api)
     private int countIdsPerSoql;
     private static final int defaultCountIdsPerSoql = 500;
     private static final int MAX_COUNT_IDS_PER_SOQL = 2000;
@@ -99,10 +99,10 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
         this(infos, defaultCountIdsPerSoql);
     }
 
-    protected BriefcaseSyncDownTarget(List<BriefcaseObjectInfo> infos, int countIdsPerSoql) {
+    BriefcaseSyncDownTarget(List<BriefcaseObjectInfo> infos, int countIdsPerSoql) {
         this.infos = infos;
         this.queryType = QueryType.briefcase;
-        setCountIdsPerSoql(countIdsPerSoql);
+        this.countIdsPerSoql = Math.min(countIdsPerSoql, MAX_COUNT_IDS_PER_SOQL);
         MobileSyncSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_RELATED_RECORDS);
 
         // Build infosMap
@@ -125,24 +125,6 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
         target.put(INFOS, infosJson);
         target.put(COUNT_IDS_PER_SOQL, countIdsPerSoql);
         return target;
-    }
-
-    /**
-     * Return number of ids to pack in a single SOQL call
-     */
-    public int getCountIdsPerSoql() {
-        return countIdsPerSoql;
-    }
-
-    /**
-     * Set the number of ids to pack in a single SOQL call (not to exceed 2000)
-     * SOQL query size limit is 100,000 characters (so ~5000 should not exceed the query size limit)
-     * However the code fetching fields from the server expect a single response per requesst
-     * This setter is to be used by tests primarily
-     * @param count
-     */
-    public void setCountIdsPerSoql(int count) {
-        countIdsPerSoql = Math.min(count, MAX_COUNT_IDS_PER_SOQL);
     }
 
     @Override
@@ -292,11 +274,10 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
 
     protected JSONArray fetchFromServerInSlices(SyncManager syncManager, String sobjectType, List<String> ids, List<String> fieldlist) throws IOException, JSONException {
         JSONArray fetchedRecords = new JSONArray();
-        int sliceSize = getCountIdsPerSoql();
-        int countSlices = (int) Math.ceil((double) ids.size() / sliceSize);
+        int countSlices = (int) Math.ceil((double) ids.size() / countIdsPerSoql);
         for (int slice = 0; slice < countSlices; slice++) {
             List<String> idsSlice = ids
-                .subList(slice * sliceSize, Math.min(ids.size(), (slice + 1) * sliceSize));
+                .subList(slice * countIdsPerSoql, Math.min(ids.size(), (slice + 1) * countIdsPerSoql));
             JSONObjectHelper.addAll(fetchedRecords, fetchFromServer(syncManager, sobjectType, idsSlice, fieldlist));
         }
         return fetchedRecords;

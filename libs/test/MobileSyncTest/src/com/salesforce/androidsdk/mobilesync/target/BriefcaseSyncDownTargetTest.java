@@ -187,6 +187,33 @@ public class BriefcaseSyncDownTargetTest extends SyncManagerTestCase {
     }
 
     // Create accounts on server
+    // Run a sync with a BriefcaseSyncDownTarget with countIdsPerSoql of 2
+    // Make sure we get the created accounts in the database
+    @Test
+    public void testSyncDownFetchingWithMultipleSOQLCalls() throws Exception {
+        final int numberAccounts = 11; // using a number that is not a multiple of countIdsPerSoql to make sure the last slice is correctly fetched
+        final Map<String, String> accounts = createRecordsOnServer(numberAccounts, Constants.ACCOUNT);
+        Assert.assertEquals("Wrong number of accounts created", numberAccounts, accounts.size());
+        final String[] accountIds = accounts.keySet().toArray(new String[0]);
+
+        // Builds briefcase sync down target to fetch the accounts with SOQL queries using 2 ids at a time
+        BriefcaseSyncDownTarget target = new BriefcaseSyncDownTarget(
+            Arrays.asList(new BriefcaseObjectInfo(
+                ACCOUNTS_SOUP,
+                Constants.ACCOUNT,
+                Arrays.asList(Constants.NAME, Constants.DESCRIPTION)
+            )),
+            2
+        );
+
+        // Run sync
+        trySyncDown(MergeMode.LEAVE_IF_CHANGED, target, ACCOUNTS_SOUP, accounts.size(), 1, null);
+
+        // Check database
+        checkDbExist(ACCOUNTS_SOUP, accountIds, Constants.ID);
+    }
+
+    // Create accounts on server
     // Run a sync with a BriefcaseSyncDownTarget that is only interested in accounts
     // Make sure we get the created accounts in the database
     // Delete some accounts from server
