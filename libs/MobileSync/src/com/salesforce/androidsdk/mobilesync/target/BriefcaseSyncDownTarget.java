@@ -39,6 +39,7 @@ import com.salesforce.androidsdk.rest.PrimingRecordsResponse.PrimingRecord;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -61,6 +62,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
     private static final String TAG = "BriefcaseSyncDownTarget";
 
     public static final String INFOS = "infos";
+    public static final String COUNT_IDS_PER_SOQL = "coundIdsPerSoql";
 
     private List<BriefcaseObjectInfo> infos;
     private Map<String, BriefcaseObjectInfo> infosMap;
@@ -70,13 +72,22 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
     protected long maxTimeStamp = 0L;
     protected String relayToken = null;
 
+    // Number of records to fetch using SOQL (with ids obtained from priming record api)
+    private int countIdsPerSoql;
+    private static final int defaultCountIdsPerSoql = 500;
+    private static final int MAX_COUNT_IDS_PER_SOQL = 2000;
+
+
     /**
      * Construct BriefcaseSyncDownTarget from json
      * @param target
      * @throws JSONException
      */
     public BriefcaseSyncDownTarget(JSONObject target) throws JSONException {
-        this(BriefcaseObjectInfo.fromJSONArray(target.getJSONArray(INFOS)));
+        this(
+            BriefcaseObjectInfo.fromJSONArray(target.getJSONArray(INFOS)),
+            target.optInt(COUNT_IDS_PER_SOQL, defaultCountIdsPerSoql)
+        );
     }
 
     /**
@@ -85,8 +96,13 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
      * @param infos
      */
     public BriefcaseSyncDownTarget(List<BriefcaseObjectInfo> infos) {
+        this(infos, defaultCountIdsPerSoql);
+    }
+
+    protected BriefcaseSyncDownTarget(List<BriefcaseObjectInfo> infos, int countIdsPerSoql) {
         this.infos = infos;
         this.queryType = QueryType.briefcase;
+        setCountIdsPerSoql(countIdsPerSoql);
         MobileSyncSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_RELATED_RECORDS);
 
         // Build infosMap
@@ -107,7 +123,26 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
             infosJson.put(info.asJSON());
         }
         target.put(INFOS, infosJson);
+        target.put(COUNT_IDS_PER_SOQL, countIdsPerSoql);
         return target;
+    }
+
+    /**
+     * Return number of ids to pack in a single SOQL call
+     */
+    public int getCountIdsPerSoql() {
+        return countIdsPerSoql;
+    }
+
+    /**
+     * Set the number of ids to pack in a single SOQL call (not to exceed 2000)
+     * SOQL query size limit is 100,000 characters (so ~5000 should not exceed the query size limit)
+     * However the code fetching fields from the server expect a single response per requesst
+     * This setter is to be used by tests primarily
+     * @param count
+     */
+    public void setCountIdsPerSoql(int count) {
+        countIdsPerSoql = Math.min(count, MAX_COUNT_IDS_PER_SOQL);
     }
 
     @Override
@@ -191,10 +226,9 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
                         fieldlistToFetch.add(fieldName);
                     }
                 }
-                JSONArray fetchedRecords = fetchFromServer(syncManager, info.sobjectType, idsToFetch, fieldlistToFetch);
-                for (int i = 0; i < fetchedRecords.length(); i++) {
-                    records.put(fetchedRecords.getJSONObject(i));
-                }
+
+                JSONArray fetchedRecords = fetchFromServerInSlices(syncManager, info.sobjectType, idsToFetch, fieldlistToFetch);
+                JSONObjectHelper.addAll(records, fetchedRecords);
             }
         }
 
@@ -256,13 +290,23 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
         return response.relayToken;
     }
 
+    protected JSONArray fetchFromServerInSlices(SyncManager syncManager, String sobjectType, List<String> ids, List<String> fieldlist) throws IOException, JSONException {
+        JSONArray fetchedRecords = new JSONArray();
+        int sliceSize = getCountIdsPerSoql();
+        int countSlices = (int) Math.ceil((double) ids.size() / sliceSize);
+        for (int slice = 0; slice < countSlices; slice++) {
+            List<String> idsSlice = ids
+                .subList(slice * sliceSize, Math.min(ids.size(), (slice + 1) * sliceSize));
+            JSONObjectHelper.addAll(fetchedRecords, fetchFromServer(syncManager, sobjectType, idsSlice, fieldlist));
+        }
+        return fetchedRecords;
+    }
+
     protected JSONArray fetchFromServer(SyncManager syncManager, String sobjectType, List<String> ids, List<String> fieldlist) throws IOException, JSONException {
+        syncManager.checkAcceptingSyncs();
+
         final String whereClause = ""
             + getIdFieldName() + " IN ('" + TextUtils.join("', '", ids) + "')";
-
-        // SOQL query size limit is 100,000 characters (so ~5000 ids)
-        // See https://developer.salesforce.com/docs/atlas.en-us.salesforce_app_limits_cheatsheet.meta/salesforce_app_limits_cheatsheet/salesforce_app_limits_platform_soslsoql.htm
-        // We won't get that many returned in one response from the priming record API so we don't need to chunk them in multiple requests
 
         final String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(sobjectType).where(whereClause).build();
         final RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, soql);
