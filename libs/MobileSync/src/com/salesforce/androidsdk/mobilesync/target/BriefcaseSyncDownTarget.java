@@ -74,7 +74,9 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
 
     // Number of records to fetch per SOQL call (with ids obtained from priming record api)
     private int countIdsPerSoql;
-    private static final int MAX_COUNT_IDS_PER_SOQL = 2000;
+    private static final int MAX_COUNT_IDS_PER_SOQL = 500;
+    // NB: SOQL query length limit is 100k but not over REST
+    //     Too many ids will cause a "414 - URI Too Long" error
 
 
     /**
