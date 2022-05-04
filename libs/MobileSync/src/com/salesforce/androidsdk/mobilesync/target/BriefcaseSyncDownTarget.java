@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.mobilesync.target;
 
 import android.text.TextUtils;
+import android.util.Log;
 import com.salesforce.androidsdk.mobilesync.app.Features;
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
@@ -45,6 +46,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -71,6 +73,9 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
     // The following members are specific to a run
     protected long maxTimeStamp = 0L;
     protected String relayToken = null;
+    // When we get many ids, we don't fetch all the records for them at once
+    protected TypedIds fetchedTypedIds = null;
+    protected int currentSliceIndex = 0;
 
     // Number of records to fetch per SOQL call (with ids obtained from priming record api)
     private int countIdsPerSoql;
@@ -138,7 +143,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
 
     @Override
     public JSONArray continueFetch(SyncManager syncManager) throws IOException, JSONException {
-        if (relayToken == null) {
+        if (relayToken == null && fetchedTypedIds == null) {
             return null;
         } else {
             return getIdsFromBriefcasesAndFetchFromServer(syncManager);
@@ -150,11 +155,12 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
         int countGhosts = 0;
 
         // Get all ids
-        Map<String, List<String>> objectTypeToIds = new HashMap<>();
+        TypedIds typedIds = new TypedIds();
         String relayToken = null;
         do {
-            relayToken = getIdsFromBriefcases(syncManager, objectTypeToIds, relayToken, 0);
+            relayToken = getIdsFromBriefcases(syncManager, typedIds, relayToken, 0);
         } while (relayToken != null);
+        Map<String, List<String>> objectTypeToIds = typedIds.toMap();
 
         // Cleaning up ghosts one object type at a time
         for (Entry<String, List<String>> entry : objectTypeToIds.entrySet()) {
@@ -175,6 +181,16 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
     }
 
     @Override
+    public Set<String> getIdsToSkip(SyncManager syncManager, String soupName) throws JSONException {
+        Set<String> idsToSkip = new HashSet<>();
+        // Aggregating ids of dirty records across all the soups
+        for (BriefcaseObjectInfo info : infos) {
+            idsToSkip.addAll(getDirtyRecordIds(syncManager, info.soupName, info.idFieldName));
+        }
+        return idsToSkip;
+    }
+
+    @Override
     protected Set<String> getRemoteIds(SyncManager syncManager, Set<String> localIds)
         throws IOException, JSONException {
         // Not used - we are overriding cleanGhosts entirely since we could have multiple soups
@@ -192,9 +208,15 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
         throws IOException, JSONException {
         JSONArray records = new JSONArray();
 
-        // Run priming record request
-        Map<String, List<String>> objectTypeToIds = new HashMap<>();
-        relayToken = getIdsFromBriefcases(syncManager, objectTypeToIds, relayToken, maxTimeStamp);
+        // Run priming record request unless we have fetched typed ids we have not yet processed
+        if (fetchedTypedIds == null) {
+            fetchedTypedIds = new TypedIds();
+            currentSliceIndex = 0;
+            relayToken = getIdsFromBriefcases(syncManager, fetchedTypedIds, relayToken, maxTimeStamp);
+        }
+
+        // Getting ids of records to fetch in a map
+        Map<String, List<String>> objectTypeToIds = fetchedTypedIds.slice(currentSliceIndex, countIdsPerSoql).toMap();
 
         // Get records using SOQL one object type at a time
         for (Entry<String, List<String>> entry : objectTypeToIds.entrySet()) {
@@ -210,7 +232,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
                     }
                 }
 
-                JSONArray fetchedRecords = fetchFromServerInSlices(syncManager, info.sobjectType, idsToFetch, fieldlistToFetch);
+                JSONArray fetchedRecords = fetchFromServer(syncManager, info.sobjectType, idsToFetch, fieldlistToFetch);
                 JSONObjectHelper.addAll(records, fetchedRecords);
             }
         }
@@ -221,7 +243,18 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
             //  - using response.stats.recordCountTotal would only be correct if the filtering by
             //  timestamp did not exclude any results
             //  - also in 236, response.stats.recordCountTotal seems wrong (it says 1000 all the time)
-            totalSize = records.length();
+            totalSize = fetchedTypedIds.size();
+        }
+
+        Log.d("SOQL-->", "size = " + fetchedTypedIds.size());
+        Log.d("SOQL-->", "number slices = " + fetchedTypedIds.countSlices(countIdsPerSoql));
+        Log.d("SOQL-->", "index = " + currentSliceIndex);
+
+        // Incrementing current slice index and checking if we have reached the end
+        currentSliceIndex++;
+        if (currentSliceIndex >= fetchedTypedIds.countSlices(countIdsPerSoql)) {
+            fetchedTypedIds = null;
+            currentSliceIndex = 0;
         }
 
         return records;
@@ -231,14 +264,14 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
      * Go to the priming record API and return ids (grouped by object type)
      *
      * @param syncManager
-     * @param objectTypeToIds - gets populated from the response to the priming records API
+     * @param typedIds - gets populated from the response to the priming records API
      * @param relayToken
      * @param maxTimeStamp - only ids with a greater time stamp are returned
      * @return new relay token
      * @throws JSONException
      * @throws IOException
      */
-    protected String getIdsFromBriefcases(SyncManager syncManager, Map<String, List<String>> objectTypeToIds, String relayToken, long maxTimeStamp)
+    protected String getIdsFromBriefcases(SyncManager syncManager, TypedIds typedIds, String relayToken, long maxTimeStamp)
         throws JSONException, IOException {
         RestRequest request = RestRequest.getRequestForPrimingRecords(syncManager.apiVersion, relayToken);
 
@@ -252,10 +285,6 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
 
         Map<String, Map<String, List<PrimingRecord>>> allPrimingRecords = response.primingRecords;
         for (BriefcaseObjectInfo info : infos) {
-            if (objectTypeToIds.get(info.sobjectType) == null) {
-                objectTypeToIds.put(info.sobjectType, new ArrayList<>());
-            }
-
             if (allPrimingRecords.containsKey(info.sobjectType)) {
                 for (List<PrimingRecord> primingRecords : allPrimingRecords.get(info.sobjectType)
                     .values()) {
@@ -263,7 +292,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
                         // Filtering by maxTimeStamp
                         // TODO Remove once 238 is GA (filtering will happen on server)
                         if (primingRecord.systemModstamp.getTime() > maxTimeStamp) {
-                            objectTypeToIds.get(info.sobjectType).add(primingRecord.id);
+                            typedIds.add(info.sobjectType, primingRecord.id);
                         }
                     }
                 }
@@ -273,22 +302,13 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
         return response.relayToken;
     }
 
-    protected JSONArray fetchFromServerInSlices(SyncManager syncManager, String sobjectType, List<String> ids, List<String> fieldlist) throws IOException, JSONException {
-        JSONArray fetchedRecords = new JSONArray();
-        int countSlices = (int) Math.ceil((double) ids.size() / countIdsPerSoql);
-        for (int slice = 0; slice < countSlices; slice++) {
-            List<String> idsSlice = ids
-                .subList(slice * countIdsPerSoql, Math.min(ids.size(), (slice + 1) * countIdsPerSoql));
-            JSONObjectHelper.addAll(fetchedRecords, fetchFromServer(syncManager, sobjectType, idsSlice, fieldlist));
-        }
-        return fetchedRecords;
-    }
-
     protected JSONArray fetchFromServer(SyncManager syncManager, String sobjectType, List<String> ids, List<String> fieldlist) throws IOException, JSONException {
         syncManager.checkAcceptingSyncs();
 
         final String whereClause = ""
             + getIdFieldName() + " IN ('" + TextUtils.join("', '", ids) + "')";
+
+        Log.d("SOQL-->", whereClause);
 
         final String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(sobjectType).where(whereClause).build();
         final RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, soql);
@@ -348,5 +368,56 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
             return infosMap.get(sobjectType);
         }
         return null;
+    }
+}
+
+class TypedId {
+    String sobjectType;
+    String id;
+
+    TypedId(String sobjectType, String id) {
+        this.sobjectType = sobjectType;
+        this.id = id;
+    }
+}
+
+class TypedIds {
+    List<TypedId> listTypedIds;
+
+    TypedIds() {
+        this(new ArrayList<>());
+    }
+
+    TypedIds(List<TypedId> ids) {
+        this.listTypedIds = ids;
+    }
+
+    void add(String objectType, String id) {
+        listTypedIds.add(new TypedId(objectType, id));
+    }
+
+    int countSlices(int sliceSize) {
+        return (int) Math.ceil((double) listTypedIds.size() / sliceSize);
+    }
+
+    int size() {
+        return listTypedIds.size();
+    }
+
+    TypedIds slice(int sliceIndex, int sliceSize) {
+        List<TypedId> idsOfSlice = listTypedIds
+            .subList(sliceIndex * sliceSize, Math.min(listTypedIds.size(), (sliceIndex + 1) * sliceSize));
+        return new TypedIds(idsOfSlice);
+    }
+
+    Map<String, List<String>> toMap() {
+        Map<String, List<String>> typeToIds = new HashMap<>();
+        for (TypedId typedId : listTypedIds) {
+            if (typeToIds.get(typedId.sobjectType) == null) {
+                typeToIds.put(typedId.sobjectType, new ArrayList<>());
+            }
+            typeToIds.get(typedId.sobjectType).add(typedId.id);
+        }
+        return typeToIds;
     }
 }
