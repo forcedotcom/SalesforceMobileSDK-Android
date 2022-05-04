@@ -181,12 +181,12 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
 
     @Override
     public Set<String> getIdsToSkip(SyncManager syncManager, String soupName) throws JSONException {
-        Set<String> idsToSkip = new HashSet<>();
+        Set<String> dirtyRecordIds = new HashSet<>();
         // Aggregating ids of dirty records across all the soups
         for (BriefcaseObjectInfo info : infos) {
-            idsToSkip.addAll(getDirtyRecordIds(syncManager, info.soupName, info.idFieldName));
+            dirtyRecordIds.addAll(getDirtyRecordIds(syncManager, info.soupName, info.idFieldName));
         }
-        return idsToSkip;
+        return dirtyRecordIds;
     }
 
     @Override

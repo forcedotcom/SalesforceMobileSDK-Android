@@ -27,6 +27,7 @@
 
 package com.salesforce.androidsdk.mobilesync.target;
 
+import android.util.Pair;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManagerTestCase;
@@ -38,6 +39,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.After;
@@ -252,35 +254,10 @@ public class BriefcaseSyncDownTargetTest extends SyncManagerTestCase {
     //
     @Test
     public void testCleanGhostsTwoObjectTypes() throws Exception {
-        final int numberRecords = 4;
-        final Map<String, String> accounts = createRecordsOnServer(numberRecords, Constants.ACCOUNT);
-        Assert.assertEquals("Wrong number of accounts created", numberRecords, accounts.size());
-        final String[] accountIds = accounts.keySet().toArray(new String[0]);
-
-        final Map<String, String> contacts = createRecordsOnServer(numberRecords, Constants.CONTACT);
-        Assert.assertEquals("Wrong number of contacts created", numberRecords, contacts.size());
-        final String[] contactIds = contacts.keySet().toArray(new String[0]);
-
-        // Builds briefcase sync down target to fetch the accounts and contacts
-        BriefcaseSyncDownTarget target = new BriefcaseSyncDownTarget(
-            Arrays.asList(
-                new BriefcaseObjectInfo(
-                    ACCOUNTS_SOUP,
-                    Constants.ACCOUNT,
-                    Arrays.asList(Constants.NAME, Constants.DESCRIPTION)),
-                new BriefcaseObjectInfo(
-                    CONTACTS_SOUP,
-                    Constants.CONTACT,
-                    Arrays.asList(Constants.LAST_NAME))
-            )
-        );
-
-        // Run sync
-        long syncId = trySyncDown(MergeMode.LEAVE_IF_CHANGED, target, ACCOUNTS_SOUP, accounts.size() + contacts.size(), 1, null);
-
-        // Check database
-        checkDbExist(ACCOUNTS_SOUP, accountIds, Constants.ID);
-        checkDbExist(CONTACTS_SOUP, contactIds, Constants.ID);
+        Pair<Pair<String[], String[]>, Long> result = trySyncDownFetchingTwoObjectTypes(4, 4, 500, 1);
+        String[] accountIds = result.first.first;
+        String[] contactIds = result.first.second;
+        long syncId = result.second;
 
         // Deleting some accounts
         deleteRecordsByIdOnServer(Arrays.asList(accountIds[0], accountIds[1]), Constants.ACCOUNT);
@@ -306,7 +283,37 @@ public class BriefcaseSyncDownTargetTest extends SyncManagerTestCase {
         checkDbExist(ACCOUNTS_SOUP, new String[] {localAccounts[0].getString(Constants.ID), localAccounts[1].getString(Constants.ID)}, Constants.ID);
         checkDbExist(CONTACTS_SOUP, new String[] {localContacts[0].getString(Constants.ID), localContacts[1].getString(Constants.ID)}, Constants.ID);
     }
-    
+
+    // Create accounts and contacts on server
+    // Run a sync with a BriefcaseSyncDownTarget that is interested in accounts and contacts
+    // Make sure we get the created accounts and contacts in the database
+    // Delete some of them locally
+    // Make sure get ids to skip return all the locally deleted records across both soups
+    @Test
+    public void testIdsToSkip() throws Exception {
+        Pair<Pair<String[], String[]>, Long> result = trySyncDownFetchingTwoObjectTypes(4, 4, 500, 1);
+        String[] accountIds = result.first.first;
+        String[] contactIds = result.first.second;
+        long syncId = result.second;
+        BriefcaseSyncDownTarget target = (BriefcaseSyncDownTarget) syncManager.getSyncStatus(syncId).getTarget();
+
+        // Initially there should be no dirty records
+        Set<String> idsToSkip = target.getIdsToSkip(syncManager, "");
+        Assert.assertTrue(idsToSkip.isEmpty());
+
+        // Marking some accounts and contacts as locally deleted
+        deleteRecordsLocally(ACCOUNTS_SOUP, accountIds[0], accountIds[3]);
+        deleteRecordsLocally(CONTACTS_SOUP, contactIds[1], contactIds[2]);
+
+        // Making sure they are returned by target.getDirtyRecordIds()
+        idsToSkip = target.getIdsToSkip(syncManager, "");
+        Assert.assertEquals(4, idsToSkip.size());
+        Assert.assertTrue(idsToSkip.contains(accountIds[0]));
+        Assert.assertTrue(idsToSkip.contains(accountIds[3]));
+        Assert.assertTrue(idsToSkip.contains(contactIds[1]));
+        Assert.assertTrue(idsToSkip.contains(contactIds[2]));
+    }
+
     protected String createRecordName(String objectType) {
         return String.format(Locale.US, "BriefcaseTest_%s_%d", objectType, System.nanoTime());
     }
@@ -333,7 +340,19 @@ public class BriefcaseSyncDownTargetTest extends SyncManagerTestCase {
         checkDbExist(ACCOUNTS_SOUP, accountIds, Constants.ID);
     }
 
-    protected void trySyncDownFetchingTwoObjectTypes(int numberAccounts, int numberContacts, int countIdsPerSoql, int expectedNumberFetches) throws Exception {
+    /**
+     * Create accounts and contacts on server
+     * Run briefcase sync down
+     * Check database
+     *
+     * @param numberAccounts
+     * @param numberContacts
+     * @param countIdsPerSoql
+     * @param expectedNumberFetches
+     * @return pair made of aa pair with accountIds and contactIds created and sync id
+     * @throws Exception
+     */
+    protected Pair<Pair<String[], String[]>, Long> trySyncDownFetchingTwoObjectTypes(int numberAccounts, int numberContacts, int countIdsPerSoql, int expectedNumberFetches) throws Exception {
         final Map<String, String> accounts = createRecordsOnServer(numberAccounts, Constants.ACCOUNT);
         Assert.assertEquals("Wrong number of accounts created", numberAccounts, accounts.size());
         final String[] accountIds = accounts.keySet().toArray(new String[0]);
@@ -358,11 +377,15 @@ public class BriefcaseSyncDownTargetTest extends SyncManagerTestCase {
         );
 
         // Run sync
-        trySyncDown(MergeMode.LEAVE_IF_CHANGED, target, ACCOUNTS_SOUP, accounts.size() + contacts.size(), expectedNumberFetches, null);
+        long syncId = trySyncDown(MergeMode.LEAVE_IF_CHANGED, target, ACCOUNTS_SOUP, accounts.size() + contacts.size(), expectedNumberFetches, null);
 
         // Check database
         checkDbExist(ACCOUNTS_SOUP, accountIds, Constants.ID);
         checkDbExist(CONTACTS_SOUP, contactIds, Constants.ID);
+
+        // Returning accountIds, contactIds and syncId for tests that need to do more
+        return new Pair<>(new Pair<>(accountIds, contactIds), syncId);
     }
 
 }
+
