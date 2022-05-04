@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.mobilesync.target;
 
 import android.text.TextUtils;
-import android.util.Log;
 import com.salesforce.androidsdk.mobilesync.app.Features;
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
@@ -246,10 +245,6 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
             totalSize = fetchedTypedIds.size();
         }
 
-        Log.d("SOQL-->", "size = " + fetchedTypedIds.size());
-        Log.d("SOQL-->", "number slices = " + fetchedTypedIds.countSlices(countIdsPerSoql));
-        Log.d("SOQL-->", "index = " + currentSliceIndex);
-
         // Incrementing current slice index and checking if we have reached the end
         currentSliceIndex++;
         if (currentSliceIndex >= fetchedTypedIds.countSlices(countIdsPerSoql)) {
@@ -307,8 +302,6 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
 
         final String whereClause = ""
             + getIdFieldName() + " IN ('" + TextUtils.join("', '", ids) + "')";
-
-        Log.d("SOQL-->", whereClause);
 
         final String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(sobjectType).where(whereClause).build();
         final RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, soql);

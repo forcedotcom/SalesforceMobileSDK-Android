@@ -172,8 +172,7 @@ public class BriefcaseSyncDownTargetTest extends SyncManagerTestCase {
     // And that it took the multiple call to continueFetch
     @Test
     public void testSyncDownFetchingOneObjectTypeWithMultipleSOQLCalls() throws Exception {
-        trySyncDownFetchingOneObjectType(11, 2, 6);
-        // using a number of accounts that is not a multiple of countIdsPerSoql to make sure the last slice is correctly fetched
+        trySyncDownFetchingOneObjectType(12, 2, 6);
     }
 
     // Create accounts on server
@@ -239,11 +238,11 @@ public class BriefcaseSyncDownTargetTest extends SyncManagerTestCase {
     // And that it took the multiple call to continueFetch
     @Test
     public void testSyncDownFetchingTwoObjectTypesWithMultipleSOQLCalls() throws Exception {
-        trySyncDownFetchingTwoObjectTypes(12, 11, 2, 12);
+        trySyncDownFetchingTwoObjectTypes(12, 12, 3, 8);
     }
 
     // Create accounts and contacts on server
-    // Run a sync with a BriefcaseSyncDownTarget that is interested in accounts and conotacts
+    // Run a sync with a BriefcaseSyncDownTarget that is interested in accounts and contacts
     // Make sure we get the created accounts and contacts in the database
     // Delete some accounts and contacts from server
     // Create some accounts and contacts locally
@@ -307,7 +306,7 @@ public class BriefcaseSyncDownTargetTest extends SyncManagerTestCase {
         checkDbExist(ACCOUNTS_SOUP, new String[] {localAccounts[0].getString(Constants.ID), localAccounts[1].getString(Constants.ID)}, Constants.ID);
         checkDbExist(CONTACTS_SOUP, new String[] {localContacts[0].getString(Constants.ID), localContacts[1].getString(Constants.ID)}, Constants.ID);
     }
-
+    
     protected String createRecordName(String objectType) {
         return String.format(Locale.US, "BriefcaseTest_%s_%d", objectType, System.nanoTime());
     }
