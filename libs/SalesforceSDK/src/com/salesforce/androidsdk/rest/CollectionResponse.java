@@ -59,7 +59,7 @@ public class CollectionResponse {
 
         public CollectionSubResponse(JSONObject subResponseJson) throws JSONException {
             json = subResponseJson;
-            id = subResponseJson.getString(ID);
+            id = JSONObjectHelper.optString(subResponseJson, ID);
             success = subResponseJson.getBoolean(SUCCESS);
             errors = new ArrayList<>();
             for (JSONObject errorJson : JSONObjectHelper.<JSONObject>toList(subResponseJson.getJSONArray(ERRORS))) {
