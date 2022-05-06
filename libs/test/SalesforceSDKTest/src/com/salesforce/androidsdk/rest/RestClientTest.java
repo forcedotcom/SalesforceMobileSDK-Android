@@ -1161,6 +1161,139 @@ public class RestClientTest {
     }
 
     @Test
+    public void testCollectionUpsertNewRecords() throws JSONException, IOException {
+        String firstAccountName = ENTITY_NAME_PREFIX + "_account_1_" + System.nanoTime();
+        String secondAccountName = ENTITY_NAME_PREFIX + "_account_2_" + System.nanoTime();
+
+        JSONArray records = makeRecords(
+            new Pair("Account", new Pair("Name", firstAccountName)),
+            new Pair("Account", new Pair("Name", secondAccountName))
+        );
+
+        // Doing a collection upsert
+        RestResponse upsertResponse = restClient.sendSync(RestRequest.getRequestForCollectionUpsert(TestCredentials.API_VERSION, "Account" , "Id", true, records));
+
+        // Parsing response
+        CollectionResponse parsedUpsertResponse = new CollectionResponse(upsertResponse.asJSONArray());
+        String firstAccountId = parsedUpsertResponse.subResponses.get(0).id;
+        String secondAccountId = parsedUpsertResponse.subResponses.get(1).id;
+
+        // Checking response
+        Assert.assertEquals(2, parsedUpsertResponse.subResponses.size());
+        Assert.assertTrue(parsedUpsertResponse.subResponses.get(0).id.startsWith("001"));
+        Assert.assertTrue(parsedUpsertResponse.subResponses.get(0).success);
+        Assert.assertTrue(parsedUpsertResponse.subResponses.get(0).errors.isEmpty());
+        Assert.assertTrue(parsedUpsertResponse.subResponses.get(1).id.startsWith("001"));
+        Assert.assertTrue(parsedUpsertResponse.subResponses.get(1).success);
+        Assert.assertTrue(parsedUpsertResponse.subResponses.get(1).errors.isEmpty());
+    }
+
+    @Test
+    public void testCollectionUpsertExistingRecords() throws JSONException, IOException {
+        String firstAccountName = ENTITY_NAME_PREFIX + "_account_1_" + System.nanoTime();
+        String secondAccountName = ENTITY_NAME_PREFIX + "_account_2_" + System.nanoTime();
+
+        JSONArray records = makeRecords(
+            new Pair("Account", new Pair("Name", firstAccountName)),
+            new Pair("Account", new Pair("Name", secondAccountName))
+        );
+
+        // Doing a collection create
+        RestResponse createResponse = restClient.sendSync(RestRequest.getRequestForCollectionCreate(TestCredentials.API_VERSION, true, records));
+
+        // Parsing response
+        CollectionResponse parsedCreateResponse = new CollectionResponse(createResponse.asJSONArray());
+        String firstAccountId = parsedCreateResponse.subResponses.get(0).id;
+        String secondAccountId = parsedCreateResponse.subResponses.get(1).id;
+
+        // Doing a collection upsert to update the accounts
+        JSONArray updatedAccounts = makeRecords(
+            new Pair("Account", new Pair("Name", firstAccountName + "_updated")),
+            new Pair("Account", new Pair("Name", secondAccountName + "_updated"))
+        );
+        updatedAccounts.getJSONObject(0).put("Id", firstAccountId);
+        updatedAccounts.getJSONObject(1).put("Id", secondAccountId);
+
+        RestResponse upsertResponse = restClient.sendSync(RestRequest.getRequestForCollectionUpsert(TestCredentials.API_VERSION, "Account" , "Id", true, updatedAccounts));
+
+        // Parsing response
+        CollectionResponse parsedUpsertResponse = new CollectionResponse(upsertResponse.asJSONArray());
+
+        // Checking response
+        Assert.assertEquals(2, parsedUpsertResponse.subResponses.size());
+        Assert.assertTrue(parsedUpsertResponse.subResponses.get(0).id.startsWith("001"));
+        Assert.assertTrue(parsedUpsertResponse.subResponses.get(0).success);
+        Assert.assertTrue(parsedUpsertResponse.subResponses.get(0).errors.isEmpty());
+        Assert.assertTrue(parsedUpsertResponse.subResponses.get(1).id.startsWith("001"));
+        Assert.assertTrue(parsedUpsertResponse.subResponses.get(1).success);
+        Assert.assertTrue(parsedUpsertResponse.subResponses.get(1).errors.isEmpty());
+
+        // Checking account on server to make sure they were updated
+        RestRequest accountsRetrieveRequest = RestRequest.getRequestForCollectionRetrieve(TestCredentials.API_VERSION, "Account", Arrays.asList(firstAccountId, secondAccountId), Arrays.asList("Id", "Name"));
+        JSONArray accountsRetrieved = restClient.sendSync(accountsRetrieveRequest).asJSONArray();
+        Assert.assertEquals(2, accountsRetrieved.length());
+        Assert.assertEquals(firstAccountName + "_updated", accountsRetrieved.getJSONObject(0).getString("Name"));
+        Assert.assertEquals(secondAccountName + "_updated", accountsRetrieved.getJSONObject(1).getString("Name"));
+    }
+
+    @Test
+    public void testCollectionUpdate() throws JSONException, IOException {
+        String firstAccountName = ENTITY_NAME_PREFIX + "_account_1_" + System.nanoTime();
+        String secondAccountName = ENTITY_NAME_PREFIX + "_account_2_" + System.nanoTime();
+        String contactName = ENTITY_NAME_PREFIX + "_contact_" + System.nanoTime();
+
+        JSONArray records = makeRecords(
+            new Pair("Account", new Pair("Name", firstAccountName)),
+            new Pair("Contact", new Pair("LastName", contactName)),
+            new Pair("Account", new Pair("Name", secondAccountName))
+        );
+
+        // Doing a collection create
+        RestResponse createResponse = restClient.sendSync(RestRequest.getRequestForCollectionCreate(TestCredentials.API_VERSION, true , records));
+
+        // Parsing response
+        CollectionResponse parsedCreateResponse = new CollectionResponse(createResponse.asJSONArray());
+        String firstAccountId = parsedCreateResponse.subResponses.get(0).id;
+        String contactId = parsedCreateResponse.subResponses.get(1).id;
+        String secondAccountId = parsedCreateResponse.subResponses.get(2).id;
+
+        // Doing a collection upsert to update one account and the contact
+        JSONArray updatedRecords = makeRecords(
+            new Pair("Account", new Pair("Name", firstAccountName + "_updated")),
+            new Pair("Contact", new Pair("LastName", contactName + "_updated"))
+        );
+        updatedRecords.getJSONObject(0).put("Id", firstAccountId);
+        updatedRecords.getJSONObject(1).put("Id", contactId);
+
+        RestResponse updateResponse = restClient.sendSync(RestRequest.getRequestForCollectionUpdate(TestCredentials.API_VERSION, true, updatedRecords));
+
+        // Parsing response
+        CollectionResponse parsedUpdateResponse = new CollectionResponse(updateResponse.asJSONArray());
+
+        // Checking response
+        Assert.assertEquals(2, parsedUpdateResponse.subResponses.size());
+        Assert.assertTrue(parsedUpdateResponse.subResponses.get(0).id.startsWith("001"));
+        Assert.assertTrue(parsedUpdateResponse.subResponses.get(0).success);
+        Assert.assertTrue(parsedUpdateResponse.subResponses.get(0).errors.isEmpty());
+        Assert.assertTrue(parsedUpdateResponse.subResponses.get(1).id.startsWith("003"));
+        Assert.assertTrue(parsedUpdateResponse.subResponses.get(1).success);
+        Assert.assertTrue(parsedUpdateResponse.subResponses.get(1).errors.isEmpty());
+
+        // Checking accounts on server
+        RestRequest accountsRetrieveRequest = RestRequest.getRequestForCollectionRetrieve(TestCredentials.API_VERSION, "Account", Arrays.asList(firstAccountId, secondAccountId), Arrays.asList("Id", "Name"));
+        JSONArray accountsRetrieved = restClient.sendSync(accountsRetrieveRequest).asJSONArray();
+        Assert.assertEquals(2, accountsRetrieved.length());
+        Assert.assertEquals(firstAccountName + "_updated", accountsRetrieved.getJSONObject(0).getString("Name"));
+        Assert.assertEquals(secondAccountName, accountsRetrieved.getJSONObject(1).getString("Name"));
+
+        // Checking contact on server
+        RestRequest contactsRetrieveRequest = RestRequest.getRequestForCollectionRetrieve(TestCredentials.API_VERSION, "Contact", Arrays.asList(contactId), Arrays.asList("Id", "LastName"));
+        JSONArray contactsRetrieved = restClient.sendSync(contactsRetrieveRequest).asJSONArray();
+        Assert.assertEquals(1, contactsRetrieved.length());
+        Assert.assertEquals(contactName + "_updated", contactsRetrieved.getJSONObject(0).getString("LastName"));
+    }
+
+    @Test
     public void testCollectionDelete() throws JSONException, IOException {
         String firstAccountName = ENTITY_NAME_PREFIX + "_account_1_" + System.nanoTime();
         String secondAccountName = ENTITY_NAME_PREFIX + "_account_2_" + System.nanoTime();
