@@ -11,6 +11,14 @@
         android:layout_height="match_parent"
         android:scrollbars="none"
         android:windowDrawsSystemBarBackgrounds="true"/>
+    <ProgressBar
+        android:id="@+id/loginProgressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:visibility="gone"
+        android:indeterminateTint="@color/sf__primary_color"
+        />
 
     <Button android:id="@+id/sf__idp_login_button"
         android:text="@string/sf__launch_idp"

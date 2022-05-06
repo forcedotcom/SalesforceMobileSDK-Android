@@ -48,6 +48,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebSettings.LayoutAlgorithm;
 import android.webkit.WebView;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.salesforce.androidsdk.R;
@@ -70,6 +71,7 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import com.salesforce.androidsdk.util.UriFragmentParser;
+import com.salesforce.androidsdk.util.test.EventsObserver;
 
 import java.util.List;
 import java.util.Map;
@@ -83,7 +85,7 @@ import java.util.Map;
  * The bulk of the work for this is actually managed by OAuthWebviewHelper class.
  */
 public class LoginActivity extends AccountAuthenticatorActivity
-        implements OAuthWebviewHelperEvents {
+        implements OAuthWebviewHelperEvents, EventsObserver {
 
     public static final int PICK_SERVER_REQUEST_CODE = 10;
     private static final String TAG = "LoginActivity";
@@ -100,6 +102,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
     private String userHint;
     private String spActivityName;
     private Bundle spActivityExtras;
+    private ProgressBar loginProgressBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -128,6 +131,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
             final Button button = findViewById(R.id.sf__idp_login_button);
             button.setVisibility(View.VISIBLE);
         }
+        loginProgressBar = findViewById(R.id.loginProgressBar);
 
         // Setup the WebView.
         final WebView webView = findViewById(R.id.sf__oauth_webview);
@@ -150,6 +154,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
             final IntentFilter changeServerFilter = new IntentFilter(ServerPickerActivity.CHANGE_SERVER_INTENT);
             registerReceiver(changeServerReceiver, changeServerFilter);
             receiverRegistered = true;
+            EventsObservable.get().registerObserver(this);
         }
         authCallback = new SPAuthCallback();
 
@@ -161,6 +166,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
         if (receiverRegistered) {
             unregisterReceiver(changeServerReceiver);
             receiverRegistered = false;
+            EventsObservable.get().unregisterObserver(this);
         }
         super.onDestroy();
     }
@@ -475,6 +481,16 @@ public class LoginActivity extends AccountAuthenticatorActivity
         final SalesforceAnalyticsManager analyticsManager = SalesforceAnalyticsManager.getInstance(account);
         if (analyticsManager != null) {
             analyticsManager.updateLoggingPrefs();
+        }
+    }
+
+    @Override
+    public void onEvent(EventsObservable.Event evt) {
+        if (evt.getType() == EventType.AuthWebViewPageStarted) {
+            loginProgressBar.setVisibility(View.VISIBLE);
+        }
+        else if (evt.getType() == EventType.AuthWebViewPageFinished || evt.getType() == EventType.AuthWebViewPageFailed) {
+            loginProgressBar.setVisibility(View.GONE);
         }
     }
 
