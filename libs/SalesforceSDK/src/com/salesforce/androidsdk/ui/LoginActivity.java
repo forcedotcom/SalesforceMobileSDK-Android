@@ -32,6 +32,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -47,6 +48,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebSettings.LayoutAlgorithm;
 import android.webkit.WebView;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.salesforce.androidsdk.R;
@@ -58,6 +60,8 @@ import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity;
 import com.salesforce.androidsdk.auth.idp.IDPInititatedLoginReceiver;
 import com.salesforce.androidsdk.auth.idp.SPRequestHandler;
+import com.salesforce.androidsdk.config.LoginServerManager;
+import com.salesforce.androidsdk.config.LoginServerManager.LoginServer;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
@@ -67,6 +71,7 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import com.salesforce.androidsdk.util.UriFragmentParser;
+import com.salesforce.androidsdk.util.test.EventsObserver;
 
 import java.util.List;
 import java.util.Map;
@@ -80,13 +85,16 @@ import java.util.Map;
  * The bulk of the work for this is actually managed by OAuthWebviewHelper class.
  */
 public class LoginActivity extends AccountAuthenticatorActivity
-		implements OAuthWebviewHelperEvents {
+        implements OAuthWebviewHelperEvents, EventsObserver {
 
     public static final int PICK_SERVER_REQUEST_CODE = 10;
     private static final String TAG = "LoginActivity";
+    public static final String DISTRICT_SELECTED = "district_selected";
+    public static final String SERVER_SETTINGS = "server_settings";
+    public static final String SHOULD_UNCHECK_ITEMS = "should_uncheck_items";
 
-	private boolean wasBackgrounded;
-	private OAuthWebviewHelper webviewHelper;
+    private boolean wasBackgrounded;
+    private OAuthWebviewHelper webviewHelper;
     private ChangeServerReceiver changeServerReceiver;
     private boolean receiverRegistered;
     private SPRequestHandler spRequestHandler;
@@ -94,11 +102,12 @@ public class LoginActivity extends AccountAuthenticatorActivity
     private String userHint;
     private String spActivityName;
     private Bundle spActivityExtras;
+    private ProgressBar loginProgressBar;
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark_Login : R.style.SalesforceSDK);
         SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
 
@@ -118,10 +127,11 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
         // Setup content view.
         setContentView(R.layout.sf__login);
-		if (SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled()) {
+        if (SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled()) {
             final Button button = findViewById(R.id.sf__idp_login_button);
             button.setVisibility(View.VISIBLE);
         }
+        loginProgressBar = findViewById(R.id.loginProgressBar);
 
         // Setup the WebView.
         final WebView webView = findViewById(R.id.sf__oauth_webview);
@@ -140,24 +150,28 @@ public class LoginActivity extends AccountAuthenticatorActivity
         EventsObservable.get().notifyEvent(EventType.LoginActivityCreateComplete, this);
         certAuthOrLogin();
         if (!receiverRegistered) {
-			changeServerReceiver = new ChangeServerReceiver();
+            changeServerReceiver = new ChangeServerReceiver();
             final IntentFilter changeServerFilter = new IntentFilter(ServerPickerActivity.CHANGE_SERVER_INTENT);
             registerReceiver(changeServerReceiver, changeServerFilter);
             receiverRegistered = true;
+            EventsObservable.get().registerObserver(this);
         }
         authCallback = new SPAuthCallback();
-	}
 
-	@Override
-	protected void onDestroy() {
+        showSelectDistrictViewIfNeed();
+    }
+
+    @Override
+    protected void onDestroy() {
         if (receiverRegistered) {
             unregisterReceiver(changeServerReceiver);
             receiverRegistered = false;
+            EventsObservable.get().unregisterObserver(this);
         }
         super.onDestroy();
     }
 
-	@Override
+    @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
 
@@ -219,74 +233,74 @@ public class LoginActivity extends AccountAuthenticatorActivity
         }
     }
 
-	/**
+    /**
      * Returns whether certificate based authentication flow should be used.
      *
      * @return True - if it should be used, False - otherwise.
      */
     protected boolean shouldUseCertBasedAuth() {
-		return RuntimeConfig.getRuntimeConfig(this).getBoolean(ConfigKey.RequireCertAuth);
+        return RuntimeConfig.getRuntimeConfig(this).getBoolean(ConfigKey.RequireCertAuth);
     }
 
-	protected OAuthWebviewHelper getOAuthWebviewHelper(OAuthWebviewHelperEvents callback,
-			LoginOptions loginOptions, WebView webView, Bundle savedInstanceState) {
-		return new OAuthWebviewHelper(this, callback, loginOptions, webView, savedInstanceState);
-	}
+    protected OAuthWebviewHelper getOAuthWebviewHelper(OAuthWebviewHelperEvents callback,
+                                                       LoginOptions loginOptions, WebView webView, Bundle savedInstanceState) {
+        return new OAuthWebviewHelper(this, callback, loginOptions, webView, savedInstanceState);
+    }
 
-	@Override
-	protected void onResume() {
-		super.onResume();
-		if (wasBackgrounded) {
-		    if (webviewHelper.shouldReloadPage()) {
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (wasBackgrounded) {
+            if (webviewHelper.shouldReloadPage()) {
                 webviewHelper.clearView();
                 webviewHelper.loadLoginPage();
             }
-			wasBackgrounded = false;
-		}
-	}
+            wasBackgrounded = false;
+        }
+    }
 
-	@Override
-	public void onSaveInstanceState(Bundle bundle) {
-		super.onSaveInstanceState(bundle);
-		webviewHelper.saveState(bundle);
-	}
+    @Override
+    public void onSaveInstanceState(Bundle bundle) {
+        super.onSaveInstanceState(bundle);
+        webviewHelper.saveState(bundle);
+    }
 
-	@Override
-	public boolean onKeyDown(int keyCode, KeyEvent event) {
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
 
-		// This allows sub classes to override the behavior by returning false.
-		if (fixBackButtonBehavior(keyCode)) {
-			return true;
-		}
-		return super.onKeyDown(keyCode, event);
-	}
+        // This allows sub classes to override the behavior by returning false.
+        if (fixBackButtonBehavior(keyCode)) {
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
 
-	/**
-	 * A fix for back button behavior
-	 *
-	 * @return true if the fix was applied
-	 *         false if the key code was not handled
-	 */
-	protected boolean fixBackButtonBehavior(int keyCode) {
-		if (keyCode == KeyEvent.KEYCODE_BACK) {
+    /**
+     * A fix for back button behavior
+     *
+     * @return true if the fix was applied
+     *         false if the key code was not handled
+     */
+    protected boolean fixBackButtonBehavior(int keyCode) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
 
             /*
-		     * If there are no accounts signed in, we need the login screen
-		     * to go away, and go back to the home screen. However, if the
-		     * login screen has been brought up from the switcher screen,
-		     * the back button should take the user back to the previous screen.
-		     */
-			final UserAccountManager accMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
-			wasBackgrounded = true;
-			if (accMgr.getAuthenticatedUsers() == null) {
-				moveTaskToBack(true);
-			} else {
-				finish();
-			}
-			return true;
-		}
-		return false;
-	}
+             * If there are no accounts signed in, we need the login screen
+             * to go away, and go back to the home screen. However, if the
+             * login screen has been brought up from the switcher screen,
+             * the back button should take the user back to the previous screen.
+             */
+            final UserAccountManager accMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
+            wasBackgrounded = true;
+            if (accMgr.getAuthenticatedUsers() == null) {
+                moveTaskToBack(true);
+            } else {
+                finish();
+            }
+            return true;
+        }
+        return false;
+    }
 
     /**************************************************************************************************
      *
@@ -303,15 +317,15 @@ public class LoginActivity extends AccountAuthenticatorActivity
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int itemId = item.getItemId();
-		if (itemId == R.id.sf__menu_clear_cookies) {
-        	onClearCookiesClick(null);
-        	return true;
+        if (itemId == R.id.sf__menu_clear_cookies) {
+            onClearCookiesClick(null);
+            return true;
         } else if (itemId == R.id.sf__menu_pick_server) {
-        	onPickServerClick(null);
-        	return true;
+            onPickServerClick(null);
+            return true;
         } else if (itemId == R.id.sf__menu_reload) {
-        	onReloadClick(null);
-        	return true;
+            onReloadClick(null);
+            return true;
         } else {
             return super.onOptionsItemSelected(item);
         }
@@ -323,18 +337,27 @@ public class LoginActivity extends AccountAuthenticatorActivity
      *
      **************************************************************************************************/
 
-	@Override
-	public void loadingLoginPage(String loginUrl) {
-		final ActionBar ab = getActionBar();
-		if (ab != null) {
-			ab.setTitle(loginUrl);
-		}
-	}
+    @Override
+    public void loadingLoginPage(String loginUrl) {
+        final ActionBar ab = getActionBar();
+        if (ab != null) {
+            final LoginServerManager loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
+            final List<LoginServer> servers = loginServerManager.getLoginServers();
+            String serverName = null;
+            for (LoginServer server: servers) {
+                if (loginUrl != null && loginUrl.equals(server.url)) {
+                    serverName = server.name;
+                    break;
+                }
+            }
+            ab.setTitle(serverName != null ? serverName : loginUrl);
+        }
+    }
 
-	@Override
-	public void onAccountAuthenticatorResult(Bundle authResult) {
-		setAccountAuthenticatorResult(authResult);
-	}
+    @Override
+    public void onAccountAuthenticatorResult(Bundle authResult) {
+        setAccountAuthenticatorResult(authResult);
+    }
 
     /**************************************************************************************************
      *
@@ -342,15 +365,15 @@ public class LoginActivity extends AccountAuthenticatorActivity
      *
      **************************************************************************************************/
 
-	/**
-	 * Called when "Clear cookies" button is clicked.
-	 * Clear cookies and reload login page.
-	 * @param v
-	 */
-	public void onClearCookiesClick(View v) {
-		webviewHelper.clearCookies();
-		webviewHelper.loadLoginPage();
-	}
+    /**
+     * Called when "Clear cookies" button is clicked.
+     * Clear cookies and reload login page.
+     * @param v
+     */
+    public void onClearCookiesClick(View v) {
+        webviewHelper.clearCookies();
+        webviewHelper.loadLoginPage();
+    }
 
     /**
      * Called when the IDP login button is clicked.
@@ -364,36 +387,36 @@ public class LoginActivity extends AccountAuthenticatorActivity
         spRequestHandler.launchIDPApp(this);
     }
 
-	/**
-	 * Called when "Reload" button is clicked.
-	 * Reloads login page.
-	 * @param v
-	 */
-	public void onReloadClick(View v) {
-		webviewHelper.loadLoginPage();
-	}
+    /**
+     * Called when "Reload" button is clicked.
+     * Reloads login page.
+     * @param v
+     */
+    public void onReloadClick(View v) {
+        webviewHelper.loadLoginPage();
+    }
 
-	/**
-	 * Called when "Pick server" button is clicked.
-	 * Start ServerPickerActivity
-	 * @param v
-	 */
-	public void onPickServerClick(View v) {
-		final Intent i = new Intent(this, ServerPickerActivity.class);
-	    startActivityForResult(i, PICK_SERVER_REQUEST_CODE);
-	}
+    /**
+     * Called when "Pick server" button is clicked.
+     * Start ServerPickerActivity
+     * @param v
+     */
+    public void onPickServerClick(View v) {
+        final Intent i = new Intent(this, ServerPickerActivity.class);
+        startActivityForResult(i, PICK_SERVER_REQUEST_CODE);
+    }
 
-	@Override
-	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		if (requestCode == SPRequestHandler.IDP_REQUEST_CODE) {
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == SPRequestHandler.IDP_REQUEST_CODE) {
             spRequestHandler.handleIDPResponse(resultCode, data);
         } else {
-	        super.onActivityResult(requestCode, resultCode, data);
-	    }
-	}
+            super.onActivityResult(requestCode, resultCode, data);
+        }
+    }
 
-	@Override
-	public void finish(UserAccount userAccount) {
+    @Override
+    public void finish(UserAccount userAccount) {
         initAnalyticsManager(userAccount);
         final UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
         final List<UserAccount> authenticatedUsers = userAccountManager.getAuthenticatedUsers();
@@ -452,13 +475,23 @@ public class LoginActivity extends AccountAuthenticatorActivity
         spActivityName = null;
         spActivityExtras = null;
         finish();
-	}
+    }
 
     private void initAnalyticsManager(UserAccount account) {
         final SalesforceAnalyticsManager analyticsManager = SalesforceAnalyticsManager.getInstance(account);
-	    if (analyticsManager != null) {
+        if (analyticsManager != null) {
             analyticsManager.updateLoggingPrefs();
-	    }
+        }
+    }
+
+    @Override
+    public void onEvent(EventsObservable.Event evt) {
+        if (evt.getType() == EventType.AuthWebViewPageStarted) {
+            loginProgressBar.setVisibility(View.VISIBLE);
+        }
+        else if (evt.getType() == EventType.AuthWebViewPageFinished || evt.getType() == EventType.AuthWebViewPageFailed) {
+            loginProgressBar.setVisibility(View.GONE);
+        }
     }
 
     public class ChangeServerReceiver extends BroadcastReceiver {
@@ -504,6 +537,16 @@ public class LoginActivity extends AccountAuthenticatorActivity
                     Toast.makeText(getApplicationContext(), errorMessage, Toast.LENGTH_LONG).show();
                 }
             });
+        }
+    }
+
+    private void showSelectDistrictViewIfNeed() {
+        final SharedPreferences sp = getSharedPreferences(SERVER_SETTINGS, MODE_PRIVATE);
+        final boolean isDistrictSelected = sp.getBoolean(DISTRICT_SELECTED, false);
+        if (!isDistrictSelected) {
+            final Intent i = new Intent(this, ServerPickerActivity.class);
+            i.putExtra(SHOULD_UNCHECK_ITEMS, true);
+            startActivityForResult(i, PICK_SERVER_REQUEST_CODE);
         }
     }
 }

@@ -34,6 +34,7 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.net.http.SslError;
@@ -441,6 +442,12 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     protected class AuthWebViewClient extends WebViewClient {
 
         @Override
+        public void onPageStarted(WebView view, String url, Bitmap favicon) {
+            EventsObservable.get().notifyEvent(EventType.AuthWebViewPageStarted, url);
+            super.onPageStarted(view, url, favicon);
+        }
+
+        @Override
 		public void onPageFinished(WebView view, String url) {
         	EventsObservable.get().notifyEvent(EventType.AuthWebViewPageFinished, url);
         	super.onPageFinished(view, url);
@@ -469,6 +476,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
         @Override
         public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+            EventsObservable.get().notifyEvent(EventType.AuthWebViewPageFailed);
             int primError = error.getPrimaryError();
             int primErrorStringId = R.string.sf__ssl_unknown_error;
             switch (primError) {
