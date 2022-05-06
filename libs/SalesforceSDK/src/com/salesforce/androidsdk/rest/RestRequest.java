@@ -866,7 +866,7 @@ public class RestRequest {
 		JSONObject body = new JSONObject();
 		body.put("ids", new JSONArray(objectIds));
 		body.put("fields", new JSONArray(fieldList));
-		return new RestRequest(RestMethod.POST, path.toString());
+		return new RestRequest(RestMethod.POST, path.toString(), body);
 	}
 
 	/**
