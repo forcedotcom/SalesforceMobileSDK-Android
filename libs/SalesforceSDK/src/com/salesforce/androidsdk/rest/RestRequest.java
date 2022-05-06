@@ -859,13 +859,14 @@ public class RestRequest {
 	 *
 	 * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_sobjects_collections_retrieve.htm">https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_sobjects_collections_retrieve.htm</a>
 	 */
-	public static RestRequest getRequestForCollectionRetrieve(String apiVersion, String objectType, List<String> objectIds, List<String> fieldList) throws UnsupportedEncodingException {
+	public static RestRequest getRequestForCollectionRetrieve(String apiVersion, String objectType, List<String> objectIds, List<String> fieldList)
+		throws UnsupportedEncodingException, JSONException {
 		StringBuilder path = new StringBuilder(RestAction.SOBJECT_COLLECTION_RETRIEVE.getPath(apiVersion, objectType));
-		path.append("?ids=");
-		path.append(URLEncoder.encode(TextUtils.join(",", objectIds), UTF_8));
-		path.append("&fields=");
-		path.append(URLEncoder.encode(TextUtils.join(",", fieldList), UTF_8));
-		return new RestRequest(RestMethod.GET, path.toString());
+		// Using a post body which is allowed by the end point and allows more ids to be sent up (2000 instead of ~800)
+		JSONObject body = new JSONObject();
+		body.put("ids", new JSONArray(objectIds));
+		body.put("fields", new JSONArray(fieldList));
+		return new RestRequest(RestMethod.POST, path.toString());
 	}
 
 	/**
