@@ -68,6 +68,7 @@ public class ServerPickerActivity extends Activity implements
     private boolean shouldUncheckItems = false;
     private boolean optionChanged = false;
     private ProgressBar progressBar;
+    private String lastSavedServerURL;
 
     /**
      * Clears any custom URLs that may have been set.
@@ -87,8 +88,14 @@ public class ServerPickerActivity extends Activity implements
         if (shouldUncheckItems && !optionChanged) {
             Toast.makeText(this, R.string.sf__server_not_selected, Toast.LENGTH_SHORT).show();
         } else {
-            progressBar.setVisibility(View.VISIBLE);
-            (new AuthConfigTask(this)).execute();
+            final LoginServer selectedServer = loginServerManager.getSelectedLoginServer();
+            if (null != lastSavedServerURL && lastSavedServerURL.equals(selectedServer.url)) {
+                updateDistrictSelectionStatus();
+                finish();
+            } else {
+                progressBar.setVisibility(View.VISIBLE);
+                (new AuthConfigTask(this)).execute();
+            }
         }
     }
 
@@ -161,6 +168,7 @@ public class ServerPickerActivity extends Activity implements
 
         Intent i = getIntent();
         shouldUncheckItems = i.getBooleanExtra(LoginActivity.SHOULD_UNCHECK_ITEMS, false);
+        lastSavedServerURL = loginServerManager.getSelectedLoginServer().url;
     }
 
     @Override
@@ -269,13 +277,17 @@ public class ServerPickerActivity extends Activity implements
     @Override
     public void onAuthConfigFetched() {
         setResult(Activity.RESULT_OK, null);
-        final SharedPreferences sp = getSharedPreferences(LoginActivity.SERVER_SETTINGS, MODE_PRIVATE);
-        final SharedPreferences.Editor ed = sp.edit();
-        ed.putBoolean(LoginActivity.DISTRICT_SELECTED, true);
-        ed.commit();
+        updateDistrictSelectionStatus();
         progressBar.setVisibility(View.GONE);
         final Intent changeServerIntent = new Intent(CHANGE_SERVER_INTENT);
         sendBroadcast(changeServerIntent);
         finish();
+    }
+
+    private void updateDistrictSelectionStatus() {
+        final SharedPreferences sp = getSharedPreferences(LoginActivity.SERVER_SETTINGS, MODE_PRIVATE);
+        final SharedPreferences.Editor ed = sp.edit();
+        ed.putBoolean(LoginActivity.DISTRICT_SELECTED, true);
+        ed.commit();
     }
 }
