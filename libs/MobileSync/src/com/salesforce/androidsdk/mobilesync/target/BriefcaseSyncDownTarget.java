@@ -26,14 +26,12 @@
  */
 package com.salesforce.androidsdk.mobilesync.target;
 
-import android.text.TextUtils;
 import com.salesforce.androidsdk.mobilesync.app.Features;
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 import com.salesforce.androidsdk.mobilesync.util.BriefcaseObjectInfo;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
-import com.salesforce.androidsdk.mobilesync.util.SOQLBuilder;
 import com.salesforce.androidsdk.rest.PrimingRecordsResponse;
 import com.salesforce.androidsdk.rest.PrimingRecordsResponse.PrimingRecord;
 import com.salesforce.androidsdk.rest.RestRequest;
@@ -63,7 +61,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
     private static final String TAG = "BriefcaseSyncDownTarget";
 
     public static final String INFOS = "infos";
-    public static final String COUNT_IDS_PER_SOQL = "countIdsPerSoql";
+    public static final String COUNT_IDS_PER_RETRIEVE = "countIdsPerRetrieve";
 
     private List<BriefcaseObjectInfo> infos;
     private Map<String, BriefcaseObjectInfo> infosMap;
@@ -76,12 +74,9 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
     protected TypedIds fetchedTypedIds = null;
     protected int currentSliceIndex = 0;
 
-    // Number of records to fetch per SOQL call (with ids obtained from priming record api)
-    private int countIdsPerSoql;
-    private static final int MAX_COUNT_IDS_PER_SOQL = 500;
-    // NB: SOQL query length limit is 100k but not over REST
-    //     Too many ids will cause a "414 - URI Too Long" error
-
+    // Number of records to fetch per call (with ids obtained from priming record api)
+    private int countIdsPerRetrieve;
+    private static final int MAX_COUNT_IDS_PER_RETRIEVE = 2000;
 
     /**
      * Construct BriefcaseSyncDownTarget from json
@@ -91,7 +86,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
     public BriefcaseSyncDownTarget(JSONObject target) throws JSONException {
         this(
             BriefcaseObjectInfo.fromJSONArray(target.getJSONArray(INFOS)),
-            target.optInt(COUNT_IDS_PER_SOQL, MAX_COUNT_IDS_PER_SOQL)
+            target.optInt(COUNT_IDS_PER_RETRIEVE, MAX_COUNT_IDS_PER_RETRIEVE)
         );
     }
 
@@ -101,13 +96,13 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
      * @param infos
      */
     public BriefcaseSyncDownTarget(List<BriefcaseObjectInfo> infos) {
-        this(infos, MAX_COUNT_IDS_PER_SOQL);
+        this(infos, MAX_COUNT_IDS_PER_RETRIEVE);
     }
 
-    BriefcaseSyncDownTarget(List<BriefcaseObjectInfo> infos, int countIdsPerSoql) {
+    BriefcaseSyncDownTarget(List<BriefcaseObjectInfo> infos, int countIdsPerRetrieve) {
         this.infos = infos;
         this.queryType = QueryType.briefcase;
-        this.countIdsPerSoql = Math.min(countIdsPerSoql, MAX_COUNT_IDS_PER_SOQL);
+        this.countIdsPerRetrieve = Math.min(countIdsPerRetrieve, MAX_COUNT_IDS_PER_RETRIEVE);
         MobileSyncSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_RELATED_RECORDS);
 
         // Build infosMap
@@ -128,7 +123,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
             infosJson.put(info.asJSON());
         }
         target.put(INFOS, infosJson);
-        target.put(COUNT_IDS_PER_SOQL, countIdsPerSoql);
+        target.put(COUNT_IDS_PER_RETRIEVE, countIdsPerRetrieve);
         return target;
     }
 
@@ -198,7 +193,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
 
     /**
      * Method that calls the priming records API to get ids to fetch
-     * then use SOQL to get record fields
+     * then use sObject collection retrieve to get record fields
      *
      * @param syncManager
      * @return
@@ -215,9 +210,10 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
         }
 
         // Getting ids of records to fetch in a map
-        Map<String, List<String>> objectTypeToIds = fetchedTypedIds.slice(currentSliceIndex, countIdsPerSoql).toMap();
+        Map<String, List<String>> objectTypeToIds = fetchedTypedIds.slice(currentSliceIndex,
+            countIdsPerRetrieve).toMap();
 
-        // Get records using SOQL one object type at a time
+        // Get records using sObject collection retrieve one object type at a time
         for (Entry<String, List<String>> entry : objectTypeToIds.entrySet()) {
             String objectType = entry.getKey();
             List<String> idsToFetch = entry.getValue();
@@ -247,7 +243,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
 
         // Incrementing current slice index and checking if we have reached the end
         currentSliceIndex++;
-        if (currentSliceIndex >= fetchedTypedIds.countSlices(countIdsPerSoql)) {
+        if (currentSliceIndex >= fetchedTypedIds.countSlices(countIdsPerRetrieve)) {
             fetchedTypedIds = null;
             currentSliceIndex = 0;
         }
@@ -299,15 +295,9 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
 
     protected JSONArray fetchFromServer(SyncManager syncManager, String sobjectType, List<String> ids, List<String> fieldlist) throws IOException, JSONException {
         syncManager.checkAcceptingSyncs();
-
-        final String whereClause = ""
-            + getIdFieldName() + " IN ('" + TextUtils.join("', '", ids) + "')";
-
-        final String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(sobjectType).where(whereClause).build();
-        final RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, soql);
+        final RestRequest request = RestRequest.getRequestForCollectionRetrieve(syncManager.apiVersion, sobjectType, ids, fieldlist);
         final RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
-        JSONObject responseJson = response.asJSONObject();
-        return responseJson.getJSONArray(Constants.RECORDS);
+        return response.asJSONArray();
     }
 
     /**
