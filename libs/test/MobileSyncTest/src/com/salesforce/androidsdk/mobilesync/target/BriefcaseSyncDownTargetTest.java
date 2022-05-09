@@ -169,11 +169,11 @@ public class BriefcaseSyncDownTargetTest extends SyncManagerTestCase {
     }
 
     // Create accounts on server
-    // Run a sync with a BriefcaseSyncDownTarget with countIdsPerSoql of 2
+    // Run a sync with a BriefcaseSyncDownTarget with 2 of 2
     // Make sure we get the created accounts in the database
     // And that it took the multiple call to continueFetch
     @Test
-    public void testSyncDownFetchingOneObjectTypeWithMultipleSOQLCalls() throws Exception {
+    public void testSyncDownFetchingOneObjectTypeWithMultipleRetrieveCalls() throws Exception {
         trySyncDownFetchingOneObjectType(12, 2, 6);
     }
 
@@ -235,11 +235,11 @@ public class BriefcaseSyncDownTargetTest extends SyncManagerTestCase {
     }
 
     // Create accounts and contacts on server
-    // Run a sync with a BriefcaseSyncDownTarget with countIdsPerSoql of 2
+    // Run a sync with a BriefcaseSyncDownTarget with countIdsPerRetrieve of 2
     // Make sure we get the created accounts and contacts in the database
     // And that it took the multiple call to continueFetch
     @Test
-    public void testSyncDownFetchingTwoObjectTypesWithMultipleSOQLCalls() throws Exception {
+    public void testSyncDownFetchingTwoObjectTypesWithMultipleRetrieveCalls() throws Exception {
         trySyncDownFetchingTwoObjectTypes(12, 12, 3, 8);
     }
 
@@ -318,7 +318,7 @@ public class BriefcaseSyncDownTargetTest extends SyncManagerTestCase {
         return String.format(Locale.US, "BriefcaseTest_%s_%d", objectType, System.nanoTime());
     }
 
-    protected void trySyncDownFetchingOneObjectType(int numberAccounts, int countIdsPerSoql, int expectedNumberFetches) throws Exception {
+    protected void trySyncDownFetchingOneObjectType(int numberAccounts, int countIdsPerRetrieve, int expectedNumberFetches) throws Exception {
         final Map<String, String> accounts = createRecordsOnServer(numberAccounts, Constants.ACCOUNT);
         Assert.assertEquals("Wrong number of accounts created", numberAccounts, accounts.size());
         final String[] accountIds = accounts.keySet().toArray(new String[0]);
@@ -330,7 +330,7 @@ public class BriefcaseSyncDownTargetTest extends SyncManagerTestCase {
                 Constants.ACCOUNT,
                 Arrays.asList(Constants.NAME, Constants.DESCRIPTION)
             )),
-            countIdsPerSoql
+            countIdsPerRetrieve
         );
 
         // Run sync
@@ -347,12 +347,12 @@ public class BriefcaseSyncDownTargetTest extends SyncManagerTestCase {
      *
      * @param numberAccounts
      * @param numberContacts
-     * @param countIdsPerSoql
+     * @param countIdsPerRetrieve
      * @param expectedNumberFetches
      * @return pair made of aa pair with accountIds and contactIds created and sync id
      * @throws Exception
      */
-    protected Pair<Pair<String[], String[]>, Long> trySyncDownFetchingTwoObjectTypes(int numberAccounts, int numberContacts, int countIdsPerSoql, int expectedNumberFetches) throws Exception {
+    protected Pair<Pair<String[], String[]>, Long> trySyncDownFetchingTwoObjectTypes(int numberAccounts, int numberContacts, int countIdsPerRetrieve, int expectedNumberFetches) throws Exception {
         final Map<String, String> accounts = createRecordsOnServer(numberAccounts, Constants.ACCOUNT);
         Assert.assertEquals("Wrong number of accounts created", numberAccounts, accounts.size());
         final String[] accountIds = accounts.keySet().toArray(new String[0]);
@@ -373,7 +373,7 @@ public class BriefcaseSyncDownTargetTest extends SyncManagerTestCase {
                     Constants.CONTACT,
                     Arrays.asList(Constants.LAST_NAME))
             ),
-            countIdsPerSoql
+            countIdsPerRetrieve
         );
 
         // Run sync
