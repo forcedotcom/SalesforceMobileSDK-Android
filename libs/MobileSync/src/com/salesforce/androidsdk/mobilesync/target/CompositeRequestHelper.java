@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.mobilesync.target;
 
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
+import com.salesforce.androidsdk.rest.CollectionResponse;
 import com.salesforce.androidsdk.rest.CollectionResponse.CollectionSubResponse;
 import com.salesforce.androidsdk.rest.CompositeResponse;
 import com.salesforce.androidsdk.rest.CompositeResponse.CompositeSubResponse;
@@ -35,8 +36,12 @@ import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -66,13 +71,13 @@ public class CompositeRequestHelper {
          RestRequest compositeRequest = RestRequest.getCompositeRequest(syncManager.apiVersion, allOrNone, refIdToRequests);
          RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(compositeRequest);
          if (!response.isSuccess()) {
-             throw new SyncManager.MobileSyncException("sendCompositeRequest:" + response.toString());
+             throw new SyncManager.MobileSyncException("sendCompositeRequest:" + response);
          }
          CompositeResponse compositeResponse = new CompositeResponse(response.asJSONObject());
          Map<String, RecordResponse> refIdToRecordResponses = new LinkedHashMap<>();
          for (CompositeSubResponse subResponse : compositeResponse.subResponses) {
              RecordResponse recordResponse = RecordResponse.fromCompositeSubResponse(subResponse);
-             refIdToRecordResponses.put(recordResponse.referenceId, recordResponse);
+             refIdToRecordResponses.put(subResponse.referenceId, recordResponse);
          }
          return refIdToRecordResponses;
     }
@@ -87,23 +92,46 @@ public class CompositeRequestHelper {
      * @throws IOException
      */
     public static Map<String, RecordResponse> sendAsCollectionRequests(SyncManager syncManager, boolean allOrNone, List<RecordRequest> recordRequests) throws JSONException, IOException {
-        // TBD
-        return null;
+        Map<String, RecordResponse> refIdToRecordResponses = new LinkedHashMap<>();
+
+        for (RequestType requestType : RequestType.values()) {
+            List<String> refIds = RecordRequest.getRefIds(recordRequests, requestType);
+            if (refIds.size() > 0) {
+                RestRequest request = RecordRequest
+                    .getCollectionRequest(syncManager.apiVersion, allOrNone, recordRequests, requestType);
+                RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
+                if (!response.isSuccess()) {
+                    throw new SyncManager.MobileSyncException(
+                        "sendAsCollectionRequests:" + response);
+                } else {
+                    List<CollectionSubResponse> subResponses = new CollectionResponse(
+                        response.asJSONArray()).subResponses;
+                    for (int i = 0; i < subResponses.size(); i++) {
+                        String refId = refIds.get(i);
+                        RecordResponse recordResponse = RecordResponse.fromCollectionSubResponse(subResponses.get(i));
+                        refIdToRecordResponses.put(refId, recordResponse);
+                    }
+                }
+            }
+        }
+
+        return refIdToRecordResponses;
     }
 
     /**
      * @return ref id to server id map if successful
      */
-    public static Map<String, String> parseIdsFromResponses(Collection<RecordResponse> responses) throws JSONException {
-        Map<String, String> refIdToId = new HashMap<>();
-        for (RecordResponse response : responses) {
-            if (response.id != null) {
-                refIdToId.put(response.referenceId, response.id);
+    public static Map<String, String> parseIdsFromResponses(Map<String, RecordResponse> refIdToRecordResponse) throws JSONException {
+        Map<String, String> refIdToServerId = new HashMap<>();
+        for (Map.Entry<String, RecordResponse> entry : refIdToRecordResponse.entrySet()) {
+            String refId = entry.getKey();
+            RecordResponse recordResponse = entry.getValue();
+            if (recordResponse.id != null) {
+                refIdToServerId.put(refId, recordResponse.id);
             }
         }
-        return refIdToId;
+        return refIdToServerId;
     }
-
 
     /**
      * Update id field with server id
@@ -125,14 +153,12 @@ public class CompositeRequestHelper {
     static class RecordResponse {
         boolean success;
         String id;
-        String referenceId;
         boolean recordDoesNotExist;
         JSONObject json;
 
-        private RecordResponse(boolean success, String id, String referenceId, boolean recordDoesNotExist, JSONObject json) {
+        private RecordResponse(boolean success, String id, boolean recordDoesNotExist, JSONObject json) {
             this.success = success;
             this.id = id;
-            this.referenceId = referenceId;
             this.recordDoesNotExist = recordDoesNotExist;
             this.json = json;
         }
@@ -152,24 +178,23 @@ public class CompositeRequestHelper {
                     id = JSONObjectHelper.optString(responseBodyResponse, Constants.LID);
                 }
             }
-            boolean doesNotExistOnServer = success
+            boolean recordDoesNotExist = success
                 ? false
                 : compositeSubResponse.httpStatusCode  == HttpURLConnection.HTTP_NOT_FOUND
                     || "ENTITY_IS_DELETED".equals(compositeSubResponse.bodyAsJSONArray().getJSONObject(0).getString("errorCode"));
-            return new RecordResponse(success, id, refId, doesNotExistOnServer, compositeSubResponse.json);
+            return new RecordResponse(success, id, recordDoesNotExist, compositeSubResponse.json);
         }
 
-        static RecordResponse fromCollectionSubResponse(String referenceId, CollectionSubResponse collectionSubResponse) {
+        static RecordResponse fromCollectionSubResponse(CollectionSubResponse collectionSubResponse) {
             boolean success = collectionSubResponse.success;
             String id = collectionSubResponse.id;
-            String refId = referenceId;
             boolean doesNotExistOnServer = false;
             if (!collectionSubResponse.success && !collectionSubResponse.errors.isEmpty()) {
                 String error = collectionSubResponse.errors.get(0).statusCode;
                 doesNotExistOnServer = "INVALID_CROSS_REFERENCE_KEY".equals(error)
                     || "ENTITY_IS_DELETED".equals(error);
             }
-            return new RecordResponse(success, id, refId, doesNotExistOnServer, collectionSubResponse.json);
+            return new RecordResponse(success, id, doesNotExistOnServer, collectionSubResponse.json);
         }
     }
 
@@ -239,6 +264,55 @@ public class CompositeRequestHelper {
             return new RecordRequest(RequestType.DELETE, objectType, null, id, null, null);
         }
 
+        static List<String> getRefIds(List<RecordRequest> recordRequests, RequestType requestType) {
+            List<String> refIds = new LinkedList<>();
+            for (RecordRequest recordRequest : recordRequests) {
+                if (recordRequest.requestType == requestType) {
+                    refIds.add(recordRequest.referenceId);
+                }
+            }
+            return refIds;
+        }
+
+        static List<String> getIds(List<RecordRequest> recordRequests, RequestType requestType) {
+            List<String> ids = new LinkedList<>();
+            for (RecordRequest recordRequest : recordRequests) {
+                if (recordRequest.requestType == requestType) {
+                    ids.add(recordRequest.id);
+                }
+            }
+            return ids;
+        }
+
+        static JSONArray getJSONArrayForCollectionRequest(List<RecordRequest> recordRequests, RequestType requestType)
+            throws JSONException {
+            JSONArray jsonArray = new JSONArray();
+            for (RecordRequest recordRequest : recordRequests) {
+                if (recordRequest.requestType == requestType) {
+                    jsonArray.put(recordRequest.asJSONObjectForCollectionRequest());
+                }
+            }
+            return jsonArray;
+        }
+
+        static RestRequest getCollectionRequest(String apiVersion, boolean allOrNone, List<RecordRequest> recordRequests, RequestType requestType)
+            throws JSONException, UnsupportedEncodingException {
+            switch(requestType) {
+
+                case CREATE:
+                    return RestRequest.getRequestForCollectionCreate(apiVersion, allOrNone, getJSONArrayForCollectionRequest(recordRequests, RequestType.CREATE));
+                case UPDATE:
+                    return RestRequest.getRequestForCollectionCreate(apiVersion, allOrNone, getJSONArrayForCollectionRequest(recordRequests, RequestType.UPDATE));
+                case UPSERT:
+                    // TODO
+                    break;
+                case DELETE:
+                    return RestRequest.getRequestForCollectionDelete(apiVersion, getIds(recordRequests, RequestType.DELETE));
+            }
+
+            // We should never get here
+            return null;
+        }
     }
 
     static enum RequestType {

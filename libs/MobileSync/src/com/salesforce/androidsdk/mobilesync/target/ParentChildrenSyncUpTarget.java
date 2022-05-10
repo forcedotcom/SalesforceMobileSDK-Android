@@ -205,8 +205,8 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
         // Sending composite request
         Map<String, RecordResponse> refIdToRecordResponses = CompositeRequestHelper.sendAsCompositeBatchRequest(syncManager, false, recordRequests);
 
-        // Build refId to server id / status code / time stamp maps
-        Map<String, String> refIdToServerId = CompositeRequestHelper.parseIdsFromResponses(refIdToRecordResponses.values());
+        // Build refId to server id map
+        Map<String, String> refIdToServerId = CompositeRequestHelper.parseIdsFromResponses(refIdToRecordResponses);
 
         // Will a re-run be required?
         boolean needReRun = false;

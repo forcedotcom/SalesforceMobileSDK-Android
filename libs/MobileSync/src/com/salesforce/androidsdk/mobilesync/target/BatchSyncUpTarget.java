@@ -147,11 +147,11 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
             }
         }
 
-        // Sending composite request
-        Map<String, RecordResponse> refIdToRecordResponses = CompositeRequestHelper.sendAsCompositeBatchRequest(syncManager, false, recordRequests);
+        // Sending requests
+        Map<String, RecordResponse> refIdToRecordResponses = sendRecordRequests(syncManager, recordRequests);
 
-        // Build refId to server id / status code / time stamp maps
-        Map<String, String> refIdToServerId = CompositeRequestHelper.parseIdsFromResponses(refIdToRecordResponses.values());
+        // Build refId to server id map
+        Map<String, String> refIdToServerId = CompositeRequestHelper.parseIdsFromResponses(refIdToRecordResponses);
 
         // Will a re-run be required?
         boolean needReRun = false;
@@ -171,6 +171,11 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
             syncUpRecords(syncManager, records, fieldlist, mergeMode, syncSoupName, true);
         }
 
+    }
+
+    protected Map<String, RecordResponse> sendRecordRequests(SyncManager syncManager, List<RecordRequest> recordRequests)
+        throws JSONException, IOException {
+        return CompositeRequestHelper.sendAsCompositeBatchRequest(syncManager, false, recordRequests);
     }
 
     protected RecordRequest buildRequestForRecord(JSONObject record,
