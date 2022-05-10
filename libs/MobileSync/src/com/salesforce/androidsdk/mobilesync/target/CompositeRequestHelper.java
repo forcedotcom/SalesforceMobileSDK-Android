@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.mobilesync.target;
 
+import android.util.Pair;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.rest.CollectionResponse;
@@ -237,7 +238,7 @@ public class CompositeRequestHelper {
         JSONObject asJSONObjectForCollectionRequest() throws JSONException {
             JSONObject record = new JSONObject();
             JSONObject attributes = new JSONObject();
-            attributes.put(Constants.TYPE, objectType);
+            attributes.put(Constants.LTYPE, objectType);
             record.put(Constants.ATTRIBUTES, attributes);
             if (fields != null) {
                 for (Map.Entry<String, Object> entry : fields.entrySet()) {
@@ -284,6 +285,22 @@ public class CompositeRequestHelper {
             return ids;
         }
 
+        static Pair<String, String> getObjectTypeAndExternalIdFieldNameForUpsert(List<RecordRequest> recordRequests) {
+            String objectType = null;
+            String externalIdFieldName = null;
+
+            for (RecordRequest recordRequest : recordRequests) {
+                if (recordRequest.requestType == RequestType.UPSERT) {
+                    objectType = recordRequest.objectType;
+                    externalIdFieldName = recordRequest.externalIdFieldName;
+                    // TODO make sure object type and externalIdFieldName are the same across records to be upserted
+                    break;
+                }
+            }
+
+            return new Pair(objectType, externalIdFieldName);
+        }
+
         static JSONArray getJSONArrayForCollectionRequest(List<RecordRequest> recordRequests, RequestType requestType)
             throws JSONException {
             JSONArray jsonArray = new JSONArray();
@@ -298,14 +315,26 @@ public class CompositeRequestHelper {
         static RestRequest getCollectionRequest(String apiVersion, boolean allOrNone, List<RecordRequest> recordRequests, RequestType requestType)
             throws JSONException, UnsupportedEncodingException {
             switch(requestType) {
-
                 case CREATE:
                     return RestRequest.getRequestForCollectionCreate(apiVersion, allOrNone, getJSONArrayForCollectionRequest(recordRequests, RequestType.CREATE));
                 case UPDATE:
                     return RestRequest.getRequestForCollectionCreate(apiVersion, allOrNone, getJSONArrayForCollectionRequest(recordRequests, RequestType.UPDATE));
                 case UPSERT:
-                    // TODO
-                    break;
+                    JSONArray records = getJSONArrayForCollectionRequest(recordRequests, RequestType.UPSERT);
+
+                    if (records.length() > 0) {
+                        Pair<String, String> objectTypeExternalIdFieldName = getObjectTypeAndExternalIdFieldNameForUpsert(
+                            recordRequests);
+
+                        // TODO check for null
+
+                        return RestRequest
+                            .getRequestForCollectionUpsert(apiVersion,
+                                objectTypeExternalIdFieldName.first,
+                                objectTypeExternalIdFieldName.second,
+                                allOrNone,
+                                records);
+                    }
                 case DELETE:
                     return RestRequest.getRequestForCollectionDelete(apiVersion, getIds(recordRequests, RequestType.DELETE));
             }
