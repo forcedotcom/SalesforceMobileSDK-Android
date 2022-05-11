@@ -52,6 +52,7 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 import com.salesforce.androidsdk.util.test.TestCredentials;
 
+import java.util.Arrays;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Assert;
@@ -247,11 +248,14 @@ abstract public class ManagerTestCase {
      * @throws Exception
      */
     protected void deleteRecordsByIdOnServer(Collection<String> ids, String objectType) throws Exception {
-        List<RestRequest> requests = new ArrayList<>();
-        for (String id : ids) {
-            requests.add(RestRequest.getRequestForDelete(apiVersion, objectType, id));
+        List<String> idsList = new ArrayList(ids);
+        int maxIdsPerRequest = 200;
+        int countIds = idsList.size();
+        int countSlices = (int) Math.ceil((double) countIds / maxIdsPerRequest);
+        for (int slice = 0; slice < countSlices; slice++) {
+            List<String> idsToDelete = idsList.subList(slice * maxIdsPerRequest, Math.min(countIds, (slice + 1) * maxIdsPerRequest));
+            restClient.sendSync(RestRequest.getRequestForCollectionDelete(apiVersion, idsToDelete));
         }
-        restClient.sendSync(RestRequest.getBatchRequest(apiVersion, false, requests));
     }
 
     /**
