@@ -26,31 +26,27 @@
  */
 package com.salesforce.androidsdk.mobilesync.target;
 
-import android.util.Pair;
-import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
-import com.salesforce.androidsdk.mobilesync.util.Constants;
-import com.salesforce.androidsdk.rest.CollectionResponse;
-import com.salesforce.androidsdk.rest.CollectionResponse.CollectionSubResponse;
-import com.salesforce.androidsdk.rest.CompositeResponse;
-import com.salesforce.androidsdk.rest.CompositeResponse.CompositeSubResponse;
-import com.salesforce.androidsdk.rest.RestRequest;
-import com.salesforce.androidsdk.rest.RestResponse;
-import com.salesforce.androidsdk.util.JSONObjectHelper;
-
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+ import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
+ import com.salesforce.androidsdk.mobilesync.util.Constants;
+ import com.salesforce.androidsdk.rest.CollectionResponse;
+ import com.salesforce.androidsdk.rest.CollectionResponse.CollectionSubResponse;
+ import com.salesforce.androidsdk.rest.CompositeResponse;
+ import com.salesforce.androidsdk.rest.CompositeResponse.CompositeSubResponse;
+ import com.salesforce.androidsdk.rest.RestRequest;
+ import com.salesforce.androidsdk.rest.RestResponse;
+ import com.salesforce.androidsdk.util.JSONObjectHelper;
+ import java.io.IOException;
+ import java.io.UnsupportedEncodingException;
+ import java.net.HttpURLConnection;
+ import java.util.HashMap;
+ import java.util.HashSet;
+ import java.util.LinkedHashMap;
+ import java.util.LinkedList;
+ import java.util.List;
+ import java.util.Map;
+ import org.json.JSONArray;
+ import org.json.JSONException;
+ import org.json.JSONObject;
 
 public class CompositeRequestHelper {
 
@@ -296,20 +292,24 @@ public class CompositeRequestHelper {
             return ids;
         }
 
-        static Pair<String, String> getObjectTypeAndExternalIdFieldNameForUpsert(List<RecordRequest> recordRequests) {
-            String objectType = null;
-            String externalIdFieldName = null;
-
+        static List<String> getObjectTypes(List<RecordRequest> recordRequests, RequestType requestType) {
+            List<String> objectTypes = new LinkedList<>();
             for (RecordRequest recordRequest : recordRequests) {
-                if (recordRequest.requestType == RequestType.UPSERT) {
-                    objectType = recordRequest.objectType;
-                    externalIdFieldName = recordRequest.externalIdFieldName;
-                    // TODO make sure object type and externalIdFieldName are the same across records to be upserted
-                    break;
+                if (recordRequest.requestType == requestType) {
+                    objectTypes.add(recordRequest.objectType);
                 }
             }
+            return objectTypes;
+        }
 
-            return new Pair(objectType, externalIdFieldName);
+        static List<String> getExternalIdFieldNames(List<RecordRequest> recordRequests, RequestType requestType) {
+            List<String> externalIdFieldNames = new LinkedList<>();
+            for (RecordRequest recordRequest : recordRequests) {
+                if (recordRequest.requestType == requestType) {
+                    externalIdFieldNames.add(recordRequest.externalIdFieldName);
+                }
+            }
+            return externalIdFieldNames;
         }
 
         static JSONArray getJSONArrayForCollectionRequest(List<RecordRequest> recordRequests, RequestType requestType)
@@ -334,15 +334,24 @@ public class CompositeRequestHelper {
                     JSONArray records = getJSONArrayForCollectionRequest(recordRequests, RequestType.UPSERT);
 
                     if (records.length() > 0) {
-                        Pair<String, String> objectTypeExternalIdFieldName = getObjectTypeAndExternalIdFieldNameForUpsert(
-                            recordRequests);
+                        List<String> objectTypes = getObjectTypes(recordRequests, RequestType.UPSERT);
+                        List<String> externalIdFieldNames = getExternalIdFieldNames(recordRequests, RequestType.UPSERT);
 
-                        // TODO check for null
+                        if (objectTypes.size() == 0 || externalIdFieldNames.size() == 0) {
+                            throw new SyncManager.MobileSyncException("Missing sobjectType or externalIdFieldName");
+                        }
+
+                        if (new HashSet<>(objectTypes).size() > 1) {
+                            throw new SyncManager.MobileSyncException("All records must have same sobjectType");
+                        }
+
+                        String objectType = objectTypes.get(0);
+                        String externalIdFieldName = externalIdFieldNames.get(0);
 
                         return RestRequest
                             .getRequestForCollectionUpsert(apiVersion,
-                                objectTypeExternalIdFieldName.first,
-                                objectTypeExternalIdFieldName.second,
+                                objectType,
+                                externalIdFieldName,
                                 allOrNone,
                                 records);
                     }
