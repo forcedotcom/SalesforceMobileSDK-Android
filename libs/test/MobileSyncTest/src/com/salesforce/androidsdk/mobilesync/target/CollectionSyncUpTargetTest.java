@@ -179,9 +179,10 @@ public class CollectionSyncUpTargetTest extends BatchSyncUpTargetTest {
 
     @Test
     @Override
-    public void testSyncUpWithExternalId() throws Exception {
+    public void testSyncUpWithExternalId() {
         // The test is the super class does an upsert using the Id field
         // That's allowed with single object upsert REST API but not when using sObject collection
-        // We should do an upsert by some custom field but that will require the field to be setup in the test org
+        // TODO We should do an upsert by some custom field but that will require the field to be setup in the test org
+    }
     }
 }
