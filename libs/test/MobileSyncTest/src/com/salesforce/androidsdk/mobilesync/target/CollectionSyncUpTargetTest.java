@@ -184,9 +184,4 @@ public class CollectionSyncUpTargetTest extends BatchSyncUpTargetTest {
         // That's allowed with single object upsert REST API but not when using sObject collection
         // TODO We should do an upsert by some custom field but that will require the field to be setup in the test org
     }
-
-    @Test
-    public void testSyncUpManyRecords() throws Exception {
-
-    }
 }
