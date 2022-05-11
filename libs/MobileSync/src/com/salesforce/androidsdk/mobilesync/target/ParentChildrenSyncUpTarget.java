@@ -336,7 +336,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                 }
             }
             // Handling remotely deleted parent
-            else if(response.recordDoesNotExist) {
+            else if(response.relatedRecordDoesNotExist) {
                 // Parent record needs to be recreated
                 if (mergeMode == SyncState.MergeMode.OVERWRITE) {
                     parentRecord.put(LOCAL, true);

@@ -155,12 +155,14 @@ public class CompositeRequestHelper {
         boolean success;
         String id;
         boolean recordDoesNotExist;
+        boolean relatedRecordDoesNotExist;
         JSONObject json;
 
-        private RecordResponse(boolean success, String id, boolean recordDoesNotExist, JSONObject json) {
+        private RecordResponse(boolean success, String id, boolean recordDoesNotExist, boolean relatedRecordDoesNotExist, JSONObject json) {
             this.success = success;
             this.id = id;
             this.recordDoesNotExist = recordDoesNotExist;
+            this.relatedRecordDoesNotExist = relatedRecordDoesNotExist;
             this.json = json;
         }
 
@@ -173,29 +175,34 @@ public class CompositeRequestHelper {
             boolean success = compositeSubResponse.isSuccess();
             String id = null;
             String refId = compositeSubResponse.referenceId;
+            boolean recordDoesNotExist = false;
+            boolean relatedRecordDoesNotExist = false;
             if (success) {
                 JSONObject responseBodyResponse = compositeSubResponse.bodyAsJSONObject();
                 if (responseBodyResponse != null) {
                     id = JSONObjectHelper.optString(responseBodyResponse, Constants.LID);
                 }
+            } else {
+                recordDoesNotExist = compositeSubResponse.httpStatusCode == HttpURLConnection.HTTP_NOT_FOUND;
+                JSONArray bodyArray = compositeSubResponse.bodyAsJSONArray();
+                JSONObject firstError = bodyArray != null && bodyArray.length() > 0 ? bodyArray.getJSONObject(0) : null;
+                relatedRecordDoesNotExist = firstError != null ? "ENTITY_IS_DELETED".equals(firstError.getString("errorCode")) : false;
             }
-            boolean recordDoesNotExist = success
-                ? false
-                : compositeSubResponse.httpStatusCode  == HttpURLConnection.HTTP_NOT_FOUND
-                    || "ENTITY_IS_DELETED".equals(compositeSubResponse.bodyAsJSONArray().getJSONObject(0).getString("errorCode"));
-            return new RecordResponse(success, id, recordDoesNotExist, compositeSubResponse.json);
+            return new RecordResponse(success, id, recordDoesNotExist, relatedRecordDoesNotExist, compositeSubResponse.json);
         }
 
         static RecordResponse fromCollectionSubResponse(CollectionSubResponse collectionSubResponse) {
             boolean success = collectionSubResponse.success;
             String id = collectionSubResponse.id;
-            boolean doesNotExistOnServer = false;
+            boolean recordDoesNotExist = false;
+            boolean relatedRecordDoesNotExist = false;
             if (!collectionSubResponse.success && !collectionSubResponse.errors.isEmpty()) {
                 String error = collectionSubResponse.errors.get(0).statusCode;
-                doesNotExistOnServer = "INVALID_CROSS_REFERENCE_KEY".equals(error)
+                recordDoesNotExist = "INVALID_CROSS_REFERENCE_KEY".equals(error)
                     || "ENTITY_IS_DELETED".equals(error);
+                relatedRecordDoesNotExist = "ENTITY_IS_DELETED".equals(error); // XXX ambiguous
             }
-            return new RecordResponse(success, id, doesNotExistOnServer, collectionSubResponse.json);
+            return new RecordResponse(success, id, recordDoesNotExist, relatedRecordDoesNotExist, collectionSubResponse.json);
         }
     }
 
