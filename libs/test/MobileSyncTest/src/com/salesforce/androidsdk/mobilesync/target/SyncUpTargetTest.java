@@ -263,7 +263,11 @@ public class SyncUpTargetTest extends SyncManagerTestCase {
             String name = (String) fields.get(Constants.NAME);
             String lastError = (String) fields.get(SyncTarget.LAST_ERROR);
             if (setNamesBadRecords.contains(name)) {
-                Assert.assertTrue("Wrong error: " + lastError, lastError.contains("The requested resource does not exist"));
+                Assert.assertTrue("Wrong error: " + lastError,
+                    lastError.contains("The requested resource does not exist") // older end point error
+                    || lastError.contains("sObject type 'badType' is not supported.") // sobject collection error with bad type
+                    || lastError.contains("sObject type 'null' is not supported.")    // sobject collection error with no type
+                );
             }
             else {
                 Assert.fail("Unexpected record found: " + name);

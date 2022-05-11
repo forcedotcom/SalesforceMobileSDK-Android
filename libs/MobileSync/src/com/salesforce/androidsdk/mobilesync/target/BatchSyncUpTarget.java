@@ -237,9 +237,7 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
         if (isLocallyDeleted(record)) {
             if (isLocallyCreated(record)  // we didn't go to the sever
                     || response.success // or we successfully deleted on the server
-                    || response.recordDoesNotExist // or the record was already deleted on the server
-                    )
-
+                    || response.recordDoesNotExist) // or the record was already deleted on the server
             {
                 deleteFromLocalStore(syncManager, soupName, record);
             }

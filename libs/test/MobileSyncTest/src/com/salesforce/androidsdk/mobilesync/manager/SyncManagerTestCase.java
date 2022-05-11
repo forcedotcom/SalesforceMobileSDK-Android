@@ -673,9 +673,9 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
 		for (String id : ids) {
 			JSONObject record = smartStore.retrieve(soupName, smartStore.lookupSoupEntryId(soupName, Constants.ID, id)).getJSONObject(0);
 			record.put(SyncTarget.LOCAL, true);
-			record.put(SyncTarget.LOCALLY_CREATED, false);
+			record.put(SyncTarget.LOCALLY_CREATED, record.getBoolean(SyncTarget.LOCALLY_CREATED));
 			record.put(SyncTarget.LOCALLY_DELETED, true);
-			record.put(SyncTarget.LOCALLY_UPDATED, false);
+            record.put(SyncTarget.LOCALLY_UPDATED, record.getBoolean(SyncTarget.LOCALLY_UPDATED));
 			smartStore.upsert(soupName, record);
 		}
 	}
