@@ -150,7 +150,7 @@
       }
     },
     {
-      "syncName": "noBatchSyncUp",
+      "syncName": "singleRecordSyncUp",
       "syncType": "syncUp",
       "soupName": "accounts",
       "target": {
@@ -166,6 +166,22 @@
     },
     {
       "syncName": "batchSyncUp",
+      "syncType": "syncUp",
+      "soupName": "accounts",
+      "target": {
+        "iOSImpl": "SFBatchSyncUpTarget",
+        "androidImpl": "com.salesforce.androidsdk.mobilesync.target.BatchSyncUpTarget",
+        "idFieldName": "IdX",
+        "modificationDateFieldName": "LastModifiedDateX",
+        "externalIdFieldName": "ExternalIdX"
+      },
+      "options": {
+        "fieldlist": ["Name", "Description"],
+        "mergeMode":"OVERWRITE"
+      }
+    },
+    {
+      "syncName": "collectionSyncUp",
       "syncType": "syncUp",
       "soupName": "accounts",
       "target": {
