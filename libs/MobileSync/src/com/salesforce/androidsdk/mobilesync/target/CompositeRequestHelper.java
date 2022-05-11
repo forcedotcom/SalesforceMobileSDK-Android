@@ -246,6 +246,10 @@ public class CompositeRequestHelper {
                 }
             }
 
+            if (requestType == RequestType.UPDATE) {
+                record.put(Constants.ID, id);
+            }
+
             return record;
         }
 
@@ -318,7 +322,7 @@ public class CompositeRequestHelper {
                 case CREATE:
                     return RestRequest.getRequestForCollectionCreate(apiVersion, allOrNone, getJSONArrayForCollectionRequest(recordRequests, RequestType.CREATE));
                 case UPDATE:
-                    return RestRequest.getRequestForCollectionCreate(apiVersion, allOrNone, getJSONArrayForCollectionRequest(recordRequests, RequestType.UPDATE));
+                    return RestRequest.getRequestForCollectionUpdate(apiVersion, allOrNone, getJSONArrayForCollectionRequest(recordRequests, RequestType.UPDATE));
                 case UPSERT:
                     JSONArray records = getJSONArrayForCollectionRequest(recordRequests, RequestType.UPSERT);
 
