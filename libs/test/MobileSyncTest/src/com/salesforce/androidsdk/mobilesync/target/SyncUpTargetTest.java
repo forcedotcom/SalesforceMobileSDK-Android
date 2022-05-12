@@ -35,6 +35,7 @@ import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
 
+import java.util.ArrayList;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.After;
@@ -263,7 +264,11 @@ public class SyncUpTargetTest extends SyncManagerTestCase {
             String name = (String) fields.get(Constants.NAME);
             String lastError = (String) fields.get(SyncTarget.LAST_ERROR);
             if (setNamesBadRecords.contains(name)) {
-                Assert.assertTrue("Wrong error: " + lastError, lastError.contains("The requested resource does not exist"));
+                Assert.assertTrue("Wrong error: " + lastError,
+                    lastError.contains("The requested resource does not exist") // older end point error
+                    || lastError.contains("sObject type 'badType' is not supported.") // sobject collection error with bad type
+                    || lastError.contains("sObject type 'null' is not supported.")    // sobject collection error with no type
+                );
             }
             else {
                 Assert.fail("Unexpected record found: " + name);
@@ -352,7 +357,7 @@ public class SyncUpTargetTest extends SyncManagerTestCase {
      */
     @Test
     public void testSyncUpWithLocallyCreatedRecords() throws Exception {
-        trySyncUpWithLocallyCreatedRecords(SyncState.MergeMode.OVERWRITE);
+        trySyncUpWithLocallyCreatedRecords(3, SyncState.MergeMode.OVERWRITE);
     }
 
 
@@ -361,18 +366,20 @@ public class SyncUpTargetTest extends SyncManagerTestCase {
      */
     @Test
     public void testSyncUpWithLocallyCreatedRecordsWithoutOverwrite() throws Exception {
-        trySyncUpWithLocallyCreatedRecords(SyncState.MergeMode.LEAVE_IF_CHANGED);
+        trySyncUpWithLocallyCreatedRecords(3, SyncState.MergeMode.LEAVE_IF_CHANGED);
     }
 
-    private void trySyncUpWithLocallyCreatedRecords(SyncState.MergeMode syncUpMergeMode) throws Exception {
+    private void trySyncUpWithLocallyCreatedRecords(int countRecords, SyncState.MergeMode syncUpMergeMode) throws Exception {
         // Create a few entries locally
-        String[] names = new String[] { createRecordName(Constants.ACCOUNT),
-                createRecordName(Constants.ACCOUNT),
-                createRecordName(Constants.ACCOUNT) };
+        List<String> listNames = new ArrayList<>();
+        for (int i=0; i<countRecords; i++) {
+            listNames.add(createRecordName(Constants.ACCOUNT));
+        }
+        String[] names = listNames.toArray(new String[0]);
         createAccountsLocally(names);
 
         // Sync up
-        trySyncUp(3, syncUpMergeMode);
+        trySyncUp(countRecords, syncUpMergeMode);
 
         // Check that db doesn't show entries as locally created anymore and that they use sfdc id
         Map<String, Map<String, Object>> idToFieldsCreated = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{Constants.NAME, Constants.DESCRIPTION}, Constants.NAME, names);
@@ -709,6 +716,14 @@ public class SyncUpTargetTest extends SyncManagerTestCase {
 
         // Adding to idToFields so that they get deleted in tearDown
         idToFields.putAll(expectedServerIdToFields);
+    }
+
+    /**
+     * Create many accounts locally, sync up with merge mode OVERWRITE, check smartstore and server afterwards
+     */
+    @Test
+    public void testSyncUpManyLocallyCreatedRecords() throws Exception {
+        trySyncUpWithLocallyCreatedRecords(500, SyncState.MergeMode.OVERWRITE);
     }
 
     /**

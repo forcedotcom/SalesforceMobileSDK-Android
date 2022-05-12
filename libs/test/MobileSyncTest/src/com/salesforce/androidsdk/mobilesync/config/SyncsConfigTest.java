@@ -33,6 +33,7 @@ import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManagerTestCase;
 import com.salesforce.androidsdk.mobilesync.target.BatchSyncUpTarget;
 import com.salesforce.androidsdk.mobilesync.target.BriefcaseSyncDownTarget;
+import com.salesforce.androidsdk.mobilesync.target.CollectionSyncUpTarget;
 import com.salesforce.androidsdk.mobilesync.target.LayoutSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.MetadataSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.MruSyncDownTarget;
@@ -92,7 +93,7 @@ public class SyncsConfigTest extends SyncManagerTestCase {
         SyncState actualSync2 = globalSyncManager.getSyncStatus("globalSync2");
         Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, actualSync2.getSoupName());
         checkStatus(actualSync2, SyncState.Type.syncUp, actualSync2.getId(),
-                new BatchSyncUpTarget(Arrays.asList("Name"), null),
+                new CollectionSyncUpTarget(Arrays.asList("Name"), null),
                 SyncOptions.optionsForSyncUp(Arrays.asList("Id", "Name", "LastModifiedDate"), MergeMode.LEAVE_IF_CHANGED),
                 SyncState.Status.NEW, 0);
     }
@@ -107,8 +108,9 @@ public class SyncsConfigTest extends SyncManagerTestCase {
         Assert.assertFalse(syncManager.hasSyncWithName("metadataSyncDown"));
         Assert.assertFalse(syncManager.hasSyncWithName("parentChildrenSyncDown"));
         Assert.assertFalse(syncManager.hasSyncWithName("briefcaseSyncDown"));
-        Assert.assertFalse(syncManager.hasSyncWithName("noBatchSyncUp"));
+        Assert.assertFalse(syncManager.hasSyncWithName("singleRecordSyncUp"));
         Assert.assertFalse(syncManager.hasSyncWithName("batchSyncUp"));
+        Assert.assertFalse(syncManager.hasSyncWithName("collectionSyncUp"));
         Assert.assertFalse(syncManager.hasSyncWithName("parentChildrenSyncUp"));
 
         // Setting up syncs
@@ -123,8 +125,9 @@ public class SyncsConfigTest extends SyncManagerTestCase {
         Assert.assertTrue(syncManager.hasSyncWithName("metadataSyncDown"));
         Assert.assertTrue(syncManager.hasSyncWithName("parentChildrenSyncDown"));
         Assert.assertTrue(syncManager.hasSyncWithName("briefcaseSyncDown"));
-        Assert.assertTrue(syncManager.hasSyncWithName("noBatchSyncUp"));
+        Assert.assertTrue(syncManager.hasSyncWithName("singleRecordSyncUp"));
         Assert.assertTrue(syncManager.hasSyncWithName("batchSyncUp"));
+        Assert.assertTrue(syncManager.hasSyncWithName("collectionSyncUp"));
         Assert.assertTrue(syncManager.hasSyncWithName("parentChildrenSyncUp"));
     }
 
@@ -249,10 +252,10 @@ public class SyncsConfigTest extends SyncManagerTestCase {
     }
 
     @Test
-    public void testNoBatchSyncUpFromConfig() throws JSONException {
+    public void testSingleRecordSyncUpFromConfig() throws JSONException {
         MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
 
-        SyncState sync = syncManager.getSyncStatus("noBatchSyncUp");
+        SyncState sync = syncManager.getSyncStatus("singleRecordSyncUp");
         Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, sync.getSoupName());
         checkStatus(sync, SyncState.Type.syncUp, sync.getId(),
                 new SyncUpTarget(Arrays.asList("Name"), Arrays.asList("Description")),
@@ -270,6 +273,18 @@ public class SyncsConfigTest extends SyncManagerTestCase {
                 new BatchSyncUpTarget(null, null, "IdX", "LastModifiedDateX", "ExternalIdX", BatchSyncUpTarget.MAX_SUB_REQUESTS_COMPOSITE_API),
                 SyncOptions.optionsForSyncUp(Arrays.asList("Name", "Description"), MergeMode.OVERWRITE),
                 SyncState.Status.NEW, 0);
+    }
+
+    @Test
+    public void testCollectionSyncUpFromConfig() throws JSONException {
+        MobileSyncSDKManager.getInstance().setupUserSyncsFromDefaultConfig();
+
+        SyncState sync = syncManager.getSyncStatus("collectionSyncUp");
+        Assert.assertEquals("Wrong soup name", ACCOUNTS_SOUP, sync.getSoupName());
+        checkStatus(sync, SyncState.Type.syncUp, sync.getId(),
+            new CollectionSyncUpTarget(null, null, "IdX", "LastModifiedDateX", "ExternalIdX", CollectionSyncUpTarget.MAX_RECORDS_SOBJECT_COLLECTION_API),
+            SyncOptions.optionsForSyncUp(Arrays.asList("Name", "Description"), MergeMode.OVERWRITE),
+            SyncState.Status.NEW, 0);
     }
 
     @Test
