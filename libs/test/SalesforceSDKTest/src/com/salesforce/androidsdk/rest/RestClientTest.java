@@ -1068,7 +1068,15 @@ public class RestClientTest {
 
     @Test
     public void testGetPrimingRecords() throws Exception {
-        RestRequest request = RestRequest.getRequestForPrimingRecords(TestCredentials.API_VERSION, null);
+        RestRequest request = RestRequest.getRequestForPrimingRecords(TestCredentials.API_VERSION, null, null);
+        RestResponse response = restClient.sendSync(request);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
+        checkKeys(response.asJSONObject(), "primingRecords", "relayToken", "ruleErrors", "stats");
+    }
+
+    @Test
+    public void testGetPrimingRecordsWithChangedAfterTimestampParameter() throws Exception {
+        RestRequest request = RestRequest.getRequestForPrimingRecords(TestCredentials.API_VERSION, null, new Date().getTime());
         RestResponse response = restClient.sendSync(request);
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
         checkKeys(response.asJSONObject(), "primingRecords", "relayToken", "ruleErrors", "stats");
@@ -1076,7 +1084,7 @@ public class RestClientTest {
 
     @Test
     public void testParsePrimingRecordsResponse() throws Exception {
-        RestRequest request = RestRequest.getRequestForPrimingRecords(TestCredentials.API_VERSION, null);
+        RestRequest request = RestRequest.getRequestForPrimingRecords(TestCredentials.API_VERSION, null, null);
         RestResponse response = restClient.sendSync(request);
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
         try {

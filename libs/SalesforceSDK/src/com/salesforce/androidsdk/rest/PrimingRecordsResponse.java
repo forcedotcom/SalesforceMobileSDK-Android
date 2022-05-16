@@ -46,7 +46,7 @@ import org.json.JSONObject;
  * PrimingRecordsResponse: Class to represent response for a priming records request.
  */
 public class PrimingRecordsResponse {
-    private static final DateFormat TIMESTAMP_FORMAT;
+    public static final DateFormat TIMESTAMP_FORMAT;
     static {
         // NB can't use RestRequest.ISO8601_DATE_FORMAT it's for timestamp of the form 2001-07-04T12:08:56.235-0700
         TimeZone tz = TimeZone.getTimeZone("UTC");
