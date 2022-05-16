@@ -1094,9 +1094,9 @@ public class RestClientTest {
         String contactName = ENTITY_NAME_PREFIX + "_contact_" + System.nanoTime();
 
         JSONArray records = makeRecords(
-            new Pair("Account", new Pair("Name", firstAccountName)),
-            new Pair("Contact", new Pair("LastName", contactName)),
-            new Pair("Account", new Pair("Name", secondAccountName))
+            Arrays.asList("Account", "Name", firstAccountName),
+            Arrays.asList("Contact", "LastName", contactName),
+            Arrays.asList("Account", "Name", secondAccountName)
         );
 
         // Doing a collection create
@@ -1128,9 +1128,9 @@ public class RestClientTest {
         String contactName = ENTITY_NAME_PREFIX + "_contact_" + System.nanoTime();
 
         JSONArray records = makeRecords(
-            new Pair("Account", new Pair("Name", firstAccountName)),
-            new Pair("Contact", new Pair("LastName", contactName)),
-            new Pair("Account", new Pair("Name", secondAccountName))
+            Arrays.asList("Account", "Name", firstAccountName),
+            Arrays.asList("Contact", "LastName", contactName),
+            Arrays.asList("Account", "Name", secondAccountName)
         );
 
         // Doing a collection create
@@ -1166,8 +1166,8 @@ public class RestClientTest {
         String secondAccountName = ENTITY_NAME_PREFIX + "_account_2_" + System.nanoTime();
 
         JSONArray records = makeRecords(
-            new Pair("Account", new Pair("Name", firstAccountName)),
-            new Pair("Account", new Pair("Name", secondAccountName))
+            Arrays.asList("Account", "Name", firstAccountName),
+            Arrays.asList("Account", "Name", secondAccountName)
         );
 
         // Doing a collection upsert
@@ -1194,8 +1194,8 @@ public class RestClientTest {
         String secondAccountName = ENTITY_NAME_PREFIX + "_account_2_" + System.nanoTime();
 
         JSONArray records = makeRecords(
-            new Pair("Account", new Pair("Name", firstAccountName)),
-            new Pair("Account", new Pair("Name", secondAccountName))
+            Arrays.asList("Account", "Name", firstAccountName),
+            Arrays.asList("Account", "Name", secondAccountName)
         );
 
         // Doing a collection create
@@ -1207,12 +1207,12 @@ public class RestClientTest {
         String secondAccountId = parsedCreateResponse.subResponses.get(1).id;
 
         // Doing a collection upsert to update the accounts
+        String firstAccountNameUpdated = firstAccountName + "_updated";
+        String secondAccountNameUpdated = secondAccountName + "_updated";
         JSONArray updatedAccounts = makeRecords(
-            new Pair("Account", new Pair("Name", firstAccountName + "_updated")),
-            new Pair("Account", new Pair("Name", secondAccountName + "_updated"))
+            Arrays.asList("Account", "Name", firstAccountNameUpdated, "Id", firstAccountId),
+            Arrays.asList("Account", "Name", secondAccountNameUpdated, "Id", secondAccountId)
         );
-        updatedAccounts.getJSONObject(0).put("Id", firstAccountId);
-        updatedAccounts.getJSONObject(1).put("Id", secondAccountId);
 
         RestResponse upsertResponse = restClient.sendSync(RestRequest.getRequestForCollectionUpsert(TestCredentials.API_VERSION, "Account" , "Id", true, updatedAccounts));
 
@@ -1232,8 +1232,8 @@ public class RestClientTest {
         RestRequest accountsRetrieveRequest = RestRequest.getRequestForCollectionRetrieve(TestCredentials.API_VERSION, "Account", Arrays.asList(firstAccountId, secondAccountId), Arrays.asList("Id", "Name"));
         JSONArray accountsRetrieved = restClient.sendSync(accountsRetrieveRequest).asJSONArray();
         Assert.assertEquals(2, accountsRetrieved.length());
-        Assert.assertEquals(firstAccountName + "_updated", accountsRetrieved.getJSONObject(0).getString("Name"));
-        Assert.assertEquals(secondAccountName + "_updated", accountsRetrieved.getJSONObject(1).getString("Name"));
+        Assert.assertEquals(firstAccountNameUpdated, accountsRetrieved.getJSONObject(0).getString("Name"));
+        Assert.assertEquals(secondAccountNameUpdated, accountsRetrieved.getJSONObject(1).getString("Name"));
     }
 
     @Test
@@ -1243,9 +1243,9 @@ public class RestClientTest {
         String contactName = ENTITY_NAME_PREFIX + "_contact_" + System.nanoTime();
 
         JSONArray records = makeRecords(
-            new Pair("Account", new Pair("Name", firstAccountName)),
-            new Pair("Contact", new Pair("LastName", contactName)),
-            new Pair("Account", new Pair("Name", secondAccountName))
+            Arrays.asList("Account", "Name", firstAccountName),
+            Arrays.asList("Contact", "LastName", contactName),
+            Arrays.asList("Account", "Name", secondAccountName)
         );
 
         // Doing a collection create
@@ -1257,13 +1257,13 @@ public class RestClientTest {
         String contactId = parsedCreateResponse.subResponses.get(1).id;
         String secondAccountId = parsedCreateResponse.subResponses.get(2).id;
 
-        // Doing a collection upsert to update one account and the contact
+        // Doing a collection update for one account and the contact
+        String firstAccountNameUpdated = firstAccountName + "_updated";
+        String contactNameUpdated = contactName + "_updated";
         JSONArray updatedRecords = makeRecords(
-            new Pair("Account", new Pair("Name", firstAccountName + "_updated")),
-            new Pair("Contact", new Pair("LastName", contactName + "_updated"))
+            Arrays.asList("Account", "Name", firstAccountNameUpdated, "Id", firstAccountId),
+            Arrays.asList("Contact", "LastName", contactNameUpdated, "Id", contactId)
         );
-        updatedRecords.getJSONObject(0).put("Id", firstAccountId);
-        updatedRecords.getJSONObject(1).put("Id", contactId);
 
         RestResponse updateResponse = restClient.sendSync(RestRequest.getRequestForCollectionUpdate(TestCredentials.API_VERSION, true, updatedRecords));
 
@@ -1283,14 +1283,14 @@ public class RestClientTest {
         RestRequest accountsRetrieveRequest = RestRequest.getRequestForCollectionRetrieve(TestCredentials.API_VERSION, "Account", Arrays.asList(firstAccountId, secondAccountId), Arrays.asList("Id", "Name"));
         JSONArray accountsRetrieved = restClient.sendSync(accountsRetrieveRequest).asJSONArray();
         Assert.assertEquals(2, accountsRetrieved.length());
-        Assert.assertEquals(firstAccountName + "_updated", accountsRetrieved.getJSONObject(0).getString("Name"));
+        Assert.assertEquals(firstAccountNameUpdated, accountsRetrieved.getJSONObject(0).getString("Name"));
         Assert.assertEquals(secondAccountName, accountsRetrieved.getJSONObject(1).getString("Name"));
 
         // Checking contact on server
         RestRequest contactsRetrieveRequest = RestRequest.getRequestForCollectionRetrieve(TestCredentials.API_VERSION, "Contact", Arrays.asList(contactId), Arrays.asList("Id", "LastName"));
         JSONArray contactsRetrieved = restClient.sendSync(contactsRetrieveRequest).asJSONArray();
         Assert.assertEquals(1, contactsRetrieved.length());
-        Assert.assertEquals(contactName + "_updated", contactsRetrieved.getJSONObject(0).getString("LastName"));
+        Assert.assertEquals(contactNameUpdated, contactsRetrieved.getJSONObject(0).getString("LastName"));
     }
 
     @Test
@@ -1300,9 +1300,9 @@ public class RestClientTest {
         String contactName = ENTITY_NAME_PREFIX + "_contact_" + System.nanoTime();
 
         JSONArray records = makeRecords(
-            new Pair("Account", new Pair("Name", firstAccountName)),
-            new Pair("Contact", new Pair("LastName", contactName)),
-            new Pair("Account", new Pair("Name", secondAccountName))
+            Arrays.asList("Account", "Name", firstAccountName),
+            Arrays.asList("Contact", "LastName", contactName),
+            Arrays.asList("Account", "Name", secondAccountName)
         );
 
         // Doing a collection create
@@ -1356,8 +1356,8 @@ public class RestClientTest {
         String contactName = ENTITY_NAME_PREFIX + "_contact_" + System.nanoTime();
 
         JSONArray records = makeRecords(
-            new Pair("Account", new Pair("BadField", accountName)),
-            new Pair("Contact", new Pair("LastName", contactName))
+            Arrays.asList("Account", "BadField", accountName),
+            Arrays.asList("Contact", "LastName", contactName)
         );
 
         RestResponse response = restClient.sendSync(RestRequest.getRequestForCollectionCreate(TestCredentials.API_VERSION, false , records));
@@ -1367,6 +1367,7 @@ public class RestClientTest {
         Assert.assertNull(parsedResponse.subResponses.get(0).id);
         Assert.assertFalse(parsedResponse.subResponses.get(0).success);
         Assert.assertFalse(parsedResponse.subResponses.get(0).errors.isEmpty());
+        Assert.assertEquals("INVALID_FIELD", parsedResponse.subResponses.get(0).errors.get(0).statusCode);
         Assert.assertTrue(parsedResponse.subResponses.get(1).id.startsWith("003"));
         Assert.assertTrue(parsedResponse.subResponses.get(1).success);
         Assert.assertTrue(parsedResponse.subResponses.get(1).errors.isEmpty());
@@ -1378,8 +1379,8 @@ public class RestClientTest {
         String contactName = ENTITY_NAME_PREFIX + "_contact_" + System.nanoTime();
 
         JSONArray records = makeRecords(
-            new Pair("Account", new Pair("BadField", accountName)),
-            new Pair("Contact", new Pair("LastName", contactName))
+            Arrays.asList("Account", "BadField", accountName),
+            Arrays.asList("Contact", "LastName", contactName)
         );
 
         RestResponse response = restClient.sendSync(RestRequest.getRequestForCollectionCreate(TestCredentials.API_VERSION, true , records));
@@ -1389,9 +1390,11 @@ public class RestClientTest {
         Assert.assertNull(parsedResponse.subResponses.get(0).id);
         Assert.assertFalse(parsedResponse.subResponses.get(0).success);
         Assert.assertFalse(parsedResponse.subResponses.get(0).errors.isEmpty());
+        Assert.assertEquals("INVALID_FIELD", parsedResponse.subResponses.get(0).errors.get(0).statusCode);
         Assert.assertNull(parsedResponse.subResponses.get(1).id);
         Assert.assertFalse(parsedResponse.subResponses.get(1).success);
         Assert.assertFalse(parsedResponse.subResponses.get(1).errors.isEmpty());
+        Assert.assertEquals("ALL_OR_NONE_OPERATION_ROLLED_BACK", parsedResponse.subResponses.get(1).errors.get(0).statusCode);
     }
 
     //
@@ -1564,18 +1567,20 @@ public class RestClientTest {
 
     /**
      * Make JSONArray of JSONObject's representing records with provided type an field
-     * @param typeFieldNameValues a list of Pair<String, Pair<String, String>> with (objectType, (fieldName, fieldValue))
+     * @param typeFieldNameValues a list of list containing objectType, fieldName, otherFieldName, otherFieldValue etc
      * @return
      */
-    private JSONArray makeRecords(Pair<String, Pair<String, String>>... typeFieldNameValues)
+    private JSONArray makeRecords(List<String>... typeFieldNameValues)
         throws JSONException {
         JSONArray records = new JSONArray();
-        for (Pair<String, Pair<String, String>> typeFieldNameValue : typeFieldNameValues) {
+        for (List<String> entry : typeFieldNameValues) {
             JSONObject record = new JSONObject();
             JSONObject recordAttributes = new JSONObject();
-            recordAttributes.put("type", typeFieldNameValue.first);
+            recordAttributes.put("type", entry.get(0));
             record.put("attributes", recordAttributes);
-            record.put(typeFieldNameValue.second.first, typeFieldNameValue.second.second);
+            for (int i=1; i<entry.size(); i +=2 ) {
+                record.put(entry.get(i), entry.get(i+1));
+            }
             records.put(record);
         }
 

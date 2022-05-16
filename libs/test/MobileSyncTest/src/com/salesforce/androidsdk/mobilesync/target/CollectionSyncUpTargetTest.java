@@ -176,12 +176,4 @@ public class CollectionSyncUpTargetTest extends BatchSyncUpTargetTest {
         Assert.assertNull("Wrong updateFieldList", target.updateFieldlist);
         Assert.assertEquals("Wrong maxBatchSize", CollectionSyncUpTarget.MAX_RECORDS_SOBJECT_COLLECTION_API, ((CollectionSyncUpTarget) target).getMaxBatchSize());
     }
-
-    @Test
-    @Override
-    public void testSyncUpWithExternalId() {
-        // The test is the super class does an upsert using the Id field
-        // That's allowed with single object upsert REST API but not when using sObject collection
-        // TODO We should do an upsert by some custom field but that will require the field to be setup in the test org
-    }
 }
