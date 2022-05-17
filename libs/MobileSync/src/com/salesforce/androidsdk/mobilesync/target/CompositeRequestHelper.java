@@ -253,6 +253,10 @@ public class CompositeRequestHelper {
                 record.put(Constants.ID, id);
             }
 
+            if (requestType == RequestType.UPSERT) {
+                record.put(externalIdFieldName, externalId);
+            }
+
             return record;
         }
 
