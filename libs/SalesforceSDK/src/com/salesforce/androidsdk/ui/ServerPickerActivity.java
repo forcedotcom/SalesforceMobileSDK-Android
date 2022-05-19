@@ -82,7 +82,7 @@ public class ServerPickerActivity extends Activity implements AuthConfigTask.Aut
         lastSavedServerURL = loginServerManager.getSelectedLoginServer().url;
 
         final List<LoginServer> servers = loginServerManager.getLoginServers();
-        ServerPickerAdapter adapter = new ServerPickerAdapter(this, R.layout.sf__server_list_item, servers, loginServerManager);
+        ServerPickerAdapter adapter = new ServerPickerAdapter(this, R.layout.sf__server_list_item, servers, loginServerManager, shouldUncheckItems);
         ListView listView = findViewById(R.id.sf__server_list);
         listView.setAdapter(adapter);
         listView.setOnItemClickListener((parent, view, position, id) -> {

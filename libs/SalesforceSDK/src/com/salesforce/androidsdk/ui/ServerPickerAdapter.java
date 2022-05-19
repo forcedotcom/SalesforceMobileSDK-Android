@@ -18,11 +18,13 @@ public class ServerPickerAdapter extends ArrayAdapter<LoginServer> {
 
     private final int resourceId;
     private final LoginServerManager loginServerManager;
+    private final boolean shouldUncheckSelectedItem;
 
-    public ServerPickerAdapter(Context context, int resource, List<LoginServer> objects, LoginServerManager loginServerManager) {
+    public ServerPickerAdapter(Context context, int resource, List<LoginServer> objects, LoginServerManager loginServerManager, boolean shouldUncheckItem) {
         super(context, resource, objects);
         this.resourceId = resource;
         this.loginServerManager = loginServerManager;
+        shouldUncheckSelectedItem = shouldUncheckItem;
     }
 
     @Override
@@ -45,6 +47,10 @@ public class ServerPickerAdapter extends ArrayAdapter<LoginServer> {
         viewHolder.serverNameTextView.setText(loginServer.name);
         viewHolder.serverUrlTextView.setText(loginServer.url);
         final LoginServer selectedServer = loginServerManager.getSelectedLoginServer();
+        if (shouldUncheckSelectedItem) {
+            viewHolder.radioButton.setVisibility(View.GONE);
+            return view;
+        }
         if (null != selectedServer.url && selectedServer.url.equals(loginServer.url)) {
             viewHolder.radioButton.setVisibility(View.VISIBLE);
             viewHolder.radioButton.setChecked(true);
