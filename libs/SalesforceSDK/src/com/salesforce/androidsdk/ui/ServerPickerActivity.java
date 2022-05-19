@@ -135,4 +135,8 @@ public class ServerPickerActivity extends Activity implements AuthConfigTask.Aut
         ed.putBoolean(LoginActivity.DISTRICT_SELECTED, true);
         ed.commit();
     }
+
+    public void rebuildDisplay() {
+        
+    }
 }
