@@ -58,9 +58,7 @@ public class ServerPickerActivity extends Activity implements AuthConfigTask.Aut
     private LoginServerManager loginServerManager;
     private boolean shouldUncheckItems = false;
     private ProgressBar progressBar;
-    private ListView listView;
     private String lastSavedServerURL;
-    final private List<LoginServer> servers = loginServerManager.getLoginServers();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -82,8 +80,9 @@ public class ServerPickerActivity extends Activity implements AuthConfigTask.Aut
         shouldUncheckItems = i.getBooleanExtra(LoginActivity.SHOULD_UNCHECK_ITEMS, false);
         lastSavedServerURL = loginServerManager.getSelectedLoginServer().url;
 
+        final List<LoginServer> servers = loginServerManager.getLoginServers();
         ServerPickerAdapter adapter = new ServerPickerAdapter(this, R.layout.sf__server_list_item, servers, loginServerManager);
-        listView = findViewById(R.id.sf__server_list);
+        ListView listView = findViewById(R.id.sf__server_list);
         listView.setAdapter(adapter);
         listView.setOnItemClickListener((parent, view, position, id) -> {
             LoginServer selectedServer = servers.get(position);
@@ -137,6 +136,6 @@ public class ServerPickerActivity extends Activity implements AuthConfigTask.Aut
     }
 
     public void rebuildDisplay() {
-        
+
     }
 }
