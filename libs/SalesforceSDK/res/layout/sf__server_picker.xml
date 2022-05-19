@@ -5,25 +5,13 @@
 	android:layout_height="match_parent"
 	android:background="?android:colorBackground" >
 
-	<ScrollView
-		android:id="@+id/sf__server_picker_scroll_view"
+	<ListView
 		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:layout_marginStart="10dp"
-		android:layout_marginTop="10dp"
-		android:layout_marginEnd="10dp"
-		android:layout_marginBottom="10dp"
-		android:background="?android:colorBackground"
-		android:layout_alignParentTop="true"
-		android:layout_above="@id/sf__show_custom_url_edit">
-
-		<RadioGroup
-			android:id="@+id/sf__server_list_group"
-			android:layout_width="match_parent"
-			android:layout_height="wrap_content"
-			android:orientation="vertical" />
-
-	</ScrollView>
+		android:layout_height="match_parent"
+		android:id="@+id/sf__server_list"
+		android:divider="@color/browser_actions_divider_color"
+		android:dividerHeight="1dp"
+		/>
 	<ProgressBar
 		android:id="@+id/progressBar"
 		android:layout_width="wrap_content"
@@ -32,19 +20,4 @@
 		android:visibility="gone"
 		android:indeterminateTint="@color/sf__primary_color"
 		/>
-	<Button android:id="@+id/sf__show_custom_url_edit"
-		android:text="@string/sf__custom_url_button"
-		android:onClick="showCustomUrlDialog"
-		android:layout_width="match_parent"
-		android:layout_height="50dp"
-		android:layout_alignParentEnd="true"
-		android:layout_alignParentBottom="true"
-		android:layout_marginLeft="20dp"
-		android:layout_marginRight="20dp"
-		android:layout_marginBottom="20dp"
-		android:background="@drawable/sf__passcode_secondary_color_button"
-		android:textColor="?attr/sfNegativeButtonTextColor"
-		android:textAllCaps="false"
-		android:textSize="14sp"
-		android:textStyle="bold" />
 </RelativeLayout>

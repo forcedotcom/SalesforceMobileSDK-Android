@@ -28,24 +28,18 @@ package com.salesforce.androidsdk.ui;
 
 import android.app.ActionBar;
 import android.app.Activity;
-import android.app.FragmentManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
+import android.widget.ListView;
 import android.widget.ProgressBar;
-import android.widget.RadioGroup;
-import android.widget.ScrollView;
 import android.widget.Toast;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer;
-import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.util.AuthConfigTask;
 
 import java.util.List;
@@ -57,86 +51,16 @@ import java.util.List;
  *
  * @author bhariharan
  */
-public class ServerPickerActivity extends Activity implements
-        android.widget.RadioGroup.OnCheckedChangeListener, AuthConfigTask.AuthConfigCallbackInterface {
+public class ServerPickerActivity extends Activity implements AuthConfigTask.AuthConfigCallbackInterface {
 
     public static final String CHANGE_SERVER_INTENT = "com.salesforce.SERVER_CHANGED";
-    private static final String SERVER_DIALOG_NAME = "custom_server_dialog";
 
-    private CustomServerUrlEditor urlEditDialog;
     private LoginServerManager loginServerManager;
     private boolean shouldUncheckItems = false;
-    private boolean optionChanged = false;
     private ProgressBar progressBar;
+    private ListView listView;
     private String lastSavedServerURL;
-
-    /**
-     * Clears any custom URLs that may have been set.
-     */
-    private void clearCustomUrlSetting() {
-        loginServerManager.reset();
-        rebuildDisplay();
-        urlEditDialog = new CustomServerUrlEditor();
-    }
-
-    /**
-     * Sets the return value of the activity. Selection is stored in the
-     * shared prefs file, AuthActivity pulls from the file or a default value.
-     */
-    @Override
-    public void onBackPressed() {
-        if (shouldUncheckItems && !optionChanged) {
-            Toast.makeText(this, R.string.sf__server_not_selected, Toast.LENGTH_SHORT).show();
-        } else {
-            final LoginServer selectedServer = loginServerManager.getSelectedLoginServer();
-            if (null != lastSavedServerURL && lastSavedServerURL.equals(selectedServer.url)) {
-                updateDistrictSelectionStatus();
-                finish();
-            } else {
-                progressBar.setVisibility(View.VISIBLE);
-                (new AuthConfigTask(this)).execute();
-            }
-        }
-    }
-
-    @Override
-    public void onCheckedChanged(RadioGroup group, int checkedId) {
-        if (group != null) {
-            final SalesforceServerRadioButton rb = group.findViewById(checkedId);
-            if (rb != null) {
-                final String name = rb.getName();
-                final String url = rb.getUrl();
-                boolean isCustom = rb.isCustom();
-                loginServerManager.setSelectedLoginServer(new LoginServer(name,
-                        url, isCustom));
-            }
-        }
-        optionChanged = true;
-    }
-
-    @Override
-    public boolean onNavigateUp() {
-        onBackPressed();
-        return true;
-    }
-
-    /**
-     * Called when the 'Reset' button is clicked. Clears custom URLs.
-     *
-     * @param v View that was clicked.
-     */
-    public void onResetClick(View v) {
-        clearCustomUrlSetting();
-    }
-
-    /**
-     * Returns the server list group ID.
-     *
-     * @return Server list group ID.
-     */
-    protected int getServerListGroupId() {
-        return R.id.sf__server_list_group;
-    }
+    final private List<LoginServer> servers = loginServerManager.getLoginServers();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -153,125 +77,46 @@ public class ServerPickerActivity extends Activity implements
         actionBar.setDisplayHomeAsUpEnabled(true);
 
         progressBar = findViewById(R.id.progressBar);
-        /*
-         * Hides the 'Add Connection' button if the MDM variable to disable
-         * adding of custom hosts is set.
-         */
-        final Button addConnectionButton = findViewById(R.id.sf__show_custom_url_edit);
-        if (addConnectionButton != null) {
-            addConnectionButton.setVisibility(View.GONE);
-        }
-        final RadioGroup radioGroup = findViewById(getServerListGroupId());
-        radioGroup.setOnCheckedChangeListener(this);
-        urlEditDialog = new CustomServerUrlEditor();
-        urlEditDialog.setRetainInstance(true);
 
         Intent i = getIntent();
         shouldUncheckItems = i.getBooleanExtra(LoginActivity.SHOULD_UNCHECK_ITEMS, false);
         lastSavedServerURL = loginServerManager.getSelectedLoginServer().url;
-    }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        rebuildDisplay();
-    }
-
-    @Override
-    public void onDestroy() {
-        final RadioGroup radioGroup = findViewById(getServerListGroupId());
-        radioGroup.setOnCheckedChangeListener(null);
-        urlEditDialog = null;
-        super.onDestroy();
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.sf__clear_custom_url, menu);
-        return super.onCreateOptionsMenu(menu);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        return super.onOptionsItemSelected(item);
-    }
-
-    /**
-     * Shows the custom URL dialog.
-     *
-     * @param v View.
-     */
-    public void showCustomUrlDialog(View v) {
-        final FragmentManager fragMgr = getFragmentManager();
-
-        // Adds fragment only if it has not been added already.
-        if (!urlEditDialog.isAdded()) {
-            urlEditDialog.show(fragMgr, SERVER_DIALOG_NAME);
-        }
-    }
-
-    /**
-     * Returns the custom URL editor dialog.
-     *
-     * @return Custom URL editor dialog.
-     */
-    public CustomServerUrlEditor getCustomServerUrlEditor() {
-        return urlEditDialog;
-    }
-
-    /**
-     * Sets the radio state.
-     *
-     * @param radioGroup RadioGroup instance.
-     * @param server Login server.
-     */
-    private void setRadioState(RadioGroup radioGroup, LoginServer server) {
-        final SalesforceServerRadioButton rb = new SalesforceServerRadioButton(this,
-                server.name, server.url, server.isCustom);
-        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
-        int textColor = getResources().getColor(isDarkTheme ? R.color.sf__text_color_dark : R.color.sf__text_color);
-        rb.setTextColor(textColor);
-        rb.getButtonDrawable().setTint(getResources().getColor(R.color.sf__primary_color));
-        radioGroup.addView(rb);
-        ((ScrollView) radioGroup.getParent()).scrollTo(0, radioGroup.getBottom());
-    }
-
-    /**
-     * Controls the elements in the layout based on past user choices.
-     */
-    protected void setupRadioButtons() {
-        final RadioGroup radioGroup = findViewById(getServerListGroupId());
-        final List<LoginServer> servers = loginServerManager.getLoginServers();
-        if (servers != null) {
-            for (final LoginServer currentServer : servers) {
-                setRadioState(radioGroup, currentServer);
+        ServerPickerAdapter adapter = new ServerPickerAdapter(this, R.layout.sf__server_list_item, servers, loginServerManager);
+        listView = findViewById(R.id.sf__server_list);
+        listView.setAdapter(adapter);
+        listView.setOnItemClickListener((parent, view, position, id) -> {
+            LoginServer selectedServer = servers.get(position);
+            if (null != lastSavedServerURL && lastSavedServerURL.equals(selectedServer.url)) {
+                updateDistrictSelectionStatus();
+                finish();
+            } else {
+                loginServerManager.setSelectedLoginServer(new LoginServer(selectedServer.name,
+                        selectedServer.url, selectedServer.isCustom));
+                progressBar.setVisibility(View.VISIBLE);
+                (new AuthConfigTask(this)).execute();
             }
-        }
+            adapter.notifyDataSetChanged();
+        });
     }
 
     /**
-     * Rebuilds the display.
+     * Sets the return value of the activity. Selection is stored in the
+     * shared prefs file, AuthActivity pulls from the file or a default value.
      */
-    public void rebuildDisplay() {
-        final RadioGroup radioGroup = findViewById(getServerListGroupId());
-        radioGroup.removeAllViews();
-        setupRadioButtons();
-
+    @Override
+    public void onBackPressed() {
         if (shouldUncheckItems) {
-            return;
+            Toast.makeText(this, R.string.sf__server_not_selected, Toast.LENGTH_SHORT).show();
+        } else {
+            finish();
         }
-        // Sets selected server.
-        final LoginServer selectedServer = loginServerManager.getSelectedLoginServer();
-        int numServers = radioGroup.getChildCount();
-        for (int i = 0; i < numServers; i++) {
-            final SalesforceServerRadioButton rb = (SalesforceServerRadioButton) radioGroup.getChildAt(i);
-            if (rb != null) {
-                final LoginServer loginServer = new LoginServer(rb.getName(), rb.getUrl(), rb.isCustom());
-                if (loginServer.equals(selectedServer)) {
-                    rb.setChecked(true);
-                }
-            }
-        }
+    }
+
+    @Override
+    public boolean onNavigateUp() {
+        onBackPressed();
+        return true;
     }
 
     @Override
