@@ -59,6 +59,7 @@ public class ServerPickerActivity extends Activity implements AuthConfigTask.Aut
     private boolean shouldUncheckItems = false;
     private ProgressBar progressBar;
     private String lastSavedServerURL;
+    private boolean isUpdating = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -85,6 +86,9 @@ public class ServerPickerActivity extends Activity implements AuthConfigTask.Aut
         ListView listView = findViewById(R.id.sf__server_list);
         listView.setAdapter(adapter);
         listView.setOnItemClickListener((parent, view, position, id) -> {
+            if (isUpdating) {
+                return;
+            }
             LoginServer selectedServer = servers.get(position);
             if (null != lastSavedServerURL && lastSavedServerURL.equals(selectedServer.url)) {
                 updateDistrictSelectionStatus();
@@ -95,6 +99,7 @@ public class ServerPickerActivity extends Activity implements AuthConfigTask.Aut
                 progressBar.setVisibility(View.VISIBLE);
                 (new AuthConfigTask(this)).execute();
             }
+            isUpdating = true;
             adapter.notifyDataSetChanged();
         });
     }
@@ -105,6 +110,9 @@ public class ServerPickerActivity extends Activity implements AuthConfigTask.Aut
      */
     @Override
     public void onBackPressed() {
+        if (isUpdating) {
+            return;
+        }
         if (shouldUncheckItems) {
             Toast.makeText(this, R.string.sf__server_not_selected, Toast.LENGTH_SHORT).show();
         } else {

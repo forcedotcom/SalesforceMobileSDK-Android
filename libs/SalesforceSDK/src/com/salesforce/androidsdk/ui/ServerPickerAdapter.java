@@ -16,8 +16,8 @@ import java.util.List;
 
 public class ServerPickerAdapter extends ArrayAdapter<LoginServer> {
 
-    private int resourceId;
-    private LoginServerManager loginServerManager;
+    private final int resourceId;
+    private final LoginServerManager loginServerManager;
 
     public ServerPickerAdapter(Context context, int resource, List<LoginServer> objects, LoginServerManager loginServerManager) {
         super(context, resource, objects);
