@@ -76,7 +76,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
 
     // Number of records to fetch per call (with ids obtained from priming record api)
     private int countIdsPerRetrieve;
-    private static final int MAX_COUNT_IDS_PER_RETRIEVE = 2000;
+    private static final int MAX_COUNT_IDS_PER_RETRIEVE = RestRequest.MAX_COLLECTION_RETRIEVE_SIZE;
 
     /**
      * Construct BriefcaseSyncDownTarget from json

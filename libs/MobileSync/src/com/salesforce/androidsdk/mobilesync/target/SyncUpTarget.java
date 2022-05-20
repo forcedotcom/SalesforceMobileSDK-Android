@@ -366,7 +366,6 @@ public class SyncUpTarget extends SyncTarget {
 
         int totalSize = records.size();
         if (totalSize > 0) {
-            int maxCollectionRetrieveSize = 200;
             String objectType = (String) SmartStore.project(records.get(0), Constants.SOBJECT_TYPE);
             List<String> batchStoreIds = new ArrayList<>();
             List<String> batchServerIds = new ArrayList<>();
@@ -381,7 +380,7 @@ public class SyncUpTarget extends SyncTarget {
                 batchServerIds.add(record.getString(getIdFieldName()));
 
                 // Process batch if max batch size reached or at the end of records
-                if (batchServerIds.size() == maxCollectionRetrieveSize || i == totalSize - 1) {
+                if (batchServerIds.size() == RestRequest.MAX_COLLECTION_RETRIEVE_SIZE || i == totalSize - 1) {
                     RestRequest request = RestRequest.getRequestForCollectionRetrieve(syncManager.apiVersion, objectType, batchServerIds, Arrays.asList(getModificationDateFieldName()));
                     RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
                     JSONArray responseAsArray = response.asJSONArray();

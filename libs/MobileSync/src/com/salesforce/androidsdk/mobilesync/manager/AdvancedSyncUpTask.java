@@ -29,22 +29,17 @@ package com.salesforce.androidsdk.mobilesync.manager;
 
 import com.salesforce.androidsdk.mobilesync.target.AdvancedSyncUpTarget;
 import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget;
-import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
-
 import com.salesforce.androidsdk.mobilesync.util.SyncState.MergeMode;
-import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.util.JSONObjectHelper;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Runnable class responsible for running a sync up that uses and AdvancedSyncUpTarget
@@ -67,17 +62,17 @@ public class AdvancedSyncUpTask extends SyncUpTask {
         updateSync(sync, SyncState.Status.RUNNING, 0, callback);
         List<JSONObject> dirtyRecords = target.getFromLocalStore(syncManager, soupName, dirtyRecordIds);
 
-        // Figuring out what records need to be synched up based on merge mode and last mod date on server
+        // Figuring out what records need to be synced up based on merge mode and last mod date on server
         Map<String, Boolean> recordIdToShouldSyncUp = shouldSyncUpRecords(syncManager, target, dirtyRecords, options);
 
-        // Synching up records
+        // Syncing up records
         for (int i=0; i<totalSize; i++) {
             checkIfStopRequested();
 
             JSONObject record = dirtyRecords.get(i);
             String recordId = record.getString(SmartStore.SOUP_ENTRY_ID);
 
-            if (recordIdToShouldSyncUp.get(recordId)) {
+            if (Boolean.TRUE.equals(recordIdToShouldSyncUp.get(recordId))) {
                 batch.add(record);
             }
 
