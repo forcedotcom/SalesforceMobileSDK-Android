@@ -29,9 +29,16 @@ package com.salesforce.androidsdk.mobilesync.manager;
 
 import com.salesforce.androidsdk.mobilesync.target.AdvancedSyncUpTarget;
 import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget;
+import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
 
+import com.salesforce.androidsdk.mobilesync.util.SyncState.MergeMode;
+import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
+import java.util.HashMap;
+import java.util.Map;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -58,18 +65,24 @@ public class AdvancedSyncUpTask extends SyncUpTask {
         List<JSONObject> batch = new ArrayList<>();
 
         updateSync(sync, SyncState.Status.RUNNING, 0, callback);
+        List<JSONObject> dirtyRecords = target.getFromLocalStore(syncManager, soupName, dirtyRecordIds);
+
+        // Figuring out what records need to be synched up based on merge mode and last mod date on server
+        Map<String, Boolean> recordIdToShouldSyncUp = shouldSyncUpRecords(syncManager, target, dirtyRecords, options);
+
+        // Synching up records
         for (int i=0; i<totalSize; i++) {
             checkIfStopRequested();
 
-            JSONObject record = target.getFromLocalStore(syncManager, soupName, dirtyRecordIds.get(i));
+            JSONObject record = dirtyRecords.get(i);
+            String recordId = record.getString(SmartStore.SOUP_ENTRY_ID);
 
-            if (shouldSyncUpRecord(target, record, options)) {
+            if (recordIdToShouldSyncUp.get(recordId)) {
                 batch.add(record);
             }
 
             // Process batch if max batch size reached or at the end of dirtyRecordIds
             if (batch.size() == maxBatchSize || i == totalSize - 1) {
-
                 ((AdvancedSyncUpTarget) target).syncUpRecords(syncManager, batch, options.getFieldlist(), options.getMergeMode(), sync.getSoupName());
                 batch.clear();
             }
@@ -80,4 +93,20 @@ public class AdvancedSyncUpTask extends SyncUpTask {
                 updateSync(sync, SyncState.Status.RUNNING, progress, callback);
             }
         }
-    }}
+    }
+
+    protected Map<String, Boolean> shouldSyncUpRecords(SyncManager syncManager, SyncUpTarget target, List<JSONObject> records, SyncOptions options) throws IOException, JSONException {
+        Map<String, Boolean> recordIdToShouldSyncUp = new HashMap<>();
+
+        if (options.getMergeMode() == MergeMode.OVERWRITE) {
+            for (JSONObject record : records) {
+                String recordId = record.getString(SmartStore.SOUP_ENTRY_ID);
+                recordIdToShouldSyncUp.put(recordId, true);
+            }
+        } else {
+            recordIdToShouldSyncUp = target.areNewerThanServer(syncManager, records);
+        }
+
+        return recordIdToShouldSyncUp;
+    }
+}
