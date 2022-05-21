@@ -40,6 +40,7 @@ import com.salesforce.androidsdk.mobilesync.util.SOQLBuilder;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -430,6 +431,19 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                         fields);
             }
         }
+    }
+
+    @Override
+    public Map<String, Boolean> areNewerThanServer(SyncManager syncManager, List<JSONObject> records) throws JSONException, IOException {
+        Map<String, Boolean> storeIdToNewerThanServer = new HashMap<>();
+
+        // XXX  still doing a request per record
+        for (JSONObject record : records) {
+            String storeId = record.getString(SmartStore.SOUP_ENTRY_ID);
+            storeIdToNewerThanServer.put(storeId, isNewerThanServer(syncManager, record));
+        }
+
+        return storeIdToNewerThanServer;
     }
 
     @Override
