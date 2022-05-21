@@ -434,19 +434,6 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
     }
 
     @Override
-    public Map<String, Boolean> areNewerThanServer(SyncManager syncManager, List<JSONObject> records) throws JSONException, IOException {
-        Map<String, Boolean> storeIdToNewerThanServer = new HashMap<>();
-
-        // XXX  still doing a request per record
-        for (JSONObject record : records) {
-            String storeId = record.getString(SmartStore.SOUP_ENTRY_ID);
-            storeIdToNewerThanServer.put(storeId, isNewerThanServer(syncManager, record));
-        }
-
-        return storeIdToNewerThanServer;
-    }
-
-    @Override
     public boolean isNewerThanServer(SyncManager syncManager, JSONObject record) throws JSONException, IOException {
         if (isLocallyCreated(record)) {
             return true;

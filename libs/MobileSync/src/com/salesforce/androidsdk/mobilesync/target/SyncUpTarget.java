@@ -440,26 +440,9 @@ public class SyncUpTarget extends SyncTarget {
     public Map<String, Boolean> areNewerThanServer(SyncManager syncManager, List<JSONObject> records) throws JSONException, IOException {
         Map<String, Boolean> storeIdToNewerThanServer = new HashMap<>();
 
-        List<JSONObject> nonLocallyCreatedRecords = new ArrayList<>();
         for (JSONObject record : records) {
-            if (isLocallyCreated(record) || !record.has(getIdFieldName())) {
-                String storeId = record.getString(SmartStore.SOUP_ENTRY_ID);
-                storeIdToNewerThanServer.put(storeId, true);
-            } else {
-                nonLocallyCreatedRecords.add(record);
-            }
-        }
-
-        Map<String, RecordModDate> recordIdToRemoteModDate = fetchLastModifiedDates(syncManager, nonLocallyCreatedRecords);
-
-        for (JSONObject record : nonLocallyCreatedRecords) {
             String storeId = record.getString(SmartStore.SOUP_ENTRY_ID);
-            RecordModDate localModDate = new RecordModDate(
-                JSONObjectHelper.optString(record, getModificationDateFieldName()),
-                isLocallyDeleted(record)
-            );
-            RecordModDate remoteModDate = recordIdToRemoteModDate.get(storeId);
-            storeIdToNewerThanServer.put(storeId, isNewerThanServer(localModDate, remoteModDate));
+            storeIdToNewerThanServer.put(storeId, isNewerThanServer(syncManager, record));
         }
 
         return storeIdToNewerThanServer;
