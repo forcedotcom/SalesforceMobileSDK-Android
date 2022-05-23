@@ -29,7 +29,11 @@ package com.salesforce.androidsdk.mobilesync.target;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 import com.salesforce.androidsdk.mobilesync.target.CompositeRequestHelper.RecordRequest;
 import com.salesforce.androidsdk.mobilesync.target.CompositeRequestHelper.RecordResponse;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.json.JSONException;
@@ -93,5 +97,34 @@ public class CollectionSyncUpTarget extends BatchSyncUpTarget {
     @Override
     protected Map<String, RecordResponse> sendRecordRequests(SyncManager syncManager, List<RecordRequest> recordRequests) throws JSONException, IOException {
         return CompositeRequestHelper.sendAsCollectionRequests(syncManager, false, recordRequests);
+    }
+
+    @Override
+    public Map<String, Boolean> areNewerThanServer(SyncManager syncManager, List<JSONObject> records) throws JSONException, IOException {
+        Map<String, Boolean> storeIdToNewerThanServer = new HashMap<>();
+
+        List<JSONObject> nonLocallyCreatedRecords = new ArrayList<>();
+        for (JSONObject record : records) {
+            if (isLocallyCreated(record) || !record.has(getIdFieldName())) {
+                String storeId = record.getString(SmartStore.SOUP_ENTRY_ID);
+                storeIdToNewerThanServer.put(storeId, true);
+            } else {
+                nonLocallyCreatedRecords.add(record);
+            }
+        }
+
+        Map<String, RecordModDate> recordIdToRemoteModDate = fetchLastModifiedDates(syncManager, nonLocallyCreatedRecords);
+
+        for (JSONObject record : nonLocallyCreatedRecords) {
+            String storeId = record.getString(SmartStore.SOUP_ENTRY_ID);
+            RecordModDate localModDate = new RecordModDate(
+                JSONObjectHelper.optString(record, getModificationDateFieldName()),
+                isLocallyDeleted(record)
+            );
+            RecordModDate remoteModDate = recordIdToRemoteModDate.get(storeId);
+            storeIdToNewerThanServer.put(storeId, isNewerThanServer(localModDate, remoteModDate));
+        }
+
+        return storeIdToNewerThanServer;
     }
 }

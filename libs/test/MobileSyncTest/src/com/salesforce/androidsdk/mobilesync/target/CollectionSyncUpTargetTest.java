@@ -42,7 +42,7 @@ import org.junit.runner.RunWith;
 
 /**
  * Test class for CollectionSyncUpTarget.
- * Running all the same tests as SyncUpTargetTest but using a CollectionSyncUpTarget with batch size of 2
+ * Running all the same tests as SyncUpTargetTest but using a CollectionSyncUpTarget
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest

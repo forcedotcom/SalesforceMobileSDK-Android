@@ -45,7 +45,7 @@ import java.util.List;
 
 /**
  * Test class for BatchSyncUpTarget.
- * Running all the same tests as SyncUpTargetTest but using a BatchSyncUpTarget with batch size of 2
+ * Running all the same tests as SyncUpTargetTest but using a BatchSyncUpTarget
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest

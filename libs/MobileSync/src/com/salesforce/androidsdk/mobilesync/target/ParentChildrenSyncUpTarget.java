@@ -40,6 +40,7 @@ import com.salesforce.androidsdk.mobilesync.util.SOQLBuilder;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
