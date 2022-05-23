@@ -28,9 +28,8 @@ package com.salesforce.androidsdk.rest;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
-import android.accounts.AccountManagerCallback;
-import android.accounts.AccountManagerFuture;
 import android.accounts.NetworkErrorException;
+import android.accounts.OnAccountsUpdateListener;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -40,7 +39,6 @@ import android.os.Looper;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
-import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
@@ -51,9 +49,12 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * ClientManager is a factory class for RestClient which stores OAuth credentials in the AccountManager.
@@ -101,19 +102,11 @@ public class ClientManager {
      */
     public void getRestClient(Activity activityContext, RestClientCallback restClientCallback) {
         Account acc = getAccount();
-        Bundle options = loginOptions.asBundle();
 
-        // No account found - let's add one - the AuthenticatorService add account method will start the login activity
+        // No account found - let's add one:
         if (acc == null) {
             SalesforceSDKLogger.i(TAG, "No account of type " + accountType + " found");
-            final Intent i = new Intent(activityContext,
-                    SalesforceSDKManager.getInstance().getLoginActivityClass());
-            i.setPackage(activityContext.getPackageName());
-            i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            if (options != null) {
-                i.putExtras(options);
-            }
-            activityContext.startActivity(i);
+            launchLoginFlow(activityContext, restClientCallback);
         }
 
         // Account found
@@ -122,6 +115,61 @@ public class ClientManager {
             final RestClient cachedRestClient = peekRestClient();
             restClientCallback.authenticatedRestClient(cachedRestClient);
         }
+    }
+
+    private void launchLoginFlow(final Activity activityContext, final RestClientCallback restClientCallback) {
+        Bundle options = loginOptions.asBundle();
+
+        final OnAccountsUpdateListener listener = new OnAccountsUpdateListener() {
+            // Used with updateImmediately to get the starting list of accounts so we can ignore those in later updates.
+            private boolean isFirstCallback = true;
+            private final Set<Account> startingAccounts = new HashSet<>();
+
+            @Override
+            public void onAccountsUpdated(Account[] accounts) {
+                if (isFirstCallback) {
+                    isFirstCallback = false;
+                    startingAccounts.addAll(Arrays.asList(accounts));
+                    return;
+                }
+
+                boolean foundNewAcctWithExpectedType = false;
+
+                for (final Account account : accounts) {
+                    if (accountType.equals(account.type) && !startingAccounts.contains(account)) {
+                        foundNewAcctWithExpectedType = true;
+                        break;
+                    }
+                }
+
+                if (!foundNewAcctWithExpectedType) {
+                    return;
+                }
+
+                RestClient client = null;
+
+                try {
+                    client = peekRestClient();
+                } catch (final Exception e) {
+                    SalesforceSDKLogger.w(TAG, "Exception thrown while creating rest client", e);
+                }
+
+                // will be null if we failed to get the RestClient
+                restClientCallback.authenticatedRestClient(client);
+
+                accountManager.removeOnAccountsUpdatedListener(this);
+            }
+        };
+
+        accountManager.addOnAccountsUpdatedListener(listener, null /* main thread */, true);
+
+        final Intent i = new Intent(activityContext, SalesforceSDKManager.getInstance().getLoginActivityClass());
+        i.setPackage(activityContext.getPackageName());
+        i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        if (options != null) {
+            i.putExtras(options);
+        }
+        activityContext.startActivity(i);
     }
 
     /**
@@ -464,39 +512,6 @@ public class ClientManager {
     public void removeAccount(Account acc) {
         if (acc != null) {
             accountManager.removeAccountExplicitly(acc);
-        }
-    }
-
-    /**
-     * Callback from either user account creation, or a call to getAuthToken, used
-     * by the Android account management components.
-     */
-    private class AccMgrCallback implements AccountManagerCallback<Bundle> {
-
-        private final RestClientCallback restCallback;
-
-        /**
-         * Constructor
-         * @param restCallback Who to directly call when we get a result for getAuthToken.
-         *
-         */
-        AccMgrCallback(RestClientCallback restCallback) {
-            assert restCallback != null : "you must supply a RestClientAvailable instance";
-            this.restCallback = restCallback;
-        }
-
-        @Override
-        public void run(AccountManagerFuture<Bundle> f) {
-            RestClient client = null;
-            try {
-                f.getResult();
-                client = peekRestClient();
-            } catch (Exception e) {
-                SalesforceSDKLogger.w(TAG, "Exception thrown while creating rest client", e);
-            }
-
-            // response. if we failed, null
-            restCallback.authenticatedRestClient(client);
         }
     }
 
