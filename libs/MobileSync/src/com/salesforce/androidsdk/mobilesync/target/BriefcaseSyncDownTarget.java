@@ -103,7 +103,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
         this.infos = infos;
         this.queryType = QueryType.briefcase;
         this.countIdsPerRetrieve = Math.min(countIdsPerRetrieve, MAX_COUNT_IDS_PER_RETRIEVE);
-        MobileSyncSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_RELATED_RECORDS);
+        MobileSyncSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_BRIEFCASE);
 
         // Build infosMap
         infosMap = new HashMap<>();
