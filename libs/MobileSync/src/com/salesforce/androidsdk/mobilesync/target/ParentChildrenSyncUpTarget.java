@@ -238,6 +238,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
     protected boolean updateParentRecordInLocalStore(SyncManager syncManager, JSONObject record, JSONArray children, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, RecordResponse response) throws JSONException, IOException {
         boolean needReRun = false;
         final String soupName = parentInfo.soupName;
+        String lastError = response != null && response.errorJson != null ? response.errorJson.toString() : null;
 
         // Delete case
         if (isLocallyDeleted(record)) {
@@ -253,7 +254,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
             }
             // Failure
             else {
-                saveRecordToLocalStoreWithError(syncManager, soupName, record, response != null ? response.toString() : null);
+                saveRecordToLocalStoreWithError(syncManager, soupName, record, lastError);
             }
         }
 
@@ -286,7 +287,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
             }
             // Failure
             else {
-                saveRecordToLocalStoreWithError(syncManager, soupName, record, response != null ? response.toString() : null);
+                saveRecordToLocalStoreWithError(syncManager, soupName, record, lastError);
             }
         }
         return needReRun;
@@ -295,6 +296,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
     protected boolean updateChildRecordInLocalStore(SyncManager syncManager, JSONObject record, JSONObject parentRecord, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, RecordResponse response) throws JSONException {
         boolean needReRun = false;
         final String soupName = childrenInfo.soupName;
+        String lastError = response != null && response.errorJson != null ? response.errorJson.toString() : null;
 
         // Delete case
         if (isLocallyDeleted(record)) {
@@ -306,7 +308,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
             }
             // Failure
             else {
-                saveRecordToLocalStoreWithError(syncManager, soupName, record, response != null ? response.toString() : null);
+                saveRecordToLocalStoreWithError(syncManager, soupName, record, lastError);
             }
         }
 
@@ -349,7 +351,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
             }
             // Failure
             else {
-                saveRecordToLocalStoreWithError(syncManager, soupName, record, response != null ? response.toString() : null);
+                saveRecordToLocalStoreWithError(syncManager, soupName, record, lastError);
             }
         }
         return needReRun;
