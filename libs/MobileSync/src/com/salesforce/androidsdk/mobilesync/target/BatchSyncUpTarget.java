@@ -232,7 +232,7 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
     protected boolean updateRecordInLocalStore(SyncManager syncManager, String soupName, JSONObject record, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, RecordResponse response, boolean isReRun) throws JSONException, IOException {
 
         boolean needReRun = false;
-        String lastError = response != null && response.errorJson != null ? response.errorJson.toString() : null;
+        String lastError = (response != null && response.errorJson != null) ? response.errorJson.toString() : null;
 
         // Delete case
         if (isLocallyDeleted(record)) {
