@@ -232,6 +232,7 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
     protected boolean updateRecordInLocalStore(SyncManager syncManager, String soupName, JSONObject record, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, RecordResponse response, boolean isReRun) throws JSONException, IOException {
 
         boolean needReRun = false;
+        String lastError = (response != null && response.errorJson != null) ? response.errorJson.toString() : null;
 
         // Delete case
         if (isLocallyDeleted(record)) {
@@ -243,7 +244,7 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
             }
             // Failure
             else {
-                saveRecordToLocalStoreWithError(syncManager, soupName, record, response != null ? response.toString() : null);
+                saveRecordToLocalStoreWithError(syncManager, soupName, record, lastError);
             }
         }
         // Create / update case
@@ -266,7 +267,7 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
             }
             // Failure
             else {
-                saveRecordToLocalStoreWithError(syncManager, soupName, record, response != null ? response.toString() : null);
+                saveRecordToLocalStoreWithError(syncManager, soupName, record, lastError);
             }
         }
         return needReRun;
