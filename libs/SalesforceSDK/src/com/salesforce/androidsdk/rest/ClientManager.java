@@ -96,7 +96,11 @@ public class ClientManager {
     }
 
     /**
-     * Method to create a RestClient asynchronously. It is intended to be used by code on the UI thread.
+     * Method to create a RestClient asynchronously. If an account is currently active, the
+     * {@link RestClientCallback} will be invoked <i>immediately and synchronously</i>. If an account
+     * is not found, the login flow is kicked off and the {@link RestClientCallback} will be invoked
+     * when that flow <i>succeeds</i>. If the login flow finishes without success, the callback will
+     * not be invoked TODO THIS IS UNACCEPTABLE. This must be addressed before this bug is considered done.
      * <p>
      * If no accounts are found, it will kick off the login flow which will create a new account if successful.
      * After the account is created or if an account already existed, it creates a RestClient and returns it through restClientCallback.
@@ -953,7 +957,7 @@ public class ClientManager {
         }
 
         @NonNull
-        private final AtomicReference<BridgeState> state = new AtomicReference<>(BridgeState.Initialized);
+        private final AtomicReference<RunnerState> state = new AtomicReference<>(RunnerState.Initialized);
 
         @NonNull
         private final BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
@@ -962,7 +966,7 @@ public class ClientManager {
                 if (intent == null || !UserAccountManager.USER_SWITCH_INTENT_ACTION.equals(intent.getAction())) {
                     return;
                 }
-                if (state.compareAndSet(BridgeState.Launched, BridgeState.LoginFinished)) {
+                if (state.compareAndSet(RunnerState.Launched, RunnerState.LoginFinished)) {
                     if (curActivity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED)) {
                         ClientManager.emitRestClientToCallback(clientManager, callback);
                         shutdown();
@@ -975,7 +979,7 @@ public class ClientManager {
         private final DefaultLifecycleObserver lifecycleObserver = new DefaultLifecycleObserver() {
             @Override
             public void onStart(@NonNull LifecycleOwner owner) {
-                if (state.get() == BridgeState.LoginFinished) {
+                if (state.get() == RunnerState.LoginFinished) {
                     ClientManager.emitRestClientToCallback(clientManager, callback);
                     shutdown();
                 }
@@ -988,7 +992,7 @@ public class ClientManager {
         };
 
         void launchLoginFlow() {
-            if (state.compareAndSet(BridgeState.Initialized, BridgeState.Launched)) {
+            if (state.compareAndSet(RunnerState.Initialized, RunnerState.Launched)) {
                 curActivity.runOnUiThread(() -> {
                     curActivity.registerReceiver(broadcastReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
                     curActivity.getLifecycle().addObserver(lifecycleObserver);
@@ -998,8 +1002,8 @@ public class ClientManager {
         }
 
         void shutdown() {
-            final BridgeState prevState = state.getAndSet(BridgeState.Terminated);
-            if (prevState != BridgeState.Terminated) {
+            final RunnerState prevState = state.getAndSet(RunnerState.Terminated);
+            if (prevState != RunnerState.Terminated) {
                 curActivity.runOnUiThread(() -> {
                     curActivity.getLifecycle().removeObserver(lifecycleObserver);
                     curActivity.unregisterReceiver(broadcastReceiver);
@@ -1007,7 +1011,7 @@ public class ClientManager {
             }
         }
 
-        private enum BridgeState {
+        private enum RunnerState {
             Initialized,
             Launched,
             LoginFinished,
