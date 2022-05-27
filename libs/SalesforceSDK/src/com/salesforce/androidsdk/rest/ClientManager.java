@@ -32,15 +32,22 @@ import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.accounts.NetworkErrorException;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Looper;
+
+import androidx.activity.ComponentActivity;
+import androidx.annotation.NonNull;
+import androidx.lifecycle.DefaultLifecycleObserver;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleOwner;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
-import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
@@ -54,6 +61,7 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * ClientManager is a factory class for RestClient which stores OAuth credentials in the AccountManager.
@@ -89,39 +97,75 @@ public class ClientManager {
 
     /**
      * Method to create a RestClient asynchronously. It is intended to be used by code on the UI thread.
-     *
+     * <p>
      * If no accounts are found, it will kick off the login flow which will create a new account if successful.
      * After the account is created or if an account already existed, it creates a RestClient and returns it through restClientCallback.
+     * <p>
      *
-     * Note: The work is actually being done by the service registered to handle authentication for this application account type.
-     * @see AuthenticatorService
-     *
-     * @param activityContext        current activity
-     * @param restClientCallback     callback invoked once the RestClient is ready
+     * @param activity current activity
+     * @param callback callback invoked once the RestClient is ready
      */
-    public void getRestClient(Activity activityContext, RestClientCallback restClientCallback) {
+    public final void getRestClient(
+            @NonNull final ComponentActivity activity,
+            @NonNull final RestClientCallback callback
+    ) {
         Account acc = getAccount();
-        Bundle options = loginOptions.asBundle();
 
-        // No account found - let's add one - the AuthenticatorService add account method will start the login activity
         if (acc == null) {
-            SalesforceSDKLogger.i(TAG, "No account of type " + accountType + " found");
-            final Intent i = new Intent(activityContext,
-                    SalesforceSDKManager.getInstance().getLoginActivityClass());
-            i.setPackage(activityContext.getPackageName());
-            i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            if (options != null) {
-                i.putExtras(options);
-            }
-            activityContext.startActivity(i);
+            SalesforceSDKLogger.i(TAG, "No account of type " + accountType + " found. Starting login flow with RestClientCallback.");
+            new LoginRestClientCallbackBridge(this, activity, callback)
+                    .launchLoginFlow();
         }
 
         // Account found
         else {
             SalesforceSDKLogger.i(TAG, "Found account of type " + accountType);
-            final RestClient cachedRestClient = peekRestClient();
-            restClientCallback.authenticatedRestClient(cachedRestClient);
+            emitRestClientToCallback(this, callback);
         }
+    }
+
+    /**
+     * Method to create a RestClient asynchronously. It is intended to be used by code on the UI thread.
+     * <p>
+     * If no accounts are found, it will kick off the login flow which will create a new account if successful.
+     * After the account is created or if an account already existed, it creates a RestClient and returns it through restClientCallback.
+     * <p>
+     *
+     * @param activityContext    current activity
+     * @param restClientCallback callback invoked once the RestClient is ready
+     * @deprecated TODO
+     */
+    @Deprecated
+    public void getRestClient(Activity activityContext, RestClientCallback restClientCallback) {
+        if (activityContext instanceof ComponentActivity) {
+            getRestClient((ComponentActivity) activityContext, restClientCallback);
+        } else {
+            Account acc = getAccount();
+
+            // No account found - let's add one:
+            if (acc == null) {
+                SalesforceSDKLogger.i(TAG, "No account of type " + accountType + " found. Starting login flow.");
+                SalesforceSDKLogger.w(TAG, "Legacy Activity used to get RestClient. Cannot safely invoke RestClientCallback without access to the provided Activity's Lifecycle. Use getRestClient(ComponentActivity, RestClientCallback) instead.");
+                startLoginActivity(activityContext);
+            }
+
+            // Account found
+            else {
+                SalesforceSDKLogger.i(TAG, "Found account of type " + accountType);
+                emitRestClientToCallback(this, restClientCallback);
+            }
+        }
+    }
+
+    final void startLoginActivity(@NonNull final Activity curActivity) {
+        Bundle options = loginOptions.asBundle();
+        final Intent i = new Intent(curActivity, SalesforceSDKManager.getInstance().getLoginActivityClass());
+        i.setPackage(curActivity.getPackageName());
+        i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        if (options != null) {
+            i.putExtras(options);
+        }
+        curActivity.startActivity(i);
     }
 
     /**
@@ -863,6 +907,98 @@ public class ClientManager {
                                     options.getStringArray(OAUTH_SCOPES),
                                     options.getString(JWT),
                                     additionalParameters);
+        }
+    }
+
+    static void emitRestClientToCallback(
+            @NonNull final ClientManager receiver,
+            @NonNull final RestClientCallback callback
+    ) {
+        RestClient client = null;
+        try {
+            client = receiver.peekRestClient();
+        } catch (Exception ex) {
+            SalesforceSDKLogger.w(TAG, "Exception thrown while creating rest client", ex);
+        }
+        callback.authenticatedRestClient(client);
+    }
+
+    private static final class LoginRestClientCallbackBridge {
+        @NonNull
+        private final ComponentActivity curActivity;
+
+        @NonNull
+        private final ClientManager.RestClientCallback callback;
+
+        @NonNull
+        private final ClientManager clientManager;
+
+        LoginRestClientCallbackBridge(
+                @NonNull final ClientManager ownerClientManager,
+                @NonNull final ComponentActivity curActivity,
+                @NonNull final ClientManager.RestClientCallback callback
+        ) {
+            this.clientManager = ownerClientManager;
+            this.curActivity = curActivity;
+            this.callback = callback;
+        }
+
+        @NonNull
+        private final AtomicReference<BridgeState> state = new AtomicReference<>(BridgeState.Initialized);
+
+        @NonNull
+        private final BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent == null || !UserAccountManager.USER_SWITCH_INTENT_ACTION.equals(intent.getAction())) {
+                    return;
+                }
+                if (state.compareAndSet(BridgeState.Launched, BridgeState.LoginFinished)) {
+                    if (curActivity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED)) {
+                        ClientManager.emitRestClientToCallback(clientManager, callback);
+                        shutdown();
+                    }
+                }
+            }
+        };
+
+        @NonNull
+        private final DefaultLifecycleObserver lifecycleObserver = new DefaultLifecycleObserver() {
+            @Override
+            public void onStart(@NonNull LifecycleOwner owner) {
+                if (state.get() == BridgeState.LoginFinished) {
+                    ClientManager.emitRestClientToCallback(clientManager, callback);
+                    shutdown();
+                }
+            }
+
+            @Override
+            public void onDestroy(@NonNull LifecycleOwner owner) {
+                shutdown();
+            }
+        };
+
+        void launchLoginFlow() {
+            if (state.compareAndSet(BridgeState.Initialized, BridgeState.Launched)) {
+                curActivity.registerReceiver(broadcastReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
+                curActivity.getLifecycle().addObserver(lifecycleObserver);
+                clientManager.startLoginActivity(curActivity);
+            }
+        }
+
+        void shutdown() {
+            final BridgeState prevState = state.getAndSet(BridgeState.Terminated);
+            if (prevState != BridgeState.Terminated) {
+                curActivity.getLifecycle().removeObserver(lifecycleObserver);
+                curActivity.unregisterReceiver(broadcastReceiver);
+            }
+        }
+
+        private enum BridgeState {
+            Initialized,
+            Launched,
+            LoginFinished,
+            Terminated
         }
     }
 }
