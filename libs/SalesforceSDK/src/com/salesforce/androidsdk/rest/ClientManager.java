@@ -113,8 +113,7 @@ public class ClientManager {
 
         if (acc == null) {
             SalesforceSDKLogger.i(TAG, "No account of type " + accountType + " found. Starting login flow with RestClientCallback.");
-            new LoginRestClientCallbackBridge(this, activity, callback)
-                    .launchLoginFlow();
+            new LoginFlowRunner(this, activity, callback).launchLoginFlow();
         }
 
         // Account found
@@ -133,7 +132,8 @@ public class ClientManager {
      *
      * @param activityContext    current activity
      * @param restClientCallback callback invoked once the RestClient is ready
-     * @deprecated TODO
+     * @deprecated Cannot safely invoke the {@link RestClientCallback} when using legacy Android
+     * {@link Activity}. Replace with {@link #getRestClient(ComponentActivity, RestClientCallback)}
      */
     @Deprecated
     public void getRestClient(Activity activityContext, RestClientCallback restClientCallback) {
@@ -923,7 +923,16 @@ public class ClientManager {
         callback.authenticatedRestClient(client);
     }
 
-    private static final class LoginRestClientCallbackBridge {
+    /**
+     * This class's entire purpose is to encapsulate the procedure of getting the {@link RestClient}
+     * via the {@link RestClientCallback} by launching the Login Activity. It waits for the
+     * {@link UserAccountManager#USER_SWITCH_INTENT_ACTION} to indicate login flow was successful
+     * then invokes the callback when the original calling Activity moves back into the
+     * {@link Lifecycle.State#STARTED} state.
+     *
+     * It also ensures that the calling Activity will not leak by gracefully handling lifecycle events.
+     */
+    private static final class LoginFlowRunner {
         @NonNull
         private final ComponentActivity curActivity;
 
@@ -933,7 +942,7 @@ public class ClientManager {
         @NonNull
         private final ClientManager clientManager;
 
-        LoginRestClientCallbackBridge(
+        LoginFlowRunner(
                 @NonNull final ClientManager ownerClientManager,
                 @NonNull final ComponentActivity curActivity,
                 @NonNull final ClientManager.RestClientCallback callback
@@ -980,17 +989,21 @@ public class ClientManager {
 
         void launchLoginFlow() {
             if (state.compareAndSet(BridgeState.Initialized, BridgeState.Launched)) {
-                curActivity.registerReceiver(broadcastReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
-                curActivity.getLifecycle().addObserver(lifecycleObserver);
-                clientManager.startLoginActivity(curActivity);
+                curActivity.runOnUiThread(() -> {
+                    curActivity.registerReceiver(broadcastReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
+                    curActivity.getLifecycle().addObserver(lifecycleObserver);
+                    clientManager.startLoginActivity(curActivity);
+                });
             }
         }
 
         void shutdown() {
             final BridgeState prevState = state.getAndSet(BridgeState.Terminated);
             if (prevState != BridgeState.Terminated) {
-                curActivity.getLifecycle().removeObserver(lifecycleObserver);
-                curActivity.unregisterReceiver(broadcastReceiver);
+                curActivity.runOnUiThread(() -> {
+                    curActivity.getLifecycle().removeObserver(lifecycleObserver);
+                    curActivity.unregisterReceiver(broadcastReceiver);
+                });
             }
         }
 
