@@ -70,16 +70,21 @@ public class ServerPickerActivity extends Activity implements AuthConfigTask.Aut
         SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
         loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
         setContentView(R.layout.sf__server_picker);
-
-        final ActionBar actionBar = getActionBar();
-        actionBar.setTitle(R.string.sf__server_picker_title);
-        actionBar.setDisplayHomeAsUpEnabled(true);
-
         progressBar = findViewById(R.id.progressBar);
 
         Intent i = getIntent();
         shouldUncheckItems = i.getBooleanExtra(LoginActivity.SHOULD_UNCHECK_ITEMS, false);
         lastSavedServerURL = loginServerManager.getSelectedLoginServer().url;
+
+        final ActionBar actionBar = getActionBar();
+        actionBar.setTitle(R.string.sf__server_picker_title);
+        if (shouldUncheckItems) {
+            actionBar.setHomeButtonEnabled(false); // disable the button
+            actionBar.setDisplayHomeAsUpEnabled(false); // remove the left caret
+            actionBar.setDisplayShowHomeEnabled(false); // remove the icon
+        } else {
+            actionBar.setDisplayHomeAsUpEnabled(true);
+        }
 
         final List<LoginServer> servers = loginServerManager.getLoginServers();
         ServerPickerAdapter adapter = new ServerPickerAdapter(this, R.layout.sf__server_list_item, servers, loginServerManager, shouldUncheckItems);
