@@ -46,15 +46,16 @@ import org.junit.runner.RunWith;
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class CollectionSyncUpTargetTest extends BatchSyncUpTargetTest {
+public class CollectionSyncUpTargetTest extends SyncUpTargetTest {
 
     @Override
-    protected void trySyncUp(int numberChanges, SyncOptions options, List<String> createFieldlist, List<String> updateFieldlist, String externalIdFieldName) throws JSONException {
-        trySyncUp(new CollectionSyncUpTarget(createFieldlist, updateFieldlist, null, null, externalIdFieldName), numberChanges, options, false);
+    protected void trySyncUp(int numberChanges, SyncOptions options, List<String> createFieldlist,
+        List<String> updateFieldlist, String externalIdFieldName) throws JSONException {
+        trySyncUp(new CollectionSyncUpTarget(createFieldlist, updateFieldlist, null, null,
+            externalIdFieldName), numberChanges, options, false);
     }
 
     @Test
-    @Override
     public void testMaxBatchSizeExceedingLimit() {
         CollectionSyncUpTarget target = new CollectionSyncUpTarget(null, null, 201);
 
@@ -62,7 +63,6 @@ public class CollectionSyncUpTargetTest extends BatchSyncUpTargetTest {
     }
 
     @Test
-    @Override
     public void testMaxBatchSizeExceedingLimitInJSON() throws Exception {
         JSONObject targetJson = new JSONObject();
         targetJson.put(SyncTarget.ANDROID_IMPL, CollectionSyncUpTarget.class.getName());
@@ -75,7 +75,6 @@ public class CollectionSyncUpTargetTest extends BatchSyncUpTargetTest {
 
 
     @Test
-    @Override
     public void testConstructors() {
         String[] createdFieldArr = {Constants.NAME};
         String[] updatedFieldArr = {Constants.NAME, Constants.DESCRIPTION};
@@ -86,20 +85,25 @@ public class CollectionSyncUpTargetTest extends BatchSyncUpTargetTest {
         Assert.assertNull("Wrong updateFieldList", target.updateFieldlist);
         Assert.assertEquals("Wrong maxBatchSize", 200, target.getMaxBatchSize());
 
-        target = new CollectionSyncUpTarget( Arrays.asList(createdFieldArr),  Arrays.asList(updatedFieldArr));
-        Assert.assertArrayEquals("Wrong createFieldList", createdFieldArr, target.createFieldlist.toArray(new String[0]));
-        Assert.assertArrayEquals("Wrong updateFieldList", updatedFieldArr, target.updateFieldlist.toArray(new String[0]));
+        target = new CollectionSyncUpTarget(Arrays.asList(createdFieldArr),
+            Arrays.asList(updatedFieldArr));
+        Assert.assertArrayEquals("Wrong createFieldList", createdFieldArr,
+            target.createFieldlist.toArray(new String[0]));
+        Assert.assertArrayEquals("Wrong updateFieldList", updatedFieldArr,
+            target.updateFieldlist.toArray(new String[0]));
         Assert.assertEquals("Wrong maxBatchSize", 200, target.getMaxBatchSize());
 
-        target = new CollectionSyncUpTarget( Arrays.asList(createdFieldArr),  Arrays.asList(updatedFieldArr), maxBatchSize);
-        Assert.assertArrayEquals("Wrong createFieldList", createdFieldArr, target.createFieldlist.toArray(new String[0]));
-        Assert.assertArrayEquals("Wrong updateFieldList", updatedFieldArr, target.updateFieldlist.toArray(new String[0]));
+        target = new CollectionSyncUpTarget(Arrays.asList(createdFieldArr),
+            Arrays.asList(updatedFieldArr), maxBatchSize);
+        Assert.assertArrayEquals("Wrong createFieldList", createdFieldArr,
+            target.createFieldlist.toArray(new String[0]));
+        Assert.assertArrayEquals("Wrong updateFieldList", updatedFieldArr,
+            target.updateFieldlist.toArray(new String[0]));
         Assert.assertEquals("Wrong maxBatchSize", maxBatchSize, target.getMaxBatchSize());
     }
 
 
     @Test
-    @Override
     public void testConstructorWithJSON() throws Exception {
         String[] createdFieldArr = {Constants.NAME};
         String[] updatedFieldArr = {Constants.NAME, Constants.DESCRIPTION};
@@ -113,8 +117,10 @@ public class CollectionSyncUpTargetTest extends BatchSyncUpTargetTest {
 
         CollectionSyncUpTarget target = new CollectionSyncUpTarget(targetJson);
 
-        Assert.assertArrayEquals("Wrong createFieldList", createdFieldArr, target.createFieldlist.toArray(new String[0]));
-        Assert.assertArrayEquals("Wrong updateFieldList", updatedFieldArr, target.updateFieldlist.toArray(new String[0]));
+        Assert.assertArrayEquals("Wrong createFieldList", createdFieldArr,
+            target.createFieldlist.toArray(new String[0]));
+        Assert.assertArrayEquals("Wrong updateFieldList", updatedFieldArr,
+            target.updateFieldlist.toArray(new String[0]));
         Assert.assertEquals("Wrong maxBatchSize", maxBatchSize, target.getMaxBatchSize());
     }
 
@@ -128,7 +134,8 @@ public class CollectionSyncUpTargetTest extends BatchSyncUpTargetTest {
 
         Assert.assertNull("Wrong createFieldList", target.createFieldlist);
         Assert.assertNull("Wrong updateFieldList", target.updateFieldlist);
-        Assert.assertEquals("Wrong maxBatchSize", CollectionSyncUpTarget.MAX_RECORDS_SOBJECT_COLLECTION_API, target.getMaxBatchSize());
+        Assert.assertEquals("Wrong maxBatchSize",
+            CollectionSyncUpTarget.MAX_RECORDS_SOBJECT_COLLECTION_API, target.getMaxBatchSize());
     }
 
 
@@ -143,7 +150,8 @@ public class CollectionSyncUpTargetTest extends BatchSyncUpTargetTest {
         SyncUpTarget target = SyncUpTarget.fromJSON(targetJson);
 
         Assert.assertTrue(target instanceof CollectionSyncUpTarget);
-        Assert.assertEquals("Wrong maxBatchSize", maxBatchSize, ((CollectionSyncUpTarget) target).getMaxBatchSize());
+        Assert.assertEquals("Wrong maxBatchSize", maxBatchSize,
+            ((CollectionSyncUpTarget) target).getMaxBatchSize());
     }
 
     @Test
@@ -152,12 +160,14 @@ public class CollectionSyncUpTargetTest extends BatchSyncUpTargetTest {
         String[] updatedFieldArr = {Constants.NAME, Constants.DESCRIPTION};
         int maxBatchSize = 150;
 
-        CollectionSyncUpTarget target = new CollectionSyncUpTarget( Arrays.asList(createdFieldArr),  Arrays.asList(updatedFieldArr), maxBatchSize);
+        CollectionSyncUpTarget target = new CollectionSyncUpTarget(Arrays.asList(createdFieldArr),
+            Arrays.asList(updatedFieldArr), maxBatchSize);
 
         JSONObject expectedTargetJson = new JSONObject();
         expectedTargetJson.put(SyncTarget.ANDROID_IMPL, CollectionSyncUpTarget.class.getName());
         expectedTargetJson.put(SyncUpTarget.ID_FIELD_NAME, Constants.ID);
-        expectedTargetJson.put(SyncUpTarget.MODIFICATION_DATE_FIELD_NAME, Constants.LAST_MODIFIED_DATE);
+        expectedTargetJson
+            .put(SyncUpTarget.MODIFICATION_DATE_FIELD_NAME, Constants.LAST_MODIFIED_DATE);
         expectedTargetJson.put(SyncUpTarget.CREATE_FIELDLIST, new JSONArray(createdFieldArr));
         expectedTargetJson.put(SyncUpTarget.UPDATE_FIELDLIST, new JSONArray(updatedFieldArr));
         expectedTargetJson.put(CollectionSyncUpTarget.MAX_BATCH_SIZE, maxBatchSize);
@@ -174,6 +184,8 @@ public class CollectionSyncUpTargetTest extends BatchSyncUpTargetTest {
         Assert.assertTrue(target instanceof CollectionSyncUpTarget);
         Assert.assertNull("Wrong createFieldList", target.createFieldlist);
         Assert.assertNull("Wrong updateFieldList", target.updateFieldlist);
-        Assert.assertEquals("Wrong maxBatchSize", CollectionSyncUpTarget.MAX_RECORDS_SOBJECT_COLLECTION_API, ((CollectionSyncUpTarget) target).getMaxBatchSize());
+        Assert.assertEquals("Wrong maxBatchSize",
+            CollectionSyncUpTarget.MAX_RECORDS_SOBJECT_COLLECTION_API,
+            ((CollectionSyncUpTarget) target).getMaxBatchSize());
     }
 }
