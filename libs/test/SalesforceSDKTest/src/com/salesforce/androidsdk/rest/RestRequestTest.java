@@ -579,17 +579,34 @@ public class RestRequestTest {
 
     @Test
 	public void testGetRequestForPrimingRecords() throws Exception {
-    	RestRequest request = RestRequest.getRequestForPrimingRecords(TEST_API_VERSION, null);
+    	RestRequest request = RestRequest.getRequestForPrimingRecords(TEST_API_VERSION, null, null);
     	Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
 		Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/connect/briefcase/priming-records", request.getPath());
 	}
 
 	@Test
 	public void testGetRequestForPrimingRecordsWithRelayToken() throws Exception {
-		RestRequest request = RestRequest.getRequestForPrimingRecords(TEST_API_VERSION, "my-relay-token");
+		RestRequest request = RestRequest.getRequestForPrimingRecords(TEST_API_VERSION, "my-relay-token", null);
 		Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
 		Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/connect/briefcase/priming-records?relayToken=my-relay-token", request.getPath());
 	}
+
+	@Test
+	public void testGetRequestForPrimingRecordsWithChangedAfterTimestamp() throws Exception {
+    	long timestamp = PrimingRecordsResponse.TIMESTAMP_FORMAT.parse("2022-01-31T03:50:10.000Z").getTime();
+		RestRequest request = RestRequest.getRequestForPrimingRecords(TEST_API_VERSION, null, timestamp);
+		Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+		Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/connect/briefcase/priming-records?changedAfterTimestamp=2022-01-31T03%3A50%3A10.000Z", request.getPath());
+	}
+
+	@Test
+	public void testGetRequestForPrimingRecordsWithRelayTokenAndChangedAfterTimestamp() throws Exception {
+		long timestamp = PrimingRecordsResponse.TIMESTAMP_FORMAT.parse("2022-01-31T03:50:10.000Z").getTime();
+		RestRequest request = RestRequest.getRequestForPrimingRecords(TEST_API_VERSION, "my-relay-token", timestamp);
+		Assert.assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+		Assert.assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/connect/briefcase/priming-records?relayToken=my-relay-token&changedAfterTimestamp=2022-01-31T03%3A50%3A10.000Z", request.getPath());
+	}
+
 
 	@Test
 	public void testParsePrimingRecordsResponse() throws Exception {

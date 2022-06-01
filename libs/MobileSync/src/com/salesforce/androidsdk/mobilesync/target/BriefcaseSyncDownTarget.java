@@ -264,7 +264,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
      */
     protected String getIdsFromBriefcases(SyncManager syncManager, TypedIds typedIds, String relayToken, long maxTimeStamp)
         throws JSONException, IOException {
-        RestRequest request = RestRequest.getRequestForPrimingRecords(syncManager.apiVersion, relayToken);
+        RestRequest request = RestRequest.getRequestForPrimingRecords(syncManager.apiVersion, relayToken, maxTimeStamp);
 
         PrimingRecordsResponse response;
         try {
@@ -280,11 +280,7 @@ public class BriefcaseSyncDownTarget extends SyncDownTarget {
                 for (List<PrimingRecord> primingRecords : allPrimingRecords.get(info.sobjectType)
                     .values()) {
                     for (PrimingRecord primingRecord : primingRecords) {
-                        // Filtering by maxTimeStamp
-                        // TODO Remove once 238 is GA (filtering will happen on server)
-                        if (primingRecord.systemModstamp.getTime() > maxTimeStamp) {
-                            typedIds.add(info.sobjectType, primingRecord.id);
-                        }
+                        typedIds.add(info.sobjectType, primingRecord.id);
                     }
                 }
             }

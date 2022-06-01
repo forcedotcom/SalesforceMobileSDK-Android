@@ -821,15 +821,21 @@ public class RestRequest {
 	 * Request for getting list of record related to offline briefcase
 	 *
 	 * @param apiVersion       Salesforce API version.
-	 * @param relayToken       Relay token (to get next page of results)
+	 * @param relayToken       Relay token (to get next page of results) - or null
+	 * @param changedAfterTime To only get ids of records that changed after given time - or null
 	 *
 	 * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.chatterapi.meta/chatterapi/connect_resources_briefcase_priming_records.htm">https://developer.salesforce.com/docs/atlas.en-us.chatterapi.meta/chatterapi/connect_resources_briefcase_priming_records.htm</a>
 	 */
-    public static RestRequest getRequestForPrimingRecords(String apiVersion, String relayToken) throws UnsupportedEncodingException {
+    public static RestRequest getRequestForPrimingRecords(String apiVersion, String relayToken, Long changedAfterTime) throws UnsupportedEncodingException {
     	StringBuilder path = new StringBuilder(RestAction.PRIMING_RECORDS.getPath(apiVersion));
     	if (relayToken != null) {
     		path.append("?relayToken=");
     		path.append(URLEncoder.encode(relayToken, UTF_8));
+		}
+    	if (changedAfterTime != null) {
+    		path.append(relayToken != null ? "&" : "?");
+    		path.append("changedAfterTimestamp=");
+    		path.append(URLEncoder.encode(PrimingRecordsResponse.TIMESTAMP_FORMAT.format(new Date(changedAfterTime)), UTF_8));
 		}
 		return new RestRequest(RestMethod.GET, path.toString());
 	}
