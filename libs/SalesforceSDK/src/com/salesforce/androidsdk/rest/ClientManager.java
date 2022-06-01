@@ -28,8 +28,6 @@ package com.salesforce.androidsdk.rest;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
-import android.accounts.AccountManagerCallback;
-import android.accounts.AccountManagerFuture;
 import android.accounts.NetworkErrorException;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -41,8 +39,10 @@ import android.os.Looper;
 
 import androidx.activity.ComponentActivity;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.lifecycle.DefaultLifecycleObserver;
 import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.LifecycleOwner;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -66,7 +66,6 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * ClientManager is a factory class for RestClient which stores OAuth credentials in the AccountManager.
  * If no account is found, it kicks off the login flow which creates a new account if successful.
- *
  */
 public class ClientManager {
 
@@ -96,15 +95,20 @@ public class ClientManager {
     }
 
     /**
-     * Method to create a RestClient asynchronously. If an account is currently active, the
-     * {@link RestClientCallback} will be invoked <i>immediately and synchronously</i>. If an account
-     * is not found, the login flow is kicked off and the {@link RestClientCallback} will be invoked
-     * when that flow <i>succeeds</i>. If the login flow finishes without success, the callback will
-     * not be invoked TODO THIS IS UNACCEPTABLE. This must be addressed before this bug is considered done.
-     * <p>
-     * If no accounts are found, it will kick off the login flow which will create a new account if successful.
-     * After the account is created or if an account already existed, it creates a RestClient and returns it through restClientCallback.
-     * <p>
+     * Method to create a RestClient asynchronously.
+     * <br>
+     * <br>
+     * If an account is currently active, you will
+     * receive the {@link RestClient} via the {@link RestClientCallback} immediately on the same
+     * calling thread. OR, if an account is not found, the login flow is kicked off and the
+     * {@link RestClientCallback} will be invoked at a later time on the Main thread. In either case,
+     * the callback will be invoked exactly once.
+     * <br>
+     * <br>
+     * NB: If launching the login flow is required, the lifecycle of the {@link RestClientCallback}
+     * will be <i>bound to the lifecycle of the calling Activity.</i> In other words, if the calling
+     * Activity would be destroyed before the login flow completes, the {@link RestClientCallback}
+     * will be invoked with a null value just before the Activity's onDestroy() method.
      *
      * @param activity current activity
      * @param callback callback invoked once the RestClient is ready
@@ -117,25 +121,25 @@ public class ClientManager {
 
         if (acc == null) {
             SalesforceSDKLogger.i(TAG, "No account of type " + accountType + " found. Starting login flow with RestClientCallback.");
-            new LoginFlowRunner(this, activity, callback).launchLoginFlow();
+            LoginFlowRunner.runLoginFlow(this, activity, callback);
         }
 
         // Account found
         else {
             SalesforceSDKLogger.i(TAG, "Found account of type " + accountType);
-            emitRestClientToCallback(this, callback);
+            emitRestClientToCallback(callback);
         }
     }
 
     /**
      * Method to create a RestClient asynchronously. It is intended to be used by code on the UI thread.
-     * <p>
+     *
      * If no accounts are found, it will kick off the login flow which will create a new account if successful.
      * After the account is created or if an account already existed, it creates a RestClient and returns it through restClientCallback.
-     * <p>
      *
-     * @param activityContext    current activity
-     * @param restClientCallback callback invoked once the RestClient is ready
+     *
+     * @param activityContext        current activity
+     * @param restClientCallback     callback invoked once the RestClient is ready
      * @deprecated Cannot safely invoke the {@link RestClientCallback} when using legacy Android
      * {@link Activity}. Replace with {@link #getRestClient(ComponentActivity, RestClientCallback)}
      */
@@ -143,21 +147,21 @@ public class ClientManager {
     public void getRestClient(Activity activityContext, RestClientCallback restClientCallback) {
         if (activityContext instanceof ComponentActivity) {
             getRestClient((ComponentActivity) activityContext, restClientCallback);
-        } else {
-            Account acc = getAccount();
+            return;
+        }
+        Account acc = getAccount();
 
-            // No account found - let's add one:
-            if (acc == null) {
-                SalesforceSDKLogger.i(TAG, "No account of type " + accountType + " found. Starting login flow.");
-                SalesforceSDKLogger.w(TAG, "Legacy Activity used to get RestClient. Cannot safely invoke RestClientCallback without access to the provided Activity's Lifecycle. Use getRestClient(ComponentActivity, RestClientCallback) instead.");
-                startLoginActivity(activityContext);
-            }
+        // No account found - let's add one:
+        if (acc == null) {
+            SalesforceSDKLogger.i(TAG, "No account of type " + accountType + " found. Starting login flow.");
+            SalesforceSDKLogger.w(TAG, "Legacy Activity used to get RestClient. Cannot safely invoke RestClientCallback without access to the provided Activity's Lifecycle. Use getRestClient(ComponentActivity, RestClientCallback) instead.");
+            startLoginActivity(activityContext);
+        }
 
-            // Account found
-            else {
-                SalesforceSDKLogger.i(TAG, "Found account of type " + accountType);
-                emitRestClientToCallback(this, restClientCallback);
-            }
+        // Account found
+        else {
+            SalesforceSDKLogger.i(TAG, "Found account of type " + accountType);
+            emitRestClientToCallback(restClientCallback);
         }
     }
 
@@ -332,7 +336,7 @@ public class ClientManager {
     }
 
     /**
-     * Invalidate current auth token. The next call to {@link #getRestClient(Activity, RestClientCallback) getRestClient} will do a refresh.
+     * Invalidate current auth token. The next call to {@link #getRestClient(ComponentActivity, RestClientCallback) getRestClient} will do a refresh.
      */
     public void invalidateToken(String lastNewAuthToken) {
         accountManager.invalidateAuthToken(getAccountType(), lastNewAuthToken);
@@ -516,42 +520,9 @@ public class ClientManager {
     }
 
     /**
-     * Callback from either user account creation, or a call to getAuthToken, used
-     * by the Android account management components.
-     */
-    private class AccMgrCallback implements AccountManagerCallback<Bundle> {
-
-        private final RestClientCallback restCallback;
-
-        /**
-         * Constructor
-         * @param restCallback Who to directly call when we get a result for getAuthToken.
-         *
-         */
-        AccMgrCallback(RestClientCallback restCallback) {
-            assert restCallback != null : "you must supply a RestClientAvailable instance";
-            this.restCallback = restCallback;
-        }
-
-        @Override
-        public void run(AccountManagerFuture<Bundle> f) {
-            RestClient client = null;
-            try {
-                f.getResult();
-                client = peekRestClient();
-            } catch (Exception e) {
-                SalesforceSDKLogger.w(TAG, "Exception thrown while creating rest client", e);
-            }
-
-            // response. if we failed, null
-            restCallback.authenticatedRestClient(client);
-        }
-    }
-
-    /**
      * RestClientCallback interface.
      * You must provide an implementation of this interface when calling
-     * {@link ClientManager#getRestClient(Activity, RestClientCallback) getRestClient}.
+     * {@link ClientManager#getRestClient(ComponentActivity, RestClientCallback) getRestClient}.
      */
     public interface RestClientCallback {
         public void authenticatedRestClient(RestClient client);
@@ -914,108 +885,186 @@ public class ClientManager {
         }
     }
 
-    static void emitRestClientToCallback(
-            @NonNull final ClientManager receiver,
-            @NonNull final RestClientCallback callback
-    ) {
+    void emitRestClientToCallback(@NonNull final RestClientCallback callback) {
         RestClient client = null;
         try {
-            client = receiver.peekRestClient();
+            client = peekRestClient();
         } catch (Exception ex) {
             SalesforceSDKLogger.w(TAG, "Exception thrown while creating rest client", ex);
         }
         callback.authenticatedRestClient(client);
     }
+}
 
-    /**
-     * This class's entire purpose is to encapsulate the procedure of getting the {@link RestClient}
-     * via the {@link RestClientCallback} by launching the Login Activity. It waits for the
-     * {@link UserAccountManager#USER_SWITCH_INTENT_ACTION} to indicate login flow was successful
-     * then invokes the callback when the original calling Activity moves back into the
-     * {@link Lifecycle.State#STARTED} state.
-     *
-     * It also ensures that the calling Activity will not leak by gracefully handling lifecycle events.
-     */
-    private static final class LoginFlowRunner {
-        @NonNull
-        private final ComponentActivity curActivity;
+/**
+ * This class's entire purpose is to encapsulate the procedure of getting the {@link RestClient}
+ * via the {@link ClientManager.RestClientCallback} by launching the Login Activity. It waits for the
+ * {@link UserAccountManager#USER_SWITCH_INTENT_ACTION} to indicate login flow was successful
+ * then builds the RestClient and invokes the callback. Alternatively, if the calling Activity is
+ * about to be destroyed without {@link UserAccountManager#USER_SWITCH_INTENT_ACTION} being broadcast,
+ * this still invokes the callback at the last minute just so we can fulfill the contract of
+ * <i>always</i> invoking the callback even with no client.
+ *
+ * <p>
+ *     The implementation herein is meant to match the behavior of the {@link AccountManager#addAccount}
+ *     method as closely as possible.  Specifically, the AccountManager would invoke its callback
+ *     regardless of the calling Activity's state (so long as it is at least CREATED). This runner
+ *     has the same behavior.
+ * </p>
+ */
+final class LoginFlowRunner {
+    @Nullable
+    private ComponentActivity curActivity;
 
-        @NonNull
-        private final ClientManager.RestClientCallback callback;
+    @Nullable
+    private ClientManager.RestClientCallback callback;
 
-        @NonNull
-        private final ClientManager clientManager;
+    @Nullable
+    private ClientManager clientManager;
 
-        LoginFlowRunner(
-                @NonNull final ClientManager ownerClientManager,
-                @NonNull final ComponentActivity curActivity,
-                @NonNull final ClientManager.RestClientCallback callback
-        ) {
-            this.clientManager = ownerClientManager;
-            this.curActivity = curActivity;
-            this.callback = callback;
-        }
+    static void runLoginFlow(
+            @NonNull final ClientManager ownerClientManager,
+            @NonNull final ComponentActivity curActivity,
+            @NonNull final ClientManager.RestClientCallback callback
+    ) {
+        new LoginFlowRunner(ownerClientManager, curActivity, callback).launchLoginFlow();
+    }
 
-        @NonNull
-        private final AtomicReference<RunnerState> state = new AtomicReference<>(RunnerState.Initialized);
+    private LoginFlowRunner(
+            @NonNull final ClientManager ownerClientManager,
+            @NonNull final ComponentActivity curActivity,
+            @NonNull final ClientManager.RestClientCallback callback
+    ) {
+        this.clientManager = ownerClientManager;
+        this.curActivity = curActivity;
+        this.callback = callback;
+    }
 
-        @NonNull
-        private final BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (intent == null || !UserAccountManager.USER_SWITCH_INTENT_ACTION.equals(intent.getAction())) {
-                    return;
-                }
-                if (state.compareAndSet(RunnerState.Launched, RunnerState.LoginFinished)) {
-                    if (curActivity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED)) {
-                        ClientManager.emitRestClientToCallback(clientManager, callback);
-                        shutdown();
-                    }
-                }
+    @NonNull
+    private final AtomicReference<RunnerState> state = new AtomicReference<>(RunnerState.Created);
+
+    @Nullable
+    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent == null || !UserAccountManager.USER_SWITCH_INTENT_ACTION.equals(intent.getAction())) {
+                return;
             }
-        };
-
-        @NonNull
-        private final DefaultLifecycleObserver lifecycleObserver = new DefaultLifecycleObserver() {
-            @Override
-            public void onStart(@NonNull LifecycleOwner owner) {
-                if (state.get() == RunnerState.LoginFinished) {
-                    ClientManager.emitRestClientToCallback(clientManager, callback);
+            if (state.compareAndSet(RunnerState.Launched, RunnerState.LoginFinished)) {
+                if (curActivity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.CREATED)) {
+                    clientManager.emitRestClientToCallback(callback);
                     shutdown();
                 }
             }
+        }
+    };
 
-            @Override
-            public void onDestroy(@NonNull LifecycleOwner owner) {
+    @Nullable
+    private DefaultLifecycleObserver lifecycleObserver = new DefaultLifecycleObserver() {
+        @Override
+        public void onCreate(@NonNull LifecycleOwner owner) {
+            handleNonDestroyEvent();
+        }
+
+        @Override
+        public void onStart(@NonNull LifecycleOwner owner) {
+            handleNonDestroyEvent();
+        }
+
+        @Override
+        public void onResume(@NonNull LifecycleOwner owner) {
+            handleNonDestroyEvent();
+        }
+
+        @Override
+        public void onPause(@NonNull LifecycleOwner owner) {
+            handleNonDestroyEvent();
+        }
+
+        @Override
+        public void onStop(@NonNull LifecycleOwner owner) {
+            handleNonDestroyEvent();
+        }
+
+        @Override
+        public void onDestroy(@NonNull LifecycleOwner owner) {
+            if (state.get() != RunnerState.Terminated) {
+                clientManager.emitRestClientToCallback(callback);
+            }
+            shutdown();
+        }
+
+        private void handleNonDestroyEvent() {
+            if (state.get() == RunnerState.LoginFinished) {
+                clientManager.emitRestClientToCallback(callback);
                 shutdown();
             }
-        };
-
-        void launchLoginFlow() {
-            if (state.compareAndSet(RunnerState.Initialized, RunnerState.Launched)) {
-                curActivity.runOnUiThread(() -> {
-                    curActivity.registerReceiver(broadcastReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
-                    curActivity.getLifecycle().addObserver(lifecycleObserver);
-                    clientManager.startLoginActivity(curActivity);
-                });
-            }
         }
+    };
 
-        void shutdown() {
-            final RunnerState prevState = state.getAndSet(RunnerState.Terminated);
-            if (prevState != RunnerState.Terminated) {
-                curActivity.runOnUiThread(() -> {
-                    curActivity.getLifecycle().removeObserver(lifecycleObserver);
-                    curActivity.unregisterReceiver(broadcastReceiver);
-                });
+    private void launchLoginFlow() {
+        if (state.compareAndSet(RunnerState.Created, RunnerState.Initializing)) {
+            ComponentActivity curActivity = this.curActivity;
+            LifecycleObserver lifecycleObserver = this.lifecycleObserver;
+            ClientManager clientManager = this.clientManager;
+
+            if (curActivity == null || lifecycleObserver == null || clientManager == null) {
+                SalesforceSDKLogger.e(
+                        TAG,
+                        "Login flow runner launched with bad state. Current Activity=" +
+                                (curActivity == null ? "null" : curActivity.toString()) +
+                                ", Lifecycle Observer=" +
+                                (lifecycleObserver == null ? "null" : lifecycleObserver.toString()) +
+                                ", clientManager=" +
+                                (clientManager == null ? "null" : clientManager.toString())
+                );
+                shutdown();
+                return;
             }
-        }
 
-        private enum RunnerState {
-            Initialized,
-            Launched,
-            LoginFinished,
-            Terminated
+            curActivity.runOnUiThread(() -> {
+                curActivity.getLifecycle().addObserver(lifecycleObserver);
+                curActivity.registerReceiver(broadcastReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
+                clientManager.startLoginActivity(curActivity);
+
+                state.set(RunnerState.Launched);
+            });
         }
     }
+
+    private void shutdown() {
+        final RunnerState prevState = state.getAndSet(RunnerState.Terminated);
+        if (prevState != RunnerState.Terminated) {
+            BroadcastReceiver broadcastReceiver = this.broadcastReceiver;
+            ComponentActivity curActivity = this.curActivity;
+            LifecycleObserver lifecycleObserver = this.lifecycleObserver;
+
+            this.broadcastReceiver = null;
+            this.curActivity = null;
+            this.callback = null;
+            this.clientManager = null;
+            this.lifecycleObserver = null;
+
+            if (curActivity != null) {
+                curActivity.runOnUiThread(() -> {
+                    if (lifecycleObserver != null) {
+                        curActivity.getLifecycle().removeObserver(lifecycleObserver);
+                    }
+                    if (broadcastReceiver != null) {
+                        curActivity.unregisterReceiver(broadcastReceiver);
+                    }
+                });
+            }
+        }
+    }
+
+    private enum RunnerState {
+        Created,
+        Initializing,
+        Launched,
+        LoginFinished,
+        Terminated
+    }
+
+    private static final String TAG = LoginFlowRunner.class.getSimpleName();
 }
