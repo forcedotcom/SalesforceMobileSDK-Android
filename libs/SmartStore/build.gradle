@@ -9,7 +9,7 @@ apply plugin: 'com.android.library'
 
 dependencies {
     api project(':libs:SalesforceSDK')
-    api 'net.zetetic:android-database-sqlcipher:4.5.0'
+    api 'net.zetetic:android-database-sqlcipher:4.5.1'
     androidTestImplementation 'androidx.test:runner:1.4.0'
     androidTestImplementation 'androidx.test:rules:1.4.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
