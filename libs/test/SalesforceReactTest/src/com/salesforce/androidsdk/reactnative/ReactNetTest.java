@@ -61,7 +61,11 @@ public class ReactNetTest extends ReactTestCase {
                 "testCreateDelRetrieve",
                 "testQuery",
                 "testSearch",
-                "testPublicApiCall");
+                "testPublicApiCall",
+                "testCollectionCreateRetrieve",
+                "testCollectionUpsertUpdateRetrieve",
+                "testCollectionCreateDeleteRetrieve"
+            );
     }
 
     @Test
