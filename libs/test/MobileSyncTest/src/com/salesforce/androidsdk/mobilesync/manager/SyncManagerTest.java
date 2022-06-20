@@ -651,7 +651,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
      */
     @Test
     public void testCleanResyncGhostsForMRUTarget() throws Exception {
-
         // Creates 3 accounts on the server.
         final int numberAccounts = 3;
         final Map<String, String> accounts = createRecordsOnServer(numberAccounts, Constants.ACCOUNT);
@@ -700,6 +699,44 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Deletes the remaining accounts on the server.
         deleteRecordsByIdOnServer(new HashSet<String>(Arrays.asList(accountIds[0])), Constants.ACCOUNT);
+    }
+
+    /**
+     * Create sync down, runs it, runs clean ghosts, re-run sync down
+     */
+    @Test
+    public void testSyncCleanGhostsReSync() throws Exception {
+
+        // Creates 3 accounts on the server.
+        final int numberAccounts = 3;
+        final Map<String, String> accounts = createRecordsOnServer(numberAccounts, Constants.ACCOUNT);
+        Assert.assertEquals("Wrong number of accounts created", numberAccounts, accounts.size());
+        final String[] accountIds = accounts.keySet().toArray(new String[0]);
+
+        // Builds SOQL sync down target and performs initial sync.
+        final String soql = "SELECT Id, Name FROM Account WHERE Id IN " + makeInClause(accountIds);
+        long syncId = trySyncDown(MergeMode.LEAVE_IF_CHANGED, new SoqlSyncDownTarget(soql), ACCOUNTS_SOUP, accounts.size(), 1, null);
+        checkDbExist(ACCOUNTS_SOUP, accountIds, Constants.ID);
+
+        // Deletes 1 account on the server and verifies the ghost record is cleared from the soup.
+        deleteRecordsByIdOnServer(new HashSet<>(Arrays.asList(accountIds[0])), Constants.ACCOUNT);
+        tryCleanResyncGhosts(syncId);
+        checkDbExist(ACCOUNTS_SOUP, new String[] { accountIds[1], accountIds[2]}, Constants.ID);
+        checkDbDeleted(ACCOUNTS_SOUP, new String[] { accountIds[0]}, Constants.ID);
+
+        // Calls reSync
+        SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+        try {
+            syncManager.reSync(syncId, queue);
+        } catch (SyncManager.MobileSyncException e) {
+            Assert.fail("Unexpected exception:" + e);
+        }
+
+        // Waiting for reSync to complete successfully
+        while (!queue.getNextSyncUpdate().isDone());
+
+        // Deletes the remaining accounts on the server.
+        deleteRecordsByIdOnServer(new HashSet<>(Arrays.asList(accountIds[1], accountIds[2])), Constants.ACCOUNT);
     }
 
     /**
