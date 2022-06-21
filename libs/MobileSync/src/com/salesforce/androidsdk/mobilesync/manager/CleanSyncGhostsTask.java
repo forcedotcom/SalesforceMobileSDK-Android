@@ -76,14 +76,14 @@ public class CleanSyncGhostsTask extends SyncTask {
                 }
             }
 
+            syncManager.removeFromActiveSyncs(this);
             if (cleanSyncCallback != null) {
                 cleanSyncCallback.onSuccess(localIdSize);
             }
 
         } catch (Exception e) {
-
             MobileSyncLogger.e(TAG, "Exception thrown cleaning resync ghosts", e);
-
+            syncManager.removeFromActiveSyncs(this);
             if (cleanSyncCallback != null) {
                 cleanSyncCallback.onError(e);
             }
