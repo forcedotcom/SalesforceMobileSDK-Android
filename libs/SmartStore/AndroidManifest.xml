@@ -3,7 +3,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.salesforce.androidsdk.smartstore"
 	android:versionCode="77"
-	android:versionName="10.1.0.dev">
+	android:versionName="10.1.0">
 
 	<application>
 
