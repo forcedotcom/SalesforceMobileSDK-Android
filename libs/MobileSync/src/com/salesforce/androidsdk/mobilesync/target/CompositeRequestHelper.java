@@ -366,7 +366,7 @@ public class CompositeRequestHelper {
                                 records);
                     }
                 case DELETE:
-                    return RestRequest.getRequestForCollectionDelete(apiVersion, getIds(recordRequests, RequestType.DELETE));
+                    return RestRequest.getRequestForCollectionDelete(apiVersion, getIds(recordRequests, RequestType.DELETE), false);
             }
 
             // We should never get here

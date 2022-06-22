@@ -915,12 +915,12 @@ public class RestRequest {
 	 *
 	 * @param apiVersion    Salesforce API version.
 	 * @param objectIds     List of Salesforce IDs of the records to delete.
-	 *
+	 * @param allOrNone     Indicates whether to roll back the entire request when the delete of any object fails (true) or to continue with the independent delete of other objects in the request.
 	 * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_sobjects_collections_delete.htm">https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_sobjects_collections_delete.htm</a>
 	 */
-	public static RestRequest getRequestForCollectionDelete(String apiVersion, List<String> objectIds) throws UnsupportedEncodingException {
+	public static RestRequest getRequestForCollectionDelete(String apiVersion, List<String> objectIds, boolean allOrNone) throws UnsupportedEncodingException {
 		StringBuilder path = new StringBuilder(RestAction.SOBJECT_COLLECTION.getPath(apiVersion));
-		path.append("?ids=");
+		path.append("?allOrNone=" + allOrNone + "&=ids=");
 		path.append(URLEncoder.encode(TextUtils.join(",", objectIds), UTF_8));
 		return new RestRequest(RestMethod.DELETE, path.toString());
 	}

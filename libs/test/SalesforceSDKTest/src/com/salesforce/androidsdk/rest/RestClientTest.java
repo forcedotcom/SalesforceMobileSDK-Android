@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import android.util.Pair;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -1323,7 +1322,7 @@ public class RestClientTest {
         String secondAccountId = parsedCreateResponse.subResponses.get(2).id;
 
         // Doing a collection delete for one account and the contact
-        RestResponse deleteResponse = restClient.sendSync(RestRequest.getRequestForCollectionDelete(TestCredentials.API_VERSION, Arrays.asList(firstAccountId, contactId)));
+        RestResponse deleteResponse = restClient.sendSync(RestRequest.getRequestForCollectionDelete(TestCredentials.API_VERSION, Arrays.asList(firstAccountId, contactId), false));
         CollectionResponse parsedDeleteResponse = new CollectionResponse(deleteResponse.asJSONArray());
 
         // Checking response
