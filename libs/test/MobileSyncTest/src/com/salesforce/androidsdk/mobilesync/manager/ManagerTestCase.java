@@ -253,7 +253,7 @@ abstract public class ManagerTestCase {
         int countSlices = (int) Math.ceil((double) countIds / maxIdsPerRequest);
         for (int slice = 0; slice < countSlices; slice++) {
             List<String> idsToDelete = idsList.subList(slice * maxIdsPerRequest, Math.min(countIds, (slice + 1) * maxIdsPerRequest));
-            restClient.sendSync(RestRequest.getRequestForCollectionDelete(apiVersion, idsToDelete, false));
+            restClient.sendSync(RestRequest.getRequestForCollectionDelete(apiVersion, false, idsToDelete));
         }
     }
 

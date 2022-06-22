@@ -360,13 +360,12 @@ public class CompositeRequestHelper {
 
                         return RestRequest
                             .getRequestForCollectionUpsert(apiVersion,
-                                objectType,
+                                    allOrNone, objectType,
                                 externalIdFieldName,
-                                allOrNone,
-                                records);
+                                    records);
                     }
                 case DELETE:
-                    return RestRequest.getRequestForCollectionDelete(apiVersion, getIds(recordRequests, RequestType.DELETE), false);
+                    return RestRequest.getRequestForCollectionDelete(apiVersion, false, getIds(recordRequests, RequestType.DELETE));
             }
 
             // We should never get here

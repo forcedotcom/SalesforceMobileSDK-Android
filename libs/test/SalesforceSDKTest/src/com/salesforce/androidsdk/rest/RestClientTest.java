@@ -1178,7 +1178,7 @@ public class RestClientTest {
         );
 
         // Doing a collection upsert
-        RestResponse upsertResponse = restClient.sendSync(RestRequest.getRequestForCollectionUpsert(TestCredentials.API_VERSION, "Account" , "Id", true, records));
+        RestResponse upsertResponse = restClient.sendSync(RestRequest.getRequestForCollectionUpsert(TestCredentials.API_VERSION, true, "Account" , "Id", records));
 
         // Parsing response
         CollectionResponse parsedUpsertResponse = new CollectionResponse(upsertResponse.asJSONArray());
@@ -1221,7 +1221,7 @@ public class RestClientTest {
             Arrays.asList("Account", "Name", secondAccountNameUpdated, "Id", secondAccountId)
         );
 
-        RestResponse upsertResponse = restClient.sendSync(RestRequest.getRequestForCollectionUpsert(TestCredentials.API_VERSION, "Account" , "Id", true, updatedAccounts));
+        RestResponse upsertResponse = restClient.sendSync(RestRequest.getRequestForCollectionUpsert(TestCredentials.API_VERSION, true, "Account" , "Id", updatedAccounts));
 
         // Parsing response
         CollectionResponse parsedUpsertResponse = new CollectionResponse(upsertResponse.asJSONArray());
@@ -1322,7 +1322,7 @@ public class RestClientTest {
         String secondAccountId = parsedCreateResponse.subResponses.get(2).id;
 
         // Doing a collection delete for one account and the contact
-        RestResponse deleteResponse = restClient.sendSync(RestRequest.getRequestForCollectionDelete(TestCredentials.API_VERSION, Arrays.asList(firstAccountId, contactId), false));
+        RestResponse deleteResponse = restClient.sendSync(RestRequest.getRequestForCollectionDelete(TestCredentials.API_VERSION, false, Arrays.asList(firstAccountId, contactId)));
         CollectionResponse parsedDeleteResponse = new CollectionResponse(deleteResponse.asJSONArray());
 
         // Checking response
