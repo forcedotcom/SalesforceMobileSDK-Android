@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * BatchResponse: Class to represent response for a CompositeRequest.
+ * CompositeResponse: Class to represent response for a CompositeRequest.
  *
  */
 public class CompositeResponse {

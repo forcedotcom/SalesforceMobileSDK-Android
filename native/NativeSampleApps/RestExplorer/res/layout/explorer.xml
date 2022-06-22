@@ -53,7 +53,7 @@
 					<include android:id="@+id/file_shares_tab" layout="@layout/action_file_shares_tile" />
 					<include android:id="@+id/add_file_share_tab" layout="@layout/action_add_file_share_tile" />
 					<include android:id="@+id/delete_file_share_tab" layout="@layout/action_delete_file_share_tile" />
-
+					<include android:id="@+id/priming_records_tab" layout="@layout/action_priming_records_tile" />
 				</FrameLayout>
 
 				<FrameLayout android:layout_width="match_parent"

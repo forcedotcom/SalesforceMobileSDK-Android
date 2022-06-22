@@ -29,6 +29,8 @@ package com.salesforce.androidsdk.mobilesync.target;
 import com.salesforce.androidsdk.mobilesync.app.Features;
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
+import com.salesforce.androidsdk.mobilesync.target.CompositeRequestHelper.RecordRequest;
+import com.salesforce.androidsdk.mobilesync.target.CompositeRequestHelper.RecordResponse;
 import com.salesforce.androidsdk.mobilesync.target.ParentChildrenSyncTargetHelper.RelationshipType;
 import com.salesforce.androidsdk.mobilesync.util.ChildrenInfo;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
@@ -36,22 +38,19 @@ import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.mobilesync.util.ParentInfo;
 import com.salesforce.androidsdk.mobilesync.util.SOQLBuilder;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
-import com.salesforce.androidsdk.rest.CompositeResponse.CompositeSubResponse;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
-
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Target for sync that uploads parent with children records
@@ -168,13 +167,15 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
         boolean isDelete = isLocallyDeleted(record);
 
         // Preparing request for parent
-        LinkedHashMap<String, RestRequest> refIdToRequests = new LinkedHashMap<>();
+        List<RecordRequest> recordRequests = new LinkedList<>();
         String parentId = record.getString(getIdFieldName());
-        RestRequest parentRequest = buildRequestForParentRecord(syncManager.apiVersion, record, fieldlist);
+        RecordRequest parentRequest = buildRequestForParentRecord(syncManager.apiVersion, record, fieldlist);
 
         // Parent request goes first unless it's a delete
-        if (parentRequest != null && !isDelete)
-            refIdToRequests.put(parentId, parentRequest);
+        if (parentRequest != null && !isDelete) {
+            parentRequest.referenceId = parentId;
+            recordRequests.add(parentRequest);
+        }
 
         // Preparing requests for children
         for (int i = 0; i < children.length(); i++) {
@@ -187,21 +188,26 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                 childRecord.put(LOCAL, true);
                 childRecord.put(LOCALLY_UPDATED, true);
             }
-            RestRequest childRequest = buildRequestForChildRecord(syncManager.apiVersion, childRecord,
+            RecordRequest childRequest = buildRequestForChildRecord(syncManager.apiVersion, childRecord,
                     isCreate,
                     isDelete ? null : parentId);
-            if (childRequest != null) refIdToRequests.put(childId, childRequest);
+            if (childRequest != null) {
+                childRequest.referenceId = childId;
+                recordRequests.add(childRequest);
+            }
         }
 
         // Parent request goes last when it's a delete
-        if (parentRequest != null && isDelete)
-            refIdToRequests.put(parentId, parentRequest);
+        if (parentRequest != null && isDelete) {
+            parentRequest.referenceId = parentId;
+            recordRequests.add(parentRequest);
+        }
 
         // Sending composite request
-        Map<String, CompositeSubResponse> refIdToResponses = CompositeRequestHelper.sendCompositeRequest(syncManager, false, refIdToRequests);
+        Map<String, RecordResponse> refIdToRecordResponses = CompositeRequestHelper.sendAsCompositeBatchRequest(syncManager, false, recordRequests);
 
-        // Build refId to server id / status code / time stamp maps
-        Map<String, String> refIdToServerId = CompositeRequestHelper.parseIdsFromResponses(refIdToResponses.values());
+        // Build refId to server id map
+        Map<String, String> refIdToServerId = CompositeRequestHelper.parseIdsFromResponses(refIdToRecordResponses);
 
         // Will a re-run be required?
         boolean needReRun = false;
@@ -209,7 +215,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
         // Update parent in local store
         if (isDirty(record)) {
             needReRun = updateParentRecordInLocalStore(syncManager, record, children, mergeMode, refIdToServerId,
-                    refIdToResponses.get(record.getString(getIdFieldName())));
+                    refIdToRecordResponses.get(record.getString(getIdFieldName())));
         }
 
         // Update children local store
@@ -218,7 +224,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
 
             if (isDirty(childRecord) || isCreate) {
                 needReRun = needReRun || updateChildRecordInLocalStore(syncManager, childRecord, record, mergeMode, refIdToServerId,
-                        refIdToResponses.get(childRecord.getString(childrenInfo.idFieldName)));
+                        refIdToRecordResponses.get(childRecord.getString(childrenInfo.idFieldName)));
             }
         }
 
@@ -229,16 +235,16 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
         }
     }
 
-    protected boolean updateParentRecordInLocalStore(SyncManager syncManager, JSONObject record, JSONArray children, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, CompositeSubResponse response) throws JSONException, IOException {
+    protected boolean updateParentRecordInLocalStore(SyncManager syncManager, JSONObject record, JSONArray children, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, RecordResponse response) throws JSONException, IOException {
         boolean needReRun = false;
         final String soupName = parentInfo.soupName;
-        final Integer statusCode = response != null ? response.httpStatusCode : -1;
+        String lastError = (response != null && response.errorJson != null) ? response.errorJson.toString() : null;
 
         // Delete case
         if (isLocallyDeleted(record)) {
             if (isLocallyCreated(record)  // we didn't go to the sever
-                || RestResponse.isSuccess(statusCode) // or we successfully deleted on the server
-                || statusCode == HttpURLConnection.HTTP_NOT_FOUND) // or the record was already deleted on the server
+                || response.success // or we successfully deleted on the server
+                || response.recordDoesNotExist) // or the record was already deleted on the server
             {
                 if (relationshipType == RelationshipType.MASTER_DETAIL) {
                     ParentChildrenSyncTargetHelper.deleteChildrenFromLocalStore(syncManager.getSmartStore(), parentInfo, childrenInfo, record.getString(getIdFieldName()));
@@ -248,14 +254,14 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
             }
             // Failure
             else {
-                saveRecordToLocalStoreWithError(syncManager, soupName, record, response != null ? response.toString() : null);
+                saveRecordToLocalStoreWithError(syncManager, soupName, record, lastError);
             }
         }
 
         // Create / update case
         else {
             // Success case
-            if (RestResponse.isSuccess(statusCode))
+            if (response.success)
             {
                 // Plugging server id in id field
                 CompositeRequestHelper.updateReferences(record, getIdFieldName(), refIdToServerId);
@@ -264,7 +270,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                 cleanAndSaveInLocalStore(syncManager, soupName, record);
             }
             // Handling remotely deleted records
-            else if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
+            else if (response.recordDoesNotExist) {
                 // Record needs to be recreated
                 if (mergeMode == SyncState.MergeMode.OVERWRITE) {
                     record.put(LOCAL, true);
@@ -281,35 +287,35 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
             }
             // Failure
             else {
-                saveRecordToLocalStoreWithError(syncManager, soupName, record, response != null ? response.toString() : null);
+                saveRecordToLocalStoreWithError(syncManager, soupName, record, lastError);
             }
         }
         return needReRun;
     }
 
-    protected boolean updateChildRecordInLocalStore(SyncManager syncManager, JSONObject record, JSONObject parentRecord, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, CompositeSubResponse response) throws JSONException {
+    protected boolean updateChildRecordInLocalStore(SyncManager syncManager, JSONObject record, JSONObject parentRecord, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, RecordResponse response) throws JSONException {
         boolean needReRun = false;
         final String soupName = childrenInfo.soupName;
-        final Integer statusCode = response != null ? response.httpStatusCode : -1;
+        String lastError = (response != null && response.errorJson != null) ? response.errorJson.toString() : null;
 
         // Delete case
         if (isLocallyDeleted(record)) {
             if (isLocallyCreated(record)  // we didn't go to the sever
-                    || RestResponse.isSuccess(statusCode) // or we successfully deleted on the server
-                    || statusCode == HttpURLConnection.HTTP_NOT_FOUND) // or the record was already deleted on the server
+                    || response.success // or we successfully deleted on the server
+                    || response.recordDoesNotExist) // or the record was already deleted on the server
             {
                 deleteFromLocalStore(syncManager, soupName, record);
             }
             // Failure
             else {
-                saveRecordToLocalStoreWithError(syncManager, soupName, record, response != null ? response.toString() : null);
+                saveRecordToLocalStoreWithError(syncManager, soupName, record, lastError);
             }
         }
 
         // Create / update case
         else {
             // Success case
-            if (RestResponse.isSuccess(statusCode))
+            if (response.success)
             {
                 // Plugging server id in id field
                 CompositeRequestHelper.updateReferences(record, childrenInfo.idFieldName, refIdToServerId);
@@ -321,7 +327,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                 cleanAndSaveInLocalStore(syncManager, soupName, record);
             }
             // Handling remotely deleted records
-            else if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
+            else if (response.recordDoesNotExist) {
                 // Record needs to be recreated
                 if (mergeMode == SyncState.MergeMode.OVERWRITE) {
 
@@ -333,7 +339,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                 }
             }
             // Handling remotely deleted parent
-            else if(isEntityDeleted(response)) {
+            else if(response.relatedRecordDoesNotExist) {
                 // Parent record needs to be recreated
                 if (mergeMode == SyncState.MergeMode.OVERWRITE) {
                     parentRecord.put(LOCAL, true);
@@ -345,26 +351,26 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
             }
             // Failure
             else {
-                saveRecordToLocalStoreWithError(syncManager, soupName, record, response != null ? response.toString() : null);
+                saveRecordToLocalStoreWithError(syncManager, soupName, record, lastError);
             }
         }
         return needReRun;
     }
 
-    protected RestRequest buildRequestForParentRecord(String apiVersion,
+    protected RecordRequest buildRequestForParentRecord(String apiVersion,
                                                 JSONObject record,
                                                 List<String> fieldlist) throws IOException, JSONException {
         return buildRequestForRecord(apiVersion, record, fieldlist, true, false, null);
     }
 
-    protected RestRequest buildRequestForChildRecord(String apiVersion,
+    protected RecordRequest buildRequestForChildRecord(String apiVersion,
                                                 JSONObject record,
                                                 boolean useParentIdReference,
                                                 String parentId) throws IOException, JSONException {
         return buildRequestForRecord(apiVersion, record, null, false, useParentIdReference, parentId);
     }
 
-    protected RestRequest buildRequestForRecord(String apiVersion,
+    protected RecordRequest buildRequestForRecord(String apiVersion,
                                                 JSONObject record,
                                                 List<String> fieldlist,
                                                 boolean isParent,
@@ -384,9 +390,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                 return null; // no need to go to server
             }
             else {
-                return RestRequest.getRequestForDelete(apiVersion,
-                        info.sobjectType,
-                        id);
+                return RecordRequest.requestForDelete(info.sobjectType, id);
             }
         }
         // Create/update cases
@@ -415,20 +419,16 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                     // where the the external id field is the id field
                     // and the field is populated by a local id
                     && !isLocalId(externalId)) {
-                    return RestRequest.getRequestForUpsert(apiVersion,
-                        info.sobjectType,
+                    return RecordRequest.requestForUpsert(info.sobjectType,
                         info.externalIdFieldName,
                         externalId,
                         fields);
                 } else {
-                    return RestRequest.getRequestForCreate(apiVersion,
-                        info.sobjectType,
-                        fields);
+                    return RecordRequest.requestForCreate(info.sobjectType, fields);
                 }
             }
             else {
-                return RestRequest.getRequestForUpdate(apiVersion,
-                        info.sobjectType,
+                return RecordRequest.requestForUpdate(info.sobjectType,
                         id,
                         fields);
             }
@@ -532,11 +532,4 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
         return RestRequest.getRequestForQuery(apiVersion, builder.build());
     }
 
-    protected boolean isEntityDeleted(CompositeSubResponse response) {
-        try {
-            return response != null && "ENTITY_IS_DELETED".equals(response.bodyAsJSONArray().getJSONObject(0).getString("errorCode"));
-        } catch (JSONException e) {
-            return false;
-        }
-    }
 }

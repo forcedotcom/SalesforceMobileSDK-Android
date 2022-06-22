@@ -93,8 +93,6 @@ public abstract class SyncTask implements Runnable {
             sync.setError(e.getMessage());
             // Update status to failed
             updateSync(sync, SyncState.Status.FAILED, UNCHANGED, callback);
-        } finally {
-            syncManager.removeFromActiveSyncs(this);
         }
     }
 
@@ -141,6 +139,11 @@ public abstract class SyncTask implements Runnable {
         } catch (SmartStore.SmartStoreException e) {
             MobileSyncLogger.e(TAG, "Unexpected smart store error for sync: " + sync.getId(), e);
         } finally {
+            // Removing from active syncs before calling callback
+            if (!sync.isRunning()) {
+                syncManager.removeFromActiveSyncs(this);
+            }
+
             if (callback != null) {
                 callback.onUpdate(sync);
             }

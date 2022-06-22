@@ -57,12 +57,14 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
     public static final String FIELDLIST = "fieldlist";
     public static final String SOBJECT_TYPE = "sobjectType";
     public static final String SOUP_NAME = "soupName";
-    public static final String COUNT_IDS_PER_SOQL = "coundIdsPerSoql";
+    public static final String COUNT_IDS_PER_SOQL = "countIdsPerSoql";
     private List<String> fieldlist;
     private String objectType;
     private String soupName;
     private int countIdsPerSoql;
-    private static final int defaultCountIdsPerSoql = 500;
+    private static final int MAX_COUNT_IDS_PER_SOQL = 500;
+    // NB: SOQL query length limit is 100k but not over REST
+    //     Too many ids will cause a "414 - URI Too Long" error
 
     // NB: For each sync run - a fresh sync down target is created (by deserializing it from smartstore)
     // The following members are specific to a run
@@ -71,33 +73,17 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
     private int page = 0;
 
     /**
-     * Return number of ids to pack in a single SOQL call
-     */
-    public int getCountIdsPerSoql() {
-        return countIdsPerSoql;
-    }
-
-    /**
-     * Set the number of ids to pack in a single SOQL call
-     * SOQL query size limit is 10,000 characters (so ~500 ids)
-     * This setter is to be used by tests primarily
-     * @param count
-     */
-    public void setCountIdsPerSoql(int count) {
-        countIdsPerSoql = count;
-    }
-
-    /**
      * Construct RefreshSyncDownTarget from json
      * @param target
      * @throws JSONException
      */
     public RefreshSyncDownTarget(JSONObject target) throws JSONException {
-        super(target);
-        this.fieldlist = JSONObjectHelper.toList(target.getJSONArray(FIELDLIST));
-        this.objectType = target.getString(SOBJECT_TYPE);
-        this.soupName = target.getString(SOUP_NAME);
-        this.countIdsPerSoql = target.optInt(COUNT_IDS_PER_SOQL, defaultCountIdsPerSoql);
+        this(
+            JSONObjectHelper.toList(target.getJSONArray(FIELDLIST)),
+            target.getString(SOBJECT_TYPE),
+            target.getString(SOUP_NAME),
+            target.optInt(COUNT_IDS_PER_SOQL, MAX_COUNT_IDS_PER_SOQL)
+        );
     }
 
     /**
@@ -106,12 +92,16 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
      * @param objectType
      */
     public RefreshSyncDownTarget(List<String> fieldlist, String objectType, String soupName) {
+        this(fieldlist, objectType, soupName, MAX_COUNT_IDS_PER_SOQL);
+    }
+
+    RefreshSyncDownTarget(List<String> fieldlist, String objectType, String soupName, int countIdsPerSoql) {
         super();
         this.queryType = QueryType.refresh;
         this.fieldlist = fieldlist;
         this.objectType = objectType;
         this.soupName = soupName;
-        this.countIdsPerSoql = defaultCountIdsPerSoql;
+        this.countIdsPerSoql = Math.min(countIdsPerSoql, MAX_COUNT_IDS_PER_SOQL);;
     }
 
     /**
@@ -149,7 +139,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         if (isResync) {
             // Getting full records from SmartStore to compute maxTimeStamp
             // So doing more db work in the hope of doing less server work
-            querySpec = QuerySpec.buildAllQuerySpec(soupName, getIdFieldName(), QuerySpec.Order.ascending, getCountIdsPerSoql());
+            querySpec = QuerySpec.buildAllQuerySpec(soupName, getIdFieldName(), QuerySpec.Order.ascending, countIdsPerSoql);
             JSONArray recordsFromSmartStore = syncManager.getSmartStore().query(querySpec, page);
 
             // Compute max time stamp
@@ -162,7 +152,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         }
         else {
             querySpec = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":" + getIdFieldName()
-                    + "} FROM {" + soupName + "} ORDER BY {" + soupName + ":" + getIdFieldName() + "} ASC", getCountIdsPerSoql());
+                + "} FROM {" + soupName + "} ORDER BY {" + soupName + ":" + getIdFieldName() + "} ASC", countIdsPerSoql);
             JSONArray result = syncManager.getSmartStore().query(querySpec, page);
 
             // Not a resync
@@ -182,10 +172,16 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         }
         if (idsInSmartStore.size() > 0) {
             // Get records from server that have changed after maxTimeStamp
-            final JSONArray records = fetchFromServer(syncManager, idsInSmartStore, fieldlist, maxTimeStamp);
+            final ArrayList<String> fieldlistToFetch = new ArrayList<>(fieldlist);
+            for (String fieldName: Arrays.asList(getIdFieldName(), getModificationDateFieldName())) {
+                if (!fieldlistToFetch.contains(fieldName)) {
+                    fieldlistToFetch.add(fieldName);
+                }
+            }
+            final JSONArray records = fetchFromServer(syncManager, idsInSmartStore, fieldlistToFetch, maxTimeStamp);
 
             // Increment page if there is more to fetch
-            boolean done = getCountIdsPerSoql() * (page + 1) >= totalSize;
+            boolean done = countIdsPerSoql * (page + 1) >= totalSize;
             page = (done ? 0 : page + 1);
             return records;
         }
@@ -197,9 +193,9 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
 
     private JSONArray fetchFromServer(SyncManager syncManager, List<String> ids, List<String> fieldlist, long maxTimeStamp) throws IOException, JSONException {
         final String whereClause = ""
-                + getIdFieldName() + " IN ('" + TextUtils.join("', '", ids) + "')"
-                + (maxTimeStamp > 0 ? " AND " + getModificationDateFieldName() + " > " + Constants.TIMESTAMP_FORMAT.format(new Date(maxTimeStamp))
-                : "");
+            + getIdFieldName() + " IN ('" + TextUtils.join("', '", ids) + "')"
+            + (maxTimeStamp > 0 ? " AND " + getModificationDateFieldName() + " > " + Constants.TIMESTAMP_FORMAT.format(new Date(maxTimeStamp))
+            : "");
         final String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(objectType).where(whereClause).build();
         final RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, soql);
         final RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
@@ -214,12 +210,11 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         }
         Set<String> remoteIds = new HashSet<>();
         List<String> localIdsList = new ArrayList<>(localIds);
-        int sliceSize = getCountIdsPerSoql();
-        int countSlices = (int) Math.ceil((double) localIds.size() / sliceSize);
+        int countSlices = (int) Math.ceil((double) localIds.size() / countIdsPerSoql);
         for (int slice = 0; slice < countSlices; slice++) {
             syncManager.checkAcceptingSyncs();
 
-            List<String> idsToFetch = localIdsList.subList(slice * sliceSize, Math.min(localIdsList.size(), (slice + 1) * sliceSize));
+            List<String> idsToFetch = localIdsList.subList(slice * countIdsPerSoql, Math.min(localIdsList.size(), (slice + 1) * countIdsPerSoql));
             JSONArray records = fetchFromServer(syncManager, idsToFetch, Arrays.asList(getIdFieldName()), 0 /* get all */);
             remoteIds.addAll(parseIdsFromResponse(records));
         }

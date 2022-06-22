@@ -27,16 +27,14 @@
 package com.salesforce.androidsdk.mobilesync.target;
 
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
+import com.salesforce.androidsdk.mobilesync.target.CompositeRequestHelper.RecordRequest;
+import com.salesforce.androidsdk.mobilesync.target.CompositeRequestHelper.RecordResponse;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.mobilesync.util.SyncState;
-import com.salesforce.androidsdk.rest.CompositeResponse.CompositeSubResponse;
-import com.salesforce.androidsdk.rest.RestRequest;
-import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import org.json.JSONException;
@@ -131,7 +129,7 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
             return;
         }
 
-        LinkedHashMap<String, RestRequest> refIdToRequests = new LinkedHashMap<>();
+        List<RecordRequest> recordRequests = new LinkedList<>();
         for (int i = 0; i < records.size(); i++) {
             JSONObject record = records.get(i);
             String id = JSONObjectHelper.optString(record, getIdFieldName());
@@ -142,15 +140,18 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
                 record.put(getIdFieldName(), id);
             }
 
-            RestRequest request = buildRequestForRecord(syncManager.apiVersion, record, fieldlist);
-            if (request != null) refIdToRequests.put(id, request);
+            RecordRequest request = buildRequestForRecord(record, fieldlist);
+            if (request != null) {
+                request.referenceId = id;
+                recordRequests.add(request);
+            }
         }
 
-        // Sending composite request
-        Map<String, CompositeSubResponse> refIdToResponses = CompositeRequestHelper.sendCompositeRequest(syncManager, false, refIdToRequests);
+        // Sending requests
+        Map<String, RecordResponse> refIdToRecordResponses = sendRecordRequests(syncManager, recordRequests);
 
-        // Build refId to server id / status code / time stamp maps
-        Map<String, String> refIdToServerId = CompositeRequestHelper.parseIdsFromResponses(refIdToResponses.values());
+        // Build refId to server id map
+        Map<String, String> refIdToServerId = CompositeRequestHelper.parseIdsFromResponses(refIdToRecordResponses);
 
         // Will a re-run be required?
         boolean needReRun = false;
@@ -161,7 +162,7 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
             String id = record.getString(getIdFieldName());
 
             if (isDirty(record)) {
-                needReRun = needReRun || updateRecordInLocalStore(syncManager, syncSoupName, record, mergeMode, refIdToServerId, refIdToResponses.get(id), isReRun);
+                needReRun = needReRun || updateRecordInLocalStore(syncManager, syncSoupName, record, mergeMode, refIdToServerId, refIdToRecordResponses.get(id), isReRun);
             }
         }
 
@@ -172,9 +173,13 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
 
     }
 
-    protected RestRequest buildRequestForRecord(String apiVersion,
-                                                JSONObject record,
-                                                List<String> fieldlist) throws JSONException {
+    protected Map<String, RecordResponse> sendRecordRequests(SyncManager syncManager, List<RecordRequest> recordRequests)
+        throws JSONException, IOException {
+        return CompositeRequestHelper.sendAsCompositeBatchRequest(syncManager, false, recordRequests);
+    }
+
+    protected RecordRequest buildRequestForRecord(JSONObject record,
+                                                  List<String> fieldlist) throws JSONException {
 
         if (!isDirty(record)) {
             return null; // nothing to do
@@ -191,7 +196,7 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
                 return null; // no need to go to server
             }
             else {
-                return RestRequest.getRequestForDelete(apiVersion, objectType, id);
+                return RecordRequest.requestForDelete(objectType, id);
             }
         }
         // Create/update cases
@@ -208,45 +213,44 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
                         // where the the external id field is the id field
                         // and the field is populated by a local id
                         && !isLocalId(externalId)) {
-                    return RestRequest.getRequestForUpsert(apiVersion, objectType, getExternalIdFieldName(), externalId, fields);
+                    return RecordRequest.requestForUpsert(objectType, getExternalIdFieldName(), externalId, fields);
                 }
                 // Do a create otherwise
                 else {
-                    return RestRequest.getRequestForCreate(apiVersion, objectType, fields);
+                    return RecordRequest.requestForCreate(objectType, fields);
                 }
             }
             else {
                 fieldlist = this.updateFieldlist != null ? this.updateFieldlist : fieldlist;
                 fields = buildFieldsMap(record, fieldlist, getIdFieldName(), getModificationDateFieldName());
-                return RestRequest.getRequestForUpdate(apiVersion, objectType, id, fields);
+                return RecordRequest.requestForUpdate(objectType, id, fields);
             }
         }
     }
 
 
-    protected boolean updateRecordInLocalStore(SyncManager syncManager, String soupName, JSONObject record, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, CompositeSubResponse response, boolean isReRun) throws JSONException, IOException {
+    protected boolean updateRecordInLocalStore(SyncManager syncManager, String soupName, JSONObject record, SyncState.MergeMode mergeMode, Map<String, String> refIdToServerId, RecordResponse response, boolean isReRun) throws JSONException, IOException {
 
         boolean needReRun = false;
-        final Integer statusCode = response != null ? response.httpStatusCode : -1;
+        String lastError = (response != null && response.errorJson != null) ? response.errorJson.toString() : null;
 
         // Delete case
         if (isLocallyDeleted(record)) {
             if (isLocallyCreated(record)  // we didn't go to the sever
-                    || RestResponse.isSuccess(statusCode) // or we successfully deleted on the server
-                    || statusCode == HttpURLConnection.HTTP_NOT_FOUND) // or the record was already deleted on the server
-
+                    || response.success // or we successfully deleted on the server
+                    || response.recordDoesNotExist) // or the record was already deleted on the server
             {
                 deleteFromLocalStore(syncManager, soupName, record);
             }
             // Failure
             else {
-                saveRecordToLocalStoreWithError(syncManager, soupName, record, response != null ? response.toString() : null);
+                saveRecordToLocalStoreWithError(syncManager, soupName, record, lastError);
             }
         }
         // Create / update case
         else {
             // Success case
-            if (RestResponse.isSuccess(statusCode)) {
+            if (response.success) {
                 // Plugging server id in id field
                 CompositeRequestHelper.updateReferences(record, getIdFieldName(), refIdToServerId);
 
@@ -254,7 +258,7 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
                 cleanAndSaveInLocalStore(syncManager, soupName, record);
             }
             // Handling remotely deleted records
-            else if (statusCode == HttpURLConnection.HTTP_NOT_FOUND
+            else if (response.recordDoesNotExist
                     && mergeMode == SyncState.MergeMode.OVERWRITE // Record needs to be recreated
                     && !isReRun) {
                 record.put(LOCAL, true);
@@ -263,10 +267,9 @@ public class BatchSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTar
             }
             // Failure
             else {
-                saveRecordToLocalStoreWithError(syncManager, soupName, record, response != null ? response.toString() : null);
+                saveRecordToLocalStoreWithError(syncManager, soupName, record, lastError);
             }
         }
         return needReRun;
     }
-
 }

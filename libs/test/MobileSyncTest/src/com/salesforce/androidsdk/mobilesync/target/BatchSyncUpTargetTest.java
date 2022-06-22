@@ -45,7 +45,7 @@ import java.util.List;
 
 /**
  * Test class for BatchSyncUpTarget.
- * Running all the same tests as SyncUpTargetTest but using a BatchSyncUpTarget with batch size of 2
+ * Running all the same tests as SyncUpTargetTest but using a BatchSyncUpTarget
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
@@ -57,14 +57,14 @@ public class BatchSyncUpTargetTest extends SyncUpTargetTest {
     }
 
     @Test
-    public void testMaxBatchSizeExceeding25() {
+    public void testMaxBatchSizeExceedingLimit() {
         BatchSyncUpTarget target = new BatchSyncUpTarget(null, null, 26);
 
         Assert.assertTrue("Max batch size should be 25", 25 == target.getMaxBatchSize());
     }
 
     @Test
-    public void testMaxBatchSizeExceeding25InJSON() throws Exception {
+    public void testMaxBatchSizeExceedingLimitInJSON() throws Exception {
         JSONObject targetJson = new JSONObject();
         targetJson.put(SyncTarget.ANDROID_IMPL, BatchSyncUpTarget.class.getName());
         targetJson.put(BatchSyncUpTarget.MAX_BATCH_SIZE, 26);
@@ -162,17 +162,5 @@ public class BatchSyncUpTargetTest extends SyncUpTargetTest {
         expectedTargetJson.put(BatchSyncUpTarget.MAX_BATCH_SIZE, maxBatchSize);
 
         JSONTestHelper.assertSameJSON("Wrong json", expectedTargetJson, target.asJSON());
-    }
-
-    @Test
-    public void testBatchSyncUpTargetIsDefault() throws Exception {
-        JSONObject targetJson = new JSONObject();
-
-        SyncUpTarget target = SyncUpTarget.fromJSON(targetJson);
-
-        Assert.assertTrue(target instanceof BatchSyncUpTarget);
-        Assert.assertNull("Wrong createFieldList", target.createFieldlist);
-        Assert.assertNull("Wrong updateFieldList", target.updateFieldlist);
-        Assert.assertEquals("Wrong maxBatchSize", BatchSyncUpTarget.MAX_SUB_REQUESTS_COMPOSITE_API, ((BatchSyncUpTarget) target).getMaxBatchSize());
     }
 }

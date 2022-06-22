@@ -27,28 +27,21 @@
 package com.salesforce.androidsdk.mobilesync.manager;
 
 import android.text.TextUtils;
-
+import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget;
+import com.salesforce.androidsdk.mobilesync.target.SyncTarget;
+import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget;
+import com.salesforce.androidsdk.mobilesync.util.Constants;
+import com.salesforce.androidsdk.mobilesync.util.JSONTestHelper;
+import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
+import com.salesforce.androidsdk.mobilesync.util.SyncState;
+import com.salesforce.androidsdk.mobilesync.util.SyncUpdateCallbackQueue;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget;
-import com.salesforce.androidsdk.mobilesync.target.SyncTarget;
-import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget;
-import com.salesforce.androidsdk.mobilesync.util.Constants;
-import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
-import com.salesforce.androidsdk.mobilesync.util.SyncState;
-import com.salesforce.androidsdk.mobilesync.util.SyncUpdateCallbackQueue;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
-import com.salesforce.androidsdk.mobilesync.util.JSONTestHelper;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.junit.Assert;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -57,6 +50,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.junit.Assert;
 
 /**
  * Abstract super class for all SyncManager test classes.
@@ -69,6 +66,8 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
     protected static final int TOTAL_SIZE_UNKNOWN = -2;
     protected static final String REMOTELY_UPDATED = "_r_upd";
     protected static final String LOCALLY_UPDATED = "_l_upd";
+    protected static final String CONTACTS_SOUP = "contacts";
+    protected static final String ACCOUNT_ID = "AccountId";
 
     @Override
     public void tearDown() throws Exception {
@@ -104,6 +103,21 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
 
     protected void dropAccountsSoup(String soupName) {
         smartStore.dropSoup(soupName);
+    }
+
+    protected void createContactsSoup() {
+        final IndexSpec[] contactsIndexSpecs = {
+            new IndexSpec(Constants.ID, SmartStore.Type.string),
+            new IndexSpec(Constants.LAST_NAME, SmartStore.Type.string),
+            new IndexSpec(SyncTarget.LOCAL, SmartStore.Type.string),
+            new IndexSpec(SyncTarget.SYNC_ID, SmartStore.Type.integer),
+            new IndexSpec(ACCOUNT_ID, SmartStore.Type.string)
+        };
+        smartStore.registerSoup(CONTACTS_SOUP, contactsIndexSpecs);
+    }
+
+    protected void dropContactsSoup() {
+        smartStore.dropSoup(CONTACTS_SOUP);
     }
 
     /**
@@ -659,9 +673,9 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
 		for (String id : ids) {
 			JSONObject record = smartStore.retrieve(soupName, smartStore.lookupSoupEntryId(soupName, Constants.ID, id)).getJSONObject(0);
 			record.put(SyncTarget.LOCAL, true);
-			record.put(SyncTarget.LOCALLY_CREATED, false);
+			record.put(SyncTarget.LOCALLY_CREATED, record.getBoolean(SyncTarget.LOCALLY_CREATED));
 			record.put(SyncTarget.LOCALLY_DELETED, true);
-			record.put(SyncTarget.LOCALLY_UPDATED, false);
+            record.put(SyncTarget.LOCALLY_UPDATED, record.getBoolean(SyncTarget.LOCALLY_UPDATED));
 			smartStore.upsert(soupName, record);
 		}
 	}
@@ -737,6 +751,40 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         if (name != null) fields.put(Constants.NAME, name);
         if (description != null) fields.put(Constants.DESCRIPTION, description);
         return fields;
+    }
+
+    protected Map<JSONObject, JSONObject[]> createAccountsAndContactsLocally(String[] names, int numberOfContactsPerAccount) throws JSONException {
+        JSONObject[] accounts = createAccountsLocally(names);
+        String[] accountIds = JSONObjectHelper.pluck(accounts, Constants.ID).toArray(new String[0]);
+        Map<String, JSONObject[]> accountIdsToContacts = createContactsForAccountsLocally(numberOfContactsPerAccount, accountIds);
+        Map<JSONObject, JSONObject[]> accountToContacts = new HashMap<>();
+        for (JSONObject account : accounts) {
+            accountToContacts.put(account, accountIdsToContacts.get(account.getString(Constants.ID)));
+        }
+        return accountToContacts;
+    }
+
+    protected Map<String, JSONObject[]> createContactsForAccountsLocally(int numberOfContactsPerAccount, String... accountIds) throws JSONException {
+        Map<String, JSONObject[]> accountIdToContacts = new HashMap<>();
+        JSONObject attributes = new JSONObject();
+        attributes.put(TYPE, Constants.CONTACT);
+        for (String accountId : accountIds) {
+            JSONObject[] contacts = new JSONObject[numberOfContactsPerAccount];
+            for (int i = 0; i < numberOfContactsPerAccount; i++) {
+                JSONObject contact = new JSONObject();
+                contact.put(Constants.ID, SyncTarget.createLocalId());
+                contact.put(Constants.LAST_NAME, createRecordName(Constants.CONTACT));
+                contact.put(Constants.ATTRIBUTES, attributes);
+                contact.put(SyncTarget.LOCAL, true);
+                contact.put(SyncTarget.LOCALLY_CREATED, true);
+                contact.put(SyncTarget.LOCALLY_DELETED, false);
+                contact.put(SyncTarget.LOCALLY_UPDATED, false);
+                contact.put(ACCOUNT_ID, accountId);
+                contacts[i] = smartStore.create(CONTACTS_SOUP, contact);
+            }
+            accountIdToContacts.put(accountId, contacts);
+        }
+        return accountIdToContacts;
     }
 
     /**

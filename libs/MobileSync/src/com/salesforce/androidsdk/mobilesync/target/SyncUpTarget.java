@@ -27,12 +27,14 @@
 package com.salesforce.androidsdk.mobilesync.target;
 
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
+import com.salesforce.androidsdk.mobilesync.manager.SyncManager.MobileSyncException;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
+import java.util.ArrayList;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -98,9 +100,9 @@ public class SyncUpTarget extends SyncTarget {
      */
     @SuppressWarnings("unchecked")
     public static SyncUpTarget fromJSON(JSONObject target) throws JSONException {
-        // Default sync up target (it's BatchSyncUpTarget starting in Mobile SDK 7.1)
+        // Default sync up target (it's CollectionSyncUpTarget starting in Mobile SDK 10.1)
         if (target == null || target.isNull(ANDROID_IMPL)) {
-            return new BatchSyncUpTarget(target);
+            return new CollectionSyncUpTarget(target);
         }
 
         // Non default sync up target
@@ -353,6 +355,55 @@ public class SyncUpTarget extends SyncTarget {
     }
 
     /**
+     * Same as fetchLastModifiedDate but operating over a list of records (expected to be of the same sobject type)
+     *
+     * @param syncManager
+     * @param records
+     * @return
+     */
+    protected Map<String, RecordModDate> fetchLastModifiedDates(SyncManager syncManager, List<JSONObject> records) throws JSONException, IOException {
+        Map<String, RecordModDate> recordIdToLastModifiedDate = new HashMap<>();
+
+        int totalSize = records.size();
+        if (totalSize > 0) {
+            String objectType = (String) SmartStore.project(records.get(0), Constants.SOBJECT_TYPE);
+            List<String> batchStoreIds = new ArrayList<>();
+            List<String> batchServerIds = new ArrayList<>();
+
+            for (int i = 0; i < totalSize; i++) {
+                JSONObject record = records.get(i);
+                if (!objectType.equals(SmartStore.project(record, Constants.SOBJECT_TYPE))) {
+                    throw new MobileSyncException("All records should have same sobject type");
+                }
+
+                batchStoreIds.add(record.getString(SmartStore.SOUP_ENTRY_ID));
+                batchServerIds.add(record.getString(getIdFieldName()));
+
+                // Process batch if max batch size reached or at the end of records
+                if (batchServerIds.size() == RestRequest.MAX_COLLECTION_RETRIEVE_SIZE || i == totalSize - 1) {
+                    RestRequest request = RestRequest.getRequestForCollectionRetrieve(syncManager.apiVersion, objectType, batchServerIds, Arrays.asList(getModificationDateFieldName()));
+                    RestResponse response = syncManager.sendSyncWithMobileSyncUserAgent(request);
+                    JSONArray responseAsArray = response.asJSONArray();
+                    for (int j = 0; j < responseAsArray.length(); j++) {
+                        String storeId = batchStoreIds.get(j);
+                        JSONObject lastModResponse = responseAsArray.isNull(j) ? null : responseAsArray.getJSONObject(j);
+                        RecordModDate serverModDate = new RecordModDate(
+                            lastModResponse != null ? lastModResponse.getString(getModificationDateFieldName()) : null,
+                            lastModResponse == null
+                        );
+                        recordIdToLastModifiedDate.put(storeId, serverModDate);
+                    }
+
+                    batchServerIds.clear();
+                    batchStoreIds.clear();
+                }
+            }
+        }
+
+        return recordIdToLastModifiedDate;
+    }
+
+    /**
      * Return true if record is more recent than corresponding record on server
      * NB: also return true if both were deleted or if local mod date is missing
      *
@@ -374,6 +425,27 @@ public class SyncUpTarget extends SyncTarget {
         );
         final RecordModDate remoteModDate = fetchLastModifiedDate(syncManager, record);
         return isNewerThanServer(localModDate, remoteModDate);
+    }
+
+    /**
+     * Same as isNewerThanServer but operating over a list of records (expected to be of the same sobject type)
+     * Return map from record store id to boolean
+     *
+     * @param syncManager
+     * @param records
+     * @return
+     * @throws JSONException
+     * @throws IOException
+     */
+    public Map<String, Boolean> areNewerThanServer(SyncManager syncManager, List<JSONObject> records) throws JSONException, IOException {
+        Map<String, Boolean> storeIdToNewerThanServer = new HashMap<>();
+
+        for (JSONObject record : records) {
+            String storeId = record.getString(SmartStore.SOUP_ENTRY_ID);
+            storeIdToNewerThanServer.put(storeId, isNewerThanServer(syncManager, record));
+        }
+
+        return storeIdToNewerThanServer;
     }
 
     /**

@@ -97,7 +97,9 @@ public class EventStoreManagerTest {
     public void testStoreOneEvent() throws Exception {
         final InstrumentationEvent event = createTestEvent();
         Assert.assertNotNull("Generated event stored should not be null", event);
+        Assert.assertEquals(0, storeManager.getNumStoredEvents());
         storeManager.storeEvent(event);
+        Assert.assertEquals(1, storeManager.getNumStoredEvents());
         final List<InstrumentationEvent> events = storeManager.fetchAllEvents();
         Assert.assertNotNull("List of events stored should not be null", events);
         Assert.assertEquals("Number of events stored should be 1", 1, events.size());
@@ -118,7 +120,9 @@ public class EventStoreManagerTest {
         final List<InstrumentationEvent> genEvents = new ArrayList<InstrumentationEvent>();
         genEvents.add(event1);
         genEvents.add(event2);
+        Assert.assertEquals(0, storeManager.getNumStoredEvents());
         storeManager.storeEvents(genEvents);
+        Assert.assertEquals(2, storeManager.getNumStoredEvents());
         final List<InstrumentationEvent> events = storeManager.fetchAllEvents();
         Assert.assertNotNull("List of events stored should not be null", events);
         Assert.assertEquals("Number of events stored should be 2", 2, events.size());
@@ -196,12 +200,16 @@ public class EventStoreManagerTest {
         final InstrumentationEvent event = createTestEvent();
         Assert.assertNotNull("Generated event stored should not be null", event);
         final String eventId = event.getEventId();
+        Assert.assertEquals(0, storeManager.getNumStoredEvents());
         storeManager.storeEvent(event);
+        Assert.assertEquals(1, storeManager.getNumStoredEvents());
         final List<InstrumentationEvent> eventsBeforeDel = storeManager.fetchAllEvents();
         Assert.assertNotNull("List of events stored should not be null", eventsBeforeDel);
         Assert.assertEquals("Number of events stored should be 1", 1, eventsBeforeDel.size());
         Assert.assertTrue("Stored event should be the same as generated event", event.equals(eventsBeforeDel.get(0)));
         storeManager.deleteEvent(eventId);
+        Assert.assertEquals(0, storeManager.getNumStoredEvents());
+
         final List<InstrumentationEvent> eventsAfterDel = storeManager.fetchAllEvents();
         Assert.assertNotNull("List of events stored should not be null", eventsAfterDel);
         Assert.assertEquals("Number of events stored should be 0", 0, eventsAfterDel.size());
@@ -227,7 +235,9 @@ public class EventStoreManagerTest {
         genEvents.add(event1);
         genEvents.add(event2);
         genEvents.add(event3);
+        Assert.assertEquals(0, storeManager.getNumStoredEvents());
         storeManager.storeEvents(genEvents);
+        Assert.assertEquals(3, storeManager.getNumStoredEvents());
         final List<InstrumentationEvent> eventsBeforeDel = storeManager.fetchAllEvents();
         Assert.assertNotNull("List of events stored should not be null", eventsBeforeDel);
         Assert.assertEquals("Number of events stored should be 3", 3, eventsBeforeDel.size());
@@ -238,6 +248,7 @@ public class EventStoreManagerTest {
         eventIds.add(eventId1);
         eventIds.add(eventId3);
         storeManager.deleteEvents(eventIds);
+        Assert.assertEquals(1, storeManager.getNumStoredEvents());
         final List<InstrumentationEvent> eventsAfterDel = storeManager.fetchAllEvents();
         Assert.assertNotNull("List of events stored should not be null", eventsAfterDel);
         Assert.assertEquals("Number of events stored should be 1", 1, eventsAfterDel.size());
@@ -258,13 +269,16 @@ public class EventStoreManagerTest {
         final List<InstrumentationEvent> genEvents = new ArrayList<InstrumentationEvent>();
         genEvents.add(event1);
         genEvents.add(event2);
+        Assert.assertEquals(0, storeManager.getNumStoredEvents());
         storeManager.storeEvents(genEvents);
+        Assert.assertEquals(2, storeManager.getNumStoredEvents());
         final List<InstrumentationEvent> eventsBeforeDel = storeManager.fetchAllEvents();
         Assert.assertNotNull("List of events stored should not be null", eventsBeforeDel);
         Assert.assertEquals("Number of events stored should be 2", 2, eventsBeforeDel.size());
         Assert.assertTrue("Stored event should be the same as generated event", eventsBeforeDel.contains(event1));
         Assert.assertTrue("Stored event should be the same as generated event", eventsBeforeDel.contains(event2));
         storeManager.deleteAllEvents();
+        Assert.assertEquals(0, storeManager.getNumStoredEvents());
         final List<InstrumentationEvent> eventsAfterDel = storeManager.fetchAllEvents();
         Assert.assertNotNull("List of events stored should not be null", eventsAfterDel);
         Assert.assertEquals("Number of events stored should be 0", 0, eventsAfterDel.size());

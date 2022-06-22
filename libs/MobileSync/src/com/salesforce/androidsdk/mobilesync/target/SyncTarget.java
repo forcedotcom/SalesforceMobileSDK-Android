@@ -33,6 +33,7 @@ import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
+import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -304,6 +305,21 @@ public abstract class SyncTarget {
      */
     public JSONObject getFromLocalStore(SyncManager syncManager, String soupName, String storeId) throws JSONException {
         return syncManager.getSmartStore().retrieve(soupName, Long.valueOf(storeId)).getJSONObject(0);
+    }
+
+    /**
+     * Get records from local store by storeId
+     * @param syncManager
+     * @param storeIds
+     * @throws  JSONException
+     */
+    public List<JSONObject> getFromLocalStore(SyncManager syncManager, String soupName, List<String> storeIds) throws JSONException {
+        Long[] storeIdsLong = new Long[storeIds.size()];
+        for (int i=0; i<storeIds.size(); i++) {
+            storeIdsLong[i] = Long.valueOf(storeIds.get(i));
+        }
+
+        return JSONObjectHelper.toList(syncManager.getSmartStore().retrieve(soupName, storeIdsLong));
     }
 
     /**

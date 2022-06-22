@@ -191,4 +191,16 @@ public class JSONObjectHelper {
 		return result;
 	}
 
+	/**
+	 * Add all elements from array to destinationArray
+	 *
+	 * @param destinationArray
+	 * @param array
+	 */
+	public static void addAll(JSONArray destinationArray, JSONArray array) throws JSONException {
+		for (int i=0; i<array.length(); i++) {
+			destinationArray.put(array.getJSONObject(i));
+		}
+	}
+
 }

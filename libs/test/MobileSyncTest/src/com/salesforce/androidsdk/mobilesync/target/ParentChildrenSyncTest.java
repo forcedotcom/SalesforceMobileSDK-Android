@@ -604,7 +604,7 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
 
         // Deletes 1 account on the server and verifies the ghost record is cleared from the soup.
         String accountIdDeleted = accountIdToFields.keySet().toArray(new String[0])[0];
-        deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIdDeleted)), Constants.ACCOUNT);
+        deleteRecordsByIdOnServer(new HashSet<String>(Arrays.asList(accountIdDeleted)), Constants.ACCOUNT);
         tryCleanResyncGhosts(syncId);
 
         // Accounts and contacts expected to still be in db
@@ -654,7 +654,7 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         checkDbSyncIdField(accountIdsSecondSubset, secondSyncId, ACCOUNTS_SOUP);
 
         // Deletes id0, id2, id5 on the server
-        deleteRecordsOnServer(new HashSet<>(Arrays.asList(accountIds[0], accountIds[2], accountIds[5])), Constants.ACCOUNT);
+        deleteRecordsByIdOnServer(new HashSet<>(Arrays.asList(accountIds[0], accountIds[2], accountIds[5])), Constants.ACCOUNT);
 
         // Cleaning ghosts of first sync (should only remove id0 and its contacts)
         tryCleanResyncGhosts(firstSyncId);
@@ -771,8 +771,8 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         checkServer(contactIdToFieldsUpdated, Constants.CONTACT);
 
         // Cleanup
-        deleteRecordsOnServer(accountIdToFieldsCreated.keySet(), Constants.ACCOUNT);
-        deleteRecordsOnServer(contactIdToFieldsUpdated.keySet(), Constants.CONTACT);
+        deleteRecordsByIdOnServer(accountIdToFieldsCreated.keySet(), Constants.ACCOUNT);
+        deleteRecordsByIdOnServer(contactIdToFieldsUpdated.keySet(), Constants.CONTACT);
     }
 
     /**
@@ -813,8 +813,8 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         checkServer(contactIdToFieldsCreated, Constants.CONTACT);
 
         // Cleanup
-        deleteRecordsOnServer(accountIdToFieldsCreated.keySet(), Constants.ACCOUNT);
-        deleteRecordsOnServer(contactIdToFieldsCreated.keySet(), Constants.CONTACT);
+        deleteRecordsByIdOnServer(accountIdToFieldsCreated.keySet(), Constants.ACCOUNT);
+        deleteRecordsByIdOnServer(contactIdToFieldsCreated.keySet(), Constants.CONTACT);
     }
 
 
@@ -847,7 +847,7 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         String[] contactNames = contactNamesList.toArray(new String[0]);
 
         // Delete account remotely
-        deleteRecordsOnServer(new HashSet<>(Arrays.asList(accountId)), Constants.ACCOUNT);
+        deleteRecordsByIdOnServer(new HashSet<>(Arrays.asList(accountId)), Constants.ACCOUNT);
 
         // Sync up
         ParentChildrenSyncUpTarget target = getAccountContactsSyncUpTarget();
@@ -874,8 +874,8 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         }
 
         // Cleanup
-        deleteRecordsOnServer(new HashSet<String>(Arrays.asList(newAccountId)), Constants.ACCOUNT);
-        deleteRecordsOnServer(contactIdToFieldsCreated.keySet(), Constants.CONTACT);
+        deleteRecordsByIdOnServer(new HashSet<String>(Arrays.asList(newAccountId)), Constants.ACCOUNT);
+        deleteRecordsByIdOnServer(contactIdToFieldsCreated.keySet(), Constants.CONTACT);
     }
 
     /**
@@ -1084,7 +1084,7 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         checkServer(expectedContactsServerIdToFields, Constants.CONTACT);
 
         // Clean up
-        deleteRecordsOnServer(Collections.singletonList(newAccountId), Constants.ACCOUNT);
-        deleteRecordsOnServer(Collections.singletonList(newContactId), Constants.CONTACT);
+        deleteRecordsByIdOnServer(Collections.singletonList(newAccountId), Constants.ACCOUNT);
+        deleteRecordsByIdOnServer(Collections.singletonList(newContactId), Constants.CONTACT);
     }
 }
