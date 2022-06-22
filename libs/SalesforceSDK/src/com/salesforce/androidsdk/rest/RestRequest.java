@@ -920,7 +920,7 @@ public class RestRequest {
 	 */
 	public static RestRequest getRequestForCollectionDelete(String apiVersion, boolean allOrNone, List<String> objectIds) throws UnsupportedEncodingException {
 		StringBuilder path = new StringBuilder(RestAction.SOBJECT_COLLECTION.getPath(apiVersion));
-		path.append("?allOrNone=" + allOrNone + "&=ids=");
+		path.append("?allOrNone=" + allOrNone + "&ids=");
 		path.append(URLEncoder.encode(TextUtils.join(",", objectIds), UTF_8));
 		return new RestRequest(RestMethod.DELETE, path.toString());
 	}

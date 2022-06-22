@@ -359,10 +359,11 @@ public class CompositeRequestHelper {
                         String externalIdFieldName = externalIdFieldNames.get(0);
 
                         return RestRequest
-                            .getRequestForCollectionUpsert(apiVersion,
-                                    allOrNone, objectType,
-                                externalIdFieldName,
-                                    records);
+                                .getRequestForCollectionUpsert(apiVersion,
+                                        allOrNone,
+                                        objectType,
+                                        externalIdFieldName,
+                                        records);
                     }
                 case DELETE:
                     return RestRequest.getRequestForCollectionDelete(apiVersion, false, getIds(recordRequests, RequestType.DELETE));
