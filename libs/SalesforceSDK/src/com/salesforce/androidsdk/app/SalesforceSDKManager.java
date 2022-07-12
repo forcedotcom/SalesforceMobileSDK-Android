@@ -170,6 +170,7 @@ public class SalesforceSDKManager implements LifecycleObserver {
     private String idpAppURIScheme;
     private boolean idpAppLoginFlowActive;
     private Theme theme =  Theme.SYSTEM_DEFAULT;
+    private String appName;
 
     /**
      * Available Mobile SDK style themes.
@@ -955,9 +956,12 @@ public class SalesforceSDKManager implements LifecycleObserver {
      * @return The app name to use when constructing the user agent string
      */
     public String provideAppName() {
-        try {
-            PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
-            return context.getString(packageInfo.applicationInfo.labelRes);
+       try {
+            if (appName == null) {
+                PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+                appName = context.getString(packageInfo.applicationInfo.labelRes);
+            }
+            return appName;
         } catch (NameNotFoundException | Resources.NotFoundException e) {
             SalesforceSDKLogger.w(TAG, "Package info could not be retrieved", e);
             return "";
