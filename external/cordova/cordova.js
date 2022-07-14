@@ -19,7 +19,7 @@
  under the License.
 */
 ;(function() {
-var PLATFORM_VERSION_BUILD_LABEL = '10.1.2';
+var PLATFORM_VERSION_BUILD_LABEL = '11.0.0';
 // file: src/scripts/require.js
 var require;
 var define;
@@ -1426,6 +1426,9 @@ module.exports = {
         // TODO: Extract this as a proper plugin.
         modulemapper.clobbers('cordova/plugin/android/app', 'navigator.app');
 
+        // Core Splash Screen
+        modulemapper.clobbers('cordova/plugin/android/splashscreen', 'navigator.splashscreen');
+
         var APP_PLUGIN_NAME = Number(cordova.platformVersion.split('.')[0]) >= 4 ? 'CoreAndroid' : 'App';
 
         // Inject a listener for the backbutton on the document.
@@ -1603,6 +1606,24 @@ module.exports = {
         return exec(null, null, APP_PLUGIN_NAME, 'exitApp', []);
     }
 };
+
+});
+
+// file: ../../cordova-js-src/plugin/android/splashscreen.js
+define("cordova/plugin/android/splashscreen", function(require, exports, module) {
+
+var exec = require('cordova/exec');
+
+var splashscreen = {
+    show: function () {
+        console.log('"navigator.splashscreen.show()" is unsupported on Android.');
+    },
+    hide: function () {
+        exec(null, null, 'CordovaSplashScreenPlugin', 'hide', []);
+    }
+};
+
+module.exports = splashscreen;
 
 });
 
