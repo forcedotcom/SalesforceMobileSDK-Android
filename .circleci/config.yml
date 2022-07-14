@@ -137,7 +137,7 @@ jobs:
         default: false
       api_level:
         type: integer
-        default: 29 # most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
+        default: 30 # most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
     environment:
       CURRENT_LIB: << parameters.lib >>
     steps:
