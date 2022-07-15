@@ -29,8 +29,6 @@ package com.salesforce.androidsdk.phonegap.ui;
 
 import android.os.Bundle;
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.hybrid.R;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.util.test.TestCredentials;
 
@@ -53,7 +51,6 @@ public class SalesforceHybridTestActivity extends SalesforceDroidGapActivity {
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		setTheme(R.style.SalesforceSDK_SplashScreen);
 		super.onCreate(savedInstanceState);
 	}
 
