@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <style name="SalesforceSDK_SplashScreen" parent="Theme.SplashScreen.IconBackground">
+        <item name="postSplashScreenTheme">@style/Theme.AppCompat.NoActionBar</item>
+    </style>
+</resources>
