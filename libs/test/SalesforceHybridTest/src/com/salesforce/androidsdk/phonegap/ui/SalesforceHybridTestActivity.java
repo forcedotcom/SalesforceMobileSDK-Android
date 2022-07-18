@@ -27,6 +27,8 @@
 
 package com.salesforce.androidsdk.phonegap.ui;
 
+import android.os.Bundle;
+
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.util.test.TestCredentials;
 
@@ -46,6 +48,11 @@ public class SalesforceHybridTestActivity extends SalesforceDroidGapActivity {
 	static String userId = TestCredentials.USER_ID;
     static String photoUrl = TestCredentials.PHOTO_URL;
 	static String clientId = TestCredentials.CLIENT_ID;
+
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+	}
 
 	@Override
 	public ClientManager buildClientManager() {
