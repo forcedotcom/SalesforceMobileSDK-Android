@@ -28,14 +28,22 @@ package com.salesforce.androidsdk.app;
 
 import static com.salesforce.androidsdk.security.ScreenLockManager.MOBILE_POLICY_PREF;
 import static com.salesforce.androidsdk.security.ScreenLockManager.SCREEN_LOCK;
+import static com.salesforce.androidsdk.security.ScreenLockManager.SCREEN_LOCK_TIMEOUT;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
+import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -93,6 +101,10 @@ public class SalesforceSDKUpgradeManager {
             double installedVerDouble = Double.parseDouble(majorVersionNum);
             if (installedVerDouble < 9.2) {
                 upgradeTo9Dot2();
+            }
+            // Already incorporated into 9.2 upgrade.
+            if (installedVerDouble > 9.2 && installedVerDouble <= 10.1) {
+                upgradeTo10Dot1Dot1();
             }
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Failed to parse installed version.");
@@ -170,11 +182,12 @@ public class SalesforceSDKUpgradeManager {
                             + account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
                     if (orgPrefs.contains(KEY_TIMEOUT) && orgPrefs.contains(KEY_PASSCODE_LENGTH)) {
                         // Check that Passcode was enabled
-                        if (orgPrefs.getInt(KEY_TIMEOUT, 0) != 0) {
+                        int timeout = orgPrefs.getInt(KEY_TIMEOUT, 0);
+                        if (timeout != 0) {
                             // Set screen lock key at user level
                             final SharedPreferences userPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
                                     + account.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
-                            userPrefs.edit().putBoolean(SCREEN_LOCK, true).apply();
+                            userPrefs.edit().putBoolean(SCREEN_LOCK, true).putInt(SCREEN_LOCK_TIMEOUT, timeout).apply();
                         }
 
                         // Delete passcode keys at org level
@@ -188,6 +201,35 @@ public class SalesforceSDKUpgradeManager {
                         orgEditor.remove(KEY_BIOMETRIC_ENROLLMENT);
                         orgEditor.remove(KEY_BIOMETRIC_ENABLED);
                         orgEditor.apply();
+                    }
+                }
+            }
+        }
+    }
+
+    // TODO: Remove upgrade step in Mobile SDK 12.0
+    private void upgradeTo10Dot1Dot1() {
+        final Context ctx = SalesforceSDKManager.getInstance().getAppContext();
+        final SharedPreferences globalPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
+        if (globalPrefs.contains(SCREEN_LOCK)) {
+            final UserAccountManager manager = SalesforceSDKManager.getInstance().getUserAccountManager();
+            final List<UserAccount> accounts = manager.getAuthenticatedUsers();
+            final String clientId = SalesforceAnalyticsManager.getDeviceAppAttributes().getClientId();
+
+            if (accounts != null) {
+                for (UserAccount account : accounts) {
+                    // Get and set connected app mobile policy timeout per user.
+                    try {
+                        final OAuth2.TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
+                                new URI(account.getLoginServer()), clientId, account.getRefreshToken(), new HashMap<>());
+                        final OAuth2.IdServiceResponse response = OAuth2.callIdentityService(HttpAccess.DEFAULT,
+                                tr.idUrlWithInstance, tr.authToken);
+
+                        final SharedPreferences userPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
+                                + account.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
+                        userPrefs.edit().putInt(SCREEN_LOCK_TIMEOUT, response.screenLockTimeout).apply();
+                    } catch (IOException | URISyntaxException | OAuth2.OAuthFailedException e) {
+                        e.printStackTrace();
                     }
                 }
             }

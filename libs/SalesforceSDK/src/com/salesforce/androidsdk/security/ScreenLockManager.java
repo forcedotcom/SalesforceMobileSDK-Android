@@ -48,8 +48,10 @@ public class ScreenLockManager {
 
     public static final String MOBILE_POLICY_PREF = "mobile_policy";
     public static final String SCREEN_LOCK = "screen_lock";
+    public static final String SCREEN_LOCK_TIMEOUT = "screen_lock_timeout";
 
     private boolean backgroundedSinceUnlock = true;
+    private long lastLockedTimestamp = 0;
 
     /**
      * Stores the mobile policy for the org upon user login.
@@ -57,15 +59,22 @@ public class ScreenLockManager {
      * @param account the newly add account
      * @param screenLockRequired if the account requires screen lock or not
      */
-    public void storeMobilePolicy(UserAccount account, boolean screenLockRequired) {
+    public void storeMobilePolicy(UserAccount account, boolean screenLockRequired, int timeout) {
         Context ctx = SalesforceSDKManager.getInstance().getAppContext();
         SharedPreferences accountSharedPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
                 + account.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
-        accountSharedPrefs.edit().putBoolean(SCREEN_LOCK, screenLockRequired).apply();
+        accountSharedPrefs.edit().putBoolean(SCREEN_LOCK, screenLockRequired).putInt(SCREEN_LOCK_TIMEOUT, timeout).apply();
 
         SharedPreferences globalPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
         if (screenLockRequired) {
-            globalPrefs.edit().putBoolean(SCREEN_LOCK, true).apply();
+            int currentTimeout = globalPrefs.getInt(SCREEN_LOCK_TIMEOUT, 0);
+            SharedPreferences.Editor globalPrefsEditor = globalPrefs.edit();
+
+            globalPrefsEditor.putBoolean(SCREEN_LOCK, true);
+            if (currentTimeout == 0 || timeout < currentTimeout) {
+                globalPrefsEditor.putInt(SCREEN_LOCK_TIMEOUT, timeout);
+            }
+            globalPrefsEditor.apply();
 
             // This is needed to block access to the app immediately on login
             backgroundedSinceUnlock = true;
@@ -87,6 +96,7 @@ public class ScreenLockManager {
      */
     public void onAppBackgrounded() {
         backgroundedSinceUnlock = true;
+        lastLockedTimestamp = System.currentTimeMillis();
     }
 
     /**
@@ -95,7 +105,7 @@ public class ScreenLockManager {
     public void reset() {
         Context ctx = SalesforceSDKManager.getInstance().getAppContext();
         SharedPreferences globalPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
-        globalPrefs.edit().remove(SCREEN_LOCK).apply();
+        globalPrefs.edit().remove(SCREEN_LOCK).remove(SCREEN_LOCK_TIMEOUT).apply();
     }
 
     /**
@@ -110,12 +120,14 @@ public class ScreenLockManager {
         if (account != null) {
             final SharedPreferences accountPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
                     + account.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
-            accountPrefs.edit().remove(SCREEN_LOCK).apply();
+            accountPrefs.edit().remove(SCREEN_LOCK).remove(SCREEN_LOCK_TIMEOUT).apply();
         }
 
         // Determine if any other users still need Screen Lock.
         final List<UserAccount> accounts = SalesforceSDKManager.getInstance()
                 .getUserAccountManager().getAuthenticatedUsers();
+        int lowestTimeout = Integer.MAX_VALUE;
+
         if (accounts != null) {
             accounts.remove(account);
             for (final UserAccount mAccount : accounts) {
@@ -123,9 +135,18 @@ public class ScreenLockManager {
                     final SharedPreferences accountPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
                             + mAccount.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
                     if (accountPrefs.getBoolean(SCREEN_LOCK, false)) {
-                        return;
+                        int timeout = accountPrefs.getInt(SCREEN_LOCK_TIMEOUT, Integer.MAX_VALUE);
+                        if (timeout < lowestTimeout) {
+                            lowestTimeout = timeout;
+                        }
                     }
                 }
+            }
+
+            if (lowestTimeout < Integer.MAX_VALUE) {
+                SharedPreferences globalPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
+                globalPrefs.edit().putInt(SCREEN_LOCK_TIMEOUT, lowestTimeout).apply();
+                return;
             }
         }
 
@@ -138,17 +159,18 @@ public class ScreenLockManager {
      */
     public void unlock() {
         backgroundedSinceUnlock = false;
+        lastLockedTimestamp = 0;
     }
 
     @VisibleForTesting
     protected boolean shouldLock() {
-        return backgroundedSinceUnlock && readMobilePolicy();
-    }
-
-    private boolean readMobilePolicy() {
+        long elapsedTime = System.currentTimeMillis() - lastLockedTimestamp;
         Context ctx = SalesforceSDKManager.getInstance().getAppContext();
         SharedPreferences sharedPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
-        return sharedPrefs.getBoolean(SCREEN_LOCK, false);
+        boolean hasLock = sharedPrefs.getBoolean(SCREEN_LOCK, false);
+        int timeout = sharedPrefs.getInt(SCREEN_LOCK_TIMEOUT, 0);
+
+        return backgroundedSinceUnlock && hasLock && (elapsedTime > timeout);
     }
 
     private void lock() {
