@@ -45,6 +45,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.Executors;
 
 /**
  * This class handles upgrades from one version to another.
@@ -158,8 +159,10 @@ public class SalesforceSDKUpgradeManager {
         if (globalPrefs.contains(KEY_TIMEOUT) && globalPrefs.contains(KEY_PASSCODE_LENGTH)) {
             SharedPreferences.Editor globalEditor = globalPrefs.edit();
             // Check that Passcode was enabled
-            if (globalPrefs.getInt(KEY_TIMEOUT, 0) != 0) {
+            int timeout = globalPrefs.getInt(KEY_TIMEOUT, 0);
+            if (timeout != 0) {
                 globalEditor.putBoolean(SCREEN_LOCK, true);
+                globalEditor.putInt(SCREEN_LOCK_TIMEOUT, timeout);
             }
 
             globalEditor.remove(KEY_PASSCODE);
@@ -182,12 +185,12 @@ public class SalesforceSDKUpgradeManager {
                             + account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
                     if (orgPrefs.contains(KEY_TIMEOUT) && orgPrefs.contains(KEY_PASSCODE_LENGTH)) {
                         // Check that Passcode was enabled
-                        int timeout = orgPrefs.getInt(KEY_TIMEOUT, 0);
-                        if (timeout != 0) {
+                        int userTimeout = orgPrefs.getInt(KEY_TIMEOUT, 0);
+                        if (userTimeout != 0) {
                             // Set screen lock key at user level
                             final SharedPreferences userPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
                                     + account.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
-                            userPrefs.edit().putBoolean(SCREEN_LOCK, true).putInt(SCREEN_LOCK_TIMEOUT, timeout).apply();
+                            userPrefs.edit().putBoolean(SCREEN_LOCK, true).putInt(SCREEN_LOCK_TIMEOUT, userTimeout).apply();
                         }
 
                         // Delete passcode keys at org level
@@ -217,21 +220,39 @@ public class SalesforceSDKUpgradeManager {
             final String clientId = SalesforceAnalyticsManager.getDeviceAppAttributes().getClientId();
 
             if (accounts != null) {
-                for (UserAccount account : accounts) {
-                    // Get and set connected app mobile policy timeout per user.
-                    try {
-                        final OAuth2.TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
-                                new URI(account.getLoginServer()), clientId, account.getRefreshToken(), new HashMap<>());
-                        final OAuth2.IdServiceResponse response = OAuth2.callIdentityService(HttpAccess.DEFAULT,
-                                tr.idUrlWithInstance, tr.authToken);
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    int lowestTimeout = Integer.MAX_VALUE;
 
-                        final SharedPreferences userPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
-                                + account.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
-                        userPrefs.edit().putInt(SCREEN_LOCK_TIMEOUT, response.screenLockTimeout).apply();
-                    } catch (IOException | URISyntaxException | OAuth2.OAuthFailedException e) {
-                        e.printStackTrace();
+                    for (UserAccount account : accounts) {
+                        // Get and set connected app mobile policy timeout per user.
+                        try {
+                            final OAuth2.TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
+                                    new URI(account.getLoginServer()), clientId, account.getRefreshToken(), new HashMap<>());
+                            final OAuth2.IdServiceResponse response = OAuth2.callIdentityService(HttpAccess.DEFAULT,
+                                    tr.idUrlWithInstance, tr.authToken);
+
+                            if (response.mobilePolicy && response.screenLockTimeout != -1) {
+                                final SharedPreferences userPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
+                                        + account.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
+                                int timeoutInMills = response.screenLockTimeout * 1000 * 60;
+                                userPrefs.edit().putInt(SCREEN_LOCK_TIMEOUT, timeoutInMills).apply();
+
+                                if (lowestTimeout == Integer.MAX_VALUE || timeoutInMills < lowestTimeout) {
+                                    lowestTimeout = timeoutInMills;
+                                }
+                            }
+                        } catch (IOException | URISyntaxException | OAuth2.OAuthFailedException e) {
+                            e.printStackTrace();
+                        }
                     }
-                }
+
+                    // Set timeout or remove block.
+                    if (lowestTimeout < Integer.MAX_VALUE && lowestTimeout > 0) {
+                        globalPrefs.edit().putInt(SCREEN_LOCK_TIMEOUT, lowestTimeout).apply();
+                    } else {
+                        globalPrefs.edit().remove(SCREEN_LOCK).apply();
+                    }
+                });
             }
         }
     }

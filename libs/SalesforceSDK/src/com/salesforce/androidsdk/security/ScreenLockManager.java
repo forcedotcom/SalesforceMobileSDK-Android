@@ -50,7 +50,6 @@ public class ScreenLockManager {
     public static final String SCREEN_LOCK = "screen_lock";
     public static final String SCREEN_LOCK_TIMEOUT = "screen_lock_timeout";
 
-    private boolean backgroundedSinceUnlock = true;
     private long lastLockedTimestamp = 0;
 
     /**
@@ -77,7 +76,6 @@ public class ScreenLockManager {
             globalPrefsEditor.apply();
 
             // This is needed to block access to the app immediately on login
-            backgroundedSinceUnlock = true;
             onAppForegrounded();
         }
     }
@@ -95,7 +93,6 @@ public class ScreenLockManager {
      * To be called by the protected activity is paused to denote that the app should lock.
      */
     public void onAppBackgrounded() {
-        backgroundedSinceUnlock = true;
         lastLockedTimestamp = System.currentTimeMillis();
     }
 
@@ -158,7 +155,6 @@ public class ScreenLockManager {
      * Unlocks the app.
      */
     public void unlock() {
-        backgroundedSinceUnlock = false;
         lastLockedTimestamp = 0;
     }
 
@@ -170,7 +166,7 @@ public class ScreenLockManager {
         boolean hasLock = sharedPrefs.getBoolean(SCREEN_LOCK, false);
         int timeout = sharedPrefs.getInt(SCREEN_LOCK_TIMEOUT, 0);
 
-        return backgroundedSinceUnlock && hasLock && (elapsedTime > timeout);
+        return hasLock && (elapsedTime > timeout);
     }
 
     private void lock() {
