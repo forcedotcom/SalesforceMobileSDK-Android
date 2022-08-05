@@ -217,19 +217,16 @@ public class SalesforceSDKUpgradeManager {
         if (globalPrefs.contains(SCREEN_LOCK)) {
             final UserAccountManager manager = SalesforceSDKManager.getInstance().getUserAccountManager();
             final List<UserAccount> accounts = manager.getAuthenticatedUsers();
-            final String clientId = SalesforceAnalyticsManager.getDeviceAppAttributes().getClientId();
 
             if (accounts != null) {
                 Executors.newSingleThreadExecutor().execute(() -> {
                     int lowestTimeout = Integer.MAX_VALUE;
 
+                    // Get and set connected app mobile policy timeout per user.
                     for (UserAccount account : accounts) {
-                        // Get and set connected app mobile policy timeout per user.
                         try {
-                            final OAuth2.TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
-                                    new URI(account.getLoginServer()), clientId, account.getRefreshToken(), new HashMap<>());
                             final OAuth2.IdServiceResponse response = OAuth2.callIdentityService(HttpAccess.DEFAULT,
-                                    tr.idUrlWithInstance, tr.authToken);
+                                    account.getIdUrl(), account.getAuthToken());
 
                             if (response.mobilePolicy && response.screenLockTimeout != -1) {
                                 final SharedPreferences userPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
@@ -241,8 +238,8 @@ public class SalesforceSDKUpgradeManager {
                                     lowestTimeout = timeoutInMills;
                                 }
                             }
-                        } catch (IOException | URISyntaxException | OAuth2.OAuthFailedException e) {
-                            e.printStackTrace();
+                        } catch (IOException e) {
+                            SalesforceSDKLogger.e(TAG, "Exception throw retrieving mobile policy", e);
                         }
                     }
 
