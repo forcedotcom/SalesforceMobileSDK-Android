@@ -57,6 +57,17 @@ public class ScreenLockManager {
      *
      * @param account the newly add account
      * @param screenLockRequired if the account requires screen lock or not
+     *
+     * @deprecated Timeout is now required. This method will be removed in 11.0.
+     */
+    @Deprecated
+    public void storeMobilePolicy(UserAccount account, boolean screenLockRequired) { }
+
+    /**
+     * Stores the mobile policy for the org upon user login.
+     *
+     * @param account the newly add account
+     * @param screenLockRequired if the account requires screen lock or not
      * @param timeout timeout in milliseconds
      */
     public void storeMobilePolicy(UserAccount account, boolean screenLockRequired, int timeout) {
