@@ -33,6 +33,7 @@ import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_CLIENT_ID;
 import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_SCOPES;
 import static com.salesforce.androidsdk.security.ScreenLockManager.MOBILE_POLICY_PREF;
 import static com.salesforce.androidsdk.security.ScreenLockManager.SCREEN_LOCK;
+import static com.salesforce.androidsdk.security.ScreenLockManager.SCREEN_LOCK_TIMEOUT;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -58,6 +59,8 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 public class ScreenLockManagerTest {
+    private static final int TIMEOUT = 60000;
+    private static final int LONG_TIMEOUT = 100000;
 
     private ScreenLockManager screenLockManager;
     private UserAccount userAccount = buildTestUserAccount();
@@ -73,8 +76,8 @@ public class ScreenLockManagerTest {
 
     @After
     public void tearDown() {
-        sharedPrefs.edit().remove(SCREEN_LOCK).apply();
-        accountPrefs.edit().remove(SCREEN_LOCK).apply();
+        sharedPrefs.edit().remove(SCREEN_LOCK).remove(SCREEN_LOCK_TIMEOUT).apply();
+        accountPrefs.edit().remove(SCREEN_LOCK).remove(SCREEN_LOCK_TIMEOUT).apply();
     }
 
     @Test
@@ -91,36 +94,58 @@ public class ScreenLockManagerTest {
     }
 
     @Test
-    public void testShouldLock() {
+    public void testShouldLock() throws InterruptedException {
         Assert.assertFalse("Should not be locked by default.", screenLockManager.shouldLock());
         screenLockManager.onAppBackgrounded();
-        screenLockManager.storeMobilePolicy(userAccount, true, 60);
+        screenLockManager.storeMobilePolicy(userAccount, true, 1);
+        Thread.sleep(10);
         Assert.assertTrue("Screen should lock.", screenLockManager.shouldLock());
     }
 
     @Test
     public void testStoreMobilePolicy() {
-        Assert.assertFalse("Org Mobile Policy should not be set yet.", sharedPrefs.getBoolean(SCREEN_LOCK, false));
+        Assert.assertFalse("Global Mobile Policy should not be set yet.", sharedPrefs.getBoolean(SCREEN_LOCK, false));
         Assert.assertFalse("User Mobile Policy should not be set yet.", accountPrefs.getBoolean(SCREEN_LOCK, false));
+        Assert.assertEquals("User timeout should not be set yet.", -100, accountPrefs.getInt(SCREEN_LOCK_TIMEOUT, -100));
 
-        screenLockManager.storeMobilePolicy(userAccount, true, 60);
-        Assert.assertTrue("Org Mobile Policy should be set.", sharedPrefs.getBoolean(SCREEN_LOCK, false));
+        screenLockManager.storeMobilePolicy(userAccount, true, TIMEOUT);
+        Assert.assertTrue("Global Mobile Policy should be set.", sharedPrefs.getBoolean(SCREEN_LOCK, false));
+        Assert.assertEquals("Global timeout should be set", TIMEOUT, sharedPrefs.getInt(SCREEN_LOCK_TIMEOUT, -100));
         Assert.assertTrue("User Mobile Policy should be set.", accountPrefs.getBoolean(SCREEN_LOCK, false));
+        Assert.assertEquals("User timeout should be set.", TIMEOUT, accountPrefs.getInt(SCREEN_LOCK_TIMEOUT, -100));
     }
 
     @Test
-    public void testLockOnPause() {
+    public void testLockOnPause() throws InterruptedException {
         Assert.assertFalse("Should not be locked by default.", screenLockManager.shouldLock());
-        screenLockManager.storeMobilePolicy(userAccount, true, 60);
+        screenLockManager.storeMobilePolicy(userAccount, true, 1);
         screenLockManager.onAppBackgrounded();
+        Thread.sleep(10);
         Assert.assertTrue("Screen should lock.", screenLockManager.shouldLock());
     }
 
     @Test
-    public void testReset() {
-        screenLockManager.storeMobilePolicy(userAccount, true, 60);
+    public void testLowestTimeout() {
+        // Test low remains low
+        screenLockManager.storeMobilePolicy(userAccount, true, TIMEOUT);
+        Assert.assertEquals("Baseline timeout", TIMEOUT, sharedPrefs.getInt(SCREEN_LOCK_TIMEOUT, -100));
+        screenLockManager.storeMobilePolicy(userAccount, true, LONG_TIMEOUT);
+        Assert.assertEquals("Timeout should still be low.", TIMEOUT, sharedPrefs.getInt(SCREEN_LOCK_TIMEOUT, -100));
+
         screenLockManager.reset();
-        Assert.assertFalse("Org Mobile Policy should not be set.", sharedPrefs.getBoolean(SCREEN_LOCK, false));
+        // Test high gets lower
+        screenLockManager.storeMobilePolicy(userAccount, true, LONG_TIMEOUT);
+        Assert.assertEquals("Baseline timeout", LONG_TIMEOUT, sharedPrefs.getInt(SCREEN_LOCK_TIMEOUT, -100));
+        screenLockManager.storeMobilePolicy(userAccount, true, TIMEOUT);
+        Assert.assertEquals("Timeout should be lowered.", TIMEOUT, sharedPrefs.getInt(SCREEN_LOCK_TIMEOUT, -100));
+    }
+
+    @Test
+    public void testReset() {
+        screenLockManager.storeMobilePolicy(userAccount, true, TIMEOUT);
+        screenLockManager.reset();
+        Assert.assertFalse("Global Mobile Policy should not be set.", sharedPrefs.getBoolean(SCREEN_LOCK, false));
+        Assert.assertEquals("Global timeout should not be set.", -100, sharedPrefs.getInt(SCREEN_LOCK_TIMEOUT, -100));
     }
 
     @Test
@@ -142,7 +167,7 @@ public class ScreenLockManagerTest {
         screenLockManager.storeMobilePolicy(storedUser, true, 60);
         screenLockManager.cleanUp(storedUser);
         Assert.assertFalse("User Mobile Policy should not be set.", storedUserPrefs.getBoolean(SCREEN_LOCK, false));
-        Assert.assertFalse("Org Mobile Policy should not be set.", sharedPrefs.getBoolean(SCREEN_LOCK, false));
+        Assert.assertFalse("Global Mobile Policy should not be set.", sharedPrefs.getBoolean(SCREEN_LOCK, false));
     }
 
     private UserAccount buildTestUserAccount() {

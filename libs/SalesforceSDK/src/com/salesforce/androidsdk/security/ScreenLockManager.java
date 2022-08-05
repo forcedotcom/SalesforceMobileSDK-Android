@@ -57,6 +57,7 @@ public class ScreenLockManager {
      *
      * @param account the newly add account
      * @param screenLockRequired if the account requires screen lock or not
+     * @param timeout timeout in milliseconds
      */
     public void storeMobilePolicy(UserAccount account, boolean screenLockRequired, int timeout) {
         Context ctx = SalesforceSDKManager.getInstance().getAppContext();
