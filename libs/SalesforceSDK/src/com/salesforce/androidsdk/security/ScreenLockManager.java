@@ -87,8 +87,7 @@ public class ScreenLockManager {
             }
             globalPrefsEditor.apply();
 
-            // This is needed to block access to the app immediately on login
-            onAppForegrounded();
+            lock();
         }
     }
 
@@ -165,10 +164,11 @@ public class ScreenLockManager {
 
     /**
      * Unlocks the app.
+     *
+     * @deprecated This method will be removed in 11.0.
      */
-    public void unlock() {
-        lastLockedTimestamp = 0;
-    }
+    @Deprecated
+    public void unlock() { }
 
     @VisibleForTesting
     protected boolean shouldLock() {

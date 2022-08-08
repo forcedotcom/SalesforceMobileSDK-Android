@@ -89,7 +89,6 @@ public class ScreenLockManagerTest {
         Assert.assertFalse("Should not be locked without mobile policy set.", screenLockManager.shouldLock());
 
         screenLockManager.storeMobilePolicy(userAccount, false, 0);
-        screenLockManager.unlock();
         Assert.assertFalse("Should not be locked if shouldLock is false.", screenLockManager.shouldLock());
     }
 
