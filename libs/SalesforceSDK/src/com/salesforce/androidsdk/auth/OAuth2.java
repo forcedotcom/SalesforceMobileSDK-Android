@@ -90,6 +90,7 @@ public class OAuth2 {
     private static final String INSTANCE_URL = "instance_url";
     private static final String JSON = "json";
     private static final String MOBILE_POLICY = "mobile_policy";
+    private static final String SCREEN_LOCK_TIMEOUT = "screen_lock";
     private static final String REFRESH_TOKEN = "refresh_token";
     private static final String HYBRID_REFRESH = "hybrid_refresh";
     private static final String RESPONSE_TYPE = "response_type";
@@ -527,7 +528,7 @@ public class OAuth2 {
         public String pictureUrl;
         public String thumbnailUrl;
         public boolean mobilePolicy;
-        public int pinLength = -1;
+        @Deprecated public int pinLength = -1;
         public int screenLockTimeout = -1;
         public boolean biometricUnlockAllowed = true;
         public JSONObject customAttributes;
@@ -553,7 +554,11 @@ public class OAuth2 {
                 }
                 customAttributes = parsedResponse.optJSONObject(CUSTOM_ATTRIBUTES);
                 customPermissions = parsedResponse.optJSONObject(CUSTOM_PERMISSIONS);
-                mobilePolicy = parsedResponse.has(MOBILE_POLICY);
+                if (parsedResponse.has(MOBILE_POLICY)) {
+                    JSONObject mobilePolicyObject = parsedResponse.getJSONObject(MOBILE_POLICY);
+                    mobilePolicy = mobilePolicyObject.has(SCREEN_LOCK_TIMEOUT);
+                    screenLockTimeout = mobilePolicyObject.getInt(SCREEN_LOCK_TIMEOUT);
+                }
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse identity response", e);
             }

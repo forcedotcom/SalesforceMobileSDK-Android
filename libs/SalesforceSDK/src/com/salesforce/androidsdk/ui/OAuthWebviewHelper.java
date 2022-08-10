@@ -621,8 +621,12 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             // Save the user account
             addAccount(account);
 
-            final ScreenLockManager screenLockManager = mgr.getScreenLockManager();
-            screenLockManager.storeMobilePolicy(account, id.mobilePolicy);
+            // Screen lock required by mobile policy.
+            if (id.screenLockTimeout > 0) {
+                int timeoutInMills = id.screenLockTimeout * 1000 * 60;
+                final ScreenLockManager screenLockManager = mgr.getScreenLockManager();
+                screenLockManager.storeMobilePolicy(account, id.mobilePolicy, timeoutInMills);
+            }
 
             // All done
             callback.finish(account);
