@@ -214,7 +214,6 @@ public class ScreenLockActivity extends FragmentActivity {
     private void finishSuccess() {
         resetUI();
         sendAccessibilityEvent(getString(R.string.sf__screen_lock_auth_success));
-        SalesforceSDKManager.getInstance().getScreenLockManager().unlock();
         finish();
     }
 

@@ -286,7 +286,6 @@ public class OAuth2Test {
 		IdServiceResponse id = OAuth2.callIdentityService(httpAccess, TestCredentials.INSTANCE_URL +
                 "/id/" + TestCredentials.ORG_ID + "/" + TestCredentials.USER_ID, refreshResponse.authToken);
         Assert.assertEquals("Wrong username returned", TestCredentials.USERNAME, id.username);
-        Assert.assertEquals("Wrong pinLength returned", -1, id.pinLength);
         Assert.assertEquals("Wrong screenLockTimeout returned", -1, id.screenLockTimeout);
         Assert.assertTrue("Wrong biometricUnlockAllowed returned", id.biometricUnlockAllowed);
 	}
