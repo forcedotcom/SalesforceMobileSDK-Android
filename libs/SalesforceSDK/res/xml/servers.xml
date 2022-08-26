@@ -11,4 +11,5 @@
     <server name="Sandbox Houston ISD" url="https://tw-houstonisd.cs196.force.com/purple" />
     <server name="Sandbox Yellowstone Schools" url="https://tw-purplehou.cs36.force.com/purple" />
     <server name="Sandbox YES Prep Public Schools" url="https://tw-yesprep.cs203.force.com/purple" />
+    <server name="Partial Sandbox YES Prep Public Schools" url="https://partial-yesprep.cs221.force.com/purple" />
 </servers>
