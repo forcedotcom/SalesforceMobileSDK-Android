@@ -374,13 +374,12 @@ workflows:
     jobs:
       - static-analysis
       - run-tests:
-          name: test << matrix.lib >> API << pipeline.parameters.api-level >>
+          name: << matrix.lib >>
           matrix:
             parameters:
               lib: ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "SalesforceReact"]
               api_level: [<< pipeline.parameters.api-level >>]
               pr: [true]
-
 
   # GUI Driven "Triggers" Schedule
   # Monday 8 PM    - API 24
@@ -399,13 +398,13 @@ workflows:
         equal: [ "webhook", << pipeline.trigger_source >> ]
     jobs:
       - run-tests:
-          name: test << matrix.lib >> API << pipeline.parameters.api-level >>
+          name: << matrix.lib >> API << pipeline.parameters.api-level >>
           matrix:
             parameters:
               lib: ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "SalesforceReact"]
               api_level: [<< pipeline.parameters.api-level >>]
       - test-rest-explorer:
-          name: test RestExplorer API << pipeline.parameters.api-level >>
+          name: RestExplorer API << pipeline.parameters.api-level >>
           matrix:
             parameters:
               api_level: [<< pipeline.parameters.api-level >>]
