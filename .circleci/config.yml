@@ -1,4 +1,7 @@
 aliases:
+  # most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
+  - &default-api-level 30 
+
   - &gradle-cache-key
     gradle-cache-v2-{{ checksum "build.gradle" }}-{{
       checksum "gradle/wrapper/gradle-wrapper.properties" }}-{{
@@ -42,7 +45,7 @@ aliases:
     name: Setup Environment
     command: |
       sudo npm i npm@latest -g
-      sudo npm install -g shelljs@0.8.4
+      sudo npm install -g shelljs@0.8.5
       sudo npm install -g cordova@8.1.2
       sudo npm install -g typescript
       cordova telemetry off
@@ -55,28 +58,12 @@ aliases:
       gem install danger-jacoco
       echo $TEST_CREDENTIALS > ./shared/test/test_credentials.json
 
-  # Test APK paths
-  - &analytics-apk-path
-      "libs/SalesforceAnalytics/build/outputs/apk/androidTest/debug/SalesforceAnalytics-debug-androidTest.apk"
-  - &coresdk-apk-path
-      "libs/SalesforceSDK/build/outputs/apk/androidTest/debug/SalesforceSDK-debug-androidTest.apk"
-  - &smartStore-apk-path
-      "libs/SmartStore/build/outputs/apk/androidTest/debug/SmartStore-debug-androidTest.apk"
-  - &mobileSync-apk-path
-      "libs/MobileSync/build/outputs/apk/androidTest/debug/MobileSync-debug-androidTest.apk"
-  - &salesforceHybrid-apk-path
-      "libs/SalesforceHybrid/build/outputs/apk/androidTest/debug/SalesforceHybrid-debug-androidTest.apk"
-  - &restExplorer-apk-path
-      "native/NativeSampleApps/RestExplorer/build/outputs/apk/androidTest/debug/RestExplorer-debug-androidTest.apk"
-  - &salesforceReact-apk-path
-      "libs/SalesforceReact/build/outputs/apk/androidTest/debug/SalesforceReact-debug-androidTest.apk"
-
 version: 2.1
 executors:
   linux:
     working_directory: ~/SalesforceMobileSDK-Android
     docker:
-      - image: cimg/android:2022.03.1-node
+      - image: cimg/android:2022.08.1-node
     environment:
       - GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'
 
@@ -127,19 +114,14 @@ jobs:
     parameters:
       lib:
         type: enum
-        enum: ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "RestExplorer", "SalesforceReact"]
+        enum: ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "SalesforceReact"]
         default: "SalesforceAnalytics"
-      test_apk:
-        type: string
-        default: *analytics-apk-path
+      api_level:
+        type: integer
+        default: *default-api-level
       pr:
         type: boolean
         default: false
-      api_level:
-        type: integer
-        default: 30 # most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
-    environment:
-      CURRENT_LIB: << parameters.lib >>
     steps:
       - checkout
       - restore_cache: *restore-gradle-cache
@@ -171,7 +153,6 @@ jobs:
             ./gradlew libs:MobileSync:assembleAndroidTest
             ./gradlew libs:SalesforceHybrid:assembleAndroidTest
             ./gradlew libs:SalesforceReact:assembleAndroidTest
-            ./gradlew native:NativeSampleApps:RestExplorer:assembleAndroidTest
             ./gradlew native:NativeSampleApps:RestExplorer:assembleDebug
       - run:
           name: Authorize gcloud and set config defaults
@@ -182,18 +163,25 @@ jobs:
       - run:
           name: Run << parameters.lib >> Tests with API << parameters.api_level >>
           command: |
+            if [ << parameters.api_level >> < 28 ]
+            then 
+              export DEVICE="Nexus6P"
+            else
+              export DEVICE="MediumPhone (ARM)"
+            fi
+
             gcloud firebase test android run \
                 --project mobile-apps-firebase-test \
                 --type instrumentation \
                 --app "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk" \
-                --test << parameters.test_apk >>  \
-                --device model="NexusLowRes",version=<< parameters.api_level >>,locale=en,orientation=portrait  \
+                --test=libs/<< parameters.lib >>/build/outputs/apk/androidTest/debug/<< parameters.lib >>-debug-androidTest.apk \
+                --device model=$DEVICE,version=<< parameters.api_level >>,locale=en,orientation=portrait  \
                 --environment-variables coverage=true,coverageFile="/sdcard/coverage.ec"  \
                 --directories-to-pull=/sdcard  \
                 --results-dir=<< parameters.lib >>-${CIRCLE_BUILD_NUM}  \
                 --results-history-name=<< parameters.lib >>  \
                 --timeout=20m --no-auto-google-login --no-record-video --no-performance-metrics
-          no_output_timeout: 1200
+          no_output_timeout: 20m
       - run:
           name: Copy test results data
           command: |
@@ -228,6 +216,70 @@ jobs:
                   DANGER_GITHUB_API_TOKEN="279a29d75427e4178cef""b7b5b2d7646c540f025a" danger --dangerfile=.circleci/Dangerfile_Lib.rb --danger_id=<< parameters.lib >> --verbose
                 background: true
                 when: always
+      - store_artifacts:
+          path: firebase/
+      - store_test_results:
+          path: firebase/results
+
+  test-rest-explorer:
+    executor: linux
+    parameters:
+      api_level:
+        type: integer
+        default: *default-api-level
+    steps:
+      - checkout
+      - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-node-cache
+      - restore_cache: *restore-ruby-cache
+      - run: *setup-env
+      - run:
+          name: Build for Testing
+          command:  |
+            ./gradlew native:NativeSampleApps:RestExplorer:assembleAndroidTest
+            ./gradlew native:NativeSampleApps:RestExplorer:assembleDebug
+      - run:
+          name: Authorize gcloud and set config defaults
+          command:  |
+            echo $GCLOUD_SERVICE_KEY | base64 --decode --ignore-garbage > ${HOME}/gcloud-service-key.json
+            gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
+            gcloud --quiet config set project mobile-apps-firebase-test
+      - run:
+          name: Run RestExplorer Tests with API << parameters.api_level >>
+          command: |
+            if [ << parameters.api_level >> < 28 ]
+            then 
+              export DEVICE="Nexus6P"
+            else
+              export DEVICE="MediumPhone (ARM)"
+            fi
+
+            gcloud firebase test android run \
+                --project mobile-apps-firebase-test \
+                --type instrumentation \
+                --app "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk" \
+                --test "native/NativeSampleApps/RestExplorer/build/outputs/apk/androidTest/debug/RestExplorer-debug-androidTest.apk" \
+                --device model=$DEVICE,version=<< parameters.api_level >>,locale=en,orientation=portrait \
+                --environment-variables coverage=true,coverageFile="/sdcard/coverage.ec" \
+                --directories-to-pull=/sdcard \
+                --results-dir=RestExplorer-${CIRCLE_BUILD_NUM} \
+                --results-history-name=RestExplorer \
+                --timeout=20m --no-auto-google-login --no-record-video --no-performance-metrics
+          no_output_timeout: 20m
+      - run:
+          name: Copy test results data
+          command: |
+            gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/RestExplorer-${CIRCLE_BUILD_NUM} > /dev/null 2>&1
+            if [ $? == 0 ]
+            then
+              mkdir -p firebase/results
+              gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/RestExplorer-${CIRCLE_BUILD_NUM} | tail -1`*" ./firebase/
+              mv firebase/test_result_1.xml firebase/results
+            else
+              echo "No test results found"
+              exit 1
+            fi
+          when: always
       - store_artifacts:
           path: firebase/
       - store_test_results:
@@ -307,436 +359,53 @@ jobs:
           destination: hybrid-apps
       - save_cache: *save-gradle-cache
 
+#  Potential parameters that can come from the project GUI Triggers
+parameters:
+  api-level:
+    type: integer
+    default: *default-api-level
 
-workflows:
+workflows:  
   version: 2
 
-  # PRs run on Android API 29 
-  pr-test:
+  pr-tests:
+    when: 
+      equal: [ "webhook", << pipeline.trigger_source >> ]
     jobs:
-      - static-analysis:
-          filters:
-            branches:
-              only:
-                - /pull.*/
+      - static-analysis
       - run-tests:
-          filters:
-            branches:
-              only:
-                - /pull.*/
-          name: "SalesforceAnalytics"
-          pr: true
-      - run-tests:
-          filters:
-            branches:
-              only:
-                - /pull.*/
-          name: "SalesforceSDK"
-          lib: "SalesforceSDK"
-          test_apk: *coresdk-apk-path
-          pr: true
-      - run-tests:
-          filters:
-            branches:
-              only:
-                - /pull.*/
-          name: "SmartStore"
-          lib: "SmartStore"
-          test_apk: *smartStore-apk-path
-          pr: true
-      - run-tests:
-          filters:
-            branches:
-              only:
-                - /pull.*/
-          name: "MobileSync"
-          lib: "MobileSync"
-          test_apk: *mobileSync-apk-path
-          pr: true
-      - run-tests:
-          filters:
-            branches:
-              only:
-                - /pull.*/
-          name: "SalesforceHybrid"
-          lib: "SalesforceHybrid"
-          test_apk: *salesforceHybrid-apk-path
-          pr: true
-      - run-tests:
-          filters:
-            branches:
-              only:
-                - /pull.*/
-          name: "RestExplorer"
-          lib: "RestExplorer"
-          test_apk: *restExplorer-apk-path
-          pr: true
-      - run-tests:
-          filters:
-            branches:
-              only:
-                - /pull.*/
-          name: "SalesforceReact"
-          lib: "SalesforceReact"
-          test_apk: *salesforceReact-apk-path
-          pr: true
+          name: << matrix.lib >>
+          matrix:
+            parameters:
+              lib: ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "SalesforceReact"]
+              api_level: [<< pipeline.parameters.api-level >>]
+              pr: [true]
 
-
-  # Cron are on a timezone 8 hours ahead of PST
-  # Monday 8 PM  - API 30
-  # Monday 9 PM  - API 28
-  # Monday 10 PM - API 26
-  # Monday 11 PM - API 24
-  # Friday 7 PM  - API 31
-  # Friday 8 PM  - API 29
-  # Friday 9 PM  - API 27
-  # Friday 10 PM - API 25
-  test-api-30:
-    triggers:
-      - schedule:
-          cron: "0 4 * * 2"
-          filters:
-            branches:
-              only:
-                - dev
+  # GUI Driven "Triggers" Schedule
+  # Monday 8 PM    - API 24
+  # Monday 9 PM    - API 26
+  # Monday 10 PM   - API 27
+  # Monday 11 PM   - API 30
+  # Tuesday 12 AM  - API 32
+  # Friday 8 PM    - API 25
+  # Friday 9 PM    - API 27
+  # Friday 10 PM   - API 29
+  # Friday 11 PM   - API 31
+  # Saturday 12 AM - API 33
+  nightly-tests:
+    when:
+      not:  
+        equal: [ "webhook", << pipeline.trigger_source >> ]
     jobs:
+      - run-tests:
+          name: << matrix.lib >> API << pipeline.parameters.api-level >>
+          matrix:
+            parameters:
+              lib: ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "SalesforceReact"]
+              api_level: [<< pipeline.parameters.api-level >>]
+      - test-rest-explorer:
+          name: RestExplorer API << pipeline.parameters.api-level >>
+          matrix:
+            parameters:
+              api_level: [<< pipeline.parameters.api-level >>]
       - generate-artifacts
-      - run-tests:
-          name: "SalesforceAnalytics API 30"
-          api_level: 30
-      - run-tests:
-          name: "SalesforceSDK API 30"
-          lib: "SalesforceSDK"
-          test_apk: *coresdk-apk-path
-          api_level: 30
-      - run-tests:
-          name: "SmartStore API 30"
-          lib: "SmartStore"
-          test_apk: *smartStore-apk-path
-          api_level: 30
-      - run-tests:
-          name: "MobileSync API 30"
-          lib: "MobileSync"
-          test_apk: *mobileSync-apk-path
-          api_level: 30
-      - run-tests:
-          name: "SalesforceHybrid API 30"
-          lib: "SalesforceHybrid"
-          test_apk: *salesforceHybrid-apk-path
-          api_level: 30
-      - run-tests:
-          name: "RestExplorer API 30"
-          lib: "RestExplorer"
-          test_apk: *restExplorer-apk-path
-          api_level: 30
-      - run-tests:
-          name: "SalesforceReact API 30"
-          lib: "SalesforceReact"
-          test_apk: *salesforceReact-apk-path
-          api_level: 30
-
-
-  test-api-28:
-    triggers:
-      - schedule:
-          cron: "0 5 * * 2"
-          filters:
-            branches:
-              only:
-                - dev
-    jobs:
-      - generate-artifacts
-      - run-tests:
-          name: "SalesforceAnalytics API 28"
-          api_level: 28
-      - run-tests:
-          name: "SalesforceSDK API 28"
-          lib: "SalesforceSDK"
-          test_apk: *coresdk-apk-path
-          api_level: 28
-      - run-tests:
-          name: "SmartStore API 28"
-          lib: "SmartStore"
-          test_apk: *smartStore-apk-path
-          api_level: 28
-      - run-tests:
-          name: "MobileSync API 28"
-          lib: "MobileSync"
-          test_apk: *mobileSync-apk-path
-          api_level: 28
-      - run-tests:
-          name: "SalesforceHybrid API 28"
-          lib: "SalesforceHybrid"
-          test_apk: *salesforceHybrid-apk-path
-          api_level: 28
-      - run-tests:
-          name: "RestExplorer API 28"
-          lib: "RestExplorer"
-          test_apk: *restExplorer-apk-path
-          api_level: 28
-      - run-tests:
-          name: "SalesforceReact API 28"
-          lib: "SalesforceReact"
-          test_apk: *salesforceReact-apk-path
-          api_level: 28
-
-  test-api-26:
-    triggers:
-      - schedule:
-          cron: "0 6 * * 2"
-          filters:
-            branches:
-              only:
-                - dev
-    jobs:
-      - run-tests:
-          name: "SalesforceAnalytics API 26"
-          api_level: 26
-      - run-tests:
-          name: "SalesforceSDK API 26"
-          lib: "SalesforceSDK"
-          test_apk: *coresdk-apk-path
-          api_level: 26
-      - run-tests:
-          name: "SmartStore API 26"
-          lib: "SmartStore"
-          test_apk: *smartStore-apk-path
-          api_level: 26
-      - run-tests:
-          name: "MobileSync API 26"
-          lib: "MobileSync"
-          test_apk: *mobileSync-apk-path
-          api_level: 26
-      - run-tests:
-          name: "SalesforceHybrid API 26"
-          lib: "SalesforceHybrid"
-          test_apk: *salesforceHybrid-apk-path
-          api_level: 26
-      - run-tests:
-          name: "RestExplorer API 26"
-          lib: "RestExplorer"
-          test_apk: *restExplorer-apk-path
-          api_level: 26
-      - run-tests:
-          name: "SalesforceReact API 26"
-          lib: "SalesforceReact"
-          test_apk: *salesforceReact-apk-path
-          api_level: 26
-
-  test-api-24:
-    triggers:
-      - schedule:
-          cron: "0 7 * * 2"
-          filters:
-            branches:
-              only:
-                - dev
-    jobs:
-      - run-tests:
-          name: "SalesforceAnalytics API 24"
-          api_level: 24
-      - run-tests:
-          name: "SalesforceSDK API 24"
-          lib: "SalesforceSDK"
-          test_apk: *coresdk-apk-path
-          api_level: 24
-      - run-tests:
-          name: "SmartStore API 24"
-          lib: "SmartStore"
-          test_apk: *smartStore-apk-path
-          api_level: 24
-      - run-tests:
-          name: "MobileSync API 24"
-          lib: "MobileSync"
-          test_apk: *mobileSync-apk-path
-          api_level: 24
-      - run-tests:
-          name: "SalesforceHybrid API 24"
-          lib: "SalesforceHybrid"
-          test_apk: *salesforceHybrid-apk-path
-          api_level: 24
-      - run-tests:
-          name: "RestExplorer API 24"
-          lib: "RestExplorer"
-          test_apk: *restExplorer-apk-path
-          api_level: 24
-      - run-tests:
-          name: "SalesforceReact API 24"
-          lib: "SalesforceReact"
-          test_apk: *salesforceReact-apk-path
-          api_level: 24
-
-#  test-api-31:
-#    triggers:
-#      - schedule:
-#          cron: "0 3 * * 6"
-#          filters:
-#            branches:
-#              only:
-#                - dev
-#    jobs:
-#      - run-tests:
-#          name: "SalesforceAnalytics API 31"
-#          api_level: 31
-#      - run-tests:
-#          name: "SalesforceSDK API 31"
-#          lib: "SalesforceSDK"
-#          test_apk: *coresdk-apk-path
-#          api_level: 31
-#      - run-tests:
-#          name: "SmartStore API 31"
-#          lib: "SmartStore"
-#          test_apk: *smartStore-apk-path
-#          api_level: 31
-#      - run-tests:
-#          name: "MobileSync API 31"
-#          lib: "MobileSync"
-#          test_apk: *mobileSync-apk-path
-#          api_level: 31
-#      - run-tests:
-#          name: "SalesforceHybrid API 31"
-#          lib: "SalesforceHybrid"
-#          test_apk: *salesforceHybrid-apk-path
-#          api_level: 31
-#      - run-tests:
-#          name: "RestExplorer API 31"
-#          lib: "RestExplorer"
-#          test_apk: *restExplorer-apk-path
-#          api_level: 31
-#      - run-tests:
-#          name: "SalesforceReact API 31"
-#          lib: "SalesforceReact"
-#          test_apk: *salesforceReact-apk-path
-#          api_level: 31
-
-
-  test-api-29:
-    triggers:
-      - schedule:
-          cron: "0 4 * * 6"
-          filters:
-            branches:
-              only:
-                - dev
-    jobs:
-      - run-tests:
-          name: "SalesforceAnalytics API 29"
-          api_level: 29
-      - run-tests:
-          name: "SalesforceSDK API 29"
-          lib: "SalesforceSDK"
-          test_apk: *coresdk-apk-path
-          api_level: 29
-      - run-tests:
-          name: "SmartStore API 29"
-          lib: "SmartStore"
-          test_apk: *smartStore-apk-path
-          api_level: 29
-      - run-tests:
-          name: "MobileSync API 29"
-          lib: "MobileSync"
-          test_apk: *mobileSync-apk-path
-          api_level: 29
-      - run-tests:
-          name: "SalesforceHybrid API 29"
-          lib: "SalesforceHybrid"
-          test_apk: *salesforceHybrid-apk-path
-          api_level: 29
-      - run-tests:
-          name: "RestExplorer API 29"
-          lib: "RestExplorer"
-          test_apk: *restExplorer-apk-path
-          api_level: 29
-      - run-tests:
-          name: "SalesforceReact API 29"
-          lib: "SalesforceReact"
-          test_apk: *salesforceReact-apk-path
-          api_level: 29
-
-
-  test-api-27:
-    triggers:
-      - schedule:
-          cron: "0 5 * * 6"
-          filters:
-            branches:
-              only:
-                - dev
-    jobs:
-      - run-tests:
-          name: "SalesforceAnalytics API 27"
-          api_level: 27
-      - run-tests:
-          name: "SalesforceSDK  API 27"
-          lib: "SalesforceSDK"
-          test_apk: *coresdk-apk-path
-          api_level: 27
-      - run-tests:
-          name: "SmartStore API 27"
-          lib: "SmartStore"
-          test_apk: *smartStore-apk-path
-          api_level: 27
-      - run-tests:
-          name: "MobileSync API 27"
-          lib: "MobileSync"
-          test_apk: *mobileSync-apk-path
-          api_level: 27
-      - run-tests:
-          name: "SalesforceHybrid API 27"
-          lib: "SalesforceHybrid"
-          test_apk: *salesforceHybrid-apk-path
-          api_level: 27
-      - run-tests:
-          name: "RestExplorer API 27"
-          lib: "RestExplorer"
-          test_apk: *restExplorer-apk-path
-          api_level: 27
-      - run-tests:
-          name: "SalesforceReact API 27"
-          lib: "SalesforceReact"
-          test_apk: *salesforceReact-apk-path
-          api_level: 27
-
-  test-api-25:
-    triggers:
-      - schedule:
-          cron: "0 6 * * 6"
-          filters:
-            branches:
-              only:
-                - dev
-    jobs:
-      - run-tests:
-          name: "SalesforceAnalytics API 25"
-          api_level: 25
-      - run-tests:
-          name: "SalesforceSDK API 25"
-          lib: "SalesforceSDK"
-          test_apk: *coresdk-apk-path
-          api_level: 25
-      - run-tests:
-          name: "SmartStore API 25"
-          lib: "SmartStore"
-          test_apk: *smartStore-apk-path
-          api_level: 25
-      - run-tests:
-          name: "MobileSync API 25"
-          lib: "MobileSync"
-          test_apk: *mobileSync-apk-path
-          api_level: 25
-      - run-tests:
-          name: "SalesforceHybrid API 25"
-          lib: "SalesforceHybrid"
-          test_apk: *salesforceHybrid-apk-path
-          api_level: 25
-      - run-tests:
-          name: "RestExplorer API 25"
-          lib: "RestExplorer"
-          test_apk: *restExplorer-apk-path
-          api_level: 25
-      - run-tests:
-          name: "SalesforceReact API 25"
-          lib: "SalesforceReact"
-          test_apk: *salesforceReact-apk-path
-          api_level: 25
-
