@@ -163,7 +163,7 @@ jobs:
       - run:
           name: Run << parameters.lib >> Tests with API << parameters.api_level >>
           command: |
-            if [ << parameters.api_level >> < 28 ]
+            if (( << parameters.api_level >> < 28 ))
             then 
               export DEVICE="Nexus6P"
             else
@@ -247,7 +247,7 @@ jobs:
       - run:
           name: Run RestExplorer Tests with API << parameters.api_level >>
           command: |
-            if [ << parameters.api_level >> < 28 ]
+            if (( << parameters.api_level >> < 28 ))
             then 
               export DEVICE="Nexus6P"
             else
