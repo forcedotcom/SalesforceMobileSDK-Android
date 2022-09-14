@@ -65,7 +65,7 @@ executors:
     docker:
       - image: cimg/android:2022.08.1-node
     environment:
-      - GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'
+      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'
 
 jobs:
   static-analysis:
@@ -167,7 +167,7 @@ jobs:
             then 
               export DEVICE="Nexus6P"
             else
-              export DEVICE="MediumPhone (ARM)"
+              export DEVICE="MediumPhone.arm"
             fi
 
             gcloud firebase test android run \
@@ -382,15 +382,15 @@ workflows:
               pr: [true]
 
   # GUI Driven "Triggers" Schedule
-  # Monday 8 PM    - API 24
-  # Monday 9 PM    - API 26
-  # Monday 10 PM   - API 27
-  # Monday 11 PM   - API 30
-  # Tuesday 12 AM  - API 32
-  # Friday 8 PM    - API 25
-  # Friday 9 PM    - API 27
-  # Friday 10 PM   - API 29
-  # Friday 11 PM   - API 31
+  # Monday    8 PM - API 24
+  # Monday    9 PM - API 26
+  # Monday   10 PM - API 27
+  # Monday   11 PM - API 30
+  # Tuesday  12 AM - API 32
+  # Friday    8 PM - API 25
+  # Friday    9 PM - API 27
+  # Friday   10 PM - API 29
+  # Friday   11 PM - API 31
   # Saturday 12 AM - API 33
   nightly-tests:
     when:
