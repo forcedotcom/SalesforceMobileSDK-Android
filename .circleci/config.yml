@@ -163,19 +163,12 @@ jobs:
       - run:
           name: Run << parameters.lib >> Tests with API << parameters.api_level >>
           command: |
-            if (( << parameters.api_level >> < 28 ))
-            then 
-              export DEVICE="Nexus6P"
-            else
-              export DEVICE="MediumPhone.arm"
-            fi
-
             gcloud firebase test android run \
                 --project mobile-apps-firebase-test \
                 --type instrumentation \
                 --app "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk" \
                 --test=libs/<< parameters.lib >>/build/outputs/apk/androidTest/debug/<< parameters.lib >>-debug-androidTest.apk \
-                --device model=$DEVICE,version=<< parameters.api_level >>,locale=en,orientation=portrait  \
+                --device model=NexusLowRes,version=<< parameters.api_level >>,locale=en,orientation=portrait  \
                 --environment-variables coverage=true,coverageFile="/sdcard/coverage.ec"  \
                 --directories-to-pull=/sdcard  \
                 --results-dir=<< parameters.lib >>-${CIRCLE_BUILD_NUM}  \
