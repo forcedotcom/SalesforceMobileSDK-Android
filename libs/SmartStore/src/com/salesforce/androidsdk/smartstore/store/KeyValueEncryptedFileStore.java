@@ -29,10 +29,12 @@ package com.salesforce.androidsdk.smartstore.store;
 
 import android.content.Context;
 import android.text.TextUtils;
+
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 import com.salesforce.androidsdk.util.ManagedFilesHelper;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -142,6 +144,20 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
     public static boolean isValidStoreName(String storeName) {
         return storeName != null && storeName.length() > 0 && storeName.length() <= MAX_STORE_NAME_LENGTH
             && storeName.matches("^[a-zA-Z0-9_]*$");
+    }
+
+    /**
+     * Return true if store contains a file for the given key
+     * @param key
+     * @return
+     */
+    @Override
+    public boolean contains(String key) {
+        if (!isKeyValid(key, "contains")) {
+            return false;
+        }
+
+        return getKeyFile(key).exists() && getValueFile(key).exists();
     }
 
     /**

@@ -757,6 +757,43 @@ public class KeyValueEncryptedFileStoreTest {
         }
     }
 
+    @Test
+    public void testContains() {
+        Assert.assertFalse(keyValueStore.contains("key1"));
+        Assert.assertFalse(keyValueStore.contains("key2"));
+        Assert.assertFalse(keyValueStore.contains("key3"));
+
+        // Save one
+        keyValueStore.saveValue("key1", "value1");
+        Assert.assertTrue(keyValueStore.contains("key1"));
+        Assert.assertFalse(keyValueStore.contains("key2"));
+        Assert.assertFalse(keyValueStore.contains("key3"));
+
+        // Save another
+        keyValueStore.saveValue("key2", "value2");
+        Assert.assertTrue(keyValueStore.contains("key1"));
+        Assert.assertTrue(keyValueStore.contains("key2"));
+        Assert.assertFalse(keyValueStore.contains("key3"));
+
+        // Save third
+        keyValueStore.saveValue("key3", "value3");
+        Assert.assertTrue(keyValueStore.contains("key1"));
+        Assert.assertTrue(keyValueStore.contains("key2"));
+        Assert.assertTrue(keyValueStore.contains("key3"));
+
+        // Delete one
+        keyValueStore.deleteValue("key1");
+        Assert.assertFalse(keyValueStore.contains("key1"));
+        Assert.assertTrue(keyValueStore.contains("key2"));
+        Assert.assertTrue(keyValueStore.contains("key3"));
+
+        // Delete all
+        keyValueStore.deleteAll();
+        Assert.assertFalse(keyValueStore.contains("key1"));
+        Assert.assertFalse(keyValueStore.contains("key2"));
+        Assert.assertFalse(keyValueStore.contains("key3"));
+    }
+
     //
     // Helper methods
     //

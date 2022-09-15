@@ -36,6 +36,9 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.util.Random;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -120,7 +123,7 @@ public class MemCachedKeyValueStoreTest {
         Assert.assertEquals(2, memCachedStore.memCache.hitCount());
         Assert.assertEquals("value1", streamToString(store.getStream("key1")));
 
-        Assert.assertEquals("value1", memCachedStore.memCache.get("key1"));
+        Assert.assertEquals("value1", new String(memCachedStore.memCache.get("key1"), StandardCharsets.UTF_8));
     }
 
     /** Test saving from streams and getting them back when mem cache hits */
@@ -137,7 +140,7 @@ public class MemCachedKeyValueStoreTest {
         Assert.assertEquals(2, memCachedStore.memCache.hitCount());
         Assert.assertEquals("value1", streamToString(store.getStream("key1")));
 
-        Assert.assertEquals("value1", memCachedStore.memCache.get("key1"));
+        Assert.assertEquals("value1", new String(memCachedStore.memCache.get("key1"), StandardCharsets.UTF_8));
     }
 
     /** Test saving values and getting them back when mem cache misses */
@@ -186,7 +189,7 @@ public class MemCachedKeyValueStoreTest {
         Assert.assertEquals("value1", streamToString(memCachedStore.getStream("key1")));
         Assert.assertEquals(1, memCachedStore.memCache.hitCount());
 
-        Assert.assertEquals("value1", memCachedStore.memCache.get("key1"));
+        Assert.assertEquals("value1", new String(memCachedStore.memCache.get("key1"), StandardCharsets.UTF_8));
     }
 
     /** Test that get value populates mem cache */
@@ -201,7 +204,7 @@ public class MemCachedKeyValueStoreTest {
         Assert.assertEquals("value1", streamToString(memCachedStore.getStream("key1")));
         Assert.assertEquals(1, memCachedStore.memCache.hitCount());
 
-        Assert.assertEquals("value1", memCachedStore.memCache.get("key1"));
+        Assert.assertEquals("value1", new String(memCachedStore.memCache.get("key1"), StandardCharsets.UTF_8));
     }
 
     /** Test saving values and deleting them  */
