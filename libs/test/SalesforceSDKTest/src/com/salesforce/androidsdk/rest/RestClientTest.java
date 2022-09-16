@@ -648,6 +648,47 @@ public class RestClientTest {
     }
 
     /**
+     * Testing a query all call to the server.
+     * Create new account then look for it using soql.
+     * @throws Exception
+     */
+    @Test
+    public void testQueryAll() throws Exception {
+        // Create 3 accounts
+        List<IdName> idNames = createAccounts(3, "-testQueryAll-");
+        // Delete 1 account
+        restClient.sendSync(RestRequest.getRequestForDelete(TestCredentials.API_VERSION, ACCOUNT, idNames.get(0).id));
+
+        String soql = "select name from account where Name like '" + ENTITY_NAME_PREFIX + "-testQueryAll-%' order by Name";
+
+        // Query - expect 2 records
+        RestResponse responseQuery = restClient.sendSync(RestRequest.getRequestForQuery(TestCredentials.API_VERSION, soql));
+        checkResponse(responseQuery, HttpURLConnection.HTTP_OK, false);
+        JSONObject jsonResponseQuery = responseQuery.asJSONObject();
+        checkKeys(jsonResponseQuery, "done", "totalSize", "records");
+        Assert.assertEquals("Expected three rows", 2, jsonResponseQuery.getInt("totalSize"));
+        Assert.assertEquals("Wrong row returned", idNames.get(1).name, jsonResponseQuery.getJSONArray("records").getJSONObject(0).get(NAME));
+        Assert.assertEquals("Wrong row returned", idNames.get(2).name, jsonResponseQuery.getJSONArray("records").getJSONObject(1).get(NAME));
+
+
+        // Query all - expect 3 records
+        RestResponse responseQueryAll = restClient.sendSync(RestRequest.getRequestForQueryAll(TestCredentials.API_VERSION, soql));
+        checkResponse(responseQueryAll, HttpURLConnection.HTTP_OK, false);
+        JSONObject jsonResponseQueryAll = responseQueryAll.asJSONObject();
+        checkKeys(jsonResponseQueryAll, "done", "totalSize", "records");
+        Assert.assertTrue("Expected three rows (or more)", jsonResponseQueryAll.getInt("totalSize") >= 3);
+        JSONArray records = jsonResponseQueryAll.getJSONArray("records");
+        ArrayList<String> names = new ArrayList<>();
+        for (int i=0; i<records.length(); i++) {
+            names.add(records.getJSONObject(i).getString(NAME));
+        }
+
+        Assert.assertTrue("Row not foumd", names.contains(idNames.get(0).name));
+        Assert.assertTrue("Row not foumd", names.contains(idNames.get(1).name));
+        Assert.assertTrue("Row not foumd", names.contains(idNames.get(2).name));
+    }
+
+    /**
      * Testing a query call to the server which specifies a batch size.
      * Create new account then look for it using soql.
      * @throws Exception
