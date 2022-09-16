@@ -472,6 +472,9 @@ public class SmartStore  {
             // Add to soupNameToTableNamesMap
             DBHelper.getInstance(db).cacheTableName(soupName, soupTableName);
 
+			// Add to soupNameToExistMap
+			DBHelper.getInstance(db).cacheHasSoup(soupName, true);
+
             // Add to soupNameToIndexSpecsMap
             DBHelper.getInstance(db).cacheIndexSpecs(soupName, indexSpecsToCache);
         } finally {
@@ -712,7 +715,7 @@ public class SmartStore  {
     public boolean hasSoup(String soupName) {
     	final SQLiteDatabase db = getDatabase();
     	synchronized(db) {
-    		return DBHelper.getInstance(db).getSoupTableName(db, soupName) != null;
+    		return DBHelper.getInstance(db).hasSoup(db, soupName);
     	}
     }
 
