@@ -33,6 +33,8 @@ import java.util.Set;
 
 public interface KeyValueStore {
 
+    boolean contains(String key);
+
     String getValue(String key);
 
     InputStream getStream(String key);
