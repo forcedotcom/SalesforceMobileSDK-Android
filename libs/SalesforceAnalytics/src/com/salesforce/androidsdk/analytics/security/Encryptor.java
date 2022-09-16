@@ -459,8 +459,6 @@ public class Encryptor {
         return output.toString(StandardCharsets.UTF_8.name());
     }
 
-
-
     /**
      * Retrieves data from an InputStream.  Guaranteed to close the InputStream.
      *
