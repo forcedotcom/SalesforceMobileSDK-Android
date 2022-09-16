@@ -41,6 +41,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteOpenHelper;
 import org.json.JSONArray;
@@ -102,9 +104,11 @@ public class SmartStore  {
 	protected static final String ROWID_PREDICATE = ROWID_COL + " =?";
 
 	// Backing database
-	protected SQLiteDatabase dbLocal;
 	protected SQLiteOpenHelper dbOpenHelper;
 	protected String encryptionKey;
+
+	// Flag indicating if database was just opened
+	AtomicBoolean dbJustOpened = new AtomicBoolean(true);
 
 	// FTS extension to use
 	protected FtsExtension ftsExtension = FtsExtension.fts5;
@@ -201,24 +205,15 @@ public class SmartStore  {
         this.encryptionKey = encryptionKey;
     }
 
-	/**
-	 * Package-level constructor. Should be used in tests only.
-	 *
-	 * @param db Database.
-	 */
-	SmartStore(SQLiteDatabase db) {
-		this.dbLocal = db;
-	}
-
     /**
      * Return db
      */
     public SQLiteDatabase getDatabase() {
-    	if (dbLocal != null) {
-            return dbLocal;
-        } else {
-            return this.dbOpenHelper.getWritableDatabase(encryptionKey);
-        }
+		SQLiteDatabase db = this.dbOpenHelper.getWritableDatabase(encryptionKey);
+		if (dbJustOpened.compareAndSet(true, false)) {
+			resumeLongOperations();
+		}
+		return db;
     }
 
 	/**
