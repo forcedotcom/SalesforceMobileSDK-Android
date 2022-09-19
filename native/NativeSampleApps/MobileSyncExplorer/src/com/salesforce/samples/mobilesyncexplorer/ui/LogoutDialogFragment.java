@@ -37,7 +37,12 @@ import com.salesforce.samples.mobilesyncexplorer.R;
 
 /**
  * A simple dialog fragment to provide options at logout.
+ *
+ * @deprecated The exact signature of the methods inside of LogoutDialogFragment and its inherited
+ * methods may change in Mobile SDK 11.0 when the deprecated base class {@link android.app.DialogFragment} is
+ * replaced with {@link androidx.fragment.app.DialogFragment}.
  */
+@Deprecated
 public class LogoutDialogFragment extends DialogFragment {
 
 	/**
