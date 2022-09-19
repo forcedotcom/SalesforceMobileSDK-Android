@@ -702,7 +702,7 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
      * @throws JSONException
      */
     private void tryAlterSoupInterruptResume(AlterSoupLongOperation.AlterSoupStep toStep) throws JSONException {
-        final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
+        SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
         Assert.assertFalse("Soup test_soup should not exist", store.hasSoup(TEST_SOUP));
         IndexSpec[] indexSpecs = new IndexSpec[] {new IndexSpec("lastName", SmartStore.Type.string)};
         store.registerSoup(TEST_SOUP, indexSpecs);
@@ -737,9 +737,8 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
             // Check last step completed
             Assert.assertEquals("Wrong step", toStep, ((AlterSoupLongOperation) operations[0]).getLastStepCompleted());
 
-            // Simulate restart (clear cache and call resumeLongOperations)
-            DBHelper.getInstance(db).clearMemoryCache();
-            store.resumeLongOperations();
+            // Simulate restart
+            db = restart(db);
 
             // Check index specs
             checkIndexSpecs(TEST_SOUP, new IndexSpec[] {
@@ -774,5 +773,22 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
                 safeClose(c);
             }
         }
+    }
+
+    private SQLiteDatabase restart(SQLiteDatabase db) {
+        // Close db and clear memory caches
+        dbOpenHelper.close();
+        dbHelper.clearMemoryCache();
+        Assert.assertFalse("Database should be closed", db.isOpen());
+
+        // Re-open db
+        dbHelper = DBHelper.getInstance(dbOpenHelper.getWritableDatabase(getEncryptionKey()));
+        store = new SmartStore(dbOpenHelper, getEncryptionKey());
+        SQLiteDatabase newDb = store.getDatabase(); // should trigger a resumeLongOperations
+        Assert.assertTrue("Database should be opened", newDb.isOpen());
+
+        // It should not be the same db object
+        Assert.assertNotSame("Should be a different db object after restart", db, newDb);
+        return newDb;
     }
 }
