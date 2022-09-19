@@ -230,11 +230,6 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		db.setLockingEnabled(false);
 	}
 
-	@Override
-	public void onOpen(SQLiteDatabase db) {
-		(new SmartStore(db)).resumeLongOperations();
-	}
-
 	/**
 	 * Deletes the underlying database for the specified user account.
 	 *
