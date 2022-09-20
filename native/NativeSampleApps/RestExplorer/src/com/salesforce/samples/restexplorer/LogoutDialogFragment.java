@@ -28,9 +28,10 @@ package com.salesforce.samples.restexplorer;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.DialogFragment;
-import android.content.DialogInterface;
 import android.os.Bundle;
+
+import androidx.annotation.NonNull;
+import androidx.fragment.app.DialogFragment;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
@@ -39,29 +40,20 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
  */
 public class LogoutDialogFragment extends DialogFragment {
 
-	private AlertDialog logoutConfirmationDialog;
-
 	/**
 	 * Default constructor.
 	 */
 	public LogoutDialogFragment() {
 	}
 
+	@NonNull
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
-		logoutConfirmationDialog = new AlertDialog.Builder(getActivity())
+		return new AlertDialog.Builder(getActivity())
 				.setTitle(R.string.logout_title)
 				.setPositiveButton(R.string.logout_yes,
-				new DialogInterface.OnClickListener() {
-
-					@Override
-					public void onClick(DialogInterface dialog,
-							int which) {
-						SalesforceSDKManager.getInstance().logout(getActivity());
-					}
-				})
+						(dialog, which) -> SalesforceSDKManager.getInstance().logout(getActivity()))
 				.setNegativeButton(R.string.logout_cancel, null)
 				.create();
-		return logoutConfirmationDialog;
 	}
 }
