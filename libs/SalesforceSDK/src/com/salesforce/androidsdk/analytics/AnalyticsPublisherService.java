@@ -37,7 +37,11 @@ import com.salesforce.androidsdk.accounts.UserAccountManager;
  * A service that publishes stored data when an intent is triggered.
  *
  * @author bhariharan
+ *
+ * @deprecated This class will be drastically altered or replaced in Mobile SDK 11.0 when the deprecated
+ * {@link androidx.core.app.JobIntentService} base is replaced with a WorkManager Worker class.
  */
+@Deprecated
 public class AnalyticsPublisherService extends JobIntentService {
 
     private static final String ACTION_PUBLISH = "com.salesforce.androidsdk.analytics.action.ANALYTICS_PUBLISH";

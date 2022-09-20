@@ -70,7 +70,11 @@ import java.util.Map;
  *
  * @author bhariharan
  * @author ktanna
+ *
+ * @deprecated This class will be drastically altered or replaced in Mobile SDK 11.0 when the deprecated
+ * {@link androidx.core.app.JobIntentService} base is replaced with a WorkManager Worker class.
  */
+@Deprecated
 public class PushService extends JobIntentService {
 
 	private static final String TAG = "PushService";
