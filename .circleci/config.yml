@@ -1,5 +1,7 @@
 aliases:
-  # most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
+  # Docker image tags can be found here: https://circleci.com/developer/images/image/cimg/android
+  - &cimg cimg/android:2022.09.2-node
+  # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
   - &default-api-level 30 
 
   - &gradle-cache-key
@@ -63,7 +65,7 @@ executors:
   linux:
     working_directory: ~/SalesforceMobileSDK-Android
     docker:
-      - image: cimg/android:2022.08.1-node
+      - image: *cimg
     environment:
       GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'
 
@@ -163,12 +165,19 @@ jobs:
       - run:
           name: Run << parameters.lib >> Tests with API << parameters.api_level >>
           command: |
+            if (( << parameters.api_level >> < 31 ))
+            then
+              export DEVICE="NexusLowRes"
+            else
+              export DEVICE="MediumPhone.arm"
+            fi
+
             gcloud firebase test android run \
                 --project mobile-apps-firebase-test \
                 --type instrumentation \
                 --app "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk" \
                 --test=libs/<< parameters.lib >>/build/outputs/apk/androidTest/debug/<< parameters.lib >>-debug-androidTest.apk \
-                --device model=NexusLowRes,version=<< parameters.api_level >>,locale=en,orientation=portrait  \
+                --device model=$DEVICE,version=<< parameters.api_level >>,locale=en,orientation=portrait  \
                 --environment-variables coverage=true,coverageFile="/sdcard/coverage.ec"  \
                 --directories-to-pull=/sdcard  \
                 --results-dir=<< parameters.lib >>-${CIRCLE_BUILD_NUM}  \
@@ -240,11 +249,11 @@ jobs:
       - run:
           name: Run RestExplorer Tests with API << parameters.api_level >>
           command: |
-            if (( << parameters.api_level >> < 28 ))
+            if (( << parameters.api_level >> < 31 ))
             then 
-              export DEVICE="Nexus6P"
+              export DEVICE="NexusLowRes"
             else
-              export DEVICE="MediumPhone (ARM)"
+              export DEVICE="MediumPhone.arm"
             fi
 
             gcloud firebase test android run \
@@ -362,8 +371,12 @@ workflows:
   version: 2
 
   pr-tests:
-    when: 
-      equal: [ "webhook", << pipeline.trigger_source >> ]
+    when:
+      and:
+        - equal: [ "webhook", << pipeline.trigger_source >> ]
+        - matches:
+            pattern: "^pull/\\d+$"
+            value: << pipeline.git.branch >>
     jobs:
       - static-analysis
       - run-tests:
