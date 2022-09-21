@@ -89,7 +89,6 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		Assert.assertTrue("ENABLE_FTS4 flag not found in compile options", compileOptions.contains("ENABLE_FTS4"));
 		Assert.assertTrue("ENABLE_FTS3_PARENTHESIS flag not found in compile options", compileOptions.contains("ENABLE_FTS3_PARENTHESIS"));
 		Assert.assertTrue("ENABLE_FTS5 flag not found in compile options", compileOptions.contains("ENABLE_FTS5"));
-		Assert.assertTrue("ENABLE_JSON1 flag not found in compile options", compileOptions.contains("ENABLE_JSON1"));
 	}
 
 	/**
@@ -112,7 +111,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	 */
 	@Test
 	public void testSQLCipherVersion() {
-		Assert.assertEquals("Wrong sqlcipher version", "4.5.1 community", store.getSQLCipherVersion());
+		Assert.assertEquals("Wrong sqlcipher version", "4.5.2 community", store.getSQLCipherVersion());
 	}
 
 	/**

@@ -809,7 +809,7 @@ public class SmartStore  {
      * @throws JSONException
 	 */
 	public JSONArray query(QuerySpec querySpec, int pageIndex) throws JSONException {
-		return queryWithArgs(querySpec, pageIndex, null);
+		return queryWithArgs(querySpec, pageIndex, (String[]) null);
 	}
 
 	/**
@@ -843,7 +843,7 @@ public class SmartStore  {
 	 */
 	public void queryAsString(StringBuilder resultBuilder, QuerySpec querySpec, int pageIndex) {
 		try {
-			runQuery(null, resultBuilder, querySpec, pageIndex, null);
+			runQuery(null, resultBuilder, querySpec, pageIndex, (String []) null);
 		}
 		catch (JSONException e) {
 			// shouldn't happen since we call runQuery with a string builder
