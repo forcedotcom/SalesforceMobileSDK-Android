@@ -59,11 +59,12 @@ public final class SdkVersion implements Comparable<SdkVersion> {
     private static final Pattern VERSION_STR_PATTERN = Pattern.compile("^\\d{1,9}\\.\\d{1,9}\\.\\d{1,9}(\\.dev)?$");
 
     public static SdkVersion parseFromString(@NonNull final String versionStr) throws IllegalArgumentException {
-        if (!VERSION_STR_PATTERN.matcher(versionStr).matches()) {
-            throw new IllegalArgumentException("Version string \"" + versionStr + "\" did not match expected pattern of XX.YY.ZZ[.dev]");
+        final String trimmed = versionStr.trim();
+        if (!VERSION_STR_PATTERN.matcher(trimmed).matches()) {
+            throw new IllegalArgumentException("Version string \"" + trimmed + "\" did not match expected pattern of XX.YY.ZZ[.dev]");
         }
 
-        final String[] parts = versionStr.split("\\.");
+        final String[] parts = trimmed.split("\\.");
         return new SdkVersion(
                 Integer.parseInt(parts[0]),
                 Integer.parseInt(parts[1]),
@@ -99,8 +100,6 @@ public final class SdkVersion implements Comparable<SdkVersion> {
         if (this.patch > o.patch) {
             return 1;
         }
-
-        // TODO Is 1.1.1.dev before or after 1.1.1? I'm not sure atm...
         if (this.isDev && !o.isDev) {
             return -1;
         }
@@ -136,11 +135,15 @@ public final class SdkVersion implements Comparable<SdkVersion> {
     @NonNull
     @Override
     public String toString() {
-        return "SdkVersion{" +
-                "major=" + major +
-                ", minor=" + minor +
-                ", patch=" + patch +
-                ", isDev=" + isDev +
-                '}';
+        final StringBuilder builder = new StringBuilder()
+                .append(major)
+                .append('.')
+                .append(minor)
+                .append('.')
+                .append(patch);
+        if (isDev) {
+            builder.append(".dev");
+        }
+        return builder.toString();
     }
 }
