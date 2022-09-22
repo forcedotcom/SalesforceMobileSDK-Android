@@ -72,9 +72,10 @@ public class SalesforceReactSDKManager extends MobileSyncSDKManager {
     		INSTANCE = new SalesforceReactSDKManager(context, mainActivity, loginActivity);
     	}
 
+		initInternal(context);
+
 		// Upgrade to the latest version.
 		SalesforceReactUpgradeManager.getInstance().upgrade();
-		initInternal(context);
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
 	}
 
