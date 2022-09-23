@@ -63,19 +63,19 @@ public final class SdkVersion implements Comparable<SdkVersion> {
         return isDev;
     }
 
-    public boolean isGreaterThan(@NonNull final SdkVersion o) {
+    public boolean isGreaterThan(final SdkVersion o) {
         return this.compareTo(o) > 0;
     }
 
-    public boolean isGreaterThanOrEqualTo(@NonNull final SdkVersion o) {
+    public boolean isGreaterThanOrEqualTo(final SdkVersion o) {
         return this.compareTo(o) >= 0;
     }
 
-    public boolean isLessThan(@NonNull final SdkVersion o) {
+    public boolean isLessThan(final SdkVersion o) {
         return this.compareTo(o) < 0;
     }
 
-    public boolean isLessThanOrEqualTo(@NonNull final SdkVersion o) {
+    public boolean isLessThanOrEqualTo(final SdkVersion o) {
         return this.compareTo(o) <= 0;
     }
 
@@ -108,23 +108,14 @@ public final class SdkVersion implements Comparable<SdkVersion> {
         if (o == this) { // reference compare
             return 0;
         }
-        if (this.major < o.major) {
-            return -1;
+        if (this.major != o.major) {
+            return Integer.compare(this.major, o.major);
         }
-        if (this.major > o.major) {
-            return 1;
+        if (this.minor != o.minor) {
+            return Integer.compare(this.minor, o.minor);
         }
-        if (this.minor < o.minor) {
-            return -1;
-        }
-        if (this.minor > o.minor) {
-            return 1;
-        }
-        if (this.patch < o.patch) {
-            return -1;
-        }
-        if (this.patch > o.patch) {
-            return 1;
+        if (this.patch != o.patch) {
+            return Integer.compare(this.patch, o.patch);
         }
         if (this.isDev && !o.isDev) {
             return -1;

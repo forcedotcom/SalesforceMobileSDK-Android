@@ -165,6 +165,12 @@ public class SdkVersionTest {
                 selfEquals,
                 selfEquals
         );
+
+        Assert.assertTrue(
+                "Expected null to be after all other versions",
+                new SdkVersion(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, false)
+                        .isLessThan(null)
+        );
     }
 
     @Test
