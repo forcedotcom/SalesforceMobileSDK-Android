@@ -213,6 +213,7 @@ public class SalesforceSDKUpgradeManager {
             final UserAccountManager manager = SalesforceSDKManager.getInstance().getUserAccountManager();
             final List<UserAccount> accounts = manager.getAuthenticatedUsers();
             if (accounts != null) {
+                HttpAccess.init(ctx); // only needed because we need to hit the network for this upgrade step.
                 Executors.newSingleThreadExecutor().execute(() -> {
                     int lowestTimeout = Integer.MAX_VALUE;
 

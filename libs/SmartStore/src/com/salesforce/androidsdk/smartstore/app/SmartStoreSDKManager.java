@@ -80,10 +80,9 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
             INSTANCE = new SmartStoreSDKManager(context, mainActivity, loginActivity);
         }
 
-        initInternal(context);
-
         // Upgrade to the latest version.
         SmartStoreUpgradeManager.getInstance().upgrade();
+        initInternal(context);
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
     }
 

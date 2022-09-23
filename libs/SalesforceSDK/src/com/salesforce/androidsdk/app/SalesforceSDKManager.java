@@ -366,11 +366,11 @@ public class SalesforceSDKManager implements LifecycleObserver {
 	 */
     public static void initInternal(Context context) {
 
-        // Initializes the HTTP client.
-        HttpAccess.init(context);
-
         // Upgrades to the latest version.
         SalesforceSDKUpgradeManager.getInstance().upgrade();
+
+        // Initializes the HTTP client.
+        HttpAccess.init(context);
 
         // Enables IDP login flow if it's set through MDM.
         final RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(context);
