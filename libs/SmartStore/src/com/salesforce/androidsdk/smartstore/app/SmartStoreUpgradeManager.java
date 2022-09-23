@@ -76,15 +76,7 @@ public class SmartStoreUpgradeManager extends SalesforceSDKUpgradeManager {
         // Update shared preference file to reflect the latest version.
         writeCurVersion(SMART_STORE_KEY, SmartStoreSDKManager.SDK_VERSION);
 
-        // If the installed version < v8.2.0, we need to migrate encryption keys.
-        try {
-            final SdkVersion installedVersion = SdkVersion.parseFromString(installedVersionStr);
-        } catch (Exception e) {
-            SmartStoreLogger.e(
-                    TAG,
-                    "Failed to parse installed version. Error message: " + e.getMessage()
-            );
-        }
+        // Compare SDK versions using SdkVersion class and add upgrade steps here as needed.
     }
 
     /**

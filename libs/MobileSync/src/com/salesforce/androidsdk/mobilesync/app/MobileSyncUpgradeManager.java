@@ -75,14 +75,7 @@ public class MobileSyncUpgradeManager extends SmartStoreUpgradeManager {
         // Update shared preference file to reflect the latest version.
         writeCurVersion(MOBILE_SYNC_KEY, MobileSyncSDKManager.SDK_VERSION);
 
-        try {
-            final SdkVersion installedVersion = SdkVersion.parseFromString(installedVersionStr);
-        } catch (Exception e) {
-            MobileSyncLogger.e(
-                    TAG,
-                    "Failed to parse installed version. Error message: " + e.getMessage()
-            );
-        }
+        // Compare SDK versions using SdkVersion class and add upgrade steps here as needed.
     }
 
     /**
