@@ -100,7 +100,10 @@ public class SalesforceSDKUpgradeManager {
                 upgradeFromVersions9_2_0Thru10_1_1To10_1_1PasscodeFixes();
             }
         } catch (Exception e) {
-            SalesforceSDKLogger.e(TAG, "Failed to parse installed version.", e);
+            SalesforceSDKLogger.e(
+                    TAG,
+                    "Failed to parse installed version. Error message: " + e.getMessage()
+            );
         }
     }
 
@@ -209,7 +212,6 @@ public class SalesforceSDKUpgradeManager {
         if (globalPrefs.contains(SCREEN_LOCK)) {
             final UserAccountManager manager = SalesforceSDKManager.getInstance().getUserAccountManager();
             final List<UserAccount> accounts = manager.getAuthenticatedUsers();
-
             if (accounts != null) {
                 Executors.newSingleThreadExecutor().execute(() -> {
                     int lowestTimeout = Integer.MAX_VALUE;
