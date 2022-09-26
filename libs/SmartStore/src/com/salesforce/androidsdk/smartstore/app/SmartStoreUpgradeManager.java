@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.smartstore.app;
 
 import com.salesforce.androidsdk.app.SalesforceSDKUpgradeManager;
+import com.salesforce.androidsdk.app.SdkVersion;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 
 /**
@@ -67,21 +68,15 @@ public class SmartStoreUpgradeManager extends SalesforceSDKUpgradeManager {
      * version to the current version.
      */
     protected synchronized void upgradeSmartStore() {
-        final String installedVersion = getInstalledSmartStoreVersion();
-        if (installedVersion.equals(SmartStoreSDKManager.SDK_VERSION)) {
+        final String installedVersionStr = getInstalledSmartStoreVersion();
+        if (installedVersionStr.equals(SmartStoreSDKManager.SDK_VERSION)) {
             return;
         }
 
         // Update shared preference file to reflect the latest version.
         writeCurVersion(SMART_STORE_KEY, SmartStoreSDKManager.SDK_VERSION);
 
-        // If the installed version < v8.2.0, we need to migrate encryption keys.
-        try {
-            final String majorVersionNum = installedVersion.substring(0, 3);
-            double installedVerDouble = Double.parseDouble(majorVersionNum);
-        } catch (Exception e) {
-            SmartStoreLogger.e(TAG, "Failed to parse installed version.");
-        }
+        // Compare SDK versions using SdkVersion class and add upgrade steps here as needed.
     }
 
     /**
