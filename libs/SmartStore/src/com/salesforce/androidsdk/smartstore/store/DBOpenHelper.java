@@ -230,11 +230,6 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		db.setLockingEnabled(false);
 	}
 
-	@Override
-	public void onOpen(SQLiteDatabase db) {
-		(new SmartStore(db)).resumeLongOperations();
-	}
-
 	/**
 	 * Deletes the underlying database for the specified user account.
 	 *
@@ -382,9 +377,6 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 	static class DBHook implements SQLiteDatabaseHook {
 		public void preKey(SQLiteDatabase database) {
-			// Using sqlcipher 2.x kdf iter because 3.x default (64000) and 4.x default (256000) are too slow
-			// => should open 2.x databases without any migration
-			database.execSQL("PRAGMA cipher_default_kdf_iter = 4000");
 		}
 
 		/**
@@ -392,7 +384,9 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		 * @param database db being processed
 		 */
 		public void postKey(SQLiteDatabase database) {
-			database.rawExecSQL("PRAGMA cipher_migrate");
+			// Using sqlcipher 2.x kdf iter because 3.x default (64000) and 4.x default (256000) are too slow
+			// => should open 2.x databases without any migration
+			database.rawExecSQL("PRAGMA kdf_iter = 4000");
 		}
 	}
 

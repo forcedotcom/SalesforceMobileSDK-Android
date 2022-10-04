@@ -66,8 +66,9 @@ public class MobileSyncSDKManager extends SmartStoreSDKManager {
 
 		// Upgrade to the latest version.
 		MobileSyncUpgradeManager.getInstance().upgrade();
+
 		initInternal(context);
-        EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
+		EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
 	}
 
     /**

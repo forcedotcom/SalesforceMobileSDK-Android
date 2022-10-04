@@ -23,7 +23,7 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 10.1.1
+### What's New in 10.2.0
 See [release notes](https://github.com/forcedotcom/SalesforceMobileSDK-Android/releases).
 
 ### Native Applications

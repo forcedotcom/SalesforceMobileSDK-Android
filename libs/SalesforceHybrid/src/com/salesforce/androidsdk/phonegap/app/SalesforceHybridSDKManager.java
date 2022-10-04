@@ -85,7 +85,8 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
 
 		// Upgrade to the latest version.
 		SalesforceHybridUpgradeManager.getInstance().upgrade();
-		initInternal(context);
+        initInternal(context);
+
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
 	}
 

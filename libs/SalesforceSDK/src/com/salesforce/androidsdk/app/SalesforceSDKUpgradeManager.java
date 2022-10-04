@@ -35,15 +35,11 @@ import android.content.SharedPreferences;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Executors;
 
@@ -84,31 +80,30 @@ public class SalesforceSDKUpgradeManager {
      * version to the current version.
      */
     protected synchronized void upgradeAccMgr() {
-        String installedVersion = getInstalledAccMgrVersion();
-        if (installedVersion.equals(SalesforceSDKManager.SDK_VERSION)) {
+        String installedVersionStr = getInstalledAccMgrVersion();
+        if (installedVersionStr.equals(SalesforceSDKManager.SDK_VERSION)) {
             return;
         }
 
         // Update shared preference file to reflect the latest version.
         writeCurVersion(ACC_MGR_KEY, SalesforceSDKManager.SDK_VERSION);
 
-        /*
-         * If the installed version < v7.1.0, we need to store the current
-         * user's user ID and org ID in a shared preference file, to
-         * support fast user switching.
-         */
         try {
-            final String majorVersionNum = installedVersion.substring(0, 3);
-            double installedVerDouble = Double.parseDouble(majorVersionNum);
-            if (installedVerDouble < 9.2) {
-                upgradeTo9Dot2();
+            final SdkVersion installedVersion = SdkVersion.parseFromString(installedVersionStr);
+            if (installedVersion.isLessThan(new SdkVersion(9, 2, 0, false))) {
+                upgradeFromBefore9_2_0To10_1_1PasscodeFixes();
             }
             // Already incorporated into 9.2 upgrade.
-            if (installedVerDouble > 9.2 && installedVerDouble <= 10.1) {
-                upgradeTo10Dot1Dot1();
+            else if (installedVersion.isGreaterThanOrEqualTo(new SdkVersion(9, 2, 0, false))
+                    && installedVersion.isLessThan(new SdkVersion(10, 2, 0, false))
+            ) {
+                upgradeFromVersions9_2_0Thru10_1_1To10_1_1PasscodeFixes();
             }
         } catch (Exception e) {
-            SalesforceSDKLogger.e(TAG, "Failed to parse installed version.");
+            SalesforceSDKLogger.e(
+                    TAG,
+                    "Failed to parse installed version. Error message: " + e.getMessage()
+            );
         }
     }
 
@@ -144,7 +139,7 @@ public class SalesforceSDKUpgradeManager {
     }
 
     // TODO: Remove upgrade step in Mobile SDK 11.0
-    private void upgradeTo9Dot2() {
+    private void upgradeFromBefore9_2_0To10_1_1PasscodeFixes() {
         final String KEY_PASSCODE ="passcode";
         final String KEY_TIMEOUT = "access_timeout";
         final String KEY_PASSCODE_LENGTH = "passcode_length";
@@ -211,14 +206,14 @@ public class SalesforceSDKUpgradeManager {
     }
 
     // TODO: Remove upgrade step in Mobile SDK 12.0
-    private void upgradeTo10Dot1Dot1() {
+    private void upgradeFromVersions9_2_0Thru10_1_1To10_1_1PasscodeFixes() {
         final Context ctx = SalesforceSDKManager.getInstance().getAppContext();
         final SharedPreferences globalPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
         if (globalPrefs.contains(SCREEN_LOCK)) {
             final UserAccountManager manager = SalesforceSDKManager.getInstance().getUserAccountManager();
             final List<UserAccount> accounts = manager.getAuthenticatedUsers();
-
             if (accounts != null) {
+                HttpAccess.init(ctx); // only needed because we need to hit the network for this upgrade step.
                 Executors.newSingleThreadExecutor().execute(() -> {
                     int lowestTimeout = Integer.MAX_VALUE;
 

@@ -355,7 +355,10 @@ public class BootConfig {
 	 * Returns the push notification client ID.
 	 *
 	 * @return Push notification client ID.
+	 *
+	 * @deprecated Will be removed in 11.0 in favor of Firebase google-services.json file.
 	 */
+	@Deprecated
 	public String getPushNotificationClientId() {
 		return pushNotificationClientId;
 	}

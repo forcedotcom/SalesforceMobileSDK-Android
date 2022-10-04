@@ -170,6 +170,7 @@ public class RestRequest {
 		UPDATE(SERVICES_DATA + "%s/sobjects/%s/%s"),
 		DELETE(SERVICES_DATA + "%s/sobjects/%s/%s"),
 		QUERY(SERVICES_DATA + "%s/query"),
+		QUERY_ALL(SERVICES_DATA + "%s/queryAll"),
 		SEARCH(SERVICES_DATA + "%s/search"),
 		SEARCH_SCOPE_AND_ORDER(SERVICES_DATA + "%s/search/scopeOrder"),
 		SEARCH_RESULT_LAYOUT(SERVICES_DATA + "%s/search/layout"),
@@ -569,6 +570,22 @@ public class RestRequest {
 			headers.put(SFORCE_QUERY_OPTIONS, BATCH_SIZE_OPTION + "=" + batchSize);
 		}
 		return new RestRequest(RestMethod.GET, path.toString(), headers);
+	}
+
+	/**
+	 * Request to execute the specified SOQL query which includes deleted records because of a merge or delete in the result set.
+	 *
+	 * @param apiVersion    Salesforce API version.
+	 * @param q             SOQL query string.
+	 * @return              RestRequest object that requests a SOQL query that includes deleted records.
+	 * @throws UnsupportedEncodingException
+	 * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_queryall.htm">https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_queryall.htm</a>
+	 */
+	public static RestRequest getRequestForQueryAll(String apiVersion, String q) throws UnsupportedEncodingException {
+		StringBuilder path = new StringBuilder(RestAction.QUERY_ALL.getPath(apiVersion));
+		path.append("?q=");
+		path.append(URLEncoder.encode(q, UTF_8));
+		return new RestRequest(RestMethod.GET, path.toString());
 	}
 
 	/**

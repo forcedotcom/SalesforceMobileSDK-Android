@@ -48,7 +48,12 @@ import okhttp3.HttpUrl;
 
 /**
  * Custom dialog fragment to allow the user to set a label and URL to use for the login.
+ *
+ * @deprecated The exact signature of the methods inside of CustomServerUrlEditor and its inherited
+ * methods may change in Mobile SDK 11.0 when the deprecated base class {@link android.app.DialogFragment} is
+ * replaced with {@link androidx.fragment.app.DialogFragment}.
  */
+@Deprecated
 public class CustomServerUrlEditor extends DialogFragment {
 
 	private LoginServerManager loginServerManager;

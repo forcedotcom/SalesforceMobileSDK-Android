@@ -28,7 +28,10 @@
 package com.salesforce.androidsdk.smartstore.store;
 
 import android.util.LruCache;
+
 import com.salesforce.androidsdk.analytics.security.Encryptor;
+import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,8 +43,10 @@ import java.util.Set;
  */
 public class MemCachedKeyValueStore implements KeyValueStore {
 
+    private static final String TAG = MemCachedKeyValueStore.class.getSimpleName();
+
     KeyValueStore keyValueStore;
-    LruCache<String, String> memCache;
+    LruCache<String, byte[]> memCache;
 
     public MemCachedKeyValueStore(KeyValueStore keyValueStore, int cacheSize){
         this.keyValueStore = keyValueStore;
@@ -49,27 +54,51 @@ public class MemCachedKeyValueStore implements KeyValueStore {
     }
 
     @Override
+    public boolean contains(String key) {
+        return memCache.get(key) != null || keyValueStore.contains(key);
+    }
+
+    @Override
     public String getValue(String key) {
-        String value = memCache.get(key);
-        if (value == null) {
-            value = keyValueStore.getValue(key);
-            if (value != null) {
-                memCache.put(key, value);
+        InputStream stream = getStream(key);
+        if (stream == null) {
+            return null;
+        } else {
+            try {
+                return Encryptor.getStringFromStream(stream);
+            } catch (IOException e) {
+                SmartStoreLogger.e(TAG, "getValue(\"" + key + "\") could not convert stream to string", e);
+                return null;
             }
         }
-        return value;
     }
 
     @Override
     public InputStream getStream(String key) {
-        String value = getValue(key);
-        return value == null ?  null : new ByteArrayInputStream(value.getBytes(StandardCharsets.UTF_8));
+        byte[] bytesFromMemCache = memCache.get(key);
+        if (bytesFromMemCache == null) {
+            InputStream streamFromStore = keyValueStore.getStream(key);
+            if (streamFromStore == null) {
+                return null;
+            } else {
+                try {
+                    byte[] bytesFromStore = Encryptor.getByteArrayStreamFromStream(streamFromStore).toByteArray();
+                    memCache.put(key, bytesFromStore);
+                    return new ByteArrayInputStream(bytesFromStore);
+                } catch (IOException e) {
+                    SmartStoreLogger.e(TAG, "getStream(\"" + key + "\") could not read stream", e);
+                    return null;
+                }
+            }
+        } else {
+            return new ByteArrayInputStream(bytesFromMemCache);
+        }
     }
 
     @Override
     public boolean saveValue(String key, String value) {
         if (keyValueStore.saveValue(key, value)) {
-            memCache.put(key, value);
+            memCache.put(key, value.getBytes(StandardCharsets.UTF_8));
             return true;
         } else {
             return false;
@@ -78,8 +107,13 @@ public class MemCachedKeyValueStore implements KeyValueStore {
 
     @Override
     public boolean saveStream(String key, InputStream stream) throws IOException {
-        String value = Encryptor.getStringFromStream(stream);
-        return saveValue(key, value);
+        byte[] bytes = Encryptor.getByteArrayStreamFromStream(stream).toByteArray();
+        if (keyValueStore.saveStream(key, new ByteArrayInputStream(bytes))) {
+            memCache.put(key, bytes);
+            return true;
+        } else {
+            return false;
+        }
     }
 
     @Override

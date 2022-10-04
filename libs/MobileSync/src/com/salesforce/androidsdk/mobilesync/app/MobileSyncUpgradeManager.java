@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.mobilesync.app;
 
+import com.salesforce.androidsdk.app.SdkVersion;
 import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreUpgradeManager;
 
@@ -66,21 +67,15 @@ public class MobileSyncUpgradeManager extends SmartStoreUpgradeManager {
      * Upgrades mobile sync data from existing client version to the current version.
      */
     protected synchronized void upgradeSObject() {
-        final String installedVersion = getInstalledSobjectVersion();
-        if (installedVersion.equals(MobileSyncSDKManager.SDK_VERSION)) {
+        final String installedVersionStr = getInstalledSobjectVersion();
+        if (installedVersionStr.equals(MobileSyncSDKManager.SDK_VERSION)) {
             return;
         }
 
         // Update shared preference file to reflect the latest version.
         writeCurVersion(MOBILE_SYNC_KEY, MobileSyncSDKManager.SDK_VERSION);
 
-        // If the installed version < v8.2.0, we need to delete the old layout SmartStore file.
-        try {
-            final String majorVersionNum = installedVersion.substring(0, 3);
-            double installedVerDouble = Double.parseDouble(majorVersionNum);
-        } catch (Exception e) {
-            MobileSyncLogger.e(TAG, "Failed to parse installed version.");
-        }
+        // Compare SDK versions using SdkVersion class and add upgrade steps here as needed.
     }
 
     /**

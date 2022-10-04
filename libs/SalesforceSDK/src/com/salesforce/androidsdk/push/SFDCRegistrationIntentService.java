@@ -37,6 +37,11 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
+/**
+ * @deprecated This class will be drastically altered or replaced in Mobile SDK 11.0 when the deprecated
+ * {@link androidx.core.app.JobIntentService} base is replaced with a WorkManager Worker class.
+ */
+@Deprecated
 public class SFDCRegistrationIntentService extends JobIntentService {
 
     private static final String TAG = "RegIntentService";

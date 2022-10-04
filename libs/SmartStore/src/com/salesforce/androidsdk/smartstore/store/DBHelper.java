@@ -96,8 +96,11 @@ public class DBHelper {
 	// Caches count limit
 	private static final int CACHES_COUNT_LIMIT = 1024;
 
+	// Cache of soup name to boolean indicating existence
+	private LruCache<String, Boolean> soupNameToExistMap = new LruCache<>(CACHES_COUNT_LIMIT);
+
 	// Cache of soup name to soup table names
-	private LruCache<String, String> soupNameToTableNamesMap = new LruCache<String, String>(CACHES_COUNT_LIMIT);
+	private LruCache<String, String> soupNameToTableNamesMap = new LruCache<>(CACHES_COUNT_LIMIT);
 
 	// Cache of soup name to index specs
 	private LruCache<String, IndexSpec[]> soupNameToIndexSpecsMap = new LruCache<String, IndexSpec[]>(CACHES_COUNT_LIMIT);
@@ -145,6 +148,15 @@ public class DBHelper {
 	public void cacheTableName(String soupName, String tableName) {
 		soupNameToTableNamesMap.put(soupName, tableName);
 	}
+
+	/**
+	 * @param soupName
+	 * @param hasSoup
+	 */
+	public void cacheHasSoup(String soupName, boolean hasSoup) {
+		soupNameToExistMap.put(soupName, hasSoup);
+	}
+
 
 	/**
 	 * @param soupName
@@ -213,6 +225,7 @@ public class DBHelper {
 			
 			cleanupRawCountSqlToStatementMaps(tableName);
 		}
+		soupNameToExistMap.remove(soupName);
 		soupNameToTableNamesMap.remove(soupName);
 		soupNameToIndexSpecsMap.remove(soupName);
 		soupNameToHasFTS.remove(soupName);
@@ -453,6 +466,7 @@ public class DBHelper {
 	 * Resets all cached data from memory.
 	 */
 	public synchronized void clearMemoryCache() {
+		soupNameToExistMap.evictAll();
 		soupNameToTableNamesMap.evictAll();
 		soupNameToIndexSpecsMap.evictAll();
 		soupNameToFeaturesMap.evictAll();
@@ -605,6 +619,23 @@ public class DBHelper {
            //       we could optimize for that scenario but it doesn't seem very important
        }
        return soupTableName;
+   }
+
+	/**
+	 * Return true if given soup exists
+	 * @param db
+	 * @param soupName
+	 * @return
+	 */
+   public boolean hasSoup(SQLiteDatabase db, String soupName) {
+	   Boolean exist = soupNameToExistMap.get(soupName);
+	   if (exist != null) {
+		   return exist;
+	   } else {
+		   boolean hasSoup = getSoupTableName(db, soupName) != null;
+		   cacheHasSoup(soupName, hasSoup);
+		   return hasSoup;
+	   }
    }
 
 	/**

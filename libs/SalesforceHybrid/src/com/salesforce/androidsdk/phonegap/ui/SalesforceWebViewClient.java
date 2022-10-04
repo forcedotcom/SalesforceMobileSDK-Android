@@ -80,11 +80,7 @@ public class SalesforceWebViewClient extends SystemWebViewClient {
     		final String extendedUserAgentString = uaStr + " Hybrid " + (origUserAgent == null ? "" : origUserAgent);
     		webSettings.setUserAgentString(extendedUserAgentString);
 
-    		// Configure HTML5 cache support.
     		webSettings.setDomStorageEnabled(true);
-    		final String cachePath = SalesforceSDKManager.getInstance().getAppContext().getCacheDir().getAbsolutePath();
-    		webSettings.setAppCachePath(cachePath);
-    		webSettings.setAppCacheEnabled(true);
     		webSettings.setAllowFileAccess(true);
     		webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
         }

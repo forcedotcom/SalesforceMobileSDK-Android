@@ -26,21 +26,27 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
+import static com.salesforce.androidsdk.smartstore.tests.R.drawable.sf__icon;
+
 import android.content.Context;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 /** Tests for MemCachedKeyValueStore */
 @RunWith(AndroidJUnit4.class)
@@ -49,6 +55,7 @@ public class MemCachedKeyValueStoreTest {
     static final int NUM_ENTRIES = 25;
     static final int CACHE_SIZE = 10;
 
+    private Context context;
     private KeyValueEncryptedFileStore store;
     private MemCachedKeyValueStore memCachedStore;
 
@@ -63,7 +70,7 @@ public class MemCachedKeyValueStoreTest {
             throw new RuntimeException(e);
         }
 
-        Context context =
+        context =
             InstrumentationRegistry.getInstrumentation()
                 .getTargetContext()
                 .getApplicationContext();
@@ -120,7 +127,7 @@ public class MemCachedKeyValueStoreTest {
         Assert.assertEquals(2, memCachedStore.memCache.hitCount());
         Assert.assertEquals("value1", streamToString(store.getStream("key1")));
 
-        Assert.assertEquals("value1", memCachedStore.memCache.get("key1"));
+        Assert.assertEquals("value1", new String(memCachedStore.memCache.get("key1"), StandardCharsets.UTF_8));
     }
 
     /** Test saving from streams and getting them back when mem cache hits */
@@ -137,7 +144,7 @@ public class MemCachedKeyValueStoreTest {
         Assert.assertEquals(2, memCachedStore.memCache.hitCount());
         Assert.assertEquals("value1", streamToString(store.getStream("key1")));
 
-        Assert.assertEquals("value1", memCachedStore.memCache.get("key1"));
+        Assert.assertEquals("value1", new String(memCachedStore.memCache.get("key1"), StandardCharsets.UTF_8));
     }
 
     /** Test saving values and getting them back when mem cache misses */
@@ -186,7 +193,7 @@ public class MemCachedKeyValueStoreTest {
         Assert.assertEquals("value1", streamToString(memCachedStore.getStream("key1")));
         Assert.assertEquals(1, memCachedStore.memCache.hitCount());
 
-        Assert.assertEquals("value1", memCachedStore.memCache.get("key1"));
+        Assert.assertEquals("value1", new String(memCachedStore.memCache.get("key1"), StandardCharsets.UTF_8));
     }
 
     /** Test that get value populates mem cache */
@@ -201,7 +208,7 @@ public class MemCachedKeyValueStoreTest {
         Assert.assertEquals("value1", streamToString(memCachedStore.getStream("key1")));
         Assert.assertEquals(1, memCachedStore.memCache.hitCount());
 
-        Assert.assertEquals("value1", memCachedStore.memCache.get("key1"));
+        Assert.assertEquals("value1", new String(memCachedStore.memCache.get("key1"), StandardCharsets.UTF_8));
     }
 
     /** Test saving values and deleting them  */
@@ -301,9 +308,89 @@ public class MemCachedKeyValueStoreTest {
         }
     }
 
+    /**
+     * Read some binary file from assets, save it to the key value store then get it back
+     * Make sure it's identical to the original file
+     */
+    @Test
+    public void testBinaryStorage() throws IOException {
+        // Saving resource icon to key value store
+        memCachedStore.saveStream("icon", getResourceIconStream());
+
+        // Retrieving icon back from key value store
+        byte[] savedIconBytes = Encryptor.getByteArrayStreamFromStream(memCachedStore.getStream("icon")).toByteArray();
+
+        // Comparing bytes
+        byte[] resourceIconBytes = Encryptor.getByteArrayStreamFromStream(getResourceIconStream()).toByteArray();
+        Assert.assertEquals(resourceIconBytes.length, savedIconBytes.length);
+        for (int i=0; i<resourceIconBytes.length; i++) {
+            Assert.assertEquals(resourceIconBytes[i], savedIconBytes[i]);
+        }
+    }
+
+    /** Test calling contains after saving and deleting values */
+    @Test
+    public void testContains() {
+        Assert.assertFalse(memCachedStore.contains("key1"));
+        Assert.assertFalse(memCachedStore.contains("key2"));
+        Assert.assertFalse(memCachedStore.contains("key3"));
+        Assert.assertFalse(store.contains("key1"));
+        Assert.assertFalse(store.contains("key2"));
+        Assert.assertFalse(store.contains("key3"));
+
+        // Save one
+        memCachedStore.saveValue("key1", "value1");
+        Assert.assertTrue(memCachedStore.contains("key1"));
+        Assert.assertFalse(memCachedStore.contains("key2"));
+        Assert.assertFalse(memCachedStore.contains("key3"));
+        Assert.assertTrue(store.contains("key1"));
+        Assert.assertFalse(store.contains("key2"));
+        Assert.assertFalse(store.contains("key3"));
+
+        // Save another into underlying store directly
+        store.saveValue("key2", "value2");
+        Assert.assertTrue(memCachedStore.contains("key1"));
+        Assert.assertTrue(memCachedStore.contains("key2"));
+        Assert.assertFalse(memCachedStore.contains("key3"));
+        Assert.assertTrue(store.contains("key1"));
+        Assert.assertTrue(store.contains("key2"));
+        Assert.assertFalse(store.contains("key3"));
+
+        // Save third
+        memCachedStore.saveValue("key3", "value3");
+        Assert.assertTrue(memCachedStore.contains("key1"));
+        Assert.assertTrue(memCachedStore.contains("key2"));
+        Assert.assertTrue(memCachedStore.contains("key3"));
+        Assert.assertTrue(store.contains("key1"));
+        Assert.assertTrue(store.contains("key2"));
+        Assert.assertTrue(store.contains("key3"));
+
+        // Delete one
+        memCachedStore.deleteValue("key1");
+        Assert.assertFalse(memCachedStore.contains("key1"));
+        Assert.assertTrue(memCachedStore.contains("key2"));
+        Assert.assertTrue(memCachedStore.contains("key3"));
+        Assert.assertFalse(store.contains("key1"));
+        Assert.assertTrue(store.contains("key2"));
+        Assert.assertTrue(store.contains("key3"));
+
+        // Delete all
+        memCachedStore.deleteAll();
+        Assert.assertFalse(memCachedStore.contains("key1"));
+        Assert.assertFalse(memCachedStore.contains("key2"));
+        Assert.assertFalse(memCachedStore.contains("key3"));
+        Assert.assertFalse(store.contains("key1"));
+        Assert.assertFalse(store.contains("key2"));
+        Assert.assertFalse(store.contains("key3"));
+    }
+
     //
     // Helper methods
     //
+    private InputStream getResourceIconStream() {
+        return context.getResources().openRawResource(sf__icon);
+    }
+
     private InputStream stringToStream(String value) {
         return new ByteArrayInputStream(value.getBytes(StandardCharsets.UTF_8));
     }
