@@ -64,7 +64,7 @@ android {
 
 ext {
     PUBLISH_GROUP_ID = 'com.salesforce.mobilesdk'
-    PUBLISH_VERSION = '10.2.0'
+    PUBLISH_VERSION = '11.0.0'
     PUBLISH_ARTIFACT_ID = 'SalesforceAnalytics'
 }
 
