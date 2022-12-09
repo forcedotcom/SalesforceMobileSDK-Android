@@ -1,8 +1,10 @@
 apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
 
 dependencies {
   api project(':libs:SalesforceSDK')
-  androidTestImplementation ('androidx.test:runner:1.4.0') {
+    implementation 'androidx.core:core-ktx:+'
+    androidTestImplementation ('androidx.test:runner:1.4.0') {
     exclude module: 'support-annotations'
   }
   androidTestImplementation ('androidx.test:rules:1.4.0') {
@@ -15,10 +17,10 @@ dependencies {
 }
 
 android {
-  compileSdkVersion 32
+  compileSdkVersion 33
 
   defaultConfig {
-    targetSdkVersion 32
+    targetSdkVersion 33
     minSdkVersion 24
   }
   

@@ -1,14 +1,16 @@
 apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
 
 dependencies {
   api project(':libs:SalesforceHybrid')
+    implementation 'androidx.core:core-ktx:1.9.0'
 }
 
 android {
-  compileSdkVersion 32
+  compileSdkVersion 33
 
   defaultConfig {
-    targetSdkVersion 32
+    targetSdkVersion 33
     minSdkVersion 24
   }
 
