@@ -3,7 +3,7 @@ apply plugin: 'org.jetbrains.kotlin.android'
 
 dependencies {
   api project(':libs:SalesforceHybrid')
-    implementation 'androidx.core:core-ktx:+'
+    implementation 'androidx.core:core-ktx:1.9.0'
 }
 
 android {
