@@ -130,7 +130,7 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
             // Offline.
             else {
                 SalesforceReactLogger.w(TAG, "onResumeNotLoggedIn - should authenticate/offline - can not proceed");
-                onErrorAuthenticateOffline();
+                //onErrorAuthenticateOffline();
             }
         }
 
