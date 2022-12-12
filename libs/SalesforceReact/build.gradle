@@ -17,13 +17,15 @@ buildscript {
 }
 
 apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.android'
 
 dependencies {
-  api project(':libs:MobileSync')
-  api 'com.facebook.react:react-native:0.70.1'
-  androidTestImplementation 'androidx.test:runner:1.4.0'
-  androidTestImplementation 'androidx.test:rules:1.4.0'
-  androidTestImplementation 'androidx.test.ext:junit:1.1.3'
+    api project(':libs:MobileSync')
+    api 'com.facebook.react:react-native:0.70.1'
+    implementation 'androidx.core:core-ktx:1.9.0'
+    androidTestImplementation 'androidx.test:runner:1.5.1'
+    androidTestImplementation 'androidx.test:rules:1.5.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.4'
 
     // JSC from node_modules
     if (useIntlJsc) {
@@ -35,10 +37,10 @@ dependencies {
 }
 
 android {
-    compileSdkVersion 32
+    compileSdkVersion 33
 
     defaultConfig {
-        targetSdkVersion 32
+        targetSdkVersion 33
         minSdkVersion 24
     }
 
