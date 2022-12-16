@@ -28,7 +28,9 @@
 		android:imeOptions="actionNext"
 		android:textColor="?android:attr/textColorPrimary"
 		android:layout_height="wrap_content"
-		android:layout_width="match_parent"/>
+		android:layout_width="match_parent"
+		android:importantForAutofill="no"
+		android:minHeight="48dp"/>
 
 	<EditText android:id="@+id/sf__picker_custom_url"
 		android:layout_marginTop="10dp"
@@ -41,7 +43,9 @@
 		android:imeOptions="actionDone"
 		android:textColor="?android:attr/textColorPrimary"
 		android:layout_height="wrap_content"
-		android:layout_width="match_parent"	/>
+		android:layout_width="match_parent"
+		android:autofillHints="URL"
+		android:minHeight="48dp"/>
 
 	<LinearLayout
 		android:layout_width="match_parent"
@@ -72,7 +76,7 @@
 		    android:text="@string/sf__server_url_default_apply"
 			android:layout_width="0dp"
 			android:layout_weight="1"
-			android:layout_height="47dp"
+			android:layout_height="48dp"
 			android:layout_gravity="center"
 			android:layout_marginTop="10dp"
 			android:layout_marginStart="10dp"

@@ -47,6 +47,7 @@
         <item name="android:textColorHint">@color/sf__hint_color</item>
         <item name="android:colorBackground">@color/sf__layout_background</item>
         <item name="android:colorPrimary">@color/sf__primary_color</item>
+        <item name="android:background">@drawable/sf__dialog</item>
     </style>
 
     <style name="SalesforceSDK.Dialog.Dark">
@@ -54,6 +55,7 @@
         <item name="android:textColorHint">@color/sf__hint_color_dark</item>
         <item name="android:colorBackground">@color/sf__layout_background_dark</item>
         <item name="android:colorPrimary">@color/sf__primary_color</item>
+        <item name="android:background">@drawable/sf__dialog_dark</item>
     </style>
 
     <style name="SalesforceSDK_Dark.Login">

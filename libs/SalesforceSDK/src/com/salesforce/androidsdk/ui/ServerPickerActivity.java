@@ -26,11 +26,8 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import static java.security.AccessController.getContext;
-
 import android.app.ActionBar;
 import android.app.Activity;
-import android.app.FragmentManager;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
@@ -39,6 +36,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
+
+import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.FragmentManager;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -56,7 +56,7 @@ import java.util.List;
  *
  * @author bhariharan
  */
-public class ServerPickerActivity extends Activity implements
+public class ServerPickerActivity extends FragmentActivity implements
         android.widget.RadioGroup.OnCheckedChangeListener, AuthConfigTask.AuthConfigCallbackInterface {
 
     public static final String CHANGE_SERVER_INTENT = "com.salesforce.SERVER_CHANGED";
@@ -148,7 +148,6 @@ public class ServerPickerActivity extends Activity implements
         final RadioGroup radioGroup = findViewById(getServerListGroupId());
         radioGroup.setOnCheckedChangeListener(this);
     	urlEditDialog = new CustomServerUrlEditor();
-    	urlEditDialog.setRetainInstance(true);
     }
 
     @Override
@@ -187,7 +186,7 @@ public class ServerPickerActivity extends Activity implements
      * @param v View.
      */
     public void showCustomUrlDialog(View v) {
-    	final FragmentManager fragMgr = getFragmentManager();
+        final FragmentManager fragMgr = getSupportFragmentManager();
 
         // Adds fragment only if it has not been added already.
         if (!urlEditDialog.isAdded()) {
