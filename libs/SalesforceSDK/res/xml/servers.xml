@@ -6,10 +6,10 @@
     <server name="Yellowstone Schools" url="https://purplehou.force.com/purple" />
     <server name="YES Prep Public Schools" url="https://yesprep.purplesense.org/purple" />
     <server name="Service Providers" url="https://purple-sense.force.com" />
-    <server name="Sandbox Aldine ISD" url="https://tw-aldine.cs201.force.com/purple" />
+    <!-- <server name="Sandbox Aldine ISD" url="https://tw-aldine.cs201.force.com/purple" />
     <server name="Sandbox Harmony Public Schools" url="https://tw-harmonyschools.cs36.force.com/purple" />
     <server name="Sandbox Houston ISD" url="https://tw-houstonisd.cs196.force.com/purple" />
     <server name="Sandbox Yellowstone Schools" url="https://tw-purplehou.cs36.force.com/purple" />
     <server name="Sandbox YES Prep Public Schools" url="https://tw-yesprep.cs203.force.com/purple" />
-    <server name="Partial Sandbox YES Prep Public Schools" url="https://partial-yesprep.cs221.force.com/purple" />
+    <server name="Partial Sandbox YES Prep Public Schools" url="https://partial-yesprep.cs221.force.com/purple" /> -->
 </servers>
