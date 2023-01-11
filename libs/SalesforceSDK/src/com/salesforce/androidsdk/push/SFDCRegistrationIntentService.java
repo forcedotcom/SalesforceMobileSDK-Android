@@ -28,6 +28,8 @@ package com.salesforce.androidsdk.push;
 
 import android.content.Context;
 import android.content.Intent;
+
+import androidx.annotation.NonNull;
 import androidx.core.app.JobIntentService;
 
 import com.google.firebase.FirebaseApp;
@@ -36,6 +38,8 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
+
+import java.util.Objects;
 
 /**
  * @deprecated This class will be drastically altered or replaced in Mobile SDK 11.0 when the deprecated
@@ -48,7 +52,7 @@ public class SFDCRegistrationIntentService extends JobIntentService {
     private static final String FCM = "FCM";
 
     @Override
-    protected void onHandleWork(Intent intent) {
+    protected void onHandleWork(@NonNull Intent intent) {
         try {
 
             /*
@@ -64,8 +68,11 @@ public class SFDCRegistrationIntentService extends JobIntentService {
             PushMessaging.initializeFirebaseIfNeeded(context);
 
             // Fetches an instance ID from Firebase once the initialization is complete.
-            final FirebaseInstanceId instanceID = FirebaseInstanceId.getInstance(FirebaseApp.getInstance(appName));
-            final String token = instanceID.getToken(BootConfig.getBootConfig(this).getPushNotificationClientId(), FCM);
+            final FirebaseApp firebaseApp = FirebaseApp.getInstance(appName);
+            final FirebaseInstanceId instanceID = FirebaseInstanceId.getInstance(firebaseApp);
+            final String senderId = Objects.requireNonNull(firebaseApp.getOptions().getGcmSenderId());
+            final String token = instanceID.getToken(senderId, FCM);
+
             final UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
 
             // Store the new token.

@@ -43,10 +43,10 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -151,9 +151,11 @@ public class PushMessaging {
      */
     public static void initializeFirebaseIfNeeded(Context context) {
         String appName = getAppNameForFirebase(context);
-        final String pushClientId = BootConfig.getBootConfig(context).getPushNotificationClientId();
-        final FirebaseOptions firebaseOptions = new FirebaseOptions.Builder().
-                setGcmSenderId(pushClientId).setApplicationId(context.getPackageName()).build();
+        final FirebaseOptions firebaseOptions = Objects.requireNonNull(
+                FirebaseOptions.fromResource(context),
+                "Unable to retrieve Firebase values.  This usually means that com.google" +
+                        ".gms:google-services was not applied to your gradle project."
+        );
 
         /*
          * Ensures that Firebase initialization occurs only once for this app. If an exception

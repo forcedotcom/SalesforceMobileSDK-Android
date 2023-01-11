@@ -26,6 +26,11 @@
  */
 package com.salesforce.androidsdk.push;
 
+import android.annotation.SuppressLint;
+import android.util.Log;
+
+import androidx.annotation.NonNull;
+
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -35,6 +40,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
  *
  * @author bhariharan
  */
+@SuppressLint("MissingFirebaseInstanceTokenRefresh")
 public class SFDCFcmListenerService extends FirebaseMessagingService {
 
     /**
@@ -43,8 +49,8 @@ public class SFDCFcmListenerService extends FirebaseMessagingService {
      * @param message Remote message received.
      */
     @Override
-    public void onMessageReceived(RemoteMessage message) {
-        if (message != null && SalesforceSDKManager.hasInstance()) {
+    public void onMessageReceived(@NonNull RemoteMessage message) {
+        if (SalesforceSDKManager.hasInstance()) {
             final PushNotificationDecryptor pnDecryptor = PushNotificationDecryptor.getInstance();
             pnDecryptor.onPushMessageReceived(message);
         }
