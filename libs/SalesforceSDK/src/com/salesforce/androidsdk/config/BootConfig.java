@@ -80,7 +80,6 @@ public class BootConfig {
 	private String errorPage;
 	private boolean shouldAuthenticate;
 	private boolean attemptOfflineLoad;
-	private String pushNotificationClientId;
 	private String unauthenticatedStartPage;
 
 	private static BootConfig INSTANCE = null;
@@ -160,7 +159,7 @@ public class BootConfig {
 	/**
 	 * Use runtime configurations (from MDM provider) if any
 	 *
-	 * @param ctx
+	 * @param ctx Context
 	 */
 	private void readFromRuntimeConfig(Context ctx) {
 		RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(ctx);
@@ -211,8 +210,7 @@ public class BootConfig {
 			throw new BootConfigException("Failed to open " + assetsFilePath);
 		}
 		try {
-			JSONObject jsonObj = new JSONObject(jsonStr);
-			return jsonObj;
+			return new JSONObject(jsonStr);
 		} catch (JSONException e) {
 			throw new BootConfigException("Failed to parse " + assetsFilePath, e);
 		}
@@ -228,7 +226,6 @@ public class BootConfig {
 		remoteAccessConsumerKey = res.getString(R.string.remoteAccessConsumerKey);
 		oauthRedirectURI = res.getString(R.string.oauthRedirectURI);
 		oauthScopes = res.getStringArray(R.array.oauthScopes);
-		pushNotificationClientId = res.getString(R.string.androidPushNotificationClientId);
 	}
 
 	/**
@@ -324,6 +321,7 @@ public class BootConfig {
 	 *
 	 * @return Path to local error page.
 	 */
+	@SuppressWarnings("unused")
 	public String getErrorPage() {
 		return errorPage;
 	}
@@ -342,6 +340,7 @@ public class BootConfig {
 	 *
 	 * @return True - if the app should attempt to load cached content, False - otherwise.
 	 */
+	@SuppressWarnings("unused")
 	public boolean attemptOfflineLoad() {
 		return attemptOfflineLoad;
 	}

@@ -8,7 +8,6 @@
         <item>web</item>
         <item>openid</item>
     </string-array>
-    <string name="androidPushNotificationClientId"></string>
     <string name="account_type">com.salesforce.androidsdk.salesforcesdktest.login</string>
     <string name="encoding">UTF-8</string>
 </resources>

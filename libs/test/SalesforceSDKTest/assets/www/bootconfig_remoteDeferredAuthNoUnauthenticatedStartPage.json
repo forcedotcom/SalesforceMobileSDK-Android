@@ -6,6 +6,5 @@
     "startPage": "/apex/TestPage",
     "errorPage": "error.html",
     "shouldAuthenticate": false,
-    "attemptOfflineLoad": true,
-    "androidPushNotificationClientId": ""
+    "attemptOfflineLoad": true
 }

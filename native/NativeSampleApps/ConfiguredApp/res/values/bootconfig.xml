@@ -7,5 +7,4 @@
         <item>api</item>
         <item>web</item>
     </string-array>
-    <string name="androidPushNotificationClientId"></string>
 </resources>

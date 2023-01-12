@@ -7,6 +7,5 @@
     "errorPage": "error.html",
     "shouldAuthenticate": false,
     "unauthenticatedStartPage": "/RelativeStartPage.html",
-    "attemptOfflineLoad": true,
-    "androidPushNotificationClientId": ""
+    "attemptOfflineLoad": true
 }

@@ -58,7 +58,7 @@ public class PushMessaging {
     private static final String TAG = "PushMessaging";
 
 	// Public constants.
-        public static final String UNREGISTERED_ATTEMPT_COMPLETE_EVENT = "com.salesforce.mobilesdk.c2dm.UNREGISTERED";
+    public static final String UNREGISTERED_ATTEMPT_COMPLETE_EVENT = "com.salesforce.mobilesdk.c2dm.UNREGISTERED";
     public static final String UNREGISTERED_EVENT = "com.salesforce.mobilesdk.c2dm.ACTUAL_UNREGISTERED";
     public static final String ACCOUNT_BUNDLE_KEY = "account_bundle";
     public static final String ALL_ACCOUNTS_BUNDLE_VALUE = "all_accounts";
