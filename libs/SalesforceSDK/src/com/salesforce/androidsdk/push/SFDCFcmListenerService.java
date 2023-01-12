@@ -27,21 +27,35 @@
 package com.salesforce.androidsdk.push;
 
 import android.annotation.SuppressLint;
-import android.util.Log;
-
 import androidx.annotation.NonNull;
-
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 /**
  * This class is called when a message is received or the token changes.
  *
  * @author bhariharan
  */
-@SuppressLint("MissingFirebaseInstanceTokenRefresh")
 public class SFDCFcmListenerService extends FirebaseMessagingService {
+    private static final String TAG = "FcmListenerService";
+
+    @Override
+    public void onNewToken(@NonNull String token) {
+        try {
+            final UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+
+            // Store the new token.
+            PushMessaging.setRegistrationId(this, token, account);
+
+            // Send it to SFDC.
+            PushMessaging.registerSFDCPush(this, account);
+        } catch (Exception e) {
+            SalesforceSDKLogger.e(TAG, "Error during FCM registration", e);
+        }
+    }
 
     /**
      * Called when message is received.
