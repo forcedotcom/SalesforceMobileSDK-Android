@@ -64,7 +64,6 @@ public class BootConfig {
 	private static final String ERROR_PAGE = "errorPage";
 	private static final String SHOULD_AUTHENTICATE = "shouldAuthenticate";
 	private static final String ATTEMPT_OFFLINE_LOAD = "attemptOfflineLoad";
-	private static final String PUSH_NOTIFICATION_CLIENT_ID = "androidPushNotificationClientId";
 	private static final String UNAUTHENTICATED_START_PAGE = "unauthenticatedStartPage";
 
 	// Default for optional configs.
@@ -81,7 +80,6 @@ public class BootConfig {
 	private String errorPage;
 	private boolean shouldAuthenticate;
 	private boolean attemptOfflineLoad;
-	private String pushNotificationClientId;
 	private String unauthenticatedStartPage;
 
 	private static BootConfig INSTANCE = null;
@@ -161,7 +159,7 @@ public class BootConfig {
 	/**
 	 * Use runtime configurations (from MDM provider) if any
 	 *
-	 * @param ctx
+	 * @param ctx Context
 	 */
 	private void readFromRuntimeConfig(Context ctx) {
 		RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(ctx);
@@ -187,9 +185,6 @@ public class BootConfig {
 			config.put(IS_LOCAL, isLocal);
 			config.put(START_PAGE, startPage);
 			config.put(ERROR_PAGE, errorPage);
-			if (!TextUtils.isEmpty(pushNotificationClientId)) {
-				config.put(PUSH_NOTIFICATION_CLIENT_ID, pushNotificationClientId);
-			}
 			config.put(SHOULD_AUTHENTICATE, shouldAuthenticate);
 			config.put(ATTEMPT_OFFLINE_LOAD, attemptOfflineLoad);
 			config.put(UNAUTHENTICATED_START_PAGE, unauthenticatedStartPage);
@@ -215,8 +210,7 @@ public class BootConfig {
 			throw new BootConfigException("Failed to open " + assetsFilePath);
 		}
 		try {
-			JSONObject jsonObj = new JSONObject(jsonStr);
-			return jsonObj;
+			return new JSONObject(jsonStr);
 		} catch (JSONException e) {
 			throw new BootConfigException("Failed to parse " + assetsFilePath, e);
 		}
@@ -232,7 +226,6 @@ public class BootConfig {
 		remoteAccessConsumerKey = res.getString(R.string.remoteAccessConsumerKey);
 		oauthRedirectURI = res.getString(R.string.oauthRedirectURI);
 		oauthScopes = res.getStringArray(R.array.oauthScopes);
-		pushNotificationClientId = res.getString(R.string.androidPushNotificationClientId);
 	}
 
 	/**
@@ -255,7 +248,6 @@ public class BootConfig {
 			errorPage = config.getString(ERROR_PAGE);
 
 			// Optional fields.
-			pushNotificationClientId = config.optString(PUSH_NOTIFICATION_CLIENT_ID);
 			shouldAuthenticate = config.optBoolean(SHOULD_AUTHENTICATE, DEFAULT_SHOULD_AUTHENTICATE);
 			attemptOfflineLoad = config.optBoolean(ATTEMPT_OFFLINE_LOAD, DEFAULT_ATTEMPT_OFFLINE_LOAD);
 			unauthenticatedStartPage = config.optString(UNAUTHENTICATED_START_PAGE);
@@ -329,6 +321,7 @@ public class BootConfig {
 	 *
 	 * @return Path to local error page.
 	 */
+	@SuppressWarnings("unused")
 	public String getErrorPage() {
 		return errorPage;
 	}
@@ -347,20 +340,9 @@ public class BootConfig {
 	 *
 	 * @return True - if the app should attempt to load cached content, False - otherwise.
 	 */
+	@SuppressWarnings("unused")
 	public boolean attemptOfflineLoad() {
 		return attemptOfflineLoad;
-	}
-
-	/**
-	 * Returns the push notification client ID.
-	 *
-	 * @return Push notification client ID.
-	 *
-	 * @deprecated Will be removed in 11.0 in favor of Firebase google-services.json file.
-	 */
-	@Deprecated
-	public String getPushNotificationClientId() {
-		return pushNotificationClientId;
 	}
 
 	/**

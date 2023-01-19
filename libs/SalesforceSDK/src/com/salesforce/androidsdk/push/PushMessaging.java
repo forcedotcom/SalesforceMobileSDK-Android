@@ -35,20 +35,14 @@ import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.os.Bundle;
 
-import androidx.core.app.JobIntentService;
-
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
-import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.installations.FirebaseInstallations;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.Objects;
 
 /**
  * This class provides utility functions related to push notifications,
@@ -62,7 +56,6 @@ import java.util.concurrent.Executors;
 public class PushMessaging {
 
     private static final String TAG = "PushMessaging";
-    private static final int JOB_ID = 8;
 
 	// Public constants.
     public static final String UNREGISTERED_ATTEMPT_COMPLETE_EVENT = "com.salesforce.mobilesdk.c2dm.UNREGISTERED";
@@ -78,9 +71,6 @@ public class PushMessaging {
     private static final String DEVICE_ID = "deviceId";
     private static final String IN_PROGRESS = "inprogress";
     private static final long DEFAULT_BACKOFF = 30000;
-
-    // Background executor.
-    private static final ExecutorService threadPool = Executors.newFixedThreadPool(2);
 
     /**
      * Initiates push registration, if the application is not already registered.
@@ -99,13 +89,22 @@ public class PushMessaging {
     	 * re-registration at the SFDC endpoint, to keep it alive.
     	 */
     	initializeFirebaseIfNeeded(context);
+        FirebaseMessaging.getInstance().setAutoInitEnabled(true);
         if (account != null && !isRegistered(context, account)) {
             setInProgress(context, true, account);
-            if (checkPlayServices(context)) {
-                final Intent intent = new Intent(context, SFDCRegistrationIntentService.class);
-                JobIntentService.enqueueWork(context, SFDCRegistrationIntentService.class,
-                        JOB_ID, intent);
-            }
+
+            FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token -> {
+                try {
+                    // Store the new token.
+                    PushMessaging.setRegistrationId(context, token, account);
+
+                    // Send it to SFDC.
+                    PushMessaging.registerSFDCPush(context, account);
+                } catch (Exception e) {
+                    SalesforceSDKLogger.e(TAG, "Error during FCM registration", e);
+                }
+            });
+
         } else {
             registerSFDCPush(context, account);
         }
@@ -126,19 +125,11 @@ public class PushMessaging {
             // Deletes InstanceID only if there are no other logged in accounts.
             if (isLastAccount) {
                 initializeFirebaseIfNeeded(context);
-                String appName = getAppNameForFirebase(context);
-                final FirebaseInstanceId instanceID = FirebaseInstanceId.getInstance(FirebaseApp.getInstance(appName));
-                threadPool.execute(new Runnable() {
+                FirebaseMessaging.getInstance().setAutoInitEnabled(false);
 
-                    @Override
-                    public void run() {
-                        try {
-                            instanceID.deleteInstanceId();
-                        } catch (IOException e) {
-                            SalesforceSDKLogger.e(TAG, "Error deleting InstanceID", e);
-                        }
-                    }
-                });
+                final FirebaseApp firebaseApp = FirebaseApp.getInstance(getAppNameForFirebase(context));
+                FirebaseInstallations.getInstance(firebaseApp).delete();
+                firebaseApp.delete();
             }
             unregisterSFDCPush(context, account);
         }
@@ -151,9 +142,11 @@ public class PushMessaging {
      */
     public static void initializeFirebaseIfNeeded(Context context) {
         String appName = getAppNameForFirebase(context);
-        final String pushClientId = BootConfig.getBootConfig(context).getPushNotificationClientId();
-        final FirebaseOptions firebaseOptions = new FirebaseOptions.Builder().
-                setGcmSenderId(pushClientId).setApplicationId(context.getPackageName()).build();
+        final FirebaseOptions firebaseOptions = Objects.requireNonNull(
+                FirebaseOptions.fromResource(context),
+                "Unable to retrieve Firebase values.  This usually means that com.google" +
+                        ".gms:google-services was not applied to your gradle project."
+        );
 
         /*
          * Ensures that Firebase initialization occurs only once for this app. If an exception
@@ -246,7 +239,7 @@ public class PushMessaging {
         final Editor editor = prefs.edit();
         editor.putString(REGISTRATION_ID, registrationId);
         editor.putLong(BACKOFF, DEFAULT_BACKOFF);
-        editor.commit();
+        editor.apply();
     }
 
     /**
@@ -268,12 +261,13 @@ public class PushMessaging {
      * @param context Context.
      * @param account User account.
      */
+    @SuppressWarnings("unused")
     public static void clearSFDCRegistrationInfo(Context context, UserAccount account) {
     	final SharedPreferences prefs = context.getSharedPreferences(getSharedPrefFile(account),
         		Context.MODE_PRIVATE);
         final Editor editor = prefs.edit();
         editor.remove(DEVICE_ID);
-        editor.commit();
+        editor.apply();
     }
 
     /**
@@ -283,6 +277,7 @@ public class PushMessaging {
      * @param account User account.
      * @return True - if registered, False - otherwise.
      */
+    @SuppressWarnings("unused")
     public static boolean isRegisteredWithSFDC(Context context, UserAccount account) {
     	final SharedPreferences prefs = context.getSharedPreferences(getSharedPrefFile(account),
         		Context.MODE_PRIVATE);
@@ -310,13 +305,14 @@ public class PushMessaging {
      * @param lastRegistrationTime Last registration time.
      * @param account User account.
      */
+    @SuppressWarnings("unused")
     public static void setLastRegistrationTime(Context context, long lastRegistrationTime,
     		UserAccount account) {
     	final SharedPreferences prefs = context.getSharedPreferences(getSharedPrefFile(account),
         		Context.MODE_PRIVATE);
         final Editor editor = prefs.edit();
         editor.putLong(LAST_SFDC_REGISTRATION_TIME, lastRegistrationTime);
-        editor.commit();
+        editor.apply();
     }
 
     /**
@@ -333,7 +329,7 @@ public class PushMessaging {
         		Context.MODE_PRIVATE);
         final Editor editor = prefs.edit();
         editor.putBoolean(IN_PROGRESS, inProgress);
-        editor.commit();
+        editor.apply();
     }
 
     /**
@@ -343,6 +339,7 @@ public class PushMessaging {
      * @param account User account.
      * @return True - if in progress, False - otherwise.
      */
+    @SuppressWarnings("unused")
     public static boolean isInProgress(Context context, UserAccount account) {
     	final SharedPreferences prefs = context.getSharedPreferences(getSharedPrefFile(account),
         		Context.MODE_PRIVATE);
@@ -360,7 +357,7 @@ public class PushMessaging {
         		Context.MODE_PRIVATE);
         final Editor editor = prefs.edit();
         editor.clear();
-        editor.commit();
+        editor.apply();
     }
 
     /**
@@ -370,6 +367,7 @@ public class PushMessaging {
      * @return Backoff time.
      * @param account User account.
      */
+    @SuppressWarnings("unused")
     static long getBackoff(Context context, UserAccount account) {
     	final SharedPreferences prefs = context.getSharedPreferences(getSharedPrefFile(account),
         		Context.MODE_PRIVATE);
@@ -383,12 +381,13 @@ public class PushMessaging {
      * @param backoff Backoff time to be used.
      * @param account User account.
      */
+    @SuppressWarnings("unused")
     static void setBackoff(Context context, long backoff, UserAccount account) {
         final SharedPreferences prefs = context.getSharedPreferences(getSharedPrefFile(account),
         		Context.MODE_PRIVATE);
         final Editor editor = prefs.edit();
         editor.putLong(BACKOFF, backoff);
-        editor.commit();
+        editor.apply();
     }
 
     /**
@@ -409,7 +408,7 @@ public class PushMessaging {
         editor.putLong(BACKOFF, DEFAULT_BACKOFF);
         editor.putLong(LAST_SFDC_REGISTRATION_TIME, System.currentTimeMillis());
         editor.putBoolean(IN_PROGRESS, false);
-        editor.commit();
+        editor.apply();
     }
 
     private static String getSharedPrefFile(UserAccount account) {
@@ -418,11 +417,5 @@ public class PushMessaging {
     		sharedPrefFile = sharedPrefFile + account.getUserLevelFilenameSuffix();
     	}
     	return sharedPrefFile;
-    }
-
-    private static boolean checkPlayServices(Context context) {
-        GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
-        int resultCode = apiAvailability.isGooglePlayServicesAvailable(context);
-        return resultCode == ConnectionResult.SUCCESS;
     }
 }

@@ -54,6 +54,7 @@ import android.widget.Toast;
 
 import androidx.browser.customtabs.CustomTabsIntent;
 
+import com.google.firebase.FirebaseOptions;
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountBuilder;
@@ -696,15 +697,12 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 accountOptions.csrfToken);
 
     	/*
-    	 * Registers for push notifications, if push notification client ID is present.
+    	 * Registers for push notifications, if possible.
     	 * This step needs to happen after the account has been added by client
     	 * manager, so that the push service has all the account info it needs.
     	 */
         final Context appContext = SalesforceSDKManager.getInstance().getAppContext();
-        final String pushNotificationId = BootConfig.getBootConfig(appContext).getPushNotificationClientId();
-        if (!TextUtils.isEmpty(pushNotificationId)) {
-            PushMessaging.register(appContext, account);
-        }
+        PushMessaging.register(appContext, account);
 
         callback.onAccountAuthenticatorResult(extras);
         if (SalesforceSDKManager.getInstance().getIsTestRun()) {

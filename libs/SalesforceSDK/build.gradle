@@ -11,7 +11,7 @@ apply plugin: 'org.jetbrains.kotlin.android'
 dependencies {
     api project(':libs:SalesforceAnalytics')
     api 'com.squareup.okhttp3:okhttp:4.10.0'
-    api 'com.google.firebase:firebase-messaging:20.1.0'
+    api 'com.google.firebase:firebase-messaging:23.1.1'
     api 'androidx.core:core:1.9.0'
     api 'androidx.browser:browser:1.4.0'
     implementation 'com.google.android.material:material:1.7.0'

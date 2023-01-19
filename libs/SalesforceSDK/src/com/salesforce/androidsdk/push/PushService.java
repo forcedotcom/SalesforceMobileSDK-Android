@@ -360,7 +360,7 @@ public class PushService extends JobIntentService {
                 onPushNotificationRegistrationStatus(UNREGISTRATION_STATUS_SUCCEEDED, account);
     		}
     	} catch (IOException e) {
-            onPushNotificationRegistrationStatus(UNREGISTRATION_STATUS_FAILED, account);
+			onPushNotificationRegistrationStatus(UNREGISTRATION_STATUS_FAILED, account);
 			SalesforceSDKLogger.e(TAG, "Push notification un-registration failed", e);
     	}
     }

@@ -1,9 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	package="com.salesforce.androidsdk" 
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.salesforce.androidsdk"
 	android:versionCode="80"
 	android:versionName="11.0.0.dev">
+
+    <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+    <uses-permission android:name="android.permission.USE_CREDENTIALS" />
+    <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
+
+    <!--
+        USE_FINGERPRINT is available from API 23 to API 27
+        TODO: should be removed once minAPI > 27
+    -->
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+
+    <!-- USE_BIOMETRIC is available on API 28 and higher -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
     <application>
 
@@ -13,7 +28,8 @@
 
         <!-- Service required for authentication -->
         <service android:exported="true"
-            android:name="com.salesforce.androidsdk.auth.AuthenticatorService">
+            android:name="com.salesforce.androidsdk.auth.AuthenticatorService"
+            tools:ignore="ExportedService">
             <intent-filter>
                 <action android:name="android.accounts.AccountAuthenticator" />
             </intent-filter>
@@ -75,7 +91,8 @@
 
         <!-- Receiver for IDP initiated login flow -->
         <receiver android:name="com.salesforce.androidsdk.auth.idp.IDPInititatedLoginReceiver"
-            android:exported="true">
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
             <intent-filter>
                 <action android:name="com.salesforce.IDP_LOGIN_REQUEST" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -89,11 +106,6 @@
             </intent-filter>
         </service>
 
-        <service android:name="com.salesforce.androidsdk.push.SFDCRegistrationIntentService"
-            android:permission="android.permission.BIND_JOB_SERVICE"
-            android:exported="false">
-        </service>
-
         <receiver android:name="com.salesforce.androidsdk.push.PushService$SFDCRegistrationRetryAlarmReceiver"
             android:exported="false" />
 
@@ -105,18 +117,4 @@
             android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false" />
     </application>
-
-    <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
-    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
-    <uses-permission android:name="android.permission.USE_CREDENTIALS" />
-    <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
-
-    <!--
-        USE_FINGERPRINT is available from API 23 to API 27
-        TODO: should be removed once minAPI > 27
-    -->
-    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
-
-    <!-- USE_BIOMETRIC is available on API 28 and higher -->
-    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 </manifest>
