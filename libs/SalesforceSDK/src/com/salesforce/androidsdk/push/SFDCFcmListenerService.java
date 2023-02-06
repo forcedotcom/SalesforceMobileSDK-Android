@@ -26,8 +26,8 @@
  */
 package com.salesforce.androidsdk.push;
 
-import android.annotation.SuppressLint;
 import androidx.annotation.NonNull;
+
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -47,11 +47,13 @@ public class SFDCFcmListenerService extends FirebaseMessagingService {
         try {
             final UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
 
-            // Store the new token.
-            PushMessaging.setRegistrationId(this, token, account);
+            if (account != null) {
+                // Store the new token.
+                PushMessaging.setRegistrationId(this, token, account);
 
-            // Send it to SFDC.
-            PushMessaging.registerSFDCPush(this, account);
+                // Send it to SFDC.
+                PushMessaging.registerSFDCPush(this, account);
+            }
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Error during FCM registration", e);
         }
