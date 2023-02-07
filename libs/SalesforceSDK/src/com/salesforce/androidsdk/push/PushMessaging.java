@@ -42,8 +42,6 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
-import java.util.Objects;
-
 /**
  * This class provides utility functions related to push notifications,
  * such as methods for registration, unregistration, and storage and
@@ -82,31 +80,34 @@ public class PushMessaging {
      * @param account User account.
      */
     public static void register(Context context, UserAccount account) {
+        boolean firebaseInitialized = initializeFirebaseIfNeeded(context);
 
-    	/*
-    	 * Performs registration steps if it is a new account, or if the
-    	 * account hasn't been registered yet. Otherwise, performs
-    	 * re-registration at the SFDC endpoint, to keep it alive.
-    	 */
-    	initializeFirebaseIfNeeded(context);
-        FirebaseMessaging.getInstance().setAutoInitEnabled(true);
-        if (account != null && !isRegistered(context, account)) {
-            setInProgress(context, true, account);
+        if (firebaseInitialized) {
+            FirebaseMessaging.getInstance().setAutoInitEnabled(true);
 
-            FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token -> {
-                try {
-                    // Store the new token.
-                    PushMessaging.setRegistrationId(context, token, account);
+            /*
+             * Performs registration steps if it is a new account, or if the
+             * account hasn't been registered yet. Otherwise, performs
+             * re-registration at the SFDC endpoint, to keep it alive.
+             */
+            if (account != null && !isRegistered(context, account)) {
+                setInProgress(context, true, account);
 
-                    // Send it to SFDC.
-                    PushMessaging.registerSFDCPush(context, account);
-                } catch (Exception e) {
-                    SalesforceSDKLogger.e(TAG, "Error during FCM registration", e);
-                }
-            });
+                FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token -> {
+                    try {
+                        // Store the new token.
+                        setRegistrationId(context, token, account);
 
-        } else {
-            registerSFDCPush(context, account);
+                        // Send it to SFDC.
+                        registerSFDCPush(context, account);
+                    } catch (Exception e) {
+                        SalesforceSDKLogger.e(TAG, "Error during FCM registration", e);
+                    }
+                });
+
+            } else {
+                registerSFDCPush(context, account);
+            }
         }
     }
 
@@ -124,12 +125,14 @@ public class PushMessaging {
 
             // Deletes InstanceID only if there are no other logged in accounts.
             if (isLastAccount) {
-                initializeFirebaseIfNeeded(context);
-                FirebaseMessaging.getInstance().setAutoInitEnabled(false);
+                boolean firebaseInitialized = initializeFirebaseIfNeeded(context);
+                if (firebaseInitialized) {
+                    FirebaseMessaging.getInstance().setAutoInitEnabled(false);
 
-                final FirebaseApp firebaseApp = FirebaseApp.getInstance(getAppNameForFirebase(context));
-                FirebaseInstallations.getInstance(firebaseApp).delete();
-                firebaseApp.delete();
+                    final FirebaseApp firebaseApp = FirebaseApp.getInstance(getAppNameForFirebase(context));
+                    FirebaseInstallations.getInstance(firebaseApp).delete();
+                    firebaseApp.delete();
+                }
             }
             unregisterSFDCPush(context, account);
         }
@@ -139,14 +142,17 @@ public class PushMessaging {
      * Will make call to Firebase.initializeApp if it hasn't already taken place.
      *
      * @param context Context
+     * @return True - if Firebase is now initialized, False - if the operation could not be completed.
      */
-    public static void initializeFirebaseIfNeeded(Context context) {
+    public static boolean initializeFirebaseIfNeeded(Context context) {
         String appName = getAppNameForFirebase(context);
-        final FirebaseOptions firebaseOptions = Objects.requireNonNull(
-                FirebaseOptions.fromResource(context),
-                "Unable to retrieve Firebase values.  This usually means that com.google" +
-                        ".gms:google-services was not applied to your gradle project."
-        );
+        final FirebaseOptions firebaseOptions = FirebaseOptions.fromResource(context);
+
+        if (firebaseOptions == null) {
+            SalesforceSDKLogger.w(TAG,  "Unable to retrieve Firebase values.  This usually " +
+                    "means that com.google.gms:google-services was not applied to your gradle project.");
+            return false;
+        }
 
         /*
          * Ensures that Firebase initialization occurs only once for this app. If an exception
@@ -155,9 +161,11 @@ public class PushMessaging {
         try {
             FirebaseApp.getInstance(appName);
         } catch (IllegalStateException e) {
-            SalesforceSDKLogger.w(TAG, "Firebase hasn't been initialized yet", e);
+            SalesforceSDKLogger.i(TAG, "Firebase hasn't been initialized yet", e);
             FirebaseApp.initializeApp(context, firebaseOptions, appName);
         }
+
+        return true;
     }
 
     /**
