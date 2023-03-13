@@ -30,6 +30,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.util.Log;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
@@ -37,6 +38,7 @@ import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.ui.LoginActivity;
+import com.salesforce.androidsdk.util.LogUtil;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.net.URI;
@@ -90,6 +92,7 @@ public class SPRequestHandler {
         intent.addCategory(Intent.CATEGORY_DEFAULT);
         intent.setData(Uri.parse(SalesforceSDKManager.getInstance().getIDPAppURIScheme()));
         intent.putExtra(IDPCodeGeneratorActivity.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle());
+        Log.d(TAG, "launchIDPApp " + LogUtil.intentToString(intent));
         context.startActivityForResult(intent, IDP_REQUEST_CODE);
     }
 

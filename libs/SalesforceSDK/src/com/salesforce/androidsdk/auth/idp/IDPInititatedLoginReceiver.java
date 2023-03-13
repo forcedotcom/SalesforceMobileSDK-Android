@@ -31,10 +31,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.util.LogUtil;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 /**
@@ -59,6 +61,7 @@ public class IDPInititatedLoginReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        Log.d(TAG, "onReceive " + LogUtil.intentToString(intent));
         if (intent != null) {
             if (IDP_LOGIN_REQUEST_ACTION.equals(intent.getAction())) {
                 final Bundle extras = intent.getExtras();
@@ -87,6 +90,7 @@ public class IDPInititatedLoginReceiver extends BroadcastReceiver {
                             launchIntent.addCategory(Intent.CATEGORY_DEFAULT);
                             launchIntent.putExtra(SP_ACTVITY_EXTRAS_KEY, spActivityExtras);
                             launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            Log.d(TAG, "onReceive startActivity " + LogUtil.intentToString(launchIntent));
                             SalesforceSDKManager.getInstance().getAppContext().startActivity(launchIntent);
                         } catch (Exception e) {
                             SalesforceSDKLogger.e(TAG, "Could not start activity", e);
@@ -132,6 +136,9 @@ public class IDPInititatedLoginReceiver extends BroadcastReceiver {
         intent.putExtra(SP_ACTVITY_NAME_KEY, spActivityName);
         intent.putExtra(SP_ACTVITY_EXTRAS_KEY, spActivityExtras);
         intent.putExtra(IDP_INIT_LOGIN_KEY, true);
+
+        Log.d(TAG, "launchLoginActivity " + LogUtil.intentToString(intent));
+
         SalesforceSDKManager.getInstance().getAppContext().startActivity(intent);
     }
 }

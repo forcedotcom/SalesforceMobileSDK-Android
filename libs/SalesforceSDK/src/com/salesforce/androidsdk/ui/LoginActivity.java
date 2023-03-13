@@ -38,6 +38,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.security.KeyChain;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -65,6 +66,7 @@ import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents;
 import com.salesforce.androidsdk.util.AuthConfigTask;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.LogUtil;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import com.salesforce.androidsdk.util.UriFragmentParser;
 
@@ -97,8 +99,9 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
+        super.onCreate(savedInstanceState);
+        Log.d(TAG, "onCreate " + LogUtil.intentToString(getIntent()));
+        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark_Login : R.style.SalesforceSDK);
         SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
 
@@ -150,6 +153,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
 	@Override
 	protected void onDestroy() {
+        Log.d(TAG, "onDestroy");
         if (receiverRegistered) {
             unregisterReceiver(changeServerReceiver);
             receiverRegistered = false;
@@ -160,6 +164,8 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	@Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+
+        Log.d(TAG, "onCreate " + LogUtil.intentToString(intent));
 
         // If this is a callback from Chrome, processes it and does nothing else.
         if (isChromeCallback(intent)) {
@@ -207,6 +213,8 @@ public class LoginActivity extends AccountAuthenticatorActivity
     }
 
     private void completeAuthFlow(Intent intent) {
+        Log.d(TAG, "completeAuthFlow");
+
         final Uri uri = intent.getData();
         final Map<String, String> params = UriFragmentParser.parse(uri);
         final String error = params.get("error");
@@ -236,6 +244,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	@Override
 	protected void onResume() {
 		super.onResume();
+        Log.d(TAG, "onResume");
 		if (wasBackgrounded) {
 		    if (webviewHelper.shouldReloadPage()) {
                 webviewHelper.clearView();
@@ -325,6 +334,8 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
 	@Override
 	public void loadingLoginPage(String loginUrl) {
+        Log.d(TAG, "loadingLoginPage " + loginUrl);
+
 		final ActionBar ab = getActionBar();
 		if (ab != null) {
 			ab.setTitle(loginUrl);
@@ -358,6 +369,8 @@ public class LoginActivity extends AccountAuthenticatorActivity
      * @param v IDP login button.
      */
     public void onIDPLoginClick(View v) {
+        Log.d(TAG, "onIDPLoginClick");
+
         final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url.trim();
         SalesforceSDKLogger.d(TAG, "Launching IDP app for authentication with login host: " + loginServer);
         spRequestHandler = new SPRequestHandler(loginServer, userHint, authCallback);
@@ -370,6 +383,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	 * @param v
 	 */
 	public void onReloadClick(View v) {
+        Log.d(TAG, "onReloadClick");
 		webviewHelper.loadLoginPage();
 	}
 
@@ -385,6 +399,8 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.d(TAG, "onActivityResult " + LogUtil.intentToString(data));
+
 		if (requestCode == SPRequestHandler.IDP_REQUEST_CODE) {
             spRequestHandler.handleIDPResponse(resultCode, data);
         } else {
@@ -394,6 +410,8 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
 	@Override
 	public void finish(UserAccount userAccount) {
+        Log.d(TAG, "finish " + userAccount.getUsername());
+
         initAnalyticsManager(userAccount);
         final UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
         final List<UserAccount> authenticatedUsers = userAccountManager.getAuthenticatedUsers();

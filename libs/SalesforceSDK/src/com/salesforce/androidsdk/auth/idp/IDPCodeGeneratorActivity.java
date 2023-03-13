@@ -32,6 +32,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -39,6 +40,7 @@ import android.webkit.WebViewClient;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.util.LogUtil;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import com.salesforce.androidsdk.util.UriFragmentParser;
 
@@ -72,6 +74,9 @@ public class IDPCodeGeneratorActivity extends Activity {
 
         // Fetches the required extras.
         final Intent intent = getIntent();
+
+        Log.d(TAG, "onCreate " + LogUtil.intentToString(intent));
+
         final Bundle extras = intent.getExtras();
         if (extras != null) {
             userAccount = new UserAccount(extras.getBundle(USER_ACCOUNT_BUNDLE_KEY));
@@ -140,6 +145,7 @@ public class IDPCodeGeneratorActivity extends Activity {
         final Intent intent = new Intent();
         intent.putExtra(ERROR_KEY, error);
         setResult(RESULT_CANCELED, intent);
+        Log.d(TAG, "handleError " + LogUtil.intentToString(intent));
         finish();
     }
 
@@ -148,6 +154,7 @@ public class IDPCodeGeneratorActivity extends Activity {
         intent.putExtra(CODE_KEY, code);
         intent.putExtra(LOGIN_URL_KEY, loginUrl);
         setResult(RESULT_OK, intent);
+        Log.d(TAG, "handleSuccess " + LogUtil.intentToString(intent));
         finish();
     }
 
