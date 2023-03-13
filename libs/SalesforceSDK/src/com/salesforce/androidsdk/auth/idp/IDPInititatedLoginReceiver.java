@@ -85,7 +85,8 @@ public class IDPInititatedLoginReceiver extends BroadcastReceiver {
                             final Intent launchIntent = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
                                     Class.forName(spActivityName));
                             launchIntent.addCategory(Intent.CATEGORY_DEFAULT);
-                            intent.putExtra(SP_ACTVITY_EXTRAS_KEY, spActivityExtras);
+                            launchIntent.putExtra(SP_ACTVITY_EXTRAS_KEY, spActivityExtras);
+                            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                             SalesforceSDKManager.getInstance().getAppContext().startActivity(launchIntent);
                         } catch (Exception e) {
                             SalesforceSDKLogger.e(TAG, "Could not start activity", e);
