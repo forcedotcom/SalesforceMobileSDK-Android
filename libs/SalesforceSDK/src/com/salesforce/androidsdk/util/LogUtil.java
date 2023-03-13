@@ -26,9 +26,12 @@
  */
 package com.salesforce.androidsdk.util;
 
+import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import android.content.Intent;
+import android.os.Bundle;
 import android.util.Pair;
 
 
@@ -36,6 +39,29 @@ import android.util.Pair;
  * Helper methods for logging 
  */
 public class LogUtil {
+
+	/**
+	 * Helper method when debugging intents
+	 * @param intent
+	 * @return
+	 */
+	public static String intentToString(Intent intent) {
+		if (intent == null) {
+			return "";
+		}
+		String s = intent.toString();
+		Bundle bundle = intent.getExtras();
+		if (bundle != null) {
+			Set<String> keys = bundle.keySet();
+			Iterator<String> it = keys.iterator();
+			while (it.hasNext()) {
+				String key = it.next();
+				s += " " + key + "=" + bundle.get(key);
+			}
+		}
+		return s;
+	}
+
 	/**
 	 * @param entries
 	 * @param delim
