@@ -109,8 +109,8 @@ public class LoginActivity extends AccountAuthenticatorActivity
         final LoginOptions loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
 
         // Protect against screenshots.
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
-                WindowManager.LayoutParams.FLAG_SECURE);
+//        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
+//                WindowManager.LayoutParams.FLAG_SECURE);
 
         // Fetches auth config if required.
         try {
