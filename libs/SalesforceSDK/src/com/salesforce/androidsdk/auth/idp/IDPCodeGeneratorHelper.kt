@@ -1,8 +1,9 @@
 package com.salesforce.androidsdk.auth.idp
 
+import android.app.Activity.RESULT_CANCELED
+import android.app.Activity.RESULT_OK
+import android.content.Intent
 import android.net.Uri
-import android.text.TextUtils
-import android.util.Log
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -20,10 +21,9 @@ internal class IDPCodeGeneratorHelper(
     val spConfig: SPConfig,
     val callback: CodeGeneratorCallback
 ) {
-
+    lateinit var loginUrl:String
     interface CodeGeneratorCallback {
-        fun onError(error: String?)
-        fun onSuccess(code: String?)
+        fun onResult(resultCode:Int, data: Intent)
     }
 
     init {
@@ -32,26 +32,42 @@ internal class IDPCodeGeneratorHelper(
     }
 
     fun generateCode() {
-        val idpRequestHandler = IDPRequestHandler(spConfig, userAccount)
         CoroutineScope(Dispatchers.IO).launch {
-            val accessToken = try {
-                idpRequestHandler.validAccessToken
-            } catch (e: Exception) {
-                SalesforceSDKLogger.e(TAG, "Building IDP request handler failed", e)
-                callback.onError("Incomplete SP config or user account data")
-                null
-            }
+            try {
+                val idpRequestHandler = IDPRequestHandler(spConfig, userAccount)
+                loginUrl = idpRequestHandler.loginUrl
+                val accessToken = idpRequestHandler.validAccessToken
 
-            CoroutineScope(Dispatchers.Main).launch {
-                try {
-                    if (accessToken != null) {
-                        idpRequestHandler.makeFrontDoorRequest(accessToken, webView)
+                if (accessToken != null) {
+                    CoroutineScope(Dispatchers.Main).launch {
+                        try {
+                            idpRequestHandler.makeFrontDoorRequest(accessToken, webView)
+                        } catch (e: IDPRequestHandlerException) {
+                            onError("Making frontdoor request failed", e)
+                        }
                     }
-                } catch (e: IDPRequestHandlerException) {
-                    SalesforceSDKLogger.e(TAG, "Making frontdoor request failed", e)
                 }
+
+            } catch (e: Exception) {
+                onError("Building IDP request handler failed", e)
             }
         }
+    }
+
+    private fun onError(error: String?, exception: java.lang.Exception? = null) {
+        SalesforceSDKLogger.e(TAG, "Code generation failed: ${error}", exception)
+        val intent = Intent()
+        intent.putExtra(ERROR_KEY, error);
+        callback.onResult(RESULT_CANCELED, intent)
+    }
+
+    @Override
+    private fun onSuccess(code: String?) {
+        SalesforceSDKLogger.d(TAG, "Code generation succeeded")
+        val intent = Intent()
+        intent.putExtra(CODE_KEY, code);
+        intent.putExtra(LOGIN_URL_KEY, loginUrl);
+        callback.onResult(RESULT_OK, intent);
     }
 
     /**
@@ -59,25 +75,21 @@ internal class IDPCodeGeneratorHelper(
      * when the login flow is complete, parses the response and passes it back.
      */
     inner class IDPWebViewClient : WebViewClient() {
+
+        private fun sanitizeUrl(url: String):String {
+            return url.replace("///", "/").lowercase()
+        }
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val url = request.url.toString()
-            Log.i(TAG, "--> shouldOverrideUrlLoading $url")
-            val isDone = url.replace("///", "/").lowercase()
-                .startsWith(spConfig.oauthCallbackUrl.replace("///", "/").lowercase())
+            val isDone = sanitizeUrl(url).startsWith(sanitizeUrl(spConfig.oauthCallbackUrl))
             if (isDone) {
                 val callbackUri = Uri.parse(url)
                 val params = UriFragmentParser.parse(callbackUri)
 
-                // Determines if the authentication flow succeeded or failed.
-                if (params != null) {
-                    val code = params[CODE_KEY]
-                    if (TextUtils.isEmpty(code)) {
-                        callback.onError("Code not returned from server")
-                    } else {
-                        callback.onSuccess(code)
-                    }
+                if (params == null || params[CODE_KEY].isNullOrEmpty()) {
+                    onError("Code not returned from server")
                 } else {
-                    callback.onError("Code not returned from server")
+                    onSuccess(params[CODE_KEY])
                 }
             } else if (url.contains(EC_301) || url.contains(EC_302)) {
                 /*
@@ -85,13 +97,15 @@ internal class IDPCodeGeneratorHelper(
                  * loading a page through frontdoor. Until the server API returns an
                  * error response, we look for 'ec=301' or 'ec=302' to handle this error case.
                  */
-                callback.onError("Server returned unauthorized token error - ec=301 or ec=302")
+                onError("Server returned unauthorized token error - ec=301 or ec=302")
             }
             return isDone
         }
     }
 
     companion object {
+        const val ERROR_KEY = "error"
+        const val LOGIN_URL_KEY = "login_url"
         const val CODE_KEY = "code"
         private const val EC_301 = "ec=301"
         private const val EC_302 = "ec=302"

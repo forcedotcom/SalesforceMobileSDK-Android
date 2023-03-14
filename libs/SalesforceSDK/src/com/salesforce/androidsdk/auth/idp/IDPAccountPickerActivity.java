@@ -36,9 +36,12 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.webkit.WebView;
 
+import androidx.annotation.NonNull;
+
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
@@ -230,28 +233,11 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
     private void proceedWithIDPAuthFlow(UserAccount account) {
         SalesforceSDKLogger.d(TAG, "Kicking off code exchange flow within IDP for account: " + account);
 
-        boolean useHelper = true;
-        if (useHelper) {
+        if (BootConfig.getBootConfig(this).useHeadlessAuthCodeFlow()) {
             IDPCodeGeneratorHelper codeGenerator = new IDPCodeGeneratorHelper(new WebView(this), account, spConfig, new IDPCodeGeneratorHelper.CodeGeneratorCallback() {
-                public static final String ERROR_KEY = "error";
-                public static final String CODE_KEY = "code";
-                public static final String LOGIN_URL_KEY = "login_url";
-
                 @Override
-                public void onError(String error) {
-                    final Intent intent = new Intent();
-                    intent.putExtra(ERROR_KEY, error);
-                    setResult(RESULT_CANCELED, intent);
-                    SalesforceSDKManager.getInstance().setIDPAppLoginFlowActive(false);
-                    finish();
-                }
-
-                @Override
-                public void onSuccess(String code) {
-                    final Intent intent = new Intent();
-                    intent.putExtra(CODE_KEY, code);
-                    intent.putExtra(LOGIN_URL_KEY, spConfig.getLoginUrl());
-                    setResult(RESULT_OK, intent);
+                public void onResult(int resultCode, @NonNull Intent data) {
+                    setResult(resultCode, data);
                     SalesforceSDKManager.getInstance().setIDPAppLoginFlowActive(false);
                     finish();
                 }

@@ -38,6 +38,9 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.util.LogUtil;
@@ -53,7 +56,7 @@ import java.util.Map;
  *
  * @author bhariharan
  */
-public class IDPCodeGeneratorActivity extends Activity {
+public class IDPCodeGeneratorActivity extends Activity implements IDPCodeGeneratorHelper.CodeGeneratorCallback {
 
     public static final String USER_ACCOUNT_BUNDLE_KEY = "user_account_bundle";
     public static final String SP_CONFIG_BUNDLE_KEY = "sp_config_bundle";
@@ -91,103 +94,15 @@ public class IDPCodeGeneratorActivity extends Activity {
         final WebSettings webSettings = webView.getSettings();
         webSettings.setUseWideViewPort(true);
         webSettings.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NORMAL);
-        webSettings.setJavaScriptEnabled(true);
-        webView.setWebViewClient(new IDPWebViewClient());
-        try {
-            final IDPRequestHandler idpRequestHandler = new IDPRequestHandler(spConfig, userAccount);
-            loginUrl = idpRequestHandler.getLoginUrl();
-            new RefreshAuthTokenTask(idpRequestHandler, webView).execute();
-        } catch (IDPRequestHandler.IDPRequestHandlerException e) {
-            SalesforceSDKLogger.e(TAG, "Building IDP request handler failed", e);
-            handleError("Incomplete SP config or user account data");
-        }
+
+        IDPCodeGeneratorHelper generatorHelper = new IDPCodeGeneratorHelper(webView, userAccount, spConfig, this);
+        generatorHelper.generateCode();
     }
 
-    /**
-     * This class is used to monitor redirects within the WebView to determine
-     * when the login flow is complete, parses the response and passes it back.
-     */
-    protected class IDPWebViewClient extends WebViewClient {
-
-        @Override
-        public boolean shouldOverrideUrlLoading(WebView view, String url) {
-            boolean isDone = url.replace("///", "/").toLowerCase(Locale.US).startsWith(spConfig.getOauthCallbackUrl().
-                    replace("///", "/").toLowerCase(Locale.US));
-            if (isDone) {
-                final Uri callbackUri = Uri.parse(url);
-                final Map<String, String> params = UriFragmentParser.parse(callbackUri);
-
-                // Determines if the authentication flow succeeded or failed.
-                if (params != null) {
-                    final String code = params.get(CODE_KEY);
-                    if (TextUtils.isEmpty(code)) {
-                        handleError("Code not returned from server");
-                    } else {
-                        handleSuccess(code);
-                    }
-                } else {
-                    handleError("Code not returned from server");
-                }
-            } else if (url.contains(EC_301) || url.contains(EC_302)) {
-
-                /*
-                 * Currently there's no good way to recover from an invalid access token
-                 * loading a page through frontdoor. Until the server API returns an
-                 * error response, we look for 'ec=301' or 'ec=302' to handle this error case.
-                 */
-                handleError("Server returned unauthorized token error - ec=301 or ec=302");
-            }
-            return isDone;
-        }
-    }
-
-    private void handleError(String error) {
-        final Intent intent = new Intent();
-        intent.putExtra(ERROR_KEY, error);
-        setResult(RESULT_CANCELED, intent);
-        Log.d(TAG, "handleError " + LogUtil.intentToString(intent));
+    @Override
+    public void onResult(int resultCode, @NonNull Intent data) {
+        Log.d(TAG, "onResult " + resultCode + " -> " + LogUtil.intentToString(data));
+        setResult(resultCode, data);
         finish();
-    }
-
-    private void handleSuccess(String code) {
-        final Intent intent = new Intent();
-        intent.putExtra(CODE_KEY, code);
-        intent.putExtra(LOGIN_URL_KEY, loginUrl);
-        setResult(RESULT_OK, intent);
-        Log.d(TAG, "handleSuccess " + LogUtil.intentToString(intent));
-        finish();
-    }
-
-    private class RefreshAuthTokenTask extends AsyncTask<Void, Void, String> {
-
-        private IDPRequestHandler idpRequestHandler;
-        private WebView webView;
-
-        public RefreshAuthTokenTask(IDPRequestHandler idpRequestHandler, WebView webView) {
-            this.idpRequestHandler = idpRequestHandler;
-            this.webView = webView;
-        }
-
-        @Override
-        protected String doInBackground(Void... nothings) {
-            String accessToken = null;
-            try {
-                accessToken = idpRequestHandler.getValidAccessToken();
-            } catch (Exception e) {
-                SalesforceSDKLogger.e(TAG, "Refreshing token failed", e);
-            }
-            return accessToken;
-        }
-
-        @Override
-        protected void onPostExecute(String accessToken) {
-            try {
-                if (accessToken != null) {
-                    idpRequestHandler.makeFrontDoorRequest(accessToken, webView);
-                }
-            } catch (IDPRequestHandler.IDPRequestHandlerException e) {
-                SalesforceSDKLogger.e(TAG, "Making frontdoor request failed", e);
-            }
-        }
     }
 }
