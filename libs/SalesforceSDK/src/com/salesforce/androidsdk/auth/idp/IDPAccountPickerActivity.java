@@ -229,37 +229,41 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
 
     private void proceedWithIDPAuthFlow(UserAccount account) {
         SalesforceSDKLogger.d(TAG, "Kicking off code exchange flow within IDP for account: " + account);
-        IDPCodeGeneratorHelper codeGenerator = new IDPCodeGeneratorHelper(new WebView(this), account, spConfig, new IDPCodeGeneratorHelper.CodeGeneratorCallback() {
-            public static final String ERROR_KEY = "error";
-            public static final String CODE_KEY = "code";
-            public static final String LOGIN_URL_KEY = "login_url";
 
-            @Override
-            public void onError(String error) {
-                final Intent intent = new Intent();
-                intent.putExtra(ERROR_KEY, error);
-                setResult(RESULT_CANCELED, intent);
-                SalesforceSDKManager.getInstance().setIDPAppLoginFlowActive(false);
-                finish();
-            }
+        boolean useHelper = true;
+        if (useHelper) {
+            IDPCodeGeneratorHelper codeGenerator = new IDPCodeGeneratorHelper(new WebView(this), account, spConfig, new IDPCodeGeneratorHelper.CodeGeneratorCallback() {
+                public static final String ERROR_KEY = "error";
+                public static final String CODE_KEY = "code";
+                public static final String LOGIN_URL_KEY = "login_url";
 
-            @Override
-            public void onSuccess(String code) {
-                final Intent intent = new Intent();
-                intent.putExtra(CODE_KEY, code);
-                intent.putExtra(LOGIN_URL_KEY, spConfig.getLoginUrl());
-                setResult(RESULT_OK, intent);
-                SalesforceSDKManager.getInstance().setIDPAppLoginFlowActive(false);
-                finish();
-            }
-        });
-        codeGenerator.generateCode();
+                @Override
+                public void onError(String error) {
+                    final Intent intent = new Intent();
+                    intent.putExtra(ERROR_KEY, error);
+                    setResult(RESULT_CANCELED, intent);
+                    SalesforceSDKManager.getInstance().setIDPAppLoginFlowActive(false);
+                    finish();
+                }
 
-//        final Intent intent = new Intent(this, IDPCodeGeneratorActivity.class);
-//        intent.addCategory(Intent.CATEGORY_DEFAULT);
-//        intent.putExtra(IDPCodeGeneratorActivity.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle());
-//        intent.putExtra(IDPCodeGeneratorActivity.USER_ACCOUNT_BUNDLE_KEY, account.toBundle());
-//        startActivityForResult(intent, SPRequestHandler.IDP_REQUEST_CODE);
+                @Override
+                public void onSuccess(String code) {
+                    final Intent intent = new Intent();
+                    intent.putExtra(CODE_KEY, code);
+                    intent.putExtra(LOGIN_URL_KEY, spConfig.getLoginUrl());
+                    setResult(RESULT_OK, intent);
+                    SalesforceSDKManager.getInstance().setIDPAppLoginFlowActive(false);
+                    finish();
+                }
+            });
+            codeGenerator.generateCode();
+        } else {
+            final Intent intent = new Intent(this, IDPCodeGeneratorActivity.class);
+            intent.addCategory(Intent.CATEGORY_DEFAULT);
+            intent.putExtra(IDPCodeGeneratorActivity.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle());
+            intent.putExtra(IDPCodeGeneratorActivity.USER_ACCOUNT_BUNDLE_KEY, account.toBundle());
+            startActivityForResult(intent, SPRequestHandler.IDP_REQUEST_CODE);
+        }
     }
     /**
      * A simple receiver that listens for IDP login completion. It fetches the user account

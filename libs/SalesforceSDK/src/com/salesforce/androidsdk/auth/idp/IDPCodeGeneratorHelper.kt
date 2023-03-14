@@ -26,8 +26,6 @@ internal class IDPCodeGeneratorHelper(
         fun onSuccess(code: String?)
     }
 
-    private var loginUrl: String? = null
-
     init {
         webView.settings.javaScriptEnabled = true
         webView.webViewClient = IDPWebViewClient()
@@ -35,7 +33,6 @@ internal class IDPCodeGeneratorHelper(
 
     fun generateCode() {
         val idpRequestHandler = IDPRequestHandler(spConfig, userAccount)
-        loginUrl = idpRequestHandler.loginUrl
         CoroutineScope(Dispatchers.IO).launch {
             val accessToken = try {
                 idpRequestHandler.validAccessToken
