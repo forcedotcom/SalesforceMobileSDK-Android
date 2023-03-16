@@ -28,27 +28,16 @@ package com.salesforce.androidsdk.auth.idp;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.util.Log;
-import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.util.LogUtil;
-import com.salesforce.androidsdk.util.SalesforceSDKLogger;
-import com.salesforce.androidsdk.util.UriFragmentParser;
-
-import java.util.Locale;
-import java.util.Map;
 
 /**
  * Launches a WebView, runs IDP requests within it and finishes itself when done.
@@ -59,7 +48,6 @@ import java.util.Map;
 public class IDPCodeGeneratorActivity extends Activity implements IDPCodeGeneratorHelper.CodeGeneratorCallback {
 
     public static final String USER_ACCOUNT_BUNDLE_KEY = "user_account_bundle";
-    public static final String SP_CONFIG_BUNDLE_KEY = "sp_config_bundle";
     public static final String ERROR_KEY = "error";
     public static final String CODE_KEY = "code";
     public static final String LOGIN_URL_KEY = "login_url";
@@ -83,7 +71,7 @@ public class IDPCodeGeneratorActivity extends Activity implements IDPCodeGenerat
         final Bundle extras = intent.getExtras();
         if (extras != null) {
             userAccount = new UserAccount(extras.getBundle(USER_ACCOUNT_BUNDLE_KEY));
-            spConfig = new SPConfig(extras.getBundle(SP_CONFIG_BUNDLE_KEY));
+            spConfig = new SPConfig(extras.getBundle(SPInitiatedLoginReceiver.SP_CONFIG_BUNDLE_KEY));
         }
 
         // Protects against screenshots.

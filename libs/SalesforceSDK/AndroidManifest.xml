@@ -90,7 +90,7 @@
             android:exported="false" />
 
         <!-- Receiver for IDP initiated login flow -->
-        <receiver android:name="com.salesforce.androidsdk.auth.idp.IDPInititatedLoginReceiver"
+        <receiver android:name="com.salesforce.androidsdk.auth.idp.IDPInitiatedLoginReceiver"
             android:exported="true"
             tools:ignore="ExportedReceiver">
             <intent-filter>
@@ -98,6 +98,17 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
+
+        <!-- Receiver for SP initiated login flow -->
+        <receiver android:name="com.salesforce.androidsdk.auth.idp.SPInitiatedLoginReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="com.salesforce.SP_LOGIN_REQUEST" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </receiver>
+
 
         <service android:name="com.salesforce.androidsdk.push.SFDCFcmListenerService"
             android:exported="false">

@@ -43,7 +43,6 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebSettings.LayoutAlgorithm;
 import android.webkit.WebView;
@@ -57,7 +56,7 @@ import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity;
-import com.salesforce.androidsdk.auth.idp.IDPInititatedLoginReceiver;
+import com.salesforce.androidsdk.auth.idp.IDPInitiatedLoginReceiver;
 import com.salesforce.androidsdk.auth.idp.SPRequestHandler;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
@@ -182,10 +181,10 @@ public class LoginActivity extends AccountAuthenticatorActivity
         if (intent != null) {
             final Bundle extras = intent.getExtras();
             if (extras != null) {
-                userHint = extras.getString(IDPInititatedLoginReceiver.USER_HINT_KEY);
-                spActivityName = extras.getString(IDPInititatedLoginReceiver.SP_ACTVITY_NAME_KEY);
-                spActivityExtras = extras.getBundle(IDPInititatedLoginReceiver.SP_ACTVITY_EXTRAS_KEY);
-                boolean isIdpInitFlow = extras.getBoolean(IDPInititatedLoginReceiver.IDP_INIT_LOGIN_KEY);
+                userHint = extras.getString(IDPInitiatedLoginReceiver.USER_HINT_KEY);
+                spActivityName = extras.getString(IDPInitiatedLoginReceiver.SP_ACTVITY_NAME_KEY);
+                spActivityExtras = extras.getBundle(IDPInitiatedLoginReceiver.SP_ACTVITY_EXTRAS_KEY);
+                boolean isIdpInitFlow = extras.getBoolean(IDPInitiatedLoginReceiver.IDP_INIT_LOGIN_KEY);
                 if (isIdpInitFlow) {
                     onIDPLoginClick(null);
                 }
@@ -373,7 +372,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
         final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url.trim();
         SalesforceSDKLogger.d(TAG, "Launching IDP app for authentication with login host: " + loginServer);
-        spRequestHandler = new SPRequestHandler(loginServer, userHint, authCallback);
+        spRequestHandler = new SPRequestHandler(loginServer, userHint, new SPAuthCallback());
         spRequestHandler.launchIDPApp(this);
     }
 
@@ -458,7 +457,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
             try {
                 final Intent intent = new Intent(this, Class.forName(spActivityName));
                 intent.addCategory(Intent.CATEGORY_DEFAULT);
-                intent.putExtra(IDPInititatedLoginReceiver.SP_ACTVITY_EXTRAS_KEY, spActivityExtras);
+                intent.putExtra(IDPInitiatedLoginReceiver.SP_ACTVITY_EXTRAS_KEY, spActivityExtras);
                 startActivity(intent);
             } catch (Exception e) {
                 SalesforceSDKLogger.e(TAG, "Could not start activity", e);
@@ -497,7 +496,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
      *
      * @author bhariharan
      */
-    public class SPAuthCallback {
+    public class SPAuthCallback implements SPRequestHandler.SPAuthCallback {
 
         /**
          * Called when the flow was successful and token response is received.

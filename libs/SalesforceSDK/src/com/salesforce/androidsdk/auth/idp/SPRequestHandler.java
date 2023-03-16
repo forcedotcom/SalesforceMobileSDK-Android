@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.auth.idp;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -37,7 +38,6 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
-import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.LogUtil;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
@@ -50,13 +50,18 @@ import java.net.URI;
  */
 public class SPRequestHandler {
 
+    public interface SPAuthCallback {
+        void receivedTokenResponse(OAuth2.TokenEndpointResponse tokenResponse);
+        void receivedErrorResponse(final String errorMessage);
+    }
+
     public static final int IDP_REQUEST_CODE = 375;
     private static final String TAG = "SPRequestHandler";
 
     private String codeVerifier;
     private String codeChallenge;
     private SPConfig spConfig;
-    private LoginActivity.SPAuthCallback authCallback;
+    private SPAuthCallback authCallback;
 
     /**
      * Parameterized constructor.
@@ -64,7 +69,7 @@ public class SPRequestHandler {
      * @param loginUrl Login URL.
      * @param authCallback Auth callback.
      */
-    public SPRequestHandler(String loginUrl, LoginActivity.SPAuthCallback authCallback) {
+    public SPRequestHandler(String loginUrl, SPAuthCallback authCallback) {
         this(loginUrl, null, authCallback);
     }
 
@@ -75,7 +80,7 @@ public class SPRequestHandler {
      * @param userHint User hint. Must be of the format 'orgId:userId', both being 18-char IDs.
      * @param authCallback Auth callback.
      */
-    public SPRequestHandler(String loginUrl, String userHint, LoginActivity.SPAuthCallback authCallback) {
+    public SPRequestHandler(String loginUrl, String userHint, SPAuthCallback authCallback) {
         codeVerifier = SalesforceKeyGenerator.getRandom128ByteKey();
         codeChallenge = SalesforceKeyGenerator.getSHA256Hash(codeVerifier);
         spConfig = buildSPConfig(loginUrl, userHint);
@@ -91,9 +96,13 @@ public class SPRequestHandler {
         final Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.addCategory(Intent.CATEGORY_DEFAULT);
         intent.setData(Uri.parse(SalesforceSDKManager.getInstance().getIDPAppURIScheme()));
-        intent.putExtra(IDPCodeGeneratorActivity.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle());
+        intent.putExtra(SPInitiatedLoginReceiver.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle());
         Log.d(TAG, "launchIDPApp " + LogUtil.intentToString(intent));
         context.startActivityForResult(intent, IDP_REQUEST_CODE);
+    }
+
+    public void launchIDPAppWithBroadcast(Context context) {
+        SPInitiatedLoginReceiver.sendLoginRequest(context, SalesforceSDKManager.getInstance().getIDPAppPackageName(), spConfig);
     }
 
     /**

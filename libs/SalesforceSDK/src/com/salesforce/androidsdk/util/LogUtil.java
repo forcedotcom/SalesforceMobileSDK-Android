@@ -47,19 +47,29 @@ public class LogUtil {
 	 */
 	public static String intentToString(Intent intent) {
 		if (intent == null) {
-			return "";
+			return "null";
 		}
-		String s = intent.toString();
-		Bundle bundle = intent.getExtras();
-		if (bundle != null) {
-			Set<String> keys = bundle.keySet();
-			Iterator<String> it = keys.iterator();
-			while (it.hasNext()) {
-				String key = it.next();
-				s += " " + key + "=" + bundle.get(key);
+		return intent + " extras = " + bundleToString(intent.getExtras());
+	}
+
+	public static String bundleToString(Bundle bundle) {
+		if (bundle == null) {
+			return "null";
+		}
+		String s = "";
+		Set<String> keys = bundle.keySet();
+		Iterator<String> it = keys.iterator();
+		while (it.hasNext()) {
+			String key = it.next();
+			s += " " + key + " = ";
+			Object value = bundle.get(key);
+			if (value instanceof Bundle) {
+				s += bundleToString((Bundle) value);
+			} else {
+				s += value.toString();
 			}
 		}
-		return s;
+		return "{" + s + "}";
 	}
 
 	/**

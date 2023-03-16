@@ -36,6 +36,7 @@ import android.util.Log;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.util.LogUtil;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
@@ -45,7 +46,7 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger;
  *
  * @author bhariharan
  */
-public class IDPInititatedLoginReceiver extends BroadcastReceiver {
+public class IDPInitiatedLoginReceiver extends BroadcastReceiver {
 
     public static final String IDP_LOGIN_REQUEST_ACTION = "com.salesforce.IDP_LOGIN_REQUEST";
     public static final String USER_HINT_KEY = "user_hint";
@@ -58,6 +59,18 @@ public class IDPInititatedLoginReceiver extends BroadcastReceiver {
     private String userHint;
     private String spActivityName;
     private Bundle spActivityExtras;
+
+    public static void sendLoginRequest(Context context, UserAccount currentUser, String spAppPackageName, String spAppComponentName, Bundle spActivityExtras) {
+        Intent intent = new Intent(IDP_LOGIN_REQUEST_ACTION);
+        intent.addCategory(Intent.CATEGORY_DEFAULT);
+        // Limiting intent to the target app's package.
+        intent.setPackage(spAppPackageName);
+        // Adding user hint and target component.
+        intent.putExtra(IDPInitiatedLoginReceiver.USER_HINT_KEY, currentUser == null ? null : currentUser.getOrgId() + COLON + currentUser.getUserId());
+        intent.putExtra(IDPInitiatedLoginReceiver.SP_ACTVITY_NAME_KEY, spAppPackageName + "." + spAppComponentName);
+        SalesforceSDKLogger.d(TAG, "sendLoginRequest " + intent);
+        context.sendBroadcast(intent);
+    }
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -73,7 +86,24 @@ public class IDPInititatedLoginReceiver extends BroadcastReceiver {
 
                 // Launches login flow if the user doesn't already exist on the SP app.
                 if (!doesUserExist()) {
-                    launchLoginActivity();
+//                    launchLoginActivity();
+
+                    final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url.trim();
+                    SalesforceSDKLogger.d(TAG, "Launching IDP app for authentication with login host: " + loginServer);
+                    SPRequestHandler spRequestHandler = new SPRequestHandler(loginServer, userHint, new SPRequestHandler.SPAuthCallback() {
+
+                        @Override
+                        public void receivedTokenResponse(OAuth2.TokenEndpointResponse tokenResponse) {
+
+                        }
+
+                        @Override
+                        public void receivedErrorResponse(String errorMessage) {
+
+                        }
+                    });
+                    spRequestHandler.launchIDPAppWithBroadcast(SalesforceSDKManager.getInstance().getAppContext());
+
                 } else {
 
                     // If user hint was passed in, switches to the specified user.

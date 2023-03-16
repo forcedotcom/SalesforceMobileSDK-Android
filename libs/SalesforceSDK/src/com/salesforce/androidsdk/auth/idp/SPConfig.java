@@ -27,7 +27,11 @@
 package com.salesforce.androidsdk.auth.idp;
 
 import android.os.Bundle;
+import android.text.TextUtils;
+import android.util.Pair;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2;
 
 /**
@@ -158,6 +162,24 @@ public class SPConfig {
      */
     public String getUserHint() {
         return userHint;
+    }
+
+    public UserAccount getUserHinted() {
+        if (!TextUtils.isEmpty(userHint)) {
+            final String[] userParts = userHint.split(":");
+
+            /*
+             * The value for 'user_hint' should be of the format 'orgId:userId' and should
+             * use the 18-character versions of 'orgId' and 'userId'.
+             */
+            if (userParts.length == 2) {
+                final String orgId = userParts[0];
+                final String userId = userParts[1];
+                return SalesforceSDKManager.getInstance().
+                        getUserAccountManager().getUserFromOrgAndUserId(orgId, userId);
+            }
+        }
+        return null;
     }
 
     /**

@@ -75,7 +75,7 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
         final Intent intent = getIntent();
         final Bundle extras = intent.getExtras();
         if (extras != null) {
-            spConfig = new SPConfig(extras.getBundle(IDPCodeGeneratorActivity.SP_CONFIG_BUNDLE_KEY));
+            spConfig = new SPConfig(extras.getBundle(SPInitiatedLoginReceiver.SP_CONFIG_BUNDLE_KEY));
         }
         idpLoginCompleteReceiver = new IDPLoginCompleteReceiver();
         registerReceiver(idpLoginCompleteReceiver, new IntentFilter(IDP_LOGIN_COMPLETE_ACTION));
@@ -246,7 +246,7 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
         } else {
             final Intent intent = new Intent(this, IDPCodeGeneratorActivity.class);
             intent.addCategory(Intent.CATEGORY_DEFAULT);
-            intent.putExtra(IDPCodeGeneratorActivity.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle());
+            intent.putExtra(SPInitiatedLoginReceiver.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle());
             intent.putExtra(IDPCodeGeneratorActivity.USER_ACCOUNT_BUNDLE_KEY, account.toBundle());
             startActivityForResult(intent, SPRequestHandler.IDP_REQUEST_CODE);
         }

@@ -41,6 +41,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Handler;
@@ -171,6 +172,8 @@ public class SalesforceSDKManager implements LifecycleObserver {
     private boolean idpAppLoginFlowActive;
     private Theme theme =  Theme.SYSTEM_DEFAULT;
     private String appName;
+
+    private String idpAppPackageName;
 
     /**
      * Available Mobile SDK style themes.
@@ -652,12 +655,22 @@ public class SalesforceSDKManager implements LifecycleObserver {
     }
 
     /**
+     * Returns the configured IDP app's package name.
+     *
+     * @return IDP app's package name.
+     */
+    public String getIDPAppPackageName() {
+        return idpAppPackageName;
+    }
+
+    /**
      * Sets the IDP app's URI scheme.
      *
      * @param idpAppURIScheme IDP app's URI scheme.
      */
     public synchronized void setIDPAppURIScheme(String idpAppURIScheme) {
         this.idpAppURIScheme = idpAppURIScheme;
+        this.idpAppPackageName = Uri.parse(idpAppURIScheme).getScheme();
     }
 
     /**
