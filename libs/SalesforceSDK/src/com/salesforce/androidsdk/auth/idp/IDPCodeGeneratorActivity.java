@@ -45,19 +45,13 @@ import com.salesforce.androidsdk.util.LogUtil;
  *
  * @author bhariharan
  */
-public class IDPCodeGeneratorActivity extends Activity implements IDPCodeGeneratorHelper.CodeGeneratorCallback {
+public class IDPCodeGeneratorActivity extends Activity implements IDPAuthCodeHelper.Callback {
 
     public static final String USER_ACCOUNT_BUNDLE_KEY = "user_account_bundle";
-    public static final String ERROR_KEY = "error";
-    public static final String CODE_KEY = "code";
-    public static final String LOGIN_URL_KEY = "login_url";
-    private static final String EC_301 = "ec=301";
-    private static final String EC_302 = "ec=302";
     private static final String TAG = "IDPCodeGeneratorActivity";
 
     private UserAccount userAccount;
     private SPConfig spConfig;
-    private String loginUrl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,7 +65,7 @@ public class IDPCodeGeneratorActivity extends Activity implements IDPCodeGenerat
         final Bundle extras = intent.getExtras();
         if (extras != null) {
             userAccount = new UserAccount(extras.getBundle(USER_ACCOUNT_BUNDLE_KEY));
-            spConfig = new SPConfig(extras.getBundle(SPInitiatedLoginReceiver.SP_CONFIG_BUNDLE_KEY));
+            spConfig = new SPConfig(extras.getBundle(SPRequestReceiver.SP_CONFIG_BUNDLE_KEY));
         }
 
         // Protects against screenshots.
@@ -83,8 +77,8 @@ public class IDPCodeGeneratorActivity extends Activity implements IDPCodeGenerat
         webSettings.setUseWideViewPort(true);
         webSettings.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NORMAL);
 
-        IDPCodeGeneratorHelper generatorHelper = new IDPCodeGeneratorHelper(webView, userAccount, spConfig, this);
-        generatorHelper.generateCode();
+        IDPAuthCodeHelper generatorHelper = new IDPAuthCodeHelper(webView, userAccount, spConfig, this);
+        generatorHelper.generateAuthCode();
     }
 
     @Override

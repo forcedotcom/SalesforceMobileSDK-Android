@@ -90,7 +90,7 @@
             android:exported="false" />
 
         <!-- Receiver for IDP initiated login flow -->
-        <receiver android:name="com.salesforce.androidsdk.auth.idp.IDPInitiatedLoginReceiver"
+        <receiver android:name="com.salesforce.androidsdk.auth.idp.IDPRequestReceiver"
             android:exported="true"
             tools:ignore="ExportedReceiver">
             <intent-filter>
@@ -100,7 +100,7 @@
         </receiver>
 
         <!-- Receiver for SP initiated login flow -->
-        <receiver android:name="com.salesforce.androidsdk.auth.idp.SPInitiatedLoginReceiver"
+        <receiver android:name="com.salesforce.androidsdk.auth.idp.SPRequestReceiver"
             android:exported="true"
             tools:ignore="ExportedReceiver">
             <intent-filter>

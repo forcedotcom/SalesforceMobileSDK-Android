@@ -96,13 +96,13 @@ public class SPRequestHandler {
         final Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.addCategory(Intent.CATEGORY_DEFAULT);
         intent.setData(Uri.parse(SalesforceSDKManager.getInstance().getIDPAppURIScheme()));
-        intent.putExtra(SPInitiatedLoginReceiver.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle());
+        intent.putExtra(SPRequestReceiver.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle());
         Log.d(TAG, "launchIDPApp " + LogUtil.intentToString(intent));
         context.startActivityForResult(intent, IDP_REQUEST_CODE);
     }
 
     public void launchIDPAppWithBroadcast(Context context) {
-        SPInitiatedLoginReceiver.sendLoginRequest(context, SalesforceSDKManager.getInstance().getIDPAppPackageName(), spConfig);
+        SPRequestReceiver.sendLoginRequest(context, SalesforceSDKManager.getInstance().getIDPAppPackageName(), spConfig);
     }
 
     /**
@@ -112,16 +112,16 @@ public class SPRequestHandler {
      * @param data Data returned from the IDP app.
      */
     public void handleIDPResponse(int resultCode, Intent data) {
-        if (data == null) {
-            handleError("No result received from IDP app");
-        } else if (resultCode == Activity.RESULT_CANCELED) {
-            final String error = data.getStringExtra(IDPCodeGeneratorActivity.ERROR_KEY);
-            handleError(error);
-        } else if (resultCode == Activity.RESULT_OK) {
-            final String code = data.getStringExtra(IDPCodeGeneratorActivity.CODE_KEY);
-            final String loginUrl = data.getStringExtra(IDPCodeGeneratorActivity.LOGIN_URL_KEY);
-            handleSuccess(code, loginUrl);
-        }
+//        if (data == null) {
+//            handleError("No result received from IDP app");
+//        } else if (resultCode == Activity.RESULT_CANCELED) {
+//            final String error = data.getStringExtra(IDPAuthCodeHelper.ERROR_KEY);
+//            handleError(error);
+//        } else if (resultCode == Activity.RESULT_OK) {
+//            final String code = data.getStringExtra(IDPAuthCodeHelper.CODE_KEY);
+//            final String loginUrl = data.getStringExtra(IDPAuthCodeHelper.LOGIN_URL_KEY);
+//            handleSuccess(code, loginUrl);
+//        }
     }
 
     /**

@@ -3,20 +3,21 @@ package com.salesforce.androidsdk.auth.idp
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.text.TextUtils
 import android.webkit.WebView
-import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.auth.idp.IDPCodeGeneratorHelper.CodeGeneratorCallback
+import com.salesforce.androidsdk.auth.idp.IDPAuthCodeHelper.Callback
 import com.salesforce.androidsdk.util.LogUtil
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 
-class SPInitiatedLoginReceiver : BroadcastReceiver() {
+/**
+ * Receiver running in IDP app handling calls from SP app
+ */
+class SPRequestReceiver : BroadcastReceiver() {
 
     companion object {
         const val SP_LOGIN_REQUEST_ACTION = "com.salesforce.SP_LOGIN_REQUEST"
         const val SP_CONFIG_BUNDLE_KEY = "sp_config_bundle"
 
-        val TAG = SPInitiatedLoginReceiver::class.java.simpleName
+        val TAG = SPRequestReceiver::class.java.simpleName
 
 
         @JvmStatic
@@ -41,15 +42,16 @@ class SPInitiatedLoginReceiver : BroadcastReceiver() {
             val userHinted = spConfig.userHinted
 
             if (userHinted != null) {
-                val codeGenerator = IDPCodeGeneratorHelper(
+                IDPAuthCodeHelper.generateAuthCode(
                     WebView(context),
                     userHinted,
                     SPConfig(intent.getBundleExtra(SP_CONFIG_BUNDLE_KEY)),
-                    object : CodeGeneratorCallback {
-                        override fun onResult(resultCode: Int, data: Intent) {
-                            // TBD
+                    object : Callback {
+
+                        override fun onResult(result: IDPAuthCodeHelper.Result) {
+                            IDPRequestReceiver.sendLoginResponse(context, intent.`package`, result.toBundle())
                         }
-                    })
+                })
             } else {
                 val launchIntent = Intent(context, IDPAccountPickerActivity::class.java)
                 launchIntent.addCategory(Intent.CATEGORY_DEFAULT)
