@@ -96,13 +96,13 @@ public class SPRequestHandler {
         final Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.addCategory(Intent.CATEGORY_DEFAULT);
         intent.setData(Uri.parse(SalesforceSDKManager.getInstance().getIDPAppURIScheme()));
-        intent.putExtra(SPRequestReceiver.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle());
+        intent.putExtra(IDPReceiver.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle());
         Log.d(TAG, "launchIDPApp " + LogUtil.intentToString(intent));
         context.startActivityForResult(intent, IDP_REQUEST_CODE);
     }
 
     public void launchIDPAppWithBroadcast(Context context) {
-        SPRequestReceiver.sendLoginRequest(context, SalesforceSDKManager.getInstance().getIDPAppPackageName(), spConfig);
+        IDPReceiver.sendLoginRequestToIDP(context, SalesforceSDKManager.getInstance().getIDPAppPackageName(), spConfig);
     }
 
     /**

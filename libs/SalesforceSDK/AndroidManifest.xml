@@ -90,22 +90,23 @@
             android:exported="false" />
 
         <!-- Receiver for IDP initiated login flow -->
-        <receiver android:name="com.salesforce.androidsdk.auth.idp.IDPRequestReceiver"
+        <receiver android:name="com.salesforce.androidsdk.auth.idp.SPReceiver"
             android:exported="true"
             tools:ignore="ExportedReceiver">
             <intent-filter>
                 <action android:name="com.salesforce.IDP_LOGIN_REQUEST" />
-                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.salesforce.IDP_LOGIN_RESPONSE" />
             </intent-filter>
         </receiver>
 
         <!-- Receiver for SP initiated login flow -->
-        <receiver android:name="com.salesforce.androidsdk.auth.idp.SPRequestReceiver"
+        <receiver android:name="com.salesforce.androidsdk.auth.idp.IDPReceiver"
             android:exported="true"
             tools:ignore="ExportedReceiver">
             <intent-filter>
                 <action android:name="com.salesforce.SP_LOGIN_REQUEST" />
-                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
 

@@ -34,9 +34,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.webkit.WebView;
-
-import androidx.annotation.NonNull;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.Features;
@@ -75,7 +72,7 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
         final Intent intent = getIntent();
         final Bundle extras = intent.getExtras();
         if (extras != null) {
-            spConfig = new SPConfig(extras.getBundle(SPRequestReceiver.SP_CONFIG_BUNDLE_KEY));
+//            spConfig = new SPConfig(extras.getBundle(SPRequestReceiver.SP_CONFIG_BUNDLE_KEY));
         }
         idpLoginCompleteReceiver = new IDPLoginCompleteReceiver();
         registerReceiver(idpLoginCompleteReceiver, new IntentFilter(IDP_LOGIN_COMPLETE_ACTION));
@@ -180,7 +177,7 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
 
     private Intent getIDPLoginFailureIntent() {
         final Intent intent = new Intent();
-        intent.putExtra(IDPAuthCodeHelper.ERROR_KEY, "Failed to log in to IDP app");
+//        intent.putExtra(IDPAuthCodeHelper.ERROR_KEY, "Failed to log in to IDP app");
         return intent;
     }
 
@@ -199,8 +196,8 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
             final LoginServerManager.LoginServer loginServer = getLoginServer(loginUrl);
             if (loginServer == null) {
                 final Intent intent = new Intent();
-                intent.putExtra(IDPAuthCodeHelper.ERROR_KEY,
-                        "Specified login server does not exist on IDP app");
+//                intent.putExtra(IDPAuthCodeHelper.ERROR_KEY,
+//                        "Specified login server does not exist on IDP app");
                 setResult(RESULT_CANCELED, intent);
                 finish();
             } else {
@@ -234,19 +231,19 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
         SalesforceSDKLogger.d(TAG, "Kicking off code exchange flow within IDP for account: " + account);
 
         if (BootConfig.getBootConfig(this).useHeadlessAuthCodeFlow()) {
-            IDPAuthCodeHelper codeGenerator = new IDPAuthCodeHelper(new WebView(this), account, spConfig, new IDPAuthCodeHelper.Callback() {
-                @Override
-                public void onResult(int resultCode, @NonNull Intent data) {
-                    setResult(resultCode, data);
-                    SalesforceSDKManager.getInstance().setIDPAppLoginFlowActive(false);
-                    finish();
-                }
-            });
-            codeGenerator.generateAuthCode();
+//            IDPAuthCodeHelper codeGenerator = new IDPAuthCodeHelper(new WebView(this), account, spConfig, new IDPAuthCodeHelper.Callback() {
+//                @Override
+//                public void onResult(int resultCode, @NonNull Intent data) {
+//                    setResult(resultCode, data);
+//                    SalesforceSDKManager.getInstance().setIDPAppLoginFlowActive(false);
+//                    finish();
+//                }
+//            });
+//            codeGenerator.generateAuthCode();
         } else {
             final Intent intent = new Intent(this, IDPCodeGeneratorActivity.class);
             intent.addCategory(Intent.CATEGORY_DEFAULT);
-            intent.putExtra(SPRequestReceiver.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle());
+            intent.putExtra(IDPReceiver.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle());
             intent.putExtra(IDPCodeGeneratorActivity.USER_ACCOUNT_BUNDLE_KEY, account.toBundle());
             startActivityForResult(intent, SPRequestHandler.IDP_REQUEST_CODE);
         }

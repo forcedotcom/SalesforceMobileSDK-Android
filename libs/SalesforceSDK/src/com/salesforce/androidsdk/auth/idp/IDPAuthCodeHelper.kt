@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.core.os.bundleOf
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -41,26 +42,27 @@ internal class IDPAuthCodeHelper private constructor(
             const val LOGIN_URL_KEY = "login_url"
             const val ERROR_KEY = "error"
 
-            fun fromBundle(bundle: Bundle):Result {
-                return with(bundle) {
-                    Result(
-                        getBoolean(SUCCESS_KEY),
-                        getString(CODE_KEY),
-                        getString(LOGIN_URL_KEY),
-                        getString(ERROR_KEY)
-                    )
+            fun fromBundle(bundle: Bundle?):Result? {
+                return if (bundle == null) null else {
+                    with(bundle) {
+                        Result(
+                            getBoolean(SUCCESS_KEY),
+                            getString(CODE_KEY),
+                            getString(LOGIN_URL_KEY),
+                            getString(ERROR_KEY)
+                        )
+                    }
                 }
             }
         }
 
         fun toBundle():Bundle {
-            return with(Bundle()) {
-                putBoolean(SUCCESS_KEY, success)
-                putString(CODE_KEY, code)
-                putString(LOGIN_URL_KEY, loginUrl)
-                putString(ERROR_KEY, error)
-                this
-            }
+            return bundleOf(
+                SUCCESS_KEY to success,
+                CODE_KEY to code,
+                LOGIN_URL_KEY to loginUrl,
+                ERROR_KEY to error
+            )
         }
     }
     interface Callback {
@@ -210,9 +212,9 @@ internal class IDPAuthCodeHelper private constructor(
     }
 
     companion object {
+        val TAG = IDPAuthCodeHelper::class.java.simpleName
         const val CODE_KEY = "code"
         const val EC_KEY = "ec"
-        val TAG = IDPAuthCodeHelper::class.java.simpleName
 
         fun generateAuthCode(webView: WebView,
                              userAccount: UserAccount,

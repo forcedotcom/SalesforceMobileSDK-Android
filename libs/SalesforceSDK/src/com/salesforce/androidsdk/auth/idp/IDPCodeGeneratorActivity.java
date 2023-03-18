@@ -33,8 +33,6 @@ import android.util.Log;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 
-import androidx.annotation.NonNull;
-
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.util.LogUtil;
@@ -65,7 +63,7 @@ public class IDPCodeGeneratorActivity extends Activity implements IDPAuthCodeHel
         final Bundle extras = intent.getExtras();
         if (extras != null) {
             userAccount = new UserAccount(extras.getBundle(USER_ACCOUNT_BUNDLE_KEY));
-            spConfig = new SPConfig(extras.getBundle(SPRequestReceiver.SP_CONFIG_BUNDLE_KEY));
+//            spConfig = new SPConfig(extras.getBundle(SPRequestReceiver.SP_CONFIG_BUNDLE_KEY));
         }
 
         // Protects against screenshots.
@@ -77,14 +75,14 @@ public class IDPCodeGeneratorActivity extends Activity implements IDPAuthCodeHel
         webSettings.setUseWideViewPort(true);
         webSettings.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NORMAL);
 
-        IDPAuthCodeHelper generatorHelper = new IDPAuthCodeHelper(webView, userAccount, spConfig, this);
-        generatorHelper.generateAuthCode();
+//        IDPAuthCodeHelper generatorHelper = new IDPAuthCodeHelper(webView, userAccount, spConfig, this);
+//        generatorHelper.generateAuthCode();
     }
 
     @Override
-    public void onResult(int resultCode, @NonNull Intent data) {
-        Log.d(TAG, "onResult " + resultCode + " -> " + LogUtil.intentToString(data));
-        setResult(resultCode, data);
-        finish();
+    public void onResult(IDPAuthCodeHelper.Result result) {
+//        Log.d(TAG, "onResult " + resultCode + " -> " + LogUtil.intentToString(data));
+//        setResult(resultCode, data);
+//        finish();
     }
 }
