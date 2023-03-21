@@ -56,6 +56,7 @@ data class SPConfig (
         private const val LOGIN_URL_KEY = "login_url"
         private const val USER_HINT_KEY = "user_hint"
 
+        @JvmStatic
         fun forCurrentApp(codeChallenge: String, userHint:String?):SPConfig {
             val sdkMgr = SalesforceSDKManager.getInstance()
             return with(BootConfig.getBootConfig(sdkMgr.appContext)) {
@@ -81,7 +82,7 @@ data class SPConfig (
                         codeChallenge = getString(CODE_CHALLENGE_KEY)!!,
                         oauthScopes = getStringArray(OAUTH_SCOPES_KEY)!!,
                         loginUrl = getString(LOGIN_URL_KEY)!!,
-                        userHint = getString(USER_HINT_KEY)!!
+                        userHint = getString(USER_HINT_KEY)
                     )
                 }
             }

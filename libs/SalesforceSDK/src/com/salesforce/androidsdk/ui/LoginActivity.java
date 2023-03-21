@@ -56,6 +56,8 @@ import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity;
+import com.salesforce.androidsdk.auth.idp.IDPReceiver;
+import com.salesforce.androidsdk.auth.idp.SPConfig;
 import com.salesforce.androidsdk.auth.idp.SPReceiver;
 import com.salesforce.androidsdk.auth.idp.SPRequestHandler;
 import com.salesforce.androidsdk.config.RuntimeConfig;
@@ -370,10 +372,12 @@ public class LoginActivity extends AccountAuthenticatorActivity
     public void onIDPLoginClick(View v) {
         Log.d(TAG, "onIDPLoginClick");
 
-        final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url.trim();
-        SalesforceSDKLogger.d(TAG, "Launching IDP app for authentication with login host: " + loginServer);
-        spRequestHandler = new SPRequestHandler(loginServer, userHint, new SPAuthCallback());
-        spRequestHandler.launchIDPApp(this);
+        SPReceiver.sendLoginRequestToIDP(this, null);
+
+//        final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url.trim();
+//        SalesforceSDKLogger.d(TAG, "Launching IDP app for authentication with login host: " + loginServer);
+//        spRequestHandler = new SPRequestHandler(loginServer, userHint, new SPAuthCallback());
+//        spRequestHandler.launchIDPApp(this);
     }
 
 	/**

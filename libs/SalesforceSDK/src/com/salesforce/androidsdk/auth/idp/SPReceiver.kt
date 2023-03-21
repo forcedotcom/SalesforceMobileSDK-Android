@@ -70,12 +70,13 @@ class SPReceiver : BroadcastReceiver() {
         @JvmStatic
         fun sendLoginRequestToIDP(
             context: Context,
-            idpAppPackageName: String,
-            spConfig: SPConfig
+            userHint: String? = null
         ) {
+            codeVerifier = SalesforceKeyGenerator.getRandom128ByteKey()
+            spConfig = SPConfig.forCurrentApp(SalesforceKeyGenerator.getSHA256Hash(codeVerifier), userHint)
             val intent = Intent(IDPReceiver.SP_LOGIN_REQUEST_ACTION)
-            intent.setPackage(idpAppPackageName)
-            intent.putExtra(IDPReceiver.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle())
+            intent.setPackage(SalesforceSDKManager.getInstance().idpAppPackageName)
+            intent.putExtra(IDPReceiver.SP_CONFIG_BUNDLE_KEY, spConfig!!.toBundle())
             SalesforceSDKLogger.d(TAG, "sendLoginRequestToIDP " + LogUtil.intentToString(intent))
             context.sendBroadcast(intent)
         }
@@ -106,9 +107,7 @@ class SPReceiver : BroadcastReceiver() {
         }
         else {
             // We need to login through the IDP
-            codeVerifier = SalesforceKeyGenerator.getRandom128ByteKey()
-            spConfig = SPConfig.forCurrentApp(SalesforceKeyGenerator.getSHA256Hash(codeVerifier), userHint)
-            sendLoginRequestToIDP(context, sdkMgr.idpAppPackageName, spConfig!!)
+            sendLoginRequestToIDP(context, userHint)
         }
     }
 

@@ -102,7 +102,7 @@ public class SPRequestHandler {
     }
 
     public void launchIDPAppWithBroadcast(Context context) {
-        SPReceiver.sendLoginRequestToIDP(context, SalesforceSDKManager.getInstance().getIDPAppPackageName(), spConfig);
+        // SPReceiver.sendLoginRequestToIDP(context, SalesforceSDKManager.getInstance().getIDPAppPackageName(), spConfig);
     }
 
     /**
