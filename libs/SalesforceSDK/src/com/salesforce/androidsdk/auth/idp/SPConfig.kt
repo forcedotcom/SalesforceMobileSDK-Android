@@ -37,6 +37,7 @@ import com.salesforce.androidsdk.config.BootConfig
  * SP app configuration
  */
 data class SPConfig (
+    val spAppPackageName: String,
     val oauthClientId: String,
     val oauthCallbackUrl: String,
     val codeChallenge: String,
@@ -47,6 +48,7 @@ data class SPConfig (
     val userHinted: UserAccount? = userFromHint(userHint)
 
     companion object {
+        private const val SP_APP_PACKAGE_NAME = "sp_app_package_name"
         private const val OAUTH_CLIENT_ID_KEY = "oauth_client_id"
         private const val OAUTH_CALLBACK_URL_KEY = "oauth_callback_url"
         private const val CODE_CHALLENGE_KEY = "code_challenge"
@@ -58,6 +60,7 @@ data class SPConfig (
             val sdkMgr = SalesforceSDKManager.getInstance()
             return with(BootConfig.getBootConfig(sdkMgr.appContext)) {
                 SPConfig(
+                    spAppPackageName = sdkMgr.appContext.packageName,
                     oauthClientId = remoteAccessConsumerKey,
                     oauthCallbackUrl = oauthRedirectURI,
                     codeChallenge = codeChallenge,
@@ -72,6 +75,7 @@ data class SPConfig (
             return if (bundle == null) null else {
                 with(bundle) {
                     SPConfig(
+                        spAppPackageName = getString(SP_APP_PACKAGE_NAME)!!,
                         oauthClientId = getString(OAUTH_CLIENT_ID_KEY)!!,
                         oauthCallbackUrl = getString(OAUTH_CALLBACK_URL_KEY)!!,
                         codeChallenge = getString(CODE_CHALLENGE_KEY)!!,
@@ -99,6 +103,7 @@ data class SPConfig (
 
     fun toBundle():Bundle {
         return bundleOf(
+            SP_APP_PACKAGE_NAME to spAppPackageName,
             OAUTH_CLIENT_ID_KEY to oauthClientId,
             OAUTH_CALLBACK_URL_KEY to oauthCallbackUrl,
             CODE_CHALLENGE_KEY to codeChallenge,

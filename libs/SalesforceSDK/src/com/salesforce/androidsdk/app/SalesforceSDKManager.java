@@ -94,10 +94,12 @@ import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -172,8 +174,8 @@ public class SalesforceSDKManager implements LifecycleObserver {
     private boolean idpAppLoginFlowActive;
     private Theme theme =  Theme.SYSTEM_DEFAULT;
     private String appName;
-
     private String idpAppPackageName;
+    private Set<String> allowedSPAppPackageNames;
 
     /**
      * Available Mobile SDK style themes.
@@ -664,6 +666,13 @@ public class SalesforceSDKManager implements LifecycleObserver {
     }
 
     /**
+     * Returns the package names of SP apps allowed to use this app as IDP
+     *
+     * @return set of SP apps package names
+     */
+    public Set<String> getAllowedSPAppPackageNames() { return allowedSPAppPackageNames; }
+
+    /**
      * Sets the IDP app's URI scheme.
      *
      * @param idpAppURIScheme IDP app's URI scheme.
@@ -671,6 +680,14 @@ public class SalesforceSDKManager implements LifecycleObserver {
     public synchronized void setIDPAppURIScheme(String idpAppURIScheme) {
         this.idpAppURIScheme = idpAppURIScheme;
         this.idpAppPackageName = Uri.parse(idpAppURIScheme).getScheme();
+    }
+
+    /**
+     * Sets the allowed SP apps package names
+     * @param allowedSPAppPackageNames
+     */
+    public synchronized void setAllowedSPAppPackageNames(Set<String> allowedSPAppPackageNames) {
+        this.allowedSPAppPackageNames = new HashSet<>(allowedSPAppPackageNames);
     }
 
     /**

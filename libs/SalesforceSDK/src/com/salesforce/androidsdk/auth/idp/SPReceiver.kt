@@ -35,8 +35,10 @@ import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2
-import com.salesforce.androidsdk.auth.idp.IDPReceiver.Companion.sendLoginRequestToIDP
+import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator
+import com.salesforce.androidsdk.ui.OAuthWebviewHelper
+import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents
 import com.salesforce.androidsdk.util.LogUtil
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import kotlinx.coroutines.CoroutineScope
@@ -48,9 +50,10 @@ import java.net.URI
  * Receiver running in SP app handling calls from IDP app
  */
 class SPReceiver : BroadcastReceiver() {
-
-    var spConfig:SPConfig?   = null // null means to idp login flow in flight
-    var codeVerifier:String? = null
+    
+    init {
+        SalesforceSDKLogger.d(TAG, "Creating receiver")
+    }
 
     companion object {
         val TAG = SPReceiver::class.java.simpleName
@@ -61,27 +64,19 @@ class SPReceiver : BroadcastReceiver() {
         const val SP_ACTVITY_EXTRAS_KEY = "activity_extras"
         const val IDP_INIT_LOGIN_KEY = "idp_init_login"
 
-        fun sendLoginRequestToSP(
-            context: Context,
-            spAppPackageName: String,
-            spAppComponentName: String,
-            currentUser: UserAccount?,
-            spActivityExtras: Bundle?
-        ) {
-            val intent = Intent(IDP_LOGIN_REQUEST)
-            intent.setPackage(spAppPackageName)
-            intent.putExtra(SP_ACTVITY_NAME_KEY, "$spAppPackageName.$spAppComponentName")
-            intent.putExtra(USER_HINT_KEY, SPConfig.userToHint(currentUser))
-            if (spActivityExtras != null) intent.putExtras(spActivityExtras)
-            SalesforceSDKLogger.d(TAG, "sendLoginRequestToSP ${LogUtil.intentToString(intent)}")
-            context.sendBroadcast(intent)
-        }
+        var spConfig: SPConfig? = null   // null means to idp login flow in flight
+        var codeVerifier: String? = null
 
-        internal fun sendLoginResponseToSP(context: Context, spAppPackageName: String, result: IDPAuthCodeHelper.Result) {
-            val intent = Intent(IDP_LOGIN_RESPONSE)
-            intent.setPackage(spAppPackageName)
-            intent.putExtras(result.toBundle())
-            SalesforceSDKLogger.d(TAG, "sendLoginResponseToSP ${LogUtil.intentToString(intent)}")
+        @JvmStatic
+        fun sendLoginRequestToIDP(
+            context: Context,
+            idpAppPackageName: String,
+            spConfig: SPConfig
+        ) {
+            val intent = Intent(IDPReceiver.SP_LOGIN_REQUEST_ACTION)
+            intent.setPackage(idpAppPackageName)
+            intent.putExtra(IDPReceiver.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle())
+            SalesforceSDKLogger.d(TAG, "sendLoginRequestToIDP " + LogUtil.intentToString(intent))
             context.sendBroadcast(intent)
         }
     }
@@ -112,33 +107,77 @@ class SPReceiver : BroadcastReceiver() {
         else {
             // We need to login through the IDP
             codeVerifier = SalesforceKeyGenerator.getRandom128ByteKey()
-            val codeChallenge = SalesforceKeyGenerator.getSHA256Hash(codeVerifier)
-            spConfig = SPConfig.forCurrentApp(codeChallenge, userHint)
+            spConfig = SPConfig.forCurrentApp(SalesforceKeyGenerator.getSHA256Hash(codeVerifier), userHint)
             sendLoginRequestToIDP(context, sdkMgr.idpAppPackageName, spConfig!!)
         }
     }
 
-    private fun handleLoginResponseFromIDP(result:IDPAuthCodeHelper.Result) {
+    private fun handleLoginResponseFromIDP(context:Context, result:IDPAuthCodeHelper.Result) {
         SalesforceSDKLogger.d(TAG, "handleLoginResponseFromIDP ${result}")
-        val spConfig = spConfig
-        val codeVerifier = codeVerifier
+        val spConfig = SPReceiver.spConfig
+        val codeVerifier = SPReceiver.codeVerifier
 
-        if (result.success && spConfig !=null && codeVerifier != null) {
+        if (result.success && codeVerifier != null && spConfig != null) {
             CoroutineScope(Dispatchers.IO).launch {
                 val tokenResponse = OAuth2.getSPCredentials(
                     HttpAccess.DEFAULT,
                     URI.create(result.loginUrl),
                     spConfig.oauthClientId,
-                    result.code, codeVerifier,
+                    result.code,
+                    codeVerifier,
                     spConfig.oauthCallbackUrl
                 )
 
                 SalesforceSDKLogger.d(TAG, "handleLoginResponseFromIDP tokenResponse ${tokenResponse}")
+
+                val loginOptions = ClientManager.LoginOptions(
+                    spConfig.loginUrl,
+                    spConfig.oauthCallbackUrl,
+                    spConfig.oauthClientId,
+                    spConfig.oauthScopes,
+                    null,
+                    null
+                )
+
+                SalesforceSDKLogger.d(TAG, "handleLoginResponseFromIDP loginOptions ${loginOptions}")
+
+                val callback = object: OAuthWebviewHelperEvents {
+                    override fun loadingLoginPage(loginUrl: String?) {
+                        SalesforceSDKLogger.d(TAG, "handleLoginResponseFromIDP callback loadingLoginPage")
+                    }
+
+                    override fun onAccountAuthenticatorResult(authResult: Bundle?) {
+                        SalesforceSDKLogger.d(TAG, "handleLoginResponseFromIDP callback onAccountAuthenticatorResult")
+                    }
+
+                    override fun finish(userAccount: UserAccount?) {
+                        SalesforceSDKLogger.d(TAG, "handleLoginResponseFromIDP callback finish")
+                        userAccount?.let { user -> launchActivity(context, user) }
+                    }
+                }
+                val oauthHelper = OAuthWebviewHelper(context, callback, loginOptions)
+
+                SalesforceSDKLogger.d(TAG, "handleLoginResponseFromIDP oauthHelper ${oauthHelper}")
+
+                oauthHelper.onAuthFlowComplete(tokenResponse)
             }
         }
 
-        this.spConfig = null
-        this.codeVerifier = null
+         SPReceiver.codeVerifier = null
+         SPReceiver.spConfig = null
+    }
+
+    fun launchActivity(context:Context, user:UserAccount) {
+        UserAccountManager.getInstance().switchToUser(user)
+        try {
+            val launchIntent = Intent(context, SalesforceSDKManager.getInstance().mainActivityClass)
+            launchIntent.addCategory(Intent.CATEGORY_DEFAULT)
+            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            SalesforceSDKLogger.d(TAG, "launchActivity starting activity " + LogUtil.intentToString(launchIntent))
+            context.startActivity(launchIntent)
+        } catch (e: Exception) {
+            SalesforceSDKLogger.e(TAG, "", e)
+        }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -149,9 +188,10 @@ class SPReceiver : BroadcastReceiver() {
             }
             IDP_LOGIN_RESPONSE -> {
                 IDPAuthCodeHelper.Result.fromBundle(intent.extras)?.let {result ->
-                    handleLoginResponseFromIDP(result)
+                    handleLoginResponseFromIDP(context, result)
                 }
             }
         }
     }
+
 }

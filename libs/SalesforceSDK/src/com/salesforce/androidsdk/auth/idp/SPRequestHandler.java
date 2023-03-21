@@ -102,7 +102,7 @@ public class SPRequestHandler {
     }
 
     public void launchIDPAppWithBroadcast(Context context) {
-        IDPReceiver.sendLoginRequestToIDP(context, SalesforceSDKManager.getInstance().getIDPAppPackageName(), spConfig);
+        SPReceiver.sendLoginRequestToIDP(context, SalesforceSDKManager.getInstance().getIDPAppPackageName(), spConfig);
     }
 
     /**
@@ -134,9 +134,11 @@ public class SPRequestHandler {
     }
 
     private SPConfig buildSPConfig(String loginUrl, String userHint) {
-        final BootConfig bootConfig = BootConfig.getBootConfig(SalesforceSDKManager.getInstance().getAppContext());
-        return new SPConfig(bootConfig.getRemoteAccessConsumerKey(), bootConfig.getOauthRedirectURI(),
-                codeChallenge, bootConfig.getOauthScopes(), loginUrl, userHint);
+//        return SPConfig.fo
+//        final BootConfig bootConfig = BootConfig.getBootConfig(SalesforceSDKManager.getInstance().getAppContext());
+//        return new SPConfig(bootConfig.getRemoteAccessConsumerKey(), bootConfig.getOauthRedirectURI(),
+//                codeChallenge, bootConfig.getOauthScopes(), loginUrl, userHint);
+        return null;
     }
 
     private void handleError(String error) {
