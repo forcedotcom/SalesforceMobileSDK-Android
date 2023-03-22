@@ -4,44 +4,41 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import com.salesforce.androidsdk.accounts.UserAccount
-import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.security.SalesforceKeyGenerator
 import com.salesforce.androidsdk.util.LogUtil
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 
 /**
  * Class handling SP operations within a SP app
  */
-class SPManager(
+internal class SPManager(
     val idpAppPackageName: String
-) {
+): IDPSPManager() {
     companion object {
-        val TAG = SPManager::class.java.simpleName
+        private val TAG = SPManager::class.java.simpleName
+        private const val SRC_APP_PACKAGE_NAME_KEY = "src_app_package_name"
     }
-
-    val sdkMgr: SalesforceSDKManager
-        get() = SalesforceSDKManager.getInstance()
 
     /**
      * Return true if given IDP app is allowed
      */
-    fun isAllowed(idpAppPackageName: String?): Boolean {
+    override fun isAllowed(idpAppPackageName: String): Boolean {
         return this.idpAppPackageName == idpAppPackageName
     }
 
     /**
      * Sends message to idp app
      */
-    internal fun send(context: Context, message: IDPSPMessage) {
-        val intent = message.toIntent()
-        intent.setPackage(idpAppPackageName)
-        SalesforceSDKLogger.d(TAG, "send ${LogUtil.intentToString(intent)}")
-        context.sendBroadcast(intent)
+    fun send(context: Context, message: IDPSPMessage) {
+        send(context, message, idpAppPackageName)
     }
 
     /**
      * Handle message received
      */
-    fun handle(context: Context, message: IDPSPMessage) {
+    override fun handle(context: Context, message: IDPSPMessage, srcAppPackageName: String) {
+        SalesforceSDKLogger.d(TAG, "handle $message")
+
         when (message) {
             is IDPSPMessage.IDPLoginRequest -> {
                 handleIDPLoginRequest(context, message)
@@ -49,6 +46,10 @@ class SPManager(
 
             is IDPSPMessage.SPLoginResponse -> {
                 handleSPLoginResponse(context, message)
+            }
+
+            else -> {
+                SalesforceSDKLogger.d(TAG, "cannot handle $message")
             }
         }
     }
@@ -59,6 +60,7 @@ class SPManager(
      * - If the user specified is not available in SP app, we send a login request to IDP app
      */
     fun handleIDPLoginRequest(context: Context, message: IDPSPMessage.IDPLoginRequest) {
+        SalesforceSDKLogger.d(TAG, "handleIDPLoginRequest $message")
         val user = sdkMgr.userAccountManager.getUserFromOrgAndUserId(
             message.orgId,
             message.userId
@@ -80,17 +82,13 @@ class SPManager(
      * - if the flow was started from IDP app, we send a response to it so that it can launch our main activity
      */
     fun handleIDPLoginRequestSPAlreadyLoggedIn(context: Context, message: IDPSPMessage.IDPLoginRequest, user: UserAccount) {
+        SalesforceSDKLogger.d(TAG, "handleIDPLoginRequestSPAlreadyLoggedIn $message")
         sdkMgr.userAccountManager.switchToUser(user)
 
         // We have an activity context - launch main activity from here
         if (context is Activity) {
             val launchIntent = Intent(context, sdkMgr.mainActivityClass)
-            SalesforceSDKLogger.d(
-                TAG,
-                "handleIDPLoginRequestSPAlreadyLoggedIn start activity " + LogUtil.intentToString(
-                    launchIntent
-                )
-            )
+            SalesforceSDKLogger.d(TAG, "start activity ${LogUtil.intentToString(launchIntent)}")
             context.startActivity(launchIntent)
         }
 
@@ -106,17 +104,65 @@ class SPManager(
      * We send a login request to IDP app (contains a code challenge)
      */
     fun handleIDPLoginRequestSPNotLoggedIn(context: Context, message: IDPSPMessage.IDPLoginRequest) {
-//        handleIDPLoginRequestSPNotLoggedIn(context, message)
-//        val loginUrl = sdkMgr.loginServerManager.selectedLoginServer.url.trim()
-//        val spRequestIntent = IDPSPMessage.SPLoginRequest(message.uuid, loginUrl = loginUrl)
-//        send(context, spRequestIntent)
+        SalesforceSDKLogger.d(TAG, "handleIDPLoginRequestSPNotLoggedIn $message")
+        val codeVerifier = SalesforceKeyGenerator.getRandom128ByteKey()
+        val codeChallenge = SalesforceKeyGenerator.getSHA256Hash(codeVerifier)
+        val spRequestIntent = IDPSPMessage.SPLoginRequest(message.uuid, codeChallenge)
+        send(context, spRequestIntent)
     }
 
     /**
-     * Handle ....
+     * Handle response to login request initiated from SP app
+     * It will contain either an auth code that we need to exchange for auth tokens
+     * or an error if the auth code could not be obtained from the server
      */
     fun handleSPLoginResponse(context: Context, message:IDPSPMessage.SPLoginResponse) {
-
+        SalesforceSDKLogger.d(TAG, "handleSPLoginResponse $message")
+        if (message.error != null) {
+            // TODO
+        } else {
+//            CoroutineScope(Dispatchers.IO).launch {
+//                val tokenResponse = OAuth2.getSPCredentials(
+//                    HttpAccess.DEFAULT,
+//                    URI.create(result.loginUrl),
+//                    spConfig.oauthClientId,
+//                    result.code,
+//                    codeVerifier,
+//                    spConfig.oauthCallbackUrl
+//                )
+//
+//                SalesforceSDKLogger.d(TAG, "handleLoginResponseFromIDP tokenResponse ${tokenResponse}")
+//
+//                val loginOptions = ClientManager.LoginOptions(
+//                    spConfig.loginUrl,
+//                    spConfig.oauthCallbackUrl,
+//                    spConfig.oauthClientId,
+//                    spConfig.oauthScopes,
+//                    null,
+//                    null
+//                )
+//
+//                SalesforceSDKLogger.d(TAG, "handleLoginResponseFromIDP loginOptions ${loginOptions}")
+//
+//                val callback = object: OAuthWebviewHelperEvents {
+//                    override fun loadingLoginPage(loginUrl: String?) {
+//                        SalesforceSDKLogger.d(TAG, "handleLoginResponseFromIDP callback loadingLoginPage")
+//                    }
+//
+//                    override fun onAccountAuthenticatorResult(authResult: Bundle?) {
+//                        SalesforceSDKLogger.d(TAG, "handleLoginResponseFromIDP callback onAccountAuthenticatorResult")
+//                    }
+//
+//                    override fun finish(userAccount: UserAccount?) {
+//                        SalesforceSDKLogger.d(TAG, "handleLoginResponseFromIDP callback finish")
+//                        userAccount?.let { user -> launchActivity(context, user) }
+//                    }
+//                }
+//                val oauthHelper = OAuthWebviewHelper(context, callback, loginOptions)
+//
+//                SalesforceSDKLogger.d(TAG, "handleLoginResponseFromIDP oauthHelper ${oauthHelper}")
+//
+//                oauthHelper.onAuthFlowComplete(tokenResponse)
+        }
     }
-
 }

@@ -30,73 +30,73 @@ import android.os.Bundle
 import androidx.core.os.bundleOf
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.config.BootConfig
+import com.salesforce.androidsdk.util.LogUtil
+import com.salesforce.androidsdk.util.SalesforceSDKLogger
 
 /**
  * SP app configuration
  */
 data class SPConfig (
-    val spAppPackageName: String,
+    val appPackageName: String,
+    val componentName: String,
     val oauthClientId: String,
     val oauthCallbackUrl: String,
-    val codeChallenge: String,
-    val oauthScopes: Array<String>,
-    val loginUrl: String,
-    val userHint: String?
+    val oauthScopes: Array<String>
 ) {
-    val userHinted: UserAccount? = userFromHint(userHint)
-
     companion object {
-        private const val SP_APP_PACKAGE_NAME = "sp_app_package_name"
+        private val TAG = SPConfig::class.java.simpleName
+        private const val APP_PACKAGE_NAME = "app_package_name"
+        private const val COMPONENT_NAME = "component_name"
         private const val OAUTH_CLIENT_ID_KEY = "oauth_client_id"
         private const val OAUTH_CALLBACK_URL_KEY = "oauth_callback_url"
-        private const val CODE_CHALLENGE_KEY = "code_challenge"
         private const val OAUTH_SCOPES_KEY = "oauth_scopes"
-        private const val LOGIN_URL_KEY = "login_url"
-        private const val USER_HINT_KEY = "user_hint"
 
         @JvmStatic
-        fun forCurrentApp(codeChallenge: String, userHint:String?):SPConfig {
+        fun forCurrentApp(codeChallenge: String, userHint: String?): SPConfig {
             val sdkMgr = SalesforceSDKManager.getInstance()
             return with(BootConfig.getBootConfig(sdkMgr.appContext)) {
                 SPConfig(
-                    spAppPackageName = sdkMgr.appContext.packageName,
+                    appPackageName = sdkMgr.appContext.packageName,
+                    componentName = sdkMgr.mainActivityClass.name,
                     oauthClientId = remoteAccessConsumerKey,
                     oauthCallbackUrl = oauthRedirectURI,
-                    codeChallenge = codeChallenge,
                     oauthScopes = oauthScopes,
-                    loginUrl = sdkMgr.loginServerManager.selectedLoginServer.url.trim(),
-                    userHint = userHint
                 )
             }
         }
 
-        fun fromBundle(bundle: Bundle?):SPConfig? {
-            return if (bundle == null) null else {
+        fun fromBundle(bundle: Bundle?): SPConfig? {
+            return bundle?.let {
                 with(bundle) {
-                    SPConfig(
-                        spAppPackageName = getString(SP_APP_PACKAGE_NAME)!!,
-                        oauthClientId = getString(OAUTH_CLIENT_ID_KEY)!!,
-                        oauthCallbackUrl = getString(OAUTH_CALLBACK_URL_KEY)!!,
-                        codeChallenge = getString(CODE_CHALLENGE_KEY)!!,
-                        oauthScopes = getStringArray(OAUTH_SCOPES_KEY)!!,
-                        loginUrl = getString(LOGIN_URL_KEY)!!,
-                        userHint = getString(USER_HINT_KEY)
-                    )
-                }
-            }
-        }
+                    val appPackageName = getString(APP_PACKAGE_NAME)
+                    val componentName = getString(COMPONENT_NAME)
+                    val oauthClientId = getString(OAUTH_CLIENT_ID_KEY)
+                    val oauthCallbackUrl = getString(OAUTH_CALLBACK_URL_KEY)
+                    val oauthScopes = getStringArray(OAUTH_SCOPES_KEY)
 
-        fun userToHint(user: UserAccount?) : String? {
-            return if (user == null)  null else "${user.orgId}:${user.userId}"
-        }
-        fun userFromHint(userHint: String?):UserAccount? {
-            val sdkMgr = SalesforceSDKManager.getInstance()
-            val parts = userHint?.split(":")
-            return if (parts != null && parts.size == 2) {
-                sdkMgr.userAccountManager.getUserFromOrgAndUserId(parts[0], parts[1])
-            } else {
+                    if (appPackageName != null
+                        && componentName != null
+                        && oauthClientId != null
+                        && oauthCallbackUrl != null
+                        && oauthScopes != null
+                    ) {
+                        SPConfig(
+                            appPackageName,
+                            componentName,
+                            oauthClientId,
+                            oauthCallbackUrl,
+                            oauthScopes
+                        )
+                    } else {
+                        SalesforceSDKLogger.d(
+                            TAG,
+                            "fromBundle could not parse ${LogUtil.bundleToString(bundle)}"
+                        )
+                        null
+                    }
+                }
+            } ?: run {
                 null
             }
         }
@@ -104,13 +104,11 @@ data class SPConfig (
 
     fun toBundle():Bundle {
         return bundleOf(
-            SP_APP_PACKAGE_NAME to spAppPackageName,
+            APP_PACKAGE_NAME to appPackageName,
+            COMPONENT_NAME to componentName,
             OAUTH_CLIENT_ID_KEY to oauthClientId,
             OAUTH_CALLBACK_URL_KEY to oauthCallbackUrl,
-            CODE_CHALLENGE_KEY to codeChallenge,
-            OAUTH_SCOPES_KEY to oauthScopes,
-            LOGIN_URL_KEY to loginUrl,
-            USER_HINT_KEY to userHint
+            OAUTH_SCOPES_KEY to oauthScopes
         )
     }
 }

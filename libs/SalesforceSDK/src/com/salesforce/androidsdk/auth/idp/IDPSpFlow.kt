@@ -4,7 +4,7 @@ package com.salesforce.androidsdk.auth.idp
  * Super class of classes that are used to capture request/response and other state
  * during IDP/SP flows
  */
-sealed class IDPSpFlow() {
+internal sealed class IDPSpFlow() {
     class IDPInitiatedFlow():IDPSpFlow() {
         lateinit var idpLoginRequest: IDPSPMessage.IDPLoginRequest
         lateinit var spLoginRequest: IDPSPMessage.SPLoginRequest

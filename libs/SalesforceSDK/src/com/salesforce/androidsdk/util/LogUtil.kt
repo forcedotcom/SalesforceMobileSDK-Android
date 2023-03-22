@@ -35,17 +35,23 @@ import android.util.Pair
  */
 object LogUtil {
     /**
-     * Helper method when debugging intents
+     * Helper method for printing out intent
      * @param intent
-     * @return
+     * @return string representation
      */
 	@JvmStatic
 	fun intentToString(intent: Intent?): String {
-        return if (intent == null) {
-            "null"
-        } else {
-            intent.toString() + " extras = " + objectToString(intent.extras)
-        }
+        return objectToString(intent)
+    }
+
+    /**
+     * Helper method for printing out bundle
+     * @param bundle
+     * @return string representation
+     */
+    @JvmStatic
+    fun bundleToString(bundle: Bundle?): String {
+        return objectToString(bundle)
     }
 
     private fun objectToString(obj: Any?): String {

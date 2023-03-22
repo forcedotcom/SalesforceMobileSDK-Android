@@ -28,6 +28,7 @@ internal class IDPAuthCodeHelper private constructor(
     val webView: WebView,
     val userAccount: UserAccount,
     val spConfig: SPConfig,
+    val codeChallenge: String,
     val callback: Callback
 ) {
     data class Result(
@@ -37,10 +38,10 @@ internal class IDPAuthCodeHelper private constructor(
         val error: String? = null
     ) {
         companion object {
-            const val SUCCESS_KEY = "success"
-            const val CODE_KEY = "code"
-            const val LOGIN_URL_KEY = "login_url"
-            const val ERROR_KEY = "error"
+            private const val SUCCESS_KEY = "success"
+            private const val CODE_KEY = "code"
+            private const val LOGIN_URL_KEY = "login_url"
+            private const val ERROR_KEY = "error"
 
             fun fromBundle(bundle: Bundle?):Result? {
                 return if (bundle == null) null else {
@@ -145,9 +146,12 @@ internal class IDPAuthCodeHelper private constructor(
         val context = SalesforceSDKManager.getInstance().appContext
         val frontdoorUrl = OAuth2.getIDPFrontdoorUrl(
             userAccount.instanceServer,
-            accessToken, userAccount.loginServer, context.getString(R.string.oauth_display_type),
-            spConfig.oauthClientId, spConfig.oauthCallbackUrl,
-            spConfig.oauthScopes, spConfig.codeChallenge
+            accessToken,
+            userAccount.loginServer,
+            context.getString(R.string.oauth_display_type),
+            spConfig.oauthClientId,
+            spConfig.oauthCallbackUrl,
+            spConfig.oauthScopes,codeChallenge
         )
         CoroutineScope(Dispatchers.Main).launch {
             webView.loadUrl(frontdoorUrl.toString())
@@ -212,15 +216,16 @@ internal class IDPAuthCodeHelper private constructor(
     }
 
     companion object {
-        val TAG = IDPAuthCodeHelper::class.java.simpleName
-        const val CODE_KEY = "code"
-        const val EC_KEY = "ec"
+        private val TAG = IDPAuthCodeHelper::class.java.simpleName
+        private const val CODE_KEY = "code"
+        private const val EC_KEY = "ec"
 
         fun generateAuthCode(webView: WebView,
                              userAccount: UserAccount,
                              spConfig: SPConfig,
+                             codeChallenge: String,
                              callback: Callback) {
-            IDPAuthCodeHelper(webView, userAccount, spConfig, callback).generateAuthCode()
+            IDPAuthCodeHelper(webView, userAccount, spConfig, codeChallenge, callback).generateAuthCode()
         }
     }
 }

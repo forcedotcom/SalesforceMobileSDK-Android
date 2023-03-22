@@ -38,23 +38,11 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger
  */
 class SPReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        SalesforceSDKLogger.d(TAG, "onReceive ${LogUtil.intentToString(intent)}")
-        val spManager = SalesforceSDKManager.getInstance().spManager
-        if (spManager != null) {
-            if (spManager.isAllowed(intent.`package`)) {
-                IDPSPMessage.fromIntent(intent)?.let { message ->
-                    spManager.handle(context, message)
-                }
-            } else {
-                SalesforceSDKLogger.w(TAG, "Not allowed to handle message from ${intent.`package`}")
-            }
-        } else {
-            SalesforceSDKLogger.w(TAG, "No sp manager to message")
+        SalesforceSDKManager.getInstance().spManager?.let { spManager ->
+            spManager.onReceive(context, intent)
+        } ?: run {
+            SalesforceSDKLogger.d(this::class.java.simpleName, "onReceive no sp manager to handle ${LogUtil.intentToString(intent)}")
         }
-    }
-
-    companion object {
-        val TAG = SPReceiver::class.java.simpleName
     }
 
 //

@@ -88,21 +88,21 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
     public void onResume() {
         super.onResume();
         UserAccount selectedAccount = null;
-        final String userHint = spConfig.getUserHint();
-        if (!TextUtils.isEmpty(userHint)) {
-            final String[] userParts = userHint.split(COLON);
-
-            /*
-             * The value for 'user_hint' should be of the format 'orgId:userId' and should
-             * use the 18-character versions of 'orgId' and 'userId'.
-             */
-            if (userParts.length == 2) {
-                final String orgId = userParts[0];
-                final String userId = userParts[1];
-                selectedAccount = SalesforceSDKManager.getInstance().
-                        getUserAccountManager().getUserFromOrgAndUserId(orgId, userId);
-            }
-        }
+//        final String userHint = spConfig.getUserHint();
+//        if (!TextUtils.isEmpty(userHint)) {
+//            final String[] userParts = userHint.split(COLON);
+//
+//            /*
+//             * The value for 'user_hint' should be of the format 'orgId:userId' and should
+//             * use the 18-character versions of 'orgId' and 'userId'.
+//             */
+//            if (userParts.length == 2) {
+//                final String orgId = userParts[0];
+//                final String userId = userParts[1];
+//                selectedAccount = SalesforceSDKManager.getInstance().
+//                        getUserAccountManager().getUserFromOrgAndUserId(orgId, userId);
+//            }
+//        }
 
         /*
          * If we could build a user account from the 'user_hint' value passed in,
@@ -118,20 +118,20 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
     protected List<UserAccount> getAccounts() {
         final List<UserAccount> accounts = userAccMgr.getAuthenticatedUsers();
 
-        // If no login server is passed in, return all user accounts.
-        if (TextUtils.isEmpty(spConfig.getLoginUrl())) {
-            return accounts;
-        }
+//        // If no login server is passed in, return all user accounts.
+//        if (TextUtils.isEmpty(spConfig.getLoginUrl())) {
+//            return accounts;
+//        }
         final List<UserAccount> filteredAccounts = new ArrayList<>();
-        if (accounts != null) {
-            for (final UserAccount account : accounts) {
-
-                // If user account has the same login server, add it to the list.
-                if (spConfig.getLoginUrl().equals(account.getLoginServer())) {
-                    filteredAccounts.add(account);
-                }
-            }
-        }
+//        if (accounts != null) {
+//            for (final UserAccount account : accounts) {
+//
+//                // If user account has the same login server, add it to the list.
+//                if (spConfig.getLoginUrl().equals(account.getLoginServer())) {
+//                    filteredAccounts.add(account);
+//                }
+//            }
+//        }
         if (filteredAccounts.size() == 0) {
             return null;
         }
@@ -184,7 +184,7 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
     private void kickOffNewUserFlow() {
         SalesforceSDKLogger.d(TAG, "Kicking off new user flow within IDP");
         final Bundle reply = new Bundle();
-        final String loginUrl = spConfig.getLoginUrl();
+//        final String loginUrl = spConfig.getLoginUrl();
 
         /*
          * If a login URL is passed in from the SP app, sets that server as the selected
@@ -192,18 +192,18 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
          * on the IDP, returns an error back to the SP app. If no login URL is passed in,
          * launches LoginActivity on the IDP with the current selection.
          */
-        if (!TextUtils.isEmpty(loginUrl)) {
-            final LoginServerManager.LoginServer loginServer = getLoginServer(loginUrl);
-            if (loginServer == null) {
-                final Intent intent = new Intent();
-//                intent.putExtra(IDPAuthCodeHelper.ERROR_KEY,
-//                        "Specified login server does not exist on IDP app");
-                setResult(RESULT_CANCELED, intent);
-                finish();
-            } else {
-                SalesforceSDKManager.getInstance().getLoginServerManager().setSelectedLoginServer(loginServer);
-            }
-        }
+//        if (!TextUtils.isEmpty(loginUrl)) {
+//            final LoginServerManager.LoginServer loginServer = getLoginServer(loginUrl);
+//            if (loginServer == null) {
+//                final Intent intent = new Intent();
+////                intent.putExtra(IDPAuthCodeHelper.ERROR_KEY,
+////                        "Specified login server does not exist on IDP app");
+//                setResult(RESULT_CANCELED, intent);
+//                finish();
+//            } else {
+//                SalesforceSDKManager.getInstance().getLoginServerManager().setSelectedLoginServer(loginServer);
+//            }
+//        }
         final Bundle options = SalesforceSDKManager.getInstance().getLoginOptions().asBundle();
         final Intent i = new Intent(this, SalesforceSDKManager.getInstance().getLoginActivityClass());
         i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

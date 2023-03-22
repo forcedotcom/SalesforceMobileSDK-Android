@@ -73,7 +73,7 @@ public class IDPRequestHandler {
         basicValidation();
         loginUrl = userAccount.getLoginServer();
         if (TextUtils.isEmpty(loginUrl)) {
-            loginUrl = spConfig.getLoginUrl();
+//            loginUrl = spConfig.getLoginUrl();
         }
         buildRestClient();
     }
@@ -86,12 +86,12 @@ public class IDPRequestHandler {
      * @throws IDPRequestHandlerException
      */
     public void makeFrontDoorRequest(String accessToken, WebView webView) throws IDPRequestHandlerException {
-        final Context context = SalesforceSDKManager.getInstance().getAppContext();
-        final URI frontdoorUrl = OAuth2.getIDPFrontdoorUrl(userAccount.getInstanceServer(),
-                accessToken, loginUrl, context.getString(R.string.oauth_display_type),
-                spConfig.getOauthClientId(), spConfig.getOauthCallbackUrl(),
-                spConfig.getOauthScopes(), spConfig.getCodeChallenge());
-        webView.loadUrl(frontdoorUrl.toString());
+//        final Context context = SalesforceSDKManager.getInstance().getAppContext();
+//        final URI frontdoorUrl = OAuth2.getIDPFrontdoorUrl(userAccount.getInstanceServer(),
+//                accessToken, loginUrl, context.getString(R.string.oauth_display_type),
+//                spConfig.getOauthClientId(), spConfig.getOauthCallbackUrl(),
+//                spConfig.getOauthScopes(), spConfig.getCodeChallenge());
+//        webView.loadUrl(frontdoorUrl.toString());
     }
 
     /**
@@ -137,12 +137,12 @@ public class IDPRequestHandler {
     private void basicValidation() throws IDPRequestHandlerException {
 
         // Ensures that we have all the values we need in order to perform an IDP request.
-        if (spConfig == null || TextUtils.isEmpty(spConfig.getOauthClientId()) ||
-                TextUtils.isEmpty(spConfig.getOauthCallbackUrl()) ||
-                (spConfig.getOauthScopes() == null) ||
-                TextUtils.isEmpty(spConfig.getCodeChallenge())) {
-            handleError("Incomplete SP app configuration - missing fields", null);
-        }
+//        if (spConfig == null || TextUtils.isEmpty(spConfig.getOauthClientId()) ||
+//                TextUtils.isEmpty(spConfig.getOauthCallbackUrl()) ||
+//                (spConfig.getOauthScopes() == null) ||
+//                TextUtils.isEmpty(spConfig.getCodeChallenge())) {
+//            handleError("Incomplete SP app configuration - missing fields", null);
+//        }
         if (userAccount == null) {
             handleError("Invalid user configuration - null user account", null);
         }

@@ -3,14 +3,9 @@ package com.salesforce.androidsdk.auth.idp
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
-import android.webkit.WebView
-import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.auth.idp.IDPAuthCodeHelper.Callback
 import com.salesforce.androidsdk.util.LogUtil
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
-import java.util.*
 
 
 /**
@@ -18,23 +13,11 @@ import java.util.*
  */
 class IDPReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        SalesforceSDKLogger.d(TAG, "onReceive ${LogUtil.intentToString(intent)}")
-        val idpManager = SalesforceSDKManager.getInstance().idpManager
-        if (idpManager != null) {
-            if (idpManager.isAllowed(intent.`package`)) {
-                IDPSPMessage.fromIntent(intent)?.let { message ->
-                    idpManager.handle(context, message)
-                }
-            } else {
-                SalesforceSDKLogger.w(TAG, "Not allowed to handle message from ${intent.`package`}")
-            }
-        } else {
-            SalesforceSDKLogger.w(TAG, "No idp manager to message")
+        SalesforceSDKManager.getInstance().idpManager?.let { idpManager ->
+            idpManager.onReceive(context, intent)
+        } ?: run {
+            SalesforceSDKLogger.d(this::class.java.simpleName, "onReceive no idp manager to handle ${LogUtil.intentToString(intent)}")
         }
-    }
-
-    companion object {
-        val TAG = IDPReceiver::class.java.simpleName
     }
 //
 //    companion object {
