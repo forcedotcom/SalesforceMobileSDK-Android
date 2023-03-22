@@ -55,8 +55,7 @@ public class RestExplorerApp extends Application {
          * either authenticate using the current app or use a designated IDP app for login.
          * Replace 'idpAppURIScheme' with the URI scheme of the IDP app meant to be used.
          */
-		 String idpAppURIScheme = "com.salesforce.samples.salesforceandroididptemplateapp://authenticator";
-         SalesforceSDKManager.getInstance().setIDPAppURIScheme(idpAppURIScheme);
+         SalesforceSDKManager.getInstance().setIDPAppPackageName("com.salesforce.samples.salesforceandroididptemplateapp");
 
 		/*
 		 * Un-comment the line below to enable push notifications in this app.

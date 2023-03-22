@@ -68,6 +68,9 @@ import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity;
+import com.salesforce.androidsdk.auth.idp.IDPManager;
+import com.salesforce.androidsdk.auth.idp.SPConfig;
+import com.salesforce.androidsdk.auth.idp.SPManager;
 import com.salesforce.androidsdk.config.AdminPermsManager;
 import com.salesforce.androidsdk.config.AdminSettingsManager;
 import com.salesforce.androidsdk.config.BootConfig;
@@ -174,8 +177,10 @@ public class SalesforceSDKManager implements LifecycleObserver {
     private boolean idpAppLoginFlowActive;
     private Theme theme =  Theme.SYSTEM_DEFAULT;
     private String appName;
-    private String idpAppPackageName;
-    private Set<String> allowedSPAppPackageNames;
+
+    private IDPManager idpManager;        // only set if this app is an IDP
+
+    private SPManager spManager;         // only set if this app is an SP
 
     /**
      * Available Mobile SDK style themes.
@@ -648,47 +653,37 @@ public class SalesforceSDKManager implements LifecycleObserver {
     }
 
     /**
-     * Returns the configured IDP app's URI scheme.
-     *
-     * @return IDP app's URI scheme.
+     * Returns the SP manager
+     * Only defined if setIdpAppPackageName() was first called
      */
-    public String getIDPAppURIScheme() {
-        return idpAppURIScheme;
+    public SPManager getSPManager() {
+        return spManager;
     }
 
     /**
-     * Returns the configured IDP app's package name.
-     *
-     * @return IDP app's package name.
+     * Sets the IDP package name for this app.
+     * As a result this application gets a SPManager and can be used as SP.
      */
-    public String getIDPAppPackageName() {
-        return idpAppPackageName;
+    public void setIDPAppPackageName(String idpAppPackageName) {
+        spManager = new SPManager(idpAppPackageName);
     }
 
     /**
-     * Returns the package names of SP apps allowed to use this app as IDP
-     *
-     * @return set of SP apps package names
+     * Returns the IDP manager
+     * Only defined if setAllowedSPApps() was first called
      */
-    public Set<String> getAllowedSPAppPackageNames() { return allowedSPAppPackageNames; }
-
-    /**
-     * Sets the IDP app's URI scheme.
-     *
-     * @param idpAppURIScheme IDP app's URI scheme.
-     */
-    public synchronized void setIDPAppURIScheme(String idpAppURIScheme) {
-        this.idpAppURIScheme = idpAppURIScheme;
-        this.idpAppPackageName = Uri.parse(idpAppURIScheme).getScheme();
+    public IDPManager getIDPManager() {
+        return idpManager;
     }
 
     /**
-     * Sets the allowed SP apps package names
-     * @param allowedSPAppPackageNames
+     * Sets the allowed SP apps for this app.
+     * As a result this application gets a IDPManager and can be used as IDP.
      */
-    public synchronized void setAllowedSPAppPackageNames(Set<String> allowedSPAppPackageNames) {
-        this.allowedSPAppPackageNames = new HashSet<>(allowedSPAppPackageNames);
+    public void setAllowedSPApps(List<SPConfig> allowedSPApps) {
+        idpManager = new IDPManager(allowedSPApps);
     }
+
 
     /**
      * Returns the app display name used by the passcode dialog.

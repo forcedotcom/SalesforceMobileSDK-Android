@@ -93,12 +93,12 @@ public class SPRequestHandler {
      * @param context Activity context.
      */
     public void launchIDPApp(Activity context) {
-        final Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.addCategory(Intent.CATEGORY_DEFAULT);
-        intent.setData(Uri.parse(SalesforceSDKManager.getInstance().getIDPAppURIScheme()));
-        intent.putExtra(IDPReceiver.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle());
-        Log.d(TAG, "launchIDPApp " + LogUtil.intentToString(intent));
-        context.startActivityForResult(intent, IDP_REQUEST_CODE);
+//        final Intent intent = new Intent(Intent.ACTION_VIEW);
+//        intent.addCategory(Intent.CATEGORY_DEFAULT);
+//        intent.setData(Uri.parse(SalesforceSDKManager.getInstance().getIDPAppURIScheme()));
+//        intent.putExtra(IDPReceiver.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle());
+//        Log.d(TAG, "launchIDPApp " + LogUtil.intentToString(intent));
+//        context.startActivityForResult(intent, IDP_REQUEST_CODE);
     }
 
     public void launchIDPAppWithBroadcast(Context context) {

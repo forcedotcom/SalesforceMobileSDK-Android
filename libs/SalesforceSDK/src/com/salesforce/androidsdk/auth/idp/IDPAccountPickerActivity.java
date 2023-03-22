@@ -241,11 +241,11 @@ public class IDPAccountPickerActivity extends AccountSwitcherActivity {
 //            });
 //            codeGenerator.generateAuthCode();
         } else {
-            final Intent intent = new Intent(this, IDPCodeGeneratorActivity.class);
-            intent.addCategory(Intent.CATEGORY_DEFAULT);
-            intent.putExtra(IDPReceiver.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle());
-            intent.putExtra(IDPCodeGeneratorActivity.USER_ACCOUNT_BUNDLE_KEY, account.toBundle());
-            startActivityForResult(intent, SPRequestHandler.IDP_REQUEST_CODE);
+//            final Intent intent = new Intent(this, IDPCodeGeneratorActivity.class);
+//            intent.addCategory(Intent.CATEGORY_DEFAULT);
+//            intent.putExtra(IDPReceiver.SP_CONFIG_BUNDLE_KEY, spConfig.toBundle());
+//            intent.putExtra(IDPCodeGeneratorActivity.USER_ACCOUNT_BUNDLE_KEY, account.toBundle());
+//            startActivityForResult(intent, SPRequestHandler.IDP_REQUEST_CODE);
         }
     }
     /**

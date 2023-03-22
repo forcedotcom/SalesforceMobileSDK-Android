@@ -183,13 +183,13 @@ public class LoginActivity extends AccountAuthenticatorActivity
         if (intent != null) {
             final Bundle extras = intent.getExtras();
             if (extras != null) {
-                userHint = extras.getString(SPReceiver.USER_HINT_KEY);
-                spActivityName = extras.getString(SPReceiver.SP_ACTVITY_NAME_KEY);
-                spActivityExtras = extras.getBundle(SPReceiver.SP_ACTVITY_EXTRAS_KEY);
-                boolean isIdpInitFlow = extras.getBoolean(SPReceiver.IDP_INIT_LOGIN_KEY);
-                if (isIdpInitFlow) {
-                    onIDPLoginClick(null);
-                }
+//                userHint = extras.getString(SPReceiver.USER_HINT_KEY);
+//                spActivityName = extras.getString(SPReceiver.SP_ACTVITY_NAME_KEY);
+//                spActivityExtras = extras.getBundle(SPReceiver.SP_ACTVITY_EXTRAS_KEY);
+//                boolean isIdpInitFlow = extras.getBoolean(SPReceiver.IDP_INIT_LOGIN_KEY);
+//                if (isIdpInitFlow) {
+//                    onIDPLoginClick(null);
+//                }
             }
         }
     }
@@ -372,7 +372,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
     public void onIDPLoginClick(View v) {
         Log.d(TAG, "onIDPLoginClick");
 
-        SPReceiver.sendLoginRequestToIDP(this, null);
+//        SPReceiver.sendLoginRequestToIDP(this, null);
 
 //        final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url.trim();
 //        SalesforceSDKLogger.d(TAG, "Launching IDP app for authentication with login host: " + loginServer);
@@ -459,10 +459,10 @@ public class LoginActivity extends AccountAuthenticatorActivity
         // If the IDP app specified a component to launch after login, launches that component.
         if (!TextUtils.isEmpty(spActivityName)) {
             try {
-                final Intent intent = new Intent(this, Class.forName(spActivityName));
-                intent.addCategory(Intent.CATEGORY_DEFAULT);
-                intent.putExtra(SPReceiver.SP_ACTVITY_EXTRAS_KEY, spActivityExtras);
-                startActivity(intent);
+//                final Intent intent = new Intent(this, Class.forName(spActivityName));
+//                intent.addCategory(Intent.CATEGORY_DEFAULT);
+//                intent.putExtra(SPReceiver.SP_ACTVITY_EXTRAS_KEY, spActivityExtras);
+//                startActivity(intent);
             } catch (Exception e) {
                 SalesforceSDKLogger.e(TAG, "Could not start activity", e);
             }

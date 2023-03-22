@@ -108,6 +108,9 @@
             <intent-filter>
                 <action android:name="com.salesforce.SP_LOGIN_REQUEST" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="com.salesforce.SP_LOGIN_RESPONSE" />
+            </intent-filter>
         </receiver>
 
 
