@@ -45,12 +45,15 @@ import android.webkit.WebSettings.LayoutAlgorithm;
 import android.webkit.WebView;
 import android.widget.Button;
 
+import androidx.annotation.NonNull;
+
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.auth.idp.interfaces.SPManager;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
@@ -342,7 +345,12 @@ public class LoginActivity extends AccountAuthenticatorActivity
      */
     public void onIDPLoginClick(View v) {
         Log.d(TAG, "onIDPLoginClick");
-        SalesforceSDKManager.getInstance().getSPManager().kickOffSPInitiatedLoginFlow(this);
+        SalesforceSDKManager.getInstance().getSPManager().kickOffSPInitiatedLoginFlow(this, new SPManager.StatusUpdateCallback() {
+            @Override
+            public void onStatusUpdate(@NonNull SPManager.Status status) {
+//                Toast.makeText(getApplicationContext(), status.toString(), Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
 	/**

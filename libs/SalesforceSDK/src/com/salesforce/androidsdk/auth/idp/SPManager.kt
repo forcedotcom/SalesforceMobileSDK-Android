@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.Intent
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.auth.idp.IDPSPMessage.*
+import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
+import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator
 import com.salesforce.androidsdk.util.LogUtil
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
@@ -15,19 +17,19 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger
  *      the code verifier
  *      the idp login request that trigged it (if applicable)
  */
-internal class SPInitiatedLoginFlow private constructor(context:Context, val codeVerifier:String)
+internal class SPInitiatedLoginFlow private constructor(context:Context, val codeVerifier:String, val onStatusUpdate: (Status) -> Unit)
     : ActiveFlow(context) {
 
         companion object {
             val TAG = SPInitiatedLoginFlow::class.java.simpleName
 
-            fun kickOff(spManager:SPManager, context: Context, idpLoginRequest:IDPLoginRequest? = null): SPInitiatedLoginFlow {
+            fun kickOff(spManager:SPManager, context: Context, onStatusUpdate: (Status) -> Unit = { _ -> }, idpLoginRequest:IDPLoginRequest? = null): SPInitiatedLoginFlow {
                 val trigger = if (idpLoginRequest == null) "" else " triggered by ${idpLoginRequest} "
                 SalesforceSDKLogger.d(TAG, "Kicking off sp initiated login flow from ${context}${trigger}")
 
                 val codeVerifier = SalesforceKeyGenerator.getRandom128ByteKey()
                 val codeChallenge = SalesforceKeyGenerator.getSHA256Hash(codeVerifier)
-                val activeFlow = SPInitiatedLoginFlow(context, codeVerifier)
+                val activeFlow = SPInitiatedLoginFlow(context, codeVerifier, onStatusUpdate)
 
                 val spLoginRequest = if (idpLoginRequest != null) {
                     activeFlow.addMessage(idpLoginRequest)
@@ -42,7 +44,7 @@ internal class SPInitiatedLoginFlow private constructor(context:Context, val cod
 
                 // Send SP login request
                 spManager.send(context, spLoginRequest)
-
+                onStatusUpdate(Status.LOGIN_REQUEST_SENT_TO_IDP)
                 return activeFlow
             }
         }
@@ -164,7 +166,7 @@ internal class SPManager(
      */
     fun handleNoUser(context: Context, message: IDPLoginRequest) {
         SalesforceSDKLogger.d(TAG, "handleNoUser $message")
-        activeFlow = SPInitiatedLoginFlow.kickOff(this, context, message)
+        activeFlow = SPInitiatedLoginFlow.kickOff(this, context, idpLoginRequest = message)
     }
 
     /**
@@ -175,13 +177,15 @@ internal class SPManager(
     fun handleLoginResponse(activeFlow: SPInitiatedLoginFlow, message: SPLoginResponse) {
         SalesforceSDKLogger.d(TAG, "handleLoginResponse $message")
         if (message.error != null) {
-            // TODO
+            activeFlow.onStatusUpdate(Status.ERROR_RESPONSE_RECEIVED_FROM_IDP)
         } else if (message.loginUrl != null && message.code != null) {
+            activeFlow.onStatusUpdate(Status.SUCCESS_RESPONSE_RECEIVED_FROM_IDP)
             SPAuthCodeHelper.loginWithAuthCode(activeFlow.context, message.loginUrl,
                 message.code,
                 activeFlow.codeVerifier
             ) { user ->
                 with(activeFlow) {
+                    activeFlow.onStatusUpdate(Status.LOGIN_COMPLETE)
                     handleUserExists(
                         context,
                         if (firstMessage is IDPLoginRequest) firstMessage as IDPLoginRequest else null,
@@ -189,15 +193,13 @@ internal class SPManager(
                     )
                 }
             }
-        } else {
-            // should not happen
         }
     }
 
     /**
      * Kick off SP initiated login flow
      */
-    override fun kickOffSPInitiatedLoginFlow(context: Context) {
-        activeFlow = SPInitiatedLoginFlow.kickOff(this, context)
+    override fun kickOffSPInitiatedLoginFlow(context: Context, statusUpdateCallback: StatusUpdateCallback) {
+        activeFlow = SPInitiatedLoginFlow.kickOff(this, context, statusUpdateCallback::onStatusUpdate)
     }
 }
