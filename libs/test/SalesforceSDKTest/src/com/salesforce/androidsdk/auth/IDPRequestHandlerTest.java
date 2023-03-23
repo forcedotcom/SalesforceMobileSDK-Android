@@ -38,7 +38,6 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountBuilder;
 import com.salesforce.androidsdk.accounts.UserAccountTest;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
-import com.salesforce.androidsdk.auth.idp.IDPRequestHandler;
 import com.salesforce.androidsdk.auth.idp.SPConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.util.test.TestCredentials;

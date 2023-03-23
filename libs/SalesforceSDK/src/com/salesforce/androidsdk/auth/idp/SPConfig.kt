@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.auth.idp
 
 import android.os.Bundle
 import androidx.core.os.bundleOf
-import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.util.LogUtil

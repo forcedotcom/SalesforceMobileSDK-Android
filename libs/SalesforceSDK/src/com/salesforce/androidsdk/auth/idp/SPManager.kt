@@ -195,9 +195,6 @@ internal class SPManager(
         }
     }
 
-    fun handleSPLoginResponseUserCreated(activeFlow: SPInitiatedLoginFlow, user: UserAccount) {
-    }
-
     /**
      * Kick off SP initiated login flow
      */

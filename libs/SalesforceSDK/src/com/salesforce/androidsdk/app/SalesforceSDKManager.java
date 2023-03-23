@@ -35,9 +35,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -66,9 +64,8 @@ import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
-import com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity;
-import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager;
 import com.salesforce.androidsdk.auth.idp.SPConfig;
+import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager;
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager;
 import com.salesforce.androidsdk.config.AdminPermsManager;
 import com.salesforce.androidsdk.config.AdminSettingsManager;
@@ -603,13 +600,7 @@ public class SalesforceSDKManager implements LifecycleObserver {
      * @return True - if IDP login flow is enabled, False - otherwise.
      */
     public boolean isIDPLoginFlowEnabled() {
-        boolean isIDPFlowEnabled = !TextUtils.isEmpty(idpAppURIScheme);
-        if (isIDPFlowEnabled) {
-            SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_APP_IS_SP);
-        } else {
-            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(Features.FEATURE_APP_IS_SP);
-        }
-        return isIDPFlowEnabled;
+        return spManager != null;
     }
 
     /**
@@ -650,6 +641,7 @@ public class SalesforceSDKManager implements LifecycleObserver {
      * As a result this application gets a SPManager and can be used as SP.
      */
     public void setIDPAppPackageName(String idpAppPackageName) {
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_APP_IS_SP);
         spManager = new com.salesforce.androidsdk.auth.idp.SPManager(idpAppPackageName);
     }
 
@@ -666,6 +658,7 @@ public class SalesforceSDKManager implements LifecycleObserver {
      * As a result this application gets a IDPManager and can be used as IDP.
      */
     public void setAllowedSPApps(List<SPConfig> allowedSPApps) {
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_APP_IS_IDP);
         idpManager = new com.salesforce.androidsdk.auth.idp.IDPManager(allowedSPApps);
     }
 
