@@ -158,7 +158,7 @@ internal sealed class IDPSPMessage(
             const val ACTION = "com.salesforce.SP_LOGIN_RESPONSE"
             private const val CODE_KEY = "code"
             private const val LOGIN_URL_KEY = "login_url"
-            private const val ERROR_KEY = "eroor"
+            private const val ERROR_KEY = "error"
 
             fun fromBundle(bundle:Bundle?) : SPLoginResponse? {
                 val uuid = bundle?.getString(UUID_KEY)

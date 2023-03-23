@@ -10,27 +10,74 @@ import com.salesforce.androidsdk.util.LogUtil
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 
 /**
+ * Class to capture state related to SP initiated login flow
+ * e.g. the context (activity) that started it
+ *      the code verifier
+ *      the idp login request that trigged it (if applicable)
+ */
+internal class SPInitiatedLoginFlow private constructor(context:Context, val codeVerifier:String)
+    : ActiveFlow(context) {
+
+        companion object {
+            val TAG = SPInitiatedLoginFlow::class.java.simpleName
+
+            fun kickOff(spManager:SPManager, context: Context, idpLoginRequest:IDPLoginRequest? = null): SPInitiatedLoginFlow {
+                val trigger = if (idpLoginRequest == null) "" else " triggered by ${idpLoginRequest} "
+                SalesforceSDKLogger.d(TAG, "Kicking off sp initiated login flow from ${context}${trigger}")
+
+                val codeVerifier = SalesforceKeyGenerator.getRandom128ByteKey()
+                val codeChallenge = SalesforceKeyGenerator.getSHA256Hash(codeVerifier)
+                val activeFlow = SPInitiatedLoginFlow(context, codeVerifier)
+
+                val spLoginRequest = if (idpLoginRequest != null) {
+                    activeFlow.addMessage(idpLoginRequest)
+                    SPLoginRequest(idpLoginRequest.uuid, codeChallenge = codeChallenge).also {
+                        activeFlow.addMessage(it)
+                    }
+                } else {
+                    activeFlow.addMessage(SPLoginRequest(codeChallenge = codeChallenge))
+                    SPLoginRequest(codeChallenge = codeChallenge).also {
+                        activeFlow.addMessage(it)
+                    }
+                }
+
+                // Send SP login request
+                spManager.send(context, spLoginRequest)
+
+                return activeFlow
+            }
+        }
+}
+
+/**
  * Class handling SP operations within a SP app
  */
 internal class SPManager(
     val idpAppPackageName: String
 ): IDPSPManager(), com.salesforce.androidsdk.auth.idp.interfaces.SPManager {
 
+    companion object {
+        private val TAG = SPManager::class.java.simpleName
+    }
+
     /**
      * Current active login flow if any
      */
-    var activeFlow: SPInitiatedFlow? = null
+    private var activeFlow: SPInitiatedLoginFlow? = null
 
-    companion object {
-        private val TAG = SPManager::class.java.simpleName
-        private const val SRC_APP_PACKAGE_NAME_KEY = "src_app_package_name"
+    override fun getActiveFlow(): ActiveFlow? {
+        return activeFlow
+    }
+
+    override fun endActiveFlow() {
+        activeFlow = null
     }
 
     /**
      * Return true if given IDP app is allowed
      */
-    override fun isAllowed(idpAppPackageName: String): Boolean {
-        return this.idpAppPackageName == idpAppPackageName
+    override fun isAllowed(srcAppPackageName: String): Boolean {
+        return this.idpAppPackageName == srcAppPackageName
     }
 
     /**
@@ -46,28 +93,17 @@ internal class SPManager(
     override fun handle(context: Context, message: IDPSPMessage, srcAppPackageName: String) {
         SalesforceSDKLogger.d(TAG, "handle $message")
 
-        if (activeFlow != null && activeFlow?.uuid == message.uuid) {
-            // There is an active flow and the message is part of it
-            activeFlow?.messages?.add(message)
-        } else {
-            // Reset active flow
-            activeFlow = null
-        }
-
-        // Use active flow context if available
-        val contextToUse = activeFlow?.context ?: context
-
         when (message) {
             is IDPLoginRequest -> {
-                handleIDPLoginRequest(contextToUse, message)
+                handleLoginRequest(context, message)
             }
 
             is SPLoginResponse -> {
-                // Handle only if there is an active flow
-                if (activeFlow != null) {
-                    handleSPLoginResponse(contextToUse, message)
+                // Handle only if there is an active flow and the message is part of it
+                if (activeFlow?.isPartOfFlow(message) == true) {
+                    activeFlow?.let { activeFlow -> handleLoginResponse(activeFlow, message) }
                 } else {
-                    SalesforceSDKLogger.d(TAG, "cannot handle (no sp iniated login flow started) $message")
+                    SalesforceSDKLogger.d(TAG, "no sp iniated login flow started - cannot handle $message")
                 }
             }
 
@@ -82,7 +118,7 @@ internal class SPManager(
      * - If the user specified is available in SP app we just switch to it
      * - If the user specified is not available in SP app, we send a login request to IDP app
      */
-    fun handleIDPLoginRequest(context: Context, message: IDPLoginRequest) {
+    fun handleLoginRequest(context: Context, message: IDPLoginRequest) {
         SalesforceSDKLogger.d(TAG, "handleIDPLoginRequest $message")
         val user = sdkMgr.userAccountManager.getUserFromOrgAndUserId(
             message.orgId,
@@ -90,22 +126,23 @@ internal class SPManager(
         )
         // We have the user already - switch to it
         if (user != null) {
-            handleIDPLoginRequestSPAlreadyLoggedIn(context, message, user)
+            handleUserExists(context, message, user)
         }
         // We don't have the user already - send login request to IDP
         else {
-            handleIDPLoginRequestSPNotLoggedIn(context, message)
+            handleNoUser(context, message)
         }
     }
 
     /**
-     * Handle request to login coming from IDP app - when user hinted is already available in SP app
-     * - We switch to the user
-     * - if the flow was started from SP app (and context is an activity), we launch main activity
-     * - if the flow was started from IDP app, we send a response to it so that it can launch our main activity
+     * Handle the case when we have the user either from the start or following a login flow
+     * - we switch to the user
+     * - we launch the main activity if our context allows it
+     * - we send a IDPLoginResponse if we got here because of a IDPLoginRequest
+     *
      */
-    fun handleIDPLoginRequestSPAlreadyLoggedIn(context: Context, message: IDPLoginRequest, user: UserAccount) {
-        SalesforceSDKLogger.d(TAG, "handleIDPLoginRequestSPAlreadyLoggedIn $message")
+    fun handleUserExists(context: Context, message: IDPLoginRequest?, user: UserAccount) {
+        SalesforceSDKLogger.d(TAG, "handleUserExists $message")
         sdkMgr.userAccountManager.switchToUser(user)
 
         // We have an activity context - launch main activity from here
@@ -116,8 +153,8 @@ internal class SPManager(
         }
 
         // Otherwise sends a response back to IDP app to have it launch the activity
-        else {
-            val responseMessage = IDPSPMessage.IDPLoginResponse(message.uuid)
+        else if (message != null) {
+            val responseMessage = IDPLoginResponse(message.uuid)
             send(context, responseMessage)
         }
     }
@@ -126,9 +163,9 @@ internal class SPManager(
      * Handle request to login coming from IDP app - when user hinted is not available in SP app
      * We kick off a SP initiated login flow using the same uuid as the original IDP login request
      */
-    fun handleIDPLoginRequestSPNotLoggedIn(context: Context, message: IDPLoginRequest) {
-        SalesforceSDKLogger.d(TAG, "handleIDPLoginRequestSPNotLoggedIn $message")
-        activeFlow = SPInitiatedFlow(context, message.uuid)
+    fun handleNoUser(context: Context, message: IDPLoginRequest) {
+        SalesforceSDKLogger.d(TAG, "handleNoUser $message")
+        activeFlow = SPInitiatedLoginFlow.kickOff(this, context, message)
     }
 
     /**
@@ -136,81 +173,35 @@ internal class SPManager(
      * It will contain either an auth code that we need to exchange for auth tokens
      * or an error if the auth code could not be obtained from the server
      */
-    fun handleSPLoginResponse(context: Context, message: SPLoginResponse) {
-        SalesforceSDKLogger.d(TAG, "handleSPLoginResponse $message")
+    fun handleLoginResponse(activeFlow: SPInitiatedLoginFlow, message: SPLoginResponse) {
+        SalesforceSDKLogger.d(TAG, "handleLoginResponse $message")
         if (message.error != null) {
             // TODO
+        } else if (message.loginUrl != null && message.code != null) {
+            SPAuthCodeHelper.loginWithAuthCode(activeFlow.context, message.loginUrl,
+                message.code,
+                activeFlow.codeVerifier
+            ) { user ->
+                with(activeFlow) {
+                    handleUserExists(
+                        context,
+                        if (firstMessage is IDPLoginRequest) firstMessage as IDPLoginRequest else null,
+                        user
+                    )
+                }
+            }
         } else {
-//            CoroutineScope(Dispatchers.IO).launch {
-//                val tokenResponse = OAuth2.getSPCredentials(
-//                    HttpAccess.DEFAULT,
-//                    URI.create(result.loginUrl),
-//                    spConfig.oauthClientId,
-//                    result.code,
-//                    codeVerifier,
-//                    spConfig.oauthCallbackUrl
-//                )
-//
-//                SalesforceSDKLogger.d(TAG, "handleLoginResponseFromIDP tokenResponse ${tokenResponse}")
-//
-//                val loginOptions = ClientManager.LoginOptions(
-//                    spConfig.loginUrl,
-//                    spConfig.oauthCallbackUrl,
-//                    spConfig.oauthClientId,
-//                    spConfig.oauthScopes,
-//                    null,
-//                    null
-//                )
-//
-//                SalesforceSDKLogger.d(TAG, "handleLoginResponseFromIDP loginOptions ${loginOptions}")
-//
-//                val callback = object: OAuthWebviewHelperEvents {
-//                    override fun loadingLoginPage(loginUrl: String?) {
-//                        SalesforceSDKLogger.d(TAG, "handleLoginResponseFromIDP callback loadingLoginPage")
-//                    }
-//
-//                    override fun onAccountAuthenticatorResult(authResult: Bundle?) {
-//                        SalesforceSDKLogger.d(TAG, "handleLoginResponseFromIDP callback onAccountAuthenticatorResult")
-//                    }
-//
-//                    override fun finish(userAccount: UserAccount?) {
-//                        SalesforceSDKLogger.d(TAG, "handleLoginResponseFromIDP callback finish")
-//                        userAccount?.let { user -> launchActivity(context, user) }
-//                    }
-//                }
-//                val oauthHelper = OAuthWebviewHelper(context, callback, loginOptions)
-//
-//                SalesforceSDKLogger.d(TAG, "handleLoginResponseFromIDP oauthHelper ${oauthHelper}")
-//
-//                oauthHelper.onAuthFlowComplete(tokenResponse)
+            // should not happen
         }
+    }
+
+    fun handleSPLoginResponseUserCreated(activeFlow: SPInitiatedLoginFlow, user: UserAccount) {
     }
 
     /**
      * Kick off SP initiated login flow
      */
     override fun kickOffSPInitiatedLoginFlow(context: Context) {
-        SalesforceSDKLogger.d(TAG, "kickOffSPInitiatedLoginFlow")
-        activeFlow = SPInitiatedFlow(context)
-    }
-
-    inner class SPInitiatedFlow(val context: Context, idpInitiatedFlowUuid: String? = null) {
-
-        val uuid: String
-        val codeVerifier: String
-        val messages = ArrayList<IDPSPMessage>()
-
-        init {
-            codeVerifier = SalesforceKeyGenerator.getRandom128ByteKey()
-            val codeChallenge = SalesforceKeyGenerator.getSHA256Hash(codeVerifier)
-            val spLoginRequest = if (idpInitiatedFlowUuid == null) {
-                SPLoginRequest(codeChallenge = codeChallenge)
-            } else {
-                SPLoginRequest(idpInitiatedFlowUuid, codeChallenge)
-            }
-            messages.add(spLoginRequest)
-            uuid = spLoginRequest.uuid
-            send(context, spLoginRequest)
-        }
+        activeFlow = SPInitiatedLoginFlow.kickOff(this, context)
     }
 }

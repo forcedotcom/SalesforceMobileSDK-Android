@@ -43,7 +43,7 @@ import com.salesforce.androidsdk.util.LogUtil;
  *
  * @author bhariharan
  */
-public class IDPCodeGeneratorActivity extends Activity implements IDPAuthCodeHelper.Callback {
+public class IDPCodeGeneratorActivity extends Activity { // implements IDPAuthCodeHelper.Callback {
 
     public static final String USER_ACCOUNT_BUNDLE_KEY = "user_account_bundle";
     private static final String TAG = "IDPCodeGeneratorActivity";
@@ -79,7 +79,7 @@ public class IDPCodeGeneratorActivity extends Activity implements IDPAuthCodeHel
 //        generatorHelper.generateAuthCode();
     }
 
-    @Override
+//    @Override
     public void onResult(IDPAuthCodeHelper.Result result) {
 //        Log.d(TAG, "onResult " + resultCode + " -> " + LogUtil.intentToString(data));
 //        setResult(resultCode, data);

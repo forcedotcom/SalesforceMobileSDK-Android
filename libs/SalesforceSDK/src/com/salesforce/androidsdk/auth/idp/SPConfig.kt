@@ -53,7 +53,7 @@ data class SPConfig (
         private const val OAUTH_SCOPES_KEY = "oauth_scopes"
 
         @JvmStatic
-        fun forCurrentApp(codeChallenge: String, userHint: String?): SPConfig {
+        fun forCurrentApp(): SPConfig {
             val sdkMgr = SalesforceSDKManager.getInstance()
             return with(BootConfig.getBootConfig(sdkMgr.appContext)) {
                 SPConfig(

@@ -22,14 +22,14 @@ import kotlinx.coroutines.launch
 import java.io.IOException
 
 /**
- * Helper class used in IDP app to get auth code for SP app
+ * Helper class used in IDP app to get auth code from server
  */
 internal class IDPAuthCodeHelper private constructor(
     val webView: WebView,
     val userAccount: UserAccount,
     val spConfig: SPConfig,
     val codeChallenge: String,
-    val callback: Callback
+    val onResult:(result:Result) -> Unit
 ) {
     data class Result(
         val success: Boolean,
@@ -65,9 +65,6 @@ internal class IDPAuthCodeHelper private constructor(
                 ERROR_KEY to error
             )
         }
-    }
-    interface Callback {
-        fun onResult(result:Result)
     }
 
     init {
@@ -160,13 +157,13 @@ internal class IDPAuthCodeHelper private constructor(
 
     private fun onError(error: String, exception: java.lang.Exception? = null) {
         SalesforceSDKLogger.e(TAG, "Auth code obtention failed: ${error}", exception)
-        callback.onResult(Result(success = false, error = error))
+        onResult(Result(success = false, error = error))
     }
 
     @Override
     private fun onSuccess(code: String) {
         SalesforceSDKLogger.d(TAG, "Auth code successfully obtained")
-        callback.onResult(Result(success = true, code = code, loginUrl = userAccount.loginServer))
+        onResult(Result(success = true, code = code, loginUrl = userAccount.loginServer))
     }
 
     /**
@@ -224,8 +221,8 @@ internal class IDPAuthCodeHelper private constructor(
                              userAccount: UserAccount,
                              spConfig: SPConfig,
                              codeChallenge: String,
-                             callback: Callback) {
-            IDPAuthCodeHelper(webView, userAccount, spConfig, codeChallenge, callback).generateAuthCode()
+                             onResult: (result: Result) -> Unit) {
+            IDPAuthCodeHelper(webView, userAccount, spConfig, codeChallenge, onResult).generateAuthCode()
         }
     }
 }
