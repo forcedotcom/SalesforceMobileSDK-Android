@@ -343,7 +343,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
     public void onIDPLoginClick(View v) {
         Log.d(TAG, "onIDPLoginClick");
         SalesforceSDKManager.getInstance().getSPManager().kickOffSPInitiatedLoginFlow(this);
-
     }
 
 	/**

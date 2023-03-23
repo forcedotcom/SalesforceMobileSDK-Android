@@ -35,7 +35,6 @@ internal class SPInitiatedLoginFlow private constructor(context:Context, val cod
                         activeFlow.addMessage(it)
                     }
                 } else {
-                    activeFlow.addMessage(SPLoginRequest(codeChallenge = codeChallenge))
                     SPLoginRequest(codeChallenge = codeChallenge).also {
                         activeFlow.addMessage(it)
                     }
