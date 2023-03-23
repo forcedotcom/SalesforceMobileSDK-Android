@@ -2,6 +2,7 @@ package com.salesforce.androidsdk.auth.idp
 
 import android.content.Context
 import android.content.Intent
+import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.util.LogUtil
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
@@ -27,7 +28,7 @@ internal abstract class IDPSPManager() {
     /**
      * Sends message
      */
-    internal fun send(context: Context, message: IDPSPMessage, destinationAppPackageName: String) {
+    fun send(context: Context, message: IDPSPMessage, destinationAppPackageName: String) {
         val intent = message.toIntent().apply {
             putExtra(SRC_APP_PACKAGE_NAME_KEY, context.applicationInfo.packageName)
             setPackage(destinationAppPackageName)
@@ -37,9 +38,9 @@ internal abstract class IDPSPManager() {
     }
 
     /**
-     * Receive message
+     * Process received intent
      */
-    internal fun onReceive(context: Context, intent: Intent) {
+    fun onReceive(context: Context, intent: Intent) {
         SalesforceSDKLogger.d(this::class.java.simpleName, "onReceive ${LogUtil.intentToString(intent)}")
         intent.getStringExtra(SRC_APP_PACKAGE_NAME_KEY)?.let { srcAppPackageName ->
             if (!isAllowed(srcAppPackageName)) {

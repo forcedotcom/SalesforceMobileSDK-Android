@@ -41,7 +41,6 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.content.res.Resources;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Handler;
@@ -68,9 +67,9 @@ import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity;
-import com.salesforce.androidsdk.auth.idp.IDPManager;
+import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager;
 import com.salesforce.androidsdk.auth.idp.SPConfig;
-import com.salesforce.androidsdk.auth.idp.SPManager;
+import com.salesforce.androidsdk.auth.idp.interfaces.SPManager;
 import com.salesforce.androidsdk.config.AdminPermsManager;
 import com.salesforce.androidsdk.config.AdminSettingsManager;
 import com.salesforce.androidsdk.config.BootConfig;
@@ -97,12 +96,10 @@ import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -616,22 +613,10 @@ public class SalesforceSDKManager implements LifecycleObserver {
     }
 
     /**
-     * Checks for IDPAccountPickerActivity in manifest
      * @return True - if this application is configured as a Identity Provider
      */
     private boolean isIdentityProvider() {
-        try {
-            PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(),
-                    PackageManager.GET_ACTIVITIES);
-            for (ActivityInfo activityInfo : packageInfo.activities) {
-                if (activityInfo.name.equals(IDPAccountPickerActivity.class.getName())) {
-                    return true;
-                }
-            }
-        } catch (NameNotFoundException e) {
-            SalesforceSDKLogger.e(TAG, "Exception occurred while examining application info", e);
-        }
-        return false;
+        return idpManager != null;
     }
 
     /**
@@ -665,7 +650,7 @@ public class SalesforceSDKManager implements LifecycleObserver {
      * As a result this application gets a SPManager and can be used as SP.
      */
     public void setIDPAppPackageName(String idpAppPackageName) {
-        spManager = new SPManager(idpAppPackageName);
+        spManager = new com.salesforce.androidsdk.auth.idp.SPManager(idpAppPackageName);
     }
 
     /**
@@ -681,7 +666,7 @@ public class SalesforceSDKManager implements LifecycleObserver {
      * As a result this application gets a IDPManager and can be used as IDP.
      */
     public void setAllowedSPApps(List<SPConfig> allowedSPApps) {
-        idpManager = new IDPManager(allowedSPApps);
+        idpManager = new com.salesforce.androidsdk.auth.idp.IDPManager(allowedSPApps);
     }
 
 

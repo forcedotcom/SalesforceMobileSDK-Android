@@ -10,8 +10,8 @@ import java.util.*
  * Message can be built from intent, and intent can be built from message.
  */
 internal sealed class IDPSPMessage(
-    val action:String,
     val uuid:String,
+    val action:String,
 ) {
     fun toIntent(): Intent {
         return Intent(action).apply {

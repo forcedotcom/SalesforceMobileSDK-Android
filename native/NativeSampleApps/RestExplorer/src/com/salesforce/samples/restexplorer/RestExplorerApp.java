@@ -53,7 +53,7 @@ public class RestExplorerApp extends Application {
 		/*
          * Uncomment the following line to enable IDP login flow. This will allow the user to
          * either authenticate using the current app or use a designated IDP app for login.
-         * Replace 'idpAppURIScheme' with the URI scheme of the IDP app meant to be used.
+         * Replace 'idpAppPackageName' with the package name of the IDP app meant to be used.
          */
          SalesforceSDKManager.getInstance().setIDPAppPackageName("com.salesforce.samples.salesforceandroididptemplateapp");
 

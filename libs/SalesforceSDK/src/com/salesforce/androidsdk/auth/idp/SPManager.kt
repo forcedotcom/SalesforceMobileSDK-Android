@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.auth.idp.IDPSPMessage.*
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator
 import com.salesforce.androidsdk.util.LogUtil
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
@@ -13,7 +14,13 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger
  */
 internal class SPManager(
     val idpAppPackageName: String
-): IDPSPManager() {
+): IDPSPManager(), com.salesforce.androidsdk.auth.idp.interfaces.SPManager {
+
+    /**
+     * Current active login flow if any
+     */
+    var activeFlow: SPInitiatedFlow? = null
+
     companion object {
         private val TAG = SPManager::class.java.simpleName
         private const val SRC_APP_PACKAGE_NAME_KEY = "src_app_package_name"
@@ -39,13 +46,29 @@ internal class SPManager(
     override fun handle(context: Context, message: IDPSPMessage, srcAppPackageName: String) {
         SalesforceSDKLogger.d(TAG, "handle $message")
 
+        if (activeFlow != null && activeFlow?.uuid == message.uuid) {
+            // There is an active flow and the message is part of it
+            activeFlow?.messages?.add(message)
+        } else {
+            // Reset active flow
+            activeFlow = null
+        }
+
+        // Use active flow context if available
+        val contextToUse = activeFlow?.context ?: context
+
         when (message) {
-            is IDPSPMessage.IDPLoginRequest -> {
-                handleIDPLoginRequest(context, message)
+            is IDPLoginRequest -> {
+                handleIDPLoginRequest(contextToUse, message)
             }
 
-            is IDPSPMessage.SPLoginResponse -> {
-                handleSPLoginResponse(context, message)
+            is SPLoginResponse -> {
+                // Handle only if there is an active flow
+                if (activeFlow != null) {
+                    handleSPLoginResponse(contextToUse, message)
+                } else {
+                    SalesforceSDKLogger.d(TAG, "cannot handle (no sp iniated login flow started) $message")
+                }
             }
 
             else -> {
@@ -59,7 +82,7 @@ internal class SPManager(
      * - If the user specified is available in SP app we just switch to it
      * - If the user specified is not available in SP app, we send a login request to IDP app
      */
-    fun handleIDPLoginRequest(context: Context, message: IDPSPMessage.IDPLoginRequest) {
+    fun handleIDPLoginRequest(context: Context, message: IDPLoginRequest) {
         SalesforceSDKLogger.d(TAG, "handleIDPLoginRequest $message")
         val user = sdkMgr.userAccountManager.getUserFromOrgAndUserId(
             message.orgId,
@@ -81,7 +104,7 @@ internal class SPManager(
      * - if the flow was started from SP app (and context is an activity), we launch main activity
      * - if the flow was started from IDP app, we send a response to it so that it can launch our main activity
      */
-    fun handleIDPLoginRequestSPAlreadyLoggedIn(context: Context, message: IDPSPMessage.IDPLoginRequest, user: UserAccount) {
+    fun handleIDPLoginRequestSPAlreadyLoggedIn(context: Context, message: IDPLoginRequest, user: UserAccount) {
         SalesforceSDKLogger.d(TAG, "handleIDPLoginRequestSPAlreadyLoggedIn $message")
         sdkMgr.userAccountManager.switchToUser(user)
 
@@ -101,14 +124,11 @@ internal class SPManager(
 
     /**
      * Handle request to login coming from IDP app - when user hinted is not available in SP app
-     * We send a login request to IDP app (contains a code challenge)
+     * We kick off a SP initiated login flow using the same uuid as the original IDP login request
      */
-    fun handleIDPLoginRequestSPNotLoggedIn(context: Context, message: IDPSPMessage.IDPLoginRequest) {
+    fun handleIDPLoginRequestSPNotLoggedIn(context: Context, message: IDPLoginRequest) {
         SalesforceSDKLogger.d(TAG, "handleIDPLoginRequestSPNotLoggedIn $message")
-        val codeVerifier = SalesforceKeyGenerator.getRandom128ByteKey()
-        val codeChallenge = SalesforceKeyGenerator.getSHA256Hash(codeVerifier)
-        val spRequestIntent = IDPSPMessage.SPLoginRequest(message.uuid, codeChallenge)
-        send(context, spRequestIntent)
+        activeFlow = SPInitiatedFlow(context, message.uuid)
     }
 
     /**
@@ -116,7 +136,7 @@ internal class SPManager(
      * It will contain either an auth code that we need to exchange for auth tokens
      * or an error if the auth code could not be obtained from the server
      */
-    fun handleSPLoginResponse(context: Context, message:IDPSPMessage.SPLoginResponse) {
+    fun handleSPLoginResponse(context: Context, message: SPLoginResponse) {
         SalesforceSDKLogger.d(TAG, "handleSPLoginResponse $message")
         if (message.error != null) {
             // TODO
@@ -163,6 +183,34 @@ internal class SPManager(
 //                SalesforceSDKLogger.d(TAG, "handleLoginResponseFromIDP oauthHelper ${oauthHelper}")
 //
 //                oauthHelper.onAuthFlowComplete(tokenResponse)
+        }
+    }
+
+    /**
+     * Kick off SP initiated login flow
+     */
+    override fun kickOffSPInitiatedLoginFlow(context: Context) {
+        SalesforceSDKLogger.d(TAG, "kickOffSPInitiatedLoginFlow")
+        activeFlow = SPInitiatedFlow(context)
+    }
+
+    inner class SPInitiatedFlow(val context: Context, idpInitiatedFlowUuid: String? = null) {
+
+        val uuid: String
+        val codeVerifier: String
+        val messages = ArrayList<IDPSPMessage>()
+
+        init {
+            codeVerifier = SalesforceKeyGenerator.getRandom128ByteKey()
+            val codeChallenge = SalesforceKeyGenerator.getSHA256Hash(codeVerifier)
+            val spLoginRequest = if (idpInitiatedFlowUuid == null) {
+                SPLoginRequest(codeChallenge = codeChallenge)
+            } else {
+                SPLoginRequest(idpInitiatedFlowUuid, codeChallenge)
+            }
+            messages.add(spLoginRequest)
+            uuid = spLoginRequest.uuid
+            send(context, spLoginRequest)
         }
     }
 }
