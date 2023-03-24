@@ -44,6 +44,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebSettings.LayoutAlgorithm;
 import android.webkit.WebView;
 import android.widget.Button;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
@@ -345,15 +346,12 @@ public class LoginActivity extends AccountAuthenticatorActivity
      */
     public void onIDPLoginClick(View v) {
         Log.d(TAG, "onIDPLoginClick");
-        SalesforceSDKManager.getInstance().getSPManager().kickOffSPInitiatedLoginFlow(this, new SPManager.StatusUpdateCallback() {
-            @Override
-            public void onStatusUpdate(@NonNull SPManager.Status status) {
-//                Toast.makeText(getApplicationContext(), status.toString(), Toast.LENGTH_LONG).show();
-            }
-        });
+        SalesforceSDKManager.getInstance().getSPManager().kickOffSPInitiatedLoginFlow(
+                this,
+                new SPStatusCallback());
     }
 
-	/**
+    /**
 	 * Called when "Reload" button is clicked.
 	 * Reloads login page.
 	 * @param v
@@ -382,31 +380,21 @@ public class LoginActivity extends AccountAuthenticatorActivity
         final List<UserAccount> authenticatedUsers = userAccountManager.getAuthenticatedUsers();
         final int numAuthenticatedUsers = authenticatedUsers == null ? 0 : authenticatedUsers.size();
 
-        /*
-         * Sends user switch intents only if this login flow is not a login triggered due
-         * to an incoming authentication request from an SP app or first user to login on IDP.
-         * If it is an incoming SP request, we should add the user account but NOT switch to
-         * the user or send user switch intents unless it's the first user being logged in.
-         */
-        boolean isFirstUserOrNotIDPFlow = !SalesforceSDKManager.getInstance().isIDPAppLoginFlowActive()
-                || (numAuthenticatedUsers <= 1);
-        if (isFirstUserOrNotIDPFlow) {
-            final int userSwitchType;
-            if (numAuthenticatedUsers == 1) {
+        final int userSwitchType;
+        if (numAuthenticatedUsers == 1) {
 
-                // We've already authenticated the first user, so there should be one.
-                userSwitchType = UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN;
-            } else if (numAuthenticatedUsers > 1) {
+            // We've already authenticated the first user, so there should be one.
+            userSwitchType = UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN;
+        } else if (numAuthenticatedUsers > 1) {
 
-                // Otherwise we're logging in with an additional user.
-                userSwitchType = UserAccountManager.USER_SWITCH_TYPE_LOGIN;
-            } else {
+            // Otherwise we're logging in with an additional user.
+            userSwitchType = UserAccountManager.USER_SWITCH_TYPE_LOGIN;
+        } else {
 
-                // This should never happen but if it does, pass in the "unknown" value.
-                userSwitchType = UserAccountManager.USER_SWITCH_TYPE_DEFAULT;
-            }
-            userAccountManager.sendUserSwitchIntent(userSwitchType, null);
+            // This should never happen but if it does, pass in the "unknown" value.
+            userSwitchType = UserAccountManager.USER_SWITCH_TYPE_DEFAULT;
         }
+        userAccountManager.sendUserSwitchIntent(userSwitchType, null);
 
         finish();
 	}
@@ -416,6 +404,36 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	    if (analyticsManager != null) {
             analyticsManager.updateLoggingPrefs();
 	    }
+    }
+
+    class SPStatusCallback implements SPManager.StatusUpdateCallback {
+        private String getText(SPManager.Status status) {
+            int resId = R.string.sf__login_request_sent_to_idp;
+            switch(status) {
+                case LOGIN_REQUEST_SENT_TO_IDP:
+                    resId = R.string.sf__login_request_sent_to_idp;
+                    break;
+                case SUCCESS_RESPONSE_RECEIVED_FROM_IDP:
+                    resId = R.string.sf__success_response_from_idp;
+                    break;
+                case ERROR_RESPONSE_RECEIVED_FROM_IDP:
+                    resId = R.string.sf__error_response_from_idp;
+                    break;
+                case LOGIN_COMPLETE:
+                    resId = R.string.sf__login_complete;
+                    break;
+            }
+
+            return getString(resId);
+        }
+        @Override
+        public void onStatusUpdate(@NonNull SPManager.Status status) {
+            runOnUiThread(() -> Toast.makeText(
+                getApplicationContext(),
+                getText(status),
+                Toast.LENGTH_LONG
+            ).show());
+        }
     }
 
     public class ChangeServerReceiver extends BroadcastReceiver {

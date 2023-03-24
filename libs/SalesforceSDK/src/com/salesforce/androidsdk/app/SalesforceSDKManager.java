@@ -167,8 +167,6 @@ public class SalesforceSDKManager implements LifecycleObserver {
     private List<String> additionalOauthKeys;
     private String loginBrand;
     private boolean browserLoginEnabled;
-    private String idpAppURIScheme;
-    private boolean idpAppLoginFlowActive;
     private Theme theme =  Theme.SYSTEM_DEFAULT;
     private String appName;
 
@@ -378,9 +376,9 @@ public class SalesforceSDKManager implements LifecycleObserver {
 
         // Enables IDP login flow if it's set through MDM.
         final RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(context);
-        final String idpAppUrlScheme = runtimeConfig.getString(RuntimeConfig.ConfigKey.IDPAppURLScheme);
-        if (!TextUtils.isEmpty(idpAppUrlScheme)) {
-            INSTANCE.idpAppURIScheme = idpAppUrlScheme;
+        final String idpAppPackageName = runtimeConfig.getString(RuntimeConfig.ConfigKey.IDPAppPackageName);
+        if (!TextUtils.isEmpty(idpAppPackageName)) {
+            INSTANCE.setIDPAppPackageName(idpAppPackageName);
         }
     }
 
@@ -608,24 +606,6 @@ public class SalesforceSDKManager implements LifecycleObserver {
      */
     private boolean isIdentityProvider() {
         return idpManager != null;
-    }
-
-    /**
-     * Returns whether the IDP app is currently going through a login flow.
-     *
-     * @return True - if the IDP app is currently going through a login flow, False - otherwise.
-     */
-    public boolean isIDPAppLoginFlowActive() {
-        return idpAppLoginFlowActive;
-    }
-
-    /**
-     * Sets whether the IDP app is currently going through a login flow.
-     *
-     * @param idpAppLoginFlowActive True - if the IDP app is kicking off login, False - otherwise.
-     */
-    public synchronized void setIDPAppLoginFlowActive(boolean idpAppLoginFlowActive) {
-        this.idpAppLoginFlowActive = idpAppLoginFlowActive;
     }
 
     /**

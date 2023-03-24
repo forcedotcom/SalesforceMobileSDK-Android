@@ -5,6 +5,8 @@ import android.content.Intent
 import android.webkit.WebView
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.auth.idp.IDPSPMessage.*
+import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager.Status
+import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager.StatusUpdateCallback
 import com.salesforce.androidsdk.util.LogUtil
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 
@@ -13,15 +15,16 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger
  * Class to capture state related to IDP initiated login flow
  * e.g. the context (activity) that started it
  */
-internal class IDPInitiatedLoginFlow private constructor(context:Context, val user:UserAccount, val spConfig: SPConfig) : ActiveFlow(context) {
+internal class IDPInitiatedLoginFlow private constructor(context:Context, val user:UserAccount, val spConfig: SPConfig, val onStatusUpdate:(Status) -> Unit) : ActiveFlow(context) {
     companion object {
         val TAG = IDPInitiatedLoginFlow::class.java.simpleName
-        fun kickOff(idpManager:IDPManager, context: Context, user: UserAccount, spConfig: SPConfig) : IDPInitiatedLoginFlow {
+        fun kickOff(idpManager:IDPManager, context: Context, user: UserAccount, spConfig: SPConfig, onStatusUpdate: (Status) -> Unit) : IDPInitiatedLoginFlow {
             SalesforceSDKLogger.d(TAG, "Kicking off idp initiated login flow from ${context} for user:${user}, sp app:${spConfig.appPackageName}")
 
             val idpLoginRequest = IDPLoginRequest(orgId = user.orgId, userId = user.userId)
-            val activeFlow = IDPInitiatedLoginFlow(context, user, spConfig)
+            val activeFlow = IDPInitiatedLoginFlow(context, user, spConfig, onStatusUpdate)
             idpManager.send(context, idpLoginRequest, spConfig.appPackageName)
+            onStatusUpdate(Status.LOGIN_REQUEST_SENT_TO_SP)
             return activeFlow
         }
     }
@@ -105,6 +108,7 @@ internal class IDPManager(
      */
     fun handleLoginResponse(activeFlow: IDPInitiatedLoginFlow, message: IDPLoginResponse) {
         SalesforceSDKLogger.d(TAG, "handleLoginResponse $message")
+        activeFlow.onStatusUpdate(Status.SP_READY)
         val launchIntent = Intent(Intent.ACTION_VIEW).apply {
             setPackage(activeFlow.spConfig.appPackageName)
             setClassName(activeFlow.spConfig.appPackageName, activeFlow.spConfig.componentName)
@@ -142,7 +146,7 @@ internal class IDPManager(
     /**
      * Kick off IDP initiated login flow for given SP app
      */
-    override fun kickOffIDPInitiatedLoginFlow(context: Context, spAppPackageName: String) {
+    override fun kickOffIDPInitiatedLoginFlow(context: Context, spAppPackageName: String, callback: StatusUpdateCallback) {
         val spConfig = getSPConfig(spAppPackageName)
         if (spConfig == null) {
             SalesforceSDKLogger.d(TAG, "Cannot kick off IDP initiated login flow: sp app $spAppPackageName not in allowed list")
@@ -155,6 +159,6 @@ internal class IDPManager(
             return
         }
 
-        activeFlow = IDPInitiatedLoginFlow.kickOff(this, context, user, spConfig)
+        activeFlow = IDPInitiatedLoginFlow.kickOff(this, context, user, spConfig, callback::onStatusUpdate)
     }
 }
