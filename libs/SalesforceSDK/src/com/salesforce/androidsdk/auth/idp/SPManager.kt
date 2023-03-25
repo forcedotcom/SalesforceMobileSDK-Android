@@ -179,7 +179,7 @@ internal class SPManager(
         if (message.error != null) {
             activeFlow.onStatusUpdate(Status.ERROR_RESPONSE_RECEIVED_FROM_IDP)
         } else if (message.loginUrl != null && message.code != null) {
-            activeFlow.onStatusUpdate(Status.SUCCESS_RESPONSE_RECEIVED_FROM_IDP)
+            activeFlow.onStatusUpdate(Status.AUTH_CODE_RECEIVED_FROM_IDP)
             SPAuthCodeHelper.loginWithAuthCode(activeFlow.context, message.loginUrl,
                 message.code,
                 activeFlow.codeVerifier

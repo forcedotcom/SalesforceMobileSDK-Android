@@ -407,32 +407,20 @@ public class LoginActivity extends AccountAuthenticatorActivity
     }
 
     class SPStatusCallback implements SPManager.StatusUpdateCallback {
-        private String getText(SPManager.Status status) {
-            int resId = R.string.sf__login_request_sent_to_idp;
-            switch(status) {
-                case LOGIN_REQUEST_SENT_TO_IDP:
-                    resId = R.string.sf__login_request_sent_to_idp;
-                    break;
-                case SUCCESS_RESPONSE_RECEIVED_FROM_IDP:
-                    resId = R.string.sf__success_response_from_idp;
-                    break;
-                case ERROR_RESPONSE_RECEIVED_FROM_IDP:
-                    resId = R.string.sf__error_response_from_idp;
-                    break;
-                case LOGIN_COMPLETE:
-                    resId = R.string.sf__login_complete;
-                    break;
-            }
-
-            return getString(resId);
-        }
+        private Toast currentToast = null;
         @Override
         public void onStatusUpdate(@NonNull SPManager.Status status) {
-            runOnUiThread(() -> Toast.makeText(
-                getApplicationContext(),
-                getText(status),
-                Toast.LENGTH_LONG
-            ).show());
+            runOnUiThread(() -> {
+                if (currentToast != null) {
+                    currentToast.cancel();
+                }
+                currentToast = Toast.makeText(
+                        getApplicationContext(),
+                        getString(status.getResIdForDescription()),
+                        Toast.LENGTH_SHORT
+                );
+                currentToast.show();
+            });
         }
     }
 

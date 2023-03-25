@@ -125,6 +125,8 @@ internal class IDPManager(
     fun handleLoginRequest(context: Context, message: SPLoginRequest, spConfig: SPConfig) {
         SalesforceSDKLogger.d(TAG, "handleLoginRequest $message")
         sdkMgr.userAccountManager.currentUser?.let {currentUser ->
+            // If we are in IDP initiated login flow send status update
+            activeFlow?.let { it.onStatusUpdate(Status.GETTING_AUTH_CODE_FROM_SERVER) }
             // Get auth code for current user
             IDPAuthCodeHelper.generateAuthCode(
                 WebView(context),
@@ -132,8 +134,16 @@ internal class IDPManager(
                 spConfig,
                 message.codeChallenge,
                 { result ->
+                    if (result.error != null) {
+                        activeFlow?.let { it.onStatusUpdate(Status.ERROR_RECEIVED_FROM_SERVER)}
+                    }
+
                     val spLoginResponse = SPLoginResponse(message.uuid, code = result.code, loginUrl = result.loginUrl)
                     send(context, spLoginResponse, spConfig.appPackageName)
+
+                    if (result.code != null) {
+                        activeFlow?.let { it.onStatusUpdate(Status.AUTH_CODE_SENT_TO_SP) }
+                    }
                 }
             )
 
