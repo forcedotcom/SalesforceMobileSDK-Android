@@ -164,7 +164,7 @@ internal class IDPManager(
                         activeFlow?.let { it.onStatusUpdate(Status.ERROR_RECEIVED_FROM_SERVER)}
                     }
 
-                    val spLoginResponse = SPLoginResponse(message.uuid, code = result.code, loginUrl = result.loginUrl)
+                    val spLoginResponse = SPLoginResponse(message.uuid, code = result.code, loginUrl = result.loginUrl, error = result.error)
                     send(context, spLoginResponse, spConfig.appPackageName)
 
                     if (result.code != null) {
