@@ -58,7 +58,7 @@
 	<string name="sf__getting_auth_code_from_server">Getting authorization code for SP app</string>
 	<string name="sf__error_received_from_server">Failed to obtain authorization code for SP app</string>
 	<string name="sf__auth_code_sent_to_sp">Authorization code sent to SP app</string>
-	<string name="sf__sp_ready">SP app ready</string>
+	<string name="sf__sp_login_complete">SP app login complete</string>
 
     <!-- Managed app restrictions -->
     <string name="sf__app_service_hosts_description">Used to specify login hosts for the application.</string>
