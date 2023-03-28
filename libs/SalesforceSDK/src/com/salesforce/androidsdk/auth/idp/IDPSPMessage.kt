@@ -102,7 +102,7 @@ internal sealed class IDPSPMessage(
                 val userId = bundle?.getString(USER_ID_KEY)
                 val orgId = bundle?.getString(ORG_ID_KEY)
                 return if (uuid != null && userId != null && orgId != null) {
-                    IDPLoginRequest(uuid, userId, orgId)
+                    IDPLoginRequest(uuid, orgId, userId)
                 } else {
                     null
                 }
