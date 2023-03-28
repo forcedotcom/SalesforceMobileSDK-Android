@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-present, salesforce.com, inc.
+ * Copyright (c) 2023-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,12 +26,8 @@
  */
 package com.salesforce.androidsdk.auth.idp
 
-import android.os.Bundle
-import androidx.core.os.bundleOf
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.BootConfig
-import com.salesforce.androidsdk.util.LogUtil
-import com.salesforce.androidsdk.util.SalesforceSDKLogger
 
 /**
  * SP app configuration
@@ -44,13 +40,6 @@ data class SPConfig (
     val oauthScopes: Array<String>
 ) {
     companion object {
-        private val TAG = SPConfig::class.java.simpleName
-        private const val APP_PACKAGE_NAME = "app_package_name"
-        private const val COMPONENT_NAME = "component_name"
-        private const val OAUTH_CLIENT_ID_KEY = "oauth_client_id"
-        private const val OAUTH_CALLBACK_URL_KEY = "oauth_callback_url"
-        private const val OAUTH_SCOPES_KEY = "oauth_scopes"
-
         @JvmStatic
         fun forCurrentApp(): SPConfig {
             val sdkMgr = SalesforceSDKManager.getInstance()
@@ -64,50 +53,5 @@ data class SPConfig (
                 )
             }
         }
-
-        fun fromBundle(bundle: Bundle?): SPConfig? {
-            return bundle?.let {
-                with(bundle) {
-                    val appPackageName = getString(APP_PACKAGE_NAME)
-                    val componentName = getString(COMPONENT_NAME)
-                    val oauthClientId = getString(OAUTH_CLIENT_ID_KEY)
-                    val oauthCallbackUrl = getString(OAUTH_CALLBACK_URL_KEY)
-                    val oauthScopes = getStringArray(OAUTH_SCOPES_KEY)
-
-                    if (appPackageName != null
-                        && componentName != null
-                        && oauthClientId != null
-                        && oauthCallbackUrl != null
-                        && oauthScopes != null
-                    ) {
-                        SPConfig(
-                            appPackageName,
-                            componentName,
-                            oauthClientId,
-                            oauthCallbackUrl,
-                            oauthScopes
-                        )
-                    } else {
-                        SalesforceSDKLogger.d(
-                            TAG,
-                            "fromBundle could not parse ${LogUtil.bundleToString(bundle)}"
-                        )
-                        null
-                    }
-                }
-            } ?: run {
-                null
-            }
-        }
-    }
-
-    fun toBundle():Bundle {
-        return bundleOf(
-            APP_PACKAGE_NAME to appPackageName,
-            COMPONENT_NAME to componentName,
-            OAUTH_CLIENT_ID_KEY to oauthClientId,
-            OAUTH_CALLBACK_URL_KEY to oauthCallbackUrl,
-            OAUTH_SCOPES_KEY to oauthScopes
-        )
     }
 }
