@@ -162,13 +162,26 @@ internal class IDPManager(
                 message.codeChallenge,
                 { result ->
                     if (result.error != null) {
-                        activeFlow?.let { it.onStatusUpdate(Status.ERROR_RECEIVED_FROM_SERVER)}
-                    }
-
-                    val spLoginResponse = SPLoginResponse(message.uuid, code = result.code, loginUrl = result.loginUrl, error = result.error)
-                    send(context, spLoginResponse, spConfig.appPackageName)
-
-                    if (result.code != null) {
+                        // We failed to get an auth code
+                        if (activeFlow == null) {
+                            // We are NOT in a IDP initiated flow - we need to let the SP app know
+                            send(
+                                context,
+                                SPLoginResponse(message.uuid, error = result.error),
+                                spConfig.appPackageName
+                            )
+                        } else {
+                            // We are in a IDP initiated flow - let the IDP app know
+                            activeFlow?.let { it.onStatusUpdate(Status.ERROR_RECEIVED_FROM_SERVER) }
+                        }
+                    } else {
+                        // We successfully got an auth code - send it to the SP app
+                        send(
+                            context,
+                            SPLoginResponse(message.uuid, code = result.code, loginUrl = result.loginUrl),
+                            spConfig.appPackageName
+                        )
+                        // Let the IDP app know
                         activeFlow?.let { it.onStatusUpdate(Status.AUTH_CODE_SENT_TO_SP) }
                     }
                 }
