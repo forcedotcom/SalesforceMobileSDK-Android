@@ -407,20 +407,13 @@ public class LoginActivity extends AccountAuthenticatorActivity
     }
 
     class SPStatusCallback implements SPManager.StatusUpdateCallback {
-        private Toast currentToast = null;
         @Override
         public void onStatusUpdate(@NonNull SPManager.Status status) {
-            runOnUiThread(() -> {
-                if (currentToast != null) {
-                    currentToast.cancel();
-                }
-                currentToast = Toast.makeText(
-                        getApplicationContext(),
-                        getString(status.getResIdForDescription()),
-                        Toast.LENGTH_SHORT
-                );
-                currentToast.show();
-            });
+            runOnUiThread(() -> Toast.makeText(
+                    getApplicationContext(),
+                    getString(status.getResIdForDescription()),
+                    Toast.LENGTH_SHORT
+            ).show());
         }
     }
 
