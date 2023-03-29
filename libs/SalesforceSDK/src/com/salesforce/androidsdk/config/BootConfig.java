@@ -66,8 +66,6 @@ public class BootConfig {
 	private static final String ATTEMPT_OFFLINE_LOAD = "attemptOfflineLoad";
 	private static final String UNAUTHENTICATED_START_PAGE = "unauthenticatedStartPage";
 
-	private static final String USE_HEADLESS_AUTH_CODE_FLOW = "useHeadlessAuthCodeFlow";
-
 	// Default for optional configs.
 	private static final boolean DEFAULT_SHOULD_AUTHENTICATE = true;
 	private static final boolean DEFAULT_ATTEMPT_OFFLINE_LOAD = true;
@@ -85,9 +83,6 @@ public class BootConfig {
 	private boolean shouldAuthenticate;
 	private boolean attemptOfflineLoad;
 	private String unauthenticatedStartPage;
-
-	private boolean useHeadlessAuthCodeFlow;
-
 	private static BootConfig INSTANCE = null;
 
 	/**
@@ -194,7 +189,6 @@ public class BootConfig {
 			config.put(SHOULD_AUTHENTICATE, shouldAuthenticate);
 			config.put(ATTEMPT_OFFLINE_LOAD, attemptOfflineLoad);
 			config.put(UNAUTHENTICATED_START_PAGE, unauthenticatedStartPage);
-			config.put(USE_HEADLESS_AUTH_CODE_FLOW, useHeadlessAuthCodeFlow);
 
 			return config;
 		}
@@ -233,11 +227,6 @@ public class BootConfig {
 		remoteAccessConsumerKey = res.getString(R.string.remoteAccessConsumerKey);
 		oauthRedirectURI = res.getString(R.string.oauthRedirectURI);
 		oauthScopes = res.getStringArray(R.array.oauthScopes);
-		try {
-			useHeadlessAuthCodeFlow = res.getBoolean(R.bool.useHeadlessAuthCodeFlow);
-		} catch (Resources.NotFoundException e) {
-			useHeadlessAuthCodeFlow = DEFAULT_USE_HEADLESS_AUTH_CODE_FLOW;
-		}
 	}
 
 	/**
@@ -263,7 +252,6 @@ public class BootConfig {
 			shouldAuthenticate = config.optBoolean(SHOULD_AUTHENTICATE, DEFAULT_SHOULD_AUTHENTICATE);
 			attemptOfflineLoad = config.optBoolean(ATTEMPT_OFFLINE_LOAD, DEFAULT_ATTEMPT_OFFLINE_LOAD);
 			unauthenticatedStartPage = config.optString(UNAUTHENTICATED_START_PAGE);
-			useHeadlessAuthCodeFlow = config.optBoolean(USE_HEADLESS_AUTH_CODE_FLOW, DEFAULT_USE_HEADLESS_AUTH_CODE_FLOW);
 		} catch (JSONException e) {
 			throw new BootConfigException("Failed to parse " + HYBRID_BOOTCONFIG_PATH, e);
 		}
@@ -356,16 +344,6 @@ public class BootConfig {
 	@SuppressWarnings("unused")
 	public boolean attemptOfflineLoad() {
 		return attemptOfflineLoad;
-	}
-
-	/**
-	 * Returns whether the app (when used as IDP) should get the authorization code without presenting
-	 * a web view to the user
-	 *
-	 * @return True - if the app should not show a web view, False - otherwise
-	 */
-	public boolean useHeadlessAuthCodeFlow() {
-		return useHeadlessAuthCodeFlow;
 	}
 
 	/**
