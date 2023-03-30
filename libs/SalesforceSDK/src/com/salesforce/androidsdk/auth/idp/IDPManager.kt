@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.auth.idp
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.webkit.WebView
@@ -47,8 +48,10 @@ internal class IDPInitiatedLoginFlow private constructor(context:Context, val us
         fun kickOff(idpManager:IDPManager, context: Context, user: UserAccount, spConfig: SPConfig, onStatusUpdate: (Status) -> Unit) : IDPInitiatedLoginFlow {
             SalesforceSDKLogger.d(TAG, "Kicking off idp initiated login flow from ${context} for user:${user}, sp app:${spConfig.appPackageName}")
 
-            val idpLoginRequest = IDPLoginRequest(orgId = user.orgId, userId = user.userId)
             val activeFlow = IDPInitiatedLoginFlow(context, user, spConfig, onStatusUpdate)
+            val idpLoginRequest = IDPLoginRequest(orgId = user.orgId, userId = user.userId).also {
+                activeFlow.addMessage(it)
+            }
             idpManager.send(context, idpLoginRequest, spConfig.appPackageName)
             onStatusUpdate(Status.LOGIN_REQUEST_SENT_TO_SP)
             return activeFlow
@@ -61,8 +64,16 @@ internal class IDPInitiatedLoginFlow private constructor(context:Context, val us
  * Class handling IDP operations within an IDP app
  */
 internal class IDPManager(
-    val allowedSPApps: List<SPConfig>
+    val allowedSPApps: List<SPConfig>,
+    val sdkMgr: SDKManager
 ): IDPSPManager(), com.salesforce.androidsdk.auth.idp.interfaces.IDPManager {
+
+    /**
+     * Interface to keep IDPManager decoupled from other managers
+     */
+    internal interface SDKManager {
+        fun getCurrentUser(): UserAccount?
+    }
 
     companion object {
         private val TAG = IDPManager::class.java.simpleName
@@ -141,8 +152,13 @@ internal class IDPManager(
             setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             addCategory(Intent.CATEGORY_DEFAULT)
         }
-        SalesforceSDKLogger.d(TAG, "handleLoginResponse startActivity ${LogUtil.intentToString(launchIntent)}")
-        activeFlow.context.startActivity(launchIntent)
+        if (activeFlow.context is Activity) {
+            SalesforceSDKLogger.d(
+                TAG,
+                "handleLoginResponse startActivity ${LogUtil.intentToString(launchIntent)}"
+            )
+            activeFlow.context.startActivity(launchIntent)
+        }
     }
 
     /**
@@ -151,7 +167,7 @@ internal class IDPManager(
      */
     fun handleLoginRequest(context: Context, message: SPLoginRequest, spConfig: SPConfig) {
         SalesforceSDKLogger.d(TAG, "handleLoginRequest $message")
-        sdkMgr.userAccountManager.currentUser?.let {currentUser ->
+        sdkMgr.getCurrentUser()?.let {currentUser ->
             // If we are in IDP initiated login flow send status update
             activeFlow?.let { it.onStatusUpdate(Status.GETTING_AUTH_CODE_FROM_SERVER) }
             // Get auth code for current user
@@ -203,7 +219,7 @@ internal class IDPManager(
             return
         }
 
-        val user = sdkMgr.userAccountManager.currentUser
+        val user = sdkMgr.getCurrentUser()
         if (user == null) {
             SalesforceSDKLogger.d(TAG, "Cannot kick off IDP initiated login flow: no current user")
             return

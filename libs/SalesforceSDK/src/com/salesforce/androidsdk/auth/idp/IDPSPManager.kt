@@ -28,12 +28,11 @@ package com.salesforce.androidsdk.auth.idp
 
 import android.content.Context
 import android.content.Intent
-import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.util.LogUtil
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 
 internal open class ActiveFlow(val context: Context) {
-    private val messages = ArrayList<IDPSPMessage>()
+    val messages = ArrayList<IDPSPMessage>()
 
     val firstMessage: IDPSPMessage
         get() = messages.first()
@@ -55,9 +54,6 @@ internal abstract class IDPSPManager() {
     companion object {
         private const val SRC_APP_PACKAGE_NAME_KEY = "src_app_package_name"
     }
-
-    val sdkMgr: SalesforceSDKManager
-        get() = SalesforceSDKManager.getInstance()
 
     /**
      * Return the currently active flow if any

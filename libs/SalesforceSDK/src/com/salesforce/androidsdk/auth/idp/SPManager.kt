@@ -80,9 +80,19 @@ internal class SPInitiatedLoginFlow private constructor(context:Context, val cod
  * Class handling SP operations within a SP app
  */
 internal class SPManager(
-    val idpAppPackageName: String
+    val idpAppPackageName: String,
+    val sdkMgr: SDKManager
 ): IDPSPManager(), com.salesforce.androidsdk.auth.idp.interfaces.SPManager {
 
+    /**
+     * Interface to keep SPManager decoupled from other managers
+     */
+    internal interface SDKManager {
+        fun getCurrentUser(): UserAccount?
+        fun getUserFromOrgAndUserId(orgId:String, userId:String): UserAccount?
+        fun switchToUser(user: UserAccount)
+        fun getMainActivityClass(): Class<out Activity>?
+    }
     companion object {
         private val TAG = SPManager::class.java.simpleName
     }
@@ -147,7 +157,7 @@ internal class SPManager(
      */
     fun handleLoginRequest(context: Context, message: IDPLoginRequest) {
         SalesforceSDKLogger.d(TAG, "handleIDPLoginRequest $message")
-        val user = sdkMgr.userAccountManager.getUserFromOrgAndUserId(
+        val user = sdkMgr.getUserFromOrgAndUserId(
             message.orgId,
             message.userId
         )
@@ -170,11 +180,11 @@ internal class SPManager(
      */
     fun handleUserExists(context: Context, message: IDPLoginRequest?, user: UserAccount) {
         SalesforceSDKLogger.d(TAG, "handleUserExists $message")
-        sdkMgr.userAccountManager.switchToUser(user)
+        sdkMgr.switchToUser(user)
 
         // We have an activity context - launch main activity from here
         if (context is Activity) {
-            val launchIntent = Intent(context, sdkMgr.mainActivityClass)
+            val launchIntent = Intent(context, sdkMgr.getMainActivityClass())
             SalesforceSDKLogger.d(TAG, "start activity ${LogUtil.intentToString(launchIntent)}")
             context.startActivity(launchIntent)
         }

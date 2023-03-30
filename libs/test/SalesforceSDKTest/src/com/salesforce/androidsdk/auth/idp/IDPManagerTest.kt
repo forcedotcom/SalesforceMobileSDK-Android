@@ -26,16 +26,14 @@
  */
 package com.salesforce.androidsdk.auth.idp
 
-import android.app.Activity
 import android.content.Context
+import android.os.Bundle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry.*
 import com.salesforce.androidsdk.accounts.UserAccount
-import com.salesforce.androidsdk.auth.idp.IDPSPMessage.SPLoginRequest
-import com.salesforce.androidsdk.auth.idp.IDPSPMessage.SPLoginResponse
-import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
-import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
-import org.junit.After
+import com.salesforce.androidsdk.auth.idp.IDPSPMessage.*
+import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager.Status
+import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager.StatusUpdateCallback
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
@@ -45,7 +43,7 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
-internal class SPManagerTest {
+internal class IDPManagerTest {
 
     companion object {
         const val MAX_UPDATES_RECORDED = 16
@@ -63,21 +61,12 @@ internal class SPManagerTest {
         }
     }
 
-    inner class TestSDKMgr : SPManager.SDKManager {
+    inner class TestSDKMgr : IDPManager.SDKManager {
         override fun getCurrentUser(): UserAccount? {
-            TODO("Not yet implemented")
-        }
-
-        override fun getUserFromOrgAndUserId(orgId: String, userId: String): UserAccount? {
-            TODO("Not yet implemented")
-        }
-
-        override fun switchToUser(user: UserAccount) {
-            TODO("Not yet implemented")
-        }
-
-        override fun getMainActivityClass(): Class<out Activity>? {
-            TODO("Not yet implemented")
+            return UserAccount(Bundle().apply {
+                putString("orgId", "some-org-id")
+                putString("userId", "some-user-id")
+            })
         }
     }
 
@@ -89,32 +78,31 @@ internal class SPManagerTest {
         testSDKMgr = TestSDKMgr()
     }
 
-    @After
-    fun teardown() {
-    }
-
     @Test
-    fun testKickOffSPInitiatedLoginFlow() {
-        val spManager = SPManager("some-idp", testSDKMgr)
-        spManager.kickOffSPInitiatedLoginFlow(context, testStatusUpdateCallback)
+    fun testKickOffIDPInitiatedLoginFlow() {
+        val allowedSPApps = listOf(SPConfig("some-sp", "c", "client-id", "callback-url", arrayOf("api")))
+        val idpManager = IDPManager(allowedSPApps, testSDKMgr)
+        idpManager.kickOffIDPInitiatedLoginFlow(context, "some-sp", testStatusUpdateCallback)
 
         // Waiting for status update
-        waitForStatusUpdate(Status.LOGIN_REQUEST_SENT_TO_IDP)
+        waitForStatusUpdate(Status.LOGIN_REQUEST_SENT_TO_SP)
 
         // Checking active flow
-        val activeFlow = spManager.getActiveFlow()
+        val activeFlow = idpManager.getActiveFlow()
         val request = activeFlow?.firstMessage
         Assert.assertNotNull(request)
-        Assert.assertTrue(request is SPLoginRequest)
+        Assert.assertTrue(request is IDPLoginRequest)
+        Assert.assertEquals("some-org-id", (request as IDPLoginRequest).orgId)
+        Assert.assertEquals("some-user-id", (request as IDPLoginRequest).userId)
 
-        // Faking a response from the idp
-        val response = SPLoginResponse(request!!.uuid, error="Failure!")
-        spManager.onReceive(context, response.toIntent().apply {
-            putExtra("src_app_package_name", "some-idp")
+        // Faking a response from the sp
+        val response = IDPLoginResponse(request.uuid)
+        idpManager.onReceive(context, response.toIntent().apply {
+            putExtra("src_app_package_name", "some-sp")
         })
 
         // Waiting for status update
-        waitForStatusUpdate(Status.ERROR_RESPONSE_RECEIVED_FROM_IDP)
+        waitForStatusUpdate(Status.SP_LOGIN_COMPLETE)
 
         // Checking active flow
         Assert.assertEquals(2, activeFlow.messages.size)

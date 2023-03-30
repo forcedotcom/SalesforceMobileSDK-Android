@@ -49,6 +49,7 @@ import android.view.View;
 import android.webkit.CookieManager;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.OnLifecycleEvent;
@@ -622,7 +623,30 @@ public class SalesforceSDKManager implements LifecycleObserver {
      */
     public void setIDPAppPackageName(String idpAppPackageName) {
         SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_APP_IS_SP);
-        spManager = new com.salesforce.androidsdk.auth.idp.SPManager(idpAppPackageName);
+        spManager = new com.salesforce.androidsdk.auth.idp.SPManager(idpAppPackageName, new com.salesforce.androidsdk.auth.idp.SPManager.SDKManager() {
+            @Nullable
+            @Override
+            public UserAccount getCurrentUser() {
+                return getUserAccountManager().getCurrentUser();
+            }
+
+            @Nullable
+            @Override
+            public UserAccount getUserFromOrgAndUserId(@NonNull String orgId, @NonNull String userId) {
+                return getUserAccountManager().getUserFromOrgAndUserId(orgId, userId);
+            }
+
+            @Override
+            public void switchToUser(@NonNull UserAccount user) {
+                getUserAccountManager().switchToUser(user);
+            }
+
+            @Nullable
+            @Override
+            public Class<? extends Activity> getMainActivityClass() {
+                return SalesforceSDKManager.this.getMainActivityClass();
+            }
+        });
     }
 
     /**
@@ -639,7 +663,13 @@ public class SalesforceSDKManager implements LifecycleObserver {
      */
     public void setAllowedSPApps(List<SPConfig> allowedSPApps) {
         SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_APP_IS_IDP);
-        idpManager = new com.salesforce.androidsdk.auth.idp.IDPManager(allowedSPApps);
+        idpManager = new com.salesforce.androidsdk.auth.idp.IDPManager(allowedSPApps, new com.salesforce.androidsdk.auth.idp.IDPManager.SDKManager() {
+            @Nullable
+            @Override
+            public UserAccount getCurrentUser() {
+                return getUserAccountManager().getCurrentUser();
+            }
+        });
     }
 
 

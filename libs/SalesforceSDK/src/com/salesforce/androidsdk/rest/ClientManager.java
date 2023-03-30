@@ -426,8 +426,7 @@ public class ClientManager {
         }
 
         /*
-         * Sets this user as the current user only if this is the first user being logged in
-         * or NOT an IDP login initiated by an SP app.
+         * Sets this user as the current user
          */
         SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUserInfo(userId, orgId);
         return extras;
