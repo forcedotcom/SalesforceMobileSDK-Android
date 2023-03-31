@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.auth.idp
 
-import android.content.Context
-import android.os.Bundle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry.*
 import com.salesforce.androidsdk.accounts.UserAccount
@@ -38,54 +36,33 @@ import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.BlockingQueue
-import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
-internal class IDPManagerTest {
-
-    companion object {
-        const val MAX_UPDATES_RECORDED = 16
-        const val TIMEOUT: Long = 3
-    }
-
-    lateinit var context: Context
-    lateinit var recordedUpdates: BlockingQueue<Status>
-    lateinit var testStatusUpdateCallback: TestStatusUpdateCallback
-    lateinit var testSDKMgr: TestSDKMgr
+internal class IDPManagerTest : IDPSPManagerTestCase() {
 
     inner class TestStatusUpdateCallback : StatusUpdateCallback {
         override fun onStatusUpdate(status: Status) {
-            recordedUpdates.put(status)
-        }
-    }
-
-    inner class TestSDKMgr : IDPManager.SDKManager {
-        override fun getCurrentUser(): UserAccount? {
-            return UserAccount(Bundle().apply {
-                putString("orgId", "some-org-id")
-                putString("userId", "some-user-id")
-            })
+            recordedEvents.put(status.toString())
         }
     }
 
     @Before
-    fun setup() {
-        context = getInstrumentation().targetContext
-        recordedUpdates = ArrayBlockingQueue(MAX_UPDATES_RECORDED)
-        testStatusUpdateCallback = TestStatusUpdateCallback()
-        testSDKMgr = TestSDKMgr()
+    override fun setup() {
+        super.setup()
     }
 
     @Test
     fun testKickOffIDPInitiatedLoginFlow() {
         val allowedSPApps = listOf(SPConfig("some-sp", "c", "client-id", "callback-url", arrayOf("api")))
-        val idpManager = IDPManager(allowedSPApps, testSDKMgr)
-        idpManager.kickOffIDPInitiatedLoginFlow(context, "some-sp", testStatusUpdateCallback)
+        val idpManager = IDPManager(allowedSPApps, object : IDPManager.SDKManager {
+            override fun getCurrentUser(): UserAccount? {
+                return buildUser("some-org-id", "some-user-id")
+            }
+        })
+        idpManager.kickOffIDPInitiatedLoginFlow(context, "some-sp", TestStatusUpdateCallback())
 
         // Waiting for status update
-        waitForStatusUpdate(Status.LOGIN_REQUEST_SENT_TO_SP)
+        waitForEvent(Status.LOGIN_REQUEST_SENT_TO_SP.toString())
 
         // Checking active flow
         val activeFlow = idpManager.getActiveFlow()
@@ -102,15 +79,10 @@ internal class IDPManagerTest {
         })
 
         // Waiting for status update
-        waitForStatusUpdate(Status.SP_LOGIN_COMPLETE)
+        waitForEvent(Status.SP_LOGIN_COMPLETE.toString())
 
         // Checking active flow
         Assert.assertEquals(2, activeFlow.messages.size)
         Assert.assertEquals(response.toString(), activeFlow.messages[1].toString())
-    }
-
-    fun waitForStatusUpdate(expectedStatusUpdate: Status) {
-        val actualStatusUpdate = recordedUpdates.poll(TIMEOUT, TimeUnit.SECONDS)
-        Assert.assertEquals(expectedStatusUpdate, actualStatusUpdate)
     }
 }

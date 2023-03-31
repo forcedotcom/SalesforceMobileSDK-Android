@@ -235,7 +235,7 @@ internal class SPManager(
     /**
      * Kick off SP initiated login flow
      */
-    override fun kickOffSPInitiatedLoginFlow(context: Context, statusUpdateCallback: StatusUpdateCallback) {
-        activeFlow = SPInitiatedLoginFlow.kickOff(this, context, statusUpdateCallback::onStatusUpdate)
+    override fun kickOffSPInitiatedLoginFlow(context: Context, callback: StatusUpdateCallback) {
+        activeFlow = SPInitiatedLoginFlow.kickOff(this, context, callback::onStatusUpdate)
     }
 }

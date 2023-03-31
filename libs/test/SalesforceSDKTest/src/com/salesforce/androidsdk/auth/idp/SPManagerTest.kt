@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.auth.idp
 
 import android.app.Activity
-import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry.*
 import com.salesforce.androidsdk.accounts.UserAccount
@@ -35,45 +34,36 @@ import com.salesforce.androidsdk.auth.idp.IDPSPMessage.SPLoginRequest
 import com.salesforce.androidsdk.auth.idp.IDPSPMessage.SPLoginResponse
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
-import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.BlockingQueue
-import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
-internal class SPManagerTest {
-
-    companion object {
-        const val MAX_UPDATES_RECORDED = 16
-        const val TIMEOUT: Long = 3
-    }
-
-    lateinit var context: Context
-    lateinit var recordedUpdates: BlockingQueue<Status>
-    lateinit var testStatusUpdateCallback: TestStatusUpdateCallback
-    lateinit var testSDKMgr: TestSDKMgr
+internal class SPManagerTest : IDPSPManagerTestCase() {
 
     inner class TestStatusUpdateCallback : StatusUpdateCallback {
         override fun onStatusUpdate(status: Status) {
-            recordedUpdates.put(status)
+            recordedEvents.put(status.toString())
         }
+    }
+
+    @Before
+    override fun setup() {
+        super.setup()
     }
 
     inner class TestSDKMgr : SPManager.SDKManager {
         override fun getCurrentUser(): UserAccount? {
-            TODO("Not yet implemented")
+            return buildUser("some-org-id", "some-user-id")
         }
 
         override fun getUserFromOrgAndUserId(orgId: String, userId: String): UserAccount? {
-            TODO("Not yet implemented")
+            return buildUser(orgId, userId)
         }
 
         override fun switchToUser(user: UserAccount) {
-            TODO("Not yet implemented")
+            recordedEvents.put("switched to ${user.userId}")
         }
 
         override fun getMainActivityClass(): Class<out Activity>? {
@@ -81,25 +71,13 @@ internal class SPManagerTest {
         }
     }
 
-    @Before
-    fun setup() {
-        context = getInstrumentation().targetContext
-        recordedUpdates = ArrayBlockingQueue(MAX_UPDATES_RECORDED)
-        testStatusUpdateCallback = TestStatusUpdateCallback()
-        testSDKMgr = TestSDKMgr()
-    }
-
-    @After
-    fun teardown() {
-    }
-
     @Test
     fun testKickOffSPInitiatedLoginFlow() {
-        val spManager = SPManager("some-idp", testSDKMgr)
-        spManager.kickOffSPInitiatedLoginFlow(context, testStatusUpdateCallback)
+        val spManager = SPManager("some-idp", TestSDKMgr())
+        spManager.kickOffSPInitiatedLoginFlow(context, TestStatusUpdateCallback())
 
         // Waiting for status update
-        waitForStatusUpdate(Status.LOGIN_REQUEST_SENT_TO_IDP)
+        waitForEvent(Status.LOGIN_REQUEST_SENT_TO_IDP.toString())
 
         // Checking active flow
         val activeFlow = spManager.getActiveFlow()
@@ -114,15 +92,26 @@ internal class SPManagerTest {
         })
 
         // Waiting for status update
-        waitForStatusUpdate(Status.ERROR_RESPONSE_RECEIVED_FROM_IDP)
+        waitForEvent(Status.ERROR_RESPONSE_RECEIVED_FROM_IDP.toString())
 
         // Checking active flow
         Assert.assertEquals(2, activeFlow.messages.size)
         Assert.assertEquals(response.toString(), activeFlow.messages[1].toString())
     }
 
-    fun waitForStatusUpdate(expectedStatusUpdate: Status) {
-        val actualStatusUpdate = recordedUpdates.poll(TIMEOUT, TimeUnit.SECONDS)
-        Assert.assertEquals(expectedStatusUpdate, actualStatusUpdate)
+    @Test
+    fun testIDPInitiatedFlowForExistingUser() {
+        val spManager = SPManager("some-idp", TestSDKMgr())
+
+        // Faking a request from the idp
+        val request = IDPSPMessage.IDPLoginRequest(orgId = "some-org-id", userId = "some-user-id")
+        spManager.onReceive(context, request.toIntent().apply {
+            putExtra("src_app_package_name", "some-idp")
+        })
+
+        // Checking that sp switched to requested user
+        waitForEvent("switched to some-user-id")
+
+    // To be continued
     }
 }
