@@ -151,15 +151,15 @@ class BiometricAuthenticationManagerTest {
 
     @Test
     fun testNativeBiometricLoginButton() {
-        Assert.assertTrue("Should default to true.", bioAuthManager.isNativeBiometricLoginButtonEnabled(userAccount))
+        Assert.assertTrue("Should default to true.", bioAuthManager.isNativeBiometricLoginButtonEnabled())
         bioAuthManager.storeMobilePolicy(userAccount, true, 0)
-        Assert.assertTrue("Should default to true.", bioAuthManager.isNativeBiometricLoginButtonEnabled(userAccount))
+        Assert.assertTrue("Should default to true.", bioAuthManager.isNativeBiometricLoginButtonEnabled())
 
         bioAuthManager.enableNativeBiometricLoginButton(userAccount, false)
-        Assert.assertFalse("Should be opted in", bioAuthManager.isNativeBiometricLoginButtonEnabled(userAccount))
+        Assert.assertFalse("Should be opted in", bioAuthManager.isNativeBiometricLoginButtonEnabled())
 
         bioAuthManager.enableNativeBiometricLoginButton(userAccount, true)
-        Assert.assertTrue("User should have opted in again", bioAuthManager.isNativeBiometricLoginButtonEnabled(userAccount))
+        Assert.assertTrue("User should have opted in again", bioAuthManager.isNativeBiometricLoginButtonEnabled())
     }
 
     // TODO: shouldAllowRefresh, presentOptInDialog?

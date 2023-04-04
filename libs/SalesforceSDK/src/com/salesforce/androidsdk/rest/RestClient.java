@@ -687,7 +687,9 @@ public class RestClient {
 			/*
 			 * Standard access token expiry returns 401 as the error code.
 			 */
-            if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED) {
+            if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED &&
+				SalesforceSDKManager.getInstance().getBiometricAuthenticationManager().shouldAllowRefresh()) {
+
 				final URI curInstanceUrl = clientInfo.getInstanceUrl();
 				if (curInstanceUrl != null) {
 					final HttpUrl currentInstanceUrl = HttpUrl.get(curInstanceUrl);
@@ -796,7 +798,7 @@ public class RestClient {
         /**
          * Swaps the existing access token for a new one.
          */
-        private void refreshAccessToken() throws IOException {
+		public void refreshAccessToken() throws IOException {
 
             // If we haven't retried already and we have an accessTokenProvider
             // Then let's try to get a new authToken

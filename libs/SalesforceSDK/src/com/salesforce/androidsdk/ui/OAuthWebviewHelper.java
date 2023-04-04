@@ -43,6 +43,7 @@ import android.security.KeyChain;
 import android.security.KeyChainAliasCallback;
 import android.security.KeyChainException;
 import android.text.TextUtils;
+import android.view.View;
 import android.webkit.ClientCertRequest;
 import android.webkit.CookieManager;
 import android.webkit.SslErrorHandler;
@@ -50,11 +51,12 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import androidx.browser.customtabs.CustomTabsIntent;
 
-import com.google.firebase.FirebaseOptions;
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountBuilder;
@@ -65,12 +67,12 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
-import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
 import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -444,7 +446,18 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
         @Override
 		public void onPageFinished(WebView view, String url) {
-        	EventsObservable.get().notifyEvent(EventType.AuthWebViewPageFinished, url);
+            // Remove the Biometric Login button from the Connected App allow denny screen.
+            if (url.contains("frontdoor.jsp")) {
+                final RelativeLayout parentView = (RelativeLayout) view.getParent();
+                if (parentView != null) {
+                    final Button button = parentView.findViewById(R.id.sf__bio_login_button);
+                    if (button != null) {
+                        button.setVisibility(View.INVISIBLE);
+                    }
+                }
+            }
+
+            EventsObservable.get().notifyEvent(EventType.AuthWebViewPageFinished, url);
         	super.onPageFinished(view, url);
 		}
 
@@ -626,7 +639,16 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             if (id.screenLockTimeout > 0) {
                 int timeoutInMills = id.screenLockTimeout * 1000 * 60;
                 final ScreenLockManager screenLockManager = mgr.getScreenLockManager();
-                screenLockManager.storeMobilePolicy(account, id.mobilePolicy, timeoutInMills);
+                screenLockManager.storeMobilePolicy(account, id.screenLock, timeoutInMills);
+            }
+
+            // Biometric Auth required by mobile policy.
+            if (id.biometricAuth) {
+                // Default to 15 minutes if not set.
+                int timeout = (id.biometricAuthTimeout != -1) ? id.biometricAuthTimeout : 15;
+                int timeoutInMills = timeout * 1000 * 60;
+                final BiometricAuthenticationManager bioAuthManager = mgr.getBiometricAuthenticationManager();
+                bioAuthManager.storeMobilePolicy(account, id.biometricAuth, timeoutInMills);
             }
 
             // All done

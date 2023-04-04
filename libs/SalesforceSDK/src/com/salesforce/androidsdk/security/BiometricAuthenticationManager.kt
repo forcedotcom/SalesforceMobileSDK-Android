@@ -36,7 +36,7 @@ import com.salesforce.androidsdk.util.EventsObservable
 internal class BiometricAuthenticationManager: AppLockManager(
     MOBILE_POLICY_PREF, BIO_AUTH, BIO_AUTH_TIMEOUT
 ) {
-    private var isLocked = true
+    var isLocked = true
 
     override fun shouldLock(): Boolean {
         val elapsedTime = System.currentTimeMillis() - lastBackgroundTimestamp
@@ -90,8 +90,9 @@ internal class BiometricAuthenticationManager: AppLockManager(
             .edit().putBoolean(BIO_AUTH_NATIVE_BUTTON, enabled).apply()
     }
 
-    fun isNativeBiometricLoginButtonEnabled(account: UserAccount): Boolean {
-        return getAccountPrefs(account, BIO_AUTH).getBoolean(BIO_AUTH_NATIVE_BUTTON, true)
+    fun isNativeBiometricLoginButtonEnabled(): Boolean {
+        val currentUser = SalesforceSDKManager.getInstance().userAccountManager.currentUser
+        return currentUser != null && getAccountPrefs(currentUser, BIO_AUTH).getBoolean(BIO_AUTH_NATIVE_BUTTON, true)
     }
 
     fun presentOptInDialog() {

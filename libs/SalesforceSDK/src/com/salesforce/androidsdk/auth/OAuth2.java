@@ -42,7 +42,6 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -91,6 +90,7 @@ public class OAuth2 {
     private static final String JSON = "json";
     private static final String MOBILE_POLICY = "mobile_policy";
     private static final String SCREEN_LOCK_TIMEOUT = "screen_lock";
+    private static final String BIOMETRIC_AUTHENTICATION = "biometric_auth";
     private static final String REFRESH_TOKEN = "refresh_token";
     private static final String HYBRID_REFRESH = "hybrid_refresh";
     private static final String RESPONSE_TYPE = "response_type";
@@ -527,10 +527,10 @@ public class OAuth2 {
         public String displayName;
         public String pictureUrl;
         public String thumbnailUrl;
-        public boolean mobilePolicy;
-        @Deprecated public int pinLength = -1;
+        public boolean screenLock;
         public int screenLockTimeout = -1;
-        public boolean biometricUnlockAllowed = true;
+        public boolean biometricAuth;
+        public int biometricAuthTimeout = -1;
         public JSONObject customAttributes;
         public JSONObject customPermissions;
 
@@ -556,8 +556,15 @@ public class OAuth2 {
                 customPermissions = parsedResponse.optJSONObject(CUSTOM_PERMISSIONS);
                 if (parsedResponse.has(MOBILE_POLICY)) {
                     JSONObject mobilePolicyObject = parsedResponse.getJSONObject(MOBILE_POLICY);
-                    mobilePolicy = mobilePolicyObject.has(SCREEN_LOCK_TIMEOUT);
+                    screenLock = mobilePolicyObject.has(SCREEN_LOCK_TIMEOUT);
                     screenLockTimeout = mobilePolicyObject.getInt(SCREEN_LOCK_TIMEOUT);
+                    biometricAuth = mobilePolicyObject.has(BIOMETRIC_AUTHENTICATION);
+                    biometricAuthTimeout = mobilePolicyObject.getInt(BIOMETRIC_AUTHENTICATION);
+
+                    if (screenLock && biometricAuth) {
+                        SalesforceSDKLogger.w(TAG, "Ignoring ScreenLock because BiometricAuthentication is enabled.");
+                        screenLock = false;
+                    }
                 }
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse identity response", e);
