@@ -30,8 +30,7 @@ import android.app.Activity
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry.*
 import com.salesforce.androidsdk.accounts.UserAccount
-import com.salesforce.androidsdk.auth.idp.IDPSPMessage.SPLoginRequest
-import com.salesforce.androidsdk.auth.idp.IDPSPMessage.SPLoginResponse
+import com.salesforce.androidsdk.auth.idp.IDPSPMessage.*
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
 import org.junit.Assert
@@ -44,7 +43,7 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
 
     inner class TestStatusUpdateCallback : StatusUpdateCallback {
         override fun onStatusUpdate(status: Status) {
-            recordedEvents.put(status.toString())
+            recordedEvents.put("status ${status}")
         }
     }
 
@@ -53,13 +52,17 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
         super.setup()
     }
 
-    inner class TestSDKMgr : SPManager.SDKManager {
+    inner class TestSDKMgr(val user:UserAccount?) : SPManager.SDKManager {
         override fun getCurrentUser(): UserAccount? {
-            return buildUser("some-org-id", "some-user-id")
+            return user
         }
 
         override fun getUserFromOrgAndUserId(orgId: String, userId: String): UserAccount? {
-            return buildUser(orgId, userId)
+            return if (orgId == user?.orgId && userId == user.userId) {
+                user
+            } else {
+                null
+            }
         }
 
         override fun switchToUser(user: UserAccount) {
@@ -67,51 +70,105 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
         }
 
         override fun getMainActivityClass(): Class<out Activity>? {
-            TODO("Not yet implemented")
+            return null
         }
     }
 
     @Test
     fun testKickOffSPInitiatedLoginFlow() {
-        val spManager = SPManager("some-idp", TestSDKMgr())
+        val spManager = SPManager("some-idp", TestSDKMgr(buildUser("some-org-id", "some-user-id")), this::sendBroadcast)
         spManager.kickOffSPInitiatedLoginFlow(context, TestStatusUpdateCallback())
-
-        // Waiting for status update
-        waitForEvent(Status.LOGIN_REQUEST_SENT_TO_IDP.toString())
 
         // Checking active flow
         val activeFlow = spManager.getActiveFlow()
-        val request = activeFlow?.firstMessage
-        Assert.assertNotNull(request)
-        Assert.assertTrue(request is SPLoginRequest)
+        Assert.assertNotNull(activeFlow)
+        val spLoginRequest = activeFlow?.firstMessage
+        Assert.assertNotNull(spLoginRequest)
+        Assert.assertTrue(spLoginRequest is SPLoginRequest)
 
-        // Faking a response from the idp
-        val response = SPLoginResponse(request!!.uuid, error="Failure!")
+        // Checking events
+        waitForEvent("sendBroadcast Intent { act=com.salesforce.SP_LOGIN_REQUEST pkg=some-idp (has extras) } extras = { uuid = ${spLoginRequest!!.uuid} src_app_package_name = com.salesforce.androidsdk.tests code_challenge = ")
+        waitForEvent("status LOGIN_REQUEST_SENT_TO_IDP")
+
+        // Faking a response from the idp (with the error so that we don't attempt to exchange the code for tokens)
+        val response = SPLoginResponse(spLoginRequest.uuid, error="some-error")
         spManager.onReceive(context, response.toIntent().apply {
             putExtra("src_app_package_name", "some-idp")
         })
 
         // Waiting for status update
-        waitForEvent(Status.ERROR_RESPONSE_RECEIVED_FROM_IDP.toString())
+        waitForEvent("status ERROR_RESPONSE_RECEIVED_FROM_IDP")
 
         // Checking active flow
         Assert.assertEquals(2, activeFlow.messages.size)
-        Assert.assertEquals(response.toString(), activeFlow.messages[1].toString())
+        val spLoginResponse = activeFlow.messages.get(1)
+        Assert.assertNotNull(spLoginResponse)
+        Assert.assertTrue(spLoginResponse is SPLoginResponse)
+        Assert.assertEquals(response.toString(), spLoginResponse.toString())
+
+        // Expect no more events
+        expectNoEvent()
     }
 
     @Test
     fun testIDPInitiatedFlowForExistingUser() {
-        val spManager = SPManager("some-idp", TestSDKMgr())
+        val spManager = SPManager("some-idp", TestSDKMgr(buildUser("some-org-id", "some-user-id")), this::sendBroadcast)
 
         // Faking a request from the idp
-        val request = IDPSPMessage.IDPLoginRequest(orgId = "some-org-id", userId = "some-user-id")
+        val request = IDPLoginRequest(orgId = "some-org-id", userId = "some-user-id")
         spManager.onReceive(context, request.toIntent().apply {
             putExtra("src_app_package_name", "some-idp")
         })
 
-        // Checking that sp switched to requested user
-        waitForEvent("switched to some-user-id")
+        // Checking there is no active flow - we had the user, we did not need to start a sp login flow
+        Assert.assertNull(spManager.getActiveFlow())
 
-    // To be continued
+        // Checking that sp switched to requested user and responded back to the IDP app
+        waitForEvent("switched to some-user-id")
+        waitForEvent("sendBroadcast Intent { act=com.salesforce.IDP_LOGIN_RESPONSE pkg=some-idp (has extras) } extras = { uuid = ${request.uuid} src_app_package_name = com.salesforce.androidsdk.tests }")
+    }
+
+    @Test
+    fun testIDPInitiatedFlowForNewUser() {
+        val spManager = SPManager("some-idp", TestSDKMgr(null), this::sendBroadcast)
+
+        // Faking a request from the idp
+        val request = IDPLoginRequest(orgId = "some-other-org-id", userId = "some-other-user-id")
+        spManager.onReceive(context, request.toIntent().apply {
+            putExtra("src_app_package_name", "some-idp")
+        })
+
+        // Checking active flow
+        val activeFlow = spManager.getActiveFlow()
+        Assert.assertNotNull(activeFlow)
+        val idpLoginRequest = activeFlow?.messages?.get(0)
+        Assert.assertNotNull(idpLoginRequest)
+        Assert.assertTrue(idpLoginRequest is IDPLoginRequest)
+        Assert.assertEquals(request.toString(), idpLoginRequest.toString())
+
+        // Checking that sp responded with a SP_LOGIN_REQUEST
+        waitForEvent("sendBroadcast Intent { act=com.salesforce.SP_LOGIN_REQUEST pkg=some-idp (has extras) } extras = { uuid = ${request.uuid} src_app_package_name = com.salesforce.androidsdk.tests code_challenge = ")
+
+        // Checking active flow - we did not have the user, we had to start a sp login flow
+        Assert.assertEquals(2, activeFlow?.messages?.size)
+        val spLoginRequest = activeFlow?.messages?.get(1)
+        Assert.assertNotNull(spLoginRequest)
+        Assert.assertTrue(spLoginRequest is SPLoginRequest)
+
+        // Faking a response from the idp (with the error so that we don't attempt to exchange the code for tokens)
+        val response = SPLoginResponse(request.uuid, error="some-error")
+        spManager.onReceive(context, response.toIntent().apply {
+            putExtra("src_app_package_name", "some-idp")
+        })
+
+        // Checking active flow - we did not have the user, we had to start a sp login flow
+        Assert.assertEquals(3, activeFlow?.messages?.size)
+        val spLoginResponse = activeFlow?.messages?.get(2)
+        Assert.assertNotNull(spLoginResponse)
+        Assert.assertTrue(spLoginResponse is SPLoginResponse)
+        Assert.assertEquals(response.toString(), spLoginResponse.toString())
+
+        // Expect no more events
+        expectNoEvent()
     }
 }

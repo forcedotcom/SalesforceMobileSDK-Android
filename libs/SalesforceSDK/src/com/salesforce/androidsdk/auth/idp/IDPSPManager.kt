@@ -50,7 +50,9 @@ internal open class ActiveFlow(val context: Context) {
     }
 }
 
-internal abstract class IDPSPManager() {
+internal abstract class IDPSPManager(
+    val sendBroadcast: (context: Context, intent: Intent) -> Unit,
+) {
     companion object {
         private const val SRC_APP_PACKAGE_NAME_KEY = "src_app_package_name"
     }
@@ -84,7 +86,7 @@ internal abstract class IDPSPManager() {
             setPackage(destinationAppPackageName)
         }
         SalesforceSDKLogger.d(this::class.java.simpleName, "send ${LogUtil.intentToString(intent)}")
-        context.sendBroadcast(intent)
+        sendBroadcast(context, intent)
     }
 
     /**

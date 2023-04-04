@@ -42,7 +42,13 @@ internal class IDPManagerTest : IDPSPManagerTestCase() {
 
     inner class TestStatusUpdateCallback : StatusUpdateCallback {
         override fun onStatusUpdate(status: Status) {
-            recordedEvents.put(status.toString())
+            recordedEvents.put("status ${status}")
+        }
+    }
+
+    inner class TestSDKManager(val user: UserAccount?) : IDPManager.SDKManager {
+        override fun getCurrentUser(): UserAccount? {
+            return user
         }
     }
 
@@ -54,35 +60,78 @@ internal class IDPManagerTest : IDPSPManagerTestCase() {
     @Test
     fun testKickOffIDPInitiatedLoginFlow() {
         val allowedSPApps = listOf(SPConfig("some-sp", "c", "client-id", "callback-url", arrayOf("api")))
-        val idpManager = IDPManager(allowedSPApps, object : IDPManager.SDKManager {
-            override fun getCurrentUser(): UserAccount? {
-                return buildUser("some-org-id", "some-user-id")
-            }
-        })
+        val idpManager = IDPManager(allowedSPApps, TestSDKManager(buildUser("some-org-id", "some-user-id")), this::sendBroadcast)
         idpManager.kickOffIDPInitiatedLoginFlow(context, "some-sp", TestStatusUpdateCallback())
-
-        // Waiting for status update
-        waitForEvent(Status.LOGIN_REQUEST_SENT_TO_SP.toString())
 
         // Checking active flow
         val activeFlow = idpManager.getActiveFlow()
-        val request = activeFlow?.firstMessage
-        Assert.assertNotNull(request)
-        Assert.assertTrue(request is IDPLoginRequest)
-        Assert.assertEquals("some-org-id", (request as IDPLoginRequest).orgId)
-        Assert.assertEquals("some-user-id", (request as IDPLoginRequest).userId)
+        Assert.assertNotNull(activeFlow)
+        val idpLoginRequest = activeFlow?.firstMessage
+        Assert.assertNotNull(idpLoginRequest)
+        Assert.assertTrue(idpLoginRequest is IDPLoginRequest)
+        Assert.assertEquals("some-org-id", (idpLoginRequest as IDPLoginRequest).orgId)
+        Assert.assertEquals("some-user-id", idpLoginRequest.userId)
+
+        // Checking events
+        waitForEvent("sendBroadcast Intent { act=com.salesforce.IDP_LOGIN_REQUEST pkg=some-sp (has extras) } extras = { org_id = some-org-id user_id = some-user-id uuid = ${idpLoginRequest.uuid} src_app_package_name = com.salesforce.androidsdk.tests }")
+        waitForEvent("status LOGIN_REQUEST_SENT_TO_SP")
 
         // Faking a response from the sp
-        val response = IDPLoginResponse(request.uuid)
+        val response = IDPLoginResponse(idpLoginRequest.uuid)
         idpManager.onReceive(context, response.toIntent().apply {
             putExtra("src_app_package_name", "some-sp")
         })
 
-        // Waiting for status update
-        waitForEvent(Status.SP_LOGIN_COMPLETE.toString())
+        // Checking events
+        waitForEvent("status SP_LOGIN_COMPLETE")
 
         // Checking active flow
         Assert.assertEquals(2, activeFlow.messages.size)
-        Assert.assertEquals(response.toString(), activeFlow.messages[1].toString())
+        val idpLoginResponse = activeFlow.messages.get(1)
+        Assert.assertNotNull(idpLoginResponse)
+        Assert.assertTrue(idpLoginResponse is IDPLoginResponse)
+        Assert.assertEquals(response.toString(), idpLoginResponse.toString())
+
+        //  NB it won't attempt to start the activity in the SP app because the flow was
+        //     started using a context that is not an activity
+
+        // Expect no more events
+        expectNoEvent()
+    }
+
+    @Test
+    fun testSPInitiatedLoginFlowIDPNotLoggedInt() {
+        val allowedSPApps = listOf(SPConfig("some-sp", "c", "client-id", "callback-url", arrayOf("api")))
+        val idpManager = IDPManager(allowedSPApps, TestSDKManager(null), this::sendBroadcast)
+
+        // Faking a request from the sp
+        val request = SPLoginRequest(codeChallenge = "some-challenge")
+        idpManager.onReceive(context, request.toIntent().apply {
+            putExtra("src_app_package_name", "some-sp")
+        })
+
+        // Checking there is no active flow - we did not initiate
+        Assert.assertNull(idpManager.getActiveFlow())
+
+        // Expecting an error response to be sent back - since we setup the IDP not to have a current user
+        waitForEvent("sendBroadcast Intent { act=com.salesforce.SP_LOGIN_RESPONSE pkg=some-sp (has extras) } extras = { login_url = null code = null uuid = ${request.uuid} error = IDP app not logged in src_app_package_name = com.salesforce.androidsdk.tests }")
+    }
+
+    @Test
+    fun testSPInitiatedLoginFlowBadSP() {
+        val allowedSPApps = listOf(SPConfig("some-sp", "c", "client-id", "callback-url", arrayOf("api")))
+        val idpManager = IDPManager(allowedSPApps, TestSDKManager(null), this::sendBroadcast)
+
+        // Faking a request from the sp
+        val request = SPLoginRequest(codeChallenge = "some-challenge")
+        idpManager.onReceive(context, request.toIntent().apply {
+            putExtra("src_app_package_name", "some-other-sp")
+        })
+
+        // Checking there is no active flow - we did not initiate
+        Assert.assertNull(idpManager.getActiveFlow())
+
+        // Expect no more events
+        expectNoEvent()
     }
 }

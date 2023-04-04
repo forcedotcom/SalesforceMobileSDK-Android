@@ -65,8 +65,9 @@ internal class IDPInitiatedLoginFlow private constructor(context:Context, val us
  */
 internal class IDPManager(
     val allowedSPApps: List<SPConfig>,
-    val sdkMgr: SDKManager
-): IDPSPManager(), com.salesforce.androidsdk.auth.idp.interfaces.IDPManager {
+    val sdkMgr: SDKManager,
+    sendBroadcast: (context:Context, intent:Intent) -> Unit
+): IDPSPManager(sendBroadcast), com.salesforce.androidsdk.auth.idp.interfaces.IDPManager {
 
     /**
      * Interface to keep IDPManager decoupled from other managers
@@ -78,6 +79,15 @@ internal class IDPManager(
     companion object {
         private val TAG = IDPManager::class.java.simpleName
     }
+
+    /**
+     * Secondary constructor (called from java)
+     */
+    constructor(allowedSPApps: List<SPConfig>, sdkMgr: SDKManager) : this(
+        allowedSPApps,
+        sdkMgr,
+        { context, intent -> context.sendBroadcast(intent) }
+    )
 
     /**
      * Current active login flow if any
@@ -204,8 +214,11 @@ internal class IDPManager(
             )
 
         } ?: run {
-            val spLoginResponse = SPLoginResponse(error = "IDP app not logged in")
-            send(context, spLoginResponse, spConfig.appPackageName)
+            send(
+                context,
+                SPLoginResponse(message.uuid, error = "IDP app not logged in"),
+                spConfig.appPackageName
+            )
         }
     }
 
