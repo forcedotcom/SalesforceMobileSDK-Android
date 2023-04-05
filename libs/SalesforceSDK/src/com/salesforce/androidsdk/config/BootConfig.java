@@ -70,8 +70,6 @@ public class BootConfig {
 	private static final boolean DEFAULT_SHOULD_AUTHENTICATE = true;
 	private static final boolean DEFAULT_ATTEMPT_OFFLINE_LOAD = true;
 
-	private static final boolean DEFAULT_USE_HEADLESS_AUTH_CODE_FLOW = false;
-
 	private boolean configIsHybrid;
 
 	private String remoteAccessConsumerKey;
