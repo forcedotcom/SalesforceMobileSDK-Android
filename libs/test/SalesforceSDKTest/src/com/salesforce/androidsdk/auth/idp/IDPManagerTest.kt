@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.auth.idp
 
+import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry.*
 import com.salesforce.androidsdk.accounts.UserAccount
@@ -49,6 +50,16 @@ internal class IDPManagerTest : IDPSPManagerTestCase() {
     inner class TestSDKManager(val user: UserAccount?) : IDPManager.SDKManager {
         override fun getCurrentUser(): UserAccount? {
             return user
+        }
+
+        override fun generateAuthCode(
+            context: Context,
+            userAccount: UserAccount,
+            spConfig: SPConfig,
+            codeChallenge: String,
+            onResult: (result: IDPAuthCodeHelper.Result) -> Unit
+        ) {
+            onResult(IDPAuthCodeHelper.Result(true, code = "some-code", loginUrl = "some-login-url"))
         }
     }
 
@@ -100,7 +111,25 @@ internal class IDPManagerTest : IDPSPManagerTestCase() {
     }
 
     @Test
-    fun testSPInitiatedLoginFlowIDPNotLoggedInt() {
+    fun testSPInitiatedLoginFlowWithIDPReturningCode() {
+        val allowedSPApps = listOf(SPConfig("some-sp", "c", "client-id", "callback-url", arrayOf("api")))
+        val idpManager = IDPManager(allowedSPApps, TestSDKManager(buildUser("some-org-id", "some-user-id")), this::sendBroadcast)
+
+        // Faking a request from the sp
+        val request = SPLoginRequest(codeChallenge = "some-challenge")
+        idpManager.onReceive(context, request.toIntent().apply {
+            putExtra("src_app_package_name", "some-sp")
+        })
+
+        // Checking there is no active flow - we did not initiate
+        Assert.assertNull(idpManager.getActiveFlow())
+
+        // Expecting a response with a code to be sent back
+        waitForEvent("sendBroadcast Intent { act=com.salesforce.SP_LOGIN_RESPONSE pkg=some-sp (has extras) } extras = { login_url = some-login-url code = some-code uuid = ${request.uuid} error = null src_app_package_name = com.salesforce.androidsdk.tests }")
+    }
+
+    @Test
+    fun testSPInitiatedLoginFlowWithIDPNotLoggedInt() {
         val allowedSPApps = listOf(SPConfig("some-sp", "c", "client-id", "callback-url", arrayOf("api")))
         val idpManager = IDPManager(allowedSPApps, TestSDKManager(null), this::sendBroadcast)
 
@@ -118,7 +147,7 @@ internal class IDPManagerTest : IDPSPManagerTestCase() {
     }
 
     @Test
-    fun testSPInitiatedLoginFlowBadSP() {
+    fun testSPInitiatedLoginFlowWithBadSP() {
         val allowedSPApps = listOf(SPConfig("some-sp", "c", "client-id", "callback-url", arrayOf("api")))
         val idpManager = IDPManager(allowedSPApps, TestSDKManager(null), this::sendBroadcast)
 

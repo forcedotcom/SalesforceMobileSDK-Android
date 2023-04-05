@@ -31,6 +31,7 @@ import android.content.Context
 import android.content.Intent
 import android.webkit.WebView
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.idp.IDPSPMessage.*
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager.StatusUpdateCallback
@@ -65,15 +66,22 @@ internal class IDPInitiatedLoginFlow private constructor(context:Context, val us
  */
 internal class IDPManager(
     val allowedSPApps: List<SPConfig>,
+    // the following allows us to decouple IDPManager from other part of the SDK and make it easier to test
     val sdkMgr: SDKManager,
     sendBroadcast: (context:Context, intent:Intent) -> Unit
 ): IDPSPManager(sendBroadcast), com.salesforce.androidsdk.auth.idp.interfaces.IDPManager {
 
     /**
-     * Interface to keep IDPManager decoupled from other managers
+     * Interface to keep IDPManager decoupled from the rest of the SDK
      */
     internal interface SDKManager {
         fun getCurrentUser(): UserAccount?
+
+        fun generateAuthCode(context: Context,
+                             userAccount: UserAccount,
+                             spConfig: SPConfig,
+                             codeChallenge: String,
+                             onResult: (result: IDPAuthCodeHelper.Result) -> Unit): Unit
     }
 
     companion object {
@@ -81,12 +89,28 @@ internal class IDPManager(
     }
 
     /**
-     * Secondary constructor (called from java)
+     * Secondary constructor (all wired)
      */
-    constructor(allowedSPApps: List<SPConfig>, sdkMgr: SDKManager) : this(
+    constructor(allowedSPApps: List<SPConfig>) : this(
         allowedSPApps,
-        sdkMgr,
-        { context, intent -> context.sendBroadcast(intent) }
+        object : SDKManager {
+            override fun getCurrentUser(): UserAccount? {
+                return SalesforceSDKManager.getInstance().userAccountManager.currentUser
+            }
+
+            override fun generateAuthCode(
+                context: Context,
+                userAccount: UserAccount,
+                spConfig: SPConfig,
+                codeChallenge: String,
+                onResult: (result: IDPAuthCodeHelper.Result) -> Unit
+            ) {
+                IDPAuthCodeHelper.generateAuthCode(WebView(context), userAccount, spConfig, codeChallenge, onResult)
+            }
+
+
+        },
+        { context, intent -> context.sendBroadcast(intent) },
     )
 
     /**
@@ -181,8 +205,8 @@ internal class IDPManager(
             // If we are in IDP initiated login flow send status update
             activeFlow?.let { it.onStatusUpdate(Status.GETTING_AUTH_CODE_FROM_SERVER) }
             // Get auth code for current user
-            IDPAuthCodeHelper.generateAuthCode(
-                WebView(context),
+            sdkMgr.generateAuthCode(
+                context,
                 currentUser,
                 spConfig,
                 message.codeChallenge,

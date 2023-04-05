@@ -30,6 +30,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.idp.IDPSPMessage.*
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
@@ -82,6 +83,7 @@ internal class SPLoginFlow private constructor(context:Context, val codeVerifier
  */
 internal class SPManager(
     val idpAppPackageName: String,
+    // the following allows us to decouple IDPManager from other part of the SDK and make it easier to test
     val sdkMgr: SDKManager,
     sendBroadcast: (context:Context, intent:Intent) -> Unit
 ): IDPSPManager(sendBroadcast), com.salesforce.androidsdk.auth.idp.interfaces.SPManager {
@@ -94,17 +96,48 @@ internal class SPManager(
         fun getUserFromOrgAndUserId(orgId:String, userId:String): UserAccount?
         fun switchToUser(user: UserAccount)
         fun getMainActivityClass(): Class<out Activity>?
+        fun loginWithAuthCode(context:Context,
+                                loginUrl: String,
+                                code: String,
+                                codeVerifier: String,
+                                onUserCreated: (UserAccount) -> Unit)
     }
     companion object {
         private val TAG = SPManager::class.java.simpleName
     }
 
     /**
-     * Secondary constructor (called from java)
+     * Secondary constructor (all wired)
      */
-    constructor(idpAppPackageName: String, sdkMgr: SDKManager) : this(
+    constructor(idpAppPackageName: String) : this(
         idpAppPackageName,
-        sdkMgr,
+        object : SDKManager {
+            override fun getCurrentUser(): UserAccount? {
+                return SalesforceSDKManager.getInstance().userAccountManager.currentUser
+            }
+
+            override fun getUserFromOrgAndUserId(orgId: String, userId: String): UserAccount? {
+                return SalesforceSDKManager.getInstance().userAccountManager.getUserFromOrgAndUserId(orgId, userId)
+            }
+
+            override fun switchToUser(user: UserAccount) {
+                SalesforceSDKManager.getInstance().userAccountManager.switchToUser(user)
+            }
+
+            override fun getMainActivityClass(): Class<out Activity>? {
+                return SalesforceSDKManager.getInstance().mainActivityClass
+            }
+
+            override fun loginWithAuthCode(
+                context: Context,
+                loginUrl: String,
+                code: String,
+                codeVerifier: String,
+                onUserCreated: (UserAccount) -> Unit
+            ) {
+                SPAuthCodeHelper.loginWithAuthCode(context, loginUrl, code, codeVerifier, onUserCreated)
+            }
+        },
         { context, intent -> context.sendBroadcast(intent) }
     )
 
@@ -226,17 +259,17 @@ internal class SPManager(
             activeFlow.onStatusUpdate(Status.ERROR_RESPONSE_RECEIVED_FROM_IDP)
         } else if (message.loginUrl != null && message.code != null) {
             activeFlow.onStatusUpdate(Status.AUTH_CODE_RECEIVED_FROM_IDP)
-            SPAuthCodeHelper.loginWithAuthCode(activeFlow.context, message.loginUrl,
+            sdkMgr.loginWithAuthCode(activeFlow.context, message.loginUrl,
                 message.code,
                 activeFlow.codeVerifier
             ) { user ->
                 with(activeFlow) {
-                    activeFlow.onStatusUpdate(Status.LOGIN_COMPLETE)
                     handleUserExists(
                         context,
                         if (firstMessage is IDPLoginRequest) firstMessage as IDPLoginRequest else null,
                         user
                     )
+                    activeFlow.onStatusUpdate(Status.LOGIN_COMPLETE)
                 }
             }
         }
