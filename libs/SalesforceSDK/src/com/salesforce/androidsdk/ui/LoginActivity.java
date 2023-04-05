@@ -35,7 +35,6 @@ import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
 import android.security.KeyChain;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -63,7 +62,6 @@ import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents;
 import com.salesforce.androidsdk.util.AuthConfigTask;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import com.salesforce.androidsdk.util.LogUtil;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import com.salesforce.androidsdk.util.UriFragmentParser;
 
@@ -92,7 +90,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.d(TAG, "onCreate " + LogUtil.intentToString(getIntent()));
         boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark_Login : R.style.SalesforceSDK);
         SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
@@ -144,7 +141,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
 	@Override
 	protected void onDestroy() {
-        Log.d(TAG, "onDestroy");
         if (receiverRegistered) {
             unregisterReceiver(changeServerReceiver);
             receiverRegistered = false;
@@ -155,8 +151,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	@Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-
-        Log.d(TAG, "onCreate " + LogUtil.intentToString(intent));
 
         // If this is a callback from Chrome, processes it and does nothing else.
         if (isChromeCallback(intent)) {
@@ -190,8 +184,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
     }
 
     private void completeAuthFlow(Intent intent) {
-        Log.d(TAG, "completeAuthFlow");
-
         final Uri uri = intent.getData();
         final Map<String, String> params = UriFragmentParser.parse(uri);
         final String error = params.get("error");
@@ -221,7 +213,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	@Override
 	protected void onResume() {
 		super.onResume();
-        Log.d(TAG, "onResume");
 		if (wasBackgrounded) {
 		    if (webviewHelper.shouldReloadPage()) {
                 webviewHelper.clearView();
@@ -311,8 +302,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
 	@Override
 	public void loadingLoginPage(String loginUrl) {
-        Log.d(TAG, "loadingLoginPage " + loginUrl);
-
 		final ActionBar ab = getActionBar();
 		if (ab != null) {
 			ab.setTitle(loginUrl);
@@ -346,7 +335,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
      * @param v IDP login button.
      */
     public void onIDPLoginClick(View v) {
-        Log.d(TAG, "onIDPLoginClick");
         SalesforceSDKManager.getInstance().getSPManager().kickOffSPInitiatedLoginFlow(
                 this,
                 new SPStatusCallback());
@@ -358,7 +346,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	 * @param v
 	 */
 	public void onReloadClick(View v) {
-        Log.d(TAG, "onReloadClick");
 		webviewHelper.loadLoginPage();
 	}
 
@@ -374,8 +361,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
 	@Override
 	public void finish(UserAccount userAccount) {
-        Log.d(TAG, "finish " + userAccount.getUsername());
-
         initAnalyticsManager(userAccount);
         final UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
         final List<UserAccount> authenticatedUsers = userAccountManager.getAuthenticatedUsers();
