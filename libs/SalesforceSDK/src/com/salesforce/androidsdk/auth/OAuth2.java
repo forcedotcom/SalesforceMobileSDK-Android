@@ -286,6 +286,33 @@ public class OAuth2 {
     }
 
     /**
+     * Returns an approval URL for web server flow: https://help.salesforce.com/s/articleView?id=sf.remoteaccess_oauth_web_server_flow.htm&type=5
+     *
+     * @param loginUrl login URL.
+     * @param displayType display type.
+     * @param clientId client ID.
+     * @param callbackUrl callback URL.
+     * @param scopes scopes.
+     * @param codeChallenge code challenge.
+     * @return An approval URL for getting an auth code
+     */
+    public static URI getWebServerApprovalUrl(String loginUrl, String displayType,
+                                              String clientId, String callbackUrl,
+                                              String[] scopes, String codeChallenge) {
+        final StringBuilder sb = new StringBuilder(loginUrl);
+        sb.append(OAUTH_AUTH_PATH).append(getBrandedLoginPath());
+        sb.append(OAUTH_DISPLAY_PARAM).append(displayType == null ? TOUCH : displayType);
+        sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(CODE);
+        sb.append(AND).append(CLIENT_ID).append(EQUAL).append(Uri.encode(clientId));
+        if (scopes != null && scopes.length > 0) {
+            sb.append(AND).append(SCOPE).append(EQUAL).append(Uri.encode(computeScopeParameter(scopes)));
+        }
+        sb.append(AND).append(REDIRECT_URI).append(EQUAL).append(callbackUrl);
+        sb.append(AND).append(CODE_CHALLENGE).append(EQUAL).append(Uri.encode(codeChallenge));
+        return URI.create(sb.toString());
+    }
+
+    /**
      * Computes the scope parameter from an array of scopes. Also adds
      * the 'refresh_token' scope if it hasn't already been added.
      *

@@ -35,6 +35,7 @@ import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
 import android.security.KeyChain;
+import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -191,8 +192,14 @@ public class LoginActivity extends AccountAuthenticatorActivity
             final String errorDesc = params.get("error_description");
             webviewHelper.onAuthFlowError(error, errorDesc, null);
         } else {
-            final OAuth2.TokenEndpointResponse tr = new OAuth2.TokenEndpointResponse(params);
-            webviewHelper.onAuthFlowComplete(tr);
+            // if contains code, then do web server flow completion for hybrid_auth_code exchange
+            String code = params.get("code");
+            if (!(TextUtils.isEmpty(code))) {
+                webviewHelper.onWebServerFlowComplete(code);
+            } else {
+                final OAuth2.TokenEndpointResponse tr = new OAuth2.TokenEndpointResponse(params);
+                webviewHelper.onAuthFlowComplete(tr);
+            }
         }
     }
 
