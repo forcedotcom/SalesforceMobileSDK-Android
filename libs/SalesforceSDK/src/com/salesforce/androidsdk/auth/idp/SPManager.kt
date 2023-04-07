@@ -42,7 +42,7 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger
  * Class to capture state related to SP login flow
  * e.g. the context that started it
  *      - could be an activity in the case of a SP initiated login
- *      - or the receiver context in the case it was started in response to a IDP login request)
+ *      - or the receiver context in the case it was started in response to a IDP login request
  *      the code verifier
  */
 internal class SPLoginFlow private constructor(context:Context, val codeVerifier:String, val onStatusUpdate: (Status) -> Unit)

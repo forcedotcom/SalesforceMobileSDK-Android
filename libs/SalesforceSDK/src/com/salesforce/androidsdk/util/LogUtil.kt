@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.util
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Pair
 
 /**
  * Helper methods for logging
@@ -66,64 +65,5 @@ object LogUtil {
         } else {
             obj.toString()
         }
-    }
-
-    /**
-     * @param entries
-     * @param delim
-     * @return delim-delimited keys and comma-delimited values; string values are put between '
-     */
-	@JvmStatic
-	fun getAsStrings(entries: Set<Map.Entry<String?, Any>>?, delim: String?): Pair<String, String> {
-        if (entries == null) return Pair("", "")
-        val keysBuilder = StringBuilder()
-        val valuesBuilder = StringBuilder()
-        var first = true
-        for ((key, value) in entries) {
-            if (first) {
-                first = false
-            } else {
-                keysBuilder.append(delim)
-                valuesBuilder.append(delim)
-            }
-            keysBuilder.append(key)
-            if (value is String) {
-                valuesBuilder.append("'").append(value).append("'")
-            } else {
-                valuesBuilder.append(value)
-            }
-        }
-        return Pair(keysBuilder.toString(), valuesBuilder.toString())
-    }
-
-    /**
-     * Return arr1[0] + operator  + arr2[0] + delim + arr1[1] + operator  + arr2[1] + ...
-     * String elements of arr2 are put between '
-     * @param arr1
-     * @param arr2
-     * @param operator
-     * @param delim
-     * @return
-     */
-	@JvmStatic
-	fun zipJoin(entries: Set<Map.Entry<String?, Any>>?, operator: String?, delim: String?): String {
-        if (entries == null) return ""
-        val sb = StringBuilder()
-        var first = true
-        for ((key, value) in entries) {
-            first = if (first) {
-                false
-            } else {
-                sb.append(delim)
-                false
-            }
-            sb.append(key).append(operator)
-            if (value is String) {
-                sb.append("'").append(value).append("'")
-            } else {
-                sb.append(value)
-            }
-        }
-        return sb.toString()
     }
 }

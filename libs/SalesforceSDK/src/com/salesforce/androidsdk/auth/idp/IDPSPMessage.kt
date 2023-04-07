@@ -36,7 +36,7 @@ import java.util.*
  * Message can be built from intent, and intent can be built from message.
  */
 internal sealed class IDPSPMessage(
-    val uuid:String,
+    open val uuid:String,
     val action:String,
 ) {
     fun toIntent(): Intent {
@@ -86,8 +86,8 @@ internal sealed class IDPSPMessage(
     /**
      * Message sent by IDP to SP to kick-off an IDP initiated login
      */
-    class IDPLoginRequest(
-        uuid: String = UUID.randomUUID().toString(),
+    data class IDPLoginRequest(
+        override val uuid: String = UUID.randomUUID().toString(),
         val orgId: String,
         val userId: String
     ) : IDPSPMessage(uuid, ACTION) {
@@ -121,8 +121,8 @@ internal sealed class IDPSPMessage(
      * Message sent by SP to IDP in response to IDPLoginRequest
      * when SP app already has hinted user
      */
-    class IDPLoginResponse(
-        uuid: String,
+    data class IDPLoginResponse(
+        override val uuid: String,
     ) : IDPSPMessage(uuid, ACTION) {
 
         companion object {
@@ -143,8 +143,8 @@ internal sealed class IDPSPMessage(
      * Message sent from SP app to IDP either to kick-off a SP initiated login
      * or during an IDP initiated login when the SP app does not the requested user
      */
-    class SPLoginRequest(
-        uuid: String = UUID.randomUUID().toString(),
+    data class SPLoginRequest(
+        override val uuid: String = UUID.randomUUID().toString(),
         val codeChallenge:String,
     ): IDPSPMessage(uuid, ACTION) {
 
@@ -173,8 +173,8 @@ internal sealed class IDPSPMessage(
     /**
      * Message sent by IDP app to SP app in response to SPLoginRequest
      */
-    class SPLoginResponse(
-        uuid: String = UUID.randomUUID().toString(),
+    data class SPLoginResponse(
+        override val uuid: String = UUID.randomUUID().toString(),
         val code: String? = null,
         val loginUrl: String? = null,
         val error: String? = null
