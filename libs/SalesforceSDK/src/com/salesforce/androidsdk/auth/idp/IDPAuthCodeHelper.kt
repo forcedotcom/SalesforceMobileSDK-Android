@@ -62,36 +62,7 @@ internal class IDPAuthCodeHelper private constructor(
         val code: String? = null,
         val loginUrl: String? = null,
         val error: String? = null
-    ) {
-        companion object {
-            private const val SUCCESS_KEY = "success"
-            private const val CODE_KEY = "code"
-            private const val LOGIN_URL_KEY = "login_url"
-            private const val ERROR_KEY = "error"
-
-            fun fromBundle(bundle: Bundle?):Result? {
-                return if (bundle == null) null else {
-                    with(bundle) {
-                        Result(
-                            getBoolean(SUCCESS_KEY),
-                            getString(CODE_KEY),
-                            getString(LOGIN_URL_KEY),
-                            getString(ERROR_KEY)
-                        )
-                    }
-                }
-            }
-        }
-
-        fun toBundle():Bundle {
-            return bundleOf(
-                SUCCESS_KEY to success,
-                CODE_KEY to code,
-                LOGIN_URL_KEY to loginUrl,
-                ERROR_KEY to error
-            )
-        }
-    }
+    )
 
     init {
         webView.settings.javaScriptEnabled = true

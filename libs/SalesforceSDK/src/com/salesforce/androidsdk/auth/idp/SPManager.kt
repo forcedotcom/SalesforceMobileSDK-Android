@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.auth.idp
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.idp.IDPSPMessage.*
@@ -97,10 +98,11 @@ internal class SPManager(
         fun switchToUser(user: UserAccount)
         fun getMainActivityClass(): Class<out Activity>?
         fun loginWithAuthCode(context:Context,
-                                loginUrl: String,
-                                code: String,
-                                codeVerifier: String,
-                                onUserCreated: (UserAccount) -> Unit)
+                              loginUrl: String,
+                              code: String,
+                              codeVerifier: String,
+                              onResult: (SPAuthCodeHelper.Result) -> Unit
+        )
     }
     companion object {
         private val TAG = SPManager::class.java.simpleName
@@ -133,9 +135,9 @@ internal class SPManager(
                 loginUrl: String,
                 code: String,
                 codeVerifier: String,
-                onUserCreated: (UserAccount) -> Unit
+                onResult: (SPAuthCodeHelper.Result) -> Unit
             ) {
-                SPAuthCodeHelper.loginWithAuthCode(context, loginUrl, code, codeVerifier, onUserCreated)
+                SPAuthCodeHelper.loginWithAuthCode(context, loginUrl, code, codeVerifier, onResult)
             }
         },
         { context, intent -> context.sendBroadcast(intent) }
@@ -256,22 +258,30 @@ internal class SPManager(
     fun handleLoginResponse(activeFlow: SPLoginFlow, message: SPLoginResponse) {
         SalesforceSDKLogger.d(TAG, "handleLoginResponse $message")
         if (message.error != null) {
-            activeFlow.onStatusUpdate(Status.ERROR_RESPONSE_RECEIVED_FROM_IDP)
+            activeFlow.onStatusUpdate(Status.ERROR_RECEIVED_FROM_IDP)
         } else if (message.loginUrl != null && message.code != null) {
             activeFlow.onStatusUpdate(Status.AUTH_CODE_RECEIVED_FROM_IDP)
             sdkMgr.loginWithAuthCode(activeFlow.context, message.loginUrl,
                 message.code,
-                activeFlow.codeVerifier
-            ) { user ->
-                with(activeFlow) {
-                    handleUserExists(
-                        context,
-                        if (firstMessage is IDPLoginRequest) firstMessage as IDPLoginRequest else null,
-                        user
-                    )
-                    activeFlow.onStatusUpdate(Status.LOGIN_COMPLETE)
+                activeFlow.codeVerifier,
+                { result ->
+                    if (result.success) {
+                        with(activeFlow) {
+                            handleUserExists(
+                                context,
+                                if (firstMessage is IDPLoginRequest) firstMessage as IDPLoginRequest else null,
+                                result.user!!
+                            )
+                            activeFlow.onStatusUpdate(Status.LOGIN_COMPLETE)
+                        }
+                    } else {
+                        if (activeFlow.firstMessage is IDPLoginRequest) {
+                            send(activeFlow.context, IDPLoginResponse(message.uuid, result.error))
+                        }
+                        activeFlow.onStatusUpdate(Status.FAILED_TO_EXCHANGE_AUTHORIZATION_CODE)
+                    }
                 }
-            }
+            )
         }
     }
 

@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.auth.idp
 import android.content.Context
 import android.os.Bundle
 import com.salesforce.androidsdk.accounts.UserAccount
-import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
@@ -51,14 +50,22 @@ internal class SPAuthCodeHelper private constructor (
     val loginUrl: String,
     val code: String,
     val codeVerifier: String,
-    val onUserCreated: (UserAccount) -> Unit
+    val onResult:(result:Result) -> Unit
 ) : OAuthWebviewHelperEvents {
-
+    data class Result(
+        val success: Boolean,
+        val user: UserAccount? = null,
+        val error: String? = null
+    )
     companion object {
         val TAG = SPAuthCodeHelper::class.java.simpleName
 
-        fun loginWithAuthCode(context:Context, loginUrl: String, code: String, codeVerifier: String, onUserCreated: (UserAccount) -> Unit) {
-            val spAuthCodeHelper = SPAuthCodeHelper(context, loginUrl, code, codeVerifier, onUserCreated)
+        fun loginWithAuthCode(context:Context,
+                              loginUrl: String, code:
+                              String, codeVerifier: String,
+                              onResult: (Result) -> Unit
+        ) {
+            val spAuthCodeHelper = SPAuthCodeHelper(context, loginUrl, code, codeVerifier, onResult)
             CoroutineScope(Dispatchers.IO).launch {
                 spAuthCodeHelper.loginWithAuthCode()
             }
@@ -66,9 +73,6 @@ internal class SPAuthCodeHelper private constructor (
     }
 
     val spConfig: SPConfig
-
-    val sdkMgr: SalesforceSDKManager
-        get() = SalesforceSDKManager.getInstance()
 
     init {
         spConfig = SPConfig.forCurrentApp()
@@ -104,7 +108,12 @@ internal class SPAuthCodeHelper private constructor (
 
     private fun loginWithAuthCode() {
         CoroutineScope(Dispatchers.IO).launch {
-            completeLogin(getTokenResponse())
+            try {
+                completeLogin(getTokenResponse())
+            } catch (e: Exception) {
+                SalesforceSDKLogger.e(TAG, "loginWithAuthCode failed", e)
+                onResult(Result(success = false, error = e.message))
+            }
         }
     }
 
@@ -118,6 +127,8 @@ internal class SPAuthCodeHelper private constructor (
 
     override fun finish(user: UserAccount?) {
         SalesforceSDKLogger.d(TAG, "finish ${user}")
-        user?.let { onUserCreated(user) }
+        user?.let {
+            onResult(Result(success = true, user = it))
+        }
     }
 }

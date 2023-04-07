@@ -86,8 +86,8 @@ internal sealed class IDPSPMessage(
     /**
      * Message sent by IDP to SP to kick-off an IDP initiated login
      */
-    data class IDPLoginRequest(
-        override val uuid: String = UUID.randomUUID().toString(),
+    class IDPLoginRequest(
+        uuid: String = UUID.randomUUID().toString(),
         val orgId: String,
         val userId: String
     ) : IDPSPMessage(uuid, ACTION) {
@@ -119,22 +119,31 @@ internal sealed class IDPSPMessage(
 
     /**
      * Message sent by SP to IDP in response to IDPLoginRequest
-     * when SP app already has hinted user
+     * when flow is complete either successfully or not
      */
-    data class IDPLoginResponse(
-        override val uuid: String,
+    class IDPLoginResponse(
+        uuid: String,
+        val error: String? = null
     ) : IDPSPMessage(uuid, ACTION) {
 
         companion object {
             const val ACTION = "com.salesforce.IDP_LOGIN_RESPONSE"
+            private const val ERROR_KEY = "error"
 
             fun fromBundle(bundle:Bundle?) : IDPLoginResponse? {
                 val uuid = bundle?.getString(UUID_KEY)
+                val error = bundle?.getString(ERROR_KEY)
                 return if (uuid != null) {
-                    IDPLoginResponse(uuid)
+                    IDPLoginResponse(uuid, error)
                 } else {
                     null
                 }
+            }
+        }
+
+        override fun toBundle(): Bundle {
+            return super.toBundle().apply {
+                putString(ERROR_KEY, error)
             }
         }
     }
@@ -143,8 +152,8 @@ internal sealed class IDPSPMessage(
      * Message sent from SP app to IDP either to kick-off a SP initiated login
      * or during an IDP initiated login when the SP app does not the requested user
      */
-    data class SPLoginRequest(
-        override val uuid: String = UUID.randomUUID().toString(),
+    class SPLoginRequest(
+        uuid: String = UUID.randomUUID().toString(),
         val codeChallenge:String,
     ): IDPSPMessage(uuid, ACTION) {
 
@@ -173,8 +182,8 @@ internal sealed class IDPSPMessage(
     /**
      * Message sent by IDP app to SP app in response to SPLoginRequest
      */
-    data class SPLoginResponse(
-        override val uuid: String = UUID.randomUUID().toString(),
+    class SPLoginResponse(
+        uuid: String = UUID.randomUUID().toString(),
         val code: String? = null,
         val loginUrl: String? = null,
         val error: String? = null

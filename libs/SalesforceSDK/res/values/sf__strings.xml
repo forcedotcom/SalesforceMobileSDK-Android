@@ -51,13 +51,15 @@
 	<string name="sf__login_request_sent_to_idp">Login request sent to IDP app</string>
 	<string name="sf__auth_code_received_from_idp">IDP app successfully obtained authorization code</string>
 	<string name="sf__error_received_from_idp">IDP app failed to obtain authorization code</string>
+	<string name="sf__failed_to_exchange_authorization_code">Failed to exchange authorization code</string>
 	<string name="sf__login_complete">Login complete</string>
 
 	<!-- IDP status updates -->
 	<string name="sf__login_request_sent_to_sp">Login request sent to SP app</string>
 	<string name="sf__getting_auth_code_from_server">Getting authorization code for SP app</string>
-	<string name="sf__error_received_from_server">Failed to obtain authorization code for SP app</string>
+	<string name="sf__failed_to_get_authorization_code">Failed to get authorization code for SP app</string>
 	<string name="sf__auth_code_sent_to_sp">Authorization code sent to SP app</string>
+	<string name="sf__error_received_from_sp">SP app failed to exchange authorization code</string>
 	<string name="sf__sp_login_complete">SP app login complete</string>
 
     <!-- Managed app restrictions -->

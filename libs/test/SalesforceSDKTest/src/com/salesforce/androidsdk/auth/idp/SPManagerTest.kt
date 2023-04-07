@@ -79,10 +79,11 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
             loginUrl: String,
             code: String,
             codeVerifier: String,
-            onUserCreated: (UserAccount) -> Unit
+            onResult: (SPAuthCodeHelper.Result) -> Unit
         ) {
             recordedEvents.put("logging in with $loginUrl $code $codeVerifier")
-            onUserCreated(buildUser("org-for-$code", "user-for-$code"))
+            val newUser = buildUser("org-for-$code", "user-for-$code")
+            onResult(SPAuthCodeHelper.Result(success = true, user = newUser))
         }
     }
 
@@ -109,7 +110,7 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
         })
 
         // Waiting for status update
-        waitForEvent("status ERROR_RESPONSE_RECEIVED_FROM_IDP")
+        waitForEvent("status ERROR_RECEIVED_FROM_IDP")
 
         // Checking active flow
         Assert.assertEquals(2, activeFlow.messages.size)
@@ -225,6 +226,6 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
         waitForEvent("switched to org-for-some-code user-for-some-code")
 
         // Expecting a response sent back to IDP
-        waitForEvent("sendBroadcast Intent { act=com.salesforce.IDP_LOGIN_RESPONSE pkg=some-idp (has extras) } extras = { uuid = ${request?.uuid} src_app_package_name = com.salesforce.androidsdk.tests }")
+        waitForEvent("sendBroadcast Intent { act=com.salesforce.IDP_LOGIN_RESPONSE pkg=some-idp (has extras) } extras = { uuid = ${request.uuid} src_app_package_name = com.salesforce.androidsdk.tests }")
     }
 }

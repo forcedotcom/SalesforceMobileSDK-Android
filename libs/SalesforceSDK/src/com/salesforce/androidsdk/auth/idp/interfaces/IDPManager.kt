@@ -35,8 +35,9 @@ interface IDPManager {
     enum class Status(val resIdForDescription:Int) {
         LOGIN_REQUEST_SENT_TO_SP(R.string.sf__login_request_sent_to_sp),
         GETTING_AUTH_CODE_FROM_SERVER(R.string.sf__getting_auth_code_from_server),
-        ERROR_RECEIVED_FROM_SERVER(R.string.sf__error_received_from_server),
+        ERROR_RECEIVED_FROM_SERVER(R.string.sf__failed_to_get_authorization_code),
         AUTH_CODE_SENT_TO_SP(R.string.sf__auth_code_sent_to_sp),
+        ERROR_RECEIVED_FROM_SP(R.string.sf__error_received_from_sp),
         SP_LOGIN_COMPLETE(R.string.sf__sp_login_complete)
     }
     interface StatusUpdateCallback {
