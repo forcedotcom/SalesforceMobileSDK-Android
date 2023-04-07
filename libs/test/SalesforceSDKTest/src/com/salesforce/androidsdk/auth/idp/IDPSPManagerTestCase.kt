@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit
 internal open class IDPSPManagerTestCase {
     companion object {
         const val MAX_EVENTS = 16
-        const val TIMEOUT: Long = 3
+        const val TIMEOUT_MS: Long = 500 // we don't go to the server so async operations should complete quickly
     }
 
     lateinit var context: Context
@@ -31,14 +31,14 @@ internal open class IDPSPManagerTestCase {
     }
 
     fun waitForEvent(expectedEvent: String) {
-        val actualEvent = recordedEvents.poll(TIMEOUT, TimeUnit.SECONDS)
-        Log.i(this::class.java.simpleName, "received event $actualEvent")
-        Log.i(this::class.java.simpleName, "expected event $expectedEvent")
+        val actualEvent = recordedEvents.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        Log.i(this::class.java.simpleName, "received event [$actualEvent]")
+        Log.i(this::class.java.simpleName, "expected event [$expectedEvent]")
         Assert.assertTrue(actualEvent.startsWith(expectedEvent))
     }
 
     fun expectNoEvent() {
-        Assert.assertNull(recordedEvents.poll(TIMEOUT, TimeUnit.SECONDS))
+        Assert.assertNull(recordedEvents.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS))
     }
 
     fun buildUser(orgId: String, userId:String):UserAccount {
@@ -46,5 +46,36 @@ internal open class IDPSPManagerTestCase {
             putString("orgId", orgId)
             putString("userId", userId)
         })
+    }
+
+    fun checkActiveFlow(idpspManager: IDPSPManager,
+                        expectedAction: String,
+                        expectedMessageIndex: Int):IDPSPMessage? {
+        val activeFlow = idpspManager.getActiveFlow()
+        Assert.assertNotNull("Active flow not expected to be null", activeFlow)
+        activeFlow?.let {
+            Assert.assertTrue("Not enough messages in active flow",
+                it.messages.size > expectedMessageIndex)
+            Assert.assertEquals(
+                "Wrong message type at index ${expectedMessageIndex}",
+                expectedAction, it.messages[expectedMessageIndex].action
+            )
+        }
+        return activeFlow?.messages?.get(expectedMessageIndex)
+    }
+
+    fun checkActiveFlow(idpspManager: IDPSPManager,
+                        expectedMessage: IDPSPMessage,
+                        expectedMessageIndex: Int) {
+        val activeFlow = idpspManager.getActiveFlow()
+        Assert.assertNotNull("Active flow not expected to be null", activeFlow)
+        activeFlow?.let {
+            Assert.assertTrue("Not enough messages in active flow",
+                it.messages.size > expectedMessageIndex)
+            Assert.assertEquals(
+                "Wrong message at index ${expectedMessageIndex}",
+                expectedMessage.toString(), it.messages[expectedMessageIndex].toString()
+            )
+        }
     }
 }

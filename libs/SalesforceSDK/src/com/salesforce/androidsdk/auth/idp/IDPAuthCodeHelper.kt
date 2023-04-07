@@ -27,11 +27,9 @@
 package com.salesforce.androidsdk.auth.idp
 
 import android.net.Uri
-import android.os.Bundle
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.core.os.bundleOf
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
