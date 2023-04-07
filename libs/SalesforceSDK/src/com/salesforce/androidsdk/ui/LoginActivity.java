@@ -145,7 +145,8 @@ public class LoginActivity extends FragmentActivity
             final Button button = findViewById(R.id.sf__idp_login_button);
             button.setVisibility(View.VISIBLE);
         }
-        BiometricAuthenticationManager bioAuthManager = SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
+        BiometricAuthenticationManager bioAuthManager =
+                (BiometricAuthenticationManager) SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
         if (bioAuthManager.isEnabled() && bioAuthManager.isNativeBiometricLoginButtonEnabled()) {
             final Button button = findViewById(R.id.sf__bio_login_button);
             button.setVisibility(View.VISIBLE);
@@ -581,7 +582,8 @@ public class LoginActivity extends FragmentActivity
                     @Override
                     public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
                         super.onAuthenticationSucceeded(result);
-                        SalesforceSDKManager.getInstance().getBiometricAuthenticationManager().setLocked(false);
+                        ((BiometricAuthenticationManager) SalesforceSDKManager.getInstance()
+                                .getBiometricAuthenticationManager()).setLocked(false);
                         new RefreshTokenTask(loginActivity).execute();
                     }
 

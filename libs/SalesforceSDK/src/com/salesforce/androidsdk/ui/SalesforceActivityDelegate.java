@@ -56,7 +56,7 @@ public class SalesforceActivityDelegate {
     }
 
     public void onCreate() {
-        screenLockManager = SalesforceSDKManager.getInstance().getScreenLockManager();
+        screenLockManager = (ScreenLockManager) SalesforceSDKManager.getInstance().getScreenLockManager();
         userSwitchReceiver = new ActivityUserSwitchReceiver();
         activity.registerReceiver(userSwitchReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
         logoutCompleteReceiver = new ActivityLogoutCompleteReceiver();

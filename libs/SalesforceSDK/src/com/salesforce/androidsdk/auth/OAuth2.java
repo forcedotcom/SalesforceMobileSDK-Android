@@ -554,12 +554,14 @@ public class OAuth2 {
                 }
                 customAttributes = parsedResponse.optJSONObject(CUSTOM_ATTRIBUTES);
                 customPermissions = parsedResponse.optJSONObject(CUSTOM_PERMISSIONS);
+
+                biometricAuth = customAttributes.has(BIOMETRIC_AUTHENTICATION);
+                biometricAuthTimeout = customAttributes.getInt(BIOMETRIC_AUTHENTICATION);
+
                 if (parsedResponse.has(MOBILE_POLICY)) {
                     JSONObject mobilePolicyObject = parsedResponse.getJSONObject(MOBILE_POLICY);
                     screenLock = mobilePolicyObject.has(SCREEN_LOCK_TIMEOUT);
                     screenLockTimeout = mobilePolicyObject.getInt(SCREEN_LOCK_TIMEOUT);
-                    biometricAuth = mobilePolicyObject.has(BIOMETRIC_AUTHENTICATION);
-                    biometricAuthTimeout = mobilePolicyObject.getInt(BIOMETRIC_AUTHENTICATION);
 
                     if (screenLock && biometricAuth) {
                         SalesforceSDKLogger.w(TAG, "Ignoring ScreenLock because BiometricAuthentication is enabled.");

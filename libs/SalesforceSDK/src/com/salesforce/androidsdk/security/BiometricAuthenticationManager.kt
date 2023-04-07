@@ -35,8 +35,10 @@ import com.salesforce.androidsdk.util.EventsObservable
 
 internal class BiometricAuthenticationManager: AppLockManager(
     MOBILE_POLICY_PREF, BIO_AUTH, BIO_AUTH_TIMEOUT
-) {
-    var isLocked = true
+), com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager {
+    var locked = true
+    private val currentUser: UserAccount?
+        get() { return SalesforceSDKManager.getInstance().userAccountManager.currentUser }
 
     override fun shouldLock(): Boolean {
         val elapsedTime = System.currentTimeMillis() - lastBackgroundTimestamp
@@ -47,55 +49,71 @@ internal class BiometricAuthenticationManager: AppLockManager(
         return enabled && (elapsedTime > timeout)
     }
 
+    override fun isLocked(): Boolean {
+        return locked
+    }
     override fun lock() {
-        isLocked = true
-        val ctx = SalesforceSDKManager.getInstance().appContext
-        val options = SalesforceSDKManager.getInstance().loginOptions.asBundle()
-        val intent = Intent(ctx, SalesforceSDKManager.getInstance().loginActivityClass)
-        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        intent.putExtras(options)
-        ctx.startActivity(intent)
-        EventsObservable.get().notifyEvent(EventsObservable.EventType.AppLocked)
+        currentUser?.let {user ->
+            locked = true
+            val ctx = SalesforceSDKManager.getInstance().appContext
+            val options = SalesforceSDKManager.getInstance().loginOptions.asBundle()
+            val intent = Intent(ctx, SalesforceSDKManager.getInstance().loginActivityClass)
+            intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            intent.putExtras(options)
+            ctx.startActivity(intent)
+            EventsObservable.get().notifyEvent(EventsObservable.EventType.AppLocked)
 
-        val currentUser = SalesforceSDKManager.getInstance().userAccountManager.currentUser
-        Log.i("bpage", "storing current refresh token: ${currentUser.refreshToken}")
-        getAccountPrefs(currentUser, BIO_AUTH)
-            .edit().putString("token", currentUser.refreshToken).apply()
+            getAccountPrefs(user, BIO_AUTH).edit().putString("token", user.refreshToken).apply()
+        }
 
     }
 
-    fun biometricOptIn(account: UserAccount, optIn: Boolean = true) {
-        getAccountPrefs(account, BIO_AUTH).edit()
-            .putBoolean(USER_BIO_OPT_IN, optIn)
-            .apply()
+    override fun biometricOptIn(optIn: Boolean) {
+        currentUser?.let { user ->
+            getAccountPrefs(user, BIO_AUTH).edit()
+                .putBoolean(USER_BIO_OPT_IN, optIn)
+                .apply()
+        }
     }
 
-    fun hasOptedIn(account: UserAccount): Boolean {
-        return getAccountPrefs(account, BIO_AUTH).getBoolean(USER_BIO_OPT_IN, false)
+    override fun hasBiometricOptedIn(): Boolean {
+        currentUser?.let { user ->
+            return getAccountPrefs(user, BIO_AUTH).getBoolean(USER_BIO_OPT_IN, false)
+        }
+
+        return false
     }
 
-    fun isEnabled(): Boolean {
-        val currentUser = SalesforceSDKManager.getInstance().userAccountManager.currentUser
-        return currentUser != null && getPolicy(currentUser).first
+    override fun isEnabled(): Boolean {
+        currentUser?.let { user ->
+            return currentUser != null && getPolicy(user).first
+        }
+
+        return false
     }
 
     fun shouldAllowRefresh(): Boolean {
-        return !(isEnabled() && isLocked)
+        return !(isEnabled() && locked)
     }
 
-    fun enableNativeBiometricLoginButton(account: UserAccount, enabled: Boolean) {
-        getAccountPrefs(account, BIO_AUTH)
-            .edit().putBoolean(BIO_AUTH_NATIVE_BUTTON, enabled).apply()
+    override fun enableNativeBiometricLoginButton(enabled: Boolean) {
+        currentUser?.let { user ->
+            getAccountPrefs(user, BIO_AUTH)
+                .edit().putBoolean(BIO_AUTH_NATIVE_BUTTON, enabled).apply()
+        }
     }
 
     fun isNativeBiometricLoginButtonEnabled(): Boolean {
-        val currentUser = SalesforceSDKManager.getInstance().userAccountManager.currentUser
-        return currentUser != null && getAccountPrefs(currentUser, BIO_AUTH).getBoolean(BIO_AUTH_NATIVE_BUTTON, true)
+        currentUser?.let { user ->
+            return getAccountPrefs(user, BIO_AUTH).getBoolean(BIO_AUTH_NATIVE_BUTTON, true)
+        }
+
+        return true
     }
 
-    fun presentOptInDialog() {
+    override fun presentOptInDialog() {
 
     }
 

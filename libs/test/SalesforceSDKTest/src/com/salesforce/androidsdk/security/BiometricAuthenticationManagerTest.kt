@@ -138,15 +138,15 @@ class BiometricAuthenticationManagerTest {
 
     @Test
     fun testBiometricOptIn() {
-        Assert.assertFalse("Should not be locked without mobile policy set.", bioAuthManager.hasOptedIn(userAccount))
+        Assert.assertFalse("Should not be locked without mobile policy set.", bioAuthManager.hasBiometricOptedIn())
         bioAuthManager.storeMobilePolicy(userAccount, true, 0)
-        Assert.assertFalse("Should not be opted in by default.", bioAuthManager.hasOptedIn(userAccount))
+        Assert.assertFalse("Should not be opted in by default.", bioAuthManager.hasBiometricOptedIn())
 
-        bioAuthManager.biometricOptIn(userAccount, true)
-        Assert.assertTrue("Should be opted in", bioAuthManager.hasOptedIn(userAccount))
+        bioAuthManager.biometricOptIn(true)
+        Assert.assertTrue("Should be opted in", bioAuthManager.hasBiometricOptedIn())
 
-        bioAuthManager.biometricOptIn(userAccount, false)
-        Assert.assertFalse("User should have opted out again", bioAuthManager.hasOptedIn(userAccount))
+        bioAuthManager.biometricOptIn(false)
+        Assert.assertFalse("User should have opted out again", bioAuthManager.hasBiometricOptedIn())
     }
 
     @Test
@@ -155,10 +155,10 @@ class BiometricAuthenticationManagerTest {
         bioAuthManager.storeMobilePolicy(userAccount, true, 0)
         Assert.assertTrue("Should default to true.", bioAuthManager.isNativeBiometricLoginButtonEnabled())
 
-        bioAuthManager.enableNativeBiometricLoginButton(userAccount, false)
+        bioAuthManager.enableNativeBiometricLoginButton(false)
         Assert.assertFalse("Should be opted in", bioAuthManager.isNativeBiometricLoginButtonEnabled())
 
-        bioAuthManager.enableNativeBiometricLoginButton(userAccount, true)
+        bioAuthManager.enableNativeBiometricLoginButton(true)
         Assert.assertTrue("User should have opted in again", bioAuthManager.isNativeBiometricLoginButtonEnabled())
     }
 

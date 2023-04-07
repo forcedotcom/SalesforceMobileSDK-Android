@@ -30,6 +30,7 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import org.json.JSONObject;
@@ -683,12 +684,13 @@ public class RestClient {
             request = buildAuthenticatedRequest(request);
             Response response = chain.proceed(request);
 			int responseCode = response.code();
+			BiometricAuthenticationManager bioAuthManager =
+					(BiometricAuthenticationManager) SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
 
 			/*
 			 * Standard access token expiry returns 401 as the error code.
 			 */
-            if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED &&
-				SalesforceSDKManager.getInstance().getBiometricAuthenticationManager().shouldAllowRefresh()) {
+            if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED && bioAuthManager.shouldAllowRefresh()) {
 
 				final URI curInstanceUrl = clientInfo.getInstanceUrl();
 				if (curInstanceUrl != null) {

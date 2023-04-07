@@ -638,17 +638,17 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             // Screen lock required by mobile policy.
             if (id.screenLockTimeout > 0) {
                 int timeoutInMills = id.screenLockTimeout * 1000 * 60;
-                final ScreenLockManager screenLockManager = mgr.getScreenLockManager();
-                screenLockManager.storeMobilePolicy(account, id.screenLock, timeoutInMills);
+                ((ScreenLockManager) mgr.getScreenLockManager())
+                        .storeMobilePolicy(account, id.screenLock, timeoutInMills);
             }
 
             // Biometric Auth required by mobile policy.
             if (id.biometricAuth) {
                 // Default to 15 minutes if not set.
                 int timeout = (id.biometricAuthTimeout != -1) ? id.biometricAuthTimeout : 15;
-                int timeoutInMills = timeout * 1000 * 60;
-                final BiometricAuthenticationManager bioAuthManager = mgr.getBiometricAuthenticationManager();
-                bioAuthManager.storeMobilePolicy(account, id.biometricAuth, timeoutInMills);
+                int timeoutInMills = timeout * 1000;
+                ((BiometricAuthenticationManager) mgr.getBiometricAuthenticationManager())
+                        .storeMobilePolicy(account, id.biometricAuth, timeoutInMills);
             }
 
             // All done
