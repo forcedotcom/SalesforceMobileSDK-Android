@@ -31,12 +31,13 @@ import android.util.Log
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.security.ScreenLockManager.Companion.MOBILE_POLICY_PREF
+import com.salesforce.androidsdk.ui.BiometricAuthenticationOptInDialog
 import com.salesforce.androidsdk.util.EventsObservable
 
 internal class BiometricAuthenticationManager: AppLockManager(
     MOBILE_POLICY_PREF, BIO_AUTH, BIO_AUTH_TIMEOUT
 ), com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager {
-    var locked = true
+    var locked = false
     private val currentUser: UserAccount?
         get() { return SalesforceSDKManager.getInstance().userAccountManager.currentUser }
 

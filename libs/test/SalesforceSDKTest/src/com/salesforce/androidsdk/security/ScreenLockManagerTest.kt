@@ -189,6 +189,15 @@ class ScreenLockManagerTest {
         Assert.assertFalse("Global Mobile Policy should not be set.", globalPrefs.getBoolean(SCREEN_LOCK, false))
     }
 
+    @Test
+    fun testIsEnabled() {
+        Assert.assertFalse("Should not be enabled by default.", screenLockManager.isEnabled())
+        screenLockManager.storeMobilePolicy(userAccount, false, 0)
+        Assert.assertFalse("Should not be enabled without mobile policy set.", screenLockManager.isEnabled())
+        screenLockManager.storeMobilePolicy(userAccount, true, 1)
+        Assert.assertTrue("Should be enabled when user has mobile policy.", screenLockManager.isEnabled())
+    }
+
     companion object {
         const val TIMEOUT = 60000
         const val LONG_TIMEOUT = 100000

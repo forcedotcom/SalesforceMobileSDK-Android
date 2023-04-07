@@ -95,8 +95,8 @@ class BiometricAuthenticationManagerTest {
     @Test
     fun testShouldLock() {
         Assert.assertFalse("Should not be locked by default.", bioAuthManager.shouldLock())
-        bioAuthManager.onAppBackgrounded()
         bioAuthManager.storeMobilePolicy(userAccount, true, 1)
+        bioAuthManager.onAppBackgrounded()
         Thread.sleep(10)
         Assert.assertTrue("Screen should lock.", bioAuthManager.shouldLock())
     }
@@ -162,5 +162,50 @@ class BiometricAuthenticationManagerTest {
         Assert.assertTrue("User should have opted in again", bioAuthManager.isNativeBiometricLoginButtonEnabled())
     }
 
-    // TODO: shouldAllowRefresh, presentOptInDialog?
+    @Test
+    fun testShouldAllowRefresh() {
+        Assert.assertTrue("Should allow refresh by default.", bioAuthManager.shouldAllowRefresh())
+
+        bioAuthManager.storeMobilePolicy(userAccount, false, 0)
+        Assert.assertTrue("Should allow refresh with feature not enabled.", bioAuthManager.shouldAllowRefresh())
+
+        bioAuthManager.storeMobilePolicy(userAccount, true, 1)
+        Assert.assertTrue("Should allow refresh when app is not locked.", bioAuthManager.shouldAllowRefresh())
+
+        bioAuthManager.lock()
+        Assert.assertFalse("Should not alow refresh when app is locked.", bioAuthManager.shouldAllowRefresh())
+    }
+
+    @Test
+    fun testIsEnabled() {
+        Assert.assertFalse("Should not be enabled by default.", bioAuthManager.isEnabled())
+
+        bioAuthManager.storeMobilePolicy(userAccount, false, 0)
+        Assert.assertFalse("Should not be enabled without mobile policy set.", bioAuthManager.isEnabled())
+
+        bioAuthManager.storeMobilePolicy(userAccount, true, 1)
+        Assert.assertTrue("Should be enabled when user has mobile policy.", bioAuthManager.isEnabled())
+    }
+
+    @Test
+    fun testIsLocked() {
+        Assert.assertFalse("Should not be locked by default.", bioAuthManager.isLocked())
+
+        bioAuthManager.storeMobilePolicy(userAccount, false, 0)
+        Assert.assertFalse("Should not be enabled without mobile policy set.", bioAuthManager.isLocked())
+
+        bioAuthManager.storeMobilePolicy(userAccount, true, 1)
+        Assert.assertFalse("Should not be locked by default.", bioAuthManager.isLocked())
+
+        bioAuthManager.onAppBackgrounded()
+        Thread.sleep(10)
+        bioAuthManager.onAppForegrounded()
+        Assert.assertTrue("Should be locked upon background for timeout.", bioAuthManager.isLocked())
+
+        bioAuthManager.locked = false
+        Assert.assertFalse("Should be unlocked.", bioAuthManager.isLocked())
+
+        bioAuthManager.lock()
+        Assert.assertTrue("Should be locked by lock() API.", bioAuthManager.isLocked())
+    }
 }
