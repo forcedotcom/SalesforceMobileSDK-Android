@@ -190,6 +190,7 @@ internal class IDPAuthCodeHelper private constructor(
         }
 
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+            SalesforceSDKLogger.d(TAG, "Web view navigating to ${request.url}")
             return if (isOauthCallbackUrl(request.url.toString())) {
                 val code = extractCode(request.url)
                 if (code == null) {
