@@ -26,16 +26,16 @@
  */
 package com.salesforce.androidsdk.security
 
+import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
-import android.util.Log
+import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.security.ScreenLockManager.Companion.MOBILE_POLICY_PREF
-import com.salesforce.androidsdk.ui.BiometricAuthenticationOptInDialog
 import com.salesforce.androidsdk.util.EventsObservable
 
 internal class BiometricAuthenticationManager: AppLockManager(
-    MOBILE_POLICY_PREF, BIO_AUTH, BIO_AUTH_TIMEOUT
+    BIO_AUTH_POLICY, BIO_AUTH_ENABLED, BIO_AUTH_TIMEOUT
 ), com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager {
     var locked = false
     private val currentUser: UserAccount?
@@ -66,14 +66,14 @@ internal class BiometricAuthenticationManager: AppLockManager(
             ctx.startActivity(intent)
             EventsObservable.get().notifyEvent(EventsObservable.EventType.AppLocked)
 
-            getAccountPrefs(user, BIO_AUTH).edit().putString("token", user.refreshToken).apply()
+            getAccountPrefs(user).edit().putString("token", user.refreshToken).apply()
         }
 
     }
 
     override fun biometricOptIn(optIn: Boolean) {
         currentUser?.let { user ->
-            getAccountPrefs(user, BIO_AUTH).edit()
+            getAccountPrefs(user).edit()
                 .putBoolean(USER_BIO_OPT_IN, optIn)
                 .apply()
         }
@@ -81,7 +81,15 @@ internal class BiometricAuthenticationManager: AppLockManager(
 
     override fun hasBiometricOptedIn(): Boolean {
         currentUser?.let { user ->
-            return getAccountPrefs(user, BIO_AUTH).getBoolean(USER_BIO_OPT_IN, false)
+            return getAccountPrefs(user).getBoolean(USER_BIO_OPT_IN, false)
+        }
+
+        return false
+    }
+
+    fun hasBeenPresentedOptIn(): Boolean {
+        currentUser?.let {user ->
+            return getAccountPrefs(user).all.containsKey(USER_BIO_OPT_IN);
         }
 
         return false
@@ -101,25 +109,34 @@ internal class BiometricAuthenticationManager: AppLockManager(
 
     override fun enableNativeBiometricLoginButton(enabled: Boolean) {
         currentUser?.let { user ->
-            getAccountPrefs(user, BIO_AUTH)
+            getAccountPrefs(user)
                 .edit().putBoolean(BIO_AUTH_NATIVE_BUTTON, enabled).apply()
         }
     }
 
     fun isNativeBiometricLoginButtonEnabled(): Boolean {
         currentUser?.let { user ->
-            return getAccountPrefs(user, BIO_AUTH).getBoolean(BIO_AUTH_NATIVE_BUTTON, true)
+            return getAccountPrefs(user).getBoolean(BIO_AUTH_NATIVE_BUTTON, true)
         }
 
         return true
     }
 
-    override fun presentOptInDialog() {
-
+    override fun presentOptInDialog(activity: Activity) {
+        activity.runOnUiThread {
+            AlertDialog.Builder(activity)
+                .setTitle(R.string.sf__biometric_opt_in)
+                .setNegativeButton(R.string.sf__biometric_deny) { _, _ -> biometricOptIn(false) }
+                .setPositiveButton(R.string.sf__biometric_approve) { _, _ -> biometricOptIn(true) }
+                .setCancelable(false)
+                .create()
+                .show()
+        }
     }
 
     companion object {
-        internal const val BIO_AUTH = "bio_auth"
+        internal const val BIO_AUTH_POLICY = "bio_auth"
+        internal const val BIO_AUTH_ENABLED = "bio_auth_enabled"
         internal const val BIO_AUTH_TIMEOUT = "bio_auth_timeout"
         internal const val USER_BIO_OPT_IN = "user_bio_opt_in"
         internal const val BIO_AUTH_NATIVE_BUTTON = "bio_auth_native_button"

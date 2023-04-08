@@ -53,37 +53,38 @@ internal abstract class AppLockManager(
         lastBackgroundTimestamp = System.currentTimeMillis()
     }
 
-    fun getAccountPrefs(account: UserAccount, key: String): SharedPreferences {
+    fun getAccountPrefs(account: UserAccount): SharedPreferences {
         val ctx = SalesforceSDKManager.getInstance().appContext
-        return ctx.getSharedPreferences(key + account.userLevelFilenameSuffix, Context.MODE_PRIVATE)
+        return ctx.getSharedPreferences(policyKey + account.userLevelFilenameSuffix, Context.MODE_PRIVATE)
     }
 
-    fun getGlobalPrefs(key: String): SharedPreferences {
+    fun getGlobalPrefs(): SharedPreferences {
         val ctx = SalesforceSDKManager.getInstance().appContext
-        return ctx.getSharedPreferences(key, Context.MODE_PRIVATE)
+        return ctx.getSharedPreferences(policyKey, Context.MODE_PRIVATE)
     }
 
     fun getPolicy(account: UserAccount): Policy {
-        val accountPolicy = getAccountPrefs(account, policyKey)
+        val accountPolicy = getAccountPrefs(account)
         return accountPolicy.getBoolean(enabledKey, false) to accountPolicy.getInt(timeoutKey, 0)
     }
 
     fun getGlobalPolicy(): Policy {
-        val globalPolicy = getGlobalPrefs(policyKey)
+        val globalPolicy = getGlobalPrefs()
         return globalPolicy.getBoolean(enabledKey, false) to globalPolicy.getInt(timeoutKey, 0)
     }
 
     open fun storeMobilePolicy(account: UserAccount, enabled: Boolean, timeout: Int) {
-        getAccountPrefs(account, policyKey).edit()
+        getAccountPrefs(account).edit()
             .putBoolean(enabledKey, enabled)
             .putInt(timeoutKey, timeout)
             .apply()
     }
 
     open fun cleanUp(account: UserAccount) {
-        getAccountPrefs(account, policyKey).edit()
-            .remove(enabledKey)
-            .remove(timeoutKey)
-            .apply()
+        val editor = getAccountPrefs(account).edit()
+        getAccountPrefs(account).all.keys.forEach { key ->
+            editor.remove(key)
+        }
+        editor.apply()
     }
 }

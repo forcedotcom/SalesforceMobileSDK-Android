@@ -40,7 +40,7 @@ internal class ScreenLockManager: AppLockManager(
         super.storeMobilePolicy(account, enabled, timeout)
 
         if (enabled) {
-            val globalPrefs = getGlobalPrefs(MOBILE_POLICY_PREF)
+            val globalPrefs = getGlobalPrefs()
             val currentTimeout = globalPrefs.getInt(SCREEN_LOCK_TIMEOUT, 0)
             val globalPrefsEditor = globalPrefs.edit()
             globalPrefsEditor.putBoolean(SCREEN_LOCK, true)
@@ -86,7 +86,7 @@ internal class ScreenLockManager: AppLockManager(
         if (!accounts.isNullOrEmpty()) {
             accounts.forEach { remainingAccount ->
                 if (remainingAccount != null) {
-                    val accountPrefs = getAccountPrefs(remainingAccount, MOBILE_POLICY_PREF)
+                    val accountPrefs = getAccountPrefs(remainingAccount)
                     if (accountPrefs.getBoolean(SCREEN_LOCK, false)) {
                         val timeout = accountPrefs.getInt(SCREEN_LOCK_TIMEOUT, Int.MAX_VALUE)
                         if (timeout < lowestTimeout) {
@@ -96,7 +96,7 @@ internal class ScreenLockManager: AppLockManager(
                 }
             }
             if (lowestTimeout < Int.MAX_VALUE) {
-                getGlobalPrefs(MOBILE_POLICY_PREF).edit()
+                getGlobalPrefs().edit()
                     .putInt(SCREEN_LOCK_TIMEOUT, lowestTimeout)
                     .apply()
                 return
@@ -108,7 +108,7 @@ internal class ScreenLockManager: AppLockManager(
     }
 
     fun reset() {
-        getGlobalPrefs(MOBILE_POLICY_PREF).edit()
+        getGlobalPrefs().edit()
             .remove(SCREEN_LOCK)
             .remove(SCREEN_LOCK_TIMEOUT)
             .apply()

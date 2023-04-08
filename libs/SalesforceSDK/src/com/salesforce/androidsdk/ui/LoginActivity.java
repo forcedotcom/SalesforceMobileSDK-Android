@@ -141,15 +141,18 @@ public class LoginActivity extends FragmentActivity
 
         // Setup content view.
         setContentView(R.layout.sf__login);
-		if (SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled()) {
+        if (SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled()) {
             final Button button = findViewById(R.id.sf__idp_login_button);
             button.setVisibility(View.VISIBLE);
         }
+
         BiometricAuthenticationManager bioAuthManager =
                 (BiometricAuthenticationManager) SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
-        if (bioAuthManager.isEnabled() && bioAuthManager.isNativeBiometricLoginButtonEnabled()) {
-            final Button button = findViewById(R.id.sf__bio_login_button);
-            button.setVisibility(View.VISIBLE);
+        if (bioAuthManager.isEnabled() && bioAuthManager.hasBiometricOptedIn()) {
+            if (bioAuthManager.isNativeBiometricLoginButtonEnabled()) {
+                final Button button = findViewById(R.id.sf__bio_login_button);
+                button.setVisibility(View.VISIBLE);
+            }
             presentBiometric();
         }
 

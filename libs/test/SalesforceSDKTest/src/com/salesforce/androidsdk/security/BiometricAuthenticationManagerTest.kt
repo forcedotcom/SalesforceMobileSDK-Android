@@ -35,11 +35,9 @@ import com.salesforce.androidsdk.accounts.UserAccountTest
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.ClientManagerTest
-import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.BIO_AUTH
-import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.BIO_AUTH_NATIVE_BUTTON
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.BIO_AUTH_POLICY
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.BIO_AUTH_ENABLED
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.BIO_AUTH_TIMEOUT
-import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.USER_BIO_OPT_IN
-import com.salesforce.androidsdk.security.ScreenLockManager.Companion.MOBILE_POLICY_PREF
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
@@ -58,7 +56,8 @@ class BiometricAuthenticationManagerTest {
     fun setUp() {
         bioAuthManager = BiometricAuthenticationManager()
         userAccount = ScreenLockManagerTest.buildTestUserAccount()
-        accountPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
+        accountPrefs = ctx.getSharedPreferences(
+            BIO_AUTH_POLICY
                 + userAccount.userLevelFilenameSuffix, Context.MODE_PRIVATE
         )
 
@@ -78,7 +77,7 @@ class BiometricAuthenticationManagerTest {
 
     @After
     fun tearDown() {
-        accountPrefs.edit().remove(BIO_AUTH).remove(BIO_AUTH_TIMEOUT).remove(USER_BIO_OPT_IN).remove(BIO_AUTH_NATIVE_BUTTON).apply()
+        bioAuthManager.cleanUp(userAccount)
     }
 
     @Test
@@ -103,14 +102,14 @@ class BiometricAuthenticationManagerTest {
 
     @Test
     fun testStoreMobilePolicy() {
-        Assert.assertFalse("User Mobile Policy should not be set yet.", accountPrefs.getBoolean(BIO_AUTH, false))
+        Assert.assertFalse("User Mobile Policy should not be set yet.", accountPrefs.getBoolean(BIO_AUTH_ENABLED, false))
         Assert.assertEquals(
             "User timeout should not be set yet.",
             -100,
             accountPrefs.getInt(BIO_AUTH_TIMEOUT, -100).toLong()
         )
         bioAuthManager.storeMobilePolicy(userAccount, true, ScreenLockManagerTest.TIMEOUT)
-        Assert.assertTrue("User Mobile Policy should be set.", accountPrefs.getBoolean(BIO_AUTH, false))
+        Assert.assertTrue("User Mobile Policy should be set.", accountPrefs.getBoolean(BIO_AUTH_ENABLED, false))
         Assert.assertEquals(
             "User timeout should be set.",
             ScreenLockManagerTest.TIMEOUT.toLong(),
@@ -130,10 +129,10 @@ class BiometricAuthenticationManagerTest {
     @Test
     fun testCleanUp() {
         val storedUser = SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers[0]
-        val storedUserPrefs = ctx.getSharedPreferences((BIO_AUTH + storedUser.userLevelFilenameSuffix), Context.MODE_PRIVATE)
+        val storedUserPrefs = ctx.getSharedPreferences((BIO_AUTH_POLICY + storedUser.userLevelFilenameSuffix), Context.MODE_PRIVATE)
         bioAuthManager.storeMobilePolicy(storedUser, true, 60)
         bioAuthManager.cleanUp(storedUser)
-        Assert.assertFalse("User Mobile Policy should not be set.", storedUserPrefs.getBoolean(BIO_AUTH, false))
+        Assert.assertFalse("User Mobile Policy should not be set.", storedUserPrefs.getBoolean(BIO_AUTH_POLICY, false))
     }
 
     @Test

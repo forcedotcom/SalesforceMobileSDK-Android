@@ -556,7 +556,6 @@ public class OAuth2 {
                 customPermissions = parsedResponse.optJSONObject(CUSTOM_PERMISSIONS);
 
                 biometricAuth = customAttributes.has(BIOMETRIC_AUTHENTICATION);
-                biometricAuthTimeout = customAttributes.getInt(BIOMETRIC_AUTHENTICATION);
 
                 if (parsedResponse.has(MOBILE_POLICY)) {
                     JSONObject mobilePolicyObject = parsedResponse.getJSONObject(MOBILE_POLICY);

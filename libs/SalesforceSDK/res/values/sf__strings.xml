@@ -72,6 +72,11 @@
 	<string name="sf__screen_lock_setup_button">Setup Lock Screen</string>
 	<string name="sf__screen_lock_retry_button">Retry Unlock</string>
 
+	<!-- Biometric Authentication -->
+	<string name="sf__biometric_opt_in">Enable Biometric Unlock?</string>
+	<string name="sf__biometric_approve">Allow</string>
+	<string name="sf__biometric_deny">Deny</string>
+
 	<!-- Dev support -->
 	<string name="sf__dev_support_title">Mobile SDK Dev Support</string>
 </resources>

@@ -647,12 +647,34 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 // Default to 15 minutes if not set.
                 int timeout = (id.biometricAuthTimeout != -1) ? id.biometricAuthTimeout : 15;
                 int timeoutInMills = timeout * 1000;
-                ((BiometricAuthenticationManager) mgr.getBiometricAuthenticationManager())
-                        .storeMobilePolicy(account, id.biometricAuth, timeoutInMills);
-            }
+                BiometricAuthenticationManager bioAuthManager =
+                        (BiometricAuthenticationManager) mgr.getBiometricAuthenticationManager();
+                bioAuthManager.storeMobilePolicy(account, id.biometricAuth, timeoutInMills);
 
-            // All done
-            callback.finish(account);
+                //  Don't prompt the user every time they login.
+                if (bioAuthManager.hasBeenPresentedOptIn()) {
+                    callback.finish(account);
+                } else {
+                    // Present the biometric opt in dialog with an on dismiss listener
+                    // that finishes the activity.
+                    activity.runOnUiThread(() -> {
+                        new android.app.AlertDialog.Builder(activity)
+                                .setTitle(R.string.sf__biometric_opt_in)
+                                .setNegativeButton(R.string.sf__biometric_deny, ((dialog, which) ->
+                                        bioAuthManager.biometricOptIn(false)))
+                                .setPositiveButton(R.string.sf__biometric_approve, (dialog, which) ->
+                                        bioAuthManager.biometricOptIn(true))
+                                .setCancelable(false)
+                                .setOnDismissListener(dialog -> callback.finish(account))
+                                .create()
+                                .show();
+                    });
+                }
+            } else {
+
+                // All done
+                callback.finish(account);
+            }
         }
 
         protected void handleException(Exception ex) {

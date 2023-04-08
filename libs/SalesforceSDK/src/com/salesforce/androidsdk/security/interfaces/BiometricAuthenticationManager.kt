@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.security.interfaces
 
+import android.app.Activity
+
 /**
  * Manages if the user should re-authenticate to use the app.
  */
@@ -67,8 +69,10 @@ interface BiometricAuthenticationManager {
 
     /**
      * Presents a dialog to the user asking them to top into biometric unlock.
+     *
+     * @param activity The activity used to display the dialog
      */
-    fun presentOptInDialog()
+    fun presentOptInDialog(activity: Activity)
 
     /**
      * Enables or disables a native button on the login screen that allows the user to bypass
