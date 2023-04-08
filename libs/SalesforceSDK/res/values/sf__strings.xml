@@ -25,7 +25,8 @@
 	<string name="sf__clear_cookies">Clear Cookies</string>
 	<string name="sf__reload">Reload</string>
 	<string name="sf__launch_idp">Launch IDP App</string>
-	<string name="sf__launch_bio">Login with Biometric</string>
+	<string name="sf__login_with_biometric">Login with Biometric</string>
+	<string name="sf__setup_biometric_unlock">Setup Biometric Unlock</string>
 
 	<!-- Server picker -->
 	<string name="sf__auth_login_production">Production</string>
@@ -72,7 +73,7 @@
 	<string name="sf__screen_lock_setup_button">Setup Lock Screen</string>
 	<string name="sf__screen_lock_retry_button">Retry Unlock</string>
 
-	<!-- Biometric Authentication -->
+	<!-- Biometric Authentication Opt In Dialog -->
 	<string name="sf__biometric_opt_in">Enable Biometric Unlock?</string>
 	<string name="sf__biometric_approve">Allow</string>
 	<string name="sf__biometric_deny">Deny</string>

@@ -33,6 +33,7 @@ import static androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTI
 import android.accounts.AccountAuthenticatorResponse;
 import android.accounts.AccountManager;
 import android.app.ActionBar;
+import android.app.admin.DevicePolicyManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -43,6 +44,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.Settings;
 import android.security.KeyChain;
 import android.text.TextUtils;
 import android.view.KeyEvent;
@@ -98,6 +100,7 @@ public class LoginActivity extends FragmentActivity
 		implements OAuthWebviewHelperEvents {
 
     public static final int PICK_SERVER_REQUEST_CODE = 10;
+    private static final int SETUP_REQUEST_CODE = 72;
     private static final String TAG = "LoginActivity";
 
 	private boolean wasBackgrounded;
@@ -110,8 +113,8 @@ public class LoginActivity extends FragmentActivity
     private String spActivityName;
     private Bundle spActivityExtras;
     private AccountAuthenticatorResponse mAccountAuthenticatorResponse = null;
-
     private Bundle accountAuthenticatorResult = null;
+    private Button biometricAuthenticationButton = null;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -150,8 +153,8 @@ public class LoginActivity extends FragmentActivity
                 (BiometricAuthenticationManager) SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
         if (bioAuthManager.isEnabled() && bioAuthManager.hasBiometricOptedIn()) {
             if (bioAuthManager.isNativeBiometricLoginButtonEnabled()) {
-                final Button button = findViewById(R.id.sf__bio_login_button);
-                button.setVisibility(View.VISIBLE);
+                biometricAuthenticationButton = findViewById(R.id.sf__bio_login_button);
+                biometricAuthenticationButton.setVisibility(View.VISIBLE);
             }
             presentBiometric();
         }
@@ -303,21 +306,27 @@ public class LoginActivity extends FragmentActivity
 	protected boolean fixBackButtonBehavior(int keyCode) {
 		if (keyCode == KeyEvent.KEYCODE_BACK) {
 
-            /*
-		     * If there are no accounts signed in, we need the login screen
-		     * to go away, and go back to the home screen. However, if the
-		     * login screen has been brought up from the switcher screen,
-		     * the back button should take the user back to the previous screen.
-		     */
-			final UserAccountManager accMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
-			wasBackgrounded = true;
-			if (accMgr.getAuthenticatedUsers() == null) {
-				moveTaskToBack(true);
-			} else {
-				finish();
-			}
-			return true;
+            if (!SalesforceSDKManager.getInstance().getBiometricAuthenticationManager().isLocked()) {
+
+                /*
+                 * If there are no accounts signed in, we need the login screen
+                 * to go away, and go back to the home screen. However, if the
+                 * login screen has been brought up from the switcher screen,
+                 * the back button should take the user back to the previous screen.
+                 */
+                final UserAccountManager accMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
+                wasBackgrounded = true;
+                if (accMgr.getAuthenticatedUsers() == null) {
+                    moveTaskToBack(true);
+                } else {
+                    finish();
+                }
+            }
+
+            //  Do not execute back button behavior.
+            return true;
 		}
+
 		return false;
 	}
 
@@ -423,6 +432,15 @@ public class LoginActivity extends FragmentActivity
         } else {
 	        super.onActivityResult(requestCode, resultCode, data);
 	    }
+
+        /*
+         * presentAuth again after the user has come back from security settings to ensure they
+         * actually set up a secure lock screen (pin/pattern/password/etc) instead of swipe or none.
+         */
+        if (requestCode == SETUP_REQUEST_CODE) {
+            biometricAuthenticationButton.setText(R.string.sf__login_with_biometric);
+            presentBiometric();
+        }
 	}
 
 	@Override
@@ -566,6 +584,21 @@ public class LoginActivity extends FragmentActivity
                 break;
             case BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE:
             case BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED:
+                /*
+                 * Prompts the user to setup OS screen lock and biometric.
+                 * TODO: Remove when min API > 29.
+                 */
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    final Intent biometricIntent = new Intent(Settings.ACTION_BIOMETRIC_ENROLL);
+                    biometricIntent.putExtra(Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED, getAuthenticators());
+                    biometricAuthenticationButton.setOnClickListener(v ->
+                            startActivityForResult(biometricIntent, SETUP_REQUEST_CODE));
+                } else {
+                    final Intent lockScreenIntent = new Intent(DevicePolicyManager.ACTION_SET_NEW_PASSWORD);
+                    biometricAuthenticationButton.setOnClickListener(v ->
+                            startActivityForResult(lockScreenIntent, SETUP_REQUEST_CODE));
+                }
+                biometricAuthenticationButton.setText(getString(R.string.sf__setup_biometric_unlock));
                 break;
             case BiometricManager.BIOMETRIC_SUCCESS:
                 biometricPrompt.authenticate(getPromptInfo());

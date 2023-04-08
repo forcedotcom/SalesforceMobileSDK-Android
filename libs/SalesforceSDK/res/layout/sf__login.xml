@@ -30,7 +30,7 @@
         android:textStyle="bold"/>
 
     <Button android:id="@+id/sf__bio_login_button"
-        android:text="@string/sf__launch_bio"
+        android:text="@string/sf__login_with_biometric"
         android:visibility="gone"
         android:onClick="onBioAuthClick"
         android:layout_width="match_parent"
