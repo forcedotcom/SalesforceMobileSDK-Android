@@ -35,7 +35,7 @@ import androidx.core.os.bundleOf
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.auth.OAuth2
+import com.salesforce.androidsdk.auth.OAuth2.*
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.RestClient
@@ -46,6 +46,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.IOException
+import java.net.URI
 
 /**
  * Helper class used in IDP app to get auth code from server
@@ -167,14 +168,19 @@ internal class IDPAuthCodeHelper private constructor(
     fun makeFrontDoorRequest(accessToken: String, webView: WebView) {
         SalesforceSDKLogger.d(TAG, "Making front door request")
         val context = SalesforceSDKManager.getInstance().appContext
-        val frontdoorUrl = OAuth2.getIDPFrontdoorUrl(
-            userAccount.instanceServer,
+        val frontdoorUrl = getFrontdoorUrl(
+            getAuthorizationUrl(
+                URI(userAccount.loginServer),
+                spConfig.oauthClientId,
+                spConfig.oauthCallbackUrl,
+                spConfig.oauthScopes,
+                context.getString(R.string.oauth_display_type),
+                codeChallenge,
+                null
+            ),
             accessToken,
-            userAccount.loginServer,
-            context.getString(R.string.oauth_display_type),
-            spConfig.oauthClientId,
-            spConfig.oauthCallbackUrl,
-            spConfig.oauthScopes,codeChallenge
+            userAccount.instanceServer,
+            null
         )
         CoroutineScope(Dispatchers.Main).launch {
             webView.loadUrl(frontdoorUrl.toString())

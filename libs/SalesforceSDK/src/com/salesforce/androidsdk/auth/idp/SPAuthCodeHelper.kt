@@ -75,7 +75,7 @@ internal class SPAuthCodeHelper private constructor (
     }
 
     private fun getTokenResponse(): TokenEndpointResponse {
-        val tokenResponse = OAuth2.getSPCredentials(
+        val tokenResponse = OAuth2.exchangeCode(
             HttpAccess.DEFAULT,
             URI.create(loginUrl),
             spConfig.oauthClientId,
