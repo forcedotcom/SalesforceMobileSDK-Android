@@ -51,6 +51,8 @@ public class AuthConfigUtilTest {
 
     private static final String MY_DOMAIN_ENDPOINT = "https://mobilesdk.my.salesforce.com";
     private static final String ALTERNATE_MY_DOMAIN_ENDPOINT = "https://powerofus.force.com";
+
+    private static final String LOGIN_URL_FOR_ALTERNATE_MY_DOMAIN = "https://foundation.my.site.com/PowerOfUsLogin";
     private static final String SANDBOX_ENDPOINT = "https://test.salesforce.com";
     private static final String FORWARD_SLASH = "/";
 
@@ -105,7 +107,7 @@ public class AuthConfigUtilTest {
         Assert.assertNotNull("Auth config JSON should not be null", authConfig.getAuthConfig());
         Assert.assertNotNull("Login page URL should not be null", authConfig.getLoginPageUrl());
         Assert.assertTrue("Login page URL should contain correct URL",
-                authConfig.getLoginPageUrl().contains(ALTERNATE_MY_DOMAIN_ENDPOINT));
+                authConfig.getLoginPageUrl().contains(LOGIN_URL_FOR_ALTERNATE_MY_DOMAIN));
     }
 
     @Test

@@ -87,10 +87,12 @@ class IDPSPMessageTest {
     fun testIDPLoginResponseFromBundle() {
         val bundle = Bundle().apply {
             putString("uuid", "some-uuid")
+            putString("error", "some-error")
         }
         val message = IDPSPMessage.IDPLoginResponse.fromBundle(bundle)
 
         Assert.assertEquals("some-uuid", message?.uuid)
+        Assert.assertEquals("some-error", message?.error)
     }
 
     @Test

@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <resources>
-    <string name="remoteAccessConsumerKey">3MVG94DzwlYDSHS5d9A2_Ra7sqI.2ttBQuZPF1cS65n9QOZFzBL0F36mCZe33SMzKDKXFthjUNvbJMo.faevi</string>
-    <string name="oauthRedirectURI">spsfdc:///mobilesdk/detect/oauth/done</string>
+    <!-- Mobile SDK Sample App (cs1.mobilesdk.ee.org) -->
+    <string name="remoteAccessConsumerKey">3MVG98dostKihXN53TYStBIiS8FC2a3tE3XhGId0hQ37iQjF0xe4fxMSb2mFaWZn9e3GiLs1q67TNlyRji.Xw</string>
+    <string name="oauthRedirectURI">testsfdc:///mobilesdk/detect/oauth/done</string>
     <string-array name="oauthScopes">
         <item>api</item>
         <item>web</item>

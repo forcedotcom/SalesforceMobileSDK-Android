@@ -37,7 +37,8 @@ internal open class ActiveFlow(val context: Context) {
     val firstMessage: IDPSPMessage
         get() = messages.first()
     fun addMessage(message: IDPSPMessage) : Boolean {
-        return if (messages.isEmpty() || messages.last().uuid == message.uuid) {
+        return if (messages.isEmpty() || (messages.last().uuid == message.uuid)) {
+            SalesforceSDKLogger.d(this::class.java.simpleName, "Adding message to active flow: ${message}")
             messages.add(message)
             true
         } else {
@@ -63,9 +64,14 @@ internal abstract class IDPSPManager(
     abstract fun getActiveFlow(): ActiveFlow?
 
     /**
-     * The previously active flow is over
+     * End the currently active flow
      */
     abstract fun endActiveFlow()
+
+    /**
+     * Make the passed flow the active flow
+     */
+    abstract fun startActiveFlow(flow: ActiveFlow)
 
     /**
      * Return true if messages from srcAppPackageName are allowed
@@ -79,8 +85,19 @@ internal abstract class IDPSPManager(
 
     /**
      * Sends message
+     * - adds it to an existing active flow if the message uuid matches
+     * - ends an existing active flow if the message uuid does not match
      */
     fun send(context: Context, message: IDPSPMessage, destinationAppPackageName: String) {
+        getActiveFlow()?.let { activeFlow ->
+            if (activeFlow.addMessage(message)) {
+                // There is an active flow and the message is part of it
+            } else {
+                // There is an active flow and the message is NOT part of it
+                // End active flow
+                endActiveFlow()
+            }
+        }
         val intent = message.toIntent().apply {
             putExtra(SRC_APP_PACKAGE_NAME_KEY, context.applicationInfo.packageName)
             setPackage(destinationAppPackageName)
@@ -91,6 +108,9 @@ internal abstract class IDPSPManager(
 
     /**
      * Process received intent
+     * Build IDPSPMessage from it
+     * - adds it to an existing active flow if the message uuid matches
+     * - ends an existing active flow if the message uuid does not match
      */
     fun onReceive(context: Context, intent: Intent) {
         SalesforceSDKLogger.d(this::class.java.simpleName, "onReceive ${LogUtil.intentToString(intent)}")

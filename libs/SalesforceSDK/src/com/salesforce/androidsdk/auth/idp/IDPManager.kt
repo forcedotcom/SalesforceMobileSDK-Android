@@ -46,16 +46,15 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger
 internal class IDPInitiatedLoginFlow private constructor(context:Context, val user:UserAccount, val spConfig: SPConfig, val onStatusUpdate:(Status) -> Unit) : ActiveFlow(context) {
     companion object {
         val TAG = IDPInitiatedLoginFlow::class.java.simpleName
-        fun kickOff(idpManager:IDPManager, context: Context, user: UserAccount, spConfig: SPConfig, onStatusUpdate: (Status) -> Unit) : IDPInitiatedLoginFlow {
+        fun kickOff(idpManager:IDPManager, context: Context, user: UserAccount, spConfig: SPConfig, onStatusUpdate: (Status) -> Unit) {
             SalesforceSDKLogger.d(TAG, "Kicking off idp initiated login flow from ${context} for user:${user}, sp app:${spConfig.appPackageName}")
 
             val activeFlow = IDPInitiatedLoginFlow(context, user, spConfig, onStatusUpdate)
-            val idpLoginRequest = IDPLoginRequest(orgId = user.orgId, userId = user.userId).also {
-                activeFlow.addMessage(it)
-            }
+            idpManager.startActiveFlow(activeFlow) // make it the active flow for the manager other send won't add requests to flow automatically
+
+            val idpLoginRequest = IDPLoginRequest(orgId = user.orgId, userId = user.userId)
             idpManager.send(context, idpLoginRequest, spConfig.appPackageName)
             onStatusUpdate(Status.LOGIN_REQUEST_SENT_TO_SP)
-            return activeFlow
         }
     }
 
@@ -123,7 +122,12 @@ internal class IDPManager(
     }
 
     override fun endActiveFlow() {
+        SalesforceSDKLogger.d(TAG, "Ending active flow")
         activeFlow = null
+    }
+
+    override fun startActiveFlow(flow: ActiveFlow) {
+        activeFlow = flow as IDPInitiatedLoginFlow
     }
 
     /**
@@ -179,19 +183,23 @@ internal class IDPManager(
      */
     fun handleLoginResponse(activeFlow: IDPInitiatedLoginFlow, message: IDPLoginResponse) {
         SalesforceSDKLogger.d(TAG, "handleLoginResponse $message")
-        activeFlow.onStatusUpdate(Status.SP_LOGIN_COMPLETE)
-        val launchIntent = Intent(Intent.ACTION_VIEW).apply {
-            setPackage(activeFlow.spConfig.appPackageName)
-            setClassName(activeFlow.spConfig.appPackageName, activeFlow.spConfig.componentName)
-            setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-            addCategory(Intent.CATEGORY_DEFAULT)
-        }
-        if (activeFlow.context is Activity) {
-            SalesforceSDKLogger.d(
-                TAG,
-                "handleLoginResponse startActivity ${LogUtil.intentToString(launchIntent)}"
-            )
-            activeFlow.context.startActivity(launchIntent)
+        if (message.error == null) {
+            activeFlow.onStatusUpdate(Status.SP_LOGIN_COMPLETE)
+            val launchIntent = Intent(Intent.ACTION_VIEW).apply {
+                setPackage(activeFlow.spConfig.appPackageName)
+                setClassName(activeFlow.spConfig.appPackageName, activeFlow.spConfig.componentName)
+                setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                addCategory(Intent.CATEGORY_DEFAULT)
+            }
+            if (activeFlow.context is Activity) {
+                SalesforceSDKLogger.d(
+                    TAG,
+                    "handleLoginResponse startActivity ${LogUtil.intentToString(launchIntent)}"
+                )
+                activeFlow.context.startActivity(launchIntent)
+            }
+        } else {
+            activeFlow.onStatusUpdate(Status.ERROR_RECEIVED_FROM_SP)
         }
     }
 
@@ -262,6 +270,6 @@ internal class IDPManager(
             return
         }
 
-        activeFlow = IDPInitiatedLoginFlow.kickOff(this, context, user, spConfig, callback::onStatusUpdate)
+        IDPInitiatedLoginFlow.kickOff(this, context, user, spConfig, callback::onStatusUpdate)
     }
 }

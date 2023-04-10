@@ -35,7 +35,8 @@ interface SPManager {
     enum class Status(val resIdForDescription:Int) {
         LOGIN_REQUEST_SENT_TO_IDP(R.string.sf__login_request_sent_to_idp),
         AUTH_CODE_RECEIVED_FROM_IDP(R.string.sf__auth_code_received_from_idp),
-        ERROR_RESPONSE_RECEIVED_FROM_IDP(R.string.sf__error_received_from_idp),
+        ERROR_RECEIVED_FROM_IDP(R.string.sf__error_received_from_idp),
+        FAILED_TO_EXCHANGE_AUTHORIZATION_CODE(R.string.sf__failed_to_exchange_authorization_code),
         LOGIN_COMPLETE(R.string.sf__login_complete)
     }
     interface StatusUpdateCallback {

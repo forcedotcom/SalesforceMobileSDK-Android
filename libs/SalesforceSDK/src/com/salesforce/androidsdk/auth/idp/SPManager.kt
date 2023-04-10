@@ -42,38 +42,35 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger
  * Class to capture state related to SP login flow
  * e.g. the context that started it
  *      - could be an activity in the case of a SP initiated login
- *      - or the receiver context in the case it was started in response to a IDP login request)
+ *      - or the receiver context in the case it was started in response to a IDP login request
  *      the code verifier
  */
-internal class SPLoginFlow private constructor(context:Context, val codeVerifier:String, val onStatusUpdate: (Status) -> Unit)
+internal class SPLoginFlow private constructor(context:Context, val onStatusUpdate: (Status) -> Unit)
     : ActiveFlow(context) {
 
-        companion object {
+    val codeVerifier = SalesforceKeyGenerator.getRandom128ByteKey()
+    val codeChallenge = SalesforceKeyGenerator.getSHA256Hash(codeVerifier)
+
+    companion object {
             val TAG = SPLoginFlow::class.java.simpleName
 
-            fun kickOff(spManager:SPManager, context: Context, onStatusUpdate: (Status) -> Unit = { _ -> }, idpLoginRequest:IDPLoginRequest? = null): SPLoginFlow {
+            fun kickOff(spManager:SPManager, context: Context, onStatusUpdate: (Status) -> Unit = { _ -> }, idpLoginRequest:IDPLoginRequest? = null) {
                 val trigger = if (idpLoginRequest == null) "" else " triggered by ${idpLoginRequest} "
                 SalesforceSDKLogger.d(TAG, "Kicking off sp initiated login flow from ${context}${trigger}")
 
-                val codeVerifier = SalesforceKeyGenerator.getRandom128ByteKey()
-                val codeChallenge = SalesforceKeyGenerator.getSHA256Hash(codeVerifier)
-                val activeFlow = SPLoginFlow(context, codeVerifier, onStatusUpdate)
+                val activeFlow = SPLoginFlow(context, onStatusUpdate)
+                spManager.startActiveFlow(activeFlow) // make it the active flow for the manager other send won't add requests to flow automatically
 
                 val spLoginRequest = if (idpLoginRequest != null) {
                     activeFlow.addMessage(idpLoginRequest)
-                    SPLoginRequest(idpLoginRequest.uuid, codeChallenge = codeChallenge).also {
-                        activeFlow.addMessage(it)
-                    }
+                    SPLoginRequest(idpLoginRequest.uuid, codeChallenge = activeFlow.codeChallenge)
                 } else {
-                    SPLoginRequest(codeChallenge = codeChallenge).also {
-                        activeFlow.addMessage(it)
-                    }
+                    SPLoginRequest(codeChallenge = activeFlow.codeChallenge)
                 }
 
                 // Send SP login request
                 spManager.send(context, spLoginRequest)
                 onStatusUpdate(Status.LOGIN_REQUEST_SENT_TO_IDP)
-                return activeFlow
             }
         }
 }
@@ -97,10 +94,11 @@ internal class SPManager(
         fun switchToUser(user: UserAccount)
         fun getMainActivityClass(): Class<out Activity>?
         fun loginWithAuthCode(context:Context,
-                                loginUrl: String,
-                                code: String,
-                                codeVerifier: String,
-                                onUserCreated: (UserAccount) -> Unit)
+                              loginUrl: String,
+                              code: String,
+                              codeVerifier: String,
+                              onResult: (SPAuthCodeHelper.Result) -> Unit
+        )
     }
     companion object {
         private val TAG = SPManager::class.java.simpleName
@@ -133,9 +131,9 @@ internal class SPManager(
                 loginUrl: String,
                 code: String,
                 codeVerifier: String,
-                onUserCreated: (UserAccount) -> Unit
+                onResult: (SPAuthCodeHelper.Result) -> Unit
             ) {
-                SPAuthCodeHelper.loginWithAuthCode(context, loginUrl, code, codeVerifier, onUserCreated)
+                SPAuthCodeHelper.loginWithAuthCode(context, loginUrl, code, codeVerifier, onResult)
             }
         },
         { context, intent -> context.sendBroadcast(intent) }
@@ -151,7 +149,12 @@ internal class SPManager(
     }
 
     override fun endActiveFlow() {
+        SalesforceSDKLogger.d(TAG, "Ending active flow")
         activeFlow = null
+    }
+
+    override fun startActiveFlow(flow: ActiveFlow) {
+        activeFlow = flow as SPLoginFlow
     }
 
     /**
@@ -245,7 +248,7 @@ internal class SPManager(
      */
     fun handleNoUser(context: Context, message: IDPLoginRequest) {
         SalesforceSDKLogger.d(TAG, "handleNoUser $message")
-        activeFlow = SPLoginFlow.kickOff(this, context, idpLoginRequest = message)
+        SPLoginFlow.kickOff(this, context, idpLoginRequest = message)
     }
 
     /**
@@ -256,22 +259,32 @@ internal class SPManager(
     fun handleLoginResponse(activeFlow: SPLoginFlow, message: SPLoginResponse) {
         SalesforceSDKLogger.d(TAG, "handleLoginResponse $message")
         if (message.error != null) {
-            activeFlow.onStatusUpdate(Status.ERROR_RESPONSE_RECEIVED_FROM_IDP)
+            activeFlow.onStatusUpdate(Status.ERROR_RECEIVED_FROM_IDP)
         } else if (message.loginUrl != null && message.code != null) {
             activeFlow.onStatusUpdate(Status.AUTH_CODE_RECEIVED_FROM_IDP)
             sdkMgr.loginWithAuthCode(activeFlow.context, message.loginUrl,
                 message.code,
-                activeFlow.codeVerifier
-            ) { user ->
-                with(activeFlow) {
-                    handleUserExists(
-                        context,
-                        if (firstMessage is IDPLoginRequest) firstMessage as IDPLoginRequest else null,
-                        user
-                    )
-                    activeFlow.onStatusUpdate(Status.LOGIN_COMPLETE)
+                activeFlow.codeVerifier,
+                { result ->
+                    if (result.success) {
+                        with(activeFlow) {
+                            handleUserExists(
+                                context,
+                                if (firstMessage is IDPLoginRequest) firstMessage as IDPLoginRequest else null,
+                                result.user!!
+                            )
+                            activeFlow.onStatusUpdate(Status.LOGIN_COMPLETE)
+                        }
+                    } else {
+                        // We failed to login - let idp app know if this was a idp initiated login
+                        if (activeFlow.firstMessage is IDPLoginRequest) {
+                            send(activeFlow.context, IDPLoginResponse(message.uuid, result.error))
+                        }
+                        // Let the sp app know
+                        activeFlow.onStatusUpdate(Status.FAILED_TO_EXCHANGE_AUTHORIZATION_CODE)
+                    }
                 }
-            }
+            )
         }
     }
 
@@ -279,6 +292,6 @@ internal class SPManager(
      * Kick off SP initiated login flow
      */
     override fun kickOffSPInitiatedLoginFlow(context: Context, callback: StatusUpdateCallback) {
-        activeFlow = SPLoginFlow.kickOff(this, context, callback::onStatusUpdate)
+        SPLoginFlow.kickOff(this, context, callback::onStatusUpdate)
     }
 }

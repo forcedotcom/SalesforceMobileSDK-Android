@@ -36,7 +36,7 @@ import java.util.*
  * Message can be built from intent, and intent can be built from message.
  */
 internal sealed class IDPSPMessage(
-    val uuid:String,
+    open val uuid:String,
     val action:String,
 ) {
     fun toIntent(): Intent {
@@ -119,22 +119,31 @@ internal sealed class IDPSPMessage(
 
     /**
      * Message sent by SP to IDP in response to IDPLoginRequest
-     * when SP app already has hinted user
+     * when flow is complete either successfully or not
      */
     class IDPLoginResponse(
         uuid: String,
+        val error: String? = null
     ) : IDPSPMessage(uuid, ACTION) {
 
         companion object {
             const val ACTION = "com.salesforce.IDP_LOGIN_RESPONSE"
+            private const val ERROR_KEY = "error"
 
             fun fromBundle(bundle:Bundle?) : IDPLoginResponse? {
                 val uuid = bundle?.getString(UUID_KEY)
+                val error = bundle?.getString(ERROR_KEY)
                 return if (uuid != null) {
-                    IDPLoginResponse(uuid)
+                    IDPLoginResponse(uuid, error)
                 } else {
                     null
                 }
+            }
+        }
+
+        override fun toBundle(): Bundle {
+            return super.toBundle().apply {
+                putString(ERROR_KEY, error)
             }
         }
     }
