@@ -113,10 +113,6 @@ public class LoginActivity extends AccountAuthenticatorActivity
 //            final Button button = findViewById(R.id.sf__idp_login_button);
 //            button.setVisibility(View.VISIBLE);
 //        }
-        if (SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled()) {
-            final Button button = findViewById(R.id.sf__idp_login_button);
-            button.setVisibility(View.VISIBLE);
-        }
 
         // Setup the WebView.
         final WebView webView = findViewById(R.id.sf__oauth_webview);
