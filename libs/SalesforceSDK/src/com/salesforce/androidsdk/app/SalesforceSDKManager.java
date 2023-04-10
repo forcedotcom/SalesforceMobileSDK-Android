@@ -35,9 +35,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -51,6 +49,7 @@ import android.view.View;
 import android.webkit.CookieManager;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.OnLifecycleEvent;
@@ -66,7 +65,9 @@ import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
-import com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity;
+import com.salesforce.androidsdk.auth.idp.SPConfig;
+import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager;
+import com.salesforce.androidsdk.auth.idp.interfaces.SPManager;
 import com.salesforce.androidsdk.config.AdminPermsManager;
 import com.salesforce.androidsdk.config.AdminSettingsManager;
 import com.salesforce.androidsdk.config.BootConfig;
@@ -171,10 +172,12 @@ public class SalesforceSDKManager implements LifecycleObserver {
     private List<String> additionalOauthKeys;
     private String loginBrand;
     private boolean browserLoginEnabled;
-    private String idpAppURIScheme;
-    private boolean idpAppLoginFlowActive;
     private Theme theme =  Theme.SYSTEM_DEFAULT;
     private String appName;
+
+    private IDPManager idpManager;        // only set if this app is an IDP
+
+    private SPManager spManager;         // only set if this app is an SP
 
     /**
      * Available Mobile SDK style themes.
@@ -379,9 +382,9 @@ public class SalesforceSDKManager implements LifecycleObserver {
 
         // Enables IDP login flow if it's set through MDM.
         final RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(context);
-        final String idpAppUrlScheme = runtimeConfig.getString(RuntimeConfig.ConfigKey.IDPAppURLScheme);
-        if (!TextUtils.isEmpty(idpAppUrlScheme)) {
-            INSTANCE.idpAppURIScheme = idpAppUrlScheme;
+        final String idpAppPackageName = runtimeConfig.getString(RuntimeConfig.ConfigKey.IDPAppPackageName);
+        if (!TextUtils.isEmpty(idpAppPackageName)) {
+            INSTANCE.setIDPAppPackageName(idpAppPackageName);
         }
     }
 
@@ -616,69 +619,50 @@ public class SalesforceSDKManager implements LifecycleObserver {
      * @return True - if IDP login flow is enabled, False - otherwise.
      */
     public boolean isIDPLoginFlowEnabled() {
-        boolean isIDPFlowEnabled = !TextUtils.isEmpty(idpAppURIScheme);
-        if (isIDPFlowEnabled) {
-            SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_APP_IS_SP);
-        } else {
-            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(Features.FEATURE_APP_IS_SP);
-        }
-        return isIDPFlowEnabled;
+        return spManager != null;
     }
 
     /**
-     * Checks for IDPAccountPickerActivity in manifest
      * @return True - if this application is configured as a Identity Provider
      */
     private boolean isIdentityProvider() {
-        try {
-            PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(),
-                    PackageManager.GET_ACTIVITIES);
-            for (ActivityInfo activityInfo : packageInfo.activities) {
-                if (activityInfo.name.equals(IDPAccountPickerActivity.class.getName())) {
-                    return true;
-                }
-            }
-        } catch (NameNotFoundException e) {
-            SalesforceSDKLogger.e(TAG, "Exception occurred while examining application info", e);
-        }
-        return false;
+        return idpManager != null;
     }
 
     /**
-     * Returns whether the IDP app is currently going through a login flow.
-     *
-     * @return True - if the IDP app is currently going through a login flow, False - otherwise.
+     * Returns the SP manager
+     * Only defined if setIdpAppPackageName() was first called
      */
-    public boolean isIDPAppLoginFlowActive() {
-        return idpAppLoginFlowActive;
+    public SPManager getSPManager() {
+        return spManager;
     }
 
     /**
-     * Sets whether the IDP app is currently going through a login flow.
-     *
-     * @param idpAppLoginFlowActive True - if the IDP app is kicking off login, False - otherwise.
+     * Sets the IDP package name for this app.
+     * As a result this application gets a SPManager and can be used as SP.
      */
-    public synchronized void setIDPAppLoginFlowActive(boolean idpAppLoginFlowActive) {
-        this.idpAppLoginFlowActive = idpAppLoginFlowActive;
+    public void setIDPAppPackageName(String idpAppPackageName) {
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_APP_IS_SP);
+        spManager = new com.salesforce.androidsdk.auth.idp.SPManager(idpAppPackageName);
     }
 
     /**
-     * Returns the configured IDP app's URI scheme.
-     *
-     * @return IDP app's URI scheme.
+     * Returns the IDP manager
+     * Only defined if setAllowedSPApps() was first called
      */
-    public String getIDPAppURIScheme() {
-        return idpAppURIScheme;
+    public IDPManager getIDPManager() {
+        return idpManager;
     }
 
     /**
-     * Sets the IDP app's URI scheme.
-     *
-     * @param idpAppURIScheme IDP app's URI scheme.
+     * Sets the allowed SP apps for this app.
+     * As a result this application gets a IDPManager and can be used as IDP.
      */
-    public synchronized void setIDPAppURIScheme(String idpAppURIScheme) {
-        this.idpAppURIScheme = idpAppURIScheme;
+    public void setAllowedSPApps(List<SPConfig> allowedSPApps) {
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_APP_IS_IDP);
+        idpManager = new com.salesforce.androidsdk.auth.idp.IDPManager(allowedSPApps);
     }
+
 
     /**
      * Returns the app display name used by the passcode dialog.

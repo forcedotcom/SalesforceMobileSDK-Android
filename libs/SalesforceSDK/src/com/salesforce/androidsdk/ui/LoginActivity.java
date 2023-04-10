@@ -46,7 +46,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
 import android.security.KeyChain;
-import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -64,15 +63,15 @@ import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
+import androidx.annotation.NonNull;
+
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2;
-import com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity;
-import com.salesforce.androidsdk.auth.idp.IDPInititatedLoginReceiver;
-import com.salesforce.androidsdk.auth.idp.SPRequestHandler;
+import com.salesforce.androidsdk.auth.idp.interfaces.SPManager;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
@@ -103,15 +102,10 @@ public class LoginActivity extends FragmentActivity
     private static final int SETUP_REQUEST_CODE = 72;
     private static final String TAG = "LoginActivity";
 
-	private boolean wasBackgrounded;
-	private OAuthWebviewHelper webviewHelper;
+    private boolean wasBackgrounded;
+    private OAuthWebviewHelper webviewHelper;
     private ChangeServerReceiver changeServerReceiver;
     private boolean receiverRegistered;
-    private SPRequestHandler spRequestHandler;
-    private SPAuthCallback authCallback;
-    private String userHint;
-    private String spActivityName;
-    private Bundle spActivityExtras;
     private AccountAuthenticatorResponse mAccountAuthenticatorResponse = null;
     private Bundle accountAuthenticatorResult = null;
     private Button biometricAuthenticationButton = null;
@@ -176,16 +170,15 @@ public class LoginActivity extends FragmentActivity
         EventsObservable.get().notifyEvent(EventType.LoginActivityCreateComplete, this);
         certAuthOrLogin();
         if (!receiverRegistered) {
-			changeServerReceiver = new ChangeServerReceiver();
+            changeServerReceiver = new ChangeServerReceiver();
             final IntentFilter changeServerFilter = new IntentFilter(ServerPickerActivity.CHANGE_SERVER_INTENT);
             registerReceiver(changeServerReceiver, changeServerFilter);
             receiverRegistered = true;
         }
-        authCallback = new SPAuthCallback();
-	}
+    }
 
-	@Override
-	protected void onDestroy() {
+    @Override
+    protected void onDestroy() {
         if (receiverRegistered) {
             unregisterReceiver(changeServerReceiver);
             receiverRegistered = false;
@@ -193,7 +186,7 @@ public class LoginActivity extends FragmentActivity
         super.onDestroy();
     }
 
-	@Override
+    @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
 
@@ -206,20 +199,6 @@ public class LoginActivity extends FragmentActivity
         // Reloads login page for every new intent to ensure the correct login server is selected.
         if (webviewHelper.shouldReloadPage()) {
             webviewHelper.loadLoginPage();
-        }
-
-        // Launches IDP login flow directly for IDP initiated login flow.
-        if (intent != null) {
-            final Bundle extras = intent.getExtras();
-            if (extras != null) {
-                userHint = extras.getString(IDPInititatedLoginReceiver.USER_HINT_KEY);
-                spActivityName = extras.getString(IDPInititatedLoginReceiver.SP_ACTVITY_NAME_KEY);
-                spActivityExtras = extras.getBundle(IDPInititatedLoginReceiver.SP_ACTVITY_EXTRAS_KEY);
-                boolean isIdpInitFlow = extras.getBoolean(IDPInititatedLoginReceiver.IDP_INIT_LOGIN_KEY);
-                if (isIdpInitFlow) {
-                    onIDPLoginClick(null);
-                }
-            }
         }
     }
 
@@ -255,56 +234,56 @@ public class LoginActivity extends FragmentActivity
         }
     }
 
-	/**
+    /**
      * Returns whether certificate based authentication flow should be used.
      *
      * @return True - if it should be used, False - otherwise.
      */
     protected boolean shouldUseCertBasedAuth() {
-		return RuntimeConfig.getRuntimeConfig(this).getBoolean(ConfigKey.RequireCertAuth);
+        return RuntimeConfig.getRuntimeConfig(this).getBoolean(ConfigKey.RequireCertAuth);
     }
 
-	protected OAuthWebviewHelper getOAuthWebviewHelper(OAuthWebviewHelperEvents callback,
-			LoginOptions loginOptions, WebView webView, Bundle savedInstanceState) {
-		return new OAuthWebviewHelper(this, callback, loginOptions, webView, savedInstanceState);
-	}
+    protected OAuthWebviewHelper getOAuthWebviewHelper(OAuthWebviewHelperEvents callback,
+            LoginOptions loginOptions, WebView webView, Bundle savedInstanceState) {
+        return new OAuthWebviewHelper(this, callback, loginOptions, webView, savedInstanceState);
+    }
 
-	@Override
-	protected void onResume() {
-		super.onResume();
-		if (wasBackgrounded) {
-		    if (webviewHelper.shouldReloadPage()) {
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (wasBackgrounded) {
+            if (webviewHelper.shouldReloadPage()) {
                 webviewHelper.clearView();
                 webviewHelper.loadLoginPage();
             }
-			wasBackgrounded = false;
-		}
-	}
+            wasBackgrounded = false;
+        }
+    }
 
-	@Override
-	public void onSaveInstanceState(Bundle bundle) {
-		super.onSaveInstanceState(bundle);
-		webviewHelper.saveState(bundle);
-	}
+    @Override
+    public void onSaveInstanceState(Bundle bundle) {
+        super.onSaveInstanceState(bundle);
+        webviewHelper.saveState(bundle);
+    }
 
-	@Override
-	public boolean onKeyDown(int keyCode, KeyEvent event) {
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
 
-		// This allows sub classes to override the behavior by returning false.
-		if (fixBackButtonBehavior(keyCode)) {
-			return true;
-		}
-		return super.onKeyDown(keyCode, event);
-	}
+        // This allows sub classes to override the behavior by returning false.
+        if (fixBackButtonBehavior(keyCode)) {
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
 
-	/**
-	 * A fix for back button behavior
-	 *
-	 * @return true if the fix was applied
-	 *         false if the key code was not handled
-	 */
-	protected boolean fixBackButtonBehavior(int keyCode) {
-		if (keyCode == KeyEvent.KEYCODE_BACK) {
+    /**
+     * A fix for back button behavior
+     *
+     * @return true if the fix was applied
+     *         false if the key code was not handled
+     */
+    protected boolean fixBackButtonBehavior(int keyCode) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
 
             if (!SalesforceSDKManager.getInstance().getBiometricAuthenticationManager().isLocked()) {
 
@@ -345,15 +324,15 @@ public class LoginActivity extends FragmentActivity
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int itemId = item.getItemId();
-		if (itemId == R.id.sf__menu_clear_cookies) {
-        	onClearCookiesClick(null);
-        	return true;
+        if (itemId == R.id.sf__menu_clear_cookies) {
+            onClearCookiesClick(null);
+            return true;
         } else if (itemId == R.id.sf__menu_pick_server) {
-        	onPickServerClick(null);
-        	return true;
+            onPickServerClick(null);
+            return true;
         } else if (itemId == R.id.sf__menu_reload) {
-        	onReloadClick(null);
-        	return true;
+            onReloadClick(null);
+            return true;
         } else {
             return super.onOptionsItemSelected(item);
         }
@@ -365,13 +344,13 @@ public class LoginActivity extends FragmentActivity
      *
      **************************************************************************************************/
 
-	@Override
-	public void loadingLoginPage(String loginUrl) {
-		final ActionBar ab = getActionBar();
-		if (ab != null) {
-			ab.setTitle(loginUrl);
-		}
-	}
+    @Override
+    public void loadingLoginPage(String loginUrl) {
+        final ActionBar ab = getActionBar();
+        if (ab != null) {
+            ab.setTitle(loginUrl);
+        }
+    }
 
 	@Override
 	public void onAccountAuthenticatorResult(Bundle authResult) {
@@ -384,15 +363,15 @@ public class LoginActivity extends FragmentActivity
      *
      **************************************************************************************************/
 
-	/**
-	 * Called when "Clear cookies" button is clicked.
-	 * Clear cookies and reload login page.
-	 * @param v
-	 */
-	public void onClearCookiesClick(View v) {
-		webviewHelper.clearCookies();
-		webviewHelper.loadLoginPage();
-	}
+    /**
+     * Called when "Clear cookies" button is clicked.
+     * Clear cookies and reload login page.
+     * @param v
+     */
+    public void onClearCookiesClick(View v) {
+        webviewHelper.clearCookies();
+        webviewHelper.loadLoginPage();
+    }
 
     /**
      * Called when the IDP login button is clicked.
@@ -400,38 +379,33 @@ public class LoginActivity extends FragmentActivity
      * @param v IDP login button.
      */
     public void onIDPLoginClick(View v) {
-        final String loginServer = SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url.trim();
-        SalesforceSDKLogger.d(TAG, "Launching IDP app for authentication with login host: " + loginServer);
-        spRequestHandler = new SPRequestHandler(loginServer, userHint, authCallback);
-        spRequestHandler.launchIDPApp(this);
+        SalesforceSDKManager.getInstance().getSPManager().kickOffSPInitiatedLoginFlow(
+                this,
+                new SPStatusCallback());
     }
 
-	/**
-	 * Called when "Reload" button is clicked.
-	 * Reloads login page.
-	 * @param v
-	 */
-	public void onReloadClick(View v) {
-		webviewHelper.loadLoginPage();
-	}
+    /**
+     * Called when "Reload" button is clicked.
+     * Reloads login page.
+     * @param v
+     */
+    public void onReloadClick(View v) {
+        webviewHelper.loadLoginPage();
+    }
 
-	/**
-	 * Called when "Pick server" button is clicked.
-	 * Start ServerPickerActivity
-	 * @param v
-	 */
-	public void onPickServerClick(View v) {
-		final Intent i = new Intent(this, ServerPickerActivity.class);
-	    startActivityForResult(i, PICK_SERVER_REQUEST_CODE);
-	}
+    /**
+     * Called when "Pick server" button is clicked.
+     * Start ServerPickerActivity
+     * @param v
+     */
+    public void onPickServerClick(View v) {
+        final Intent i = new Intent(this, ServerPickerActivity.class);
+        startActivityForResult(i, PICK_SERVER_REQUEST_CODE);
+    }
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		if (requestCode == SPRequestHandler.IDP_REQUEST_CODE) {
-            spRequestHandler.handleIDPResponse(resultCode, data);
-        } else {
-	        super.onActivityResult(requestCode, resultCode, data);
-	    }
+        super.onActivityResult(requestCode, resultCode, data);
 
         /*
          * presentAuth again after the user has come back from security settings to ensure they
@@ -441,7 +415,7 @@ public class LoginActivity extends FragmentActivity
             biometricAuthenticationButton.setText(R.string.sf__login_with_biometric);
             presentBiometric();
         }
-	}
+    }
 
 	@Override
 	public void finish(UserAccount userAccount) {
@@ -450,77 +424,41 @@ public class LoginActivity extends FragmentActivity
         final List<UserAccount> authenticatedUsers = userAccountManager.getAuthenticatedUsers();
         final int numAuthenticatedUsers = authenticatedUsers == null ? 0 : authenticatedUsers.size();
 
-        /*
-         * Sends user switch intents only if this login flow is not a login triggered due
-         * to an incoming authentication request from an SP app or first user to login on IDP.
-         * If it is an incoming SP request, we should add the user account but NOT switch to
-         * the user or send user switch intents unless it's the first user being logged in.
-         */
-        boolean isFirstUserOrNotIDPFlow = !SalesforceSDKManager.getInstance().isIDPAppLoginFlowActive()
-                || (numAuthenticatedUsers <= 1);
-        if (isFirstUserOrNotIDPFlow) {
-            final int userSwitchType;
-            if (numAuthenticatedUsers == 1) {
+        final int userSwitchType;
+        if (numAuthenticatedUsers == 1) {
 
-                // We've already authenticated the first user, so there should be one.
-                userSwitchType = UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN;
-            } else if (numAuthenticatedUsers > 1) {
+            // We've already authenticated the first user, so there should be one.
+            userSwitchType = UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN;
+        } else if (numAuthenticatedUsers > 1) {
 
-                // Otherwise we're logging in with an additional user.
-                userSwitchType = UserAccountManager.USER_SWITCH_TYPE_LOGIN;
-            } else {
+            // Otherwise we're logging in with an additional user.
+            userSwitchType = UserAccountManager.USER_SWITCH_TYPE_LOGIN;
+        } else {
 
-                // This should never happen but if it does, pass in the "unknown" value.
-                userSwitchType = UserAccountManager.USER_SWITCH_TYPE_DEFAULT;
-            }
-            userAccountManager.sendUserSwitchIntent(userSwitchType, null);
+            // This should never happen but if it does, pass in the "unknown" value.
+            userSwitchType = UserAccountManager.USER_SWITCH_TYPE_DEFAULT;
         }
+        userAccountManager.sendUserSwitchIntent(userSwitchType, null);
 
-        /*
-         * Passes back the added user account object if this is a login flow in the IDP app
-         * initiated by an incoming request for authentication from an SP app.
-         */
-        if (userAccount != null && SalesforceSDKManager.getInstance().isIDPAppLoginFlowActive()) {
-            final Intent intent = new Intent(IDPAccountPickerActivity.IDP_LOGIN_COMPLETE_ACTION);
-            intent.putExtra(IDPAccountPickerActivity.USER_ACCOUNT_KEY, userAccount.toBundle());
-            sendBroadcast(intent);
-        }
-
-        // If the IDP app specified a component to launch after login, launches that component.
-        if (!TextUtils.isEmpty(spActivityName)) {
-            try {
-                final Intent intent = new Intent(this, Class.forName(spActivityName));
-                intent.addCategory(Intent.CATEGORY_DEFAULT);
-                intent.putExtra(IDPInititatedLoginReceiver.SP_ACTVITY_EXTRAS_KEY, spActivityExtras);
-                startActivity(intent);
-            } catch (Exception e) {
-                SalesforceSDKLogger.e(TAG, "Could not start activity", e);
-            }
-        }
-
-        // Cleans up some state before dismissing activity.
-        userHint = null;
-        spActivityName = null;
-        spActivityExtras = null;
-
-        if (mAccountAuthenticatorResponse != null) {
-            // send the result bundle back if set, otherwise send an error.
-            if (accountAuthenticatorResult != null) {
-                mAccountAuthenticatorResponse.onResult(accountAuthenticatorResult);
-            } else {
-                mAccountAuthenticatorResponse.onError(AccountManager.ERROR_CODE_CANCELED,
-                        "canceled");
-            }
-            mAccountAuthenticatorResponse = null;
-        }
         finish();
-	}
+    }
 
     private void initAnalyticsManager(UserAccount account) {
         final SalesforceAnalyticsManager analyticsManager = SalesforceAnalyticsManager.getInstance(account);
-	    if (analyticsManager != null) {
+        if (analyticsManager != null) {
             analyticsManager.updateLoggingPrefs();
-	    }
+        }
+    }
+
+    class SPStatusCallback implements SPManager.StatusUpdateCallback {
+        @Override
+        public void onStatusUpdate(@NonNull SPManager.Status status) {
+            runOnUiThread(() -> Toast.makeText(
+                    getApplicationContext(),
+                    getString(status.getResIdForDescription()),
+                    Toast.LENGTH_SHORT
+            ).show());
+        }
     }
 
     public class ChangeServerReceiver extends BroadcastReceiver {
@@ -533,39 +471,6 @@ public class LoginActivity extends FragmentActivity
                     webviewHelper.loadLoginPage();
                 }
             }
-        }
-    }
-
-    /**
-     * Callbacks for SP authentication flow.
-     *
-     * @author bhariharan
-     */
-    public class SPAuthCallback {
-
-        /**
-         * Called when the flow was successful and token response is received.
-         *
-         * @param tokenResponse Token response.
-         */
-        public void receivedTokenResponse(OAuth2.TokenEndpointResponse tokenResponse) {
-            webviewHelper.onAuthFlowComplete(tokenResponse);
-        }
-
-        /**
-         * Called when the flow was not successful.
-         *
-         * @param errorMessage Error message.
-         */
-        public void receivedErrorResponse(final String errorMessage) {
-            final Handler toastHandler = new Handler(Looper.getMainLooper());
-            toastHandler.post(new Runnable() {
-
-                @Override
-                public void run() {
-                    Toast.makeText(getApplicationContext(), errorMessage, Toast.LENGTH_LONG).show();
-                }
-            });
         }
     }
 

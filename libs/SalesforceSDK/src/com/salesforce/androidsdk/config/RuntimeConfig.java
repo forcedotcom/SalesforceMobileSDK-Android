@@ -61,7 +61,7 @@ public class RuntimeConfig {
         RequireCertAuth,
         ManagedAppCertAlias,
         OnlyShowAuthorizedHosts,
-        IDPAppURLScheme
+        IDPAppPackageName
     }
 
     private boolean isManaged;
@@ -195,7 +195,7 @@ public class RuntimeConfig {
             jsonObject.put(ConfigKey.RequireCertAuth.name(), getBoolean(ConfigKey.RequireCertAuth));
             jsonObject.put(ConfigKey.ManagedAppCertAlias.name(), getString(ConfigKey.ManagedAppCertAlias));
             jsonObject.put(ConfigKey.OnlyShowAuthorizedHosts.name(), getJSONArray(ConfigKey.OnlyShowAuthorizedHosts));
-            jsonObject.put(ConfigKey.IDPAppURLScheme.name(), getString(ConfigKey.IDPAppURLScheme));
+            jsonObject.put(ConfigKey.IDPAppPackageName.name(), getString(ConfigKey.IDPAppPackageName));
             return jsonObject;
         }
         catch (JSONException e) {

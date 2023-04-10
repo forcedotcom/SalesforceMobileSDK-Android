@@ -164,6 +164,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     public OAuthWebviewHelper(Activity activity, OAuthWebviewHelperEvents callback, LoginOptions options,
                               WebView webview, Bundle savedInstanceState, boolean shouldReloadPage) {
         assert options != null && callback != null && webview != null && activity != null;
+        this.context = webview.getContext();
         this.activity = activity;
         this.callback = callback;
         this.loginOptions = options;
@@ -191,10 +192,20 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         }
     }
 
+    public OAuthWebviewHelper(Context context, OAuthWebviewHelperEvents callback, LoginOptions options) {
+        this.context = context;
+        this.callback = callback;
+        this.loginOptions = options;
+        this.webview = null;
+        this.activity = null;
+        this.shouldReloadPage = true;
+    }
+
     private final OAuthWebviewHelperEvents callback;
     protected final LoginOptions loginOptions;
     private final WebView webview;
     private AccountOptions accountOptions;
+    private final Context context;
     private final Activity activity;
     private PrivateKey key;
     private X509Certificate[] certChain;
@@ -243,7 +254,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     }
 
     protected Context getContext() {
-        return webview.getContext();
+        return context;
     }
 
     /**
@@ -513,7 +524,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
      * Called when the user facing part of the auth flow completed successfully.
      * The last step is to call the identity service to get the username.
      */
-    protected void onAuthFlowComplete(TokenEndpointResponse tr) {
+    public void onAuthFlowComplete(TokenEndpointResponse tr) {
+        SalesforceSDKLogger.d(TAG, "token response -> " +  tr);
         FinishAuthTask t = new FinishAuthTask();
         t.execute(tr);
     }

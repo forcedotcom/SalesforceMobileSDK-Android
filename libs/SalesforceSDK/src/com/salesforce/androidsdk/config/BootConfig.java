@@ -81,7 +81,6 @@ public class BootConfig {
 	private boolean shouldAuthenticate;
 	private boolean attemptOfflineLoad;
 	private String unauthenticatedStartPage;
-
 	private static BootConfig INSTANCE = null;
 
 	/**
