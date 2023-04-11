@@ -47,6 +47,7 @@ import android.webkit.ClientCertRequest;
 import android.webkit.CookieManager;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -54,7 +55,6 @@ import android.widget.Toast;
 
 import androidx.browser.customtabs.CustomTabsIntent;
 
-import com.google.firebase.FirebaseOptions;
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountBuilder;
@@ -65,12 +65,12 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
-import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -117,6 +117,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
     // background executor
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
+    private String codeVerifier;
 
     /**
      * the host activity/fragment should pass in an implementation of this
@@ -404,26 +405,21 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     }
 
     protected URI getAuthorizationUrl(Boolean jwtFlow) throws URISyntaxException {
+        codeVerifier = SalesforceKeyGenerator.getRandom128ByteKey();
+        String codeChallenge = SalesforceKeyGenerator.getSHA256Hash(codeVerifier);
+
+        Map<String, String> addlParams = jwtFlow ? null : loginOptions.getAdditionalParameters();
+        URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(loginOptions.getLoginUrl()), getOAuthClientId(), loginOptions.getOauthCallbackUrl(), loginOptions.getOauthScopes(), getAuthorizationDisplayType(), codeChallenge, addlParams);
+
         if (jwtFlow) {
-            return OAuth2.getAuthorizationUrl(new URI(loginOptions.getLoginUrl()),
-                    getOAuthClientId(),
-                    loginOptions.getOauthCallbackUrl(),
-                    loginOptions.getOauthScopes(),
-                    getAuthorizationDisplayType(),
+            return OAuth2.getFrontdoorUrl(authorizationUrl,
                     loginOptions.getJwt(),
                     loginOptions.getLoginUrl(),
                     loginOptions.getAdditionalParameters());
+        } else {
+            return authorizationUrl;
         }
-        return OAuth2.getAuthorizationUrl(new URI(loginOptions.getLoginUrl()),
-                getOAuthClientId(),
-                loginOptions.getOauthCallbackUrl(),
-                loginOptions.getOauthScopes(),
-                getAuthorizationDisplayType(),
-                loginOptions.getAdditionalParameters());
-    }
 
-    protected URI getAuthorizationUrl() throws URISyntaxException {
-        return getAuthorizationUrl(false);
     }
 
    	/**
@@ -459,12 +455,12 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         	super.onPageFinished(view, url);
 		}
 
-		@Override
-        public boolean shouldOverrideUrlLoading(WebView view, String url) {
-			boolean isDone = url.replace("///", "/").toLowerCase(Locale.US).startsWith(loginOptions.getOauthCallbackUrl().replace("///", "/").toLowerCase(Locale.US));
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+            Uri uri = request.getUrl();
+			boolean isDone = uri.toString().replace("///", "/").toLowerCase(Locale.US).startsWith(loginOptions.getOauthCallbackUrl().replace("///", "/").toLowerCase(Locale.US));
             if (isDone) {
-                Uri callbackUri = Uri.parse(url);
-                Map<String, String> params = UriFragmentParser.parse(callbackUri);
+                Map<String, String> params = UriFragmentParser.parse(uri);
                 String error = params.get("error");
                 // Did we fail?
                 if (error != null) {
@@ -473,8 +469,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 }
                 // Or succeed?
                 else {
-                    TokenEndpointResponse tr = new TokenEndpointResponse(params);
-                    onAuthFlowComplete(tr);
+                    String code = params.get("code");
+                    onWebServerFlowComplete(code);
                 }
             }
             return isDone;
@@ -515,6 +511,37 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         SalesforceSDKLogger.d(TAG, "token response -> " +  tr);
         FinishAuthTask t = new FinishAuthTask();
         t.execute(tr);
+    }
+    protected void onWebServerFlowComplete(String code) {
+        new CodeExchangeEndpointTask(code).execute();
+    }
+
+    private class CodeExchangeEndpointTask extends AsyncTask<Void, Void, TokenEndpointResponse> {
+
+        private String code;
+
+        public CodeExchangeEndpointTask(String code) {
+            this.code = code;
+        }
+
+        @Override
+        protected OAuth2.TokenEndpointResponse doInBackground(Void... nothings) {
+            OAuth2.TokenEndpointResponse tokenResponse = null;
+            try {
+                tokenResponse = OAuth2.exchangeCode(HttpAccess.DEFAULT,
+                        URI.create(loginOptions.getLoginUrl()), loginOptions.getOauthClientId(), code, codeVerifier,
+                        loginOptions.getOauthCallbackUrl());
+            } catch (Exception e) {
+                SalesforceSDKLogger.e(TAG, "Exception occurred while making token request", e);
+                onAuthFlowError("Token Request Error", e.getMessage(), e);
+            }
+            return tokenResponse;
+        }
+
+        @Override
+        protected void onPostExecute(OAuth2.TokenEndpointResponse tokenResponse) {
+            onAuthFlowComplete(tokenResponse);
+        }
     }
 
     private class SwapJWTForAccessTokenTask extends BaseFinishAuthFlowTask<LoginOptions> {
