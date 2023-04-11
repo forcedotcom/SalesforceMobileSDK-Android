@@ -54,7 +54,6 @@ import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebSettings.LayoutAlgorithm;
 import android.webkit.WebView;
-import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -70,7 +69,6 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
@@ -138,10 +136,11 @@ public class LoginActivity extends FragmentActivity
 
         // Setup content view.
         setContentView(R.layout.sf__login);
-        if (SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled()) {
-            final Button button = findViewById(R.id.sf__idp_login_button);
-            button.setVisibility(View.VISIBLE);
-        }
+        // TODO bring back login with idp button once positioning / hiding is correctly done
+//		if (SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled()) {
+//            final Button button = findViewById(R.id.sf__idp_login_button);
+//            button.setVisibility(View.VISIBLE);
+//        }
 
         BiometricAuthenticationManager bioAuthManager =
                 (BiometricAuthenticationManager) SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
@@ -229,8 +228,8 @@ public class LoginActivity extends FragmentActivity
             final String errorDesc = params.get("error_description");
             webviewHelper.onAuthFlowError(error, errorDesc, null);
         } else {
-            final OAuth2.TokenEndpointResponse tr = new OAuth2.TokenEndpointResponse(params);
-            webviewHelper.onAuthFlowComplete(tr);
+            String code = params.get("code");
+            webviewHelper.onWebServerFlowComplete(code);
         }
     }
 
