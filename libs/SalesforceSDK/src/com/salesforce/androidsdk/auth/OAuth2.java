@@ -96,7 +96,6 @@ public class OAuth2 {
     private static final String SCOPE = "scope";
     private static final String REDIRECT_URI = "redirect_uri";
     private static final String DEVICE_ID = "device_id";
-    private static final String HYBRID_TOKEN = "hybrid_token";
     private static final String USERNAME = "username";
     private static final String EMAIL = "email";
     private static final String FIRST_NAME = "first_name";
