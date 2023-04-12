@@ -284,18 +284,20 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
 
         // Displays the error in a Toast and reloads the login page after clearing cookies.
-        final Toast t = Toast.makeText(webview.getContext(), error + " : " + errorDesc,
-                Toast.LENGTH_LONG);
-        webview.postDelayed(new Runnable() {
+        activity.runOnUiThread(() -> {
+            final Toast t = Toast.makeText(webview.getContext(), error + " : " + errorDesc,
+                    Toast.LENGTH_LONG);
+            webview.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    clearCookies();
+                    loadLoginPage();
+                }
+            }, t.getDuration());
+            t.show();
+        });
+}
 
-            @Override
-            public void run() {
-                clearCookies();
-                loadLoginPage();
-            }
-        }, t.getDuration());
-        t.show();
-    }
 
     protected void showError(Exception exception) {
         Toast.makeText(getContext(),
