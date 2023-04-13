@@ -474,7 +474,7 @@ public class LoginActivity extends FragmentActivity
         }
     }
 
-    private void presentBiometric() {
+    protected void presentBiometric() {
         BiometricPrompt biometricPrompt = getBiometricPrompt();
         BiometricManager biometricManager = BiometricManager.from(this);
 

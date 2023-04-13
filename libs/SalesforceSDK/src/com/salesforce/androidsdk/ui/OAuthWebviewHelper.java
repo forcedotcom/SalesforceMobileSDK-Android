@@ -120,6 +120,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     public static final String HTTP_ERROR_RESPONSE_CODE_INTENT = "com.salesforce.auth.intent.HTTP_RESPONSE_CODE";
     public static final String RESPONSE_ERROR_INTENT = "com.salesforce.auth.intent.RESPONSE_ERROR";
     public static final String RESPONSE_ERROR_DESCRIPTION_INTENT = "com.salesforce.auth.intent.RESPONSE_ERROR_DESCRIPTION";
+    public static final String BIOMETRIC_PROMPT = "mobilesdk://biometric/authentication/prompt";
     private static final String TAG = "OAuthWebViewHelper";
     private static final String ACCOUNT_OPTIONS = "accountOptions";
     private String codeVerifier;
@@ -479,6 +480,13 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
             Uri uri = request.getUrl();
+
+            // Login webview embedded button has sent the signal to show the  biometric prompt.
+            if (uri.toString().equals(BIOMETRIC_PROMPT) && activity != null) {
+                ((LoginActivity) activity).presentBiometric();
+                return true;
+            }
+
 			boolean isDone = uri.toString().replace("///", "/").toLowerCase(Locale.US).startsWith(loginOptions.getOauthCallbackUrl().replace("///", "/").toLowerCase(Locale.US));
             if (isDone) {
                 Map<String, String> params = UriFragmentParser.parse(uri);
