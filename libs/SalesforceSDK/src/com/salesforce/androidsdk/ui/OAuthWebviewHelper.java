@@ -73,6 +73,9 @@ import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
 import com.salesforce.androidsdk.security.ScreenLockManager;
@@ -86,6 +89,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.PrivateKey;
@@ -118,6 +122,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     public static final String RESPONSE_ERROR_DESCRIPTION_INTENT = "com.salesforce.auth.intent.RESPONSE_ERROR_DESCRIPTION";
     private static final String TAG = "OAuthWebViewHelper";
     private static final String ACCOUNT_OPTIONS = "accountOptions";
+    private String codeVerifier;
 
     // background executor
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
@@ -686,12 +691,35 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
             // Biometric Auth required by mobile policy.
             if (id.biometricAuth) {
-                // Default to 15 minutes if not set.
-                int timeout = (id.biometricAuthTimeout != -1) ? id.biometricAuthTimeout : 15;
-                int timeoutInMills = timeout * 1000;
                 BiometricAuthenticationManager bioAuthManager =
                         (BiometricAuthenticationManager) mgr.getBiometricAuthenticationManager();
-                bioAuthManager.storeMobilePolicy(account, id.biometricAuth, timeoutInMills);
+
+                activity.runOnUiThread(() ->  {
+                    SalesforceSDKManager.getInstance().getClientManager().peekRestClient()
+                            .sendAsync(RestRequest.getRequestForAuthTokenInfo(), new RestClient.AsyncRequestCallback() {
+                                @Override
+                                public void onSuccess(RestRequest request, RestResponse response) {
+                                    try {
+                                        JSONObject jsonResponse = response.asJSONObject();
+                                        int expiration = jsonResponse.getInt("exp");
+                                        int issuedAt = jsonResponse.getInt("iat");
+                                        int timeoutInMills = (expiration - issuedAt) * 1000;
+                                        bioAuthManager.storeMobilePolicy(account, id.biometricAuth, timeoutInMills);
+                                    } catch (Exception exception) {
+                                        onError(exception);
+                                    }
+                                }
+
+                                @Override
+                                public void onError(Exception exception) {
+                                    SalesforceSDKLogger.e(TAG, "Encountered error introspecting token: " + exception);
+
+                                    // Default to the lowest session time (15 minutes) if it cannot be retrieved.
+                                    int timeoutInMills = 15 * 60 * 1000;
+                                    bioAuthManager.storeMobilePolicy(account, id.biometricAuth, timeoutInMills);
+                                }
+                            });
+                });
 
                 //  Don't prompt the user every time they login.
                 if (bioAuthManager.hasBeenPresentedOptIn()) {

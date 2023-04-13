@@ -59,6 +59,8 @@ public class BootConfig {
 	private static final String REMOTE_ACCESS_CONSUMER_KEY = "remoteAccessConsumerKey";
 	private static final String OAUTH_REDIRECT_URI = "oauthRedirectURI";
 	private static final String OAUTH_SCOPES = "oauthScopes";
+
+	private static final String REMOTE_ACCESS_CONSUMER_SECRET = "remoteAccessConsumerSecret";
 	private static final String IS_LOCAL = "isLocal";
 	private static final String START_PAGE = "startPage";
 	private static final String ERROR_PAGE = "errorPage";
@@ -75,6 +77,7 @@ public class BootConfig {
 	private String remoteAccessConsumerKey;
 	private String oauthRedirectURI;
 	private String[] oauthScopes;
+	private String remoteAccessConsumerSecret;
 	private boolean isLocal;
 	private String startPage;
 	private String errorPage;
@@ -109,11 +112,11 @@ public class BootConfig {
 	 * @return A BootConfig representing the hybrid boot config object.
 	 */
 	static BootConfig getHybridBootConfig(Context ctx, String assetFilePath) {
-		BootConfig hybridBootConfg = new BootConfig();
-		hybridBootConfg.configIsHybrid = true;
+		BootConfig hybridBootConfig = new BootConfig();
+		hybridBootConfig.configIsHybrid = true;
 		JSONObject bootConfigJsonObj = readFromJSON(ctx, assetFilePath);
-		hybridBootConfg.parseBootConfig(bootConfigJsonObj);
-		return hybridBootConfg;
+		hybridBootConfig.parseBootConfig(bootConfigJsonObj);
+		return hybridBootConfig;
 	}
 
 	/**
@@ -187,6 +190,9 @@ public class BootConfig {
 			config.put(SHOULD_AUTHENTICATE, shouldAuthenticate);
 			config.put(ATTEMPT_OFFLINE_LOAD, attemptOfflineLoad);
 			config.put(UNAUTHENTICATED_START_PAGE, unauthenticatedStartPage);
+			if (!TextUtils.isEmpty(remoteAccessConsumerSecret)) {
+				config.put(REMOTE_ACCESS_CONSUMER_SECRET, remoteAccessConsumerSecret);
+			}
 
 			return config;
 		}
@@ -225,6 +231,7 @@ public class BootConfig {
 		remoteAccessConsumerKey = res.getString(R.string.remoteAccessConsumerKey);
 		oauthRedirectURI = res.getString(R.string.oauthRedirectURI);
 		oauthScopes = res.getStringArray(R.array.oauthScopes);
+		remoteAccessConsumerSecret = res.getString(R.string.remoteAccessConsumerSecret);
 	}
 
 	/**
@@ -250,6 +257,7 @@ public class BootConfig {
 			shouldAuthenticate = config.optBoolean(SHOULD_AUTHENTICATE, DEFAULT_SHOULD_AUTHENTICATE);
 			attemptOfflineLoad = config.optBoolean(ATTEMPT_OFFLINE_LOAD, DEFAULT_ATTEMPT_OFFLINE_LOAD);
 			unauthenticatedStartPage = config.optString(UNAUTHENTICATED_START_PAGE);
+			remoteAccessConsumerSecret = config.optString(REMOTE_ACCESS_CONSUMER_SECRET);
 		} catch (JSONException e) {
 			throw new BootConfigException("Failed to parse " + HYBRID_BOOTCONFIG_PATH, e);
 		}
@@ -306,6 +314,15 @@ public class BootConfig {
 	 * @return URL of the unauthenticated start page.
 	 */
 	public String getUnauthenticatedStartPage() { return unauthenticatedStartPage; }
+
+	/**
+	 * Returns the consumer secret value specified for your remote access object or connected app.
+	 *
+	 * @return Consumer secret value specified for your remote access object or connected app.
+	 */
+	public String getRemoteAccessConsumerSecret() {
+		return remoteAccessConsumerSecret;
+	}
 
 	/**
 	 * Convenience method to determine whether a configured startPage value is an absolute URL.

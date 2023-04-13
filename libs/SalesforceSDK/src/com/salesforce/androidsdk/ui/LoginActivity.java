@@ -54,6 +54,7 @@ import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebSettings.LayoutAlgorithm;
 import android.webkit.WebView;
+import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
