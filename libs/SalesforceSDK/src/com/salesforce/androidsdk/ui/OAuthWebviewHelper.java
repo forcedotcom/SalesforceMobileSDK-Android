@@ -461,7 +461,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         @Override
 		public void onPageFinished(WebView view, String url) {
             // Remove the Biometric Login button from the Connected App allow denny screen.
-            if (url.contains("frontdoor.jsp")) {
+            if (url.contains("RemoteAccessAuthorizationPage.apexp")) {
                 final RelativeLayout parentView = (RelativeLayout) view.getParent();
                 if (parentView != null) {
                     final Button button = parentView.findViewById(R.id.sf__bio_login_button);
@@ -720,10 +720,10 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
             // Biometric Auth required by mobile policy.
             if (id.biometricAuth) {
+                int sessionTimeout = BootConfig.getBootConfig(context).getSessionTimeout() * 60 * 1000;
                 BiometricAuthenticationManager bioAuthManager =
                         (BiometricAuthenticationManager) mgr.getBiometricAuthenticationManager();
-                bioAuthManager.storeMobilePolicy(account, id.biometricAuth,
-                        BootConfig.getBootConfig(context).getSessionTimeout());
+                bioAuthManager.storeMobilePolicy(account, id.biometricAuth, sessionTimeout);
 
                 //  Don't prompt the user every time they login.
                 if (bioAuthManager.hasBeenPresentedOptIn()) {

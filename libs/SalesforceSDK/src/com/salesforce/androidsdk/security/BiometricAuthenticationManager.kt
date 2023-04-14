@@ -66,8 +66,6 @@ internal class BiometricAuthenticationManager: AppLockManager(
             intent.putExtras(options)
             ctx.startActivity(intent)
             EventsObservable.get().notifyEvent(EventsObservable.EventType.AppLocked)
-
-            getAccountPrefs(user).edit().putString("token", user.refreshToken).apply()
         }
 
     }
