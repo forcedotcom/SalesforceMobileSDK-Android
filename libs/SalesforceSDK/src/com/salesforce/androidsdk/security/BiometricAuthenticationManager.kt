@@ -32,11 +32,12 @@ import android.content.Intent
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager
 import com.salesforce.androidsdk.util.EventsObservable
 
 internal class BiometricAuthenticationManager: AppLockManager(
     BIO_AUTH_POLICY, BIO_AUTH_ENABLED, BIO_AUTH_TIMEOUT
-), com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager {
+), BiometricAuthenticationManager {
     var locked = false
     private val currentUser: UserAccount?
         get() { return SalesforceSDKManager.getInstance().userAccountManager.currentUser }
@@ -89,7 +90,7 @@ internal class BiometricAuthenticationManager: AppLockManager(
 
     fun hasBeenPresentedOptIn(): Boolean {
         currentUser?.let {user ->
-            return getAccountPrefs(user).all.containsKey(USER_BIO_OPT_IN);
+            return getAccountPrefs(user).all.containsKey(USER_BIO_OPT_IN)
         }
 
         return false
@@ -140,5 +141,9 @@ internal class BiometricAuthenticationManager: AppLockManager(
         internal const val BIO_AUTH_TIMEOUT = "bio_auth_timeout"
         internal const val USER_BIO_OPT_IN = "user_bio_opt_in"
         internal const val BIO_AUTH_NATIVE_BUTTON = "bio_auth_native_button"
+
+        fun isEnabled(userAccount: UserAccount): Boolean {
+            return BiometricAuthenticationManager().getAccountPrefs(userAccount).getBoolean(BIO_AUTH_ENABLED, false)
+        }
     }
 }

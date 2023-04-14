@@ -68,16 +68,15 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
+import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.rest.RestRequest;
-import com.salesforce.androidsdk.rest.RestResponse;
-import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
+import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -89,7 +88,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.PrivateKey;
@@ -687,6 +685,29 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 mgr.getAdminPermsManager().setPrefs(id.customPermissions, account);
             }
 
+            List<UserAccount> existingUsers = mgr.getUserAccountManager().getAuthenticatedUsers();
+            if (existingUsers != null) {
+                // Check if the user already exists
+                if (existingUsers.contains(account)) {
+                    UserAccount duplicateUserAccount = existingUsers.remove(existingUsers.indexOf(account));
+                    RestClient.clearCaches();
+                    UserAccountManager.getInstance().clearCachedCurrentUser();
+
+                    // Revoke existing refresh token
+                    if (!account.getRefreshToken().equals(duplicateUserAccount.getRefreshToken())) {
+                        new RevokeTokenTask(duplicateUserAccount.getRefreshToken(),
+                                duplicateUserAccount.getInstanceServer()).execute();
+                    }
+                }
+
+                // Remove any accounts that have Biometric Authentication enabled.
+                existingUsers.forEach(existingUser -> {
+                    if (BiometricAuthenticationManager.Companion.isEnabled(existingUser)) {
+                        mgr.getUserAccountManager().signoutUser(existingUser, activity, false);
+                    }
+                });
+            }
+
             // Save the user account
             addAccount(account);
 
@@ -701,33 +722,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             if (id.biometricAuth) {
                 BiometricAuthenticationManager bioAuthManager =
                         (BiometricAuthenticationManager) mgr.getBiometricAuthenticationManager();
-
-                activity.runOnUiThread(() ->  {
-                    SalesforceSDKManager.getInstance().getClientManager().peekRestClient()
-                            .sendAsync(RestRequest.getRequestForAuthTokenInfo(), new RestClient.AsyncRequestCallback() {
-                                @Override
-                                public void onSuccess(RestRequest request, RestResponse response) {
-                                    try {
-                                        JSONObject jsonResponse = response.asJSONObject();
-                                        int expiration = jsonResponse.getInt("exp");
-                                        int issuedAt = jsonResponse.getInt("iat");
-                                        int timeoutInMills = (expiration - issuedAt) * 1000;
-                                        bioAuthManager.storeMobilePolicy(account, id.biometricAuth, timeoutInMills);
-                                    } catch (Exception exception) {
-                                        onError(exception);
-                                    }
-                                }
-
-                                @Override
-                                public void onError(Exception exception) {
-                                    SalesforceSDKLogger.e(TAG, "Encountered error introspecting token: " + exception);
-
-                                    // Default to the lowest session time (15 minutes) if it cannot be retrieved.
-                                    int timeoutInMills = 15 * 60 * 1000;
-                                    bioAuthManager.storeMobilePolicy(account, id.biometricAuth, timeoutInMills);
-                                }
-                            });
-                });
+                bioAuthManager.storeMobilePolicy(account, id.biometricAuth,
+                        BootConfig.getBootConfig(context).getSessionTimeout());
 
                 //  Don't prompt the user every time they login.
                 if (bioAuthManager.hasBeenPresentedOptIn()) {
@@ -778,6 +774,32 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 backgroundException = e;
             }
             return tr;
+        }
+    }
+
+    /**
+     * TODO: This has been duplicated from SalesforceSDKManager to keep that instance private.
+     * If it remains private we don't have to deprecate and wait for a major version to replace with
+     * a proper (work manager) solution.
+     */
+    private static class RevokeTokenTask extends AsyncTask<Void, Void, Void> {
+
+        private final String refreshToken;
+        private final String loginServer;
+
+        public RevokeTokenTask(String refreshToken, String loginServer) {
+            this.refreshToken = refreshToken;
+            this.loginServer = loginServer;
+        }
+
+        @Override
+        protected Void doInBackground(Void... nothings) {
+            try {
+                OAuth2.revokeRefreshToken(HttpAccess.DEFAULT, new URI(loginServer), refreshToken);
+            } catch (Exception e) {
+                SalesforceSDKLogger.w(TAG, "Revoking token failed", e);
+            }
+            return null;
         }
     }
 

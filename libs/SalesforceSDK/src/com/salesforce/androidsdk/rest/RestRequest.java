@@ -374,33 +374,6 @@ public class RestRequest {
 	}
 
 	/**
-	 * Request to get information about the user's connected app authorization token.  Note that this API requires the
-	 * optional remoteAccessConsumerSecret bootconfig value.
-	 *
-	 * @return RestRequest object that requests authorization token info.
-	 * @see <a href="https://help.salesforce.com/s/articleView?id=sf.remoteaccess_oidc_token_introspection_endpoint.htm">https://help.salesforce.com/s/articleView?id=sf.remoteaccess_oidc_token_introspection_endpoint.htm</a></a>
-	 */
-	public static RestRequest getRequestForAuthTokenInfo() {
-		SalesforceSDKManager manager = SalesforceSDKManager.getInstance();
-		BootConfig bootConfig = BootConfig.getBootConfig(manager.getAppContext());
-		String clientSecret = bootConfig.getRemoteAccessConsumerSecret();
-		if (clientSecret == null || clientSecret.isEmpty()) {
-			SalesforceSDKLogger.e(TAG, "getRequestForAuthTokenInfo requires remoteAccessConsumerSecret " +
-					"to be set in bootconfig.");
-			return null;
-		}
-
-		RequestBody body = new FormBody.Builder()
-				.add("token", manager.getUserAccountManager().getCurrentUser().getAuthToken())
-				.add("client_id", bootConfig.getRemoteAccessConsumerKey())
-				.add("client_secret", clientSecret)
-				.add("token_type_hint", "access_token")
-				.build();
-
-		return new RestRequest(RestMethod.POST, RestEndpoint.INSTANCE, RestAction.TOKENINFO.getPath(), body, null);
-	}
-
-	/**
 	 * Request to get summary information about each Salesforce.com version currently available.
 	 * 
 	 * @return  RestRequest object that requests the list of versions.

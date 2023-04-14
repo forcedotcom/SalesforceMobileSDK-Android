@@ -7,5 +7,5 @@
         <item>api</item>
         <item>web</item>
     </string-array>
-    <string name="remoteAccessConsumerSecret"></string>
+    <integer name="sessionTimeout">15</integer>
 </resources>
