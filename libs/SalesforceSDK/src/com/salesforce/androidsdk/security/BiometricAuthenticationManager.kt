@@ -27,8 +27,8 @@
 package com.salesforce.androidsdk.security
 
 import android.app.Activity
-import android.app.AlertDialog
 import android.content.Intent
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -123,10 +123,13 @@ internal class BiometricAuthenticationManager: AppLockManager(
 
     override fun presentOptInDialog(activity: Activity) {
         activity.runOnUiThread {
-            AlertDialog.Builder(activity)
-                .setTitle(R.string.sf__biometric_opt_in)
-                .setNegativeButton(R.string.sf__biometric_deny) { _, _ -> biometricOptIn(false) }
-                .setPositiveButton(R.string.sf__biometric_approve) { _, _ -> biometricOptIn(true) }
+            val isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme
+            val theme = if (isDarkTheme) R.style.SalesforceSDK_AlertDialog_Dark else R.style.SalesforceSDK_AlertDialog
+            MaterialAlertDialogBuilder(activity, theme)
+                .setTitle(R.string.sf__biometric_opt_in_title)
+                .setMessage(R.string.sf__biometric_opt_in_message)
+                .setNegativeButton(R.string.sf__biometric_opt_in_deny) { _, _ -> biometricOptIn(false) }
+                .setPositiveButton(R.string.sf__biometric_opt_in_approve) { _, _ -> biometricOptIn(true) }
                 .setCancelable(false)
                 .create()
                 .show()

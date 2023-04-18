@@ -58,6 +58,7 @@ import android.widget.Toast;
 
 import androidx.browser.customtabs.CustomTabsIntent;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountBuilder;
@@ -184,6 +185,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         webSettings.setUserAgentString(String.format("%s %s", msdkUserAgent, origUserAgent));
         webview.setWebViewClient(makeWebViewClient());
         webview.setWebChromeClient(makeWebChromeClient());
+        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
+        activity.setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark_Login : R.style.SalesforceSDK);
 
         /*
          * Restores WebView's state if available.
@@ -461,7 +464,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         @Override
 		public void onPageFinished(WebView view, String url) {
             // Remove the Biometric Login button from the Connected App allow denny screen.
-            if (url.contains("RemoteAccessAuthorizationPage.apexp")) {
+            if (url.contains("frontdoor.jsp")) {
                 final RelativeLayout parentView = (RelativeLayout) view.getParent();
                 if (parentView != null) {
                     final Button button = parentView.findViewById(R.id.sf__bio_login_button);
@@ -732,11 +735,14 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     // Present the biometric opt in dialog with an on dismiss listener
                     // that finishes the activity.
                     activity.runOnUiThread(() -> {
-                        new android.app.AlertDialog.Builder(activity)
-                                .setTitle(R.string.sf__biometric_opt_in)
-                                .setNegativeButton(R.string.sf__biometric_deny, ((dialog, which) ->
+                        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
+                        int theme = isDarkTheme ? R.style.SalesforceSDK_AlertDialog_Dark : R.style.SalesforceSDK_AlertDialog;
+                        new MaterialAlertDialogBuilder(activity, theme)
+                                .setTitle(R.string.sf__biometric_opt_in_title)
+                                .setMessage(R.string.sf__biometric_opt_in_message)
+                                .setNegativeButton(R.string.sf__biometric_opt_in_deny, ((dialog, which) ->
                                         bioAuthManager.biometricOptIn(false)))
-                                .setPositiveButton(R.string.sf__biometric_approve, (dialog, which) ->
+                                .setPositiveButton(R.string.sf__biometric_opt_in_approve, (dialog, which) ->
                                         bioAuthManager.biometricOptIn(true))
                                 .setCancelable(false)
                                 .setOnDismissListener(dialog -> callback.finish(account))

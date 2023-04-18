@@ -89,9 +89,10 @@
 	<string name="sf__screen_lock_retry_button">Retry Unlock</string>
 
 	<!-- Biometric Authentication Opt In Dialog -->
-	<string name="sf__biometric_opt_in">Enable Biometric Unlock?</string>
-	<string name="sf__biometric_approve">Allow</string>
-	<string name="sf__biometric_deny">Deny</string>
+	<string name="sf__biometric_opt_in_title">Biometric Login</string>
+	<string name="sf__biometric_opt_in_message">Use your fingerprint of face to quickly login.  Biometric information is never stored.</string>
+	<string name="sf__biometric_opt_in_approve">Enable</string>
+	<string name="sf__biometric_opt_in_deny">Use Password</string>
 
 	<!-- Dev support -->
 	<string name="sf__dev_support_title">Mobile SDK Dev Support</string>
