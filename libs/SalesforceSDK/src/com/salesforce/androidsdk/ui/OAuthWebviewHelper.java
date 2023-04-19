@@ -738,10 +738,13 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
             // Biometric Auth required by mobile policy.
             if (id.biometricAuth) {
-                int sessionTimeout = BootConfig.getBootConfig(context).getSessionTimeout() * 60 * 1000;
+                int sessionTimeout = BootConfig.getBootConfig(context).getSessionTimeout();
+                // Default to 15 minutes (lowest connected app option) if not specified.
+                int timeoutInMills = ((sessionTimeout == 0) ? 15 : sessionTimeout) * 60 * 1000;
+
                 BiometricAuthenticationManager bioAuthManager =
                         (BiometricAuthenticationManager) mgr.getBiometricAuthenticationManager();
-                bioAuthManager.storeMobilePolicy(account, id.biometricAuth, sessionTimeout);
+                bioAuthManager.storeMobilePolicy(account, id.biometricAuth, timeoutInMills);
 
                 //  Don't prompt the user every time they login.
                 if (bioAuthManager.hasBeenPresentedOptIn()) {

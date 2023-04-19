@@ -257,7 +257,7 @@ public class BootConfig {
 			shouldAuthenticate = config.optBoolean(SHOULD_AUTHENTICATE, DEFAULT_SHOULD_AUTHENTICATE);
 			attemptOfflineLoad = config.optBoolean(ATTEMPT_OFFLINE_LOAD, DEFAULT_ATTEMPT_OFFLINE_LOAD);
 			unauthenticatedStartPage = config.optString(UNAUTHENTICATED_START_PAGE);
-			sessionTimeout = config.getInt(REMOTE_ACCESS_SESSION_TIMEOUT);
+			sessionTimeout = config.optInt(REMOTE_ACCESS_SESSION_TIMEOUT);
 		} catch (JSONException e) {
 			throw new BootConfigException("Failed to parse " + HYBRID_BOOTCONFIG_PATH, e);
 		}
