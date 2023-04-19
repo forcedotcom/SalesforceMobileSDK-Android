@@ -482,9 +482,16 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
             Uri uri = request.getUrl();
 
-            // Login webview embedded button has sent the signal to show the  biometric prompt.
-            if (uri.toString().equals(BIOMETRIC_PROMPT) && activity != null) {
-                ((LoginActivity) activity).presentBiometric();
+            // Login webview embedded button has sent the signal to show the biometric prompt.
+            if (uri.toString().equals(BIOMETRIC_PROMPT)) {
+                com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager bioAuthManager =
+                        SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
+                if (bioAuthManager.hasBiometricOptedIn() && bioAuthManager.hasBiometricOptedIn()) {
+                    if (activity != null && activity instanceof LoginActivity) {
+                        ((LoginActivity) activity).presentBiometric();
+                    }
+                }
+
                 return true;
             }
 
