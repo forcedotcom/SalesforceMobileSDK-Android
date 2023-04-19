@@ -38,14 +38,14 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.provider.Settings;
 import android.security.KeyChain;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -55,16 +55,17 @@ import android.webkit.WebSettings;
 import android.webkit.WebSettings.LayoutAlgorithm;
 import android.webkit.WebView;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
-import androidx.annotation.NonNull;
-
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
@@ -150,7 +151,10 @@ public class LoginActivity extends FragmentActivity
                 biometricAuthenticationButton = findViewById(R.id.sf__bio_login_button);
                 biometricAuthenticationButton.setVisibility(View.VISIBLE);
             }
-            presentBiometric();
+
+            if (getIntent().getExtras().getBoolean(BiometricAuthenticationManager.SHOW_BIOMETRIC)) {
+                presentBiometric();
+            }
         }
 
         // Setup the WebView.
@@ -568,10 +572,19 @@ public class LoginActivity extends FragmentActivity
     }
 
     private BiometricPrompt.PromptInfo getPromptInfo() {
+        boolean hasFaceUnlock = false;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            hasFaceUnlock = getPackageManager().hasSystemFeature(PackageManager.FEATURE_FACE) ||
+                    (getPackageManager().hasSystemFeature(PackageManager.FEATURE_IRIS));
+        }
+
+        String subtitle = SalesforceSDKManager.getInstance().getUserAccountManager()
+                .getCurrentUser().getUsername();
         return new BiometricPrompt.PromptInfo.Builder()
                 .setTitle("Login with Biometric")
+                .setSubtitle(subtitle)
                 .setAllowedAuthenticators(getAuthenticators())
-                .setConfirmationRequired(false)
+                .setConfirmationRequired(hasFaceUnlock)
                 .build();
     }
 

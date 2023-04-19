@@ -63,6 +63,8 @@ internal class BiometricAuthenticationManager: AppLockManager(
             intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
             intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+            options.putBoolean(SHOW_BIOMETRIC, true)
             intent.putExtras(options)
             ctx.startActivity(intent)
             EventsObservable.get().notifyEvent(EventsObservable.EventType.AppLocked)
@@ -142,6 +144,7 @@ internal class BiometricAuthenticationManager: AppLockManager(
         internal const val BIO_AUTH_TIMEOUT = "bio_auth_timeout"
         internal const val USER_BIO_OPT_IN = "user_bio_opt_in"
         internal const val BIO_AUTH_NATIVE_BUTTON = "bio_auth_native_button"
+        internal const val SHOW_BIOMETRIC = "show_biometric"
 
         fun isEnabled(userAccount: UserAccount): Boolean {
             return BiometricAuthenticationManager().getAccountPrefs(userAccount).getBoolean(BIO_AUTH_ENABLED, false)

@@ -470,7 +470,6 @@ public class OAuth2 {
         public boolean screenLock;
         public int screenLockTimeout = -1;
         public boolean biometricAuth;
-        public int biometricAuthTimeout = -1;
         public JSONObject customAttributes;
         public JSONObject customPermissions;
 

@@ -703,12 +703,20 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     }
                 }
 
-                // Remove any accounts that have Biometric Authentication enabled.
-                existingUsers.forEach(existingUser -> {
-                    if (BiometricAuthenticationManager.Companion.isEnabled(existingUser)) {
-                        mgr.getUserAccountManager().signoutUser(existingUser, activity, false);
-                    }
-                });
+                // If this account has Biometric Authentication enabled remove any others that also have it.
+                if (id.biometricAuth) {
+                    existingUsers.forEach(existingUser -> {
+                        if (BiometricAuthenticationManager.Companion.isEnabled(existingUser)) {
+                            activity.runOnUiThread(() -> {
+                                String toastMessage = activity.getString(R.string.sf__biometric_signout_user,
+                                        existingUser.getUsername());
+                                Toast.makeText(activity, toastMessage, Toast.LENGTH_LONG).show();
+                            });
+
+                            mgr.getUserAccountManager().signoutUser(existingUser, activity, false);
+                        }
+                    });
+                }
             }
 
             // Save the user account

@@ -93,6 +93,7 @@
 	<string name="sf__biometric_opt_in_message">Use your fingerprint of face to quickly login.  Biometric information is never stored.</string>
 	<string name="sf__biometric_opt_in_approve">Enable</string>
 	<string name="sf__biometric_opt_in_deny">Use Password</string>
+	<string name="sf__biometric_signout_user">Signing out %s.</string>
 
 	<!-- Dev support -->
 	<string name="sf__dev_support_title">Mobile SDK Dev Support</string>
