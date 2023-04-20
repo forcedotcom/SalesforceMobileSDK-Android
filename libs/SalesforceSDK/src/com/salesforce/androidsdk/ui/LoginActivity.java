@@ -45,7 +45,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.security.KeyChain;
-import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -55,17 +54,14 @@ import android.webkit.WebSettings;
 import android.webkit.WebSettings.LayoutAlgorithm;
 import android.webkit.WebView;
 import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
@@ -106,16 +102,16 @@ public class LoginActivity extends FragmentActivity
     private OAuthWebviewHelper webviewHelper;
     private ChangeServerReceiver changeServerReceiver;
     private boolean receiverRegistered;
-    private AccountAuthenticatorResponse mAccountAuthenticatorResponse = null;
+    private AccountAuthenticatorResponse accountAuthenticatorResponse = null;
     private Bundle accountAuthenticatorResult = null;
     private Button biometricAuthenticationButton = null;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-        mAccountAuthenticatorResponse = getIntent().getParcelableExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE);
-        if (mAccountAuthenticatorResponse != null) {
-            mAccountAuthenticatorResponse.onRequestContinued();
+        accountAuthenticatorResponse = getIntent().getParcelableExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE);
+        if (accountAuthenticatorResponse != null) {
+            accountAuthenticatorResponse.onRequestContinued();
         }
 
 		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
@@ -204,6 +200,23 @@ public class LoginActivity extends FragmentActivity
         if (webviewHelper.shouldReloadPage()) {
             webviewHelper.loadLoginPage();
         }
+    }
+
+    // The code in this override was taken from the deprecated AccountAuthenticatorActivity
+    // class to replicate its functionality per the deprecation message.
+    @Override
+    public void finish() {
+        if (accountAuthenticatorResponse != null) {
+            // send the result bundle back if set, otherwise send an error.
+            if (accountAuthenticatorResult != null) {
+                accountAuthenticatorResponse.onResult(accountAuthenticatorResult);
+            } else {
+                accountAuthenticatorResponse.onError(AccountManager.ERROR_CODE_CANCELED, "canceled");
+            }
+            accountAuthenticatorResponse = null;
+        }
+
+        super.finish();
     }
 
     protected void certAuthOrLogin() {
