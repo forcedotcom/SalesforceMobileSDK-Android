@@ -28,4 +28,21 @@
         android:textAllCaps="false"
         android:textSize="14sp"
         android:textStyle="bold"/>
+
+    <Button android:id="@+id/sf__bio_login_button"
+        android:text="@string/sf__login_with_biometric"
+        android:visibility="gone"
+        android:onClick="onBioAuthClick"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginBottom="20dp"
+        android:background="@drawable/sf__primary_color_button"
+        android:textColor="?attr/sfColorSecondary"
+        android:textAllCaps="false"
+        android:textSize="14sp"
+        android:textStyle="bold"/>
 </RelativeLayout>

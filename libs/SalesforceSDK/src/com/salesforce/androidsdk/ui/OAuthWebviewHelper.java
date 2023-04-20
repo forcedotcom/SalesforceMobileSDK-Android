@@ -43,6 +43,7 @@ import android.security.KeyChain;
 import android.security.KeyChainAliasCallback;
 import android.security.KeyChainException;
 import android.text.TextUtils;
+import android.view.View;
 import android.webkit.ClientCertRequest;
 import android.webkit.CookieManager;
 import android.webkit.SslErrorHandler;
@@ -51,10 +52,13 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import androidx.browser.customtabs.CustomTabsIntent;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountBuilder;
@@ -65,11 +69,14 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
+import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.util.EventsObservable;
@@ -112,12 +119,13 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     public static final String HTTP_ERROR_RESPONSE_CODE_INTENT = "com.salesforce.auth.intent.HTTP_RESPONSE_CODE";
     public static final String RESPONSE_ERROR_INTENT = "com.salesforce.auth.intent.RESPONSE_ERROR";
     public static final String RESPONSE_ERROR_DESCRIPTION_INTENT = "com.salesforce.auth.intent.RESPONSE_ERROR_DESCRIPTION";
+    public static final String BIOMETRIC_PROMPT = "mobilesdk://biometric/authentication/prompt";
     private static final String TAG = "OAuthWebViewHelper";
     private static final String ACCOUNT_OPTIONS = "accountOptions";
+    private String codeVerifier;
 
     // background executor
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
-    private String codeVerifier;
 
     /**
      * the host activity/fragment should pass in an implementation of this
@@ -177,6 +185,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         webSettings.setUserAgentString(String.format("%s %s", msdkUserAgent, origUserAgent));
         webview.setWebViewClient(makeWebViewClient());
         webview.setWebChromeClient(makeWebChromeClient());
+        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
+        activity.setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark_Login : R.style.SalesforceSDK);
 
         /*
          * Restores WebView's state if available.
@@ -453,13 +463,38 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
         @Override
 		public void onPageFinished(WebView view, String url) {
-        	EventsObservable.get().notifyEvent(EventType.AuthWebViewPageFinished, url);
+            // Remove the Biometric Login button from the Connected App allow denny screen.
+            if (url.contains("frontdoor.jsp")) {
+                final RelativeLayout parentView = (RelativeLayout) view.getParent();
+                if (parentView != null) {
+                    final Button button = parentView.findViewById(R.id.sf__bio_login_button);
+                    if (button != null) {
+                        button.setVisibility(View.INVISIBLE);
+                    }
+                }
+            }
+
+            EventsObservable.get().notifyEvent(EventType.AuthWebViewPageFinished, url);
         	super.onPageFinished(view, url);
 		}
 
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
             Uri uri = request.getUrl();
+
+            // Login webview embedded button has sent the signal to show the biometric prompt.
+            if (uri.toString().equals(BIOMETRIC_PROMPT)) {
+                com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager bioAuthManager =
+                        SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
+                if (bioAuthManager.hasBiometricOptedIn() && bioAuthManager.hasBiometricOptedIn()) {
+                    if (activity != null && activity instanceof LoginActivity) {
+                        ((LoginActivity) activity).presentBiometric();
+                    }
+                }
+
+                return true;
+            }
+
 			boolean isDone = uri.toString().replace("///", "/").toLowerCase(Locale.US).startsWith(loginOptions.getOauthCallbackUrl().replace("///", "/").toLowerCase(Locale.US));
             if (isDone) {
                 Map<String, String> params = UriFragmentParser.parse(uri);
@@ -660,18 +695,84 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 mgr.getAdminPermsManager().setPrefs(id.customPermissions, account);
             }
 
+            List<UserAccount> existingUsers = mgr.getUserAccountManager().getAuthenticatedUsers();
+            if (existingUsers != null) {
+                // Check if the user already exists
+                if (existingUsers.contains(account)) {
+                    UserAccount duplicateUserAccount = existingUsers.remove(existingUsers.indexOf(account));
+                    RestClient.clearCaches();
+                    UserAccountManager.getInstance().clearCachedCurrentUser();
+
+                    // Revoke existing refresh token
+                    if (!account.getRefreshToken().equals(duplicateUserAccount.getRefreshToken())) {
+                        new RevokeTokenTask(duplicateUserAccount.getRefreshToken(),
+                                duplicateUserAccount.getInstanceServer()).execute();
+                    }
+                }
+
+                // If this account has Biometric Authentication enabled remove any others that also have it.
+                if (id.biometricAuth) {
+                    existingUsers.forEach(existingUser -> {
+                        if (BiometricAuthenticationManager.Companion.isEnabled(existingUser)) {
+                            activity.runOnUiThread(() -> {
+                                String toastMessage = activity.getString(R.string.sf__biometric_signout_user,
+                                        existingUser.getUsername());
+                                Toast.makeText(activity, toastMessage, Toast.LENGTH_LONG).show();
+                            });
+
+                            mgr.getUserAccountManager().signoutUser(existingUser, activity, false);
+                        }
+                    });
+                }
+            }
+
             // Save the user account
             addAccount(account);
 
             // Screen lock required by mobile policy.
             if (id.screenLockTimeout > 0) {
                 int timeoutInMills = id.screenLockTimeout * 1000 * 60;
-                final ScreenLockManager screenLockManager = mgr.getScreenLockManager();
-                screenLockManager.storeMobilePolicy(account, id.mobilePolicy, timeoutInMills);
+                ((ScreenLockManager) mgr.getScreenLockManager())
+                        .storeMobilePolicy(account, id.screenLock, timeoutInMills);
             }
 
-            // All done
-            callback.finish(account);
+            // Biometric Auth required by mobile policy.
+            if (id.biometricAuth) {
+                int sessionTimeout = BootConfig.getBootConfig(context).getSessionTimeout();
+                // Default to 15 minutes (lowest connected app option) if not specified.
+                int timeoutInMills = ((sessionTimeout == 0) ? 15 : sessionTimeout) * 60 * 1000;
+
+                BiometricAuthenticationManager bioAuthManager =
+                        (BiometricAuthenticationManager) mgr.getBiometricAuthenticationManager();
+                bioAuthManager.storeMobilePolicy(account, id.biometricAuth, timeoutInMills);
+
+                //  Don't prompt the user every time they login.
+                if (bioAuthManager.hasBeenPresentedOptIn()) {
+                    callback.finish(account);
+                } else {
+                    // Present the biometric opt in dialog with an on dismiss listener
+                    // that finishes the activity.
+                    activity.runOnUiThread(() -> {
+                        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
+                        int theme = isDarkTheme ? R.style.SalesforceSDK_AlertDialog_Dark : R.style.SalesforceSDK_AlertDialog;
+                        new MaterialAlertDialogBuilder(activity, theme)
+                                .setTitle(R.string.sf__biometric_opt_in_title)
+                                .setMessage(R.string.sf__biometric_opt_in_message)
+                                .setNegativeButton(R.string.sf__biometric_opt_in_deny, ((dialog, which) ->
+                                        bioAuthManager.biometricOptIn(false)))
+                                .setPositiveButton(R.string.sf__biometric_opt_in_approve, (dialog, which) ->
+                                        bioAuthManager.biometricOptIn(true))
+                                .setCancelable(false)
+                                .setOnDismissListener(dialog -> callback.finish(account))
+                                .create()
+                                .show();
+                    });
+                }
+            } else {
+
+                // All done
+                callback.finish(account);
+            }
         }
 
         protected void handleException(Exception ex) {
@@ -697,6 +798,32 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 backgroundException = e;
             }
             return tr;
+        }
+    }
+
+    /**
+     * TODO: This has been duplicated from SalesforceSDKManager to keep that instance private.
+     * If it remains private we don't have to deprecate and wait for a major version to replace with
+     * a proper (work manager) solution.
+     */
+    private static class RevokeTokenTask extends AsyncTask<Void, Void, Void> {
+
+        private final String refreshToken;
+        private final String loginServer;
+
+        public RevokeTokenTask(String refreshToken, String loginServer) {
+            this.refreshToken = refreshToken;
+            this.loginServer = loginServer;
+        }
+
+        @Override
+        protected Void doInBackground(Void... nothings) {
+            try {
+                OAuth2.revokeRefreshToken(HttpAccess.DEFAULT, new URI(loginServer), refreshToken);
+            } catch (Exception e) {
+                SalesforceSDKLogger.w(TAG, "Revoking token failed", e);
+            }
+            return null;
         }
     }
 

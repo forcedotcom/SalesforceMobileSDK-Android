@@ -79,6 +79,7 @@ import com.salesforce.androidsdk.push.PushService;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
@@ -156,6 +157,9 @@ public class SalesforceSDKManager implements LifecycleObserver {
     private Class<? extends Activity> loginActivityClass = LoginActivity.class;
     private Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
     private ScreenLockManager screenLockManager;
+
+    private BiometricAuthenticationManager bioAuthManager;
+
     private LoginServerManager loginServerManager;
     private boolean isTestRun = false;
 	private boolean isLoggingOut = false;
@@ -185,9 +189,10 @@ public class SalesforceSDKManager implements LifecycleObserver {
     }
 
     /**
-     * ScreenLockManager object lock.
+     * ScreenLockManager and BiometricAuthenticationManager object locks.
      */
     private final Object screenLockManagerLock = new Object();
+    private final Object bioAuthManagerLock = new Object();
 
     /**
      * Dev support
@@ -507,7 +512,7 @@ public class SalesforceSDKManager implements LifecycleObserver {
      *
      * @return ScreenLockManager instance.
      */
-    public ScreenLockManager getScreenLockManager() {
+    public com.salesforce.androidsdk.security.interfaces.ScreenLockManager getScreenLockManager() {
         synchronized (screenLockManagerLock) {
             if (screenLockManager == null) {
                 screenLockManager = new ScreenLockManager();
@@ -516,7 +521,22 @@ public class SalesforceSDKManager implements LifecycleObserver {
         }
     }
 
-	/**
+    /**
+     * Returns the Biometric Authentication manager that's associated wth SalesforceSDKManager.
+     *
+     * @return BiometricAuthenticationManager instance.
+     */
+    public com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager getBiometricAuthenticationManager() {
+        synchronized (bioAuthManagerLock) {
+            if (bioAuthManager == null) {
+                bioAuthManager = new BiometricAuthenticationManager();
+            }
+            return bioAuthManager;
+        }
+    }
+
+
+    /**
      * Returns the user account manager that's associated with SalesforceSDKManager.
      *
      * @return UserAccountManager instance.
@@ -726,8 +746,9 @@ public class SalesforceSDKManager implements LifecycleObserver {
             adminSettingsManager = null;
             adminPermsManager = null;
 
-            getScreenLockManager().reset();
+            ((ScreenLockManager) getScreenLockManager()).reset();
             screenLockManager = null;
+            bioAuthManager = null;
         }
     }
 
@@ -740,7 +761,9 @@ public class SalesforceSDKManager implements LifecycleObserver {
         SalesforceAnalyticsManager.reset(userAccount);
         RestClient.clearCaches(userAccount);
         UserAccountManager.getInstance().clearCachedCurrentUser();
-        getScreenLockManager().cleanUp(userAccount);
+        ((ScreenLockManager) getScreenLockManager()).cleanUp(userAccount);
+        ((BiometricAuthenticationManager) getBiometricAuthenticationManager())
+                .cleanUp(userAccount);
     }
 
     /**
@@ -1379,11 +1402,15 @@ public class SalesforceSDKManager implements LifecycleObserver {
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     protected void onAppBackgrounded() {
-        getScreenLockManager().onAppBackgrounded();
+        ((ScreenLockManager) getScreenLockManager()).onAppBackgrounded();
+        ((BiometricAuthenticationManager) getBiometricAuthenticationManager())
+                .onAppBackgrounded();
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
     protected void onAppForegrounded() {
-        getScreenLockManager().onAppForegrounded();
+        ((ScreenLockManager) getScreenLockManager()).onAppForegrounded();
+        ((BiometricAuthenticationManager) getBiometricAuthenticationManager())
+                .onAppForegrounded();
     }
 }

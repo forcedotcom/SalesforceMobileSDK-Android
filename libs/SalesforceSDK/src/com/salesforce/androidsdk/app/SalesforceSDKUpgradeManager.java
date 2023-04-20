@@ -223,7 +223,7 @@ public class SalesforceSDKUpgradeManager {
                             final OAuth2.IdServiceResponse response = OAuth2.callIdentityService(HttpAccess.DEFAULT,
                                     account.getIdUrl(), account.getAuthToken());
 
-                            if (response.mobilePolicy && response.screenLockTimeout != -1) {
+                            if (response.screenLock && response.screenLockTimeout != -1) {
                                 final SharedPreferences userPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
                                         + account.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
                                 int timeoutInMills = response.screenLockTimeout * 1000 * 60;

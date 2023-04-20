@@ -25,6 +25,8 @@
 	<string name="sf__clear_cookies">Clear Cookies</string>
 	<string name="sf__reload">Reload</string>
 	<string name="sf__launch_idp">Login with IDP App</string>
+	<string name="sf__login_with_biometric">Login with Biometric</string>
+	<string name="sf__setup_biometric_unlock">Setup Biometric Unlock</string>
 
 	<!-- Server picker -->
 	<string name="sf__auth_login_production">Production</string>
@@ -85,6 +87,13 @@
 	<string name="sf__screen_lock_setup_required">%s requires a device lock screen.</string>
 	<string name="sf__screen_lock_setup_button">Setup Lock Screen</string>
 	<string name="sf__screen_lock_retry_button">Retry Unlock</string>
+
+	<!-- Biometric Authentication Opt In Dialog -->
+	<string name="sf__biometric_opt_in_title">Biometric Login</string>
+	<string name="sf__biometric_opt_in_message">Use your fingerprint of face to quickly login.  Biometric information is never stored.</string>
+	<string name="sf__biometric_opt_in_approve">Enable</string>
+	<string name="sf__biometric_opt_in_deny">Use Password</string>
+	<string name="sf__biometric_signout_user">Signing out %s.</string>
 
 	<!-- Dev support -->
 	<string name="sf__dev_support_title">Mobile SDK Dev Support</string>
