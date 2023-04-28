@@ -60,7 +60,6 @@ public class BootConfig {
 	private static final String OAUTH_REDIRECT_URI = "oauthRedirectURI";
 	private static final String OAUTH_SCOPES = "oauthScopes";
 
-	private static final String REMOTE_ACCESS_SESSION_TIMEOUT = "sessionTimeout";
 	private static final String IS_LOCAL = "isLocal";
 	private static final String START_PAGE = "startPage";
 	private static final String ERROR_PAGE = "errorPage";
@@ -77,7 +76,6 @@ public class BootConfig {
 	private String remoteAccessConsumerKey;
 	private String oauthRedirectURI;
 	private String[] oauthScopes;
-	private int sessionTimeout;
 	private boolean isLocal;
 	private String startPage;
 	private String errorPage;
@@ -190,9 +188,6 @@ public class BootConfig {
 			config.put(SHOULD_AUTHENTICATE, shouldAuthenticate);
 			config.put(ATTEMPT_OFFLINE_LOAD, attemptOfflineLoad);
 			config.put(UNAUTHENTICATED_START_PAGE, unauthenticatedStartPage);
-			if (sessionTimeout != 0) {
-				config.put(REMOTE_ACCESS_SESSION_TIMEOUT, sessionTimeout);
-			}
 
 			return config;
 		}
@@ -231,7 +226,6 @@ public class BootConfig {
 		remoteAccessConsumerKey = res.getString(R.string.remoteAccessConsumerKey);
 		oauthRedirectURI = res.getString(R.string.oauthRedirectURI);
 		oauthScopes = res.getStringArray(R.array.oauthScopes);
-		sessionTimeout = res.getInteger(R.integer.sessionTimeout);
 	}
 
 	/**
@@ -257,7 +251,6 @@ public class BootConfig {
 			shouldAuthenticate = config.optBoolean(SHOULD_AUTHENTICATE, DEFAULT_SHOULD_AUTHENTICATE);
 			attemptOfflineLoad = config.optBoolean(ATTEMPT_OFFLINE_LOAD, DEFAULT_ATTEMPT_OFFLINE_LOAD);
 			unauthenticatedStartPage = config.optString(UNAUTHENTICATED_START_PAGE);
-			sessionTimeout = config.optInt(REMOTE_ACCESS_SESSION_TIMEOUT);
 		} catch (JSONException e) {
 			throw new BootConfigException("Failed to parse " + HYBRID_BOOTCONFIG_PATH, e);
 		}
@@ -314,15 +307,6 @@ public class BootConfig {
 	 * @return URL of the unauthenticated start page.
 	 */
 	public String getUnauthenticatedStartPage() { return unauthenticatedStartPage; }
-
-	/**
-	 * Returns the connected app session timeout specified or the default value of 15.
-	 *
-	 * @return session timeout.
-	 */
-	public int getSessionTimeout() {
-		return sessionTimeout;
-	}
 
 	/**
 	 * Convenience method to determine whether a configured startPage value is an absolute URL.
