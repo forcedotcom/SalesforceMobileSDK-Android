@@ -191,11 +191,11 @@ class ScreenLockManagerTest {
 
     @Test
     fun testIsEnabled() {
-        Assert.assertFalse("Should not be enabled by default.", screenLockManager.isEnabled())
+        Assert.assertFalse("Should not be enabled by default.", screenLockManager.enabled)
         screenLockManager.storeMobilePolicy(userAccount, false, 0)
-        Assert.assertFalse("Should not be enabled without mobile policy set.", screenLockManager.isEnabled())
+        Assert.assertFalse("Should not be enabled without mobile policy set.", screenLockManager.enabled)
         screenLockManager.storeMobilePolicy(userAccount, true, 1)
-        Assert.assertTrue("Should be enabled when user has mobile policy.", screenLockManager.isEnabled())
+        Assert.assertTrue("Should be enabled when user has mobile policy.", screenLockManager.enabled)
     }
 
     companion object {

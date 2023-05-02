@@ -90,8 +90,9 @@ public class OAuth2 {
     private static final String JSON = "json";
     private static final String MOBILE_POLICY = "mobile_policy";
     private static final String SCREEN_LOCK_TIMEOUT = "screen_lock";
-    private static final String BIOMETRIC_AUTHENTICATION = "biometric_auth";
-    private static final String BIOMETRIC_AUTHENTICATION_TIMEOUT = "biometric_auth_timeout";
+    private static final String BIOMETRIC_AUTHENTICATION = "ENABLE_BIOMETRIC_AUTHENTICATION";
+    private static final String BIOMETRIC_AUTHENTICATION_TIMEOUT = "REQUIRE_BIOMETRICS_AFTER";
+    private static final int BIOMETRIC_AUTHENTICATION_DEFAULT_TIMEOUT = 15;
     private static final String REFRESH_TOKEN = "refresh_token";
     private static final String HYBRID_REFRESH = "hybrid_refresh";
     private static final String RESPONSE_TYPE = "response_type";
@@ -137,7 +138,6 @@ public class OAuth2 {
     private static final String CONTENT_DOMAIN = "content_domain";
     private static final String CONTENT_SID = "content_sid";
     private static final String CSRF_TOKEN = "csrf_token";
-
     private static final String EMPTY_STRING = "";
     private static final String FORWARD_SLASH = "/";
     private static final String SINGLE_SPACE = " ";
@@ -503,8 +503,8 @@ public class OAuth2 {
                     }
 
                     if (biometricAuthTimeout < 1) {
-                        // Set to the lowest session timeout value if not specified.
-                        biometricAuthTimeout = 15;
+                        // Set to the lowest session timeout value (15 minutes) if not specified.
+                        biometricAuthTimeout = BIOMETRIC_AUTHENTICATION_DEFAULT_TIMEOUT;
                     }
                 }
 
