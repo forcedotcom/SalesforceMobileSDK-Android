@@ -177,34 +177,34 @@ class BiometricAuthenticationManagerTest {
 
     @Test
     fun testIsEnabled() {
-        Assert.assertFalse("Should not be enabled by default.", bioAuthManager.isEnabled())
+        Assert.assertFalse("Should not be enabled by default.", bioAuthManager.enabled)
 
         bioAuthManager.storeMobilePolicy(userAccount, false, 0)
-        Assert.assertFalse("Should not be enabled without mobile policy set.", bioAuthManager.isEnabled())
+        Assert.assertFalse("Should not be enabled without mobile policy set.", bioAuthManager.enabled)
 
         bioAuthManager.storeMobilePolicy(userAccount, true, 1)
-        Assert.assertTrue("Should be enabled when user has mobile policy.", bioAuthManager.isEnabled())
+        Assert.assertTrue("Should be enabled when user has mobile policy.", bioAuthManager.enabled)
     }
 
     @Test
     fun testIsLocked() {
-        Assert.assertFalse("Should not be locked by default.", bioAuthManager.isLocked())
+        Assert.assertFalse("Should not be locked by default.", bioAuthManager.locked)
 
         bioAuthManager.storeMobilePolicy(userAccount, false, 0)
-        Assert.assertFalse("Should not be enabled without mobile policy set.", bioAuthManager.isLocked())
+        Assert.assertFalse("Should not be enabled without mobile policy set.", bioAuthManager.locked)
 
         bioAuthManager.storeMobilePolicy(userAccount, true, 1)
-        Assert.assertFalse("Should not be locked by default.", bioAuthManager.isLocked())
+        Assert.assertFalse("Should not be locked by default.", bioAuthManager.locked)
 
         bioAuthManager.onAppBackgrounded()
         Thread.sleep(10)
         bioAuthManager.onAppForegrounded()
-        Assert.assertTrue("Should be locked upon background for timeout.", bioAuthManager.isLocked())
+        Assert.assertTrue("Should be locked upon background for timeout.", bioAuthManager.locked)
 
         bioAuthManager.locked = false
-        Assert.assertFalse("Should be unlocked.", bioAuthManager.isLocked())
+        Assert.assertFalse("Should be unlocked.", bioAuthManager.locked)
 
         bioAuthManager.lock()
-        Assert.assertTrue("Should be locked by lock() API.", bioAuthManager.isLocked())
+        Assert.assertTrue("Should be locked by lock() API.", bioAuthManager.locked)
     }
 }

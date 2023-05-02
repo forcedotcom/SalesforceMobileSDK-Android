@@ -69,7 +69,6 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
-import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.push.PushMessaging;
@@ -738,9 +737,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
             // Biometric Auth required by mobile policy.
             if (id.biometricAuth) {
-                int sessionTimeout = BootConfig.getBootConfig(context).getSessionTimeout();
                 // Default to 15 minutes (lowest connected app option) if not specified.
-                int timeoutInMills = ((sessionTimeout == 0) ? 15 : sessionTimeout) * 60 * 1000;
+                int timeoutInMills = ((id.biometricAuthTimeout == 0) ? 15 : id.biometricAuthTimeout) * 60 * 1000;
 
                 BiometricAuthenticationManager bioAuthManager =
                         (BiometricAuthenticationManager) mgr.getBiometricAuthenticationManager();

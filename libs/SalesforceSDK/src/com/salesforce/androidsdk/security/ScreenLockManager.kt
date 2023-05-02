@@ -35,6 +35,11 @@ import com.salesforce.androidsdk.util.EventsObservable
 internal class ScreenLockManager: AppLockManager(
     MOBILE_POLICY_PREF, SCREEN_LOCK, SCREEN_LOCK_TIMEOUT
 ), com.salesforce.androidsdk.security.interfaces.ScreenLockManager {
+    // @Suppress is necessary due to a Kotlin bug:  https://youtrack.jetbrains.com/issue/KT-31420
+    @Suppress("INAPPLICABLE_JVM_NAME")
+    @get:JvmName("isEnabled")
+    override val enabled: Boolean
+        get() = getGlobalPolicy().first
 
     override fun storeMobilePolicy(account: UserAccount, enabled: Boolean, timeout: Int) {
         super.storeMobilePolicy(account, enabled, timeout)
@@ -57,10 +62,6 @@ internal class ScreenLockManager: AppLockManager(
         val (hasLock, timeout) = getGlobalPolicy()
 
         return hasLock && (elapsedTime > timeout)
-    }
-
-    override fun isEnabled(): Boolean {
-        return getGlobalPolicy().first
     }
 
     override fun lock() {

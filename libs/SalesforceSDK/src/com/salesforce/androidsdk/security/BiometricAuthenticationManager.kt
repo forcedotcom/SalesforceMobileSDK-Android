@@ -38,7 +38,14 @@ import com.salesforce.androidsdk.util.EventsObservable
 internal class BiometricAuthenticationManager: AppLockManager(
     BIO_AUTH_POLICY, BIO_AUTH_ENABLED, BIO_AUTH_TIMEOUT
 ), BiometricAuthenticationManager {
-    var locked = false
+    // @Suppress is necessary due to a Kotlin bug:  https://youtrack.jetbrains.com/issue/KT-31420
+    @Suppress("INAPPLICABLE_JVM_NAME")
+    @get:JvmName("isEnabled")
+    override val enabled: Boolean
+        get() { return currentUser != null && getPolicy(currentUser!!).first }
+    @Suppress("INAPPLICABLE_JVM_NAME")
+    @get:JvmName("isLocked")
+    override var locked = false
     private val currentUser: UserAccount?
         get() { return SalesforceSDKManager.getInstance().userAccountManager.currentUser }
 
@@ -49,10 +56,6 @@ internal class BiometricAuthenticationManager: AppLockManager(
         val (enabled, timeout) = getPolicy(userAccount)
 
         return enabled && (elapsedTime > timeout)
-    }
-
-    override fun isLocked(): Boolean {
-        return locked
     }
     override fun lock() {
         currentUser?.let {user ->
@@ -96,16 +99,8 @@ internal class BiometricAuthenticationManager: AppLockManager(
         return false
     }
 
-    override fun isEnabled(): Boolean {
-        currentUser?.let { user ->
-            return currentUser != null && getPolicy(user).first
-        }
-
-        return false
-    }
-
     fun shouldAllowRefresh(): Boolean {
-        return !(isEnabled() && locked)
+        return !(enabled && locked)
     }
 
     override fun enableNativeBiometricLoginButton(enabled: Boolean) {
