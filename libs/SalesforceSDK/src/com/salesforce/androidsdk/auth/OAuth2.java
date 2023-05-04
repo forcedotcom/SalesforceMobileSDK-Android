@@ -90,7 +90,9 @@ public class OAuth2 {
     private static final String JSON = "json";
     private static final String MOBILE_POLICY = "mobile_policy";
     private static final String SCREEN_LOCK_TIMEOUT = "screen_lock";
-    private static final String BIOMETRIC_AUTHENTICATION = "biometric_auth";
+    private static final String BIOMETRIC_AUTHENTICATION = "ENABLE_BIOMETRIC_AUTHENTICATION";
+    private static final String BIOMETRIC_AUTHENTICATION_TIMEOUT = "REQUIRE_BIOMETRICS_AFTER";
+    private static final int BIOMETRIC_AUTHENTICATION_DEFAULT_TIMEOUT = 15;
     private static final String REFRESH_TOKEN = "refresh_token";
     private static final String HYBRID_REFRESH = "hybrid_refresh";
     private static final String RESPONSE_TYPE = "response_type";
@@ -136,7 +138,6 @@ public class OAuth2 {
     private static final String CONTENT_DOMAIN = "content_domain";
     private static final String CONTENT_SID = "content_sid";
     private static final String CSRF_TOKEN = "csrf_token";
-
     private static final String EMPTY_STRING = "";
     private static final String FORWARD_SLASH = "/";
     private static final String SINGLE_SPACE = " ";
@@ -470,6 +471,7 @@ public class OAuth2 {
         public boolean screenLock;
         public int screenLockTimeout = -1;
         public boolean biometricAuth;
+        public int biometricAuthTimeout = -1;
         public JSONObject customAttributes;
         public JSONObject customPermissions;
 
@@ -494,7 +496,18 @@ public class OAuth2 {
                 customAttributes = parsedResponse.optJSONObject(CUSTOM_ATTRIBUTES);
                 customPermissions = parsedResponse.optJSONObject(CUSTOM_PERMISSIONS);
 
-                biometricAuth = customAttributes.has(BIOMETRIC_AUTHENTICATION);
+                if (customAttributes.has(BIOMETRIC_AUTHENTICATION)) {
+                    biometricAuth = true;
+                    if (customAttributes.has(BIOMETRIC_AUTHENTICATION_TIMEOUT)) {
+                        biometricAuthTimeout = customAttributes.getInt(BIOMETRIC_AUTHENTICATION_TIMEOUT);
+                    }
+
+                    if (biometricAuthTimeout < 1) {
+                        // Set to the lowest session timeout value (15 minutes) if not specified.
+                        biometricAuthTimeout = BIOMETRIC_AUTHENTICATION_DEFAULT_TIMEOUT;
+                    }
+                }
+
 
                 if (parsedResponse.has(MOBILE_POLICY)) {
                     JSONObject mobilePolicyObject = parsedResponse.getJSONObject(MOBILE_POLICY);

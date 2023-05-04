@@ -29,14 +29,15 @@ package com.salesforce.androidsdk.security.interfaces
 /**
  * Manages if the app should be locked.
  */
+// @Suppress is necessary due to a Kotlin bug:  https://youtrack.jetbrains.com/issue/KT-31420
+@Suppress("INAPPLICABLE_JVM_NAME")
 interface ScreenLockManager {
 
     /**
      * If the app has a user that requires mobile policy.
-     *
-     * @return True if the feature is enabled
      */
-    fun isEnabled(): Boolean
+    @get:JvmName("isEnabled")
+    val enabled: Boolean
 
     /**
      * Locks the app immediately.

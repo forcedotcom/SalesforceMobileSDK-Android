@@ -31,21 +31,21 @@ import android.app.Activity
 /**
  * Manages if the user should re-authenticate to use the app.
  */
+// @Suppress is necessary due to a Kotlin bug:  https://youtrack.jetbrains.com/issue/KT-31420
+@Suppress("INAPPLICABLE_JVM_NAME")
 interface BiometricAuthenticationManager {
 
     /**
      * If the feature is enabled for the current user.
-     *
-     * @return True if the feature is enabled for the current user
      */
-    fun isEnabled(): Boolean
+    @get:JvmName("isEnabled")
+    val enabled: Boolean
 
     /**
-     * If the device is currently locked.  Authenticated rest requests will fail true.
-     *
-     * @return True if the device is locked
+     * If the device is currently locked.  Authenticated rest requests will fail.
      */
-    fun isLocked(): Boolean
+    @get:JvmName("isLocked")
+    val locked: Boolean
 
     /**
      * Locks the device immediately.  Authenticated rest requests will fail until the user unlocks the app.
@@ -63,12 +63,12 @@ interface BiometricAuthenticationManager {
     /**
      * If the current user has opted in to biometric unlock or not.
      *
-     * @return True if the current user has opted in
+     * @return True if the current user has opted in, false if not
      */
     fun hasBiometricOptedIn(): Boolean
 
     /**
-     * Presents a dialog to the user asking them to top into biometric unlock.
+     * Presents a dialog to the user asking them to opt-in to biometric authentication.
      *
      * @param activity The activity used to display the dialog
      */
