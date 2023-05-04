@@ -30,6 +30,10 @@ internal open class IDPSPManagerTestCase {
         recordedEvents.add("sendBroadcast ${LogUtil.intentToString(intent)}")
     }
 
+    fun startActivity(context:Context, intent: Intent) {
+        recordedEvents.add("startActivity ${LogUtil.intentToString(intent)}")
+    }
+
     fun waitForEvent(expectedEvent: String) {
         val actualEvent = recordedEvents.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS)
         Log.i(this::class.java.simpleName, "received event [$actualEvent]")

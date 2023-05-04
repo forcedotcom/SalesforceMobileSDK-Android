@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.auth.idp
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.webkit.WebView
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.idp.IDPSPMessage.*
@@ -67,8 +66,9 @@ internal class IDPManager(
     val allowedSPApps: List<SPConfig>,
     // the following allows us to decouple IDPManager from other part of the SDK and make it easier to test
     val sdkMgr: SDKManager,
-    sendBroadcast: (context:Context, intent:Intent) -> Unit
-): IDPSPManager(sendBroadcast), com.salesforce.androidsdk.auth.idp.interfaces.IDPManager {
+    sendBroadcast: (context:Context, intent:Intent) -> Unit,
+    startActivity: (context:Context, intent:Intent) -> Unit
+): IDPSPManager(sendBroadcast, startActivity), com.salesforce.androidsdk.auth.idp.interfaces.IDPManager {
 
     /**
      * Interface to keep IDPManager decoupled from the rest of the SDK
@@ -104,12 +104,36 @@ internal class IDPManager(
                 codeChallenge: String,
                 onResult: (result: IDPAuthCodeHelper.Result) -> Unit
             ) {
-                IDPAuthCodeHelper.generateAuthCode(WebView(context), userAccount, spConfig, codeChallenge, onResult)
+                val authCodeActivity = context as? IDPAuthCodeActivity
+                if (authCodeActivity == null) {
+                    onResult(
+                        IDPAuthCodeHelper.Result(
+                            false,
+                            "Auth code must be obtained from visible web view"
+                        )
+                    )
+                } else {
+                    IDPAuthCodeHelper.generateAuthCode(
+                        authCodeActivity.webView,
+                        userAccount,
+                        spConfig,
+                        codeChallenge,
+                        { result ->
+                            authCodeActivity.finish()
+                            onResult(result)
+                        }
+                    )
+                }
             }
-
-
         },
-        { context, intent -> context.sendBroadcast(intent) },
+        { context, intent ->
+            SalesforceSDKLogger.d(TAG, "send broadcast ${LogUtil.intentToString(intent)}")
+            context.sendBroadcast(intent)
+        },
+        { context, intent ->
+            SalesforceSDKLogger.d(TAG, "start activity ${LogUtil.intentToString(intent)}")
+            context.startActivity(intent)
+        }
     )
 
     /**
@@ -196,7 +220,7 @@ internal class IDPManager(
                     TAG,
                     "handleLoginResponse startActivity ${LogUtil.intentToString(launchIntent)}"
                 )
-                activeFlow.context.startActivity(launchIntent)
+                startActivity(activeFlow.context, launchIntent)
             }
         } else {
             activeFlow.onStatusUpdate(Status.ERROR_RECEIVED_FROM_SP)

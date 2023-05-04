@@ -26,8 +26,10 @@
  */
 package com.salesforce.androidsdk.auth.idp
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager
 import com.salesforce.androidsdk.util.LogUtil
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 
@@ -53,9 +55,10 @@ internal open class ActiveFlow(val context: Context) {
 
 internal abstract class IDPSPManager(
     val sendBroadcast: (context: Context, intent: Intent) -> Unit,
+    val startActivity: (context: Context, intent: Intent) -> Unit
 ) {
     companion object {
-        private const val SRC_APP_PACKAGE_NAME_KEY = "src_app_package_name"
+        const val SRC_APP_PACKAGE_NAME_KEY = "src_app_package_name"
     }
 
     /**
@@ -89,6 +92,19 @@ internal abstract class IDPSPManager(
      * - ends an existing active flow if the message uuid does not match
      */
     fun send(context: Context, message: IDPSPMessage, destinationAppPackageName: String) {
+        addToActiveFlowIfApplicable(message)
+        val intent = message.toIntent().apply {
+            putExtra(SRC_APP_PACKAGE_NAME_KEY, context.applicationInfo.packageName)
+            setPackage(destinationAppPackageName)
+        }
+        sendBroadcast(context, intent)
+    }
+
+    /**
+     * Add message to an existing active flow if the message uuid matches
+     * Ends an existing active flow if the message uuid does not match
+     */
+    fun addToActiveFlowIfApplicable(message: IDPSPMessage) {
         getActiveFlow()?.let { activeFlow ->
             if (activeFlow.addMessage(message)) {
                 // There is an active flow and the message is part of it
@@ -98,12 +114,6 @@ internal abstract class IDPSPManager(
                 endActiveFlow()
             }
         }
-        val intent = message.toIntent().apply {
-            putExtra(SRC_APP_PACKAGE_NAME_KEY, context.applicationInfo.packageName)
-            setPackage(destinationAppPackageName)
-        }
-        SalesforceSDKLogger.d(this::class.java.simpleName, "send ${LogUtil.intentToString(intent)}")
-        sendBroadcast(context, intent)
     }
 
     /**
@@ -123,7 +133,8 @@ internal abstract class IDPSPManager(
                         if (activeFlow.addMessage(message)) {
                             // There is an active flow and the message is part of it
                             // Handle the message with the active flow's context
-                            handle(activeFlow.context, message, srcAppPackageName)
+                            // Unless the message was received by an activity
+                            handle(if (context is Activity) context else activeFlow.context, message, srcAppPackageName)
                         } else {
                             // There is an active flow and the message is NOT part of it
                             // End active flow and handle message with context passed in

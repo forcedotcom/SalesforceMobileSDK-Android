@@ -194,7 +194,7 @@ internal class IDPManagerTest : IDPSPManagerTestCase() {
     @Test
     fun testSPInitiatedLoginFlowWithIDPReturningCode() {
         val allowedSPApps = listOf(SPConfig("some-sp", "c", "client-id", "callback-url", arrayOf("api")))
-        val idpManager = IDPManager(allowedSPApps, TestSDKManager(buildUser("some-org-id", "some-user-id")), this::sendBroadcast)
+        val idpManager = IDPManager(allowedSPApps, TestSDKManager(buildUser("some-org-id", "some-user-id")), this::sendBroadcast, this::startActivity)
 
         // Simulate sp login request
         val uuid = simulateInitialSPLoginRequest(idpManager)
@@ -209,7 +209,7 @@ internal class IDPManagerTest : IDPSPManagerTestCase() {
     @Test
     fun testSPInitiatedLoginFlowWithIDPReturningError() {
         val allowedSPApps = listOf(SPConfig("some-sp", "c", "client-id", "callback-url", arrayOf("api")))
-        val idpManager = IDPManager(allowedSPApps, TestSDKManager(buildUser("some-org-id", "some-user-id")), this::sendBroadcast)
+        val idpManager = IDPManager(allowedSPApps, TestSDKManager(buildUser("some-org-id", "some-user-id")), this::sendBroadcast, this::startActivity)
 
         // Simulate sp login request
         val uuid = simulateInitialSPLoginRequest(idpManager, "bad-challenge")
@@ -224,7 +224,7 @@ internal class IDPManagerTest : IDPSPManagerTestCase() {
     @Test
     fun testSPInitiatedLoginFlowWithIDPNotLoggedIn() {
         val allowedSPApps = listOf(SPConfig("some-sp", "c", "client-id", "callback-url", arrayOf("api")))
-        val idpManager = IDPManager(allowedSPApps, TestSDKManager(null), this::sendBroadcast)
+        val idpManager = IDPManager(allowedSPApps, TestSDKManager(null), this::sendBroadcast, this::startActivity)
 
         // Simulate sp login request
         val uuid = simulateInitialSPLoginRequest(idpManager)
@@ -242,7 +242,7 @@ internal class IDPManagerTest : IDPSPManagerTestCase() {
     @Test
     fun testSPInitiatedLoginFlowWithBadSP() {
         val allowedSPApps = listOf(SPConfig("some-sp", "c", "client-id", "callback-url", arrayOf("api")))
-        val idpManager = IDPManager(allowedSPApps, TestSDKManager(null), this::sendBroadcast)
+        val idpManager = IDPManager(allowedSPApps, TestSDKManager(null), this::sendBroadcast, this::startActivity)
 
         // Simulate a request from an unknown sp
         val spLoginRequest = SPLoginRequest(codeChallenge = "some-challenge")
@@ -260,7 +260,7 @@ internal class IDPManagerTest : IDPSPManagerTestCase() {
     fun kickOffIDPInitiatedLoginFlow():IDPManager {
         // Set up idp manager
         val allowedSPApps = listOf(SPConfig("some-sp", "c", "client-id", "callback-url", arrayOf("api")))
-        val idpManager = IDPManager(allowedSPApps, TestSDKManager(buildUser("some-org-id", "some-user-id")), this::sendBroadcast)
+        val idpManager = IDPManager(allowedSPApps, TestSDKManager(buildUser("some-org-id", "some-user-id")), this::sendBroadcast, this::startActivity)
         idpManager.kickOffIDPInitiatedLoginFlow(context, "some-sp", TestStatusUpdateCallback())
 
         // Make sure we have an active flow with a IDPLoginRequest as first message

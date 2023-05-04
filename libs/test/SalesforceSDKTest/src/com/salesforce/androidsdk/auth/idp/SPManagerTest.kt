@@ -121,7 +121,7 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
     @Test
     fun testIDPInitiatedFlowForExistingUser() {
         // Set up sp manager with a current user
-        val spManager = SPManager("some-idp", TestSDKMgr(buildUser("some-org-id", "some-user-id")), this::sendBroadcast)
+        val spManager = SPManager("some-idp", TestSDKMgr(buildUser("some-org-id", "some-user-id")), this::sendBroadcast, this::startActivity)
 
         // Simulate a request from the idp
         val ipdLoginRequest = IDPLoginRequest(orgId = "some-org-id", userId = "some-user-id")
@@ -148,7 +148,7 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
     @Test
     fun testIDPInitiatedFlowForNewUser() {
         // Set up sp manager with no current user
-        val spManager = SPManager("some-idp", TestSDKMgr(null), this::sendBroadcast)
+        val spManager = SPManager("some-idp", TestSDKMgr(null), this::sendBroadcast, this::startActivity)
 
         // Simulate idp login request
         val uuid = simulateIDPLoginRequest(spManager)
@@ -166,7 +166,7 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
     @Test
     fun testIDPInitiatedFlowForNewUserWithBadCode() {
         // Set up sp manager with no current user
-        val spManager = SPManager("some-idp", TestSDKMgr(null), this::sendBroadcast)
+        val spManager = SPManager("some-idp", TestSDKMgr(null), this::sendBroadcast, this::startActivity)
 
         // Simulate idp login request
         val uuid = simulateIDPLoginRequest(spManager)
@@ -183,7 +183,7 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
 
     fun kickOffSPInitiatedLoginFlow():SPManager {
         // Set up sp manager with a current user
-        val spManager = SPManager("some-idp", TestSDKMgr(buildUser("some-org-id", "some-user-id")), this::sendBroadcast)
+        val spManager = SPManager("some-idp", TestSDKMgr(buildUser("some-org-id", "some-user-id")), this::sendBroadcast, this::startActivity)
         spManager.kickOffSPInitiatedLoginFlow(context, TestStatusUpdateCallback())
 
         // Make sure we have an active flow with a SPLoginRequest as first message

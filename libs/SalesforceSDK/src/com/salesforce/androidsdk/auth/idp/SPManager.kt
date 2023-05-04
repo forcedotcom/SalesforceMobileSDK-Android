@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.auth.idp
 
 import android.app.Activity
+import android.app.SearchManager.ACTION_KEY
 import android.content.Context
 import android.content.Intent
 import com.salesforce.androidsdk.accounts.UserAccount
@@ -82,8 +83,9 @@ internal class SPManager(
     val idpAppPackageName: String,
     // the following allows us to decouple IDPManager from other part of the SDK and make it easier to test
     val sdkMgr: SDKManager,
-    sendBroadcast: (context:Context, intent:Intent) -> Unit
-): IDPSPManager(sendBroadcast), com.salesforce.androidsdk.auth.idp.interfaces.SPManager {
+    sendBroadcast: (context:Context, intent:Intent) -> Unit,
+    startActivity: (context:Context, intent:Intent) -> Unit
+): IDPSPManager(sendBroadcast, startActivity), com.salesforce.androidsdk.auth.idp.interfaces.SPManager {
 
     /**
      * Interface to keep SPManager decoupled from other managers
@@ -136,7 +138,14 @@ internal class SPManager(
                 SPAuthCodeHelper.loginWithAuthCode(context, loginUrl, code, codeVerifier, onResult)
             }
         },
-        { context, intent -> context.sendBroadcast(intent) }
+        { context, intent ->
+            SalesforceSDKLogger.d(TAG, "send broadcast ${LogUtil.intentToString(intent)}")
+            context.sendBroadcast(intent)
+        },
+        { context, intent ->
+            SalesforceSDKLogger.d(TAG, "start activity ${LogUtil.intentToString(intent)}")
+            context.startActivity(intent)
+        }
     )
 
     /**
@@ -168,7 +177,23 @@ internal class SPManager(
      * Sends message to idp app
      */
     fun send(context: Context, message: IDPSPMessage) {
-        send(context, message, idpAppPackageName)
+        if (message.action == SPLoginRequest.ACTION) {
+            // Special handling for SPLoginRequest - starting an activity instead of sending a broadcast
+            addToActiveFlowIfApplicable(message)
+            val intent = message.toIntent().apply {
+                putExtra(SRC_APP_PACKAGE_NAME_KEY, context.applicationInfo.packageName)
+                // Intent action needs to be ACTION_VIEW, so passing message action through extras
+                putExtra(ACTION_KEY, message.action)
+                setAction(Intent.ACTION_VIEW)
+                setPackage(idpAppPackageName)
+                setClass(context, IDPAuthCodeActivity::class.java)
+                setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                addCategory(Intent.CATEGORY_DEFAULT)
+            }
+            startActivity(context, intent)
+        } else {
+            send(context, message, idpAppPackageName)
+        }
     }
 
     /**
@@ -233,7 +258,7 @@ internal class SPManager(
         if (context is Activity) {
             val launchIntent = Intent(context, sdkMgr.getMainActivityClass())
             SalesforceSDKLogger.d(TAG, "start activity ${LogUtil.intentToString(launchIntent)}")
-            context.startActivity(launchIntent)
+            startActivity(context, launchIntent)
         }
 
         // Otherwise sends a response back to IDP app to have it launch the activity

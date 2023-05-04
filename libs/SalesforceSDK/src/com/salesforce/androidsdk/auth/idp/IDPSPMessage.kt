@@ -45,6 +45,7 @@ internal sealed class IDPSPMessage(
         }
     }
 
+
     override fun toString(): String {
         return "message for ${LogUtil.intentToString(toIntent())}"
     }
@@ -56,13 +57,17 @@ internal sealed class IDPSPMessage(
     }
 
     companion object {
+        private const val ACTION_KEY = "action"
         private const val UUID_KEY = "uuid"
 
         fun fromIntent(intent:Intent):IDPSPMessage? {
             return if (intent.extras == null) {
                 null
             } else {
-                return when (intent.action) {
+                // Using action from extras if found otherwise use intent action
+                val extrasAction = intent.getStringExtra(ACTION_KEY)
+                val intentAction = intent.action
+                return when (if (extrasAction != null) extrasAction else intentAction) {
                     IDPLoginRequest.ACTION -> {
                         IDPLoginRequest.fromBundle(intent.extras)
                     }
