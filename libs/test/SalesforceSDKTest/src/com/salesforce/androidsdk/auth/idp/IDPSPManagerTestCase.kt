@@ -32,6 +32,10 @@ internal open class IDPSPManagerTestCase {
 
     fun startActivity(context:Context, intent: Intent) {
         recordedEvents.add("startActivity ${LogUtil.intentToString(intent)}")
+        intent.apply {
+            setPackage(null) //  removing bogus test package
+        }
+        context.startActivity(intent)
     }
 
     fun waitForEvent(expectedEvent: String) {

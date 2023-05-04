@@ -64,7 +64,9 @@ internal sealed class IDPSPMessage(
             return if (intent.extras == null) {
                 null
             } else {
-                // Using action from extras if found otherwise use intent action
+                // Using action from extras if found otherwise use intent's action
+                // - message action is passed through extras in activity launch intents
+                // - message action is set as intent action in broadcast intents
                 val extrasAction = intent.getStringExtra(ACTION_KEY)
                 val intentAction = intent.action
                 return when (if (extrasAction != null) extrasAction else intentAction) {
