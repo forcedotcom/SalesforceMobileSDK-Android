@@ -462,13 +462,17 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
         @Override
 		public void onPageFinished(WebView view, String url) {
-            // Remove the Biometric Login button from the Connected App allow denny screen.
+            // Remove the native login buttons (biometric, IDP) once on the allow/deny screen
             if (url.contains("frontdoor.jsp")) {
                 final RelativeLayout parentView = (RelativeLayout) view.getParent();
                 if (parentView != null) {
-                    final Button button = parentView.findViewById(R.id.sf__bio_login_button);
-                    if (button != null) {
-                        button.setVisibility(View.INVISIBLE);
+                    final Button idpButton = parentView.findViewById(R.id.sf__idp_login_button);
+                    if (idpButton != null) {
+                        idpButton.setVisibility(View.INVISIBLE);
+                    }
+                    final Button bioButton = parentView.findViewById(R.id.sf__bio_login_button);
+                    if (bioButton != null) {
+                        bioButton.setVisibility(View.INVISIBLE);
                     }
                 }
             }
