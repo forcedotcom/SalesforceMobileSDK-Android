@@ -26,16 +26,17 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import android.app.ListActivity;
 import android.os.Bundle;
 import android.view.KeyEvent;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 /**
  * Abstract base class for all Salesforce list activities.
  *
  * @author bhariharan
  */
-public abstract class SalesforceListActivity extends ListActivity implements SalesforceActivityInterface {
+public abstract class SalesforceListActivity extends AppCompatActivity implements SalesforceActivityInterface {
 
 	private final SalesforceActivityDelegate delegate;
 
