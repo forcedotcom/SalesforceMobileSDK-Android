@@ -57,8 +57,8 @@ internal sealed class IDPSPMessage(
     }
 
     companion object {
-        private const val ACTION_KEY = "action"
-        private const val UUID_KEY = "uuid"
+        const val ACTION_KEY = "action"
+        const val UUID_KEY = "uuid"
 
         fun fromIntent(intent:Intent):IDPSPMessage? {
             return if (intent.extras == null) {

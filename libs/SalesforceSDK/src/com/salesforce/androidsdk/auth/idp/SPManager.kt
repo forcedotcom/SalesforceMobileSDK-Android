@@ -27,12 +27,12 @@
 package com.salesforce.androidsdk.auth.idp
 
 import android.app.Activity
-import android.app.SearchManager.ACTION_KEY
 import android.content.Context
 import android.content.Intent
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.idp.IDPSPMessage.*
+import com.salesforce.androidsdk.auth.idp.IDPSPMessage.Companion.ACTION_KEY
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator
@@ -70,7 +70,7 @@ internal class SPLoginFlow private constructor(context:Context, val onStatusUpda
                 }
 
                 // Send SP login request
-                spManager.send(context, spLoginRequest)
+                spManager.sendLoginRequest(context, spLoginRequest)
                 onStatusUpdate(Status.LOGIN_REQUEST_SENT_TO_IDP)
             }
         }
@@ -177,8 +177,12 @@ internal class SPManager(
      * Sends message to idp app
      */
     fun send(context: Context, message: IDPSPMessage) {
-        if (message.action == SPLoginRequest.ACTION) {
-            // Special handling for SPLoginRequest - starting an activity instead of sending a broadcast
+        send(context, message, idpAppPackageName)
+    }
+
+    fun sendLoginRequest(context: Context, message: SPLoginRequest) {
+        if (context is Activity) {
+            // This is a SP initiated login, we start the IDP auth code activity from the SP app
             addToActiveFlowIfApplicable(message)
             val intent = message.toIntent().apply {
                 putExtra(SRC_APP_PACKAGE_NAME_KEY, context.applicationInfo.packageName)
@@ -186,13 +190,15 @@ internal class SPManager(
                 putExtra(ACTION_KEY, message.action)
                 setAction(Intent.ACTION_VIEW)
                 setPackage(idpAppPackageName)
-                setClass(context, IDPAuthCodeActivity::class.java)
-                setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                setClassName(idpAppPackageName, IDPAuthCodeActivity::class.java.name)
+//                setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 addCategory(Intent.CATEGORY_DEFAULT)
             }
             startActivity(context, intent)
         } else {
-            send(context, message, idpAppPackageName)
+            // This is a IDP initiated login, we will send the message to the IDP receiver
+            // and let the IDP app start the IDP auth code activity
+            send(context, message)
         }
     }
 

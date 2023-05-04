@@ -32,6 +32,7 @@ import android.content.Intent
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.idp.IDPSPMessage.*
+import com.salesforce.androidsdk.auth.idp.IDPSPMessage.Companion.ACTION_KEY
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager.StatusUpdateCallback
 import com.salesforce.androidsdk.util.LogUtil
@@ -232,6 +233,24 @@ internal class IDPManager(
      * We get an auth code from the server and return it to the SP app or an error if that failed
      */
     fun handleLoginRequest(context: Context, message: SPLoginRequest, spConfig: SPConfig) {
+        if (context is Activity && !(context is IDPAuthCodeActivity)) {
+            // IDP initiated login:
+            // SP sent login request through receiver but we need the IDP auth code activity to run
+            val intent = message.toIntent().apply {
+                putExtra(SRC_APP_PACKAGE_NAME_KEY, spConfig.appPackageName)
+                // Intent action needs to be ACTION_VIEW, so passing message action through extras
+                putExtra(ACTION_KEY, message.action)
+                setAction(Intent.ACTION_VIEW)
+                setClass(context, IDPAuthCodeActivity::class.java)
+//                setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                addCategory(Intent.CATEGORY_DEFAULT)
+            }
+            // The activity will call onReceive which will call handleLoginRequest but this time
+            // with a IDPAuthCodeActivity as context
+            startActivity(context, intent)
+            return
+        }
+
         SalesforceSDKLogger.d(TAG, "handleLoginRequest $message")
         sdkMgr.getCurrentUser()?.let {currentUser ->
             // If we are in IDP initiated login flow send status update

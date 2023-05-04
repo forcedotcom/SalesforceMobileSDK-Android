@@ -153,8 +153,8 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
         // Simulate idp login request
         val uuid = simulateIDPLoginRequest(spManager)
 
-        // Make sure sp app sends a SPLoginRequest back to the idp app (as an activity launch event)
-        waitForEvent("startActivity Intent { act=android.intent.action.VIEW cat=[android.intent.category.DEFAULT] flg=0x10008000 pkg=some-idp cmp=com.salesforce.androidsdk.tests/com.salesforce.androidsdk.auth.idp.IDPAuthCodeActivity (has extras) } extras = { uuid = ${uuid} src_app_package_name = com.salesforce.androidsdk.tests action_key = com.salesforce.SP_LOGIN_REQUEST code_challenge = ")
+        // Make sure sp app sends a SPLoginRequest back to the idp app
+        waitForEvent("sendBroadcast Intent { act=com.salesforce.SP_LOGIN_REQUEST pkg=some-idp (has extras) } extras = { uuid = ${uuid} src_app_package_name = com.salesforce.androidsdk.tests code_challenge = ")
 
         // Make sure the SPLoginRequest was added to the list of messages for the active flow
         checkActiveFlow(spManager, SPLoginRequest.ACTION, 1)
@@ -171,8 +171,8 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
         // Simulate idp login request
         val uuid = simulateIDPLoginRequest(spManager)
 
-        // Make sure sp app sends a SPLoginRequest back to the idp app (as an activity launch event)
-        waitForEvent("startActivity Intent { act=android.intent.action.VIEW cat=[android.intent.category.DEFAULT] flg=0x10008000 pkg=some-idp cmp=com.salesforce.androidsdk.tests/com.salesforce.androidsdk.auth.idp.IDPAuthCodeActivity (has extras) } extras = { uuid = ${uuid} src_app_package_name = com.salesforce.androidsdk.tests action_key = com.salesforce.SP_LOGIN_REQUEST code_challenge = ")
+        // Make sure sp app sends a SPLoginRequest back to the idp app
+        waitForEvent("sendBroadcast Intent { act=com.salesforce.SP_LOGIN_REQUEST pkg=some-idp (has extras) } extras = { uuid = ${uuid} src_app_package_name = com.salesforce.androidsdk.tests code_challenge = ")
 
         // Make sure the SPLoginRequest was added to the list of messages for the active flow
         checkActiveFlow(spManager, SPLoginRequest.ACTION, 1)
@@ -191,7 +191,7 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
 
         // Make sure the SPLoginRequest was sent to the idp
         val codeChallenge = (spManager.getActiveFlow() as SPLoginFlow).codeChallenge
-        waitForEvent("startActivity Intent { act=android.intent.action.VIEW cat=[android.intent.category.DEFAULT] flg=0x10008000 pkg=some-idp cmp=com.salesforce.androidsdk.tests/com.salesforce.androidsdk.auth.idp.IDPAuthCodeActivity (has extras) } extras = { uuid = ${firstRequestInActiveFlow!!.uuid} src_app_package_name = com.salesforce.androidsdk.tests action_key = com.salesforce.SP_LOGIN_REQUEST code_challenge = ${codeChallenge}")
+        waitForEvent("sendBroadcast Intent { act=com.salesforce.SP_LOGIN_REQUEST pkg=some-idp (has extras) } extras = { uuid = ${firstRequestInActiveFlow!!.uuid} src_app_package_name = com.salesforce.androidsdk.tests code_challenge = ${codeChallenge}")
 
         // Make sure the sp got a status update as well
         waitForEvent("status LOGIN_REQUEST_SENT_TO_IDP")

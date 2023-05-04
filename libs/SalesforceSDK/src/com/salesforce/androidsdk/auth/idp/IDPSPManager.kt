@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.auth.idp
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager
 import com.salesforce.androidsdk.util.LogUtil
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 
