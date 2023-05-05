@@ -134,7 +134,7 @@ public class LoginActivity extends FragmentActivity
 
         // Setup content view.
         setContentView(R.layout.sf__login);
-		if (SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled()) {
+        if (SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled()) {
             final Button button = findViewById(R.id.sf__idp_login_button);
             button.setVisibility(View.VISIBLE);
         }
