@@ -191,7 +191,6 @@ internal class SPManager(
                 setAction(Intent.ACTION_VIEW)
                 setPackage(idpAppPackageName)
                 setClassName(idpAppPackageName, IDPAuthCodeActivity::class.java.name)
-//                setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 addCategory(Intent.CATEGORY_DEFAULT)
             }
             startActivity(context, intent)
