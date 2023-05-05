@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.auth.idp
 
+import android.content.Intent
 import android.os.Bundle
 import org.junit.Assert
 import org.junit.Test
@@ -164,6 +165,24 @@ class IDPSPMessageTest {
         Assert.assertEquals("some-uuid", intent.getStringExtra("uuid"))
         Assert.assertEquals("some-code-challenge", intent.getStringExtra("code_challenge"))
 
+        val recreatedMessage = IDPSPMessage.fromIntent(intent)
+        Assert.assertTrue(recreatedMessage is IDPSPMessage.SPLoginRequest)
+        val typedRecreatedMessage = recreatedMessage as IDPSPMessage.SPLoginRequest
+        Assert.assertEquals(typedRecreatedMessage.uuid, message.uuid)
+        Assert.assertEquals(typedRecreatedMessage.codeChallenge, message.codeChallenge)
+    }
+
+    @Test
+    fun testSPLoginRequestFromLaunchIntent() {
+        val message = IDPSPMessage.SPLoginRequest("some-uuid", "some-code-challenge")
+        val intent = message.toIntent().apply {
+            putExtra(IDPSPManager.SRC_APP_PACKAGE_NAME_KEY, "spAppPackageName")
+            // Intent action needs to be ACTION_VIEW, so passing message action through extras
+            putExtra(IDPSPMessage.ACTION_KEY, message.action)
+            setAction(Intent.ACTION_VIEW)
+            setClassName("idpAppPackageName", IDPAuthCodeActivity::class.java.name)
+            addCategory(Intent.CATEGORY_DEFAULT)
+        }
         val recreatedMessage = IDPSPMessage.fromIntent(intent)
         Assert.assertTrue(recreatedMessage is IDPSPMessage.SPLoginRequest)
         val typedRecreatedMessage = recreatedMessage as IDPSPMessage.SPLoginRequest
