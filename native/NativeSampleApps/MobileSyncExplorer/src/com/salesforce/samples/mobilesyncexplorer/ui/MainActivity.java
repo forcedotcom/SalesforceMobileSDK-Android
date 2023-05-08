@@ -66,7 +66,7 @@ import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
-import com.salesforce.androidsdk.ui.SalesforceListActivity;
+import com.salesforce.androidsdk.ui.SalesforceActivity;
 import com.salesforce.samples.mobilesyncexplorer.R;
 import com.salesforce.samples.mobilesyncexplorer.loaders.ContactListLoader;
 import com.salesforce.samples.mobilesyncexplorer.objects.ContactObject;
@@ -81,7 +81,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author bhariharan
  */
-public class MainActivity extends SalesforceListActivity implements
+public class MainActivity extends SalesforceActivity implements
 		OnQueryTextListener,
 		LoaderManager.LoaderCallbacks<List<ContactObject>> {
 
