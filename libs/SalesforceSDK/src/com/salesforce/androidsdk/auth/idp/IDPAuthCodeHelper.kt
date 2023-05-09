@@ -27,15 +27,12 @@
 package com.salesforce.androidsdk.auth.idp
 
 import android.net.Uri
-import android.opengl.Visibility
 import android.view.View
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.RelativeLayout
-import android.widget.TextView
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -50,7 +47,6 @@ import com.salesforce.androidsdk.util.UriFragmentParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.w3c.dom.Text
 import java.io.IOException
 import java.net.URI
 
@@ -225,8 +221,8 @@ internal class IDPAuthCodeHelper private constructor(
             super.onPageFinished(webView, url)
             if (webView != null) {
                 (webView.parent as? RelativeLayout)?.let { parentView ->
-                    parentView.findViewById<ProgressBar>(R.id.sf__loading_spinner)?.let { loadingText ->
-                        loadingText.visibility = View.INVISIBLE
+                    parentView.findViewById<ProgressBar>(R.id.sf__loading_spinner)?.let { spinner ->
+                        spinner.visibility = View.INVISIBLE
                     }
                 }
                 webView.visibility = View.VISIBLE
