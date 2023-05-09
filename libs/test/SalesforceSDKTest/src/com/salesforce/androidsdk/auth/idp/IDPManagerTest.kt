@@ -263,10 +263,10 @@ internal class IDPManagerTest : IDPSPManagerTestCase() {
         val idpManager = IDPManager(allowedSPApps, TestSDKManager(buildUser("some-org-id", "some-user-id")), this::sendBroadcast, this::startActivity)
         idpManager.kickOffIDPInitiatedLoginFlow(context, "some-sp", TestStatusUpdateCallback())
 
-        // Make sure we have an active flow with a IDPLoginRequest as first message
+        // Make sure we have an active flow with a IDPToSPRequest as first message
         val firstRequestInActiveFlow = checkActiveFlow(idpManager, IDPToSPRequest.ACTION, 0)
 
-        // Make sure the IDPLoginRequest was sent to the idp
+        // Make sure the IDPToSPRequest was sent to the idp
         waitForEvent("sendBroadcast Intent { act=com.salesforce.IDP_TO_SP_REQUEST pkg=some-sp (has extras) } extras = { org_id = some-org-id user_id = some-user-id uuid = ${firstRequestInActiveFlow?.uuid} src_app_package_name = com.salesforce.androidsdk.tests }")
 
         // Make sure the idp got a status update as well

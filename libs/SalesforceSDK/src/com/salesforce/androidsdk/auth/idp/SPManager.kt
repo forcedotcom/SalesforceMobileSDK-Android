@@ -233,7 +233,7 @@ internal class SPManager(
      * - If the user specified is not available in SP app, we send a login request to IDP app
      */
     fun handleLoginRequest(context: Context, message: IDPToSPRequest) {
-        SalesforceSDKLogger.d(TAG, "handleIDPLoginRequest $message")
+        SalesforceSDKLogger.d(TAG, "handleIDPToSPRequest $message")
         val user = sdkMgr.getUserFromOrgAndUserId(
             message.orgId,
             message.userId

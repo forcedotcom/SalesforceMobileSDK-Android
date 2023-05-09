@@ -151,7 +151,7 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
         val spManager = SPManager("some-idp", TestSDKMgr(null), this::sendBroadcast, this::startActivity)
 
         // Simulate idp login request
-        val uuid = simulateIDPLoginRequest(spManager)
+        val uuid = simulateIDPToSPRequest(spManager)
 
         // Make sure sp app sends a SPToIDPRequest back to the idp app
         waitForEvent("sendBroadcast Intent { act=com.salesforce.SP_TO_IDP_REQUEST pkg=some-idp (has extras) } extras = { uuid = ${uuid} src_app_package_name = com.salesforce.androidsdk.tests code_challenge = ")
@@ -169,7 +169,7 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
         val spManager = SPManager("some-idp", TestSDKMgr(null), this::sendBroadcast, this::startActivity)
 
         // Simulate idp login request
-        val uuid = simulateIDPLoginRequest(spManager)
+        val uuid = simulateIDPToSPRequest(spManager)
 
         // Make sure sp app sends a SPToIDPRequest back to the idp app
         waitForEvent("sendBroadcast Intent { act=com.salesforce.SP_TO_IDP_REQUEST pkg=some-idp (has extras) } extras = { uuid = ${uuid} src_app_package_name = com.salesforce.androidsdk.tests code_challenge = ")
@@ -288,14 +288,14 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
         expectNoEvent()
     }
 
-    fun simulateIDPLoginRequest(spManager: SPManager):String {
+    fun simulateIDPToSPRequest(spManager: SPManager):String {
         // Simulate a request from the idp
         val idpToSpRequest = IDPToSPRequest(orgId = "some-other-org-id", userId = "some-other-user-id")
         spManager.onReceive(context, idpToSpRequest.toIntent().apply {
             putExtra("src_app_package_name", "some-idp")
         })
 
-        // Make sure we have an active flow with the IDPLoginRequest as first message
+        // Make sure we have an active flow with the IDPToSPRequest as first message
         checkActiveFlow(spManager, idpToSpRequest, 0)
 
         return idpToSpRequest.uuid
