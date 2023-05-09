@@ -11,8 +11,8 @@ apply plugin: 'org.jetbrains.kotlin.android'
 dependencies {
     api project(':libs:MobileSync')
     api 'org.apache.cordova:framework:11.0.0'
-    api 'androidx.appcompat:appcompat:1.6.0'
-    api 'androidx.appcompat:appcompat-resources:1.6.0'
+    api 'androidx.appcompat:appcompat:1.6.1'
+    api 'androidx.appcompat:appcompat-resources:1.6.1'
     api 'androidx.webkit:webkit:1.6.0'
     api 'androidx.core:core-splashscreen:1.0.0'
     implementation 'androidx.core:core-ktx:1.9.0'

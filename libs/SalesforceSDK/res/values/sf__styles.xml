@@ -2,7 +2,7 @@
 
 <resources xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <style name="SalesforceSDK">
+    <style name="SalesforceSDK" parent="Theme.AppCompat.DayNight">
         <item name="android:actionBarStyle">@style/SalesforceSDKActionBar</item>
         <item name="android:colorPrimary">@color/sf__primary_color</item>
         <item name="android:colorPrimaryDark">@color/sf__primary_color</item>
@@ -195,6 +195,13 @@
         <item name="android:layout_marginTop">@dimen/sf__screenlock_error_margin_top</item>
         <item name="android:layout_marginLeft">@dimen/sf__screenlock_error_margin_left</item>
         <item name="android:layout_marginRight">@dimen/sf__screenlock_error_margin_right</item>
+    </style>
+
+    <style name="SalesforceSDK_Fullscreen" parent="@style/Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
     </style>
 
 </resources>

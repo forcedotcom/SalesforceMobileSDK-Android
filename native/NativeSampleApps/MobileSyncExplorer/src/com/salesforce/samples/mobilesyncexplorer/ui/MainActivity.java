@@ -26,7 +26,10 @@
  */
 package com.salesforce.samples.mobilesyncexplorer.ui;
 
+import static android.view.LayoutInflater.from;
+
 import android.accounts.Account;
+import android.annotation.SuppressLint;
 import android.app.LoaderManager;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
@@ -38,28 +41,32 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MenuItem.OnActionExpandListener;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.Filter;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.SearchView;
-import android.widget.SearchView.OnCloseListener;
 import android.widget.SearchView.OnQueryTextListener;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.RecyclerView.Adapter;
+import androidx.recyclerview.widget.RecyclerView.ViewHolder;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
-import com.salesforce.androidsdk.ui.SalesforceListActivity;
+import com.salesforce.androidsdk.ui.SalesforceActivity;
 import com.salesforce.samples.mobilesyncexplorer.R;
 import com.salesforce.samples.mobilesyncexplorer.loaders.ContactListLoader;
 import com.salesforce.samples.mobilesyncexplorer.objects.ContactObject;
@@ -74,8 +81,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author bhariharan
  */
-public class MainActivity extends SalesforceListActivity implements
-		OnQueryTextListener, OnCloseListener,
+public class MainActivity extends SalesforceActivity implements
+		OnQueryTextListener,
 		LoaderManager.LoaderCallbacks<List<ContactObject>> {
 
 	public static final String OBJECT_ID_KEY = "object_id";
@@ -122,9 +129,21 @@ public class MainActivity extends SalesforceListActivity implements
 		SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
 
 		setContentView(R.layout.main);
-		getActionBar().setTitle(R.string.main_activity_title);
-		listAdapter = new ContactListAdapter(this, R.layout.list_item);
-		getListView().setAdapter(listAdapter);
+		getSupportActionBar().setTitle(R.string.main_activity_title);
+
+		RecyclerView recyclerView = ((RecyclerView)findViewById(R.id.recycler_view));
+		listAdapter = new ContactListAdapter(
+				R.layout.list_item,
+				this::onListItemClick);
+		LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+		DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(
+				this,
+				layoutManager.getOrientation()
+		);
+		recyclerView.addItemDecoration(dividerItemDecoration);
+		recyclerView.setAdapter(listAdapter);
+		recyclerView.setLayoutManager(layoutManager);
+
 		nameFilter = new NameFieldFilter(listAdapter, null);
 		logoutConfirmationDialog = new LogoutDialogFragment();
 		loadCompleteReceiver = new LoadCompleteReceiver();
@@ -209,8 +228,20 @@ public class MainActivity extends SalesforceListActivity implements
 	    final MenuItem searchItem = menu.findItem(R.id.action_search);
 		final SearchView searchView = new SearchView(this);
 	    searchView.setOnQueryTextListener(this);
-        searchView.setOnCloseListener(this);
-        searchItem.setActionView(searchView);
+		MenuItem searchViewItem = menu.findItem(R.id.action_search);
+		searchViewItem.setOnActionExpandListener(new OnActionExpandListener() {
+			@Override
+			public boolean onMenuItemActionExpand(@NonNull MenuItem item) {
+				return true;
+			}
+
+			@Override
+			public boolean onMenuItemActionCollapse(@NonNull MenuItem item) {
+				MainActivity.this.onQueryTextChange("");
+				return true;
+			}
+		});
+		searchItem.setActionView(searchView);
 	    return super.onCreateOptionsMenu(menu);
 	}
 
@@ -222,7 +253,7 @@ public class MainActivity extends SalesforceListActivity implements
 				requestSync(false /* sync up + sync down */);
 	            return true;
 	        case R.id.action_logout:
-	    		logoutConfirmationDialog.show(getFragmentManager(), "LogoutDialog");
+	    		logoutConfirmationDialog.show(getSupportFragmentManager(), "LogoutDialog");
 	            return true;
 			case R.id.action_switch_user:
 				launchAccountSwitcherActivity();
@@ -267,11 +298,6 @@ public class MainActivity extends SalesforceListActivity implements
 	}
 
 	@Override
-	public boolean onClose() {
-		return true;
-	}
-
-	@Override
 	public boolean onQueryTextSubmit(String query) {
 		nameFilter.setFilterTerm(query);
 		return true;
@@ -283,11 +309,11 @@ public class MainActivity extends SalesforceListActivity implements
 		return true;
     }
 
-	@Override
-	protected void onListItemClick(ListView l, View v, int position, long id) {
-		final ContactObject sObject = listAdapter.getItem(position);
-		launchDetailActivity(sObject.getObjectId(), sObject.getName(),
-				sObject.getTitle());
+	protected void onListItemClick(ContactObject contact) {
+		launchDetailActivity(
+				contact.getObjectId(),
+				contact.getName(),
+				contact.getTitle());
 	}
 
     private void refreshList() {
@@ -314,25 +340,28 @@ public class MainActivity extends SalesforceListActivity implements
 	}
 
 	/**
-	 * Custom array adapter to supply data to the list view.
+	 * Custom recycler view adapter to supply data to the recycler view.
 	 *
 	 * @author bhariharan
 	 */
-	private static class ContactListAdapter extends ArrayAdapter<ContactObject> {
+	private static class ContactListAdapter extends Adapter<ContactListAdapter.ContactViewHolder> {
 
 		private int listItemLayoutId;
 		private List<ContactObject> sObjects;
-		private String filterTerm;
+		private final OnItemClickedListener onClickListener;
 
 		/**
 		 * Parameterized constructor.
 		 *
-		 * @param context Context.
 		 * @param listItemLayoutId List item view resource ID.
 		 */
-		public ContactListAdapter(Context context, int listItemLayoutId) {
-			super(context, listItemLayoutId);
+		public ContactListAdapter(
+				int listItemLayoutId,
+				OnItemClickedListener onClickListener) {
+			super();
+
 			this.listItemLayoutId = listItemLayoutId;
+			this.onClickListener = onClickListener;
 		}
 
 		/**
@@ -340,50 +369,62 @@ public class MainActivity extends SalesforceListActivity implements
 		 *
 		 * @param data Data.
 		 */
+		@SuppressLint("NotifyDataSetChanged")
 		public void setData(List<ContactObject> data) {
-			clear();
 			sObjects = data;
-			if (data != null) {
-				addAll(data);
-				notifyDataSetChanged();
-			}
+			notifyDataSetChanged();
 		}
 
 		@Override
-		public View getView (int position, View convertView, ViewGroup parent) {
-			if (convertView == null) {
-				convertView = LayoutInflater.from(getContext()).inflate(listItemLayoutId, null);
-		    }
-			if (sObjects != null) {
-				final ContactObject sObject = sObjects.get(position);
-				if (sObject != null) {
-			        final TextView objName = (TextView) convertView.findViewById(R.id.obj_name);
-			        final TextView objType = (TextView) convertView.findViewById(R.id.obj_type);
-					final TextView objImage = (TextView) convertView.findViewById(R.id.obj_image);
-			        if (objName != null) {
-			        	objName.setText(sObject.getName());
-			        }
-			        if (objType != null) {
-			        	objType.setText(sObject.getTitle());
-			        }
-			        if (objImage != null) {
-			        	final String firstName = sObject.getFirstName();
-			        	String initials = Constants.EMPTY_STRING;
-			        	if (firstName.length() > 0) {
-			        		initials = firstName.substring(0, 1);
-			        	}
-			        	objImage.setText(initials);
-			        	setBubbleColor(objImage, firstName);
-			        }
-			        final ImageView syncImage = convertView.findViewById(R.id.sync_status_view);
-			        if (syncImage != null && sObject.isLocallyModified()) {
-			        	syncImage.setImageResource(R.drawable.sync_local);
-			        } else {
-			        	syncImage.setImageResource(R.drawable.sync_save);
-			        }
+		public void onBindViewHolder(@NonNull ContactViewHolder holder,
+									 int position) {
+
+			final ContactObject sObject = sObjects.get(position);
+			View itemView = holder.itemView;
+
+			itemView.setOnClickListener(v -> onClickListener.itemClicked(sObject));
+
+			if (sObject != null) {
+				final TextView objName = (TextView) itemView.findViewById(R.id.obj_name);
+				final TextView objType = (TextView) itemView.findViewById(R.id.obj_type);
+				final TextView objImage = (TextView) itemView.findViewById(R.id.obj_image);
+				if (objName != null) {
+					objName.setText(sObject.getName());
+				}
+				if (objType != null) {
+					objType.setText(sObject.getTitle());
+				}
+				if (objImage != null) {
+					final String firstName = sObject.getFirstName();
+					String initials = Constants.EMPTY_STRING;
+					if (firstName.length() > 0) {
+						initials = firstName.substring(0, 1);
+					}
+					objImage.setText(initials);
+					setBubbleColor(objImage, firstName);
+				}
+				final ImageView syncImage = itemView.findViewById(R.id.sync_status_view);
+				if (syncImage != null && sObject.isLocallyModified()) {
+					syncImage.setImageResource(R.drawable.sync_local);
+				} else {
+					syncImage.setImageResource(R.drawable.sync_save);
 				}
 			}
-		    return convertView;
+		}
+
+		@NonNull
+		@Override
+		public ContactViewHolder onCreateViewHolder(@NonNull ViewGroup parent,
+													int viewType) {
+			return new ContactViewHolder(
+					from(parent.getContext()).inflate(
+							listItemLayoutId,
+							null));
+		}
+
+		@Override
+		public int getItemCount() {
+			return sObjects == null ? 0 : sObjects.size();
 		}
 
 		private void setBubbleColor(TextView tv, String firstName) {
@@ -401,6 +442,18 @@ public class MainActivity extends SalesforceListActivity implements
 			drawable.setShape(GradientDrawable.OVAL);
 			tv.setBackground(drawable);
 		}
+
+		static class ContactViewHolder extends ViewHolder {
+
+			public ContactViewHolder(@NonNull View itemView) {
+				super(itemView);
+			}
+		}
+
+		interface OnItemClickedListener {
+
+			void itemClicked(ContactObject contact);
+		}
 	}
 
 	/**
@@ -408,7 +461,7 @@ public class MainActivity extends SalesforceListActivity implements
 	 *
 	 * @author bhariharan
 	 */
-	private static class NameFieldFilter extends Filter {
+	private class NameFieldFilter extends Filter {
 
 		private ContactListAdapter adpater;
 		private List<ContactObject> data;
@@ -476,6 +529,7 @@ public class MainActivity extends SalesforceListActivity implements
 		@Override
 		protected void publishResults(CharSequence constraint, FilterResults results) {
 			if (results != null && results.values != null) {
+				MainActivity.this.findViewById(R.id.empty).setVisibility(results.count > 0 ? View.GONE : View.VISIBLE);
 				adpater.setData((List<ContactObject>) results.values);
 			}
 		}

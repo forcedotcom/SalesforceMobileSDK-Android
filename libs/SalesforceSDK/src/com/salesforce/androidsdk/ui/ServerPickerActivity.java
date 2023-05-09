@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -37,7 +36,8 @@ import android.widget.Button;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
 
-import androidx.fragment.app.FragmentActivity;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentManager;
 
 import com.salesforce.androidsdk.R;
@@ -56,7 +56,7 @@ import java.util.List;
  *
  * @author bhariharan
  */
-public class ServerPickerActivity extends FragmentActivity implements
+public class ServerPickerActivity extends AppCompatActivity implements
         android.widget.RadioGroup.OnCheckedChangeListener, AuthConfigTask.AuthConfigCallbackInterface {
 
     public static final String CHANGE_SERVER_INTENT = "com.salesforce.SERVER_CHANGED";
@@ -131,7 +131,7 @@ public class ServerPickerActivity extends FragmentActivity implements
         loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
         setContentView(R.layout.sf__server_picker);
 
-        final ActionBar actionBar = getActionBar();
+        final ActionBar actionBar = getSupportActionBar();
         actionBar.setTitle(R.string.sf__server_picker_title);
         actionBar.setDisplayHomeAsUpEnabled(true);
 
@@ -172,7 +172,10 @@ public class ServerPickerActivity extends FragmentActivity implements
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.sf__menu_clear_custom_url) {
+        if (item.getItemId() == android.R.id.home) {
+            finish();
+            return true;
+        } else if (item.getItemId() == R.id.sf__menu_clear_custom_url) {
             clearCustomUrlSetting();
             return true;
         } else {
