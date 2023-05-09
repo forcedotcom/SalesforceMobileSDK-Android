@@ -52,8 +52,8 @@ internal class IDPInitiatedLoginFlow private constructor(context:Context, val us
             val activeFlow = IDPInitiatedLoginFlow(context, user, spConfig, onStatusUpdate)
             idpManager.startActiveFlow(activeFlow) // make it the active flow for the manager other send won't add requests to flow automatically
 
-            val idpLoginRequest = IDPLoginRequest(orgId = user.orgId, userId = user.userId)
-            idpManager.send(context, idpLoginRequest, spConfig.appPackageName)
+            val idpToSpRequest = IDPToSPRequest(orgId = user.orgId, userId = user.userId)
+            idpManager.send(context, idpToSpRequest, spConfig.appPackageName)
             onStatusUpdate(Status.LOGIN_REQUEST_SENT_TO_SP)
         }
     }
@@ -178,7 +178,7 @@ internal class IDPManager(
 
         getSPConfig(srcAppPackageName)?.let {spConfig ->
             when (message) {
-                is IDPLoginResponse -> {
+                is SPToIDPResponse -> {
                     // Handle only if there is an active flow and the message is part of it
                     if (activeFlow?.isPartOfFlow(message) == true) {
                         activeFlow?.let { handleLoginResponse(it, message) }
@@ -187,7 +187,7 @@ internal class IDPManager(
                     }
                 }
 
-                is SPLoginRequest -> {
+                is SPToIDPRequest -> {
                     handleLoginRequest(context, message, spConfig)
                 }
 
@@ -206,7 +206,7 @@ internal class IDPManager(
      * Handle case where SP already has user hinted in IDP initiated login request
      * but it is unable to launch activity itself
      */
-    fun handleLoginResponse(activeFlow: IDPInitiatedLoginFlow, message: IDPLoginResponse) {
+    fun handleLoginResponse(activeFlow: IDPInitiatedLoginFlow, message: SPToIDPResponse) {
         SalesforceSDKLogger.d(TAG, "handleLoginResponse $message")
         if (message.error == null) {
             activeFlow.onStatusUpdate(Status.SP_LOGIN_COMPLETE)
@@ -232,7 +232,7 @@ internal class IDPManager(
      * Handle request to login coming from SP app
      * We get an auth code from the server and return it to the SP app or an error if that failed
      */
-    fun handleLoginRequest(context: Context, message: SPLoginRequest, spConfig: SPConfig) {
+    fun handleLoginRequest(context: Context, message: SPToIDPRequest, spConfig: SPConfig) {
         if (context is Activity && !(context is IDPAuthCodeActivity)) {
             // IDP initiated login:
             // SP sent login request through receiver but we need the IDP auth code activity to run
@@ -267,7 +267,7 @@ internal class IDPManager(
                             // We are NOT in a IDP initiated flow - we need to let the SP app know
                             send(
                                 context,
-                                SPLoginResponse(message.uuid, error = result.error),
+                                IDPToSPResponse(message.uuid, error = result.error),
                                 spConfig.appPackageName
                             )
                         } else {
@@ -278,7 +278,7 @@ internal class IDPManager(
                         // We successfully got an auth code - send it to the SP app
                         send(
                             context,
-                            SPLoginResponse(message.uuid, code = result.code, loginUrl = result.loginUrl),
+                            IDPToSPResponse(message.uuid, code = result.code, loginUrl = result.loginUrl),
                             spConfig.appPackageName
                         )
                         // Let the IDP app know
@@ -290,7 +290,7 @@ internal class IDPManager(
         } ?: run {
             send(
                 context,
-                SPLoginResponse(message.uuid, error = "IDP app not logged in"),
+                IDPToSPResponse(message.uuid, error = "IDP app not logged in"),
                 spConfig.appPackageName
             )
         }
