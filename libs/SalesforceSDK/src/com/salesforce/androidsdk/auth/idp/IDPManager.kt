@@ -105,7 +105,7 @@ internal class IDPManager(
                 codeChallenge: String,
                 onResult: (result: IDPAuthCodeHelper.Result) -> Unit
             ) {
-                val authCodeActivity = context as? IDPAuthCodeActivity
+                val authCodeActivity = context as? com.salesforce.androidsdk.auth.idp.interfaces.IDPAuthCodeActivity
                 if (authCodeActivity == null) {
                     onResult(
                         IDPAuthCodeHelper.Result(
@@ -115,7 +115,7 @@ internal class IDPManager(
                     )
                 } else {
                     IDPAuthCodeHelper.generateAuthCode(
-                        authCodeActivity.webView,
+                        authCodeActivity.getWebView(),
                         userAccount,
                         spConfig,
                         codeChallenge,

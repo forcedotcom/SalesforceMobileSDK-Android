@@ -11,9 +11,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager
 /**
  * Activity showing web view through which IDP gets auth code for SP app
  */
-class IDPAuthCodeActivity : Activity() {
-    lateinit var webView: WebView
-
+class IDPAuthCodeActivity : Activity(), com.salesforce.androidsdk.auth.idp.interfaces.IDPAuthCodeActivity {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -29,7 +27,7 @@ class IDPAuthCodeActivity : Activity() {
         setContentView(R.layout.sf__idp_auth_code)
 
         // Setup web view
-        webView = findViewById(R.id.sf__webview) as WebView
+        val webView = findViewById(R.id.sf__webview) as WebView
         val webSettings = webView.settings
         webSettings.useWideViewPort = true
         webSettings.layoutAlgorithm = LayoutAlgorithm.NORMAL
@@ -37,5 +35,9 @@ class IDPAuthCodeActivity : Activity() {
         SalesforceSDKManager.getInstance().idpManager?.let {
             it.onReceive(this@IDPAuthCodeActivity, intent)
         }
+    }
+
+    override fun getWebView(): WebView {
+        return findViewById(R.id.sf__webview) as WebView
     }
 }
