@@ -34,7 +34,13 @@ import android.view.KeyEvent;
  * Abstract base class for all Salesforce list activities.
  *
  * @author bhariharan
+ * @deprecated Please note {@link SalesforceListActivity} inherits from the
+ * Android SDK's deprecated {@link android.app.ListActivity}.  Similar to the
+ * instructions in {@link ListActivity}, use {@link SalesforceActivity} with
+ * {@link androidx.recyclerview.widget.RecyclerView} to implement your
+ * Activity instead.
  */
+@Deprecated
 public abstract class SalesforceListActivity extends ListActivity implements SalesforceActivityInterface {
 
 	private final SalesforceActivityDelegate delegate;
