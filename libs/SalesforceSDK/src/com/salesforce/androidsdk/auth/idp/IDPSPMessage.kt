@@ -29,7 +29,7 @@ package com.salesforce.androidsdk.auth.idp
 import android.content.Intent
 import android.os.Bundle
 import com.salesforce.androidsdk.util.LogUtil
-import java.util.*
+import java.util.UUID
 
 /**
  * Super class of messages being sent between IDP and SP app
@@ -100,7 +100,7 @@ internal sealed class IDPSPMessage(
     ) : IDPSPMessage(uuid, ACTION) {
 
         companion object {
-            const val ACTION = "com.salesforce.IDP_TO_SP_REQUEST"
+            const val ACTION = "com.salesforce.androidsdk.IDP_TO_SP_REQUEST"
             private const val USER_ID_KEY = "user_id"
             private const val ORG_ID_KEY = "org_id"
 
@@ -133,7 +133,7 @@ internal sealed class IDPSPMessage(
     ) : IDPSPMessage(uuid, ACTION) {
 
         companion object {
-            const val ACTION = "com.salesforce.SP_TO_IDP_RESPONSE"
+            const val ACTION = "com.salesforce.androidsdk.SP_TO_IDP_RESPONSE"
             private const val ERROR_KEY = "error"
 
             fun fromBundle(bundle:Bundle?) : SPToIDPResponse? {
@@ -164,7 +164,7 @@ internal sealed class IDPSPMessage(
     ): IDPSPMessage(uuid, ACTION) {
 
         companion object {
-            const val ACTION = "com.salesforce.SP_TO_IDP_REQUEST"
+            const val ACTION = "com.salesforce.androidsdk.SP_TO_IDP_REQUEST"
             private const val CODE_CHALLENGE_KEY = "code_challenge"
 
             fun fromBundle(bundle:Bundle?) : SPToIDPRequest? {
@@ -196,7 +196,7 @@ internal sealed class IDPSPMessage(
     ): IDPSPMessage(uuid, ACTION) {
 
         companion object {
-            const val ACTION = "com.salesforce.IDP_TO_SP_RESPONSE"
+            const val ACTION = "com.salesforce.androidsdk.IDP_TO_SP_RESPONSE"
             private const val CODE_KEY = "code"
             private const val LOGIN_URL_KEY = "login_url"
             private const val ERROR_KEY = "error"

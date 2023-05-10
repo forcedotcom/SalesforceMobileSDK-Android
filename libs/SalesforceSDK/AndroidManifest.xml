@@ -94,8 +94,8 @@
             android:exported="true"
             tools:ignore="ExportedReceiver">
             <intent-filter>
-                <action android:name="com.salesforce.IDP_TO_SP_REQUEST" />
-                <action android:name="com.salesforce.IDP_TO_SP_RESPONSE" />
+                <action android:name="com.salesforce.androidsdk.IDP_TO_SP_REQUEST" />
+                <action android:name="com.salesforce.androidsdk.IDP_TO_SP_RESPONSE" />
             </intent-filter>
         </receiver>
 
@@ -104,8 +104,8 @@
             android:exported="true"
             tools:ignore="ExportedReceiver">
             <intent-filter>
-                <action android:name="com.salesforce.SP_TO_REQUEST" />
-                <action android:name="com.salesforce.SP_TO_IDP_RESPONSE" />
+                <action android:name="com.salesforce.androidsdk.SP_TO_IDP_REQUEST" />
+                <action android:name="com.salesforce.androidsdk.SP_TO_IDP_RESPONSE" />
             </intent-filter>
         </receiver>
 

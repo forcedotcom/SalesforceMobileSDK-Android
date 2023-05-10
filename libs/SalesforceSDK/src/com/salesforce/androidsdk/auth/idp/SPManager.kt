@@ -31,8 +31,11 @@ import android.content.Context
 import android.content.Intent
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.auth.idp.IDPSPMessage.*
 import com.salesforce.androidsdk.auth.idp.IDPSPMessage.Companion.ACTION_KEY
+import com.salesforce.androidsdk.auth.idp.IDPSPMessage.IDPToSPRequest
+import com.salesforce.androidsdk.auth.idp.IDPSPMessage.IDPToSPResponse
+import com.salesforce.androidsdk.auth.idp.IDPSPMessage.SPToIDPRequest
+import com.salesforce.androidsdk.auth.idp.IDPSPMessage.SPToIDPResponse
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator
@@ -40,7 +43,7 @@ import com.salesforce.androidsdk.util.LogUtil
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 
 /**
- * Class to capture state related to SP login flow
+ * Class to capture state related to IDP-SP login in the SP app
  * e.g. the context that started it
  *      - could be an activity in the case of a SP initiated login
  *      - or the receiver context in the case it was started in response to a IDP login request
@@ -57,10 +60,10 @@ internal class SPLoginFlow private constructor(context:Context, val onStatusUpda
 
             fun kickOff(spManager:SPManager, context: Context, onStatusUpdate: (Status) -> Unit = { _ -> }, idpToSpRequest:IDPToSPRequest? = null) {
                 val trigger = if (idpToSpRequest == null) "" else " triggered by ${idpToSpRequest} "
-                SalesforceSDKLogger.d(TAG, "Kicking off sp initiated login flow from ${context}${trigger}")
+                SalesforceSDKLogger.d(TAG, "Kicking off login flow from ${context}${trigger}")
 
                 val activeFlow = SPLoginFlow(context, onStatusUpdate)
-                spManager.startActiveFlow(activeFlow) // make it the active flow for the manager other send won't add requests to flow automatically
+                spManager.startActiveFlow(activeFlow)
 
                 val spToIDPRequest = if (idpToSpRequest != null) {
                     activeFlow.addMessage(idpToSpRequest)
@@ -251,25 +254,17 @@ internal class SPManager(
     /**
      * Handle the case when we have the user either from the start or following a login flow
      * - we switch to the user
-     * - we launch the main activity if our context allows it
-     * - we send a IDPLoginResponse if we got here because of a IDPLoginRequest
-     *
+     * - we send a SPToIDPResponse to have the IDP app launch the SP main activity
      */
-    fun handleUserExists(context: Context, message: IDPToSPRequest?, user: UserAccount) {
+    fun handleUserExists(context: Context, message: IDPSPMessage, user: UserAccount) {
         SalesforceSDKLogger.d(TAG, "handleUserExists $message")
         sdkMgr.switchToUser(user)
-
-        // We have an activity context - launch main activity from here
-        if (context is Activity) {
-            val launchIntent = Intent(context, sdkMgr.getMainActivityClass())
-            SalesforceSDKLogger.d(TAG, "start activity ${LogUtil.intentToString(launchIntent)}")
-            startActivity(context, launchIntent)
-        }
-
-        // Otherwise sends a response back to IDP app to have it launch the activity
-        else if (message != null) {
-            send(context, SPToIDPResponse(message.uuid))
-        }
+        // SP is in the background either because we are in a IDP initiated login flow or
+        // because we had to switch the IDP app to show the IDPAuthCodeActivity
+        // So we can't launch the main activity from here
+        // Instead we send a SPToIDPResponse back and have the IDP app launch the SP app
+        // main activity
+        send(context, SPToIDPResponse(message.uuid))
     }
 
     /**
@@ -297,14 +292,8 @@ internal class SPManager(
                 activeFlow.codeVerifier,
                 { result ->
                     if (result.success) {
-                        with(activeFlow) {
-                            handleUserExists(
-                                context,
-                                if (firstMessage is IDPToSPRequest) firstMessage as IDPToSPRequest else null,
-                                result.user!!
-                            )
-                            activeFlow.onStatusUpdate(Status.LOGIN_COMPLETE)
-                        }
+                        handleUserExists(activeFlow.context, message, result.user!!)
+                        activeFlow.onStatusUpdate(Status.LOGIN_COMPLETE)
                     } else {
                         // We failed to login - let idp app know if this was a idp initiated login
                         if (activeFlow.firstMessage is IDPToSPRequest) {

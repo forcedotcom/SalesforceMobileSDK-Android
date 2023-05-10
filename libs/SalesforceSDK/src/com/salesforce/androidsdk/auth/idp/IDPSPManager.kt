@@ -132,7 +132,7 @@ internal abstract class IDPSPManager(
                         if (activeFlow.addMessage(message)) {
                             // There is an active flow and the message is part of it
                             // Handle the message with the active flow's context
-                            // Unless the message was received by an activity
+                            // Unless the message was received through an activity
                             handle(if (context is Activity) context else activeFlow.context, message, srcAppPackageName)
                         } else {
                             // There is an active flow and the message is NOT part of it

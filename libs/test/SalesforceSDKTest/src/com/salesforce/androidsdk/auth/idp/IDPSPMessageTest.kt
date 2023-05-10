@@ -129,7 +129,7 @@ class IDPSPMessageTest {
         val message = IDPSPMessage.IDPToSPRequest("some-uuid", "some-org-id", "some-user-id")
 
         val intent = message.toIntent()
-        Assert.assertEquals("com.salesforce.IDP_TO_SP_REQUEST", intent.action)
+        Assert.assertEquals("com.salesforce.androidsdk.IDP_TO_SP_REQUEST", intent.action)
         Assert.assertEquals("some-uuid", intent.getStringExtra("uuid"))
         Assert.assertEquals("some-org-id", intent.getStringExtra("org_id"))
         Assert.assertEquals("some-user-id", intent.getStringExtra("user_id"))
@@ -147,7 +147,7 @@ class IDPSPMessageTest {
         val message = IDPSPMessage.SPToIDPResponse("some-uuid")
 
         val intent = message.toIntent()
-        Assert.assertEquals("com.salesforce.SP_TO_IDP_RESPONSE", intent.action)
+        Assert.assertEquals("com.salesforce.androidsdk.SP_TO_IDP_RESPONSE", intent.action)
         Assert.assertEquals("some-uuid", intent.getStringExtra("uuid"))
 
         val recreatedMessage = IDPSPMessage.fromIntent(intent)
@@ -161,7 +161,7 @@ class IDPSPMessageTest {
         val message = IDPSPMessage.SPToIDPRequest("some-uuid", "some-code-challenge")
 
         val intent = message.toIntent()
-        Assert.assertEquals("com.salesforce.SP_TO_IDP_REQUEST", intent.action)
+        Assert.assertEquals("com.salesforce.androidsdk.SP_TO_IDP_REQUEST", intent.action)
         Assert.assertEquals("some-uuid", intent.getStringExtra("uuid"))
         Assert.assertEquals("some-code-challenge", intent.getStringExtra("code_challenge"))
 
@@ -195,7 +195,7 @@ class IDPSPMessageTest {
         val message = IDPSPMessage.IDPToSPResponse("some-uuid", "some-code", "some-login-url", "some-error")
 
         val intent = message.toIntent()
-        Assert.assertEquals("com.salesforce.IDP_TO_SP_RESPONSE", intent.action)
+        Assert.assertEquals("com.salesforce.androidsdk.IDP_TO_SP_RESPONSE", intent.action)
         Assert.assertEquals("some-uuid", intent.getStringExtra("uuid"))
         Assert.assertEquals("some-code", intent.getStringExtra("code"))
         Assert.assertEquals("some-login-url", intent.getStringExtra("login_url"))
