@@ -317,6 +317,10 @@ internal class IDPManager(
                 startActiveFlow(flow)
                 flow.authCodeActivity = authCodeActivity
             }
+            // Otherwise close auth code activity
+            else {
+                authCodeActivity.finish()
+            }
         }
     }
 
