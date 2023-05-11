@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.auth.idp
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import com.salesforce.androidsdk.accounts.UserAccount
@@ -36,6 +35,7 @@ import com.salesforce.androidsdk.auth.idp.IDPSPMessage.IDPToSPRequest
 import com.salesforce.androidsdk.auth.idp.IDPSPMessage.IDPToSPResponse
 import com.salesforce.androidsdk.auth.idp.IDPSPMessage.SPToIDPRequest
 import com.salesforce.androidsdk.auth.idp.IDPSPMessage.SPToIDPResponse
+import com.salesforce.androidsdk.auth.idp.interfaces.IDPAuthCodeActivity
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager.StatusUpdateCallback
 import com.salesforce.androidsdk.util.LogUtil
@@ -45,8 +45,11 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger
 /**
  * Class to capture state related to IDP-SP login in the IDP app
  * e.g. the context (activity) that started it
+ *      the web view to get the auth code in
  */
 internal class IDPLoginFlow(context:Context, val user:UserAccount, val spConfig: SPConfig, val onStatusUpdate:(Status) -> Unit) : ActiveFlow(context) {
+
+    var authCodeActivity: IDPAuthCodeActivity? = null
 
     fun isIDPInitiatedLoginFlow(): Boolean {
         return firstMessage.action == IDPToSPRequest.ACTION
@@ -85,11 +88,12 @@ internal class IDPManager(
     internal interface SDKManager {
         fun getCurrentUser(): UserAccount?
 
-        fun generateAuthCode(context: Context,
-                             userAccount: UserAccount,
-                             spConfig: SPConfig,
-                             codeChallenge: String,
-                             onResult: (result: IDPAuthCodeHelper.Result) -> Unit): Unit
+        fun generateAuthCode(
+            authCodeActivity: IDPAuthCodeActivity,
+            userAccount: UserAccount,
+            spConfig: SPConfig,
+            codeChallenge: String,
+            onResult: (result: IDPAuthCodeHelper.Result) -> Unit)
     }
 
     companion object {
@@ -107,32 +111,22 @@ internal class IDPManager(
             }
 
             override fun generateAuthCode(
-                context: Context,
+                authCodeActivity: IDPAuthCodeActivity,
                 userAccount: UserAccount,
                 spConfig: SPConfig,
                 codeChallenge: String,
                 onResult: (result: IDPAuthCodeHelper.Result) -> Unit
             ) {
-                val authCodeActivity = context as? com.salesforce.androidsdk.auth.idp.interfaces.IDPAuthCodeActivity
-                if (authCodeActivity == null) {
-                    onResult(
-                        IDPAuthCodeHelper.Result(
-                            false,
-                            "Auth code must be obtained from visible web view"
-                        )
-                    )
-                } else {
-                    IDPAuthCodeHelper.generateAuthCode(
-                        authCodeActivity.getWebView(),
-                        userAccount,
-                        spConfig,
-                        codeChallenge,
-                        { result ->
-                            authCodeActivity.finish()
-                            onResult(result)
-                        }
-                    )
-                }
+                IDPAuthCodeHelper.generateAuthCode(
+                    authCodeActivity.getWebView(),
+                    userAccount,
+                    spConfig,
+                    codeChallenge,
+                    { result ->
+                        authCodeActivity.finish()
+                        onResult(result)
+                    }
+                )
             }
         },
         { context, intent ->
@@ -172,6 +166,14 @@ internal class IDPManager(
     }
 
     /**
+     * Return SP app config from intent
+     */
+    fun getSPConfig(intent: Intent): SPConfig? {
+        val srcAppPackageName = intent.getStringExtra(SRC_APP_PACKAGE_NAME_KEY)
+        return if (srcAppPackageName == null) null else getSPConfig(srcAppPackageName)
+    }
+
+    /**
      * Return true if given SP app is allowed
      */
     override fun isAllowed(srcAppPackageName: String): Boolean {
@@ -186,6 +188,10 @@ internal class IDPManager(
 
         getSPConfig(srcAppPackageName)?.let {spConfig ->
             when (message) {
+                is SPToIDPRequest -> {
+                    handleLoginRequest(context, message, spConfig)
+                }
+
                 is SPToIDPResponse -> {
                     // Handle only if there is an active flow and the message is part of it
                     if (activeFlow?.isPartOfFlow(message) == true) {
@@ -193,10 +199,6 @@ internal class IDPManager(
                     } else {
                         SalesforceSDKLogger.d(TAG, "no idp iniated login flow started - cannot handle $message")
                     }
-                }
-
-                is SPToIDPRequest -> {
-                    handleLoginRequest(context, message, spConfig)
                 }
 
                 else -> {
@@ -224,13 +226,7 @@ internal class IDPManager(
                 setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 addCategory(Intent.CATEGORY_DEFAULT)
             }
-            if (activeFlow.context is Activity) {
-                SalesforceSDKLogger.d(
-                    TAG,
-                    "handleLoginResponse startActivity ${LogUtil.intentToString(launchIntent)}"
-                )
-                startActivity(activeFlow.context, launchIntent)
-            }
+            startActivity(activeFlow.context, launchIntent)
         } else {
             activeFlow.onStatusUpdate(Status.ERROR_RECEIVED_FROM_SP)
         }
@@ -244,15 +240,23 @@ internal class IDPManager(
         SalesforceSDKLogger.d(TAG, "handleLoginRequest $message")
         sdkMgr.getCurrentUser()?.let {currentUser ->
 
-            // IDP initiated login:
-            // SP sent login request through receiver but we need the IDP auth code activity to run
-            if (context is Activity && !(context is IDPAuthCodeActivity)) {
+            // During SP initiated login flow:
+            // - SP will launch IDPAuthCodeActivity directly with a SPToIDPRequest in the intent
+            // - the activity will setup the active flow
+            // - the activity will then call this method (through IDP manager onReceive)
+            // During IDP initiated login flow:
+            // - SP will send a SPToIDPRequest to the IDPReceiver
+            // - this method will be invoked which will start the IDPAuthCodeActivity
+            // - the activity will setup the active flow
+            // - the activity will then call this method again (through IDP manager onReceive)
+
+            if (activeFlow == null || activeFlow?.authCodeActivity == null) {
                 val intent = message.toIntent().apply {
                     putExtra(SRC_APP_PACKAGE_NAME_KEY, spConfig.appPackageName)
                     // Intent action needs to be ACTION_VIEW, so passing message action through extras
                     putExtra(ACTION_KEY, message.action)
                     setAction(Intent.ACTION_VIEW)
-                    setClass(context, IDPAuthCodeActivity::class.java)
+                    setClass(context, com.salesforce.androidsdk.auth.idp.IDPAuthCodeActivity::class.java)
                     addCategory(Intent.CATEGORY_DEFAULT)
                 }
                 // The activity will call onReceive which will call handleLoginRequest but this time
@@ -261,22 +265,16 @@ internal class IDPManager(
                 return
             }
 
-            // SP initiated login:
-            // We don't have an active flow yet, let's create one
-            if (activeFlow == null) {
-                activeFlow = IDPLoginFlow(context, currentUser, spConfig, { _ -> })
-                activeFlow?.addMessage(message)
+            val authCodeActivity = activeFlow?.authCodeActivity
+            if (authCodeActivity != null) {
+                // Get auth code for current user
+                getAuthCode(context, authCodeActivity, currentUser, spConfig, message)
+            } else {
+                send(context, IDPToSPResponse(message.uuid, error = "Cannot get auth code - webview not setup"), spConfig.appPackageName)
             }
 
-            // Get auth code for current user
-            getAuthCode(context, currentUser, spConfig, message)
-
         } ?: run {
-            send(
-                context,
-                IDPToSPResponse(message.uuid, error = "IDP app not logged in"),
-                spConfig.appPackageName
-            )
+            send(context, IDPToSPResponse(message.uuid, error = "IDP app not logged in"), spConfig.appPackageName)
         }
     }
 
@@ -285,42 +283,42 @@ internal class IDPManager(
      */
     fun getAuthCode(
         context: Context,
+        authCodeActivity: IDPAuthCodeActivity,
         currentUser: UserAccount,
         spConfig: SPConfig,
         message: SPToIDPRequest
     ) {
         activeFlow?.onStatusUpdate?.let { it(Status.GETTING_AUTH_CODE_FROM_SERVER) }
         sdkMgr.generateAuthCode(
-            context,
+            authCodeActivity,
             currentUser,
             spConfig,
-            message.codeChallenge,
-            { result ->
-                if (result.error != null) {
-                    // We failed to get an auth code
-                    if (activeFlow?.isIDPInitiatedLoginFlow() == true) {
-                        // We are in a IDP initiated flow - let the IDP app know
-                        activeFlow?.let { it.onStatusUpdate(Status.ERROR_RECEIVED_FROM_SERVER) }
-                    } else {
-                        // We are NOT in a IDP initiated flow - we need to let the SP app know
-                        send(
-                            context,
-                            IDPToSPResponse(message.uuid, error = result.error),
-                            spConfig.appPackageName
-                        )
-                    }
+            message.codeChallenge
+        ) { result ->
+            if (result.error != null) {
+                // We failed to get an auth code
+                if (activeFlow?.isIDPInitiatedLoginFlow() == true) {
+                    // We are in a IDP initiated flow - let the IDP app know
+                    activeFlow?.let { it.onStatusUpdate(Status.ERROR_RECEIVED_FROM_SERVER) }
                 } else {
-                    // We successfully got an auth code - send it to the SP app
+                    // We are NOT in a IDP initiated flow - we need to let the SP app know
                     send(
                         context,
-                        IDPToSPResponse(message.uuid, code = result.code, loginUrl = result.loginUrl),
+                        IDPToSPResponse(message.uuid, error = result.error),
                         spConfig.appPackageName
                     )
-                    // Let the IDP app know
-                    activeFlow?.let { it.onStatusUpdate(Status.AUTH_CODE_SENT_TO_SP) }
                 }
+            } else {
+                // We successfully got an auth code - send it to the SP app
+                send(
+                    context,
+                    IDPToSPResponse(message.uuid, code = result.code, loginUrl = result.loginUrl),
+                    spConfig.appPackageName
+                )
+                // Let the IDP app know
+                activeFlow?.let { it.onStatusUpdate(Status.AUTH_CODE_SENT_TO_SP) }
             }
-        )
+        }
     }
 
     /**

@@ -21,28 +21,33 @@ internal open class IDPSPManagerTestCase {
     lateinit var context: Context
     lateinit var recordedEvents: BlockingQueue<String>
 
+    fun recordEvent(event: String) {
+        Log.i(this::class.java.simpleName, "recording event   [$event]")
+        recordedEvents.add(event)
+    }
+
     open fun setup() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
         recordedEvents = ArrayBlockingQueue(MAX_EVENTS)
     }
 
     fun sendBroadcast(context:Context, intent: Intent) {
-        recordedEvents.add("sendBroadcast ${LogUtil.intentToString(intent)}")
+        recordEvent("sendBroadcast ${LogUtil.intentToString(intent)}")
     }
 
-    fun startActivity(context:Context, intent: Intent) {
-        recordedEvents.add("startActivity ${LogUtil.intentToString(intent)}")
-        intent.apply {
-            setPackage(null) //  removing bogus test package
-        }
-        context.startActivity(intent)
+    open fun startActivity(context:Context, intent: Intent) {
+        recordEvent("startActivity ${LogUtil.intentToString(intent)}")
     }
 
     fun waitForEvent(expectedEvent: String) {
+        Log.i(this::class.java.simpleName, "waiting for event [$expectedEvent]")
         val actualEvent = recordedEvents.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS)
-        Log.i(this::class.java.simpleName, "received event [$actualEvent]")
-        Log.i(this::class.java.simpleName, "expected event [$expectedEvent]")
-        Assert.assertTrue(actualEvent.startsWith(expectedEvent))
+        if (actualEvent == null) {
+            Assert.fail("received no event")
+        } else {
+            Log.i(this::class.java.simpleName, "received event    [$actualEvent]")
+            Assert.assertTrue(actualEvent.startsWith(expectedEvent))
+        }
     }
 
     fun expectNoEvent() {

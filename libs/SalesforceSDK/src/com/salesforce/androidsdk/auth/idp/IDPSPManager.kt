@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.auth.idp
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import com.salesforce.androidsdk.util.LogUtil
@@ -122,18 +121,23 @@ internal abstract class IDPSPManager(
      * - ends an existing active flow if the message uuid does not match
      */
     fun onReceive(context: Context, intent: Intent) {
-        SalesforceSDKLogger.d(this::class.java.simpleName, "onReceive ${LogUtil.intentToString(intent)}")
+        SalesforceSDKLogger.d(
+            this::class.java.simpleName,
+            "onReceive ${LogUtil.intentToString(intent)}"
+        )
         intent.getStringExtra(SRC_APP_PACKAGE_NAME_KEY)?.let { srcAppPackageName ->
             if (!isAllowed(srcAppPackageName)) {
-                SalesforceSDKLogger.w(this::class.java.simpleName, "onReceive not allowed to handle ${LogUtil.intentToString(intent)}")
+                SalesforceSDKLogger.w(
+                    this::class.java.simpleName,
+                    "onReceive not allowed to handle ${LogUtil.intentToString(intent)}"
+                )
             } else {
                 IDPSPMessage.fromIntent(intent)?.let { message ->
-                    getActiveFlow()?.let {activeFlow ->
+                    getActiveFlow()?.let { activeFlow ->
                         if (activeFlow.addMessage(message)) {
                             // There is an active flow and the message is part of it
                             // Handle the message with the active flow's context
-                            // Unless the message was received through an activity
-                            handle(if (context is Activity) context else activeFlow.context, message, srcAppPackageName)
+                            handle(activeFlow.context, message, srcAppPackageName)
                         } else {
                             // There is an active flow and the message is NOT part of it
                             // End active flow and handle message with context passed in
@@ -146,7 +150,10 @@ internal abstract class IDPSPManager(
                         handle(context, message, srcAppPackageName)
                     }
                 } ?: run {
-                    SalesforceSDKLogger.w(this::class.java.simpleName, "onReceive could not parse ${LogUtil.intentToString(intent)}")
+                    SalesforceSDKLogger.w(
+                        this::class.java.simpleName,
+                        "onReceive could not parse ${LogUtil.intentToString(intent)}"
+                    )
                 }
             }
         }

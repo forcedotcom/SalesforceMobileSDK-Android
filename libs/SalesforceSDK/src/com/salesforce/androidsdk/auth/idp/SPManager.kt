@@ -220,7 +220,7 @@ internal class SPManager(
                 if (activeFlow?.isPartOfFlow(message) == true) {
                     activeFlow?.let { activeFlow -> handleLoginResponse(activeFlow, message) }
                 } else {
-                    SalesforceSDKLogger.d(TAG, "no sp iniated login flow started - cannot handle $message")
+                    SalesforceSDKLogger.d(TAG, "no active flow - cannot handle $message")
                 }
             }
 
@@ -259,11 +259,11 @@ internal class SPManager(
     fun handleUserExists(context: Context, message: IDPSPMessage, user: UserAccount) {
         SalesforceSDKLogger.d(TAG, "handleUserExists $message")
         sdkMgr.switchToUser(user)
-        // SP is in the background either because we are in a IDP initiated login flow or
-        // because we had to switch the IDP app to show the IDPAuthCodeActivity
+        // SP is in the background either because:
+        // - we are in an IDP initiated login flow
+        // - or we had to switch the IDP app to show the IDPAuthCodeActivity
         // So we can't launch the main activity from here
-        // Instead we send a SPToIDPResponse back and have the IDP app launch the SP app
-        // main activity
+        // Instead we send a SPToIDPResponse back and have the IDP app launch the SP main activity
         send(context, SPToIDPResponse(message.uuid))
     }
 
