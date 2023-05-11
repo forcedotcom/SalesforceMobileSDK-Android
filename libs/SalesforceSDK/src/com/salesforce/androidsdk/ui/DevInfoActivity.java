@@ -53,8 +53,7 @@ public class DevInfoActivity extends Activity {
         boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark : R.style.SalesforceSDK);
 
-        // Title / layout
-        getActionBar().setTitle(R.string.sf__dev_support_title);
+        // Layout
         setContentView(R.layout.sf__dev_info);
 
         // Setup list

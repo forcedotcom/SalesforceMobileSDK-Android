@@ -99,6 +99,7 @@ public class OAuth2 {
     private static final String SCOPE = "scope";
     private static final String REDIRECT_URI = "redirect_uri";
     private static final String DEVICE_ID = "device_id";
+    private static final String HYBRID_TOKEN = "hybrid_token";
     private static final String USERNAME = "username";
     private static final String EMAIL = "email";
     private static final String FIRST_NAME = "first_name";
@@ -147,31 +148,41 @@ public class OAuth2 {
      * Builds the URL to the authorization web page for this login server.
      * You need not provide the 'refresh_token' scope, as it is provided automatically.
      *
+     * @param useWebServerAuthentication True to use web server flow, False to use user agent flow
      * @param loginServer Base protocol and server to use (e.g. https://login.salesforce.com).
      * @param clientId OAuth client ID.
      * @param callbackUrl OAuth callback URL or redirect URL.
      * @param scopes A list of OAuth scopes to request (e.g. {"visualforce", "api"}). If null,
      *               the default OAuth scope is provided.
      * @param displayType OAuth display type. If null, the default of 'touch' is used.
+     * @param codeChallenge Code challenge to use when using web server flow
      * @param addlParams Any additional parameters that may be added to the request.
      * @return A URL to start the OAuth flow in a web browser/view.
      *
      * @see <a href="https://help.salesforce.com/apex/HTViewHelpDoc?language=en&id=remoteaccess_oauth_scopes.htm">RemoteAccess OAuth Scopes</a>
      */
-    public static URI getAuthorizationUrl(URI loginServer, String clientId, String callbackUrl,
-                                          String[] scopes, String displayType, String codeChallenge,
-                                          Map<String,String> addlParams) {
+    public static URI getAuthorizationUrl(
+            boolean useWebServerAuthentication,
+            URI loginServer,
+            String clientId,
+            String callbackUrl,
+            String[] scopes,
+            String displayType,
+            String codeChallenge,
+            Map<String,String> addlParams) {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
         sb.append(OAUTH_AUTH_PATH).append(getBrandedLoginPath());
         sb.append(OAUTH_DISPLAY_PARAM).append(displayType == null ? TOUCH : displayType);
-        sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(CODE);
+        sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(useWebServerAuthentication ? CODE : HYBRID_TOKEN);
         sb.append(AND).append(CLIENT_ID).append(EQUAL).append(Uri.encode(clientId));
         if (scopes != null && scopes.length > 0) {
             sb.append(AND).append(SCOPE).append(EQUAL).append(Uri.encode(computeScopeParameter(scopes)));
         }
         sb.append(AND).append(REDIRECT_URI).append(EQUAL).append(callbackUrl);
         sb.append(AND).append(DEVICE_ID).append(EQUAL).append(SalesforceSDKManager.getInstance().getDeviceId());
-        sb.append(AND).append(CODE_CHALLENGE).append(EQUAL).append(Uri.encode(codeChallenge));
+        if (useWebServerAuthentication) {
+            sb.append(AND).append(CODE_CHALLENGE).append(EQUAL).append(Uri.encode(codeChallenge));
+        }
         if (addlParams != null && addlParams.size() > 0) {
             for (final Map.Entry<String,String> entry : addlParams.entrySet()) {
                 final String value = entry.getValue() == null ? EMPTY_STRING : entry.getValue();
