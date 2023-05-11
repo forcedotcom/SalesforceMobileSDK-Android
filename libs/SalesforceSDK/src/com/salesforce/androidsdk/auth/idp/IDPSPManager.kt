@@ -125,7 +125,7 @@ internal abstract class IDPSPManager(
             this::class.java.simpleName,
             "onReceive ${LogUtil.intentToString(intent)}"
         )
-        intent.getStringExtra(SRC_APP_PACKAGE_NAME_KEY)?.let { srcAppPackageName ->
+        getSrcAppPackageName(intent)?.let { srcAppPackageName ->
             if (!isAllowed(srcAppPackageName)) {
                 SalesforceSDKLogger.w(
                     this::class.java.simpleName,
@@ -157,5 +157,12 @@ internal abstract class IDPSPManager(
                 }
             }
         }
+    }
+
+    /**
+     * Return source app package name from intent
+     */
+    fun getSrcAppPackageName(intent: Intent): String? {
+        return intent.getStringExtra(SRC_APP_PACKAGE_NAME_KEY)
     }
 }

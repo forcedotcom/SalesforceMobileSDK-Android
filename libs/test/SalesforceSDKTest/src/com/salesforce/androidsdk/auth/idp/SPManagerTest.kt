@@ -115,7 +115,7 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
 
         // Simulate idp responding with bad code
         val uuid = (spManager.getActiveFlow() as SPLoginFlow).messages.first().uuid
-        simulateSPLoginResponseFromIDPWithBadCode(spManager, uuid, spInitiated = true)
+        simulateIDPToSPResponseFromIDPWithBadCode(spManager, uuid, spInitiated = true)
     }
 
     @Test
@@ -178,7 +178,7 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
         checkActiveFlow(spManager, SPToIDPRequest.ACTION, 1)
 
         // Simulate idp responding with a bad code
-        simulateSPLoginResponseFromIDPWithBadCode(spManager, uuid, spInitiated = false)
+        simulateIDPToSPResponseFromIDPWithBadCode(spManager, uuid, spInitiated = false)
     }
 
     fun kickOffSPInitiatedLoginFlow():SPManager {
@@ -199,7 +199,7 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
         return spManager
     }
 
-    fun simulateSPLoginResponseFromIDPWithBadCode(spManager: SPManager, uuid: String, spInitiated: Boolean) {
+    fun simulateIDPToSPResponseFromIDPWithBadCode(spManager: SPManager, uuid: String, spInitiated: Boolean) {
         // Simulate a response from the idp with a bad code
         val IDPToSpResponse = IDPToSPResponse(uuid, loginUrl = "some-login-url",  code = "bad-code")
         spManager.onReceive(context, IDPToSpResponse.toIntent().apply {

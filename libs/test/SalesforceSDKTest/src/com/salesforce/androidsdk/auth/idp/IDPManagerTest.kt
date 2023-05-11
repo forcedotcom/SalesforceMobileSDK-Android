@@ -83,21 +83,15 @@ internal class IDPManagerTest : IDPSPManagerTestCase() {
 
         if (intent.component?.className == IDPAuthCodeActivity::class.java.name) {
             // Imitating behavior of IDPAuthCodeActivity
-            IDPAuthCodeActivity.attachToActiveFlow(
+            val spAppPackageName = idpManager.getSrcAppPackageName(intent)
+            idpManager.attachToActiveFlow(
                 context,
                 object : IDPAuthCodeActivityInterface {
-                    override fun getWebView(): WebView {
-                        return WebView(context)
-                    }
-
-                    override fun finish() {
-                    }
+                    override fun getWebView(): WebView { return WebView(context) }
+                    override fun finish() { }
                 },
-                idpManager,
-                idpManager.sdkMgr.getCurrentUser(),
-                idpManager.getSPConfig(intent)
+                spAppPackageName
             )
-
             // Handing intent to IDPManager
             idpManager.onReceive(context, intent)
         }
