@@ -57,7 +57,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 /**
  * This class contains APIs that can be used to interact with
@@ -489,7 +488,9 @@ public class SalesforceAnalyticsManager {
 
             @Override
             public void run() {
-                AnalyticsPublisherService.startActionPublish(SalesforceSDKManager.getInstance().getAppContext());
+                AnalyticsPublishingWorker.Companion.startActionPublish(
+                        SalesforceSDKManager.getInstance().getAppContext()
+                );
             }
         };
         return scheduler.scheduleAtFixedRate(publishRunnable, 0, sPublishFrequencyInHours, TimeUnit.HOURS);
