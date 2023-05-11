@@ -41,6 +41,7 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.util.test.TestCredentials;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -74,6 +75,11 @@ public class OAuth2Test {
 		TestCredentials.init(InstrumentationRegistry.getInstrumentation().getContext());
 		httpAccess = new HttpAccess(null, "dummy-agent");		
 	}
+
+    @After
+    public void tearDown() {
+        SalesforceSDKManager.getInstance().setLoginBrand(null);
+    }
 
 	/**
 	 * Testing getAuthorizationUrl.
