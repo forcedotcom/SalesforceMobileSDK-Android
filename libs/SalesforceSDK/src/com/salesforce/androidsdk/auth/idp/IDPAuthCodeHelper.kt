@@ -161,7 +161,7 @@ internal class IDPAuthCodeHelper private constructor(
     }
 
     private fun onError(error: String, exception: java.lang.Exception? = null) {
-        SalesforceSDKLogger.e(TAG, "Auth code obtention failed: ${error}", exception)
+        SalesforceSDKLogger.e(TAG, "Auth code obtention failed: $error", exception)
         onResult(Result(success = false, error = error))
     }
 

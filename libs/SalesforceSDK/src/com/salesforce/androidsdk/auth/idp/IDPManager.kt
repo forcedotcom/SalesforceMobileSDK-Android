@@ -52,9 +52,9 @@ internal class IDPLoginFlow(context:Context, val user:UserAccount, val spConfig:
     var authCodeActivity: IDPAuthCodeActivity? = null
 
     companion object {
-        val TAG = IDPLoginFlow::class.java.simpleName
+        val TAG: String = IDPLoginFlow::class.java.simpleName
         fun kickOff(idpManager:IDPManager, context: Context, user: UserAccount, spConfig: SPConfig, onStatusUpdate: (Status) -> Unit) {
-            SalesforceSDKLogger.d(SPLoginFlow.TAG, "Kicking off login flow from ${context}")
+            SalesforceSDKLogger.d(SPLoginFlow.TAG, "Kicking off login flow from $context")
 
             val activeFlow = IDPLoginFlow(context, user, spConfig, onStatusUpdate)
             idpManager.startActiveFlow(activeFlow)
@@ -117,12 +117,11 @@ internal class IDPManager(
                     authCodeActivity.getWebView(),
                     userAccount,
                     spConfig,
-                    codeChallenge,
-                    { result ->
-                        authCodeActivity.finish()
-                        onResult(result)
-                    }
-                )
+                    codeChallenge
+                ) { result ->
+                    authCodeActivity.finish()
+                    onResult(result)
+                }
             }
         },
         { context, intent ->
@@ -185,7 +184,7 @@ internal class IDPManager(
                     if (activeFlow?.isPartOfFlow(message) == true) {
                         activeFlow?.let { handleLoginResponse(it, message) }
                     } else {
-                        SalesforceSDKLogger.d(TAG, "no idp iniated login flow started - cannot handle $message")
+                        SalesforceSDKLogger.d(TAG, "no idp initiated login flow started - cannot handle $message")
                     }
                 }
 
@@ -211,7 +210,7 @@ internal class IDPManager(
             val launchIntent = Intent(Intent.ACTION_VIEW).apply {
                 setPackage(activeFlow.spConfig.appPackageName)
                 setClassName(activeFlow.spConfig.appPackageName, activeFlow.spConfig.componentName)
-                setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 addCategory(Intent.CATEGORY_DEFAULT)
             }
             startActivity(activeFlow.context, launchIntent)
@@ -245,7 +244,7 @@ internal class IDPManager(
                     putExtra(SRC_APP_PACKAGE_NAME_KEY, spConfig.appPackageName)
                     // Intent action needs to be ACTION_VIEW, so passing message action through extras
                     putExtra(ACTION_KEY, message.action)
-                    setAction(Intent.ACTION_VIEW)
+                    action = Intent.ACTION_VIEW
                     setClass(context, com.salesforce.androidsdk.auth.idp.IDPAuthCodeActivity::class.java)
                     addCategory(Intent.CATEGORY_DEFAULT)
                 }
@@ -313,7 +312,7 @@ internal class IDPManager(
 
             // Setup active flow and attach ourself to it
             if (currentUser != null && spConfig != null) {
-                val flow = IDPLoginFlow(context, currentUser, spConfig, { _ -> })
+                val flow = IDPLoginFlow(context, currentUser, spConfig) { }
                 startActiveFlow(flow)
                 flow.authCodeActivity = authCodeActivity
             }

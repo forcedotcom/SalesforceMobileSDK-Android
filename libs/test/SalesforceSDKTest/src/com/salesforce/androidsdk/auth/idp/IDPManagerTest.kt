@@ -44,7 +44,7 @@ import com.salesforce.androidsdk.auth.idp.interfaces.IDPAuthCodeActivity as IDPA
 @RunWith(AndroidJUnit4::class)
 internal class IDPManagerTest : IDPSPManagerTestCase() {
 
-    lateinit var idpManager: IDPManager
+    private lateinit var idpManager: IDPManager
 
     inner class TestStatusUpdateCallback : StatusUpdateCallback {
         override fun onStatusUpdate(status: Status) {
@@ -294,7 +294,7 @@ internal class IDPManagerTest : IDPSPManagerTestCase() {
         expectNoEvent()
     }
 
-    fun kickOffIDPInitiatedLoginFlow() {
+    private fun kickOffIDPInitiatedLoginFlow() {
         // Set up idp manager
         val allowedSPApps = listOf(SPConfig("some-sp", "c", "client-id", "callback-url", arrayOf("api")))
         idpManager = IDPManager(allowedSPApps, TestSDKManager(buildUser("some-org-id", "some-user-id")), this::sendBroadcast, this::startActivity)
@@ -311,7 +311,7 @@ internal class IDPManagerTest : IDPSPManagerTestCase() {
     }
 
     // Simulate a login request from the sp during sp initiated login
-    fun simulateInitialSPToIDPRequest(idpManager: IDPManager, challenge: String = "some-challenge"):String {
+    private fun simulateInitialSPToIDPRequest(idpManager: IDPManager, challenge: String = "some-challenge"):String {
         val spToIdpRequest = SPToIDPRequest(codeChallenge = challenge)
         idpManager.onReceive(context, spToIdpRequest.toIntent().apply {
             putExtra("src_app_package_name", "some-sp")
@@ -332,7 +332,7 @@ internal class IDPManagerTest : IDPSPManagerTestCase() {
     }
 
     // Simulate a login request from the sp during idp initiated login
-    fun simulateSPToIDPRequestDuringIDPInitiatedFlow(idpManager: IDPManager, uuid: String, challenge: String = "some-challenge") {
+    private fun simulateSPToIDPRequestDuringIDPInitiatedFlow(idpManager: IDPManager, uuid: String, challenge: String = "some-challenge") {
         val spToIdpRequest = SPToIDPRequest(uuid, challenge)
         idpManager.onReceive(context, spToIdpRequest.toIntent().apply {
             putExtra("src_app_package_name", "some-sp")

@@ -38,7 +38,7 @@ internal open class ActiveFlow(val context: Context) {
         get() = messages.first()
     fun addMessage(message: IDPSPMessage) : Boolean {
         return if (messages.isEmpty() || (messages.last().uuid == message.uuid)) {
-            SalesforceSDKLogger.d(this::class.java.simpleName, "Adding message to active flow: ${message}")
+            SalesforceSDKLogger.d(this::class.java.simpleName, "Adding message to active flow: $message")
             messages.add(message)
             true
         } else {

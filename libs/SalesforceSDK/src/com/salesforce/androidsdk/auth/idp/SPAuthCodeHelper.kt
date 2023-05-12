@@ -58,7 +58,7 @@ internal class SPAuthCodeHelper private constructor (
         val error: String? = null
     )
     companion object {
-        val TAG = SPAuthCodeHelper::class.java.simpleName
+        val TAG: String = SPAuthCodeHelper::class.java.simpleName
 
         fun loginWithAuthCode(context:Context,
                               loginUrl: String, code:
@@ -72,11 +72,7 @@ internal class SPAuthCodeHelper private constructor (
         }
     }
 
-    val spConfig: SPConfig
-
-    init {
-        spConfig = SPConfig.forCurrentApp()
-    }
+    val spConfig: SPConfig = SPConfig.forCurrentApp()
 
     private fun getTokenResponse(): TokenEndpointResponse {
         val tokenResponse = OAuth2.exchangeCode(
@@ -87,7 +83,7 @@ internal class SPAuthCodeHelper private constructor (
             codeVerifier,
             spConfig.oauthCallbackUrl
         )
-        SalesforceSDKLogger.d(TAG, "getTokenResponse ${tokenResponse}")
+        SalesforceSDKLogger.d(TAG, "getTokenResponse $tokenResponse")
         return tokenResponse
     }
 
@@ -102,7 +98,7 @@ internal class SPAuthCodeHelper private constructor (
         )
 
         val oauthHelper = OAuthWebviewHelper(context, this, loginOptions)
-        SalesforceSDKLogger.d(TAG, "completeLogin oauthHelper ${oauthHelper}")
+        SalesforceSDKLogger.d(TAG, "completeLogin oauthHelper $oauthHelper")
         oauthHelper.onAuthFlowComplete(tokenResponse)
     }
 
@@ -118,7 +114,7 @@ internal class SPAuthCodeHelper private constructor (
     }
 
     override fun loadingLoginPage(loginUrl: String?) {
-        SalesforceSDKLogger.d(TAG, "loadingLoginPage ${loginUrl}")
+        SalesforceSDKLogger.d(TAG, "loadingLoginPage $loginUrl")
     }
 
     override fun onAccountAuthenticatorResult(authResult: Bundle?) {
@@ -126,7 +122,7 @@ internal class SPAuthCodeHelper private constructor (
     }
 
     override fun finish(user: UserAccount?) {
-        SalesforceSDKLogger.d(TAG, "finish ${user}")
+        SalesforceSDKLogger.d(TAG, "finish $user")
         user?.let {
             onResult(Result(success = true, user = it))
         }

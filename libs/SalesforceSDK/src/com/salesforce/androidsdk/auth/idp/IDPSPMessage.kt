@@ -69,7 +69,7 @@ internal sealed class IDPSPMessage(
                 // - message action is set as intent action in broadcast intents
                 val extrasAction = intent.getStringExtra(ACTION_KEY)
                 val intentAction = intent.action
-                return when (if (extrasAction != null) extrasAction else intentAction) {
+                return when (extrasAction ?: intentAction) {
                     IDPToSPRequest.ACTION -> {
                         IDPToSPRequest.fromBundle(intent.extras)
                     }

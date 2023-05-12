@@ -44,7 +44,7 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
 
     inner class TestStatusUpdateCallback : StatusUpdateCallback {
         override fun onStatusUpdate(status: Status) {
-            recordedEvents.put("status ${status}")
+            recordedEvents.put("status $status")
         }
     }
 
@@ -154,7 +154,7 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
         val uuid = simulateIDPToSPRequest(spManager)
 
         // Make sure sp app sends a SPToIDPRequest back to the idp app
-        waitForEvent("sendBroadcast Intent { act=com.salesforce.androidsdk.SP_TO_IDP_REQUEST pkg=some-idp (has extras) } extras = { uuid = ${uuid} src_app_package_name = com.salesforce.androidsdk.tests code_challenge = ")
+        waitForEvent("sendBroadcast Intent { act=com.salesforce.androidsdk.SP_TO_IDP_REQUEST pkg=some-idp (has extras) } extras = { uuid = $uuid src_app_package_name = com.salesforce.androidsdk.tests code_challenge = ")
 
         // Make sure the SPToIDPRequest was added to the list of messages for the active flow
         checkActiveFlow(spManager, SPToIDPRequest.ACTION, 1)
@@ -172,7 +172,7 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
         val uuid = simulateIDPToSPRequest(spManager)
 
         // Make sure sp app sends a SPToIDPRequest back to the idp app
-        waitForEvent("sendBroadcast Intent { act=com.salesforce.androidsdk.SP_TO_IDP_REQUEST pkg=some-idp (has extras) } extras = { uuid = ${uuid} src_app_package_name = com.salesforce.androidsdk.tests code_challenge = ")
+        waitForEvent("sendBroadcast Intent { act=com.salesforce.androidsdk.SP_TO_IDP_REQUEST pkg=some-idp (has extras) } extras = { uuid = $uuid src_app_package_name = com.salesforce.androidsdk.tests code_challenge = ")
 
         // Make sure the SPToIDPRequest was added to the list of messages for the active flow
         checkActiveFlow(spManager, SPToIDPRequest.ACTION, 1)
@@ -181,7 +181,7 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
         simulateIDPToSPResponseFromIDPWithBadCode(spManager, uuid, spInitiated = false)
     }
 
-    fun kickOffSPInitiatedLoginFlow():SPManager {
+    private fun kickOffSPInitiatedLoginFlow():SPManager {
         // Set up sp manager with a current user
         val spManager = SPManager("some-idp", TestSDKMgr(buildUser("some-org-id", "some-user-id")), this::sendBroadcast, this::startActivity)
         spManager.kickOffSPInitiatedLoginFlow(context, TestStatusUpdateCallback())
@@ -191,7 +191,7 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
 
         // Make sure the SPToIDPRequest was sent to the idp
         val codeChallenge = (spManager.getActiveFlow() as SPLoginFlow).codeChallenge
-        waitForEvent("sendBroadcast Intent { act=com.salesforce.androidsdk.SP_TO_IDP_REQUEST pkg=some-idp (has extras) } extras = { uuid = ${firstRequestInActiveFlow!!.uuid} src_app_package_name = com.salesforce.androidsdk.tests code_challenge = ${codeChallenge}")
+        waitForEvent("sendBroadcast Intent { act=com.salesforce.androidsdk.SP_TO_IDP_REQUEST pkg=some-idp (has extras) } extras = { uuid = ${firstRequestInActiveFlow!!.uuid} src_app_package_name = com.salesforce.androidsdk.tests code_challenge = $codeChallenge")
 
         // Make sure the sp got a status update as well
         waitForEvent("status LOGIN_REQUEST_SENT_TO_IDP")
@@ -199,10 +199,10 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
         return spManager
     }
 
-    fun simulateIDPToSPResponseFromIDPWithBadCode(spManager: SPManager, uuid: String, spInitiated: Boolean) {
+    private fun simulateIDPToSPResponseFromIDPWithBadCode(spManager: SPManager, uuid: String, spInitiated: Boolean) {
         // Simulate a response from the idp with a bad code
-        val IDPToSpResponse = IDPToSPResponse(uuid, loginUrl = "some-login-url",  code = "bad-code")
-        spManager.onReceive(context, IDPToSpResponse.toIntent().apply {
+        val idpToSpResponse = IDPToSPResponse(uuid, loginUrl = "some-login-url",  code = "bad-code")
+        spManager.onReceive(context, idpToSpResponse.toIntent().apply {
             putExtra("src_app_package_name", "some-idp")
         })
 
@@ -212,18 +212,18 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
         }
 
         // Make sure the response also made it to the list of messages for the active flow
-        checkActiveFlow(spManager, IDPToSpResponse, if (spInitiated) 1 else 2)
+        checkActiveFlow(spManager, idpToSpResponse, if (spInitiated) 1 else 2)
 
         // Make sure the login with code fails
         val codeVerifier = (spManager.getActiveFlow() as SPLoginFlow).codeVerifier
-        waitForEvent("logging in with some-login-url bad-code ${codeVerifier}")
+        waitForEvent("logging in with some-login-url bad-code $codeVerifier")
 
         if (spInitiated) {
             // Make sure we got a status update to indicate that login failed
             waitForEvent("status FAILED_TO_EXCHANGE_AUTHORIZATION_CODE")
         } else {
             // Make sure sp app sends an error response to the idp app
-            waitForEvent("sendBroadcast Intent { act=com.salesforce.androidsdk.SP_TO_IDP_RESPONSE pkg=some-idp (has extras) } extras = { uuid = ${uuid} error = some-sp-error src_app_package_name = com.salesforce.androidsdk.tests }")
+            waitForEvent("sendBroadcast Intent { act=com.salesforce.androidsdk.SP_TO_IDP_RESPONSE pkg=some-idp (has extras) } extras = { uuid = $uuid error = some-sp-error src_app_package_name = com.salesforce.androidsdk.tests }")
 
             // Make sure the response also made it to the list of messages for the active flow
             checkActiveFlow(spManager, SPToIDPResponse.ACTION, 3)
@@ -233,10 +233,10 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
         expectNoEvent()
     }
 
-    fun simulateIDPToSPResponseWithCode(spManager: SPManager, uuid: String, spInitiated:Boolean) {
+    private fun simulateIDPToSPResponseWithCode(spManager: SPManager, uuid: String, spInitiated:Boolean) {
         // Simulate a response from the idp with a code
-        val IDPToSpResponse = IDPToSPResponse(uuid, loginUrl = "some-login-url",  code = "some-code")
-        spManager.onReceive(context, IDPToSpResponse.toIntent().apply {
+        val idpToSpResponse = IDPToSPResponse(uuid, loginUrl = "some-login-url",  code = "some-code")
+        spManager.onReceive(context, idpToSpResponse.toIntent().apply {
             putExtra("src_app_package_name", "some-idp")
         })
 
@@ -246,17 +246,17 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
         }
 
         // Make sure the response also made it to the list of messages for the active flow
-        checkActiveFlow(spManager, IDPToSpResponse, if(spInitiated)  1 else 2)
+        checkActiveFlow(spManager, idpToSpResponse, if(spInitiated)  1 else 2)
 
         // Make sure login with code happens
         val codeVerifier = (spManager.getActiveFlow() as SPLoginFlow).codeVerifier
-        waitForEvent("logging in with some-login-url some-code ${codeVerifier}")
+        waitForEvent("logging in with some-login-url some-code $codeVerifier")
 
         // Make sure the sp app switches to the new user
         waitForEvent("switched to org-for-some-code user-for-some-code")
 
         // Make sure sp app sends a response to the idp app
-        waitForEvent("sendBroadcast Intent { act=com.salesforce.androidsdk.SP_TO_IDP_RESPONSE pkg=some-idp (has extras) } extras = { uuid = ${uuid} error = null src_app_package_name = com.salesforce.androidsdk.tests }")
+        waitForEvent("sendBroadcast Intent { act=com.salesforce.androidsdk.SP_TO_IDP_RESPONSE pkg=some-idp (has extras) } extras = { uuid = $uuid error = null src_app_package_name = com.salesforce.androidsdk.tests }")
 
         // Make sure the response also made it to the list of messages for the active flow
         checkActiveFlow(spManager, SPToIDPResponse.ACTION, if (spInitiated) 2 else 3)
@@ -270,10 +270,10 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
         expectNoEvent()
     }
 
-    fun simulateIDPToSPResponseWithError(spManager: SPManager, uuid:String) {
+    private fun simulateIDPToSPResponseWithError(spManager: SPManager, uuid:String) {
         // Simulate a response from the idp with an error
-        val IDPToSpResponse = IDPToSPResponse(uuid, error="some-error")
-        spManager.onReceive(context, IDPToSpResponse.toIntent().apply {
+        val idpToSpResponse = IDPToSPResponse(uuid, error="some-error")
+        spManager.onReceive(context, idpToSpResponse.toIntent().apply {
             putExtra("src_app_package_name", "some-idp")
         })
 
@@ -281,13 +281,13 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
         waitForEvent("status ERROR_RECEIVED_FROM_IDP")
 
         // Make sure the response also made it to the list of messages for the active flow
-        checkActiveFlow(spManager, IDPToSpResponse, 1)
+        checkActiveFlow(spManager, idpToSpResponse, 1)
 
         // Make sure there are no more events
         expectNoEvent()
     }
 
-    fun simulateIDPToSPRequest(spManager: SPManager):String {
+    private fun simulateIDPToSPRequest(spManager: SPManager):String {
         // Simulate a request from the idp
         val idpToSpRequest = IDPToSPRequest(orgId = "some-other-org-id", userId = "some-other-user-id")
         spManager.onReceive(context, idpToSpRequest.toIntent().apply {

@@ -61,32 +61,32 @@ internal open class IDPSPManagerTestCase {
         })
     }
 
-    fun checkActiveFlow(idpspManager: IDPSPManager,
+    fun checkActiveFlow(idpSpManager: IDPSPManager,
                         expectedAction: String,
                         expectedMessageIndex: Int):IDPSPMessage? {
-        val activeFlow = idpspManager.getActiveFlow()
+        val activeFlow = idpSpManager.getActiveFlow()
         Assert.assertNotNull("Active flow not expected to be null", activeFlow)
         activeFlow?.let {
             Assert.assertTrue("Not enough messages in active flow",
                 it.messages.size > expectedMessageIndex)
             Assert.assertEquals(
-                "Wrong message type at index ${expectedMessageIndex}",
+                "Wrong message type at index $expectedMessageIndex",
                 expectedAction, it.messages[expectedMessageIndex].action
             )
         }
         return activeFlow?.messages?.get(expectedMessageIndex)
     }
 
-    fun checkActiveFlow(idpspManager: IDPSPManager,
+    fun checkActiveFlow(idpSpManager: IDPSPManager,
                         expectedMessage: IDPSPMessage,
                         expectedMessageIndex: Int) {
-        val activeFlow = idpspManager.getActiveFlow()
+        val activeFlow = idpSpManager.getActiveFlow()
         Assert.assertNotNull("Active flow not expected to be null", activeFlow)
         activeFlow?.let {
             Assert.assertTrue("Not enough messages in active flow",
                 it.messages.size > expectedMessageIndex)
             Assert.assertEquals(
-                "Wrong message at index ${expectedMessageIndex}",
+                "Wrong message at index $expectedMessageIndex",
                 expectedMessage.toString(), it.messages[expectedMessageIndex].toString()
             )
         }

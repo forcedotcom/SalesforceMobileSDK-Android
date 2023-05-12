@@ -179,7 +179,7 @@ class IDPSPMessageTest {
             putExtra(IDPSPManager.SRC_APP_PACKAGE_NAME_KEY, "spAppPackageName")
             // Intent action needs to be ACTION_VIEW, so passing message action through extras
             putExtra(IDPSPMessage.ACTION_KEY, message.action)
-            setAction(Intent.ACTION_VIEW)
+            action = Intent.ACTION_VIEW
             setClassName("idpAppPackageName", IDPAuthCodeActivity::class.java.name)
             addCategory(Intent.CATEGORY_DEFAULT)
         }

@@ -26,15 +26,15 @@ class IDPAuthCodeActivity : Activity(), IDPAuthCodeActivityInterface {
         window.setFlags(LayoutParams.FLAG_SECURE, LayoutParams.FLAG_SECURE)
 
         // Set theme
-        val isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme;
-        setTheme(if (isDarkTheme) R.style.SalesforceSDK_Dark_Login else R.style.SalesforceSDK);
-        SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
+        val isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme
+        setTheme(if (isDarkTheme) R.style.SalesforceSDK_Dark_Login else R.style.SalesforceSDK)
+        SalesforceSDKManager.getInstance().setViewNavigationVisibility(this)
 
         // Set layout
         setContentView(R.layout.sf__idp_auth_code)
 
         // Setup web view
-        val webView = findViewById(R.id.sf__webview) as WebView
+        val webView = findViewById<WebView>(R.id.sf__webview)
         val webSettings = webView.settings
         webSettings.useWideViewPort = true
         webSettings.layoutAlgorithm = LayoutAlgorithm.NORMAL
