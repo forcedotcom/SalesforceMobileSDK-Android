@@ -87,7 +87,7 @@ internal class IDPManagerTest : IDPSPManagerTestCase() {
             idpManager.attachToActiveFlow(
                 context,
                 object : IDPAuthCodeActivityInterface {
-                    override fun getWebView(): WebView { return WebView(context) }
+                    override val webView get() = WebView(context)
                     override fun finish() { }
                 },
                 spAppPackageName

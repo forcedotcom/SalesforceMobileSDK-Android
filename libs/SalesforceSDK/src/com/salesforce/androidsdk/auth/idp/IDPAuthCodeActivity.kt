@@ -49,7 +49,5 @@ class IDPAuthCodeActivity : Activity(), IDPAuthCodeActivityInterface {
         }
     }
 
-    override fun getWebView(): WebView {
-        return findViewById(R.id.sf__webview) as WebView
-    }
+    override val webView : WebView  get() = findViewById(R.id.sf__webview)
 }

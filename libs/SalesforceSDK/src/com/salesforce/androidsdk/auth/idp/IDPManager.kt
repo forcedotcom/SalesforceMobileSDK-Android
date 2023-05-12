@@ -114,7 +114,7 @@ internal class IDPManager(
                 onResult: (result: IDPAuthCodeHelper.Result) -> Unit
             ) {
                 IDPAuthCodeHelper.generateAuthCode(
-                    authCodeActivity.getWebView(),
+                    authCodeActivity.webView,
                     userAccount,
                     spConfig,
                     codeChallenge

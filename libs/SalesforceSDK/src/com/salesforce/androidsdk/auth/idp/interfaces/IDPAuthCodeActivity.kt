@@ -30,6 +30,6 @@ import android.webkit.WebView
 
 interface IDPAuthCodeActivity {
 
-    fun getWebView(): WebView
+    val webView: WebView
     fun finish()
 }
