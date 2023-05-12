@@ -27,10 +27,8 @@
 package com.salesforce.androidsdk.push
 
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
-import android.os.Bundle
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import com.google.firebase.installations.FirebaseInstallations
@@ -51,8 +49,6 @@ object PushMessaging {
     // Public constants.
     const val UNREGISTERED_ATTEMPT_COMPLETE_EVENT = "com.salesforce.mobilesdk.c2dm.UNREGISTERED"
     const val UNREGISTERED_EVENT = "com.salesforce.mobilesdk.c2dm.ACTUAL_UNREGISTERED"
-    const val ACCOUNT_BUNDLE_KEY = "account_bundle"
-    const val ALL_ACCOUNTS_BUNDLE_VALUE = "all_accounts"
 
     // Private constants.
     private const val GCM_PREFS = "gcm_prefs"
@@ -206,8 +202,7 @@ object PushMessaging {
      */
     @JvmStatic
     fun registerSFDCPush(context: Context, account: UserAccount?) {
-        val registrationIntent = Intent(PushService.SFDC_REGISTRATION_RETRY_INTENT)
-        runPushService(context, account, registrationIntent)
+        runPushService(context, account, PushService.SFDC_REGISTRATION_RETRY_INTENT)
     }
 
     /**
@@ -217,19 +212,14 @@ object PushMessaging {
      * @param account User account.
      */
     private fun unregisterSFDCPush(context: Context, account: UserAccount?) {
-        val unregistrationIntent = Intent(PushService.SFDC_UNREGISTRATION_INTENT)
-        runPushService(context, account, unregistrationIntent)
+        runPushService(context, account, PushService.SFDC_UNREGISTRATION_INTENT)
     }
 
-    private fun runPushService(context: Context, account: UserAccount?, intent: Intent) {
+    private fun runPushService(context: Context, account: UserAccount?, action: String) {
         if (account == null) {
-            val bundle = Bundle()
-            bundle.putString(ACCOUNT_BUNDLE_KEY, ALL_ACCOUNTS_BUNDLE_VALUE)
-            intent.putExtra(ACCOUNT_BUNDLE_KEY, bundle)
-            PushService.runIntentInService(intent)
+            PushService.runIntentInService(null, action, null)
         } else if (isRegistered(context, account)) {
-            intent.putExtra(ACCOUNT_BUNDLE_KEY, account.toBundle())
-            PushService.runIntentInService(intent)
+            PushService.runIntentInService(account, action, null)
         }
     }
 
