@@ -139,6 +139,7 @@ internal class IDPAuthCodeHelper private constructor(
         val context = SalesforceSDKManager.getInstance().appContext
         val frontdoorUrl = getFrontdoorUrl(
             getAuthorizationUrl(
+                true, // use web server flow
                 URI(userAccount.loginServer),
                 spConfig.oauthClientId,
                 spConfig.oauthCallbackUrl,

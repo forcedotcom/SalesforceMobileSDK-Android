@@ -49,7 +49,6 @@ import android.view.View;
 import android.webkit.CookieManager;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.OnLifecycleEvent;
@@ -172,6 +171,8 @@ public class SalesforceSDKManager implements LifecycleObserver {
     private List<String> additionalOauthKeys;
     private String loginBrand;
     private boolean browserLoginEnabled;
+
+    private boolean useWebServerAuthentication = true; // web server flow ON by default - but app can opt out by calling setUseWebServerAuthentication(false)
     private Theme theme =  Theme.SYSTEM_DEFAULT;
     private String appName;
 
@@ -596,6 +597,23 @@ public class SalesforceSDKManager implements LifecycleObserver {
      */
     public boolean isBrowserLoginEnabled() {
         return browserLoginEnabled;
+    }
+
+    /**
+     * Returns whether web server flow should be used when logging through the WebView
+     *
+     * @return True - if web server flow should be used, False - otherwise.
+     */
+    public boolean shouldUseWebServerAuthentication() {
+        return useWebServerAuthentication;
+    }
+
+    /**
+     * Sets whether web server flow should be used when logging through the WebView
+     * @param useWebServerAuthentication
+     */
+    public synchronized void setUseWebServerAuthentication(boolean useWebServerAuthentication) {
+        this.useWebServerAuthentication = useWebServerAuthentication;
     }
 
     /**
@@ -1246,6 +1264,7 @@ public class SalesforceSDKManager implements LifecycleObserver {
                 "SDK Version", SDK_VERSION,
                 "App Type", getAppType(),
                 "User Agent", getUserAgent(),
+                "Use Web Server Authentication", shouldUseWebServerAuthentication() + "",
                 "Browser Login Enabled", isBrowserLoginEnabled() + "",
                 "IDP Enabled", isIDPLoginFlowEnabled() + "",
                 "Identity Provider", isIdentityProvider() + "",
