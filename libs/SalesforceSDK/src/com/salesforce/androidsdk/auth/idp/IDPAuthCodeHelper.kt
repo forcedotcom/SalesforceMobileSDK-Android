@@ -27,13 +27,17 @@
 package com.salesforce.androidsdk.auth.idp
 
 import android.net.Uri
+import android.view.View
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.ProgressBar
+import android.widget.RelativeLayout
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.auth.OAuth2.*
+import com.salesforce.androidsdk.auth.OAuth2.getAuthorizationUrl
+import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.RestClient
@@ -158,7 +162,7 @@ internal class IDPAuthCodeHelper private constructor(
     }
 
     private fun onError(error: String, exception: java.lang.Exception? = null) {
-        SalesforceSDKLogger.e(TAG, "Auth code obtention failed: ${error}", exception)
+        SalesforceSDKLogger.e(TAG, "Auth code obtention failed: $error", exception)
         onResult(Result(success = false, error = error))
     }
 
@@ -211,6 +215,18 @@ internal class IDPAuthCodeHelper private constructor(
                 false
             } else {
                 false
+            }
+        }
+
+        override fun onPageFinished(webView: WebView?, url: String?) {
+            super.onPageFinished(webView, url)
+            if (webView != null) {
+                (webView.parent as? RelativeLayout)?.let { parentView ->
+                    parentView.findViewById<ProgressBar>(R.id.sf__loading_spinner)?.let { spinner ->
+                        spinner.visibility = View.INVISIBLE
+                    }
+                }
+                webView.visibility = View.VISIBLE
             }
         }
     }

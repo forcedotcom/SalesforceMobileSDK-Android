@@ -54,4 +54,28 @@ data class SPConfig (
             }
         }
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as SPConfig
+
+        if (appPackageName != other.appPackageName) return false
+        if (componentName != other.componentName) return false
+        if (oauthClientId != other.oauthClientId) return false
+        if (oauthCallbackUrl != other.oauthCallbackUrl) return false
+        if (!oauthScopes.contentEquals(other.oauthScopes)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = appPackageName.hashCode()
+        result = 31 * result + componentName.hashCode()
+        result = 31 * result + oauthClientId.hashCode()
+        result = 31 * result + oauthCallbackUrl.hashCode()
+        result = 31 * result + oauthScopes.contentHashCode()
+        return result
+    }
 }

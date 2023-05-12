@@ -507,7 +507,7 @@ public class OAuth2 {
                 customAttributes = parsedResponse.optJSONObject(CUSTOM_ATTRIBUTES);
                 customPermissions = parsedResponse.optJSONObject(CUSTOM_PERMISSIONS);
 
-                if (customAttributes.has(BIOMETRIC_AUTHENTICATION)) {
+                if (customAttributes != null && customAttributes.has(BIOMETRIC_AUTHENTICATION)) {
                     biometricAuth = true;
                     if (customAttributes.has(BIOMETRIC_AUTHENTICATION_TIMEOUT)) {
                         biometricAuthTimeout = customAttributes.getInt(BIOMETRIC_AUTHENTICATION_TIMEOUT);

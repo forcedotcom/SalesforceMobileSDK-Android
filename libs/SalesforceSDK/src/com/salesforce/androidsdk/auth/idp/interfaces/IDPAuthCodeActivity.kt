@@ -24,23 +24,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.auth.idp
+package com.salesforce.androidsdk.auth.idp.interfaces
 
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.util.LogUtil
-import com.salesforce.androidsdk.util.SalesforceSDKLogger
+import android.webkit.WebView
 
+interface IDPAuthCodeActivity {
 
-/**
- * Receiver running in IDP app handling calls from SP app
- */
-class IDPReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
-        SalesforceSDKManager.getInstance().idpManager?.onReceive(context, intent) ?: run {
-            SalesforceSDKLogger.d(this::class.java.simpleName, "onReceive no idp manager to handle ${LogUtil.intentToString(intent)}")
-        }
-    }
+    val webView: WebView
+    fun finish()
 }

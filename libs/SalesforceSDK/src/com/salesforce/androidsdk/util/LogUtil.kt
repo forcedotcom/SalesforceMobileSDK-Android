@@ -57,7 +57,7 @@ object LogUtil {
         return if (obj == null) {
             "null"
         } else if (obj is Intent) {
-            "${obj.toString()} extras = ${objectToString(obj.extras)}"
+            "$obj extras = ${objectToString(obj.extras)}"
         } else if (obj is Bundle) {
             obj.keySet().map { key ->
                 "$key = ${objectToString(obj[key])}"

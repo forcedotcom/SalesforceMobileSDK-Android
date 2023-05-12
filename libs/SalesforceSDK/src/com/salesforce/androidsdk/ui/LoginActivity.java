@@ -134,11 +134,10 @@ public class LoginActivity extends AppCompatActivity
 
         // Setup content view.
         setContentView(R.layout.sf__login);
-        // TODO bring back login with idp button once positioning / hiding is correctly done
-//		if (SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled()) {
-//            final Button button = findViewById(R.id.sf__idp_login_button);
-//            button.setVisibility(View.VISIBLE);
-//        }
+        if (SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled()) {
+            final Button button = findViewById(R.id.sf__idp_login_button);
+            button.setVisibility(View.VISIBLE);
+        }
 
         BiometricAuthenticationManager bioAuthManager =
                 (BiometricAuthenticationManager) SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
