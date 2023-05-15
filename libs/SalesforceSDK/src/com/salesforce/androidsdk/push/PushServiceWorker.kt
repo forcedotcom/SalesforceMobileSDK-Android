@@ -33,7 +33,6 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager.getInstance
-import com.salesforce.androidsdk.push.PushService.performRegistrationChange
 import com.salesforce.androidsdk.push.PushServiceWorker.Action.Register
 import org.json.JSONObject
 
@@ -59,14 +58,15 @@ internal class PushServiceWorker(
     override fun doWork(): Result {
 
         // Fetch worker input data for action and user account.
-        val action = runCatching {
-            Action.valueOf(
-                inputData.getString("ACTION") ?: return failure()
-            )
-        }.getOrNull() ?: return failure()
+        val action = Action.values().firstOrNull { action ->
+            action.value == (inputData.getString("ACTION") ?: return failure())
+        }
         val userAccount = inputData.getString("USER_ACCOUNT")?.let { userAccountJson ->
             UserAccount(JSONObject(userAccountJson))
         }
+
+        // Instantiate push notifications registrar...
+        val pushNotificationsRegistrar = getInstance().pushServiceType.newInstance()
 
         // Determine scope of user accounts when...
         when (userAccount) {
@@ -75,16 +75,16 @@ internal class PushServiceWorker(
             null ->
                 // ...Change push notification registration for all user accounts.
                 getInstance().userAccountManager.authenticatedUsers?.forEach { nextUserAccount ->
-                    performRegistrationChange(
+                    pushNotificationsRegistrar.performRegistrationChange(
                         action == Register,
                         nextUserAccount
                     )
                 }
 
-            // ...The input data provided a specific user account... TODO: W-10186872: Make callers specific the current user when desired. ECJ20230511
+            // ...The input data provided a specific user account... TODO: W-10186872: Make callers specify the current user when desired. ECJ20230511
             else ->
                 // ...Change push notification registration for the specified user account.
-                performRegistrationChange(
+                pushNotificationsRegistrar.performRegistrationChange(
                     action == Register,
                     userAccount
                 )
@@ -93,8 +93,8 @@ internal class PushServiceWorker(
         return success()
     }
 
-    internal enum class Action {
-        Register,
-        Unregister
+    internal enum class Action(val value: String) {
+        Register("com.salesforce.mobilesdk.c2dm.intent.RETRY"),
+        Unregister("com.salesforce.mobilesdk.c2dm.intent.UNREGISTER")
     }
 }

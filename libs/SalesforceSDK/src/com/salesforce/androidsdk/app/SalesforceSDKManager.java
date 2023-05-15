@@ -73,6 +73,7 @@ import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.push.PushNotificationInterface;
+import com.salesforce.androidsdk.push.PushService;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient;
@@ -163,6 +164,7 @@ public class SalesforceSDKManager implements LifecycleObserver {
     private AdminSettingsManager adminSettingsManager;
     private AdminPermsManager adminPermsManager;
     private PushNotificationInterface pushNotificationInterface;
+    private Class<? extends PushService> pushServiceType = PushService.class;
     private final String uid; // device id
     private final SortedSet<String> features;
     private List<String> additionalOauthKeys;
@@ -460,6 +462,30 @@ public class SalesforceSDKManager implements LifecycleObserver {
      */
     public synchronized PushNotificationInterface getPushNotificationReceiver() {
     	return pushNotificationInterface;
+    }
+
+    /**
+     * Sets the class fulfilling push notification registration features.  A
+     * default implementation is provided in {@link PushService}.  Setting this
+     * property to a subclass will inject the specified class instead.
+     * <p>
+     * Note, the specified class no longer needs to be specified in the Android
+     * manifest as a service.
+     *
+     * @param pushServiceType A class extending {@link PushService}
+     */
+    public synchronized void setPushServiceType(Class<? extends PushService> pushServiceType) {
+
+        this.pushServiceType = pushServiceType;
+    }
+
+    /**
+     *  Returns the class that will be used as a push service.
+     *
+     *  @return the service class
+     */
+    public synchronized Class<? extends PushService> getPushServiceType() {
+        return pushServiceType;
     }
 
     /**

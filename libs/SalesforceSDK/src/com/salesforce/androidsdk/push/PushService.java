@@ -135,7 +135,7 @@ public class PushService {
 		workManager.enqueue(workRequest);
 	}
 
-	static void performRegistrationChange(boolean register, UserAccount userAccount) {
+	void performRegistrationChange(boolean register, UserAccount userAccount) {
 		if (register) {
 			final String regId = PushMessaging.getRegistrationId(SalesforceSDKManager.getInstance().getAppContext(),
                     userAccount);
@@ -147,7 +147,7 @@ public class PushService {
 		}
 	}
 
-    private static void onRegistered(String registrationId, UserAccount account) {
+    private void onRegistered(String registrationId, UserAccount account) {
         if (account == null) {
             SalesforceSDKLogger.e(TAG, "Account is null, will retry registration later");
             return;
@@ -172,7 +172,7 @@ public class PushService {
     	}
     }
 
-    private static void onUnregistered(UserAccount account) {
+    private void onUnregistered(UserAccount account) {
         final Context context = SalesforceSDKManager.getInstance().getAppContext();
     	try {
         	final String id = PushMessaging.getDeviceId(context, account);
@@ -199,7 +199,7 @@ public class PushService {
 	 * @return the response from registration
 	 * @throws IOException if the request could not be made
 	 */
-	protected static RestResponse onSendRegisterPushNotificationRequest(
+	protected RestResponse onSendRegisterPushNotificationRequest(
 			Map<String, Object> requestBodyJsonFields,
 			RestClient restClient) throws IOException {
 		return restClient.sendSync(RestRequest.getRequestForCreate(
@@ -217,12 +217,12 @@ public class PushService {
      * @param status the registration status. One of the {@code REGISTRATION_STATUS_XXX} constants
      * @param userAccount the user account that's performing registration
      */
-	protected static void onPushNotificationRegistrationStatus(int status, UserAccount userAccount) {
+	protected void onPushNotificationRegistrationStatus(int status, UserAccount userAccount) {
 
 		// Do nothing.
 	}
 
-    private static String registerSFDCPushNotification(String registrationId, UserAccount account) {
+    private String registerSFDCPushNotification(String registrationId, UserAccount account) {
     	try {
             final Map<String, Object> fields = new HashMap<>();
             fields.put(CONNECTION_TOKEN, registrationId);
@@ -275,7 +275,7 @@ public class PushService {
     	return null;
     }
 
-    private synchronized static String getRSAPublicKey() {
+    private synchronized String getRSAPublicKey() {
 		String rsaPublicKey = null;
 		final String name = SalesforceKeyGenerator.getUniqueId(PUSH_NOTIFICATION_KEY_NAME);
 		final String sanitizedName = name.replaceAll("[^A-Za-z0-9]", "");
@@ -298,14 +298,14 @@ public class PushService {
 	 * @return the response from unregistration
 	 * @throws IOException if the request could not be made
 	 */
-	protected static RestResponse onSendUnregisterPushNotificationRequest(String registeredId,
+	protected RestResponse onSendUnregisterPushNotificationRequest(String registeredId,
 			RestClient restClient) throws IOException {
 		return restClient.sendSync(RestRequest.getRequestForDelete(
 				ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()),
                 MOBILE_PUSH_SERVICE_DEVICE, registeredId));
 	}
 
-    private static void unregisterSFDCPushNotification(String registeredId, UserAccount account) {
+    private void unregisterSFDCPushNotification(String registeredId, UserAccount account) {
     	try {
     		final RestClient client = getRestClient(account);
     		if (client != null) {
@@ -318,7 +318,7 @@ public class PushService {
     	}
     }
 
-    private static RestClient getRestClient(UserAccount account) {
+    private RestClient getRestClient(UserAccount account) {
     	final ClientManager cm = SalesforceSDKManager.getInstance().getClientManager();
     	RestClient client = null;
 
