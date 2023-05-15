@@ -121,6 +121,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     public static final String BIOMETRIC_PROMPT = "mobilesdk://biometric/authentication/prompt";
     private static final String TAG = "OAuthWebViewHelper";
     private static final String ACCOUNT_OPTIONS = "accountOptions";
+    private static final String PROMPT_LOGIN = "&prompt=login";
     private String codeVerifier;
 
     // background executor
@@ -336,6 +337,10 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             URI uri = getAuthorizationUrl(useWebServerFlowAuthentication);
             callback.loadingLoginPage(loginOptions.getLoginUrl());
             if (SalesforceSDKManager.getInstance().isBrowserLoginEnabled()) {
+                if(!SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled()){
+                    String urlString = uri.toString();
+                    uri = new URI(urlString.concat(PROMPT_LOGIN));
+                }
                 loadLoginPageInChrome(uri);
             } else {
                 webview.loadUrl(uri.toString());
