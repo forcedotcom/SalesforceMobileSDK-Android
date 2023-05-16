@@ -96,6 +96,7 @@ public class AuthConfigUtil {
 
         private static final String MOBILE_SDK_KEY = "MobileSDK";
         private static final String USE_NATIVE_BROWSER_KEY = "UseAndroidNativeBrowserForAuthentication";
+        private static final String SHARE_BROWSER_SESSION_KEY = "shareBrowserSessionAndroid";
         private static final String SAML_PROVIDERS_KEY = "SamlProviders";
         private static final String AUTH_PROVIDERS_KEY = "AuthProviders";
         private static final String SSO_URL_KEY = "SsoUrl";
@@ -104,6 +105,7 @@ public class AuthConfigUtil {
 
         private final JSONObject authConfig;
         private boolean browserLoginEnabled;
+        private boolean shareBrowserSession;
         private List<String> ssoUrls;
         private String loginPageUrl;
 
@@ -119,6 +121,7 @@ public class AuthConfigUtil {
                 final JSONObject mobileSDK = authConfig.optJSONObject(MOBILE_SDK_KEY);
                 if (mobileSDK != null) {
                     browserLoginEnabled = mobileSDK.optBoolean(USE_NATIVE_BROWSER_KEY);
+                    shareBrowserSession = mobileSDK.optBoolean(SHARE_BROWSER_SESSION_KEY);
                 }
 
                 // Parses SAML provider list and adds it to the list of SSO URLs.
@@ -172,6 +175,15 @@ public class AuthConfigUtil {
          */
         public boolean isBrowserLoginEnabled() {
             return browserLoginEnabled;
+        }
+
+        /**
+         * Returns whether share browser session has been enabled in this auth config.
+         *
+         * @return True - if share browser session is enabled, False - otherwise.
+         */
+        public boolean isShareBrowserSessionEnabled() {
+            return shareBrowserSession;
         }
 
         /**
