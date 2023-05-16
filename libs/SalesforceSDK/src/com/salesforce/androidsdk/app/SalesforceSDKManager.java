@@ -620,7 +620,7 @@ public class SalesforceSDKManager implements LifecycleObserver {
     /**
      * Returns whether share browser session is enabled.
      *
-     * @return True - if share browser session is enabled, False - otherwise..
+     * @return True - if share browser session is enabled, False - otherwise.
      */
     public boolean isShareBrowserSessionEnabled() {
         return shareBrowserSessionEnabled;
