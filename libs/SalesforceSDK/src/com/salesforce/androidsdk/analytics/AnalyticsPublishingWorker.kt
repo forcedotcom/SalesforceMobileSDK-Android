@@ -27,24 +27,25 @@
 package com.salesforce.androidsdk.analytics
 
 import android.content.Context
-import androidx.work.ListenableWorker.Result.failure
 import androidx.work.ListenableWorker.Result.success
 import androidx.work.OneTimeWorkRequest.Companion.from
 import androidx.work.WorkManager.getInstance
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.salesforce.androidsdk.accounts.UserAccountManager
+import com.salesforce.androidsdk.analytics.AnalyticsPublishingWorker.Companion.startActionPublish
 
 /**
  * An Android background tasks worker which publishes stored analytics.
  * This class is intended to be instantiated by the background tasks work
  * manager.
  *
- * Use startActionPublish to enqueue an analytics publishing worker.
+ * Use [startActionPublish] to enqueue an analytics publishing worker.
  *
  * @param context The Android context provided by the work manager
  * @param workerParams The worker parameters provided by the work manager
- * @see <a href='https://developer.android.com/guide/background'>Android Background Tasks</a>
+ * @see <a href='https://developer.android.com/guide/background'>Android
+ * Background Tasks</a>
  */
 internal class AnalyticsPublishingWorker(
     context: Context,
@@ -57,13 +58,15 @@ internal class AnalyticsPublishingWorker(
     override fun doWork() =
 
         // Publish all stored analytics for the current user.
-        UserAccountManager.getInstance().cachedCurrentUser?.let { userAccount ->
-            SalesforceAnalyticsManager
-                .getInstance(userAccount)
-                .publishAllEvents()
-        }?.let {
-            success()
-        } ?: failure()
+        UserAccountManager
+            .getInstance()
+            .cachedCurrentUser
+            .let { userAccount ->
+
+                SalesforceAnalyticsManager
+                    .getInstance(userAccount ?: return@let null)
+                    .publishAllEvents()
+            }.run { success() /* Though not having a user cancels analytics publishing, it's not a failure. */ }
 
     companion object {
 

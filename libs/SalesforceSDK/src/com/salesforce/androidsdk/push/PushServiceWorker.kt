@@ -41,7 +41,7 @@ import org.json.JSONObject
  * This class is intended to be instantiated by the background tasks work
  * manager.
  *
- * Use {@link PushService.runIntentInService} to enqueue a push service worker.
+ * Use [PushService.runIntentInService] to enqueue a push service worker.
  *
  * @param context The Android context provided by the work manager
  * @param workerParams The worker parameters provided by the work manager
@@ -68,7 +68,7 @@ internal class PushServiceWorker(
         // Instantiate push notifications registrar...
         val pushNotificationsRegistrar = getInstance().pushServiceType.newInstance()
 
-        // Determine scope of user accounts when...
+        // ...Determine scope of user accounts when...
         when (userAccount) {
 
             // ...The input data didn't provide a user account...
@@ -81,7 +81,7 @@ internal class PushServiceWorker(
                     )
                 }
 
-            // ...The input data provided a specific user account... TODO: W-10186872: Make callers specify the current user when desired. ECJ20230511
+            // ...The input data provided a specific user account...
             else ->
                 // ...Change push notification registration for the specified user account.
                 pushNotificationsRegistrar.performRegistrationChange(

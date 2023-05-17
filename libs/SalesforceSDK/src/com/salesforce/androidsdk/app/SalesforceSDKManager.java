@@ -474,8 +474,10 @@ public class SalesforceSDKManager implements LifecycleObserver {
      *
      * @param pushServiceType A class extending {@link PushService}
      */
-    public synchronized void setPushServiceType(Class<? extends PushService> pushServiceType) {
-
+    @SuppressWarnings("unused")
+    public synchronized void setPushServiceType(
+            Class<? extends PushService> pushServiceType
+    ) {
         this.pushServiceType = pushServiceType;
     }
 

@@ -63,10 +63,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * This class houses functionality related to push notifications. It performs
- * registration and un-registration of push notifications against the Salesforce
- * connected app endpoint. It also receives push notifications sent by the org
- * to the registered user/device.
+ * Provides a default implementation of push notifications registration and
+ * receipt features using the Salesforce connected app endpoint.
  *
  * @author bhariharan
  * @author ktanna
@@ -217,6 +215,7 @@ public class PushService {
      * @param status the registration status. One of the {@code REGISTRATION_STATUS_XXX} constants
      * @param userAccount the user account that's performing registration
      */
+	@SuppressWarnings("unused")
 	protected void onPushNotificationRegistrationStatus(int status, UserAccount userAccount) {
 
 		// Do nothing.
@@ -261,7 +260,6 @@ public class PushService {
             		}
             	} else if (res.getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
                     id = NOT_ENABLED;
-                    status = REGISTRATION_STATUS_FAILED;
             	}
             	res.consume();
                 SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_PUSH_NOTIFICATIONS);
@@ -278,7 +276,7 @@ public class PushService {
     private synchronized String getRSAPublicKey() {
 		String rsaPublicKey = null;
 		final String name = SalesforceKeyGenerator.getUniqueId(PUSH_NOTIFICATION_KEY_NAME);
-		final String sanitizedName = name.replaceAll("[^A-Za-z0-9]", "");
+		final String sanitizedName = name.replaceAll("[^A-Za-z\\d]", "");
 		if (!TextUtils.isEmpty(sanitizedName)) {
 			rsaPublicKey = KeyStoreWrapper.getInstance().getRSAPublicString(sanitizedName);
 		}
@@ -295,7 +293,7 @@ public class PushService {
 	 *
 	 * @param registeredId the id that identifies this device with the push notification provider
 	 * @param restClient a {@link RestClient} that can be used to make a new request
-	 * @return the response from unregistration
+	 * @return the response from un-registration
 	 * @throws IOException if the request could not be made
 	 */
 	protected RestResponse onSendUnregisterPushNotificationRequest(String registeredId,
