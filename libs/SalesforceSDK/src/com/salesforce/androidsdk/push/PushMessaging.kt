@@ -74,7 +74,9 @@ internal object PushMessaging {
     fun register(context: Context, account: UserAccount?) {
         val firebaseInitialized = initializeFirebaseIfNeeded(context)
         if (firebaseInitialized) {
-            FirebaseMessaging.getInstance().isAutoInitEnabled = true
+            val firebaseMessaging = SalesforceSDKManager.getInstance()
+                .pushNotificationReceiver?.supplyFirebaseMessaging() ?: FirebaseMessaging.getInstance()
+            firebaseMessaging.isAutoInitEnabled = true
 
             /*
              * Performs registration steps if it is a new account, or if the
@@ -83,9 +85,6 @@ internal object PushMessaging {
              */
             if (account != null && !isRegistered(context, account)) {
                 setInProgress(context, account)
-
-                val firebaseMessaging = SalesforceSDKManager.getInstance()
-                    .pushNotificationReceiver?.supplyFirebaseMessaging() ?: FirebaseMessaging.getInstance()
 
                 firebaseMessaging.token.addOnSuccessListener { token: String? ->
                     try {
@@ -121,7 +120,9 @@ internal object PushMessaging {
             if (isLastAccount) {
                 val firebaseInitialized = initializeFirebaseIfNeeded(context)
                 if (firebaseInitialized) {
-                    FirebaseMessaging.getInstance().isAutoInitEnabled = false
+                    val firebaseMessaging = SalesforceSDKManager.getInstance()
+                        .pushNotificationReceiver?.supplyFirebaseMessaging() ?: FirebaseMessaging.getInstance()
+                    firebaseMessaging.isAutoInitEnabled = false
                     val firebaseApp = FirebaseApp.getInstance(getAppNameForFirebase(context))
                     FirebaseInstallations.getInstance(firebaseApp).delete()
                     firebaseApp.delete()
