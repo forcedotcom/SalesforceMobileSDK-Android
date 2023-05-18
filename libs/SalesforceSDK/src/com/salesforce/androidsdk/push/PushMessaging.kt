@@ -58,10 +58,8 @@ object PushMessaging {
     private const val GCM_PREFS = "gcm_prefs"
     private const val LAST_SFDC_REGISTRATION_TIME = "last_registration_change"
     private const val REGISTRATION_ID = "c2dm_registration_id"
-    private const val BACKOFF = "backoff"
     private const val DEVICE_ID = "deviceId"
     private const val IN_PROGRESS = "inprogress"
-    private const val DEFAULT_BACKOFF: Long = 30000
 
     /**
      * Initiates push registration, if the application is not already registered.
@@ -274,7 +272,6 @@ object PushMessaging {
         )
         val editor = prefs.edit()
         editor.putString(REGISTRATION_ID, registrationId)
-        editor.putLong(BACKOFF, DEFAULT_BACKOFF)
         editor.apply()
     }
 
@@ -419,40 +416,6 @@ object PushMessaging {
     }
 
     /**
-     * Returns the last backoff time.
-     *
-     * @param context Context.
-     * @return Backoff time.
-     * @param account User account.
-     */
-    @Suppress("unused")
-    fun getBackoff(context: Context, account: UserAccount?): Long {
-        val prefs = context.getSharedPreferences(
-            getSharedPrefFile(account),
-            Context.MODE_PRIVATE
-        )
-        return prefs.getLong(BACKOFF, DEFAULT_BACKOFF)
-    }
-
-    /**
-     * Sets the backoff time for registration retry.
-     *
-     * @param context Context.
-     * @param backoff Backoff time to be used.
-     * @param account User account.
-     */
-    @Suppress("unused")
-    fun setBackoff(context: Context, backoff: Long, account: UserAccount?) {
-        val prefs = context.getSharedPreferences(
-            getSharedPrefFile(account),
-            Context.MODE_PRIVATE
-        )
-        val editor = prefs.edit()
-        editor.putLong(BACKOFF, backoff)
-        editor.apply()
-    }
-
-    /**
      * Stores the current registration information, and resets the backoff time.
      *
      * @param context Context.
@@ -472,7 +435,6 @@ object PushMessaging {
         val editor = prefs.edit()
         editor.putString(REGISTRATION_ID, registrationId)
         editor.putString(DEVICE_ID, deviceId)
-        editor.putLong(BACKOFF, DEFAULT_BACKOFF)
         editor.putLong(LAST_SFDC_REGISTRATION_TIME, System.currentTimeMillis())
         editor.putBoolean(IN_PROGRESS, false)
         editor.apply()
