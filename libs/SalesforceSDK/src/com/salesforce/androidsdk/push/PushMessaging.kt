@@ -28,6 +28,8 @@ package com.salesforce.androidsdk.push
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
@@ -43,7 +45,7 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger
  * retrieval of push notification registration information from a
  * private shared preference file.
  */
-internal object PushMessaging {
+object PushMessaging {
     private const val TAG = "PushMessaging"
 
     // Public constants.
@@ -172,12 +174,22 @@ internal object PushMessaging {
      * @param context Context
      * @return appName String
      */
-    private fun getAppNameForFirebase(context: Context): String {
+    @Suppress("MemberVisibilityCanBePrivate")
+    fun getAppNameForFirebase(context: Context): String {
         var appName = "[DEFAULT]"
         try {
-            // The replacement for the deprecated getPackageInfo currently requires API 33:
-            // https://issuetracker.google.com/issues/246845196
-            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            /**
+             * TODO:  Remove check when min version of SDK >=  API 33 or the below issue is resolved.
+             *
+             * The replacement for the deprecated getPackageInfo currently requires API 33:
+             * https://issuetracker.google.com/issues/246845196
+             */
+            val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.packageManager.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.getPackageInfo(context.packageName, 0)
+            }
             appName = context.getString(packageInfo.applicationInfo.labelRes)
         } catch (e: Exception) {
             SalesforceSDKLogger.w(TAG, "Package info could not be retrieved.", e)
@@ -352,7 +364,6 @@ internal object PushMessaging {
      * registration or un-registration (in progress or not).
      *
      * @param context Context.
-     * @param inProgress True - if in progress, False - otherwise.
      * @param account User account.
      */
     private fun setInProgress(
