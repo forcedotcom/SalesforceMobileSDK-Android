@@ -27,20 +27,23 @@
 package com.salesforce.androidsdk.analytics
 
 import android.content.Context
+import androidx.work.ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE
 import androidx.work.ListenableWorker.Result.success
-import androidx.work.OneTimeWorkRequest.Companion.from
+import androidx.work.PeriodicWorkRequest.Builder
 import androidx.work.WorkManager.getInstance
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.salesforce.androidsdk.accounts.UserAccountManager
-import com.salesforce.androidsdk.analytics.AnalyticsPublishingWorker.Companion.startActionPublish
+import com.salesforce.androidsdk.analytics.AnalyticsPublishingWorker.Companion.reEnqueueAnalyticsPublishPeriodicWorkRequest
+import java.util.concurrent.TimeUnit.HOURS
 
 /**
  * An Android background tasks worker which publishes stored analytics.
  * This class is intended to be instantiated by the background tasks work
  * manager.
  *
- * Use [startActionPublish] to enqueue an analytics publishing worker.
+ * Use [reEnqueueAnalyticsPublishPeriodicWorkRequest] to enqueue a analytics
+ * publish periodic work request.  Previous requests will be cancelled.
  *
  * @param context The Android context provided by the work manager
  * @param workerParams The worker parameters provided by the work manager
@@ -71,15 +74,33 @@ internal class AnalyticsPublishingWorker(
     companion object {
 
         /**
-         * Enqueues a persistent background worker to publish stored analytics
-         * for the current user.
+         * Enqueues a persistent background tasks periodic work request to
+         * publish stored analytics for the current user at the provided
+         * interval.
          *
-         * If a worker is already queued, a new task will be enqueued.
+         * If a work request is already queued, it will be cancelled before
+         * the replacement is enqueued.
          *
          * @param context The Android context
+         * @param publishHoursInterval The interval at which to publish in hours
+         * @return UUID The worker's unique id, which may be used for
+         * cancellation
          */
-        fun startActionPublish(context: Context) = getInstance(context).enqueue(
-            from(AnalyticsPublishingWorker::class.java)
-        )
+        fun reEnqueueAnalyticsPublishPeriodicWorkRequest(
+            context: Context,
+            publishHoursInterval: Long
+        ) = Builder(
+            AnalyticsPublishingWorker::class.java,
+            publishHoursInterval,
+            HOURS
+        ).build().also { publishAnalyticsPeriodicWorkRequest ->
+            getInstance(
+                context
+            ).enqueueUniquePeriodicWork(
+                "SalesforceAnalyticsPublishingPeriodicWork",
+                CANCEL_AND_REENQUEUE,
+                publishAnalyticsPeriodicWorkRequest
+            )
+        }.id
     }
 }

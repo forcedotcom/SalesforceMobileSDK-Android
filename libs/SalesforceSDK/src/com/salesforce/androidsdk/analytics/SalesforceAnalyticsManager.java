@@ -53,10 +53,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This class contains APIs that can be used to interact with
@@ -75,7 +71,6 @@ public class SalesforceAnalyticsManager {
 
     private static Map<String, SalesforceAnalyticsManager> INSTANCES;
     private static boolean sPublishHandlerActive;
-    private static ScheduledFuture sScheduler;
     private static int sPublishFrequencyInHours = DEFAULT_PUBLISH_FREQUENCY_IN_HOURS;
     private static int sEventPublishBatchSize = DEFAULT_BATCH_SIZE;
 
@@ -137,7 +132,7 @@ public class SalesforceAnalyticsManager {
 
         // Adds a handler for publishing if not already active.
         if (!sPublishHandlerActive) {
-            sScheduler = createPublishHandler();
+            recreateAnalyticsPublishPeriodicWorkRequest();
             sPublishHandlerActive = true;
         }
         return instance;
@@ -193,10 +188,7 @@ public class SalesforceAnalyticsManager {
      */
     public static synchronized void setPublishFrequencyInHours(int publishFrequencyInHours) {
         sPublishFrequencyInHours = publishFrequencyInHours;
-        if (sScheduler != null) {
-            sScheduler.cancel(false);
-            sScheduler = createPublishHandler();
-        }
+        recreateAnalyticsPublishPeriodicWorkRequest();
     }
 
     /**
@@ -482,17 +474,10 @@ public class SalesforceAnalyticsManager {
         e.commit();
     }
 
-    private static ScheduledFuture createPublishHandler() {
-        final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        final Runnable publishRunnable = new Runnable() {
-
-            @Override
-            public void run() {
-                AnalyticsPublishingWorker.Companion.startActionPublish(
-                        SalesforceSDKManager.getInstance().getAppContext()
-                );
-            }
-        };
-        return scheduler.scheduleAtFixedRate(publishRunnable, 0, sPublishFrequencyInHours, TimeUnit.HOURS);
+    private static void recreateAnalyticsPublishPeriodicWorkRequest() {
+        AnalyticsPublishingWorker.Companion.reEnqueueAnalyticsPublishPeriodicWorkRequest(
+                SalesforceSDKManager.getInstance().getAppContext(),
+                sPublishFrequencyInHours
+        );
     }
 }
