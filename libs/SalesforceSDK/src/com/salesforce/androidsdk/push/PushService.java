@@ -159,6 +159,14 @@ public class PushService {
     	} catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Error occurred during SFDC registration", e);
     	} finally {
+			/*
+			 * Although each user account should be registered with the SFDC API
+			 * for push notifications on login and Firebase push notifications
+			 * registration, enqueue an additional SFDC API push notifications
+			 * registration for all users six days from now.  This may provide
+			 * an additional level of registration verification, though the
+			 * actual requirements may need more definition in the future.
+			 */
             enqueuePushNotificationsRegistrationWork(
 					null, // All user accounts.
 					Register,
@@ -273,7 +281,7 @@ public class PushService {
     private synchronized String getRSAPublicKey() {
 		String rsaPublicKey = null;
 		final String name = SalesforceKeyGenerator.getUniqueId(PUSH_NOTIFICATION_KEY_NAME);
-		final String sanitizedName = name.replaceAll("[^A-Za-z\\d]", "");
+		final String sanitizedName = name.replaceAll("[^A-Za-z0-9]", "");
 		if (!TextUtils.isEmpty(sanitizedName)) {
 			rsaPublicKey = KeyStoreWrapper.getInstance().getRSAPublicString(sanitizedName);
 		}
@@ -290,7 +298,7 @@ public class PushService {
 	 *
 	 * @param registeredId the id that identifies this device with the push notification provider
 	 * @param restClient a {@link RestClient} that can be used to make a new request
-	 * @return the response from un-registration
+	 * @return the response from unregistration
 	 * @throws IOException if the request could not be made
 	 */
 	protected RestResponse onSendUnregisterPushNotificationRequest(String registeredId,
