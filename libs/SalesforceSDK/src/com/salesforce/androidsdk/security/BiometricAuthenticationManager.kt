@@ -91,14 +91,6 @@ internal class BiometricAuthenticationManager: AppLockManager(
         return false
     }
 
-    fun hasBeenPresentedOptIn(): Boolean {
-        currentUser?.let {user ->
-            return getAccountPrefs(user).all.containsKey(USER_BIO_OPT_IN)
-        }
-
-        return false
-    }
-
     fun shouldAllowRefresh(): Boolean {
         return !(enabled && locked)
     }

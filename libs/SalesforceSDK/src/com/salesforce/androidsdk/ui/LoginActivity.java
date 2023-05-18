@@ -142,7 +142,7 @@ public class LoginActivity extends FragmentActivity
 
         BiometricAuthenticationManager bioAuthManager =
                 (BiometricAuthenticationManager) SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
-        if (bioAuthManager.isEnabled() && bioAuthManager.hasBiometricOptedIn()) {
+        if (bioAuthManager.isLocked() && bioAuthManager.hasBiometricOptedIn()) {
             if (bioAuthManager.isNativeBiometricLoginButtonEnabled()) {
                 biometricAuthenticationButton = findViewById(R.id.sf__bio_login_button);
                 biometricAuthenticationButton.setVisibility(View.VISIBLE);

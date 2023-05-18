@@ -83,8 +83,8 @@ internal class ScreenLockManager: AppLockManager(
             .userAccountManager.authenticatedUsers
         var lowestTimeout = Int.MAX_VALUE
 
-        accounts.remove(account)
         if (!accounts.isNullOrEmpty()) {
+            accounts.remove(account)
             accounts.forEach { remainingAccount ->
                 if (remainingAccount != null) {
                     val accountPrefs = getAccountPrefs(remainingAccount)

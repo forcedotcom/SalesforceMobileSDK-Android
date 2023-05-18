@@ -737,40 +737,14 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
             // Biometric Auth required by mobile policy.
             if (id.biometricAuth) {
-                // Default to 15 minutes (lowest connected app option) if not specified.
-                int timeoutInMills = ((id.biometricAuthTimeout == 0) ? 15 : id.biometricAuthTimeout) * 60 * 1000;
-
                 BiometricAuthenticationManager bioAuthManager =
                         (BiometricAuthenticationManager) mgr.getBiometricAuthenticationManager();
+                int timeoutInMills = id.biometricAuthTimeout * 60 * 1000;
                 bioAuthManager.storeMobilePolicy(account, id.biometricAuth, timeoutInMills);
-
-                //  Don't prompt the user every time they login.
-                if (bioAuthManager.hasBeenPresentedOptIn()) {
-                    callback.finish(account);
-                } else {
-                    // Present the biometric opt in dialog with an on dismiss listener
-                    // that finishes the activity.
-                    activity.runOnUiThread(() -> {
-                        boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
-                        int theme = isDarkTheme ? R.style.SalesforceSDK_AlertDialog_Dark : R.style.SalesforceSDK_AlertDialog;
-                        new MaterialAlertDialogBuilder(activity, theme)
-                                .setTitle(R.string.sf__biometric_opt_in_title)
-                                .setMessage(R.string.sf__biometric_opt_in_message)
-                                .setNegativeButton(R.string.sf__biometric_opt_in_deny, ((dialog, which) ->
-                                        bioAuthManager.biometricOptIn(false)))
-                                .setPositiveButton(R.string.sf__biometric_opt_in_approve, (dialog, which) ->
-                                        bioAuthManager.biometricOptIn(true))
-                                .setCancelable(false)
-                                .setOnDismissListener(dialog -> callback.finish(account))
-                                .create()
-                                .show();
-                    });
-                }
-            } else {
-
-                // All done
-                callback.finish(account);
             }
+
+            // All done
+            callback.finish(account);
         }
 
         protected void handleException(Exception ex) {
