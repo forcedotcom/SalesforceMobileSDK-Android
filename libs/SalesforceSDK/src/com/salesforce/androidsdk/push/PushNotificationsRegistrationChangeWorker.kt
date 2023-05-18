@@ -33,7 +33,7 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager.getInstance
-import com.salesforce.androidsdk.push.PushServiceWorker.Action.Register
+import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
 import org.json.JSONObject
 
 /**
@@ -41,13 +41,14 @@ import org.json.JSONObject
  * This class is intended to be instantiated by the background tasks work
  * manager.
  *
- * Use [PushService.runIntentInService] to enqueue a push service worker.
+ * Use [PushService.enqueuePushNotificationsRegistrationWork] to enqueue a push
+ * service worker.
  *
  * @param context The Android context provided by the work manager
  * @param workerParams The worker parameters provided by the work manager
  * @see <a href='https://developer.android.com/guide/background'>Android Background Tasks</a>
  */
-internal class PushServiceWorker(
+internal class PushNotificationsRegistrationChangeWorker(
     context: Context,
     workerParams: WorkerParameters
 ) : Worker(
@@ -57,13 +58,13 @@ internal class PushServiceWorker(
 
     override fun doWork(): Result {
 
-        // Fetch worker input data for action and user account.
-        val action = Action.values().firstOrNull { action ->
-            action.value == (inputData.getString("ACTION") ?: return failure())
-        }
+        // Fetch worker input data for registration action and user account.
+        val pushNotificationsRegistrationAction = PushNotificationsRegistrationAction.valueOf(
+            inputData.getString("ACTION") ?: return failure() /* Action is required */
+        )
         val userAccount = inputData.getString("USER_ACCOUNT")?.let { userAccountJson ->
             UserAccount(JSONObject(userAccountJson))
-        }
+        } /* User account is optional where null specifies all accounts */
 
         // Instantiate push notifications registrar...
         val pushNotificationsRegistrar = getInstance().pushServiceType.newInstance()
@@ -76,7 +77,7 @@ internal class PushServiceWorker(
                 // ...Change push notification registration for all user accounts.
                 getInstance().userAccountManager.authenticatedUsers?.forEach { nextUserAccount ->
                     pushNotificationsRegistrar.performRegistrationChange(
-                        action == Register,
+                        pushNotificationsRegistrationAction == Register,
                         nextUserAccount
                     )
                 }
@@ -85,7 +86,7 @@ internal class PushServiceWorker(
             else ->
                 // ...Change push notification registration for the specified user account.
                 pushNotificationsRegistrar.performRegistrationChange(
-                    action == Register,
+                    pushNotificationsRegistrationAction == Register,
                     userAccount
                 )
         }
@@ -93,8 +94,14 @@ internal class PushServiceWorker(
         return success()
     }
 
-    internal enum class Action(val value: String) {
-        Register("com.salesforce.mobilesdk.c2dm.intent.RETRY"),
-        Unregister("com.salesforce.mobilesdk.c2dm.intent.UNREGISTER")
+    /**
+     * The available push notifications registration action types.
+     */
+    internal enum class PushNotificationsRegistrationAction {
+        /** Deregister */
+        Deregister,
+
+        /** Register with retry if needed */
+        Register
     }
 }

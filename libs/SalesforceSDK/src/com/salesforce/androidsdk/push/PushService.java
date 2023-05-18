@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.push;
 
+import static com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import android.content.Context;
@@ -43,6 +44,7 @@ import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.AccMgrAuthTokenProvider;
@@ -74,10 +76,6 @@ public class PushService {
 
 	private static final String TAG = "PushService";
 
-    // Intent actions.
-    public static final String SFDC_REGISTRATION_RETRY_INTENT = "com.salesforce.mobilesdk.c2dm.intent.RETRY";
-    public static final String SFDC_UNREGISTRATION_INTENT = "com.salesforce.mobilesdk.c2dm.intent.UNREGISTER";
-
 	// Retry time constants.
     private static final long MILLISECONDS_IN_SIX_DAYS = 518400000L;
 
@@ -98,18 +96,17 @@ public class PushService {
 	protected static final int UNREGISTRATION_STATUS_FAILED = 3;
 
 	/**
-	 * Changes one or more user account's push notifications registration. This
-	 * is implemented using Android's background tasks library.
+	 * Enqueues a change to one or more user accounts' push notifications
+	 * registration as persistent work via Android background tasks.
 	 *
 	 * @param userAccount       The user account or null for all user accounts
-	 * @param action            The push notifications registration action to
-	 *                          take
+	 * @param action            The push notifications registration action
 	 * @param delayMilliseconds The amount of delay before the push registration
 	 *                          action is taken, such as in a retry scenario
 	 */
-	static void runIntentInService(
+	static void enqueuePushNotificationsRegistrationWork(
 			@Nullable UserAccount userAccount,
-			@NonNull String action,
+			@NonNull PushNotificationsRegistrationAction action,
 			@Nullable Long delayMilliseconds) {
 		final Context context = SalesforceSDKManager.getInstance().getAppContext();
 		final WorkManager workManager = WorkManager.getInstance(context);
@@ -119,10 +116,10 @@ public class PushService {
 				userAccountJson
 		).putString(
 				"ACTION",
-				action
+				action.name()
 		).build();
 		final OneTimeWorkRequest workRequest = new OneTimeWorkRequest.Builder(
-				PushServiceWorker.class
+				PushNotificationsRegistrationChangeWorker.class
 		).setInputData(
 				workData
 		).setInitialDelay(
@@ -162,9 +159,9 @@ public class PushService {
     	} catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Error occurred during SFDC registration", e);
     	} finally {
-            runIntentInService(
+            enqueuePushNotificationsRegistrationWork(
 					null, // All user accounts.
-					SFDC_REGISTRATION_RETRY_INTENT,
+					Register,
 					MILLISECONDS_IN_SIX_DAYS
 			);
     	}

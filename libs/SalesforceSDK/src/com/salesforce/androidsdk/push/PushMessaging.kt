@@ -35,6 +35,10 @@ import com.google.firebase.installations.FirebaseInstallations
 import com.google.firebase.messaging.FirebaseMessaging
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction
+import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Deregister
+import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
+import com.salesforce.androidsdk.push.PushService.enqueuePushNotificationsRegistrationWork
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 
 /**
@@ -202,7 +206,7 @@ object PushMessaging {
      */
     @JvmStatic
     fun registerSFDCPush(context: Context, account: UserAccount?) {
-        runPushService(context, account, PushService.SFDC_REGISTRATION_RETRY_INTENT)
+        runPushService(context, account, Register)
     }
 
     /**
@@ -212,14 +216,26 @@ object PushMessaging {
      * @param account User account.
      */
     private fun unregisterSFDCPush(context: Context, account: UserAccount?) {
-        runPushService(context, account, PushService.SFDC_UNREGISTRATION_INTENT)
+        runPushService(context, account, Deregister)
     }
 
-    private fun runPushService(context: Context, account: UserAccount?, action: String) {
+    private fun runPushService(
+        context: Context,
+        account: UserAccount?,
+        action: PushNotificationsRegistrationAction
+    ) {
         if (account == null) {
-            PushService.runIntentInService(null, action, null)
+            enqueuePushNotificationsRegistrationWork(
+                null,
+                action,
+                null
+            )
         } else if (isRegistered(context, account)) {
-            PushService.runIntentInService(account, action, null)
+            enqueuePushNotificationsRegistrationWork(
+                account,
+                action,
+                null
+            )
         }
     }
 
