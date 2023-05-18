@@ -21,20 +21,33 @@ internal open class IDPSPManagerTestCase {
     lateinit var context: Context
     lateinit var recordedEvents: BlockingQueue<String>
 
+    fun recordEvent(event: String) {
+        Log.i(this::class.java.simpleName, "recording event   [$event]")
+        recordedEvents.add(event)
+    }
+
     open fun setup() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
         recordedEvents = ArrayBlockingQueue(MAX_EVENTS)
     }
 
     fun sendBroadcast(context:Context, intent: Intent) {
-        recordedEvents.add("sendBroadcast ${LogUtil.intentToString(intent)}")
+        recordEvent("sendBroadcast ${LogUtil.intentToString(intent)}")
+    }
+
+    open fun startActivity(context:Context, intent: Intent) {
+        recordEvent("startActivity ${LogUtil.intentToString(intent)}")
     }
 
     fun waitForEvent(expectedEvent: String) {
+        Log.i(this::class.java.simpleName, "waiting for event [$expectedEvent]")
         val actualEvent = recordedEvents.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS)
-        Log.i(this::class.java.simpleName, "received event [$actualEvent]")
-        Log.i(this::class.java.simpleName, "expected event [$expectedEvent]")
-        Assert.assertTrue(actualEvent.startsWith(expectedEvent))
+        if (actualEvent == null) {
+            Assert.fail("received no event")
+        } else {
+            Log.i(this::class.java.simpleName, "received event    [$actualEvent]")
+            Assert.assertTrue(actualEvent.startsWith(expectedEvent))
+        }
     }
 
     fun expectNoEvent() {
@@ -48,32 +61,32 @@ internal open class IDPSPManagerTestCase {
         })
     }
 
-    fun checkActiveFlow(idpspManager: IDPSPManager,
+    fun checkActiveFlow(idpSpManager: IDPSPManager,
                         expectedAction: String,
                         expectedMessageIndex: Int):IDPSPMessage? {
-        val activeFlow = idpspManager.getActiveFlow()
+        val activeFlow = idpSpManager.getActiveFlow()
         Assert.assertNotNull("Active flow not expected to be null", activeFlow)
         activeFlow?.let {
             Assert.assertTrue("Not enough messages in active flow",
                 it.messages.size > expectedMessageIndex)
             Assert.assertEquals(
-                "Wrong message type at index ${expectedMessageIndex}",
+                "Wrong message type at index $expectedMessageIndex",
                 expectedAction, it.messages[expectedMessageIndex].action
             )
         }
         return activeFlow?.messages?.get(expectedMessageIndex)
     }
 
-    fun checkActiveFlow(idpspManager: IDPSPManager,
+    fun checkActiveFlow(idpSpManager: IDPSPManager,
                         expectedMessage: IDPSPMessage,
                         expectedMessageIndex: Int) {
-        val activeFlow = idpspManager.getActiveFlow()
+        val activeFlow = idpSpManager.getActiveFlow()
         Assert.assertNotNull("Active flow not expected to be null", activeFlow)
         activeFlow?.let {
             Assert.assertTrue("Not enough messages in active flow",
                 it.messages.size > expectedMessageIndex)
             Assert.assertEquals(
-                "Wrong message at index ${expectedMessageIndex}",
+                "Wrong message at index $expectedMessageIndex",
                 expectedMessage.toString(), it.messages[expectedMessageIndex].toString()
             )
         }

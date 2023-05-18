@@ -24,49 +24,37 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.mobilesyncexplorer.ui;
+package com.salesforce.samples.mobilesyncexplorer.ui
 
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.DialogFragment;
-import android.content.DialogInterface;
-import android.os.Bundle;
-
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.samples.mobilesyncexplorer.R;
+import android.app.AlertDialog.Builder
+import android.app.Dialog
+import android.os.Bundle
+import androidx.fragment.app.DialogFragment
+import com.salesforce.androidsdk.app.SalesforceSDKManager.getInstance
+import com.salesforce.samples.mobilesyncexplorer.R.string.cancel
+import com.salesforce.samples.mobilesyncexplorer.R.string.logout_title
+import com.salesforce.samples.mobilesyncexplorer.R.string.yes
+import com.salesforce.samples.mobilesyncexplorer.R.style.SalesforceSDK_Dialog
+import com.salesforce.samples.mobilesyncexplorer.R.style.SalesforceSDK_Dialog_Dark
 
 /**
  * A simple dialog fragment to provide options at logout.
- *
- * @deprecated The exact signature of the methods inside of LogoutDialogFragment and its inherited
- * methods may change in Mobile SDK 11.0 when the deprecated base class {@link android.app.DialogFragment} is
- * replaced with {@link androidx.fragment.app.DialogFragment}.
  */
-@Deprecated
-public class LogoutDialogFragment extends DialogFragment {
+class LogoutDialogFragment : DialogFragment() {
 
-	/**
-	 * Default constructor.
-	 */
-	public LogoutDialogFragment() {
-	}
-
-	@Override
-	public Dialog onCreateDialog(Bundle savedInstanceState) {
-		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
-		return new AlertDialog.Builder(getActivity(), isDarkTheme ?
-				R.style.SalesforceSDK_Dialog_Dark : R.style.SalesforceSDK_Dialog)
-				.setTitle(R.string.logout_title)
-				.setPositiveButton(R.string.yes,
-				new DialogInterface.OnClickListener() {
-
-					@Override
-					public void onClick(DialogInterface dialog,
-							int which) {
-						SalesforceSDKManager.getInstance().logout(getActivity());
-					}
-				})
-				.setNegativeButton(R.string.cancel, null)
-				.create();
-	}
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        return Builder(
+            activity,
+            when (getInstance().isDarkTheme) {
+                true -> SalesforceSDK_Dialog_Dark
+                else -> SalesforceSDK_Dialog
+            }
+        )
+            .setTitle(logout_title)
+            .setPositiveButton(yes) { _, _ ->
+                getInstance().logout(activity)
+            }
+            .setNegativeButton(cancel, null)
+            .create()
+    }
 }

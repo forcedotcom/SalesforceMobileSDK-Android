@@ -31,6 +31,8 @@ import android.os.Bundle;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
@@ -42,7 +44,7 @@ import java.util.Map;
 /**
  * Dev support activity showing a lot of useful information
  */
-public class DevInfoActivity extends Activity {
+public class DevInfoActivity extends AppCompatActivity {
 
     public static final String NAME = "name";
     public static final String VALUE = "value";
@@ -54,7 +56,7 @@ public class DevInfoActivity extends Activity {
         setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark : R.style.SalesforceSDK);
 
         // Title / layout
-        getActionBar().setTitle(R.string.sf__dev_support_title);
+        getSupportActionBar().setTitle(R.string.sf__dev_support_title);
         setContentView(R.layout.sf__dev_info);
 
         // Setup list

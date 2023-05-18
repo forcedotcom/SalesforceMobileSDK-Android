@@ -38,7 +38,7 @@ internal open class ActiveFlow(val context: Context) {
         get() = messages.first()
     fun addMessage(message: IDPSPMessage) : Boolean {
         return if (messages.isEmpty() || (messages.last().uuid == message.uuid)) {
-            SalesforceSDKLogger.d(this::class.java.simpleName, "Adding message to active flow: ${message}")
+            SalesforceSDKLogger.d(this::class.java.simpleName, "Adding message to active flow: $message")
             messages.add(message)
             true
         } else {
@@ -53,9 +53,10 @@ internal open class ActiveFlow(val context: Context) {
 
 internal abstract class IDPSPManager(
     val sendBroadcast: (context: Context, intent: Intent) -> Unit,
+    val startActivity: (context: Context, intent: Intent) -> Unit
 ) {
     companion object {
-        private const val SRC_APP_PACKAGE_NAME_KEY = "src_app_package_name"
+        const val SRC_APP_PACKAGE_NAME_KEY = "src_app_package_name"
     }
 
     /**
@@ -89,6 +90,19 @@ internal abstract class IDPSPManager(
      * - ends an existing active flow if the message uuid does not match
      */
     fun send(context: Context, message: IDPSPMessage, destinationAppPackageName: String) {
+        addToActiveFlowIfApplicable(message)
+        val intent = message.toIntent().apply {
+            putExtra(SRC_APP_PACKAGE_NAME_KEY, context.applicationInfo.packageName)
+            setPackage(destinationAppPackageName)
+        }
+        sendBroadcast(context, intent)
+    }
+
+    /**
+     * Add message to an existing active flow if the message uuid matches
+     * Ends an existing active flow if the message uuid does not match
+     */
+    fun addToActiveFlowIfApplicable(message: IDPSPMessage) {
         getActiveFlow()?.let { activeFlow ->
             if (activeFlow.addMessage(message)) {
                 // There is an active flow and the message is part of it
@@ -98,12 +112,6 @@ internal abstract class IDPSPManager(
                 endActiveFlow()
             }
         }
-        val intent = message.toIntent().apply {
-            putExtra(SRC_APP_PACKAGE_NAME_KEY, context.applicationInfo.packageName)
-            setPackage(destinationAppPackageName)
-        }
-        SalesforceSDKLogger.d(this::class.java.simpleName, "send ${LogUtil.intentToString(intent)}")
-        sendBroadcast(context, intent)
     }
 
     /**
@@ -113,13 +121,19 @@ internal abstract class IDPSPManager(
      * - ends an existing active flow if the message uuid does not match
      */
     fun onReceive(context: Context, intent: Intent) {
-        SalesforceSDKLogger.d(this::class.java.simpleName, "onReceive ${LogUtil.intentToString(intent)}")
-        intent.getStringExtra(SRC_APP_PACKAGE_NAME_KEY)?.let { srcAppPackageName ->
+        SalesforceSDKLogger.d(
+            this::class.java.simpleName,
+            "onReceive ${LogUtil.intentToString(intent)}"
+        )
+        getSrcAppPackageName(intent)?.let { srcAppPackageName ->
             if (!isAllowed(srcAppPackageName)) {
-                SalesforceSDKLogger.w(this::class.java.simpleName, "onReceive not allowed to handle ${LogUtil.intentToString(intent)}")
+                SalesforceSDKLogger.w(
+                    this::class.java.simpleName,
+                    "onReceive not allowed to handle ${LogUtil.intentToString(intent)}"
+                )
             } else {
                 IDPSPMessage.fromIntent(intent)?.let { message ->
-                    getActiveFlow()?.let {activeFlow ->
+                    getActiveFlow()?.let { activeFlow ->
                         if (activeFlow.addMessage(message)) {
                             // There is an active flow and the message is part of it
                             // Handle the message with the active flow's context
@@ -136,9 +150,19 @@ internal abstract class IDPSPManager(
                         handle(context, message, srcAppPackageName)
                     }
                 } ?: run {
-                    SalesforceSDKLogger.w(this::class.java.simpleName, "onReceive could not parse ${LogUtil.intentToString(intent)}")
+                    SalesforceSDKLogger.w(
+                        this::class.java.simpleName,
+                        "onReceive could not parse ${LogUtil.intentToString(intent)}"
+                    )
                 }
             }
         }
+    }
+
+    /**
+     * Return source app package name from intent
+     */
+    fun getSrcAppPackageName(intent: Intent): String? {
+        return intent.getStringExtra(SRC_APP_PACKAGE_NAME_KEY)
     }
 }

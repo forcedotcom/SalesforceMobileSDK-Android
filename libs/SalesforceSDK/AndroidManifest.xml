@@ -77,7 +77,12 @@
             android:screenOrientation="portrait"
             android:exported="false" />
 
-        <!-- IDP webview activity -->
+        <!-- IDP auth code activity -->
+        <activity android:name="com.salesforce.androidsdk.auth.idp.IDPAuthCodeActivity"
+            android:excludeFromRecents="true"
+            android:theme="@style/SalesforceSDK"
+            android:exported="true"
+            android:screenOrientation="portrait" />
 
         <!--  Dev info activity -->
         <activity android:name="com.salesforce.androidsdk.ui.DevInfoActivity"
@@ -89,8 +94,8 @@
             android:exported="true"
             tools:ignore="ExportedReceiver">
             <intent-filter>
-                <action android:name="com.salesforce.IDP_LOGIN_REQUEST" />
-                <action android:name="com.salesforce.SP_LOGIN_RESPONSE" />
+                <action android:name="com.salesforce.androidsdk.IDP_TO_SP_REQUEST" />
+                <action android:name="com.salesforce.androidsdk.IDP_TO_SP_RESPONSE" />
             </intent-filter>
         </receiver>
 
@@ -99,8 +104,8 @@
             android:exported="true"
             tools:ignore="ExportedReceiver">
             <intent-filter>
-                <action android:name="com.salesforce.IDP_LOGIN_RESPONSE" />
-                <action android:name="com.salesforce.SP_LOGIN_REQUEST" />
+                <action android:name="com.salesforce.androidsdk.SP_TO_IDP_REQUEST" />
+                <action android:name="com.salesforce.androidsdk.SP_TO_IDP_RESPONSE" />
             </intent-filter>
         </receiver>
 

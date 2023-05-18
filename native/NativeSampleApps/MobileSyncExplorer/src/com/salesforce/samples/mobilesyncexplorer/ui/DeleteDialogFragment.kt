@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-present, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,18 +24,29 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.push;
+package com.salesforce.samples.mobilesyncexplorer.ui
 
-import java.util.Map;
+import android.app.AlertDialog.Builder
+import android.app.Dialog
+import android.content.DialogInterface
+import android.os.Bundle
+import androidx.fragment.app.DialogFragment
+import com.salesforce.samples.mobilesyncexplorer.R.string.cancel
+import com.salesforce.samples.mobilesyncexplorer.R.string.delete_title
+import com.salesforce.samples.mobilesyncexplorer.R.string.yes
 
 /**
- * This interface represents a simple push notification received. The
- * implementation of this interface would receive a notification and
- * handle it in some way, such as showing a notification to the user.
- *
- * @author bhariharan
+ * A simple dialog fragment to provide options for deletion.
  */
-public interface PushNotificationInterface {
+class DeleteDialogFragment : DialogFragment() {
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        return Builder(activity)
+            .setTitle(delete_title)
+            .setPositiveButton(yes) { _: DialogInterface?, _: Int ->
 
-	void onPushMessageReceived(Map<String, String> data);
+                (activity as? DetailActivity?)?.deleteOrUndelete()
+            }
+            .setNegativeButton(cancel, null)
+            .create()
+    }
 }

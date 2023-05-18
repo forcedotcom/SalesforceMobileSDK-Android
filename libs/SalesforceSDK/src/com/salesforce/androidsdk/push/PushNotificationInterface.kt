@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-present, salesforce.com, inc.
+ * Copyright (c) 2013-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,46 +24,46 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.mobilesyncexplorer.ui;
+package com.salesforce.androidsdk.push
 
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.DialogFragment;
-import android.content.DialogInterface;
-import android.os.Bundle;
-
-import com.salesforce.samples.mobilesyncexplorer.R;
+import com.google.firebase.FirebaseOptions
+import com.google.firebase.messaging.FirebaseMessaging
 
 /**
- * A simple dialog fragment to provide options for deletion.
+ * This interface represents the App's push notification implementation.
  *
- * @deprecated The exact signature of the methods inside of DeleteDialogFragment and its inherited
- * methods may change in Mobile SDK 11.0 when the deprecated base class {@link android.app.DialogFragment} is
- * replaced with {@link androidx.fragment.app.DialogFragment}.
+ * The simplest way to satisfy this interface is to add your google-services.json
+ * to the root of your project and implement [onPushMessageReceived].  Other, optional,
+ * functions are available of for more complex implementations.
  */
-@Deprecated
-public class DeleteDialogFragment extends DialogFragment {
+interface PushNotificationInterface {
 
-	/**
-	 * Default constructor.
-	 */
-	public DeleteDialogFragment() {
-	}
+    /**
+     * The implementation of this method would receive a notification and
+     * handle it in some way, such as showing a notification to the user.
+     *
+     * @param data the notification payload.
+     */
+    fun onPushMessageReceived(data: Map<String?, String?>?)
 
-	@Override
-	public Dialog onCreateDialog(Bundle savedInstanceState) {
-		return new AlertDialog.Builder(getActivity())
-				.setTitle(R.string.delete_title)
-				.setPositiveButton(R.string.yes,
-				new DialogInterface.OnClickListener() {
+    /**
+     * This method is optional, you may simply return null.
+     *
+     * Use this method to provide the SDK with an instance of FirebaseOptions if
+     * it is not possible to provide the google-services.json file in the root
+     * of your project.
+     *
+     * @return the FirebaseOptions instance to use.
+     */
+    fun supplyFirebaseOptions(): FirebaseOptions?
 
-					@Override
-					public void onClick(DialogInterface dialog,
-							int which) {
-                        ((DetailActivity) getActivity()).deleteOrUndelete();
-                    }
-				})
-				.setNegativeButton(R.string.cancel, null)
-				.create();
-	}
+    /**
+     * This method is optional, you may simply return null.
+     *
+     * Use this method to provide the correct FirebaseMessaging instance if the one
+     * you intend to use is not the default.
+     *
+     * @return the FirebaseMessaging instance to use.
+     */
+    fun supplyFirebaseMessaging(): FirebaseMessaging?
 }

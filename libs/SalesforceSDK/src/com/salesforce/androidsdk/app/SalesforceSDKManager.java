@@ -49,7 +49,6 @@ import android.view.View;
 import android.webkit.CookieManager;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.OnLifecycleEvent;
@@ -172,6 +171,9 @@ public class SalesforceSDKManager implements LifecycleObserver {
     private List<String> additionalOauthKeys;
     private String loginBrand;
     private boolean browserLoginEnabled;
+    private boolean shareBrowserSessionEnabled;
+
+    private boolean useWebServerAuthentication = true; // web server flow ON by default - but app can opt out by calling setUseWebServerAuthentication(false)
     private Theme theme =  Theme.SYSTEM_DEFAULT;
     private String appName;
 
@@ -599,13 +601,40 @@ public class SalesforceSDKManager implements LifecycleObserver {
     }
 
     /**
+     * Returns whether web server flow should be used when logging through the WebView
+     *
+     * @return True - if web server flow should be used, False - otherwise.
+     */
+    public boolean shouldUseWebServerAuthentication() {
+        return useWebServerAuthentication;
+    }
+
+    /**
+     * Sets whether web server flow should be used when logging through the WebView
+     * @param useWebServerAuthentication
+     */
+    public synchronized void setUseWebServerAuthentication(boolean useWebServerAuthentication) {
+        this.useWebServerAuthentication = useWebServerAuthentication;
+    }
+
+    /**
+     * Returns whether share browser session is enabled.
+     *
+     * @return True - if share browser session is enabled, False - otherwise.
+     */
+    public boolean isShareBrowserSessionEnabled() {
+        return shareBrowserSessionEnabled;
+    }
+
+    /**
      * Sets whether browser based login should be used instead of WebView. This should NOT be used
      * directly by apps, this is meant for internal use, based on the value configured on the server.
      *
      * @param browserLoginEnabled True - if Chrome should be used for login, False - otherwise.
      */
-    public synchronized void setBrowserLoginEnabled(boolean browserLoginEnabled) {
+    public synchronized void setBrowserLoginEnabled(boolean browserLoginEnabled, boolean shareBrowserSessionEnabled) {
         this.browserLoginEnabled = browserLoginEnabled;
+        this.shareBrowserSessionEnabled = shareBrowserSessionEnabled;
         if (browserLoginEnabled) {
             SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_BROWSER_LOGIN);
         } else {
@@ -1246,6 +1275,7 @@ public class SalesforceSDKManager implements LifecycleObserver {
                 "SDK Version", SDK_VERSION,
                 "App Type", getAppType(),
                 "User Agent", getUserAgent(),
+                "Use Web Server Authentication", shouldUseWebServerAuthentication() + "",
                 "Browser Login Enabled", isBrowserLoginEnabled() + "",
                 "IDP Enabled", isIDPLoginFlowEnabled() + "",
                 "Identity Provider", isIdentityProvider() + "",

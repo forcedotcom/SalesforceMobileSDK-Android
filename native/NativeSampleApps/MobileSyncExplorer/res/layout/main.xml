@@ -7,13 +7,11 @@
     android:background="?android:colorBackground"
     android:id="@+id/root">
 
-    <ListView android:id="@android:id/list"
-        android:layout_height="wrap_content"
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/recycler_view"
         android:layout_width="match_parent"
-        android:scrollbarStyle="insideInset"
-        android:divider="@color/sf__border_color"/>
+        android:layout_height="wrap_content" />
 
-    <TextView android:id="@android:id/empty"
+    <TextView android:id="@+id/empty"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:text="@string/no_results_found"
@@ -22,4 +20,4 @@
         android:textStyle="bold"
         android:gravity="center"
         android:textSize="18sp" />
-</LinearLayout> 
+</LinearLayout>

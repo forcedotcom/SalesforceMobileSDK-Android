@@ -83,8 +83,8 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 		final Intent launchIntent = getIntent();
 		if (launchIntent != null) {
 			objectId = launchIntent.getStringExtra(MainActivity.OBJECT_ID_KEY);
-			getActionBar().setTitle(launchIntent.getStringExtra(MainActivity.OBJECT_NAME_KEY));
-			getActionBar().setSubtitle(launchIntent.getStringExtra(MainActivity.OBJECT_TITLE_KEY));
+			getSupportActionBar().setTitle(launchIntent.getStringExtra(MainActivity.OBJECT_NAME_KEY));
+			getSupportActionBar().setSubtitle(launchIntent.getStringExtra(MainActivity.OBJECT_TITLE_KEY));
 		}
 		deleteConfirmationDialog = new DeleteDialogFragment();
 	}
@@ -162,7 +162,7 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 		}
 		else {
 			// it's a delete
-			deleteConfirmationDialog.show(getFragmentManager(), "DeleteDialog");
+			deleteConfirmationDialog.show(getSupportFragmentManager(), "DeleteDialog");
 		}
 	}
 

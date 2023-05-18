@@ -71,15 +71,17 @@ public class AuthConfigTask extends AsyncTask<Void, Void, Void> {
         if (loginServer.equals(LoginServerManager.PRODUCTION_LOGIN_URL) ||
                 loginServer.equals(LoginServerManager.SANDBOX_LOGIN_URL) ||
                 !URLUtil.isHttpsUrl(loginServer) || HttpUrl.parse(loginServer) == null) {
-            SalesforceSDKManager.getInstance().setBrowserLoginEnabled(false);
+            SalesforceSDKManager.getInstance().setBrowserLoginEnabled(false, false);
             return null;
         }
         final AuthConfigUtil.MyDomainAuthConfig authConfig = AuthConfigUtil.getMyDomainAuthConfig(loginServer);
         boolean browserLoginEnabled = false;
+        boolean shareBrowserSessionEnabled = false;
         if (authConfig != null) {
             browserLoginEnabled = authConfig.isBrowserLoginEnabled();
+            shareBrowserSessionEnabled = authConfig.isShareBrowserSessionEnabled();
         }
-        SalesforceSDKManager.getInstance().setBrowserLoginEnabled(browserLoginEnabled);
+        SalesforceSDKManager.getInstance().setBrowserLoginEnabled(browserLoginEnabled, shareBrowserSessionEnabled);
         return null;
     }
 

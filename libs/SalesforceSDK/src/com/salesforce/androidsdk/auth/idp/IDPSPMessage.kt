@@ -29,7 +29,7 @@ package com.salesforce.androidsdk.auth.idp
 import android.content.Intent
 import android.os.Bundle
 import com.salesforce.androidsdk.util.LogUtil
-import java.util.*
+import java.util.UUID
 
 /**
  * Super class of messages being sent between IDP and SP app
@@ -45,6 +45,7 @@ internal sealed class IDPSPMessage(
         }
     }
 
+
     override fun toString(): String {
         return "message for ${LogUtil.intentToString(toIntent())}"
     }
@@ -56,24 +57,30 @@ internal sealed class IDPSPMessage(
     }
 
     companion object {
-        private const val UUID_KEY = "uuid"
+        const val ACTION_KEY = "action"
+        const val UUID_KEY = "uuid"
 
         fun fromIntent(intent:Intent):IDPSPMessage? {
             return if (intent.extras == null) {
                 null
             } else {
-                return when (intent.action) {
-                    IDPLoginRequest.ACTION -> {
-                        IDPLoginRequest.fromBundle(intent.extras)
+                // Using action from extras if found otherwise use intent's action
+                // - message action is passed through extras in activity launch intents
+                // - message action is set as intent action in broadcast intents
+                val extrasAction = intent.getStringExtra(ACTION_KEY)
+                val intentAction = intent.action
+                return when (extrasAction ?: intentAction) {
+                    IDPToSPRequest.ACTION -> {
+                        IDPToSPRequest.fromBundle(intent.extras)
                     }
-                    IDPLoginResponse.ACTION -> {
-                        IDPLoginResponse.fromBundle(intent.extras)
+                    SPToIDPResponse.ACTION -> {
+                        SPToIDPResponse.fromBundle(intent.extras)
                     }
-                    SPLoginRequest.ACTION -> {
-                        SPLoginRequest.fromBundle(intent.extras)
+                    SPToIDPRequest.ACTION -> {
+                        SPToIDPRequest.fromBundle(intent.extras)
                     }
-                    SPLoginResponse.ACTION -> {
-                        SPLoginResponse.fromBundle(intent.extras)
+                    IDPToSPResponse.ACTION -> {
+                        IDPToSPResponse.fromBundle(intent.extras)
                     }
                     else -> {
                         null
@@ -86,23 +93,23 @@ internal sealed class IDPSPMessage(
     /**
      * Message sent by IDP to SP to kick-off an IDP initiated login
      */
-    class IDPLoginRequest(
+    class IDPToSPRequest(
         uuid: String = UUID.randomUUID().toString(),
         val orgId: String,
         val userId: String
     ) : IDPSPMessage(uuid, ACTION) {
 
         companion object {
-            const val ACTION = "com.salesforce.IDP_LOGIN_REQUEST"
+            const val ACTION = "com.salesforce.androidsdk.IDP_TO_SP_REQUEST"
             private const val USER_ID_KEY = "user_id"
             private const val ORG_ID_KEY = "org_id"
 
-            fun fromBundle(bundle:Bundle?) : IDPLoginRequest? {
+            fun fromBundle(bundle:Bundle?) : IDPToSPRequest? {
                 val uuid = bundle?.getString(UUID_KEY)
                 val userId = bundle?.getString(USER_ID_KEY)
                 val orgId = bundle?.getString(ORG_ID_KEY)
                 return if (uuid != null && userId != null && orgId != null) {
-                    IDPLoginRequest(uuid, orgId, userId)
+                    IDPToSPRequest(uuid, orgId, userId)
                 } else {
                     null
                 }
@@ -118,23 +125,22 @@ internal sealed class IDPSPMessage(
     }
 
     /**
-     * Message sent by SP to IDP in response to IDPLoginRequest
-     * when flow is complete either successfully or not
+     * Message sent by SP to IDP when flow is complete either successfully or not
      */
-    class IDPLoginResponse(
+    class SPToIDPResponse(
         uuid: String,
         val error: String? = null
     ) : IDPSPMessage(uuid, ACTION) {
 
         companion object {
-            const val ACTION = "com.salesforce.IDP_LOGIN_RESPONSE"
+            const val ACTION = "com.salesforce.androidsdk.SP_TO_IDP_RESPONSE"
             private const val ERROR_KEY = "error"
 
-            fun fromBundle(bundle:Bundle?) : IDPLoginResponse? {
+            fun fromBundle(bundle:Bundle?) : SPToIDPResponse? {
                 val uuid = bundle?.getString(UUID_KEY)
                 val error = bundle?.getString(ERROR_KEY)
                 return if (uuid != null) {
-                    IDPLoginResponse(uuid, error)
+                    SPToIDPResponse(uuid, error)
                 } else {
                     null
                 }
@@ -152,20 +158,20 @@ internal sealed class IDPSPMessage(
      * Message sent from SP app to IDP either to kick-off a SP initiated login
      * or during an IDP initiated login when the SP app does not the requested user
      */
-    class SPLoginRequest(
+    class SPToIDPRequest(
         uuid: String = UUID.randomUUID().toString(),
         val codeChallenge:String,
     ): IDPSPMessage(uuid, ACTION) {
 
         companion object {
-            const val ACTION = "com.salesforce.SP_LOGIN_REQUEST"
+            const val ACTION = "com.salesforce.androidsdk.SP_TO_IDP_REQUEST"
             private const val CODE_CHALLENGE_KEY = "code_challenge"
 
-            fun fromBundle(bundle:Bundle?) : SPLoginRequest? {
+            fun fromBundle(bundle:Bundle?) : SPToIDPRequest? {
                 val uuid = bundle?.getString(UUID_KEY)
                 val codeChallenge = bundle?.getString(CODE_CHALLENGE_KEY)
                 return if (uuid != null && codeChallenge != null) {
-                    SPLoginRequest(uuid, codeChallenge)
+                    SPToIDPRequest(uuid, codeChallenge)
                 } else {
                     null
                 }
@@ -180,9 +186,9 @@ internal sealed class IDPSPMessage(
     }
 
     /**
-     * Message sent by IDP app to SP app in response to SPLoginRequest
+     * Message sent by IDP app to SP app in response to a SPToIDPRequest
      */
-    class SPLoginResponse(
+    class IDPToSPResponse(
         uuid: String = UUID.randomUUID().toString(),
         val code: String? = null,
         val loginUrl: String? = null,
@@ -190,18 +196,18 @@ internal sealed class IDPSPMessage(
     ): IDPSPMessage(uuid, ACTION) {
 
         companion object {
-            const val ACTION = "com.salesforce.SP_LOGIN_RESPONSE"
+            const val ACTION = "com.salesforce.androidsdk.IDP_TO_SP_RESPONSE"
             private const val CODE_KEY = "code"
             private const val LOGIN_URL_KEY = "login_url"
             private const val ERROR_KEY = "error"
 
-            fun fromBundle(bundle:Bundle?) : SPLoginResponse? {
+            fun fromBundle(bundle:Bundle?) : IDPToSPResponse? {
                 val uuid = bundle?.getString(UUID_KEY)
                 val code = bundle?.getString(CODE_KEY)
                 val loginUrl = bundle?.getString(LOGIN_URL_KEY)
                 val error = bundle?.getString(ERROR_KEY)
                 return if (uuid != null && ((code != null && loginUrl != null) || error != null)) {
-                    SPLoginResponse(uuid, code, loginUrl, error)
+                    IDPToSPResponse(uuid, code, loginUrl, error)
                 } else {
                     null
                 }
