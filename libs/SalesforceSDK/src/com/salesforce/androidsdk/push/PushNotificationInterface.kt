@@ -24,18 +24,46 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.push;
+package com.salesforce.androidsdk.push
 
-import java.util.Map;
+import com.google.firebase.FirebaseOptions
+import com.google.firebase.messaging.FirebaseMessaging
 
 /**
- * This interface represents a simple push notification received. The
- * implementation of this interface would receive a notification and
- * handle it in some way, such as showing a notification to the user.
+ * This interface represents the App's push notification implementation.
  *
- * @author bhariharan
+ * The simplest way to satisfy this interface is to add your google-services.json
+ * to the root of your project and implement [onPushMessageReceived].  Other, optional,
+ * functions are available of for more complex implementations.
  */
-public interface PushNotificationInterface {
+interface PushNotificationInterface {
 
-	void onPushMessageReceived(Map<String, String> data);
+    /**
+     * The implementation of this method would receive a notification and
+     * handle it in some way, such as showing a notification to the user.
+     *
+     * @param data the notification payload.
+     */
+    fun onPushMessageReceived(data: Map<String?, String?>?)
+
+    /**
+     * This method is optional, you may simply return null.
+     *
+     * Use this method to provide the SDK with an instance of FirebaseOptions if
+     * it is not possible to provide the google-services.json file in the root
+     * of your project.
+     *
+     * @return the FirebaseOptions instance to use.
+     */
+    fun supplyFirebaseOptions(): FirebaseOptions?
+
+    /**
+     * This method is optional, you may simply return null.
+     *
+     * Use this method to provide the correct FirebaseMessaging instance if the one
+     * you intend to use is not the default.
+     *
+     * @return the FirebaseMessaging instance to use.
+     */
+    fun supplyFirebaseMessaging(): FirebaseMessaging?
 }
