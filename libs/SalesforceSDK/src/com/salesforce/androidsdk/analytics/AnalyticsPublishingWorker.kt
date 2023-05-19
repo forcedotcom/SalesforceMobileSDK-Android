@@ -73,6 +73,8 @@ internal class AnalyticsPublishingWorker(
 
     companion object {
 
+        private const val publishAnalyticsPeriodicWorkName = "SalesforceAnalyticsPublishingPeriodicWork"
+
         /**
          * Enqueues a persistent background tasks periodic work request to
          * publish stored analytics for the current user at the provided
@@ -97,7 +99,7 @@ internal class AnalyticsPublishingWorker(
             runCatching {
                 getInstance(context)
             }.getOrNull()?.enqueueUniquePeriodicWork(
-                "SalesforceAnalyticsPublishingPeriodicWork",
+                publishAnalyticsPeriodicWorkName,
                 CANCEL_AND_REENQUEUE,
                 publishAnalyticsPeriodicWorkRequest
             )
