@@ -424,7 +424,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     }
 
     protected URI getAuthorizationUrl(boolean useWebServerAuthentication) throws URISyntaxException {
-        boolean jwtFlow = TextUtils.isEmpty(loginOptions.getJwt());
+        boolean jwtFlow = !TextUtils.isEmpty(loginOptions.getJwt());
         Map<String, String> addlParams = jwtFlow ? null : loginOptions.getAdditionalParameters();
         // NB code verifier / code challenge are only used when useWebServerAuthentication is true
         codeVerifier = SalesforceKeyGenerator.getRandom128ByteKey();
