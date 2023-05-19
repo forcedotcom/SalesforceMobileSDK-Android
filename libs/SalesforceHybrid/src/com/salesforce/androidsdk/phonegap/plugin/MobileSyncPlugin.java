@@ -26,6 +26,13 @@
  */
 package com.salesforce.androidsdk.phonegap.plugin;
 
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.IS_GLOBAL_STORE;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.OPTIONS;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.SOUP_NAME;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.STORE_NAME;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.SYNC_NAME;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.TARGET;
+
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SyncUpdateCallback;
 import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget;
@@ -40,13 +47,6 @@ import org.apache.cordova.CallbackContext;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.IS_GLOBAL_STORE;
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.OPTIONS;
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.SOUP_NAME;
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.STORE_NAME;
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.SYNC_NAME;
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.TARGET;
 
 /**
  * PhoneGap plugin for mobile sync.

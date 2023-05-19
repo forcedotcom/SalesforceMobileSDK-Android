@@ -350,7 +350,6 @@ public class SmartStore  {
         createTableStmt.append("CREATE TABLE ").append(soupTableName).append(" (")
                         .append(ID_COL).append(" INTEGER PRIMARY KEY AUTOINCREMENT");
 
-		// If external storage is used, do not add column for soup in the db since it will be empty.
 		createTableStmt.append(", ").append(SOUP_COL).append(" TEXT");
 
         createTableStmt.append(", ").append(CREATED_COL).append(" INTEGER")

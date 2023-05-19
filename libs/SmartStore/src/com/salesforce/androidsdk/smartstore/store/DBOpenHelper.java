@@ -288,11 +288,6 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 				}
 				ManagedFilesHelper.deleteFiles(files);
 			}
-
-			// Delete external blobs directory
-			StringBuilder blobsDbPath = new StringBuilder(ctx.getApplicationInfo().dataDir);
-			blobsDbPath.append("/databases/").append(fullDBName).append(EXTERNAL_BLOBS_SUFFIX);
-			removeAllFiles(new File(blobsDbPath.toString()));
 		} catch (Exception e) {
             SmartStoreLogger.e(TAG, "Exception occurred while attemption to delete database", e);
 		}
