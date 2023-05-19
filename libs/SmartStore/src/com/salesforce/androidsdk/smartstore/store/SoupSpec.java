@@ -26,13 +26,13 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Object representation for soup specifications, such as soup name and features.

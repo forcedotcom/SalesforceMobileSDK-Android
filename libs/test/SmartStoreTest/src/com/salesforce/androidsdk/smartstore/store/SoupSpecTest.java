@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.smartstore.store;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Assert;

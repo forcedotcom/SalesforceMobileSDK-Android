@@ -46,6 +46,8 @@ import android.widget.MultiAutoCompleteTextView;
 import android.widget.MultiAutoCompleteTextView.Tokenizer;
 import android.widget.Spinner;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.smartstore.R;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
@@ -65,7 +67,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 
-public class SmartStoreInspectorActivity extends Activity implements AdapterView.OnItemSelectedListener {
+public class SmartStoreInspectorActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
 
 	// Keys for extras bundle
 	private static final String IS_GLOBAL_STORE = "isGlobalStore";
@@ -124,7 +126,7 @@ public class SmartStoreInspectorActivity extends Activity implements AdapterView
 		super.onCreate(savedInstanceState);
 		readExtras();
 		setContentView(R.layout.sf__inspector);
-		getActionBar().setTitle(R.string.sf__inspector_title);
+		getSupportActionBar().setTitle(R.string.sf__inspector_title);
 		spinner = findViewById(R.id.sf__inspector_stores_spinner);
 		queryText = findViewById(R.id.sf__inspector_query_text);
 		pageSizeText = findViewById(R.id.sf__inspector_pagesize_text);

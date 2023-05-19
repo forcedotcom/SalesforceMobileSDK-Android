@@ -26,16 +26,16 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Simple class to represent index spec

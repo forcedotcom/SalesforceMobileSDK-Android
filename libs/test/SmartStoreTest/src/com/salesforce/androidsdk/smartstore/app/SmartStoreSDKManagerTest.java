@@ -27,8 +27,10 @@
 package com.salesforce.androidsdk.smartstore.app;
 
 import android.content.Context;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
@@ -36,6 +38,7 @@ import com.salesforce.androidsdk.smartstore.store.KeyValueEncryptedFileStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.util.ManagedFilesHelper;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.After;
