@@ -94,9 +94,9 @@ internal class AnalyticsPublishingWorker(
             publishHoursInterval,
             HOURS
         ).build().also { publishAnalyticsPeriodicWorkRequest ->
-            getInstance(
-                context
-            ).enqueueUniquePeriodicWork(
+            runCatching {
+                getInstance(context)
+            }.getOrNull()?.enqueueUniquePeriodicWork(
                 "SalesforceAnalyticsPublishingPeriodicWork",
                 CANCEL_AND_REENQUEUE,
                 publishAnalyticsPeriodicWorkRequest
