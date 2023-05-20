@@ -31,7 +31,6 @@ import android.accounts.AccountManager;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -466,38 +465,20 @@ public class SalesforceSDKManager implements LifecycleObserver {
     }
 
     /**
-     * Sets the class that will be used as a push service.
-     *
+     * Sets the class fulfilling push notification registration features.  A
+     * default implementation is provided in {@link PushService}.  Setting this
+     * property to a subclass will inject the specified class instead.
      * <p>
-     * If a class other than {@link PushService} is used, it must also be declared in the manifest and the
-     * {@link PushService} element must be disabled.
-     * </p>
+     * Note, the specified class no longer needs to be specified in the Android
+     * manifest as a service.
      *
-     * <pre>
-     * <code>
-     * &lt;service
-     *    android:enabled="false"
-     *    android:name="com.salesforce.androidsdk.push.PushService"
-     *    tools:node="merge"/&gt;
-     *
-     * &lt;service
-     *    android:enabled="true"
-     *    android:exported="false"
-     *    android:name="your.push.service"/&gt;
-     * </code>
-     * </pre>
-     *
-     * @param type the service class
+     * @param pushServiceType A class extending {@link PushService}
      */
-    public synchronized void setPushServiceType(Class<? extends PushService> type) {
-        pushServiceType = type;
-        if (!PushService.class.equals(type)) {
-            try {
-                context.getPackageManager().getServiceInfo(new ComponentName(context, type), 0);
-            } catch (NameNotFoundException e) {
-                throw new IllegalStateException(String.format("%s must be declared and enabled in the manifest", type));
-            }
-        }
+    @SuppressWarnings("unused")
+    public synchronized void setPushServiceType(
+            Class<? extends PushService> pushServiceType
+    ) {
+        this.pushServiceType = pushServiceType;
     }
 
     /**

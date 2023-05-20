@@ -26,21 +26,25 @@
  */
 package com.salesforce.androidsdk.push;
 
-import android.app.AlarmManager;
-import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
+import static com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import android.content.Context;
 import android.content.Intent;
-import android.os.Bundle;
 import android.text.TextUtils;
 
-import androidx.core.app.JobIntentService;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.work.Data;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.AccMgrAuthTokenProvider;
@@ -57,37 +61,23 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.util.Calendar;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
- * This class houses functionality related to push notifications.
- * It performs registration and unregistration of push notifications
- * against the Salesforce connected app endpoint. It also receives
- * push notifications sent by the org to the registered user/device.
+ * Provides a default implementation of push notifications registration and
+ * receipt features using the Salesforce connected app endpoint.
  *
  * @author bhariharan
  * @author ktanna
- *
- * @deprecated This class will be drastically altered or replaced in Mobile SDK 11.0 when the deprecated
- * {@link androidx.core.app.JobIntentService} base is replaced with a WorkManager Worker class.
+ * @author Eric C. Johnson <Johnson.Eric@Salesforce.com>
  */
-@Deprecated
-public class PushService extends JobIntentService {
+public class PushService {
 
 	private static final String TAG = "PushService";
 
-    // Intent actions.
-    public static final String SFDC_REGISTRATION_RETRY_INTENT = "com.salesforce.mobilesdk.c2dm.intent.RETRY";
-    public static final String SFDC_UNREGISTRATION_INTENT = "com.salesforce.mobilesdk.c2dm.intent.UNREGISTER";
-
 	// Retry time constants.
     private static final long MILLISECONDS_IN_SIX_DAYS = 518400000L;
-
-    // Unique identifier for this job.
-	private static final int JOB_ID = 24;
 
     // Salesforce push notification constants.
     private static final String MOBILE_PUSH_SERVICE_DEVICE = "MobilePushServiceDevice";
@@ -105,69 +95,42 @@ public class PushService extends JobIntentService {
 	protected static final int UNREGISTRATION_STATUS_SUCCEEDED = 2;
 	protected static final int UNREGISTRATION_STATUS_FAILED = 3;
 
-    /**
-     * This method is called from the broadcast receiver, when a push notification
-     * is received, or when we receive a callback from the GCM service. Processing
-     * of the message occurs here, and the acquired wake lock is released post processing.
-     *
-     * @param intent Intent.
-     */
-    static void runIntentInService(Intent intent) {
-        final Context context = SalesforceSDKManager.getInstance().getAppContext();
-        intent.setClassName(context, SalesforceSDKManager.getInstance().getPushServiceType().getName());
-        enqueueWork(context, SalesforceSDKManager.getInstance().getPushServiceType(), JOB_ID, intent);
-    }
+	/**
+	 * Enqueues a change to one or more user accounts' push notifications
+	 * registration as persistent work via Android background tasks.
+	 *
+	 * @param userAccount       The user account or null for all user accounts
+	 * @param action            The push notifications registration action
+	 * @param delayMilliseconds The amount of delay before the push registration
+	 *                          action is taken, such as in a retry scenario
+	 */
+	static void enqueuePushNotificationsRegistrationWork(
+			@Nullable UserAccount userAccount,
+			@NonNull PushNotificationsRegistrationAction action,
+			@Nullable Long delayMilliseconds) {
+		final Context context = SalesforceSDKManager.getInstance().getAppContext();
+		final WorkManager workManager = WorkManager.getInstance(context);
+		final String userAccountJson = userAccount == null ? null : userAccount.toJson().toString();
+		final Data workData = new Data.Builder().putString(
+				"USER_ACCOUNT",
+				userAccountJson
+		).putString(
+				"ACTION",
+				action.name()
+		).build();
+		final OneTimeWorkRequest workRequest = new OneTimeWorkRequest.Builder(
+				PushNotificationsRegistrationChangeWorker.class
+		).setInputData(
+				workData
+		).setInitialDelay(
+				delayMilliseconds == null ? 0 : delayMilliseconds,
+				MILLISECONDS
+		).build();
 
-	@Override
-	protected void onHandleWork(Intent intent) {
-
-		/*
-		 * Grabs the extras from the intent, and determines based on the
-		 * bundle whether to perform the operation for all accounts or
-		 * just the specified account that's passed in.
-		 */
-		final Bundle bundle = intent.getBundleExtra(PushMessaging.ACCOUNT_BUNDLE_KEY);
-		UserAccount account = null;
-		boolean allAccounts = false;
-		if (bundle != null) {
-			final String allAccountsValue = bundle.getString(PushMessaging.ACCOUNT_BUNDLE_KEY);
-			if (PushMessaging.ALL_ACCOUNTS_BUNDLE_VALUE.equals(allAccountsValue)) {
-				allAccounts = true;
-			} else {
-				account = new UserAccount(bundle);
-			}
-		}
-		final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
-		final List<UserAccount> accounts = userAccMgr.getAuthenticatedUsers();
-		boolean register = SFDC_REGISTRATION_RETRY_INTENT.equals(intent.getAction());
-		boolean unregister = SFDC_UNREGISTRATION_INTENT.equals(intent.getAction());
-		if (register || unregister) {
-			if (allAccounts) {
-				if (accounts != null) {
-					for (final UserAccount userAcc : accounts) {
-
-						/*
-						 * If 'register' is true, we are registering, if it's false, we must be
-						 * un-registering, because of the if gate above.
-						 */
-						performRegistrationChange(register, userAcc);
-					}
-				}
-			} else {
-				if (account == null) {
-					account = userAccMgr.getCurrentUser();
-				}
-
-				/*
-				 * If 'register' is true, we are registering, if it's false, we must be
-				 * un-registering, because of the if gate above.
-				 */
-				performRegistrationChange(register, account);
-			}
-		}
+		workManager.enqueue(workRequest);
 	}
 
-	private void performRegistrationChange(boolean register, UserAccount userAccount) {
+	void performRegistrationChange(boolean register, UserAccount userAccount) {
 		if (register) {
 			final String regId = PushMessaging.getRegistrationId(SalesforceSDKManager.getInstance().getAppContext(),
                     userAccount);
@@ -178,25 +141,6 @@ public class PushService extends JobIntentService {
 			onUnregistered(userAccount);
 		}
 	}
-
-    private void scheduleSFDCRegistrationRetry(long when, UserAccount account) {
-        final Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.MILLISECOND, (int) when);
-        final Intent retryIntent = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
-                SFDCRegistrationRetryAlarmReceiver.class);
-        if (account == null) {
-			final Bundle bundle = new Bundle();
-			bundle.putString(PushMessaging.ACCOUNT_BUNDLE_KEY, PushMessaging.ALL_ACCOUNTS_BUNDLE_VALUE);
-			retryIntent.putExtra(PushMessaging.ACCOUNT_BUNDLE_KEY, bundle);
-        } else {
-            retryIntent.putExtra(PushMessaging.ACCOUNT_BUNDLE_KEY, account.toBundle());
-        }
-        final PendingIntent retryPIntent = PendingIntent.getBroadcast(SalesforceSDKManager.getInstance().getAppContext(),
-        		1, retryIntent,
-				PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE);
-        final AlarmManager am = (AlarmManager) SalesforceSDKManager.getInstance().getAppContext().getSystemService(Context.ALARM_SERVICE);
-        am.set(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), retryPIntent);
-    }
 
     private void onRegistered(String registrationId, UserAccount account) {
         if (account == null) {
@@ -215,7 +159,19 @@ public class PushService extends JobIntentService {
     	} catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Error occurred during SFDC registration", e);
     	} finally {
-            scheduleSFDCRegistrationRetry(MILLISECONDS_IN_SIX_DAYS, null);
+			/*
+			 * Although each user account should be registered with the SFDC API
+			 * for push notifications on login and Firebase push notifications
+			 * registration, enqueue an additional SFDC API push notifications
+			 * registration for all users six days from now.  This may provide
+			 * an additional level of registration verification, though the
+			 * actual requirements may need more definition in the future.
+			 */
+            enqueuePushNotificationsRegistrationWork(
+					null, // All user accounts.
+					Register,
+					MILLISECONDS_IN_SIX_DAYS
+			);
     	}
     }
 
@@ -264,6 +220,7 @@ public class PushService extends JobIntentService {
      * @param status the registration status. One of the {@code REGISTRATION_STATUS_XXX} constants
      * @param userAccount the user account that's performing registration
      */
+	@SuppressWarnings("unused")
 	protected void onPushNotificationRegistrationStatus(int status, UserAccount userAccount) {
 
 		// Do nothing.
@@ -308,7 +265,6 @@ public class PushService extends JobIntentService {
             		}
             	} else if (res.getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
                     id = NOT_ENABLED;
-                    status = REGISTRATION_STATUS_FAILED;
             	}
             	res.consume();
                 SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_PUSH_NOTIFICATIONS);
@@ -397,27 +353,4 @@ public class PushService extends JobIntentService {
     	}
     	return client;
     }
-
-    /**
-     * Broadcast receiver to retry SFDC push registration.
-     *
-     * @author ktanna
-     */
-    public static class SFDCRegistrationRetryAlarmReceiver extends BroadcastReceiver {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-			if (intent != null) {
-				final Bundle accBundle = intent.getBundleExtra(PushMessaging.ACCOUNT_BUNDLE_KEY);
-				if (accBundle != null) {
-					final String allAccountsValue = accBundle.getString(PushMessaging.ACCOUNT_BUNDLE_KEY);
-					if (PushMessaging.ALL_ACCOUNTS_BUNDLE_VALUE.equals(allAccountsValue)) {
-						PushMessaging.registerSFDCPush(context, null);
-					} else {
-						PushMessaging.registerSFDCPush(context, new UserAccount(accBundle));
-					}
-				}
-			}
-		}
-	}
 }

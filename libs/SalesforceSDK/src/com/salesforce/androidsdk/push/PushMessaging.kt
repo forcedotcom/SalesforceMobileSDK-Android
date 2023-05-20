@@ -27,16 +27,18 @@
 package com.salesforce.androidsdk.push
 
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
-import android.os.Bundle
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import com.google.firebase.installations.FirebaseInstallations
 import com.google.firebase.messaging.FirebaseMessaging
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction
+import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Deregister
+import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
+import com.salesforce.androidsdk.push.PushService.enqueuePushNotificationsRegistrationWork
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 
 /**
@@ -51,17 +53,13 @@ object PushMessaging {
     // Public constants.
     const val UNREGISTERED_ATTEMPT_COMPLETE_EVENT = "com.salesforce.mobilesdk.c2dm.UNREGISTERED"
     const val UNREGISTERED_EVENT = "com.salesforce.mobilesdk.c2dm.ACTUAL_UNREGISTERED"
-    const val ACCOUNT_BUNDLE_KEY = "account_bundle"
-    const val ALL_ACCOUNTS_BUNDLE_VALUE = "all_accounts"
 
     // Private constants.
     private const val GCM_PREFS = "gcm_prefs"
     private const val LAST_SFDC_REGISTRATION_TIME = "last_registration_change"
     private const val REGISTRATION_ID = "c2dm_registration_id"
-    private const val BACKOFF = "backoff"
     private const val DEVICE_ID = "deviceId"
     private const val IN_PROGRESS = "inprogress"
-    private const val DEFAULT_BACKOFF: Long = 30000
 
     /**
      * Initiates push registration, if the application is not already registered.
@@ -206,8 +204,7 @@ object PushMessaging {
      */
     @JvmStatic
     fun registerSFDCPush(context: Context, account: UserAccount?) {
-        val registrationIntent = Intent(PushService.SFDC_REGISTRATION_RETRY_INTENT)
-        runPushService(context, account, registrationIntent)
+        runPushService(context, account, Register)
     }
 
     /**
@@ -217,19 +214,26 @@ object PushMessaging {
      * @param account User account.
      */
     private fun unregisterSFDCPush(context: Context, account: UserAccount?) {
-        val unregistrationIntent = Intent(PushService.SFDC_UNREGISTRATION_INTENT)
-        runPushService(context, account, unregistrationIntent)
+        runPushService(context, account, Deregister)
     }
 
-    private fun runPushService(context: Context, account: UserAccount?, intent: Intent) {
+    private fun runPushService(
+        context: Context,
+        account: UserAccount?,
+        action: PushNotificationsRegistrationAction
+    ) {
         if (account == null) {
-            val bundle = Bundle()
-            bundle.putString(ACCOUNT_BUNDLE_KEY, ALL_ACCOUNTS_BUNDLE_VALUE)
-            intent.putExtra(ACCOUNT_BUNDLE_KEY, bundle)
-            PushService.runIntentInService(intent)
+            enqueuePushNotificationsRegistrationWork(
+                null,
+                action,
+                null
+            )
         } else if (isRegistered(context, account)) {
-            intent.putExtra(ACCOUNT_BUNDLE_KEY, account.toBundle())
-            PushService.runIntentInService(intent)
+            enqueuePushNotificationsRegistrationWork(
+                account,
+                action,
+                null
+            )
         }
     }
 
@@ -268,7 +272,6 @@ object PushMessaging {
         )
         val editor = prefs.edit()
         editor.putString(REGISTRATION_ID, registrationId)
-        editor.putLong(BACKOFF, DEFAULT_BACKOFF)
         editor.apply()
     }
 
@@ -413,40 +416,6 @@ object PushMessaging {
     }
 
     /**
-     * Returns the last backoff time.
-     *
-     * @param context Context.
-     * @return Backoff time.
-     * @param account User account.
-     */
-    @Suppress("unused")
-    fun getBackoff(context: Context, account: UserAccount?): Long {
-        val prefs = context.getSharedPreferences(
-            getSharedPrefFile(account),
-            Context.MODE_PRIVATE
-        )
-        return prefs.getLong(BACKOFF, DEFAULT_BACKOFF)
-    }
-
-    /**
-     * Sets the backoff time for registration retry.
-     *
-     * @param context Context.
-     * @param backoff Backoff time to be used.
-     * @param account User account.
-     */
-    @Suppress("unused")
-    fun setBackoff(context: Context, backoff: Long, account: UserAccount?) {
-        val prefs = context.getSharedPreferences(
-            getSharedPrefFile(account),
-            Context.MODE_PRIVATE
-        )
-        val editor = prefs.edit()
-        editor.putLong(BACKOFF, backoff)
-        editor.apply()
-    }
-
-    /**
      * Stores the current registration information, and resets the backoff time.
      *
      * @param context Context.
@@ -466,7 +435,6 @@ object PushMessaging {
         val editor = prefs.edit()
         editor.putString(REGISTRATION_ID, registrationId)
         editor.putString(DEVICE_ID, deviceId)
-        editor.putLong(BACKOFF, DEFAULT_BACKOFF)
         editor.putLong(LAST_SFDC_REGISTRATION_TIME, System.currentTimeMillis())
         editor.putBoolean(IN_PROGRESS, false)
         editor.apply()
