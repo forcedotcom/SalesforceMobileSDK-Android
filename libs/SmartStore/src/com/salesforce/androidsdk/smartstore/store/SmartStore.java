@@ -992,8 +992,8 @@ public class SmartStore  {
 	            soupElt.put(SOUP_LAST_MODIFIED_DATE, now);
 	            ContentValues contentValues = new ContentValues();
 	            contentValues.put(ID_COL, soupEntryId);
-	            contentValues.put(CREATED_COL, now);
-	            contentValues.put(LAST_MODIFIED_COL, now);
+				contentValues.put(CREATED_COL, now);
+				contentValues.put(LAST_MODIFIED_COL, now);
 				contentValues.put(SOUP_COL, soupElt.toString());
 	            projectIndexedPaths(soupElt, contentValues, indexSpecs, TypeGroup.value_extracted_to_column);
 
