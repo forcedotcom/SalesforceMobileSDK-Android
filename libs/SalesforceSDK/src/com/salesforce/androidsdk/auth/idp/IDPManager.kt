@@ -246,6 +246,7 @@ internal class IDPManager(
                     putExtra(ACTION_KEY, message.action)
                     action = Intent.ACTION_VIEW
                     setClass(context, com.salesforce.androidsdk.auth.idp.IDPAuthCodeActivity::class.java)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     addCategory(Intent.CATEGORY_DEFAULT)
                 }
                 // The activity will call onReceive which will call handleLoginRequest but this time
