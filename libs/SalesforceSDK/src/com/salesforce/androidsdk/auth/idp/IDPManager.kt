@@ -52,9 +52,9 @@ internal class IDPLoginFlow(context:Context, val user:UserAccount, val spConfig:
     var authCodeActivity: IDPAuthCodeActivity? = null
 
     companion object {
-        val TAG: String = IDPLoginFlow::class.java.simpleName
+        private val TAG: String = IDPLoginFlow::class.java.simpleName
         fun kickOff(idpManager:IDPManager, context: Context, user: UserAccount, spConfig: SPConfig, onStatusUpdate: (Status) -> Unit) {
-            SalesforceSDKLogger.d(SPLoginFlow.TAG, "Kicking off login flow from $context")
+            SalesforceSDKLogger.d(TAG, "Kicking off login flow from $context")
 
             val activeFlow = IDPLoginFlow(context, user, spConfig, onStatusUpdate)
             idpManager.startActiveFlow(activeFlow)
@@ -246,6 +246,7 @@ internal class IDPManager(
                     putExtra(ACTION_KEY, message.action)
                     action = Intent.ACTION_VIEW
                     setClass(context, com.salesforce.androidsdk.auth.idp.IDPAuthCodeActivity::class.java)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     addCategory(Intent.CATEGORY_DEFAULT)
                 }
                 // The activity will call onReceive which will call handleLoginRequest but this time

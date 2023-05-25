@@ -58,7 +58,7 @@ internal class SPAuthCodeHelper private constructor (
         val error: String? = null
     )
     companion object {
-        val TAG: String = SPAuthCodeHelper::class.java.simpleName
+        private val TAG: String = SPAuthCodeHelper::class.java.simpleName
 
         fun loginWithAuthCode(context:Context,
                               loginUrl: String, code:
