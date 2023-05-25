@@ -121,6 +121,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     public static final String BIOMETRIC_PROMPT = "mobilesdk://biometric/authentication/prompt";
     private static final String TAG = "OAuthWebViewHelper";
     private static final String ACCOUNT_OPTIONS = "accountOptions";
+    private static final String PROMPT_LOGIN = "&prompt=login";
     private String codeVerifier;
 
     // background executor
@@ -322,17 +323,24 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     public void loadLoginPage() {
         if (TextUtils.isEmpty(loginOptions.getJwt())) {
             loginOptions.setLoginUrl(getLoginUrl());
-            doLoadPage(false);
+            doLoadPage();
         } else {
             new SwapJWTForAccessTokenTask().execute(loginOptions);
         }
     }
 
-    private void doLoadPage(boolean jwtFlow) {
+    private void doLoadPage() {
         try {
-            URI uri = getAuthorizationUrl(jwtFlow);
+            boolean isBrowserLoginEnabled = SalesforceSDKManager.getInstance().isBrowserLoginEnabled();
+            boolean useWebServerFlowAuthentication = isBrowserLoginEnabled || SalesforceSDKManager.getInstance().shouldUseWebServerAuthentication();
+
+            URI uri = getAuthorizationUrl(useWebServerFlowAuthentication);
             callback.loadingLoginPage(loginOptions.getLoginUrl());
             if (SalesforceSDKManager.getInstance().isBrowserLoginEnabled()) {
+                if(!SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled()){
+                    String urlString = uri.toString();
+                    uri = new URI(urlString.concat(PROMPT_LOGIN));
+                }
                 loadLoginPageInChrome(uri);
             } else {
                 webview.loadUrl(uri.toString());
@@ -415,12 +423,13 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     	return loginOptions.getOauthClientId();
     }
 
-    protected URI getAuthorizationUrl(Boolean jwtFlow) throws URISyntaxException {
+    protected URI getAuthorizationUrl(boolean useWebServerAuthentication) throws URISyntaxException {
+        boolean jwtFlow = !TextUtils.isEmpty(loginOptions.getJwt());
+        Map<String, String> addlParams = jwtFlow ? null : loginOptions.getAdditionalParameters();
+        // NB code verifier / code challenge are only used when useWebServerAuthentication is true
         codeVerifier = SalesforceKeyGenerator.getRandom128ByteKey();
         String codeChallenge = SalesforceKeyGenerator.getSHA256Hash(codeVerifier);
-
-        Map<String, String> addlParams = jwtFlow ? null : loginOptions.getAdditionalParameters();
-        URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(loginOptions.getLoginUrl()), getOAuthClientId(), loginOptions.getOauthCallbackUrl(), loginOptions.getOauthScopes(), getAuthorizationDisplayType(), codeChallenge, addlParams);
+        URI authorizationUrl = OAuth2.getAuthorizationUrl(useWebServerAuthentication, new URI(loginOptions.getLoginUrl()), getOAuthClientId(), loginOptions.getOauthCallbackUrl(), loginOptions.getOauthScopes(), getAuthorizationDisplayType(), codeChallenge, addlParams);
 
         if (jwtFlow) {
             return OAuth2.getFrontdoorUrl(authorizationUrl,
@@ -483,6 +492,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+            boolean useWebFlowAuthentication = SalesforceSDKManager.getInstance().shouldUseWebServerAuthentication();
             Uri uri = request.getUrl();
 
             // Login webview embedded button has sent the signal to show the biometric prompt.
@@ -509,8 +519,13 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 }
                 // Or succeed?
                 else {
-                    String code = params.get("code");
-                    onWebServerFlowComplete(code);
+                    if (useWebFlowAuthentication) {
+                        String code = params.get("code");
+                        onWebServerFlowComplete(code);
+                    } else {
+                        TokenEndpointResponse tr = new TokenEndpointResponse(params);
+                        onAuthFlowComplete(tr);
+                    }
                 }
             }
             return isDone;
@@ -605,9 +620,9 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             }
             if (tr != null && tr.authToken != null) {
                 loginOptions.setJwt(tr.authToken);
-                doLoadPage(true);
+                doLoadPage();
             } else {
-                doLoadPage(false);
+                doLoadPage();
                 handleJWTError();
             }
             loginOptions.setJwt(null);
