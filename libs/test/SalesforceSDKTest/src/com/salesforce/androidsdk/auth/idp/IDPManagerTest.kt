@@ -322,7 +322,7 @@ internal class IDPManagerTest : IDPSPManagerTestCase() {
             Assert.assertNull(idpManager.getActiveFlow())
         } else {
             // IDP auth activity should be launched upon receiving the SPToIDPRequest
-            waitForEvent("startActivity Intent { act=android.intent.action.VIEW cat=[android.intent.category.DEFAULT] cmp=com.salesforce.androidsdk.tests/com.salesforce.androidsdk.auth.idp.IDPAuthCodeActivity (has extras) } extras = { action = com.salesforce.androidsdk.SP_TO_IDP_REQUEST uuid = ${spToIdpRequest.uuid} src_app_package_name = some-sp code_challenge = $challenge }")
+            waitForEvent("startActivity Intent { act=android.intent.action.VIEW cat=[android.intent.category.DEFAULT] flg=0x10008000 cmp=com.salesforce.androidsdk.tests/com.salesforce.androidsdk.auth.idp.IDPAuthCodeActivity (has extras) } extras = { action = com.salesforce.androidsdk.SP_TO_IDP_REQUEST uuid = ${spToIdpRequest.uuid} src_app_package_name = some-sp code_challenge = $challenge }")
 
             // Checking auth activity is attached to active flow
             Assert.assertNotNull((idpManager.getActiveFlow() as? IDPLoginFlow)?.authCodeActivity)
@@ -339,7 +339,7 @@ internal class IDPManagerTest : IDPSPManagerTestCase() {
         })
 
         // IDP auth activity should be launched upon receiving the SPToIDPRequest
-        waitForEvent("startActivity Intent { act=android.intent.action.VIEW cat=[android.intent.category.DEFAULT] cmp=com.salesforce.androidsdk.tests/com.salesforce.androidsdk.auth.idp.IDPAuthCodeActivity (has extras) } extras = { action = com.salesforce.androidsdk.SP_TO_IDP_REQUEST uuid = ${spToIdpRequest.uuid} src_app_package_name = some-sp code_challenge = $challenge }")
+        waitForEvent("startActivity Intent { act=android.intent.action.VIEW cat=[android.intent.category.DEFAULT] flg=0x10008000 cmp=com.salesforce.androidsdk.tests/com.salesforce.androidsdk.auth.idp.IDPAuthCodeActivity (has extras) } extras = { action = com.salesforce.androidsdk.SP_TO_IDP_REQUEST uuid = ${spToIdpRequest.uuid} src_app_package_name = some-sp code_challenge = $challenge }")
 
         // Checking auth activity is attached to active flow
         Assert.assertNotNull((idpManager.getActiveFlow() as? IDPLoginFlow)?.authCodeActivity)
