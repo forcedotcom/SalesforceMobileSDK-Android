@@ -56,7 +56,7 @@ internal class SPLoginFlow private constructor(context:Context, val onStatusUpda
     val codeChallenge: String = SalesforceKeyGenerator.getSHA256Hash(codeVerifier)
 
     companion object {
-            val TAG: String = SPLoginFlow::class.java.simpleName
+            private val TAG: String = SPLoginFlow::class.java.simpleName
 
             fun kickOff(spManager:SPManager, context: Context, onStatusUpdate: (Status) -> Unit = { _ -> }, idpToSpRequest:IDPToSPRequest? = null) {
                 val trigger = if (idpToSpRequest == null) "" else " triggered by $idpToSpRequest "

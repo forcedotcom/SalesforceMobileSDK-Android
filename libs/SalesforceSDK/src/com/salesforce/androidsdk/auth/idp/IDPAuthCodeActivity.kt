@@ -16,7 +16,7 @@ import com.salesforce.androidsdk.auth.idp.interfaces.IDPAuthCodeActivity as IDPA
  */
 class IDPAuthCodeActivity : Activity(), IDPAuthCodeActivityInterface {
     companion object {
-        val TAG: String = IDPAuthCodeActivity::class.java.simpleName
+        private val TAG: String = IDPAuthCodeActivity::class.java.simpleName
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
