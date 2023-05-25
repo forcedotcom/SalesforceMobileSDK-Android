@@ -27,13 +27,14 @@
 package com.salesforce.androidsdk.smartstore.store;
 
 import android.database.Cursor;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
+
 import com.salesforce.androidsdk.util.JSONTestHelper;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+
 import net.sqlcipher.database.SQLiteDatabase;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -42,6 +43,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Tests to compare speed of smartstore full-text-search indices with regular indices
@@ -215,61 +220,6 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         tryAlterSoupTypeChange(SmartStore.Type.json1, SmartStore.Type.full_text);
     }
 
-
-    /**
-     * Test for alterSoup with column type change from string to json1
-     * and storage goes from external to internal
-     */
-    @Test
-    public void testAlterSoupTypeChangeStringToJSON1ExternalToInternal() throws JSONException {
-        tryAlterSoupTypeChange(SmartStore.Type.string, SmartStore.Type.json1, false, true, true);
-    }
-
-    /**
-     * Test for alterSoup with column type change from json1 to string
-     * and storage change from internal to external
-     */
-    @Test
-    public void testAlterSoupTypeChangeJSON1ToStringInternalToExternal() throws JSONException {
-        tryAlterSoupTypeChange(SmartStore.Type.json1, SmartStore.Type.string, true, true, false);
-    }
-
-    /**
-     * Test for alterSoup with column type change from string to full_text
-     * and storage change from external to internal
-     */
-    @Test
-    public void testAlterSoupTypeChangeStringToFullTextExternalToInternal() throws JSONException {
-        tryAlterSoupTypeChange(SmartStore.Type.string, SmartStore.Type.full_text, false, true, true);
-    }
-        
-    /**
-     * Test for alterSoup with column type change from full_text to string
-     * and storage change from internal to external
-     */
-    @Test
-    public void testAlterSoupTypeChangeFullTextToStringInternalToExternal() throws JSONException {
-        tryAlterSoupTypeChange(SmartStore.Type.full_text, SmartStore.Type.string, true, true, false);
-    }
-
-    /**
-     * Test for alterSoup with string column
-     * and storage change from internal to external to internal
-     */
-    @Test
-    public void testAlterSoupStringInternalToExternalToInternal() throws JSONException {
-        tryAlterSoupTypeChange(SmartStore.Type.string, SmartStore.Type.string, true, false, true);
-    }
-
-    /**
-     * Test for alterSoup with full_text column
-     * and storage change from internal to external to internal
-     */
-    @Test
-    public void testAlterSoupFullTextInternalToExternalToInternal() throws JSONException {
-        tryAlterSoupTypeChange(SmartStore.Type.full_text, SmartStore.Type.string, true, false, true);
-    }
-
     /**
      * Test for alterSoup passing in same index specs (string)
      * Make sure db table / indexes are recreated
@@ -384,15 +334,9 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
     }
 
     private void tryAlterSoupTypeChange(SmartStore.Type fromType, SmartStore.Type toType) throws JSONException {
-        tryAlterSoupTypeChange(fromType, toType, true, true, true);
-    }
-
-    private void tryAlterSoupTypeChange(SmartStore.Type fromType, SmartStore.Type toType, boolean fromStorageInternal,
-                                       boolean toStorageInternal, boolean toStorageInternal2) throws JSONException {
         IndexSpec[] indexSpecs = new IndexSpec[] {new IndexSpec(CITY, fromType), new IndexSpec(COUNTRY, fromType)};
         Assert.assertFalse("Soup test_soup should not exist", store.hasSoup(TEST_SOUP));
-        SoupSpec soupSpec = fromStorageInternal ? new SoupSpec(TEST_SOUP) : new SoupSpec(TEST_SOUP, SoupSpec.FEATURE_EXTERNAL_STORAGE);
-        store.registerSoupWithSpec(soupSpec, indexSpecs);
+        store.registerSoup(TEST_SOUP, indexSpecs);
         Assert.assertTrue("Register soup call failed", store.hasSoup(TEST_SOUP));
         JSONObject soupElt1 = new JSONObject();
         soupElt1.put(CITY, SAN_FRANCISCO);
@@ -404,46 +348,30 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         long elt2Id = idOf(store.create(TEST_SOUP, soupElt2));
 
         // Checking db
-        checkDb(new long[]{elt1Id, elt2Id}, indexSpecs[0].type, indexSpecs[1].type, fromStorageInternal);
-
-        // Checking filesystem if applicable
-        checkFileSystem(TEST_SOUP, new long[]{elt1Id, elt2Id}, !fromStorageInternal);
+        checkDb(new long[]{elt1Id, elt2Id}, indexSpecs[0].type, indexSpecs[1].type);
 
         // Alter soup - country now full_text
         IndexSpec[] indexSpecsNew = new IndexSpec[] {new IndexSpec(CITY, fromType), new IndexSpec(COUNTRY, toType)};
-        SoupSpec toSoupSpec = toStorageInternal ? new SoupSpec(TEST_SOUP) : new SoupSpec(TEST_SOUP, SoupSpec.FEATURE_EXTERNAL_STORAGE);
-        store.alterSoup(TEST_SOUP, toSoupSpec, indexSpecsNew, true);
+        store.alterSoup(TEST_SOUP, indexSpecsNew, true);
 
         // Checking db
-        checkDb(new long[]{elt1Id, elt2Id}, indexSpecsNew[0].type, indexSpecsNew[1].type, toStorageInternal);
+        checkDb(new long[]{elt1Id, elt2Id}, indexSpecsNew[0].type, indexSpecsNew[1].type);
 
-        // Checking filesystem if applicable
-        checkFileSystem(TEST_SOUP,new long[]{elt1Id, elt2Id}, !toStorageInternal);
 
         // Alter soup - city now full_text
         indexSpecsNew = new IndexSpec[] {new IndexSpec(CITY, toType), new IndexSpec(COUNTRY, toType)};
-        SoupSpec toSoupSpec2 = toStorageInternal2 ? new SoupSpec(TEST_SOUP) : new SoupSpec(TEST_SOUP, SoupSpec.FEATURE_EXTERNAL_STORAGE);
-        store.alterSoup(TEST_SOUP, toSoupSpec2, indexSpecsNew, true);
+        store.alterSoup(TEST_SOUP, indexSpecsNew, true);
 
         // Checking db
-        checkDb(new long[]{elt1Id, elt2Id}, indexSpecsNew[0].type, indexSpecsNew[1].type, toStorageInternal2);
-
-        // Checking filesystem if applicable
-        checkFileSystem(TEST_SOUP, new long[]{elt1Id, elt2Id}, !toStorageInternal2);
+        checkDb(new long[]{elt1Id, elt2Id}, indexSpecsNew[0].type, indexSpecsNew[1].type);
     }
 
     private void checkDb(long[] expectedIds, SmartStore.Type cityColType, SmartStore.Type countryColType) throws JSONException {
-        checkDb(expectedIds, cityColType, countryColType, true);
-    }
-
-    private void checkDb(long[] expectedIds, SmartStore.Type cityColType, SmartStore.Type countryColType, boolean useInternalStorage) throws JSONException {
         String[] cities = new String[] {SAN_FRANCISCO, PARIS};
         String[] countries = new String[] {USA, FRANCE};
 
         // Check columns of soup table
-        List<String> expectedColumnNames = useInternalStorage
-                ? new ArrayList<>(Arrays.asList("id", "soup", "created", "lastModified"))
-                : new ArrayList<>(Arrays.asList("id", "created", "lastModified"));
+        List<String> expectedColumnNames = new ArrayList<>(Arrays.asList("id", "soup", "created", "lastModified"));
         if (cityColType != SmartStore.Type.json1) expectedColumnNames.add(CITY_COL);
         if (countryColType != SmartStore.Type.json1) expectedColumnNames.add(COUNTRY_COL);
         checkColumns(TEST_SOUP_TABLE_NAME, expectedColumnNames);

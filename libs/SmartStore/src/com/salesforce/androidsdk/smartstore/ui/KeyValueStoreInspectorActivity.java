@@ -56,7 +56,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 public class KeyValueStoreInspectorActivity extends Activity {
     // Keys for extras bundle
