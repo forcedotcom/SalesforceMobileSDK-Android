@@ -58,7 +58,7 @@ internal class BiometricAuthenticationManager: AppLockManager(
         return enabled && (elapsedTime > timeout)
     }
     override fun lock() {
-        currentUser?.let {user ->
+        currentUser?.let {
             locked = true
             val ctx = SalesforceSDKManager.getInstance().appContext
             val options = SalesforceSDKManager.getInstance().loginOptions.asBundle()
@@ -72,7 +72,6 @@ internal class BiometricAuthenticationManager: AppLockManager(
             ctx.startActivity(intent)
             EventsObservable.get().notifyEvent(EventsObservable.EventType.AppLocked)
         }
-
     }
 
     override fun biometricOptIn(optIn: Boolean) {
