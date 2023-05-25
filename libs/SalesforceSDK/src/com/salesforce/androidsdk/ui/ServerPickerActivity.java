@@ -80,7 +80,7 @@ public class ServerPickerActivity extends AppCompatActivity implements
      */
     @Override
     public void onBackPressed() {
-        (new AuthConfigTask(this)).execute();
+        reconfigureAuthorization();
     }
 
     @Override
@@ -173,6 +173,7 @@ public class ServerPickerActivity extends AppCompatActivity implements
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
+            reconfigureAuthorization();
             finish();
             return true;
         } else if (item.getItemId() == R.id.sf__menu_clear_custom_url) {
@@ -204,6 +205,13 @@ public class ServerPickerActivity extends AppCompatActivity implements
      */
     public CustomServerUrlEditor getCustomServerUrlEditor() {
         return urlEditDialog;
+    }
+
+    /**
+     * Refreshes the authorization configuration.
+     */
+    private void reconfigureAuthorization() {
+        (new AuthConfigTask(this)).execute();
     }
 
     /**
