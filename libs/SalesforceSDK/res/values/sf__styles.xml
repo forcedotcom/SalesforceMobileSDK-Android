@@ -63,6 +63,8 @@
         <item name="android:background">@drawable/sf__dialog</item>
         <item name="buttonBarPositiveButtonStyle">@style/PositiveButtonStyle</item>
         <item name="buttonBarNegativeButtonStyle">@style/NegativeButtonStyle</item>
+        <item name="android:windowNoTitle">false</item>
+        <item name="android:windowIsFloating">true</item>
     </style>
 
     <style name="SalesforceSDK.AlertDialog.Dark">
