@@ -91,7 +91,7 @@ public class OAuth2 {
     private static final String MOBILE_POLICY = "mobile_policy";
     private static final String SCREEN_LOCK_TIMEOUT = "screen_lock";
     private static final String BIOMETRIC_AUTHENTICATION = "ENABLE_BIOMETRIC_AUTHENTICATION";
-    private static final String BIOMETRIC_AUTHENTICATION_TIMEOUT = "REQUIRE_BIOMETRICS_AFTER";
+    private static final String BIOMETRIC_AUTHENTICATION_TIMEOUT = "BIOMETRIC_AUTHENTICATION_TIMEOUT";
     private static final int BIOMETRIC_AUTHENTICATION_DEFAULT_TIMEOUT = 15;
     private static final String REFRESH_TOKEN = "refresh_token";
     private static final String HYBRID_REFRESH = "hybrid_refresh";
