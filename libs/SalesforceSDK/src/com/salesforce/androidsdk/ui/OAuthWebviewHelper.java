@@ -64,6 +64,7 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountBuilder;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
+import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
@@ -749,6 +750,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
             // Screen lock required by mobile policy.
             if (id.screenLockTimeout > 0) {
+                SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_SCREEN_LOCK);
                 int timeoutInMills = id.screenLockTimeout * 1000 * 60;
                 ((ScreenLockManager) mgr.getScreenLockManager())
                         .storeMobilePolicy(account, id.screenLock, timeoutInMills);
@@ -756,6 +758,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
             // Biometric Auth required by mobile policy.
             if (id.biometricAuth) {
+                SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_BIOMETRIC_AUTH);
                 BiometricAuthenticationManager bioAuthManager =
                         (BiometricAuthenticationManager) mgr.getBiometricAuthenticationManager();
                 int timeoutInMills = id.biometricAuthTimeout * 60 * 1000;
