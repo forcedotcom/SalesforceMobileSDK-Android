@@ -42,5 +42,6 @@ public class Features {
     public static final String FEATURE_MULTI_USERS = "MU";
     public static final String FEATURE_PUSH_NOTIFICATIONS = "PN";
     public static final String FEATURE_USER_AUTH = "UA";
-
+    public static final String FEATURE_SCREEN_LOCK = "SL";
+    public static final String FEATURE_BIOMETRIC_AUTH = "BA";
 }
