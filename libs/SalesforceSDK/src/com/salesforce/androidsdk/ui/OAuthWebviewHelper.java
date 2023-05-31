@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import static com.salesforce.androidsdk.rest.RestRequest.getRequestForUserInfo;
-
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
@@ -77,9 +75,6 @@ import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
-import com.salesforce.androidsdk.rest.RestRequest;
-import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.security.ScreenLockManager;
@@ -102,6 +97,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * Helper class to manage a WebView instance that is going through the OAuth login process.
@@ -647,6 +645,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
         protected volatile Exception backgroundException;
         protected volatile IdServiceResponse id = null;
+        protected volatile boolean isSalesforceIntegrationUser = false;
 
         public BaseFinishAuthFlowTask() {
         }
@@ -670,6 +669,15 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             final SalesforceSDKManager mgr = SalesforceSDKManager.getInstance();
 
             // Failure cases.
+            if (isSalesforceIntegrationUser) {
+                SalesforceSDKLogger.w(TAG, "Salesforce integration users cannot authenticate.");
+                onAuthFlowError(
+                        getContext().getString(R.string.sf__generic_authentication_error_title),
+                        getContext().getString(R.string.sf__generic_authentication_error), backgroundException);
+                callback.finish(null);
+                return;
+            }
+
             if (backgroundException != null) {
                 SalesforceSDKLogger.w(TAG, "Exception thrown while retrieving token response", backgroundException);
                 onAuthFlowError(getContext().getString(R.string.sf__generic_authentication_error_title),
@@ -752,34 +760,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             // Save the user account
             addAccount(account);
 
-            // TODO: W-13186970: Prototype fetching `is_salesforce_integration_user`. ECJ20230531
-            final String accountType = SalesforceSDKManager.getInstance().getAccountType();
-            final ClientManager clientManager = new ClientManager(
-                    context,
-                    accountType,
-                    loginOptions,
-                    false
-            );
-            final RestClient restClient = clientManager.peekRestClient(account);
-            restClient.sendAsync(
-                    getRequestForUserInfo(),
-                    new AsyncRequestCallback() {
-                        @Override
-                        public void onSuccess(RestRequest request, RestResponse response) {
-                            try {
-                                final String json = response.asString();
-                                SalesforceSDKLogger.i(TAG, "Exception: '" + json + "'.");
-                            } catch (Throwable t) {
-                                SalesforceSDKLogger.e(TAG, "Exception: '" + t.getMessage() + "'.", t);
-                            }
-                        }
-
-                        @Override
-                        public void onError(Exception e) {
-                            SalesforceSDKLogger.e(TAG, "Exception: '" + e.getMessage() + "'.", e);
-                        }
-                    });
-
             // Screen lock required by mobile policy.
             if (id.screenLockTimeout > 0) {
                 SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_SCREEN_LOCK);
@@ -820,10 +800,22 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             try {
                 id = OAuth2.callIdentityService(
                     HttpAccess.DEFAULT, tr.idUrlWithInstance, tr.authToken);
-            } catch(Exception e) {
+                isSalesforceIntegrationUser = fetchIsSalesforceIntegrationUser(tr);
+            } catch (Exception e) {
                 backgroundException = e;
             }
             return tr;
+        }
+
+        private boolean fetchIsSalesforceIntegrationUser(TokenEndpointResponse tr) throws Exception {
+            final String url = getLoginUrl() + "/services/oauth2/userinfo";
+            final Request.Builder builder = new Request.Builder().url(url).get();
+            OAuth2.addAuthorizationHeader(builder, tr.authToken);
+            final Request request = builder.build();
+            final Response response = HttpAccess.DEFAULT.getOkHttpClient().newCall(request).execute();
+            final String responseString = response.body() == null ? null : response.body().string();
+
+            return responseString != null && new JSONObject(responseString).getBoolean("is_salesforce_integration_user");
         }
     }
 
