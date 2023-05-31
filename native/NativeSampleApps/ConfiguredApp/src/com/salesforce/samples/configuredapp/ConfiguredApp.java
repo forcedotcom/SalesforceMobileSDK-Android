@@ -42,10 +42,11 @@ public class ConfiguredApp extends Application {
 		SalesforceSDKManager.initNative(getApplicationContext(), MainActivity.class);
 
 		/*
-         * Uncomment the following line to enable IDP login flow. This will allow the user to
-         * either authenticate using the current app or use a designated IDP app for login.
-         * Replace 'idpAppURIScheme' with the URI scheme of the IDP app meant to be used.
-         */
-        // SalesforceSDKManager.getInstance().setIDPAppURIScheme(idpAppURIScheme);
+		 * Uncomment the following line to enable IDP login flow. This will allow the user to
+		 * either authenticate using the current app or use the designated IDP app for login.
+		 * Replace 'com.salesforce.samples.salesforceandroididptemplateapp' with the package name
+		 * of the IDP app meant to be used.
+		 */
+		// SalesforceSDKManager.getInstance().setIDPAppPackageName("com.salesforce.samples.salesforceandroididptemplateapp");
 	}
 }
