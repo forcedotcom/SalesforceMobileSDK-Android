@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import static com.salesforce.androidsdk.rest.RestRequest.getRequestForUserInfo;
+
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
@@ -58,7 +60,6 @@ import android.widget.Toast;
 
 import androidx.browser.customtabs.CustomTabsIntent;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountBuilder;
@@ -76,6 +77,9 @@ import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
+import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.security.ScreenLockManager;
@@ -747,6 +751,34 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
             // Save the user account
             addAccount(account);
+
+            // TODO: W-13186970: Prototype fetching `is_salesforce_integration_user`. ECJ20230531
+            final String accountType = SalesforceSDKManager.getInstance().getAccountType();
+            final ClientManager clientManager = new ClientManager(
+                    context,
+                    accountType,
+                    loginOptions,
+                    false
+            );
+            final RestClient restClient = clientManager.peekRestClient(account);
+            restClient.sendAsync(
+                    getRequestForUserInfo(),
+                    new AsyncRequestCallback() {
+                        @Override
+                        public void onSuccess(RestRequest request, RestResponse response) {
+                            try {
+                                final String json = response.asString();
+                                SalesforceSDKLogger.i(TAG, "Exception: '" + json + "'.");
+                            } catch (Throwable t) {
+                                SalesforceSDKLogger.e(TAG, "Exception: '" + t.getMessage() + "'.", t);
+                            }
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            SalesforceSDKLogger.e(TAG, "Exception: '" + e.getMessage() + "'.", e);
+                        }
+                    });
 
             // Screen lock required by mobile policy.
             if (id.screenLockTimeout > 0) {
