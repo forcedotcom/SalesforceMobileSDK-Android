@@ -30,6 +30,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.SQLException;
+import android.database.sqlite.SQLiteDoneException;
 import android.util.LruCache;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -40,7 +41,6 @@ import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 
 import net.sqlcipher.DatabaseUtils.InsertHelper;
 import net.sqlcipher.database.SQLiteDatabase;
-import net.sqlcipher.database.SQLiteDoneException;
 import net.sqlcipher.database.SQLiteStatement;
 
 import org.json.JSONArray;
