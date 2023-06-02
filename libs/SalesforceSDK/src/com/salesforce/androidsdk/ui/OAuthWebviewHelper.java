@@ -645,6 +645,11 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
         protected volatile Exception backgroundException;
         protected volatile IdServiceResponse id = null;
+
+        /**
+         * Indicates if the authenticated user is a designated Salesforce
+         * integration user
+         */
         protected volatile boolean isSalesforceIntegrationUser = false;
 
         public BaseFinishAuthFlowTask() {
@@ -670,14 +675,19 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
             // Failure cases.
             if (isSalesforceIntegrationUser) {
-                SalesforceSDKLogger.w(TAG, "Salesforce integration users cannot authenticate.");
-                onAuthFlowError(
+                /*
+                 * Salesforce integration users are prohibited from successfully
+                 * completing authentication. This alleviates the Restricted
+                 * Product Approval requirement on Salesforce Integration add-on
+                 * SKUs and conforms to Legal and Product Strategy requirements.
+                 */
+                SalesforceSDKLogger.w(TAG, "Salesforce integration users are prohibited from successfully authenticating.");
+                onAuthFlowError( // Issue the generic authentication error.
                         getContext().getString(R.string.sf__generic_authentication_error_title),
                         getContext().getString(R.string.sf__generic_authentication_error), backgroundException);
                 callback.finish(null);
                 return;
             }
-
             if (backgroundException != null) {
                 SalesforceSDKLogger.w(TAG, "Exception thrown while retrieving token response", backgroundException);
                 onAuthFlowError(getContext().getString(R.string.sf__generic_authentication_error_title),
@@ -800,6 +810,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             try {
                 id = OAuth2.callIdentityService(
                     HttpAccess.DEFAULT, tr.idUrlWithInstance, tr.authToken);
+
+                // Request the authenticated user's information to determine if it is a Salesforce integration user.  This is a synchronous network request, so it must be performed here in the background stage.
                 isSalesforceIntegrationUser = fetchIsSalesforceIntegrationUser(tr);
             } catch (Exception e) {
                 backgroundException = e;
@@ -807,10 +819,22 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             return tr;
         }
 
-        private boolean fetchIsSalesforceIntegrationUser(TokenEndpointResponse tr) throws Exception {
+        /**
+         * Requests the user's information from the network and returns the
+         * user's integration user state.
+         *
+         * @param tokenEndpointResponse The user's authentication token endpoint
+         *                              response
+         * @return Boolean true indicates the user is a Salesforce integration
+         * user. False indicates otherwise.
+         * @throws Exception Any exception that prevents returning the result
+         */
+        private boolean fetchIsSalesforceIntegrationUser(
+                TokenEndpointResponse tokenEndpointResponse
+        ) throws Exception {
             final String url = getLoginUrl() + "/services/oauth2/userinfo";
             final Request.Builder builder = new Request.Builder().url(url).get();
-            OAuth2.addAuthorizationHeader(builder, tr.authToken);
+            OAuth2.addAuthorizationHeader(builder, tokenEndpointResponse.authToken);
             final Request request = builder.build();
             final Response response = HttpAccess.DEFAULT.getOkHttpClient().newCall(request).execute();
             final String responseString = response.body() == null ? null : response.body().string();
