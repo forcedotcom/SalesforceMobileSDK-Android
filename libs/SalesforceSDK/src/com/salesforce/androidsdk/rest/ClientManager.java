@@ -406,7 +406,12 @@ public class ClientManager {
             }
         }
         Account acc = new Account(accountName, getAccountType());
-        accountManager.addAccountExplicitly(acc, SalesforceSDKManager.encrypt(refreshToken, encryptionKey), new Bundle());
+        String password = SalesforceSDKManager.encrypt(refreshToken, encryptionKey);
+        boolean success = accountManager.addAccountExplicitly(acc, password, new Bundle());
+        // Add account will fail if the account already exists, so update refresh token.
+        if (!success && acc != null) {
+            accountManager.setPassword(acc, password);
+        }
         final Account[] accounts = getAccounts();
 
         /*
