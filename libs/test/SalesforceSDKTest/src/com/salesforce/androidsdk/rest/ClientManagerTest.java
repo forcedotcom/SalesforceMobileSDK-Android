@@ -44,6 +44,7 @@ import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.LogUtil;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 import com.salesforce.androidsdk.util.test.TestCredentials;
 
@@ -478,6 +479,58 @@ public class ClientManagerTest {
 
         // Make sure there are no accounts left
         assertNoAccounts();
+    }
+
+    @Test
+    public void testToFromBundle() {
+        Bundle options = new Bundle();
+        options.putString("loginUrl", "some-login-url");
+        options.putString("oauthCallbackUrl", "some-oauth-callback-url");
+        options.putString("oauthClientId", "some-oauth-client-id");
+        options.putStringArray("oauthScopes", new String[] { "some-scope", "some-other-scope"});
+        options.putString("jwt", "some-jwt");
+
+        LoginOptions loginOptions = LoginOptions.fromBundle(options);
+        Assert.assertEquals("some-login-url", loginOptions.getLoginUrl());
+        Assert.assertEquals("some-oauth-callback-url", loginOptions.getOauthCallbackUrl());
+        Assert.assertEquals("some-oauth-client-id", loginOptions.getOauthClientId());
+        Assert.assertArrayEquals(new String[] { "some-scope", "some-other-scope"}, loginOptions.getOauthScopes());
+        Assert.assertEquals("some-jwt", loginOptions.getJwt());
+
+        Bundle recreatedBundle = loginOptions.asBundle();
+        Assert.assertEquals(LogUtil.bundleToString(recreatedBundle), LogUtil.bundleToString(options));
+    }
+
+    @Test
+    public void testFromBundleWithSafeLoginUrl() {
+        // First using a bundle with a known login url (test.salesforce.com)
+        Bundle options = new Bundle();
+        options.putString("loginUrl", "https://test.salesforce.com");
+        options.putString("oauthCallbackUrl", "some-oauth-callback-url");
+        options.putString("oauthClientId", "some-oauth-client-id");
+        options.putStringArray("oauthScopes", new String[] { "some-scope", "some-other-scope"});
+        options.putString("jwt", "some-jwt");
+
+        // Expect the LoginOptions to have the same login url (test.salesforce.com)
+        LoginOptions loginOptions = LoginOptions.fromBundleWithSafeLoginUrl(options);
+        Assert.assertEquals("https://test.salesforce.com", loginOptions.getLoginUrl());
+        Assert.assertEquals("some-oauth-callback-url", loginOptions.getOauthCallbackUrl());
+        Assert.assertEquals("some-oauth-client-id", loginOptions.getOauthClientId());
+        Assert.assertArrayEquals(new String[] { "some-scope", "some-other-scope"}, loginOptions.getOauthScopes());
+        Assert.assertEquals("some-jwt", loginOptions.getJwt());
+
+        // Now using a bundle with an unknown login url
+        options.putString("loginUrl", "some-login-url");
+
+        // Expect the LoginOptions to have the selected login server url (login.salesforce.com)
+        loginOptions = LoginOptions.fromBundleWithSafeLoginUrl(options);
+        Assert.assertEquals("https://login.salesforce.com", SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url);
+        Assert.assertEquals("https://login.salesforce.com", loginOptions.getLoginUrl());
+        Assert.assertEquals("some-oauth-callback-url", loginOptions.getOauthCallbackUrl());
+        Assert.assertEquals("some-oauth-client-id", loginOptions.getOauthClientId());
+        Assert.assertArrayEquals(new String[] { "some-scope", "some-other-scope"}, loginOptions.getOauthScopes());
+        Assert.assertEquals("some-jwt", loginOptions.getJwt());
+
     }
 
     /**
