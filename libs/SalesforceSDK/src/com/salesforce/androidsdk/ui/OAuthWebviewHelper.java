@@ -812,7 +812,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     HttpAccess.DEFAULT, tr.idUrlWithInstance, tr.authToken);
 
                 // Request the authenticated user's information to determine if it is a Salesforce integration user.  This is a synchronous network request, so it must be performed here in the background stage.
-                isSalesforceIntegrationUser = fetchIsSalesforceIntegrationUser(tr);
+                isSalesforceIntegrationUser = SalesforceSDKManager.getInstance().shouldBlockSalesforceIntegrationUser() && fetchIsSalesforceIntegrationUser(tr);
             } catch (Exception e) {
                 backgroundException = e;
             }
