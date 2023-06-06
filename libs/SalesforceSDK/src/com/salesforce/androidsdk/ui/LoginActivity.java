@@ -68,6 +68,7 @@ import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager;
+import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
@@ -120,6 +121,14 @@ public class LoginActivity extends AppCompatActivity
 
         // Getting login options from intent's extras.
         final LoginOptions loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
+
+        // Not allowing arbitrary website to be loaded in webview
+        // If the intent contains a login url that is not one of the known login server
+        // Then use the selected login server instead
+        LoginServerManager loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
+        if (loginServerManager.getLoginServerFromURL(loginOptions.getLoginUrl()) == null) {
+            loginOptions.setLoginUrl(loginServerManager.getSelectedLoginServer().url);
+        }
 
         // Protect against screenshots.
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
