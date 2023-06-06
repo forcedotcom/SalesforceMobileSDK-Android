@@ -674,7 +674,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             final SalesforceSDKManager mgr = SalesforceSDKManager.getInstance();
 
             // Failure cases.
-            if (isSalesforceIntegrationUser) {
+            if (mgr.shouldBlockSalesforceIntegrationUser() && isSalesforceIntegrationUser) {
                 /*
                  * Salesforce integration users are prohibited from successfully
                  * completing authentication. This alleviates the Restricted
