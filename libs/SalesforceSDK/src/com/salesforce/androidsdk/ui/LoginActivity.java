@@ -119,7 +119,7 @@ public class LoginActivity extends AppCompatActivity
         SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
 
         // Getting login options from intent's extras.
-        final LoginOptions loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
+        final LoginOptions loginOptions = LoginOptions.fromBundleWithSafeLoginUrl(getIntent().getExtras());
 
         // Protect against screenshots.
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,

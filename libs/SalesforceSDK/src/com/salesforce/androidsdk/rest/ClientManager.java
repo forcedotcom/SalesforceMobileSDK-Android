@@ -40,11 +40,11 @@ import android.os.Looper;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
-import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
@@ -847,6 +847,11 @@ public class ClientManager {
             return bundle;
         }
 
+        /**
+         * Build a LoginOptions from the given bundle
+         * @param options - bundle
+         * @return
+         */
         public static LoginOptions fromBundle(Bundle options) {
             Map<String, String> additionalParameters = null;
             final Serializable serializable = options.getSerializable(KEY_ADDL_PARAMS);
@@ -859,6 +864,21 @@ public class ClientManager {
                                     options.getStringArray(OAUTH_SCOPES),
                                     options.getString(JWT),
                                     additionalParameters);
+        }
+
+        /**
+         * Build a LoginOptions from the given bundle
+         * If the loginUrl in options is not one of the login servers, then the selected login server is used instead.
+         * @param options - bundle
+         * @return
+         */
+        public static LoginOptions fromBundleWithSafeLoginUrl(Bundle options) {
+            LoginOptions loginOptions = fromBundle(options);
+            LoginServerManager loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
+            if (loginServerManager.getLoginServerFromURL(loginOptions.getLoginUrl()) == null) {
+                loginOptions.setLoginUrl(loginServerManager.getSelectedLoginServer().url);
+            }
+            return loginOptions;
         }
     }
 }
