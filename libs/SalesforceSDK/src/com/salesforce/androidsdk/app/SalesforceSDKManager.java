@@ -172,6 +172,12 @@ public class SalesforceSDKManager implements LifecycleObserver {
     private boolean browserLoginEnabled;
     private boolean shareBrowserSessionEnabled;
 
+    /**
+     * When true, Salesforce integration users will be prohibited from initial
+     * authentication.  An error message will be displayed.  Defaults to false.
+     */
+    private boolean blockSalesforceIntegrationUser = false; // Default to false as Salesforce-authored apps are the primary audience for this option.  This functionality will eventually be provided by the backend.
+
     private boolean useWebServerAuthentication = true; // web server flow ON by default - but app can opt out by calling setUseWebServerAuthentication(false)
     private Theme theme =  Theme.SYSTEM_DEFAULT;
     private String appName;
@@ -579,6 +585,30 @@ public class SalesforceSDKManager implements LifecycleObserver {
      */
     public boolean isBrowserLoginEnabled() {
         return browserLoginEnabled;
+    }
+
+
+    /**
+     * Determines if Salesforce integration users will be prohibited from
+     * initial authentication.
+     *
+     * @return True indicates authentication is blocked and false indicates
+     * authentication is allowed for Salesforce integration users
+     */
+    public boolean shouldBlockSalesforceIntegrationUser() {
+        return blockSalesforceIntegrationUser;
+    }
+
+    /**
+     * Sets authentication ability for Salesforce integration users.  When true,
+     * Salesforce integration users will be prohibited from initial
+     * authentication and receive an error message.  Defaults to false.
+     *
+     * @param value True blocks authentication or false allows authentication
+     *              for Salesforce integration users
+     */
+    public synchronized void setBlockSalesforceIntegrationUser(boolean value) {
+        blockSalesforceIntegrationUser = value;
     }
 
     /**

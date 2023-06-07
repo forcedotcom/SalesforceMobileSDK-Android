@@ -647,10 +647,10 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         protected volatile IdServiceResponse id = null;
 
         /**
-         * Indicates if the authenticated user is a designated Salesforce
-         * integration user
+         * Indicates if authentication is blocked for the current user due to
+         * the block Salesforce integration user option.
          */
-        protected volatile boolean isSalesforceIntegrationUser = false;
+        protected volatile boolean shouldBlockSalesforceIntegrationUser = false;
 
         public BaseFinishAuthFlowTask() {
         }
@@ -674,7 +674,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             final SalesforceSDKManager mgr = SalesforceSDKManager.getInstance();
 
             // Failure cases.
-            if (isSalesforceIntegrationUser) {
+            if (shouldBlockSalesforceIntegrationUser) {
                 /*
                  * Salesforce integration users are prohibited from successfully
                  * completing authentication. This alleviates the Restricted
@@ -812,7 +812,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     HttpAccess.DEFAULT, tr.idUrlWithInstance, tr.authToken);
 
                 // Request the authenticated user's information to determine if it is a Salesforce integration user.  This is a synchronous network request, so it must be performed here in the background stage.
-                isSalesforceIntegrationUser = fetchIsSalesforceIntegrationUser(tr);
+                shouldBlockSalesforceIntegrationUser = SalesforceSDKManager.getInstance().shouldBlockSalesforceIntegrationUser() && fetchIsSalesforceIntegrationUser(tr);
             } catch (Exception e) {
                 backgroundException = e;
             }
