@@ -26,9 +26,6 @@
  */
 package com.salesforce.androidsdk.push
 
-import com.google.firebase.FirebaseOptions
-import com.google.firebase.messaging.FirebaseMessaging
-
 /**
  * This interface represents the App's push notification implementation.
  *
