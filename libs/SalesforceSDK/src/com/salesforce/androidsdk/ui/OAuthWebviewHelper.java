@@ -335,9 +335,10 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     private void doLoadPage() {
         try {
             boolean isBrowserLoginEnabled = SalesforceSDKManager.getInstance().isBrowserLoginEnabled();
-            boolean useWebServerFlowAuthentication = isBrowserLoginEnabled || SalesforceSDKManager.getInstance().shouldUseWebServerAuthentication();
+            boolean useWebServerAuthentication = isBrowserLoginEnabled || SalesforceSDKManager.getInstance().shouldUseWebServerAuthentication();
+            boolean useHybridAuthentication = SalesforceSDKManager.getInstance().shouldUseHybridAuthentication();
 
-            URI uri = getAuthorizationUrl(useWebServerFlowAuthentication);
+            URI uri = getAuthorizationUrl(useWebServerAuthentication, useHybridAuthentication);
             callback.loadingLoginPage(loginOptions.getLoginUrl());
             if (SalesforceSDKManager.getInstance().isBrowserLoginEnabled()) {
                 if(!SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled()){
@@ -426,13 +427,13 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     	return loginOptions.getOauthClientId();
     }
 
-    protected URI getAuthorizationUrl(boolean useWebServerAuthentication) throws URISyntaxException {
+    protected URI getAuthorizationUrl(boolean useWebServerAuthentication, boolean useHybridAuthentication) throws URISyntaxException {
         boolean jwtFlow = !TextUtils.isEmpty(loginOptions.getJwt());
         Map<String, String> addlParams = jwtFlow ? null : loginOptions.getAdditionalParameters();
         // NB code verifier / code challenge are only used when useWebServerAuthentication is true
         codeVerifier = SalesforceKeyGenerator.getRandom128ByteKey();
         String codeChallenge = SalesforceKeyGenerator.getSHA256Hash(codeVerifier);
-        URI authorizationUrl = OAuth2.getAuthorizationUrl(useWebServerAuthentication, new URI(loginOptions.getLoginUrl()), getOAuthClientId(), loginOptions.getOauthCallbackUrl(), loginOptions.getOauthScopes(), getAuthorizationDisplayType(), codeChallenge, addlParams);
+        URI authorizationUrl = OAuth2.getAuthorizationUrl(useWebServerAuthentication, useHybridAuthentication, new URI(loginOptions.getLoginUrl()), getOAuthClientId(), loginOptions.getOauthCallbackUrl(), loginOptions.getOauthScopes(), getAuthorizationDisplayType(), codeChallenge, addlParams);
 
         if (jwtFlow) {
             return OAuth2.getFrontdoorUrl(authorizationUrl,

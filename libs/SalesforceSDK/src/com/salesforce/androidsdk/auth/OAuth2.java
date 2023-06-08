@@ -99,6 +99,7 @@ public class OAuth2 {
     private static final String SCOPE = "scope";
     private static final String REDIRECT_URI = "redirect_uri";
     private static final String DEVICE_ID = "device_id";
+    private static final String TOKEN = "token";
     private static final String HYBRID_TOKEN = "hybrid_token";
     private static final String USERNAME = "username";
     private static final String EMAIL = "email";
@@ -108,7 +109,9 @@ public class OAuth2 {
     private static final String PHOTOS = "photos";
     private static final String PICTURE = "picture";
     private static final String THUMBNAIL = "thumbnail";
-    private static final String AUTHORIZATION_CODE = "hybrid_auth_code";
+
+    private static final String AUTHORIZATION_CODE = "authorization_code";
+    private static final String HYBRID_AUTH_CODE = "hybrid_auth_code";
     private static final String CODE = "code";
     private static final String CODE_CHALLENGE = "code_challenge";
     private static final String CODE_VERIFIER = "code_verifier";
@@ -149,20 +152,21 @@ public class OAuth2 {
      * You need not provide the 'refresh_token' scope, as it is provided automatically.
      *
      * @param useWebServerAuthentication True to use web server flow, False to use user agent flow
-     * @param loginServer Base protocol and server to use (e.g. https://login.salesforce.com).
-     * @param clientId OAuth client ID.
-     * @param callbackUrl OAuth callback URL or redirect URL.
-     * @param scopes A list of OAuth scopes to request (e.g. {"visualforce", "api"}). If null,
-     *               the default OAuth scope is provided.
-     * @param displayType OAuth display type. If null, the default of 'touch' is used.
-     * @param codeChallenge Code challenge to use when using web server flow
-     * @param addlParams Any additional parameters that may be added to the request.
+     * @param useHybridAuthentication    True to use "hybrid" flow
+     * @param loginServer                Base protocol and server to use (e.g. https://login.salesforce.com).
+     * @param clientId                   OAuth client ID.
+     * @param callbackUrl                OAuth callback URL or redirect URL.
+     * @param scopes                     A list of OAuth scopes to request (e.g. {"visualforce", "api"}). If null,
+     *                                   the default OAuth scope is provided.
+     * @param displayType                OAuth display type. If null, the default of 'touch' is used.
+     * @param codeChallenge              Code challenge to use when using web server flow
+     * @param addlParams                 Any additional parameters that may be added to the request.
      * @return A URL to start the OAuth flow in a web browser/view.
-     *
      * @see <a href="https://help.salesforce.com/apex/HTViewHelpDoc?language=en&id=remoteaccess_oauth_scopes.htm">RemoteAccess OAuth Scopes</a>
      */
     public static URI getAuthorizationUrl(
             boolean useWebServerAuthentication,
+            boolean useHybridAuthentication,
             URI loginServer,
             String clientId,
             String callbackUrl,
@@ -171,9 +175,12 @@ public class OAuth2 {
             String codeChallenge,
             Map<String,String> addlParams) {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
+        final String responseType = useWebServerAuthentication
+                ? CODE
+                : useHybridAuthentication ? HYBRID_TOKEN : TOKEN;
         sb.append(OAUTH_AUTH_PATH).append(getBrandedLoginPath());
         sb.append(OAUTH_DISPLAY_PARAM).append(displayType == null ? TOUCH : displayType);
-        sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(useWebServerAuthentication ? CODE : HYBRID_TOKEN);
+        sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(responseType);
         sb.append(AND).append(CLIENT_ID).append(EQUAL).append(Uri.encode(clientId));
         if (scopes != null && scopes.length > 0) {
             sb.append(AND).append(SCOPE).append(EQUAL).append(Uri.encode(computeScopeParameter(scopes)));
@@ -271,7 +278,9 @@ public class OAuth2 {
                                                      String callbackUrl)
             throws OAuthFailedException, IOException {
         final FormBody.Builder builder = new FormBody.Builder();
-        builder.add(GRANT_TYPE, AUTHORIZATION_CODE);
+        final boolean useHybridAuthentication = SalesforceSDKManager.getInstance().shouldUseHybridAuthentication();
+        final String grantType = useHybridAuthentication ? HYBRID_AUTH_CODE : AUTHORIZATION_CODE;
+        builder.add(GRANT_TYPE, grantType);
         builder.add(CLIENT_ID, clientId);
         builder.add(FORMAT, JSON);
         builder.add(CODE, code);
@@ -298,7 +307,9 @@ public class OAuth2 {
                                                          Map<String,String> addlParams)
             throws OAuthFailedException, IOException {
         final FormBody.Builder builder = new FormBody.Builder();
-        builder.add(GRANT_TYPE, HYBRID_REFRESH);
+        final boolean useHybridAuthentication = SalesforceSDKManager.getInstance().shouldUseHybridAuthentication();
+        final String grantType = useHybridAuthentication ? HYBRID_REFRESH : REFRESH_TOKEN;
+        builder.add(GRANT_TYPE, grantType);
         builder.add(CLIENT_ID, clientId);
         builder.add(REFRESH_TOKEN, refreshToken);
         builder.add(FORMAT, JSON);

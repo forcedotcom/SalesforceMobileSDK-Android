@@ -141,9 +141,11 @@ internal class IDPAuthCodeHelper private constructor(
     fun makeFrontDoorRequest(accessToken: String, webView: WebView) {
         SalesforceSDKLogger.d(TAG, "Making front door request")
         val context = SalesforceSDKManager.getInstance().appContext
+        val useHybridAuthentication = SalesforceSDKManager.getInstance().shouldUseHybridAuthentication()
         val frontdoorUrl = getFrontdoorUrl(
             getAuthorizationUrl(
                 true, // use web server flow
+                useHybridAuthentication,
                 URI(userAccount.loginServer),
                 spConfig.oauthClientId,
                 spConfig.oauthCallbackUrl,
