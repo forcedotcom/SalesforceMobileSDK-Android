@@ -24,6 +24,8 @@ dependencies {
 }
 
 android {
+    namespace = "com.salesforce.androidsdk.mobilesync"
+
     compileSdkVersion 33
 
     defaultConfig {

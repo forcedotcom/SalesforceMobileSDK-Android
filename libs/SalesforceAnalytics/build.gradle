@@ -18,6 +18,8 @@ dependencies {
 }
 
 android {
+    namespace = "com.salesforce.androidsdk.analytics"
+
     compileSdkVersion 33
 
     defaultConfig {

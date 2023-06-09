@@ -37,6 +37,8 @@ dependencies {
 }
 
 android {
+    namespace = "com.salesforce.androidsdk.reactnative"
+
     compileSdkVersion 33
 
     defaultConfig {
