@@ -89,14 +89,14 @@ public class OAuth2Test {
     @Test
 	public void testGetAuthorizationUrl() throws URISyntaxException {
 		String callbackUrl = "sfdc://callback";
-		URI authorizationUrl = OAuth2.getAuthorizationUrl(true, new URI(TestCredentials.LOGIN_URL),
+		URI authorizationUrl = OAuth2.getAuthorizationUrl(true, true, new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null, null, "some-challenge", null);
 		URI expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
                 "/services/oauth2/authorize?display=touch&response_type=code&client_id=" +
                 TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl + "&device_id=" +
 				SalesforceSDKManager.getInstance().getDeviceId() + "&code_challenge=some-challenge");
         Assert.assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
-		authorizationUrl = OAuth2.getAuthorizationUrl(true, new URI(TestCredentials.LOGIN_URL),
+		authorizationUrl = OAuth2.getAuthorizationUrl(true, true, new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null, "touch", "some-challenge", null);
 		expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
                 "/services/oauth2/authorize?display=touch&response_type=code&client_id=" +
@@ -117,7 +117,7 @@ public class OAuth2Test {
 		params.put("param1", "val1");
 		params.put("param2", "val2");
 		params.put("param3", null);
-		URI authorizationUrl = OAuth2.getAuthorizationUrl(true, new URI(TestCredentials.LOGIN_URL),
+		URI authorizationUrl = OAuth2.getAuthorizationUrl(true, true, new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null, null, "some-challenge", params);
         Assert.assertTrue("Wrong authorization url", authorizationUrl.getRawQuery().indexOf("&param1=val1") > 0);
         Assert.assertTrue("Wrong authorization url", authorizationUrl.getRawQuery().indexOf("&param2=val2") > 0);
@@ -134,14 +134,14 @@ public class OAuth2Test {
         String callbackUrl = "sfdc://callback";
         final String brandedLoginPath = "BRAND";
         SalesforceSDKManager.getInstance().setLoginBrand(brandedLoginPath);
-        URI authorizationUrl = OAuth2.getAuthorizationUrl(true, new URI(TestCredentials.LOGIN_URL),
+        URI authorizationUrl = OAuth2.getAuthorizationUrl(true, true, new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null, null, "some-challenge", null);
         URI expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
                 "/services/oauth2/authorize/BRAND?display=touch&response_type=code&client_id=" +
                 TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl + "&device_id=" +
                 SalesforceSDKManager.getInstance().getDeviceId() + "&code_challenge=some-challenge");
         Assert.assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
-        authorizationUrl = OAuth2.getAuthorizationUrl(true, new URI(TestCredentials.LOGIN_URL),
+        authorizationUrl = OAuth2.getAuthorizationUrl(true, true, new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null, "touch", "some-challenge", null);
         expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
                 "/services/oauth2/authorize/BRAND?display=touch&response_type=code&client_id=" +
@@ -160,14 +160,14 @@ public class OAuth2Test {
         String callbackUrl = "sfdc://callback";
         final String brandedLoginPath = "BRAND";
         SalesforceSDKManager.getInstance().setLoginBrand(brandedLoginPath);
-        URI authorizationUrl = OAuth2.getAuthorizationUrl(true, new URI(TestCredentials.LOGIN_URL),
+        URI authorizationUrl = OAuth2.getAuthorizationUrl(true, true, new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null, null, "some-challenge", null);
         URI expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
                 "/services/oauth2/authorize/BRAND?display=touch&response_type=code&client_id=" +
                 TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl + "&device_id=" +
                 SalesforceSDKManager.getInstance().getDeviceId() + "&code_challenge=some-challenge");
         Assert.assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
-        authorizationUrl = OAuth2.getAuthorizationUrl(true, new URI(TestCredentials.LOGIN_URL),
+        authorizationUrl = OAuth2.getAuthorizationUrl(true, true, new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null, "touch", "some-challenge", null);
         expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
                 "/services/oauth2/authorize/BRAND?display=touch&response_type=code&client_id=" +
@@ -186,14 +186,14 @@ public class OAuth2Test {
         String callbackUrl = "sfdc://callback";
         final String brandedLoginPath = "BRAND";
         SalesforceSDKManager.getInstance().setLoginBrand(brandedLoginPath);
-        URI authorizationUrl = OAuth2.getAuthorizationUrl(true, new URI(TestCredentials.LOGIN_URL),
+        URI authorizationUrl = OAuth2.getAuthorizationUrl(true, true, new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null, null, "some-challenge", null);
         URI expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
                 "/services/oauth2/authorize/BRAND?display=touch&response_type=code&client_id=" +
                 TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl + "&device_id=" +
                 SalesforceSDKManager.getInstance().getDeviceId() + "&code_challenge=some-challenge");
         Assert.assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
-        authorizationUrl = OAuth2.getAuthorizationUrl(true, new URI(TestCredentials.LOGIN_URL),
+        authorizationUrl = OAuth2.getAuthorizationUrl(true, true, new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null, "touch", "some-challenge", null);
         expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
                 "/services/oauth2/authorize/BRAND?display=touch&response_type=code&client_id=" +
@@ -203,21 +203,21 @@ public class OAuth2Test {
     }
 
     /**
-     * Testing getAuthorizationUrl with web server authenticated set to false.
+     * Testing getAuthorizationUrl with web server authentication OFF.
      *
      * @throws URISyntaxException See {@link URISyntaxException}.
      */
     @Test
     public void testGetAuthorizationUrlForUserAgentFlow() throws URISyntaxException {
         String callbackUrl = "sfdc://callback";
-        URI authorizationUrl = OAuth2.getAuthorizationUrl(false, new URI(TestCredentials.LOGIN_URL),
+        URI authorizationUrl = OAuth2.getAuthorizationUrl(false, true, new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null, null, null, null);
         URI expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
                 "/services/oauth2/authorize?display=touch&response_type=hybrid_token&client_id=" +
                 TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl + "&device_id=" +
                 SalesforceSDKManager.getInstance().getDeviceId());
         Assert.assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
-        authorizationUrl = OAuth2.getAuthorizationUrl(false, new URI(TestCredentials.LOGIN_URL),
+        authorizationUrl = OAuth2.getAuthorizationUrl(false, true, new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID, callbackUrl, null, "touch", null, null);
         expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
                 "/services/oauth2/authorize?display=touch&response_type=hybrid_token&client_id=" +
@@ -226,9 +226,57 @@ public class OAuth2Test {
         Assert.assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
     }
 
+    /**
+     * Testing getAuthorizationUrl with web server authentication and hybrid authentication OFF.
+     *
+     * @throws URISyntaxException See {@link URISyntaxException}.
+     */
+    @Test
+    public void testGetAuthorizationUrlForUserAgentFlowWithHybridAuthenticationOff() throws URISyntaxException {
+        String callbackUrl = "sfdc://callback";
+        URI authorizationUrl = OAuth2.getAuthorizationUrl(false, false, new URI(TestCredentials.LOGIN_URL),
+                TestCredentials.CLIENT_ID, callbackUrl, null, null, null, null);
+        URI expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
+                "/services/oauth2/authorize?display=touch&response_type=token&client_id=" +
+                TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl + "&device_id=" +
+                SalesforceSDKManager.getInstance().getDeviceId());
+        Assert.assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
+        authorizationUrl = OAuth2.getAuthorizationUrl(false, false, new URI(TestCredentials.LOGIN_URL),
+                TestCredentials.CLIENT_ID, callbackUrl, null, "touch", null, null);
+        expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
+                "/services/oauth2/authorize?display=touch&response_type=token&client_id=" +
+                TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl + "&device_id=" +
+                SalesforceSDKManager.getInstance().getDeviceId());
+        Assert.assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
+    }
+
+    /**
+     * Testing getAuthorizationUrl with web server authentication ON and hybrid authentication OFF.
+     *
+     * @throws URISyntaxException See {@link URISyntaxException}.
+     */
+    @Test
+    public void testGetAuthorizationUrlForWebServerFlowWithHybridAuthenticationOff() throws URISyntaxException {
+        String callbackUrl = "sfdc://callback";
+        URI authorizationUrl = OAuth2.getAuthorizationUrl(true, false, new URI(TestCredentials.LOGIN_URL),
+                TestCredentials.CLIENT_ID, callbackUrl, null, null, "some-challenge", null);
+        URI expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
+                "/services/oauth2/authorize?display=touch&response_type=code&client_id=" +
+                TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl + "&device_id=" +
+                SalesforceSDKManager.getInstance().getDeviceId() + "&code_challenge=some-challenge");
+        Assert.assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
+        authorizationUrl = OAuth2.getAuthorizationUrl(true, false, new URI(TestCredentials.LOGIN_URL),
+                TestCredentials.CLIENT_ID, callbackUrl, null, "touch", "some-challenge", null);
+        expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL +
+                "/services/oauth2/authorize?display=touch&response_type=code&client_id=" +
+                TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl + "&device_id=" +
+                SalesforceSDKManager.getInstance().getDeviceId() + "&code_challenge=some-challenge");
+        Assert.assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
+    }
+
     private void tryScopes(String[] scopes, String expectedScopeParamValue) throws URISyntaxException {
         String callbackUrl = "sfdc://callback";
-        URI authorizationUrl = OAuth2.getAuthorizationUrl(true, new URI(TestCredentials.LOGIN_URL),
+        URI authorizationUrl = OAuth2.getAuthorizationUrl(true, true, new URI(TestCredentials.LOGIN_URL),
                 TestCredentials.CLIENT_ID,callbackUrl, scopes, null, "some-challenge", null);
         HttpUrl url = HttpUrl.get(authorizationUrl);
         boolean scopesFound = false;

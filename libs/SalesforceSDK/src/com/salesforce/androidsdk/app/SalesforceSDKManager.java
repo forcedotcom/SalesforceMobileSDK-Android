@@ -179,6 +179,8 @@ public class SalesforceSDKManager implements LifecycleObserver {
     private boolean blockSalesforceIntegrationUser = false; // Default to false as Salesforce-authored apps are the primary audience for this option.  This functionality will eventually be provided by the backend.
 
     private boolean useWebServerAuthentication = true; // web server flow ON by default - but app can opt out by calling setUseWebServerAuthentication(false)
+
+    private boolean useHybridAuthentication = true; // hybrid authentication flows ON by default - but app can opt out by calling setUseHybridAuthentication(false)
     private Theme theme =  Theme.SYSTEM_DEFAULT;
     private String appName;
 
@@ -651,6 +653,23 @@ public class SalesforceSDKManager implements LifecycleObserver {
         } else {
             SalesforceSDKManager.getInstance().unregisterUsedAppFeature(Features.FEATURE_BROWSER_LOGIN);
         }
+    }
+
+    /**
+     * Returns whether hybrid authentication flow should be used
+     *
+     * @return True - if hybrid authentication flow should be used, False - otherwise.
+     */
+    public boolean shouldUseHybridAuthentication() {
+        return useHybridAuthentication;
+    }
+
+    /**
+     * Sets whether hybrid authentication flow should be used
+     * @param useHybridAuthentication
+     */
+    public synchronized void setUseHybridAuthentication(boolean useHybridAuthentication) {
+        this.useHybridAuthentication = useHybridAuthentication;
     }
 
     /**
