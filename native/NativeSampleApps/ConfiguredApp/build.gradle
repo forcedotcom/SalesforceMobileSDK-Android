@@ -9,6 +9,8 @@ dependencies {
 }
 
 android {
+    namespace = "com.salesforce.samples.configuredapp"
+
     compileSdkVersion 33
 
     defaultConfig {

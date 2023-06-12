@@ -22,6 +22,9 @@ dependencies {
 }
 
 android {
+    namespace = "com.salesforce.androidsdk.smartstore"
+    testNamespace = "com.salesforce.androidsdk.smartstore.tests"
+
     compileSdkVersion 33
 
     defaultConfig {

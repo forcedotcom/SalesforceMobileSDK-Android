@@ -37,6 +37,9 @@ dependencies {
 }
 
 android {
+    namespace = "com.salesforce.androidsdk.reactnative"
+    testNamespace = "com.salesforce.androidsdk.reactnative.tests"
+
     compileSdkVersion 33
 
     defaultConfig {

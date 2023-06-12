@@ -21,6 +21,9 @@ dependencies {
 }
 
 android {
+  namespace = "com.salesforce.samples.restexplorer"
+  testNamespace = "com.salesforce.samples.restexplorer.tests"
+
   compileSdkVersion 33
 
   defaultConfig {

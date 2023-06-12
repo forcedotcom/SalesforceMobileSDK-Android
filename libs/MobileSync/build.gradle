@@ -24,6 +24,9 @@ dependencies {
 }
 
 android {
+    namespace = "com.salesforce.androidsdk.mobilesync"
+    testNamespace = "com.salesforce.androidsdk.mobilesync.tests"
+
     compileSdkVersion 33
 
     defaultConfig {

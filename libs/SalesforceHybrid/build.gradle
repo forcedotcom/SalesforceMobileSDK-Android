@@ -22,6 +22,9 @@ dependencies {
 }
 
 android {
+    namespace = "com.salesforce.androidsdk.hybrid"
+    testNamespace = "com.salesforce.androidsdk.phonegap"
+
     compileSdkVersion 33
 
     defaultConfig {
