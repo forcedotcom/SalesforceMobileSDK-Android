@@ -10,6 +10,8 @@ dependencies {
 }
 
 android {
+  namespace = "com.salesforce.samples.mobilesyncexplorer"
+
   compileSdkVersion 33
 
   defaultConfig {
