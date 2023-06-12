@@ -113,7 +113,7 @@ public class ClientManager {
             if (options != null) {
                 i.putExtras(options);
             }
-            activityContext.startActivity(i);
+            activityContext.startActivityForResult(i, 0);
         }
 
         // Account found
