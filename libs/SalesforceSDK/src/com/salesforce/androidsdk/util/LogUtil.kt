@@ -53,6 +53,7 @@ object LogUtil {
         return objectToString(bundle)
     }
 
+    @Suppress("DEPRECATION")
     private fun objectToString(obj: Any?): String {
         return if (obj == null) {
             "null"
