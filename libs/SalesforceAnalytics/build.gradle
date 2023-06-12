@@ -19,6 +19,7 @@ dependencies {
 
 android {
     namespace = "com.salesforce.androidsdk.analytics"
+    testNamespace = "com.salesforce.androidsdk.analytics.tests"
 
     compileSdkVersion 33
 
