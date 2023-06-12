@@ -29,17 +29,21 @@ package com.salesforce.androidsdk.push
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
-import com.google.firebase.installations.FirebaseInstallations
-import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.iid.FirebaseInstanceId
 import com.salesforce.androidsdk.accounts.UserAccount
-import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Deregister
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
 import com.salesforce.androidsdk.push.PushService.enqueuePushNotificationsRegistrationWork
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
+
 
 /**
  * This class provides utility functions related to push notifications,
@@ -72,34 +76,21 @@ object PushMessaging {
      */
     @JvmStatic
     fun register(context: Context, account: UserAccount?) {
-        val firebaseInitialized = initializeFirebaseIfNeeded(context)
-        if (firebaseInitialized) {
-            val firebaseMessaging = SalesforceSDKManager.getInstance()
-                .pushNotificationReceiver?.supplyFirebaseMessaging() ?: FirebaseMessaging.getInstance()
-            firebaseMessaging.isAutoInitEnabled = true
+        /*
+         * Performs registration steps if it is a new account, or if the
+         * account hasn't been registered yet. Otherwise, performs
+         * re-registration at the SFDC endpoint, to keep it alive.
+         */
+        initializeFirebaseIfNeeded(context)
+        if (account != null && !isRegistered(context, account)) {
+            setInProgress(context, account)
 
-            /*
-             * Performs registration steps if it is a new account, or if the
-             * account hasn't been registered yet. Otherwise, performs
-             * re-registration at the SFDC endpoint, to keep it alive.
-             */
-            if (account != null && !isRegistered(context, account)) {
-                setInProgress(context, account)
-
-                firebaseMessaging.token.addOnSuccessListener { token: String? ->
-                    try {
-                        // Store the new token.
-                        setRegistrationId(context, token, account)
-
-                        // Send it to SFDC.
-                        registerSFDCPush(context, account)
-                    } catch (e: Exception) {
-                        SalesforceSDKLogger.e(TAG, "Error during FCM registration", e)
-                    }
-                }
-            } else {
-                registerSFDCPush(context, account)
+            if (GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(context) == ConnectionResult.SUCCESS) {
+                val registrationWorker = OneTimeWorkRequestBuilder<SFDCRegistrationServiceWorker>().build()
+                WorkManager.getInstance(context).enqueue(registrationWorker)
             }
+        } else {
+            registerSFDCPush(context, account)
         }
     }
 
@@ -118,18 +109,14 @@ object PushMessaging {
 
             // Deletes InstanceID only if there are no other logged in accounts.
             if (isLastAccount) {
-                val firebaseInitialized = initializeFirebaseIfNeeded(context)
-                if (firebaseInitialized) {
-                    val firebaseMessaging = SalesforceSDKManager.getInstance()
-                        .pushNotificationReceiver?.supplyFirebaseMessaging() ?: FirebaseMessaging.getInstance()
-                    firebaseMessaging.isAutoInitEnabled = false
-                    val firebaseApp = FirebaseApp.getInstance(getAppNameForFirebase(context))
-                    FirebaseInstallations.getInstance(firebaseApp).delete()
-                    firebaseApp.delete()
-                }
+                initializeFirebaseIfNeeded(context)
+                val appName = getAppNameForFirebase(context)
+                val instanceID = FirebaseInstanceId.getInstance(FirebaseApp.getInstance(appName))
+                kotlin.runCatching { instanceID.deleteInstanceId() }
             }
-            unregisterSFDCPush(context, account)
         }
+
+        unregisterSFDCPush(context, account)
     }
 
     /**
@@ -138,20 +125,12 @@ object PushMessaging {
      * @param context Context
      * @return True - if Firebase is now initialized, False - if the operation could not be completed.
      */
-    private fun initializeFirebaseIfNeeded(context: Context): Boolean {
-        // If an instance of PushNotificationInterface is not provided the app does not intent to use the feature.
-        val pnDelegate = SalesforceSDKManager.getInstance().pushNotificationReceiver ?: return false
+    private fun initializeFirebaseIfNeeded(context: Context) {
         val appName = getAppNameForFirebase(context)
-        val firebaseOptions = pnDelegate.supplyFirebaseOptions() ?: FirebaseOptions.fromResource(context)
-
-        @Suppress("UselessCallOnNotNull") // FirebaseOptions instance could be from an older version.
-        if ((firebaseOptions == null) || firebaseOptions.apiKey.isNullOrBlank()) {
-            SalesforceSDKLogger.w(
-                TAG, "Unable to retrieve Firebase values.  This usually " +
-                        "means that com.google.gms:google-services was not applied to your gradle project."
-            )
-            return false
-        }
+        val firebaseOptions = FirebaseOptions.Builder()
+            .setGcmSenderId(BootConfig.getBootConfig(context).pushNotificationClientId)
+            .setApplicationId(context.packageName)
+            .build()
 
         /*
          * Ensures that Firebase initialization occurs only once for this app. If an exception
@@ -163,7 +142,6 @@ object PushMessaging {
             SalesforceSDKLogger.i(TAG, "Firebase hasn't been initialized yet", e)
             FirebaseApp.initializeApp(context, firebaseOptions, appName)
         }
-        return true
     }
 
     /**
@@ -220,7 +198,7 @@ object PushMessaging {
     private fun runPushService(
         context: Context,
         account: UserAccount?,
-        action: PushNotificationsRegistrationAction
+        action: PushNotificationsRegistrationAction,
     ) {
         if (account == null) {
             enqueuePushNotificationsRegistrationWork(
@@ -264,7 +242,7 @@ object PushMessaging {
     @JvmStatic
     fun setRegistrationId(
         context: Context, registrationId: String?,
-        account: UserAccount?
+        account: UserAccount?,
     ) {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
@@ -351,7 +329,7 @@ object PushMessaging {
     @Suppress("unused")
     fun setLastRegistrationTime(
         context: Context, lastRegistrationTime: Long,
-        account: UserAccount?
+        account: UserAccount?,
     ) {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
@@ -426,7 +404,7 @@ object PushMessaging {
     @JvmStatic
     fun setRegistrationInfo(
         context: Context, registrationId: String?,
-        deviceId: String?, account: UserAccount?
+        deviceId: String?, account: UserAccount?,
     ) {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),

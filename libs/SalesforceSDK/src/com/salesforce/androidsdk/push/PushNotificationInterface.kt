@@ -26,9 +26,6 @@
  */
 package com.salesforce.androidsdk.push
 
-import com.google.firebase.FirebaseOptions
-import com.google.firebase.messaging.FirebaseMessaging
-
 /**
  * This interface represents the App's push notification implementation.
  *
@@ -45,25 +42,4 @@ interface PushNotificationInterface {
      * @param data the notification payload.
      */
     fun onPushMessageReceived(data: Map<String?, String?>?)
-
-    /**
-     * This method is optional, you may simply return null.
-     *
-     * Use this method to provide the SDK with an instance of FirebaseOptions if
-     * it is not possible to provide the google-services.json file in the root
-     * of your project.
-     *
-     * @return the FirebaseOptions instance to use.
-     */
-    fun supplyFirebaseOptions(): FirebaseOptions?
-
-    /**
-     * This method is optional, you may simply return null.
-     *
-     * Use this method to provide the correct FirebaseMessaging instance if the one
-     * you intend to use is not the default.
-     *
-     * @return the FirebaseMessaging instance to use.
-     */
-    fun supplyFirebaseMessaging(): FirebaseMessaging?
 }
