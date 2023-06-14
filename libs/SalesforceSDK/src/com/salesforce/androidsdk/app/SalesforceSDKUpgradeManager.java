@@ -34,13 +34,15 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.config.AdminSettingsManager;
+import com.salesforce.androidsdk.config.LegacyAdminSettingsManager;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 
 /**
@@ -56,6 +58,8 @@ public class SalesforceSDKUpgradeManager {
 
     private static SalesforceSDKUpgradeManager INSTANCE = null;
 
+    private UserManager userManager;
+
     /**
      * Returns an instance of this class.
      *
@@ -66,6 +70,25 @@ public class SalesforceSDKUpgradeManager {
             INSTANCE = new SalesforceSDKUpgradeManager();
         }
         return INSTANCE;
+    }
+
+    /**
+     * Simple interface to improve testability
+     */
+    interface UserManager {
+        List<UserAccount> getAuthenticatedUsers();
+    }
+
+    public SalesforceSDKUpgradeManager() {
+        this(new UserManager() {
+            @Override
+            public List<UserAccount> getAuthenticatedUsers() {
+                return SalesforceSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers();
+            }
+        });
+    }
+    public SalesforceSDKUpgradeManager(UserManager userManager) {
+        this.userManager = userManager;
     }
 
     /**
@@ -98,6 +121,9 @@ public class SalesforceSDKUpgradeManager {
                     && installedVersion.isLessThan(new SdkVersion(10, 2, 0, false))
             ) {
                 upgradeFromVersions9_2_0Thru10_1_1To10_1_1PasscodeFixes();
+            }
+            if (installedVersion.isLessThan(new SdkVersion(11, 0, 0, false))) {
+                updateFromBefore11_0_0();
             }
         } catch (Exception e) {
             SalesforceSDKLogger.e(
@@ -171,8 +197,7 @@ public class SalesforceSDKUpgradeManager {
             globalEditor.apply();
 
             // Set which users should have screen lock
-            final UserAccountManager manager = SalesforceSDKManager.getInstance().getUserAccountManager();
-            final List<UserAccount> accounts = manager.getAuthenticatedUsers();
+            final List<UserAccount> accounts = userManager.getAuthenticatedUsers();
 
             if (accounts != null) {
                 for (UserAccount account : accounts) {
@@ -210,8 +235,7 @@ public class SalesforceSDKUpgradeManager {
         final Context ctx = SalesforceSDKManager.getInstance().getAppContext();
         final SharedPreferences globalPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
         if (globalPrefs.contains(SCREEN_LOCK)) {
-            final UserAccountManager manager = SalesforceSDKManager.getInstance().getUserAccountManager();
-            final List<UserAccount> accounts = manager.getAuthenticatedUsers();
+            final List<UserAccount> accounts = userManager.getAuthenticatedUsers();
             if (accounts != null) {
                 HttpAccess.init(ctx); // only needed because we need to hit the network for this upgrade step.
                 Executors.newSingleThreadExecutor().execute(() -> {
@@ -245,6 +269,29 @@ public class SalesforceSDKUpgradeManager {
                         globalPrefs.edit().remove(SCREEN_LOCK).apply();
                     }
                 });
+            }
+        }
+    }
+
+    // TODO: Remove upgrade step in Mobile SDK 12.0
+    private void updateFromBefore11_0_0() {
+        final LegacyAdminSettingsManager legacySettingsManager = new LegacyAdminSettingsManager();
+        final AdminSettingsManager settingsManager = SalesforceSDKManager.getInstance().getAdminSettingsManager();
+        final List<UserAccount> accounts = userManager.getAuthenticatedUsers();
+        if (accounts != null) {
+            for (UserAccount account : accounts) {
+                // Copying custom attributes from org level shared prefs to user level shared prefs
+                Map<String, String> legacySettings = legacySettingsManager.getPrefs(account);
+                if (!legacySettings.isEmpty()) {
+                    settingsManager.setPrefs(legacySettings, account);
+                }
+            }
+            // Cleaning up legacy settings at the end
+            // because there could be multiple users in the same org
+            for (UserAccount account : accounts) {
+                // NB: Not using resetAll because it will remove legacy and non-legacy settings
+                //     because they share the same prefix
+                legacySettingsManager.reset(account);
             }
         }
     }

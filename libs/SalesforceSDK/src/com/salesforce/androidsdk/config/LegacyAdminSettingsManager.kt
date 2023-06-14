@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-present, salesforce.com, inc.
+ * Copyright (c) 2023-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,23 +24,19 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.config;
+package com.salesforce.androidsdk.config
 
 /**
- * This class represents custom settings for a connected app set by the org admin.
+ * This class represents custom settings for a connected app set by the org admin
+ * for applications using Mobile SDK 10.2 or older
  *
+ * Before Mobile SDK 11.0, custom attributes were stored in org level shared prefs
+ * Starting with Mobile SDK 11.0, custom attributes are stored in user level shared prefs
+ *
+ * This class is used to migrate custom attributes from the org level to the user level shared prefs
  */
-public class AdminSettingsManager extends AbstractPrefsManager {
-
-    public static final String FILENAME_ROOT = "admin_prefs";
-
-    @Override
-    protected String getFilenameRoot() {
-        return FILENAME_ROOT;
-    }
-
-    @Override
-    protected boolean isOrgLevel() {
-        return false;
+internal class LegacyAdminSettingsManager : AdminSettingsManager() {
+    override fun isOrgLevel(): Boolean {
+        return true
     }
 }
