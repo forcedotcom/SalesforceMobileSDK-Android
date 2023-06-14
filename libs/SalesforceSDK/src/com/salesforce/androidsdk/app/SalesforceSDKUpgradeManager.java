@@ -286,7 +286,7 @@ public class SalesforceSDKUpgradeManager {
                     settingsManager.setPrefs(legacySettings, account);
                 }
             }
-            // Cleaning up legacy settings at the end since
+            // Cleaning up legacy settings at the end
             // because there could be multiple users in the same org
             for (UserAccount account : accounts) {
                 // NB: Not using resetAll because it will remove legacy and non-legacy settings
