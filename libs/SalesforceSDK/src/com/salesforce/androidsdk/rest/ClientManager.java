@@ -113,7 +113,23 @@ public class ClientManager {
             if (options != null) {
                 i.putExtras(options);
             }
-            activityContext.startActivity(i);
+            /*
+             * Special Note: `LoginActivity` does not actually return a result.
+             * However, it does start broadcast intents that need to be received
+             * by the starting activity.  Since login activity is started in a
+             * new task, the starting activity would become available to be
+             * destroyed which unregisters its broadcast intent receivers.
+             *
+             * Using `startActivityForResult` starts a new task with the
+             * starting activity as the "base" intent with login activity as its
+             * "visible" sub-activity.  This keeps the starting activity from
+             * being eagerly destroyed and sets it as the activity to be started
+             * if the user returns the this task after it may have been fully
+             * destroyed due to memory pressure.
+             *
+             * TODO: This short term solution will be replaced in a future release.
+             */
+            activityContext.startActivityForResult(i, 0);
         }
 
         // Account found
