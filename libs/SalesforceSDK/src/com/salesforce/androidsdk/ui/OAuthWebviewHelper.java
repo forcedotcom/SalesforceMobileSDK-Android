@@ -53,6 +53,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
@@ -476,9 +477,18 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
         @Override
 		public void onPageFinished(WebView view, String url) {
+            // Hide spinner / show web view
+            final RelativeLayout parentView = (RelativeLayout) view.getParent();
+            if (parentView != null) {
+                final ProgressBar progressBar = parentView.findViewById(R.id.sf__loading_spinner);
+                if (progressBar != null) {
+                    progressBar.setVisibility(View.INVISIBLE);
+                }
+            }
+            view.setVisibility(View.VISIBLE);
+
             // Remove the native login buttons (biometric, IDP) once on the allow/deny screen
             if (url.contains("frontdoor.jsp")) {
-                final RelativeLayout parentView = (RelativeLayout) view.getParent();
                 if (parentView != null) {
                     final Button idpButton = parentView.findViewById(R.id.sf__idp_login_button);
                     if (idpButton != null) {
@@ -490,9 +500,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     }
                 }
             }
-
             EventsObservable.get().notifyEvent(EventType.AuthWebViewPageFinished, url);
-        	super.onPageFinished(view, url);
+            super.onPageFinished(view, url);
 		}
 
         @Override
