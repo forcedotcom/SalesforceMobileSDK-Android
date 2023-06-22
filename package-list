@@ -9,7 +9,6 @@ com.salesforce.androidsdk.analytics.transform
 com.salesforce.androidsdk.analytics.util
 com.salesforce.androidsdk.app
 com.salesforce.androidsdk.auth
-com.salesforce.androidsdk.auth.idp
 com.salesforce.androidsdk.config
 com.salesforce.androidsdk.mobilesync.app
 com.salesforce.androidsdk.mobilesync.config
