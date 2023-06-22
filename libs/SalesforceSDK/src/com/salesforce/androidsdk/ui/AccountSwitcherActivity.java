@@ -26,11 +26,12 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -46,7 +47,7 @@ import java.util.List;
  *
  * @author bhariharan
  */
-public class AccountSwitcherActivity extends Activity {
+public class AccountSwitcherActivity extends AppCompatActivity {
 
 	protected UserAccountManager userAccMgr;
 
