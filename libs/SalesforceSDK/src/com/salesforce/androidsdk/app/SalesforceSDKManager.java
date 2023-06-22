@@ -31,13 +31,10 @@ import android.accounts.AccountManager;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -66,7 +63,9 @@ import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
-import com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity;
+import com.salesforce.androidsdk.auth.idp.SPConfig;
+import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager;
+import com.salesforce.androidsdk.auth.idp.interfaces.SPManager;
 import com.salesforce.androidsdk.config.AdminPermsManager;
 import com.salesforce.androidsdk.config.AdminSettingsManager;
 import com.salesforce.androidsdk.config.BootConfig;
@@ -78,6 +77,7 @@ import com.salesforce.androidsdk.push.PushService;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
@@ -114,7 +114,7 @@ public class SalesforceSDKManager implements LifecycleObserver {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "10.2.0";
+    public static final String SDK_VERSION = "11.0.0.dev";
 
     /**
      * Intent action meant for instances of SalesforceSDKManager residing in other processes
@@ -155,6 +155,9 @@ public class SalesforceSDKManager implements LifecycleObserver {
     private Class<? extends Activity> loginActivityClass = LoginActivity.class;
     private Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
     private ScreenLockManager screenLockManager;
+
+    private BiometricAuthenticationManager bioAuthManager;
+
     private LoginServerManager loginServerManager;
     private boolean isTestRun = false;
 	private boolean isLoggingOut = false;
@@ -167,10 +170,23 @@ public class SalesforceSDKManager implements LifecycleObserver {
     private List<String> additionalOauthKeys;
     private String loginBrand;
     private boolean browserLoginEnabled;
-    private String idpAppURIScheme;
-    private boolean idpAppLoginFlowActive;
+    private boolean shareBrowserSessionEnabled;
+
+    /**
+     * When true, Salesforce integration users will be prohibited from initial
+     * authentication.  An error message will be displayed.  Defaults to false.
+     */
+    private boolean blockSalesforceIntegrationUser = false; // Default to false as Salesforce-authored apps are the primary audience for this option.  This functionality will eventually be provided by the backend.
+
+    private boolean useWebServerAuthentication = true; // web server flow ON by default - but app can opt out by calling setUseWebServerAuthentication(false)
+
+    private boolean useHybridAuthentication = true; // hybrid authentication flows ON by default - but app can opt out by calling setUseHybridAuthentication(false)
     private Theme theme =  Theme.SYSTEM_DEFAULT;
     private String appName;
+
+    private IDPManager idpManager;        // only set if this app is an IDP
+
+    private SPManager spManager;         // only set if this app is an SP
 
     /**
      * Available Mobile SDK style themes.
@@ -182,9 +198,10 @@ public class SalesforceSDKManager implements LifecycleObserver {
     }
 
     /**
-     * ScreenLockManager object lock.
+     * ScreenLockManager and BiometricAuthenticationManager object locks.
      */
     private final Object screenLockManagerLock = new Object();
+    private final Object bioAuthManagerLock = new Object();
 
     /**
      * Dev support
@@ -374,9 +391,9 @@ public class SalesforceSDKManager implements LifecycleObserver {
 
         // Enables IDP login flow if it's set through MDM.
         final RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(context);
-        final String idpAppUrlScheme = runtimeConfig.getString(RuntimeConfig.ConfigKey.IDPAppURLScheme);
-        if (!TextUtils.isEmpty(idpAppUrlScheme)) {
-            INSTANCE.idpAppURIScheme = idpAppUrlScheme;
+        final String idpAppPackageName = runtimeConfig.getString(RuntimeConfig.ConfigKey.IDPAppPackageName);
+        if (!TextUtils.isEmpty(idpAppPackageName)) {
+            INSTANCE.setIDPAppPackageName(idpAppPackageName);
         }
     }
 
@@ -456,38 +473,20 @@ public class SalesforceSDKManager implements LifecycleObserver {
     }
 
     /**
-     * Sets the class that will be used as a push service.
-     *
+     * Sets the class fulfilling push notification registration features.  A
+     * default implementation is provided in {@link PushService}.  Setting this
+     * property to a subclass will inject the specified class instead.
      * <p>
-     * If a class other than {@link PushService} is used, it must also be declared in the manifest and the
-     * {@link PushService} element must be disabled.
-     * </p>
+     * Note, the specified class no longer needs to be specified in the Android
+     * manifest as a service.
      *
-     * <pre>
-     * <code>
-     * &lt;service
-     *    android:enabled="false"
-     *    android:name="com.salesforce.androidsdk.push.PushService"
-     *    tools:node="merge"/&gt;
-     *
-     * &lt;service
-     *    android:enabled="true"
-     *    android:exported="false"
-     *    android:name="your.push.service"/&gt;
-     * </code>
-     * </pre>
-     *
-     * @param type the service class
+     * @param pushServiceType A class extending {@link PushService}
      */
-    public synchronized void setPushServiceType(Class<? extends PushService> type) {
-        pushServiceType = type;
-        if (!PushService.class.equals(type)) {
-            try {
-                context.getPackageManager().getServiceInfo(new ComponentName(context, type), 0);
-            } catch (NameNotFoundException e) {
-                throw new IllegalStateException(String.format("%s must be declared and enabled in the manifest", type));
-            }
-        }
+    @SuppressWarnings("unused")
+    public synchronized void setPushServiceType(
+            Class<? extends PushService> pushServiceType
+    ) {
+        this.pushServiceType = pushServiceType;
     }
 
     /**
@@ -504,7 +503,7 @@ public class SalesforceSDKManager implements LifecycleObserver {
      *
      * @return ScreenLockManager instance.
      */
-    public ScreenLockManager getScreenLockManager() {
+    public com.salesforce.androidsdk.security.interfaces.ScreenLockManager getScreenLockManager() {
         synchronized (screenLockManagerLock) {
             if (screenLockManager == null) {
                 screenLockManager = new ScreenLockManager();
@@ -513,7 +512,22 @@ public class SalesforceSDKManager implements LifecycleObserver {
         }
     }
 
-	/**
+    /**
+     * Returns the Biometric Authentication manager that's associated wth SalesforceSDKManager.
+     *
+     * @return BiometricAuthenticationManager instance.
+     */
+    public com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager getBiometricAuthenticationManager() {
+        synchronized (bioAuthManagerLock) {
+            if (bioAuthManager == null) {
+                bioAuthManager = new BiometricAuthenticationManager();
+            }
+            return bioAuthManager;
+        }
+    }
+
+
+    /**
      * Returns the user account manager that's associated with SalesforceSDKManager.
      *
      * @return UserAccountManager instance.
@@ -575,14 +589,65 @@ public class SalesforceSDKManager implements LifecycleObserver {
         return browserLoginEnabled;
     }
 
+
+    /**
+     * Determines if Salesforce integration users will be prohibited from
+     * initial authentication.
+     *
+     * @return True indicates authentication is blocked and false indicates
+     * authentication is allowed for Salesforce integration users
+     */
+    public boolean shouldBlockSalesforceIntegrationUser() {
+        return blockSalesforceIntegrationUser;
+    }
+
+    /**
+     * Sets authentication ability for Salesforce integration users.  When true,
+     * Salesforce integration users will be prohibited from initial
+     * authentication and receive an error message.  Defaults to false.
+     *
+     * @param value True blocks authentication or false allows authentication
+     *              for Salesforce integration users
+     */
+    public synchronized void setBlockSalesforceIntegrationUser(boolean value) {
+        blockSalesforceIntegrationUser = value;
+    }
+
+    /**
+     * Returns whether web server flow should be used when logging through the WebView
+     *
+     * @return True - if web server flow should be used, False - otherwise.
+     */
+    public boolean shouldUseWebServerAuthentication() {
+        return useWebServerAuthentication;
+    }
+
+    /**
+     * Sets whether web server flow should be used when logging through the WebView
+     * @param useWebServerAuthentication
+     */
+    public synchronized void setUseWebServerAuthentication(boolean useWebServerAuthentication) {
+        this.useWebServerAuthentication = useWebServerAuthentication;
+    }
+
+    /**
+     * Returns whether share browser session is enabled.
+     *
+     * @return True - if share browser session is enabled, False - otherwise.
+     */
+    public boolean isShareBrowserSessionEnabled() {
+        return shareBrowserSessionEnabled;
+    }
+
     /**
      * Sets whether browser based login should be used instead of WebView. This should NOT be used
      * directly by apps, this is meant for internal use, based on the value configured on the server.
      *
      * @param browserLoginEnabled True - if Chrome should be used for login, False - otherwise.
      */
-    public synchronized void setBrowserLoginEnabled(boolean browserLoginEnabled) {
+    public synchronized void setBrowserLoginEnabled(boolean browserLoginEnabled, boolean shareBrowserSessionEnabled) {
         this.browserLoginEnabled = browserLoginEnabled;
+        this.shareBrowserSessionEnabled = shareBrowserSessionEnabled;
         if (browserLoginEnabled) {
             SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_BROWSER_LOGIN);
         } else {
@@ -591,74 +656,72 @@ public class SalesforceSDKManager implements LifecycleObserver {
     }
 
     /**
+     * Returns whether hybrid authentication flow should be used
+     *
+     * @return True - if hybrid authentication flow should be used, False - otherwise.
+     */
+    public boolean shouldUseHybridAuthentication() {
+        return useHybridAuthentication;
+    }
+
+    /**
+     * Sets whether hybrid authentication flow should be used
+     * @param useHybridAuthentication
+     */
+    public synchronized void setUseHybridAuthentication(boolean useHybridAuthentication) {
+        this.useHybridAuthentication = useHybridAuthentication;
+    }
+
+    /**
      * Returns whether the IDP login flow is enabled.
      *
      * @return True - if IDP login flow is enabled, False - otherwise.
      */
     public boolean isIDPLoginFlowEnabled() {
-        boolean isIDPFlowEnabled = !TextUtils.isEmpty(idpAppURIScheme);
-        if (isIDPFlowEnabled) {
-            SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_APP_IS_SP);
-        } else {
-            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(Features.FEATURE_APP_IS_SP);
-        }
-        return isIDPFlowEnabled;
+        return spManager != null;
     }
 
     /**
-     * Checks for IDPAccountPickerActivity in manifest
      * @return True - if this application is configured as a Identity Provider
      */
     private boolean isIdentityProvider() {
-        try {
-            PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(),
-                    PackageManager.GET_ACTIVITIES);
-            for (ActivityInfo activityInfo : packageInfo.activities) {
-                if (activityInfo.name.equals(IDPAccountPickerActivity.class.getName())) {
-                    return true;
-                }
-            }
-        } catch (NameNotFoundException e) {
-            SalesforceSDKLogger.e(TAG, "Exception occurred while examining application info", e);
-        }
-        return false;
+        return idpManager != null;
     }
 
     /**
-     * Returns whether the IDP app is currently going through a login flow.
-     *
-     * @return True - if the IDP app is currently going through a login flow, False - otherwise.
+     * Returns the SP manager
+     * Only defined if setIdpAppPackageName() was first called
      */
-    public boolean isIDPAppLoginFlowActive() {
-        return idpAppLoginFlowActive;
+    public SPManager getSPManager() {
+        return spManager;
     }
 
     /**
-     * Sets whether the IDP app is currently going through a login flow.
-     *
-     * @param idpAppLoginFlowActive True - if the IDP app is kicking off login, False - otherwise.
+     * Sets the IDP package name for this app.
+     * As a result this application gets a SPManager and can be used as SP.
      */
-    public synchronized void setIDPAppLoginFlowActive(boolean idpAppLoginFlowActive) {
-        this.idpAppLoginFlowActive = idpAppLoginFlowActive;
+    public void setIDPAppPackageName(String idpAppPackageName) {
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_APP_IS_SP);
+        spManager = new com.salesforce.androidsdk.auth.idp.SPManager(idpAppPackageName);
     }
 
     /**
-     * Returns the configured IDP app's URI scheme.
-     *
-     * @return IDP app's URI scheme.
+     * Returns the IDP manager
+     * Only defined if setAllowedSPApps() was first called
      */
-    public String getIDPAppURIScheme() {
-        return idpAppURIScheme;
+    public IDPManager getIDPManager() {
+        return idpManager;
     }
 
     /**
-     * Sets the IDP app's URI scheme.
-     *
-     * @param idpAppURIScheme IDP app's URI scheme.
+     * Sets the allowed SP apps for this app.
+     * As a result this application gets a IDPManager and can be used as IDP.
      */
-    public synchronized void setIDPAppURIScheme(String idpAppURIScheme) {
-        this.idpAppURIScheme = idpAppURIScheme;
+    public void setAllowedSPApps(List<SPConfig> allowedSPApps) {
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_APP_IS_IDP);
+        idpManager = new com.salesforce.androidsdk.auth.idp.IDPManager(allowedSPApps);
     }
+
 
     /**
      * Returns the app display name used by the passcode dialog.
@@ -742,8 +805,9 @@ public class SalesforceSDKManager implements LifecycleObserver {
             adminSettingsManager = null;
             adminPermsManager = null;
 
-            getScreenLockManager().reset();
+            ((ScreenLockManager) getScreenLockManager()).reset();
             screenLockManager = null;
+            bioAuthManager = null;
         }
     }
 
@@ -756,7 +820,9 @@ public class SalesforceSDKManager implements LifecycleObserver {
         SalesforceAnalyticsManager.reset(userAccount);
         RestClient.clearCaches(userAccount);
         UserAccountManager.getInstance().clearCachedCurrentUser();
-        getScreenLockManager().cleanUp(userAccount);
+        ((ScreenLockManager) getScreenLockManager()).cleanUp(userAccount);
+        ((BiometricAuthenticationManager) getBiometricAuthenticationManager())
+                .cleanUp(userAccount);
     }
 
     /**
@@ -1239,6 +1305,7 @@ public class SalesforceSDKManager implements LifecycleObserver {
                 "SDK Version", SDK_VERSION,
                 "App Type", getAppType(),
                 "User Agent", getUserAgent(),
+                "Use Web Server Authentication", shouldUseWebServerAuthentication() + "",
                 "Browser Login Enabled", isBrowserLoginEnabled() + "",
                 "IDP Enabled", isIDPLoginFlowEnabled() + "",
                 "Identity Provider", isIdentityProvider() + "",
@@ -1395,11 +1462,15 @@ public class SalesforceSDKManager implements LifecycleObserver {
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     protected void onAppBackgrounded() {
-        getScreenLockManager().onAppBackgrounded();
+        ((ScreenLockManager) getScreenLockManager()).onAppBackgrounded();
+        ((BiometricAuthenticationManager) getBiometricAuthenticationManager())
+                .onAppBackgrounded();
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
     protected void onAppForegrounded() {
-        getScreenLockManager().onAppForegrounded();
+        ((ScreenLockManager) getScreenLockManager()).onAppForegrounded();
+        ((BiometricAuthenticationManager) getBiometricAuthenticationManager())
+                .onAppForegrounded();
     }
 }

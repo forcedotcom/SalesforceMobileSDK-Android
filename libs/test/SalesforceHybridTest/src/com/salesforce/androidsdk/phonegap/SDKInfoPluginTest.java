@@ -82,13 +82,6 @@ public class SDKInfoPluginTest {
         Assert.assertTrue("Wrong bootconfig oauthScopes", sdkInfoOAuthScopes.contains("api"));
         Assert.assertEquals("Wrong bootconfig oauthRedirectURI", bootconfig.getOauthRedirectURI(), sdkInfoBootConfig.getString("oauthRedirectURI"));
         Assert.assertEquals("Wrong bootconfig remoteAccessConsumerKey", bootconfig.getRemoteAccessConsumerKey(), sdkInfoBootConfig.getString("remoteAccessConsumerKey"));
-        try {
-            sdkInfoBootConfig.getString("androidPushNotificationClientId");
-            Assert.fail("Wrong bootconfig having androidPushNotificationClientId field");
-        } catch (Exception ex) {
-
-            // don't do anything since the exception is expected
-        }
         Assert.assertEquals("Wrong bootconfig startPage", "index.html", sdkInfoBootConfig.optString("startPage"));
         Assert.assertEquals("Wrong bootconfig errorPage", "error.html", sdkInfoBootConfig.optString("errorPage"));
 

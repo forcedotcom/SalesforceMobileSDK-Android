@@ -40,11 +40,11 @@ import android.os.Looper;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
-import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
@@ -113,7 +113,23 @@ public class ClientManager {
             if (options != null) {
                 i.putExtras(options);
             }
-            activityContext.startActivity(i);
+            /*
+             * Special Note: `LoginActivity` does not actually return a result.
+             * However, it does start broadcast intents that need to be received
+             * by the starting activity.  Since login activity is started in a
+             * new task, the starting activity would become available to be
+             * destroyed which unregisters its broadcast intent receivers.
+             *
+             * Using `startActivityForResult` starts a new task with the
+             * starting activity as the "base" intent with login activity as its
+             * "visible" sub-activity.  This keeps the starting activity from
+             * being eagerly destroyed and sets it as the activity to be started
+             * if the user returns the this task after it may have been fully
+             * destroyed due to memory pressure.
+             *
+             * TODO: This short term solution will be replaced in a future release.
+             */
+            activityContext.startActivityForResult(i, 0);
         }
 
         // Account found
@@ -406,21 +422,20 @@ public class ClientManager {
             }
         }
         Account acc = new Account(accountName, getAccountType());
-        accountManager.addAccountExplicitly(acc, SalesforceSDKManager.encrypt(refreshToken, encryptionKey), new Bundle());
+        String password = SalesforceSDKManager.encrypt(refreshToken, encryptionKey);
+        boolean success = accountManager.addAccountExplicitly(acc, password, new Bundle());
+        // Add account will fail if the account already exists, so update refresh token.
+        if (!success && acc != null) {
+            accountManager.setPassword(acc, password);
+        }
         final Account[] accounts = getAccounts();
-        int numAuthenticatedUsers = accounts == null ? 0 : accounts.length;
-        boolean isFirstUserOrNotIDPFlow = !SalesforceSDKManager.getInstance().isIDPAppLoginFlowActive()
-                || (numAuthenticatedUsers <= 1);
 
         /*
-         * Sets auth token only if this user is the first user being logged in or NOT an IDP login.
          * Caching auth token otherwise the first call to 'accountManager.getAuthToken()' will go
          * to the AuthenticatorService which will do a refresh. That is problematic when the
          * refresh token is set to expire immediately.
          */
-        if (isFirstUserOrNotIDPFlow) {
-            accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encrypt(authToken, encryptionKey));
-        }
+        accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encrypt(authToken, encryptionKey));
 
         // There is a bug in AccountManager::addAccountExplicitly() that sometimes causes user data to not be
         // saved when the user data is passed in through that method. The work-around is to call setUserData()
@@ -432,12 +447,9 @@ public class ClientManager {
         }
 
         /*
-         * Sets this user as the current user only if this is the first user being logged in
-         * or NOT an IDP login initiated by an SP app.
+         * Sets this user as the current user
          */
-        if (isFirstUserOrNotIDPFlow) {
-            SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUserInfo(userId, orgId);
-        }
+        SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUserInfo(userId, orgId);
         return extras;
     }
 
@@ -851,6 +863,11 @@ public class ClientManager {
             return bundle;
         }
 
+        /**
+         * Build a LoginOptions from the given bundle
+         * @param options - bundle
+         * @return
+         */
         public static LoginOptions fromBundle(Bundle options) {
             Map<String, String> additionalParameters = null;
             final Serializable serializable = options.getSerializable(KEY_ADDL_PARAMS);
@@ -863,6 +880,21 @@ public class ClientManager {
                                     options.getStringArray(OAUTH_SCOPES),
                                     options.getString(JWT),
                                     additionalParameters);
+        }
+
+        /**
+         * Build a LoginOptions from the given bundle
+         * If the loginUrl in options is not one of the login servers, then the selected login server is used instead.
+         * @param options - bundle
+         * @return
+         */
+        public static LoginOptions fromBundleWithSafeLoginUrl(Bundle options) {
+            LoginOptions loginOptions = fromBundle(options);
+            LoginServerManager loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
+            if (loginServerManager.getLoginServerFromURL(loginOptions.getLoginUrl()) == null) {
+                loginOptions.setLoginUrl(loginServerManager.getSelectedLoginServer().url);
+            }
+            return loginOptions;
         }
     }
 }

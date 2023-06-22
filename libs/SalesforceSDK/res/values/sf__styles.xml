@@ -2,7 +2,9 @@
 
 <resources xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <style name="SalesforceSDK">
+    <style name="SalesforceSDK" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="colorPrimary">@color/sf__primary_color</item>
+        <item name="titleTextColor">@color/sf__secondary_color</item>
         <item name="android:actionBarStyle">@style/SalesforceSDKActionBar</item>
         <item name="android:colorPrimary">@color/sf__primary_color</item>
         <item name="android:colorPrimaryDark">@color/sf__primary_color</item>
@@ -47,13 +49,65 @@
         <item name="android:textColorHint">@color/sf__hint_color</item>
         <item name="android:colorBackground">@color/sf__layout_background</item>
         <item name="android:colorPrimary">@color/sf__primary_color</item>
+        <item name="android:background">@drawable/sf__dialog</item>
     </style>
 
     <style name="SalesforceSDK.Dialog.Dark">
         <item name="android:textColor">@color/sf__text_color_dark</item>
+        <item name="android:colorBackground">@color/sf__layout_background_dark</item>
+        <item name="android:colorPrimary">@color/sf__primary_color</item>
+        <item name="android:background">@drawable/sf__dialog_dark</item>
+    </style>
+
+    <style name="SalesforceSDK.AlertDialog" parent="@style/Theme.Material3.DayNight.Dialog.Alert">
+        <item name="android:textColor">@color/sf__text_color</item>
+        <item name="android:colorBackground">@color/sf__layout_background</item>
+        <item name="android:background">@drawable/sf__dialog</item>
+        <item name="buttonBarPositiveButtonStyle">@style/PositiveButtonStyle</item>
+        <item name="buttonBarNegativeButtonStyle">@style/NegativeButtonStyle</item>
+        <item name="android:windowNoTitle">false</item>
+        <item name="android:windowIsFloating">true</item>
+    </style>
+
+    <style name="SalesforceSDK.AlertDialog.Dark">
+        <item name="android:textColor">@color/sf__text_color_dark</item>
         <item name="android:textColorHint">@color/sf__hint_color_dark</item>
         <item name="android:colorBackground">@color/sf__layout_background_dark</item>
         <item name="android:colorPrimary">@color/sf__primary_color</item>
+        <item name="android:background">@drawable/sf__dialog_dark</item>
+        <item name="buttonBarPositiveButtonStyle">@style/PositiveButtonStyleDark</item>
+        <item name="buttonBarNegativeButtonStyle">@style/NegativeButtonStyleDark</item>
+    </style>
+
+    <style name="PositiveButtonStyle" parent="Widget.MaterialComponents.Button">
+        <item name="android:backgroundTint">@color/sf__primary_color</item>
+        <item name="android:buttonStyle">@drawable/sf__primary_color_button</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginRight">10dp</item>
+        <item name="android:layout_marginLeft">10dp</item>
+    </style>
+
+    <style name="NegativeButtonStyle" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="android:textColor">@color/sf__primary_color</item>
+        <item name="android:buttonStyle">@drawable/sf__secondary_color_button</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginRight">10dp</item>
+        <item name="android:layout_marginLeft">10dp</item>
+    </style>
+
+    <style name="PositiveButtonStyleDark" parent="PositiveButtonStyle">
+        <item name="android:backgroundTint">@color/sf__primary_color_dark</item>
+        <item name="android:buttonStyle">@drawable/sf__primary_color_button</item>
+        <item name="android:textColor">@color/sf__text_color_dark</item>
+    </style>
+
+    <style name="NegativeButtonStyleDark" parent="NegativeButtonStyle">
+        <item name="android:buttonStyle">@drawable/sf__secondary_color_button_dark</item>
+        <item name="android:textColor">@color/sf__text_color_dark</item>
     </style>
 
     <style name="SalesforceSDK_Dark.Login">
@@ -145,6 +199,13 @@
         <item name="android:layout_marginTop">@dimen/sf__screenlock_error_margin_top</item>
         <item name="android:layout_marginLeft">@dimen/sf__screenlock_error_margin_left</item>
         <item name="android:layout_marginRight">@dimen/sf__screenlock_error_margin_right</item>
+    </style>
+
+    <style name="SalesforceSDK_Fullscreen" parent="@style/Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
     </style>
 
 </resources>

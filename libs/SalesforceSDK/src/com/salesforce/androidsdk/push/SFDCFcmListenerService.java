@@ -26,9 +26,13 @@
  */
 package com.salesforce.androidsdk.push;
 
+import androidx.annotation.NonNull;
+
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 /**
  * This class is called when a message is received or the token changes.
@@ -36,6 +40,24 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
  * @author bhariharan
  */
 public class SFDCFcmListenerService extends FirebaseMessagingService {
+    private static final String TAG = "FcmListenerService";
+
+    @Override
+    public void onNewToken(@NonNull String token) {
+        try {
+            final UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+
+            if (account != null) {
+                // Store the new token.
+                PushMessaging.setRegistrationId(this, token, account);
+
+                // Send it to SFDC.
+                PushMessaging.registerSFDCPush(this, account);
+            }
+        } catch (Exception e) {
+            SalesforceSDKLogger.e(TAG, "Error during FCM registration", e);
+        }
+    }
 
     /**
      * Called when message is received.
@@ -43,8 +65,8 @@ public class SFDCFcmListenerService extends FirebaseMessagingService {
      * @param message Remote message received.
      */
     @Override
-    public void onMessageReceived(RemoteMessage message) {
-        if (message != null && SalesforceSDKManager.hasInstance()) {
+    public void onMessageReceived(@NonNull RemoteMessage message) {
+        if (SalesforceSDKManager.hasInstance()) {
             final PushNotificationDecryptor pnDecryptor = PushNotificationDecryptor.getInstance();
             pnDecryptor.onPushMessageReceived(message);
         }

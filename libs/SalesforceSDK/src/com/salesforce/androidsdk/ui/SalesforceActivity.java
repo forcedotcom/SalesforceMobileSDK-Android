@@ -26,14 +26,15 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import android.app.Activity;
 import android.os.Bundle;
 import android.view.KeyEvent;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 /**
  * Abstract base class for all Salesforce activities.
  */
-public abstract class SalesforceActivity extends Activity implements SalesforceActivityInterface {
+public abstract class SalesforceActivity extends AppCompatActivity implements SalesforceActivityInterface {
 
 	private final SalesforceActivityDelegate delegate;
 
@@ -48,7 +49,7 @@ public abstract class SalesforceActivity extends Activity implements SalesforceA
 		delegate.onCreate();
 	}
 
-	@Override 
+	@Override
 	public void onResume() {
 		super.onResume();
 		delegate.onResume(true);

@@ -165,11 +165,17 @@ public class ScreenLockActivity extends FragmentActivity {
     }
 
     private BiometricPrompt.PromptInfo getPromptInfo() {
+        boolean hasFaceUnlock = false;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            hasFaceUnlock = getPackageManager().hasSystemFeature(PackageManager.FEATURE_FACE) ||
+                    (getPackageManager().hasSystemFeature(PackageManager.FEATURE_IRIS));
+        }
+
         return new BiometricPrompt.PromptInfo.Builder()
                 .setTitle(getString(R.string.sf__screen_lock_title, appName))
                 .setSubtitle(getString(R.string.sf__screen_lock_subtitle, appName))
                 .setAllowedAuthenticators(getAuthenticators())
-                .setConfirmationRequired(false)
+                .setConfirmationRequired(hasFaceUnlock)
                 .build();
     }
 

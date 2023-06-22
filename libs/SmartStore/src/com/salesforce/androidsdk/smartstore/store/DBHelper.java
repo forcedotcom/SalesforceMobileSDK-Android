@@ -30,6 +30,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.SQLException;
+import android.database.sqlite.SQLiteDoneException;
 import android.util.LruCache;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -40,7 +41,6 @@ import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 
 import net.sqlcipher.DatabaseUtils.InsertHelper;
 import net.sqlcipher.database.SQLiteDatabase;
-import net.sqlcipher.database.SQLiteDoneException;
 import net.sqlcipher.database.SQLiteStatement;
 
 import org.json.JSONArray;
@@ -56,13 +56,12 @@ import java.util.Map.Entry;
 
 /**
  * SmartStore Database Helper
- * 
  * Singleton class that provides helpful methods for accessing the database underneath the SmartStore
  * It also caches a number of of things to speed things up (e.g. soup table name, index specs, insert helpers etc)
  */
 public class DBHelper {
 
-	// Explain suuport
+	// Explain support
 	public static final String EXPLAIN_SQL = "sql";
 	public static final String EXPLAIN_ARGS = "args";
 	public static final String EXPLAIN_ROWS = "rows";
@@ -78,7 +77,7 @@ public class DBHelper {
 	 */
 	public static synchronized DBHelper getInstance(SQLiteDatabase db) {
 		if (INSTANCES == null) {
-			INSTANCES = new HashMap<SQLiteDatabase, DBHelper>();
+			INSTANCES = new HashMap<>();
 		}
 		DBHelper instance = INSTANCES.get(db);
 		if (instance == null) {
@@ -97,22 +96,19 @@ public class DBHelper {
 	private static final int CACHES_COUNT_LIMIT = 1024;
 
 	// Cache of soup name to boolean indicating existence
-	private LruCache<String, Boolean> soupNameToExistMap = new LruCache<>(CACHES_COUNT_LIMIT);
+	private final LruCache<String, Boolean> soupNameToExistMap = new LruCache<>(CACHES_COUNT_LIMIT);
 
 	// Cache of soup name to soup table names
-	private LruCache<String, String> soupNameToTableNamesMap = new LruCache<>(CACHES_COUNT_LIMIT);
+	private final LruCache<String, String> soupNameToTableNamesMap = new LruCache<>(CACHES_COUNT_LIMIT);
 
 	// Cache of soup name to index specs
-	private LruCache<String, IndexSpec[]> soupNameToIndexSpecsMap = new LruCache<String, IndexSpec[]>(CACHES_COUNT_LIMIT);
+	private final LruCache<String, IndexSpec[]> soupNameToIndexSpecsMap = new LruCache<>(CACHES_COUNT_LIMIT);
 
 	// Cache of soup name to boolean indicating if soup uses FTS
-	private LruCache<String, Boolean> soupNameToHasFTS = new LruCache<String, Boolean>(CACHES_COUNT_LIMIT);
-
-	// Cache of soup name to soup features
-	private LruCache<String, List<String>> soupNameToFeaturesMap = new LruCache<>(CACHES_COUNT_LIMIT);
+	private final LruCache<String, Boolean> soupNameToHasFTS = new LruCache<>(CACHES_COUNT_LIMIT);
 
 	// Cache of table name to get-next-id compiled statements
-	private LruCache<String, SQLiteStatement> tableNameToNextIdStatementsMap = new LruCache<String, SQLiteStatement>(CACHES_COUNT_LIMIT) {
+	private final LruCache<String, SQLiteStatement> tableNameToNextIdStatementsMap = new LruCache<String, SQLiteStatement>(CACHES_COUNT_LIMIT) {
 		@Override
 		protected void entryRemoved(boolean evicted, String key, SQLiteStatement oldValue, SQLiteStatement newValue) {
 			oldValue.close();
@@ -120,7 +116,7 @@ public class DBHelper {
 	};
 
 	// Cache of table name to insert helpers
-	private LruCache<String, InsertHelper> tableNameToInsertHelpersMap = new LruCache<String, InsertHelper>(CACHES_COUNT_LIMIT) {
+	private final LruCache<String, InsertHelper> tableNameToInsertHelpersMap = new LruCache<String, InsertHelper>(CACHES_COUNT_LIMIT) {
 		@Override
 		protected void entryRemoved(boolean evicted, String key, InsertHelper oldValue, InsertHelper newValue) {
 			oldValue.close();
@@ -128,7 +124,7 @@ public class DBHelper {
 	};
 
 	// Cache of raw count sql to compiled statements
-	private LruCache<String, SQLiteStatement> rawCountSqlToStatementsMap = new LruCache<String, SQLiteStatement>(CACHES_COUNT_LIMIT) {
+	private final LruCache<String, SQLiteStatement> rawCountSqlToStatementsMap = new LruCache<String, SQLiteStatement>(CACHES_COUNT_LIMIT) {
 		@Override
 		protected void entryRemoved(boolean evicted, String key, SQLiteStatement oldValue, SQLiteStatement newValue) {
 			oldValue.close();
@@ -184,24 +180,6 @@ public class DBHelper {
 	}
 
 	/**
-	 * Caches a set of features given the soup name.
-	 *
-	 * @param soupName
-	 * @param features
-	 */
-	public void cacheFeatures(String soupName, List<String> features) {
-		soupNameToFeaturesMap.put(soupName, features);
-	}
-
-	/**
-	 * @param soupName
-	 * @return The set of features belonging to the given soup name.
-	 */
-	public List<String> getCachedFeatures(String soupName) {
-		return soupNameToFeaturesMap.get(soupName);
-	}
-
-	/**
 	 * @param soupName
 	 * @return
 	 */
@@ -229,11 +207,10 @@ public class DBHelper {
 		soupNameToTableNamesMap.remove(soupName);
 		soupNameToIndexSpecsMap.remove(soupName);
 		soupNameToHasFTS.remove(soupName);
-		soupNameToFeaturesMap.remove(soupName);
 	}
 
 	private void cleanupRawCountSqlToStatementMaps(String tableName) {
-		List<String> countSqlToRemove = new ArrayList<String>();
+		List<String> countSqlToRemove = new ArrayList<>();
 		for (Entry<String, SQLiteStatement>  entry : rawCountSqlToStatementsMap.snapshot().entrySet()) {
 			String countSql = entry.getKey();
 			if (countSql.contains(tableName)) {
@@ -469,7 +446,6 @@ public class DBHelper {
 		soupNameToExistMap.evictAll();
 		soupNameToTableNamesMap.evictAll();
 		soupNameToIndexSpecsMap.evictAll();
-		soupNameToFeaturesMap.evictAll();
 		tableNameToInsertHelpersMap.evictAll();
 		tableNameToNextIdStatementsMap.evictAll();
 		rawCountSqlToStatementsMap.evictAll();
@@ -535,7 +511,7 @@ public class DBHelper {
             if (!cursor.moveToFirst()) {
                 throw new SmartStoreException(String.format("%s does not have any indices", soupName));
             }
-            List<IndexSpec> indexSpecs = new ArrayList<IndexSpec>();
+            List<IndexSpec> indexSpecs = new ArrayList<>();
             do {
                 String path = cursor.getString(cursor.getColumnIndex(SmartStore.PATH_COL));
                 String columnName = cursor.getString(cursor.getColumnIndex(SmartStore.COLUMN_NAME_COL));
@@ -557,49 +533,6 @@ public class DBHelper {
 	public boolean hasFTS(SQLiteDatabase db, String soupName) {
 		getIndexSpecs(db, soupName); // will populate cache if needed
 		return getCachedHasFTS(soupName);
-	}
-
-	/**
-	 * Retrieves the set of features belonging to the given soup.
-	 *
-	 * @param db
-	 * @param soupName
-	 * @return A list of features that belong to the given soup.
-	 */
-	public List<String> getFeatures(SQLiteDatabase db, String soupName) {
-		List<String> features = getCachedFeatures(soupName);
-		if (features == null) {
-			features = getFeaturesFromDb(db, soupName);
-			cacheFeatures(soupName, features);
-		}
-		return features;
-	}
-
-	/**
-	 * Queries the database for features that belong to the given soup name.
-	 *
-	 * @param db
-	 * @param soupName
-	 * @return A list of features that belong to the given soup.
-	 */
-	protected List<String> getFeaturesFromDb(SQLiteDatabase db, String soupName) {
-		Cursor cursor = null;
-		List<String> features = new ArrayList<>();
-		try {
-			cursor = query(db, SmartStore.SOUP_ATTRS_TABLE, SoupSpec.ALL_FEATURES, null, null, SmartStore.SOUP_NAME_PREDICATE, soupName);
-			if (!cursor.moveToFirst()) {
-				return null;
-			}
-			for (String feature : SoupSpec.ALL_FEATURES) {
-				int enabled = cursor.getInt(cursor.getColumnIndex(feature));
-				if (enabled > 0) {
-					features.add(feature);
-				}
-			}
-		} finally {
-			safeClose(cursor);
-		}
-		return features;
 	}
 
     /**

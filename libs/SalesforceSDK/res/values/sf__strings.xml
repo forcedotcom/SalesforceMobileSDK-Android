@@ -24,7 +24,9 @@
 	<string name="sf__pick_server">Change Server</string>
 	<string name="sf__clear_cookies">Clear Cookies</string>
 	<string name="sf__reload">Reload</string>
-	<string name="sf__launch_idp">Launch IDP App</string>
+	<string name="sf__launch_idp">Login with IDP App</string>
+	<string name="sf__login_with_biometric">Login with Biometric</string>
+	<string name="sf__setup_biometric_unlock">Setup Biometric Unlock</string>
 
 	<!-- Server picker -->
 	<string name="sf__auth_login_production">Production</string>
@@ -46,6 +48,21 @@
 	<!-- Account switcher screen -->
 	<string name="sf__add_new_account">Add new account</string>
     <string name="sf__account_selector_text">Select an account to use</string>
+
+	<!-- SP status updates -->
+	<string name="sf__login_request_sent_to_idp">Login request sent to IDP app</string>
+	<string name="sf__auth_code_received_from_idp">IDP app successfully obtained authorization code</string>
+	<string name="sf__error_received_from_idp">IDP app failed to obtain authorization code</string>
+	<string name="sf__failed_to_exchange_authorization_code">Failed to exchange authorization code</string>
+	<string name="sf__login_complete">Login complete</string>
+
+	<!-- IDP status updates -->
+	<string name="sf__login_request_sent_to_sp">Login request sent to SP app</string>
+	<string name="sf__getting_auth_code_from_server">Getting authorization code for SP app</string>
+	<string name="sf__failed_to_get_authorization_code">Failed to get authorization code for SP app</string>
+	<string name="sf__auth_code_sent_to_sp">Authorization code sent to SP app</string>
+	<string name="sf__error_received_from_sp">SP app failed to exchange authorization code</string>
+	<string name="sf__sp_login_complete">SP app login complete</string>
 
     <!-- Managed app restrictions -->
     <string name="sf__app_service_hosts_description">Used to specify login hosts for the application.</string>
@@ -70,6 +87,13 @@
 	<string name="sf__screen_lock_setup_required">%s requires a device lock screen.</string>
 	<string name="sf__screen_lock_setup_button">Setup Lock Screen</string>
 	<string name="sf__screen_lock_retry_button">Retry Unlock</string>
+
+	<!-- Biometric Authentication Opt In Dialog -->
+	<string name="sf__biometric_opt_in_title">Biometric Login</string>
+	<string name="sf__biometric_opt_in_message">Use your fingerprint to quickly login.  Biometric information is never stored.</string>
+	<string name="sf__biometric_opt_in_approve">Enable</string>
+	<string name="sf__biometric_opt_in_deny">Use Password</string>
+	<string name="sf__biometric_signout_user">Signing out %s.</string>
 
 	<!-- Dev support -->
 	<string name="sf__dev_support_title">Mobile SDK Dev Support</string>

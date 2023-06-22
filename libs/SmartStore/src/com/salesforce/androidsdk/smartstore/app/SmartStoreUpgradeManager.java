@@ -27,8 +27,6 @@
 package com.salesforce.androidsdk.smartstore.app;
 
 import com.salesforce.androidsdk.app.SalesforceSDKUpgradeManager;
-import com.salesforce.androidsdk.app.SdkVersion;
-import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 
 /**
  * This class handles upgrades from one version to another.

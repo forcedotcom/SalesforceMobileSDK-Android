@@ -39,14 +39,17 @@ import static org.hamcrest.CoreMatchers.allOf;
 import android.content.Intent;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
+
 import androidx.test.espresso.matcher.RootMatchers;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
+
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.smartstore.R;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.ui.KeyValueStoreInspectorActivity;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;

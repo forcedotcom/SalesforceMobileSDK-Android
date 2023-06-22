@@ -26,6 +26,21 @@
  */
 package com.salesforce.androidsdk.phonegap.plugin;
 
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.CURSOR_ID;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.ENTRIES;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.ENTRY_IDS;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.EXTERNAL_ID_PATH;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.INDEX;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.INDEXES;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.IS_GLOBAL_STORE;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.PATH;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.PATHS;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.QUERY_SPEC;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.RE_INDEX_DATA;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.SOUP_NAME;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.STORE_NAME;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.TYPE;
+
 import android.app.Activity;
 import android.util.SparseArray;
 
@@ -39,7 +54,6 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
-import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 import com.salesforce.androidsdk.smartstore.store.StoreCursor;
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
 
@@ -55,22 +69,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.CURSOR_ID;
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.ENTRIES;
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.ENTRY_IDS;
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.EXTERNAL_ID_PATH;
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.INDEX;
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.INDEXES;
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.IS_GLOBAL_STORE;
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.PATH;
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.PATHS;
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.QUERY_SPEC;
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.RE_INDEX_DATA;
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.SOUP_NAME;
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.SOUP_SPEC;
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.STORE_NAME;
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.TYPE;
 
 
 /**
@@ -106,7 +104,6 @@ public class SmartStorePlugin extends ForcePlugin {
 		pgCloseCursor,
 		pgGetDatabaseSize,
 		pgGetSoupIndexSpecs,
-		pgGetSoupSpec,
 		pgMoveCursorToPageIndex,
 		pgQuerySoup,
 		pgRegisterSoup,
@@ -154,7 +151,6 @@ public class SmartStorePlugin extends ForcePlugin {
 		                  case pgCloseCursor:           closeCursor(args, callbackContext); break;
 		                  case pgGetDatabaseSize:       getDatabaseSize(args, callbackContext); break;
 		                  case pgGetSoupIndexSpecs:     getSoupIndexSpecs(args, callbackContext); break;
-		                  case pgGetSoupSpec:           getSoupSpec(args, callbackContext); break;
 		                  case pgMoveCursorToPageIndex: moveCursorToPageIndex(args, callbackContext); break;
 		                  case pgQuerySoup:             querySoup(args, callbackContext); break;
 		                  case pgRegisterSoup:          registerSoup(args, callbackContext); break;
@@ -453,18 +449,13 @@ public class SmartStorePlugin extends ForcePlugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.isNull(SOUP_NAME) ? null : arg0.getString(SOUP_NAME);
-		SoupSpec soupSpec = getSoupSpecFromArg(arg0);
 		IndexSpec[] indexSpecs = getIndexSpecsFromArg(arg0);
 		final SmartStore smartStore = getSmartStore(arg0);
 
 		// Run register
-		if (soupSpec != null) {
-			smartStore.registerSoupWithSpec(soupSpec, indexSpecs);
-		} else {
-			smartStore.registerSoup(soupName, indexSpecs);
-		}
+		smartStore.registerSoup(soupName, indexSpecs);
 
-		callbackContext.success(soupSpec != null ? soupSpec.getSoupName() : soupName);
+		callbackContext.success(soupName);
 	}
 
 	/**
@@ -597,17 +588,13 @@ public class SmartStorePlugin extends ForcePlugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
-		SoupSpec soupSpec = getSoupSpecFromArg(arg0);
 		IndexSpec[] indexSpecs = getIndexSpecsFromArg(arg0);
 		boolean reIndexData = arg0.getBoolean(RE_INDEX_DATA);
 		final SmartStore smartStore = getSmartStore(arg0);
 
 		// Run alter
-		if (soupSpec != null) {
-			smartStore.alterSoup(soupName, soupSpec, indexSpecs, reIndexData);
-		} else {
-			smartStore.alterSoup(soupName, indexSpecs, reIndexData);
-		}
+		smartStore.alterSoup(soupName, indexSpecs, reIndexData);
+
 		callbackContext.success(soupName);
 	}
 
@@ -663,23 +650,6 @@ public class SmartStorePlugin extends ForcePlugin {
 	}
 
     /**
-     * Native implementation of pgGetSoupSpec
-     * @param args JSONArray with arguments from JS
-     * @param callbackContext CallbackContext for plugin
-     * @throws Exception
-     */
-	private void getSoupSpec(JSONArray args, CallbackContext callbackContext) throws Exception {
-		// Parse args
-		JSONObject arg0 = args.getJSONObject(0);
-		String soupName = arg0.getString(SOUP_NAME);
-
-		// Get soup specs
-		SmartStore smartStore = getSmartStore(arg0);
-		SoupSpec soupSpec = smartStore.getSoupSpec(soupName);
-		callbackContext.success(soupSpec.toJSON());
-	}
-
-    /**
      * Return smartstore to use
      * @param arg0 first argument passed in plugin call
      * @return
@@ -726,17 +696,6 @@ public class SmartStorePlugin extends ForcePlugin {
     private IndexSpec[] getIndexSpecsFromArg(JSONObject arg0) throws JSONException {
         JSONArray indexesJson = arg0.getJSONArray(INDEXES);
         return IndexSpec.fromJSON(indexesJson);
-    }
-
-    /**
-     * Build soup spec from json object argument
-     * @param arg0
-     * @return
-     * @throws JSONException
-     */
-    private SoupSpec getSoupSpecFromArg(JSONObject arg0) throws JSONException {
-        JSONObject soupSpecObj = arg0.optJSONObject(SOUP_SPEC);
-        return soupSpecObj == null ? null : SoupSpec.fromJSON(soupSpecObj);
     }
 
 	private void sendStoreConfig(CallbackContext callbackContext,List<String>dbNames, boolean isGlobal)  throws JSONException {

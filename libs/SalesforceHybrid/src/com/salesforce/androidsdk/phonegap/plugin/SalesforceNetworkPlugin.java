@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.phonegap.plugin;
 import android.text.TextUtils;
 import android.util.Base64;
 
-import com.salesforce.androidsdk.phonegap.app.SalesforceHybridSDKManager;
 import com.salesforce.androidsdk.phonegap.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 import com.salesforce.androidsdk.rest.RestClient;

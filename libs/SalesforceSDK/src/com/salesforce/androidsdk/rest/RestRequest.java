@@ -29,10 +29,13 @@ package com.salesforce.androidsdk.rest;
 import android.net.Uri;
 import android.text.TextUtils;
 
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.rest.BatchRequest.BatchRequestBuilder;
 import com.salesforce.androidsdk.rest.CompositeRequest.CompositeRequestBuilder;
 import com.salesforce.androidsdk.rest.files.ConnectUriBuilder;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -52,6 +55,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
+import okhttp3.FormBody;
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
 
@@ -61,6 +65,7 @@ import okhttp3.RequestBody;
  * The class offers factory methods to build RestRequest objects for all REST API actions:
  * <ul>
  * <li> userinfo</li>
+ * <li> tokeninfo</li>
  * <li> versions</li>
  * <li> resources</li>
  * <li> describeGlobal</li>
@@ -159,6 +164,7 @@ public class RestRequest {
 	enum RestAction {
 
 		USERINFO("/services/oauth2/userinfo"),
+		TOKENINFO("/services/oauth2/introspect"),
 		VERSIONS(SERVICES_DATA),
 		RESOURCES(SERVICES_DATA + "%s/"),
 		DESCRIBE_GLOBAL(SERVICES_DATA + "%s/sobjects/"),
@@ -202,6 +208,7 @@ public class RestRequest {
 	private final RequestBody requestBody;
 	private final Map<String, String> additionalHttpHeaders;
 	private final JSONObject requestBodyAsJson; // needed for composite and batch requests
+	private static final String TAG = "RestRequest";
 
     /**
      * Generic constructor for arbitrary requests without a body.

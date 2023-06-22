@@ -83,7 +83,6 @@ public class BootConfig {
 	private boolean attemptOfflineLoad;
 	private String pushNotificationClientId;
 	private String unauthenticatedStartPage;
-
 	private static BootConfig INSTANCE = null;
 
 	/**
@@ -112,11 +111,11 @@ public class BootConfig {
 	 * @return A BootConfig representing the hybrid boot config object.
 	 */
 	static BootConfig getHybridBootConfig(Context ctx, String assetFilePath) {
-		BootConfig hybridBootConfg = new BootConfig();
-		hybridBootConfg.configIsHybrid = true;
+		BootConfig hybridBootConfig = new BootConfig();
+		hybridBootConfig.configIsHybrid = true;
 		JSONObject bootConfigJsonObj = readFromJSON(ctx, assetFilePath);
-		hybridBootConfg.parseBootConfig(bootConfigJsonObj);
-		return hybridBootConfg;
+		hybridBootConfig.parseBootConfig(bootConfigJsonObj);
+		return hybridBootConfig;
 	}
 
 	/**
@@ -161,7 +160,7 @@ public class BootConfig {
 	/**
 	 * Use runtime configurations (from MDM provider) if any
 	 *
-	 * @param ctx
+	 * @param ctx Context
 	 */
 	private void readFromRuntimeConfig(Context ctx) {
 		RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(ctx);
@@ -215,8 +214,7 @@ public class BootConfig {
 			throw new BootConfigException("Failed to open " + assetsFilePath);
 		}
 		try {
-			JSONObject jsonObj = new JSONObject(jsonStr);
-			return jsonObj;
+			return new JSONObject(jsonStr);
 		} catch (JSONException e) {
 			throw new BootConfigException("Failed to parse " + assetsFilePath, e);
 		}
@@ -329,6 +327,7 @@ public class BootConfig {
 	 *
 	 * @return Path to local error page.
 	 */
+	@SuppressWarnings("unused")
 	public String getErrorPage() {
 		return errorPage;
 	}
@@ -347,6 +346,7 @@ public class BootConfig {
 	 *
 	 * @return True - if the app should attempt to load cached content, False - otherwise.
 	 */
+	@SuppressWarnings("unused")
 	public boolean attemptOfflineLoad() {
 		return attemptOfflineLoad;
 	}
@@ -356,7 +356,7 @@ public class BootConfig {
 	 *
 	 * @return Push notification client ID.
 	 *
-	 * @deprecated Will be removed in 11.0 in favor of Firebase google-services.json file.
+	 * @deprecated Will be removed in 12.0 in favor of Firebase google-services.json file.
 	 */
 	@Deprecated
 	public String getPushNotificationClientId() {

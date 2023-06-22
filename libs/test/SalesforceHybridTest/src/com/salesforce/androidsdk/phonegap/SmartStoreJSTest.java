@@ -53,7 +53,6 @@ public class SmartStoreJSTest extends JSTestCase {
         return Arrays.asList(new String[]{
                 "testGetDatabaseSize",
                 "testRegisterRemoveSoup",
-                "testRegisterWithSpec",
                 "testRegisterRemoveSoupGlobalStore",
                 "testRegisterBogusSoup",
                 "testRegisterSoupNoIndices",
@@ -91,8 +90,6 @@ public class SmartStoreJSTest extends JSTestCase {
                 "testGetSoupIndexSpecsWithBogusSoupName",
                 "testAlterSoupNoReIndexing",
                 "testAlterSoupWithReIndexing",
-                "testAlterSoupWithSpecNoReIndexing",
-                "testAlterSoupWithSpecWithReIndexing",
                 "testAlterSoupWithBogusSoupName",
                 "testReIndexSoup",
                 "testClearSoup",

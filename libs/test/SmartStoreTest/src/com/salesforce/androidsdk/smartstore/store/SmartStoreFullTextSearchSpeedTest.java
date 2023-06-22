@@ -27,10 +27,11 @@
 package com.salesforce.androidsdk.smartstore.store;
 
 import android.util.Log;
+
 import androidx.test.filters.LargeTest;
+
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
-import java.util.Arrays;
-import java.util.Collection;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -38,6 +39,9 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.util.Arrays;
+import java.util.Collection;
 
 /**
  * Tests to compare speed of smartstore full-text-search indices with regular indices
