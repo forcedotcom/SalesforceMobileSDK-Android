@@ -33,6 +33,7 @@ import com.salesforce.androidsdk.R
 interface SPManager {
 
     enum class Status(val resIdForDescription:Int) {
+        FAILED_TO_SEND_REQUEST_TO_IDP(R.string.sf__failed_to_send_request_to_idp),
         LOGIN_REQUEST_SENT_TO_IDP(R.string.sf__login_request_sent_to_idp),
         AUTH_CODE_RECEIVED_FROM_IDP(R.string.sf__auth_code_received_from_idp),
         ERROR_RECEIVED_FROM_IDP(R.string.sf__error_received_from_idp),

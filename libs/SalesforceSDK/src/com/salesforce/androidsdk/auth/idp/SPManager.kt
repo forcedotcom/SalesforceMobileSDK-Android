@@ -74,7 +74,6 @@ internal class SPLoginFlow private constructor(context:Context, val onStatusUpda
 
                 // Send SP login request
                 spManager.sendLoginRequest(context, spToIDPRequest)
-                onStatusUpdate(Status.LOGIN_REQUEST_SENT_TO_IDP)
             }
         }
 }
@@ -184,23 +183,32 @@ internal class SPManager(
     }
 
     fun sendLoginRequest(context: Context, message: SPToIDPRequest) {
-        if (context is Activity) {
-            // This is a SP initiated login, we start the IDP auth code activity from the SP app
-            addToActiveFlowIfApplicable(message)
-            val intent = message.toIntent().apply {
-                putExtra(SRC_APP_PACKAGE_NAME_KEY, context.applicationInfo.packageName)
-                // Intent action needs to be ACTION_VIEW, so passing message action through extras
-                putExtra(ACTION_KEY, message.action)
-                action = Intent.ACTION_VIEW
-                setPackage(idpAppPackageName)
-                setClassName(idpAppPackageName, IDPAuthCodeActivity::class.java.name)
-                addCategory(Intent.CATEGORY_DEFAULT)
+        try {
+            if (context is Activity) {
+                // This is a SP initiated login, we start the IDP auth code activity from the SP app
+                addToActiveFlowIfApplicable(message)
+                val intent = message.toIntent().apply {
+                    putExtra(SRC_APP_PACKAGE_NAME_KEY, context.applicationInfo.packageName)
+                    // Intent action needs to be ACTION_VIEW, so passing message action through extras
+                    putExtra(ACTION_KEY, message.action)
+                    action = Intent.ACTION_VIEW
+                    setPackage(idpAppPackageName)
+                    setClassName(idpAppPackageName, IDPAuthCodeActivity::class.java.name)
+                    addCategory(Intent.CATEGORY_DEFAULT)
+                }
+                startActivity(context, intent)
+            } else {
+                // This is a IDP initiated login, we will send the message to the IDP receiver
+                // and let the IDP app start the IDP auth code activity
+                send(context, message)
             }
-            startActivity(context, intent)
-        } else {
-            // This is a IDP initiated login, we will send the message to the IDP receiver
-            // and let the IDP app start the IDP auth code activity
-            send(context, message)
+            (getActiveFlow() as? SPLoginFlow)?.let {
+                it.onStatusUpdate(Status.LOGIN_REQUEST_SENT_TO_IDP)
+            }
+        } catch (e: RuntimeException) {
+            (getActiveFlow() as? SPLoginFlow)?.let {
+                it.onStatusUpdate(Status.FAILED_TO_SEND_REQUEST_TO_IDP)
+            }
         }
     }
 
