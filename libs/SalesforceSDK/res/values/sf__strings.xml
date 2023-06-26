@@ -50,6 +50,7 @@
     <string name="sf__account_selector_text">Select an account to use</string>
 
 	<!-- SP status updates -->
+	<string name="sf__failed_to_send_request_to_idp">Failed to send request to IDP app</string>
 	<string name="sf__login_request_sent_to_idp">Login request sent to IDP app</string>
 	<string name="sf__auth_code_received_from_idp">IDP app successfully obtained authorization code</string>
 	<string name="sf__error_received_from_idp">IDP app failed to obtain authorization code</string>
