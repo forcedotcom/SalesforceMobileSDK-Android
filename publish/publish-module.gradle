@@ -56,7 +56,7 @@ afterEvaluate {
                             email = 'brianna.birman@salesforce.com'
                         }
                         developer {
-                            id = 'johnson.eric'
+                            id = 'JohnsonEricAtSalesforce'
                             name = 'Eric Johnson'
                             email = 'johnson.eric@salesforce.com'
                         }
