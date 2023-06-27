@@ -37,6 +37,7 @@ import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.phonegap.app.SalesforceHybridSDKManager;
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
+import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
@@ -349,7 +350,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
                      * but a stale session ID will cause the WebView to redirect
                      * to the web login.
                      */
-                    SalesforceDroidGapActivity.this.client.sendAsync(RestRequest.getRequestForUserInfo(), new AsyncRequestCallback() {
+                    SalesforceDroidGapActivity.this.client.sendAsync(RestRequest.getRequestForLimits(ApiVersionStrings.VERSION_NUMBER), new AsyncRequestCallback() {
 
                         @Override
                         public void onSuccess(RestRequest request, RestResponse response) {
@@ -422,7 +423,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
             });
             return;
         }
-        client.sendAsync(RestRequest.getRequestForUserInfo(), new AsyncRequestCallback() {
+        client.sendAsync(RestRequest.getRequestForLimits(ApiVersionStrings.VERSION_NUMBER), new AsyncRequestCallback() {
 
             @Override
             public void onSuccess(RestRequest request, RestResponse response) {

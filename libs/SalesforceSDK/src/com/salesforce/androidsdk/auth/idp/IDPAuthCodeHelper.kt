@@ -39,6 +39,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.getAuthorizationUrl
 import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.config.BootConfig
+import com.salesforce.androidsdk.rest.ApiVersionStrings
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestRequest
@@ -119,7 +120,7 @@ internal class IDPAuthCodeHelper private constructor(
         SalesforceSDKLogger.d(TAG, "Obtaining valid access token")
         buildRestClient()?.let {restClient ->
             val restResponse = try {
-                restClient.sendSync(RestRequest.getRequestForUserInfo())
+                restClient.sendSync(RestRequest.getRequestForLimits(ApiVersionStrings.VERSION_NUMBER))
             } catch (e: IOException) {
                 SalesforceSDKLogger.e(TAG, "Failed to obtain valid access token", e)
                 null
