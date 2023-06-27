@@ -29,13 +29,10 @@ package com.salesforce.androidsdk.rest;
 import android.net.Uri;
 import android.text.TextUtils;
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.rest.BatchRequest.BatchRequestBuilder;
 import com.salesforce.androidsdk.rest.CompositeRequest.CompositeRequestBuilder;
 import com.salesforce.androidsdk.rest.files.ConnectUriBuilder;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
-import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -55,7 +52,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
-import okhttp3.FormBody;
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
 
@@ -189,7 +185,8 @@ public class RestRequest {
 		SOBJECT_COLLECTION_UPSERT(SERVICES_DATA + "%s/composite/sobjects/%s/%s"),
         NOTIFICATIONS_STATUS(SERVICES_DATA + "%s/connect/notifications/status"),
 		NOTIFICATIONS(SERVICES_DATA + "%s/connect/notifications/%s"),
-		PRIMING_RECORDS(SERVICES_DATA + "%s/connect/briefcase/priming-records");
+		PRIMING_RECORDS(SERVICES_DATA + "%s/connect/briefcase/priming-records"),
+		LIMITS(SERVICES_DATA + "%s/limits");
 
 		private final String pathTemplate;
 
@@ -947,6 +944,17 @@ public class RestRequest {
 		path.append("?allOrNone=" + allOrNone + "&ids=");
 		path.append(URLEncoder.encode(TextUtils.join(",", objectIds), UTF_8));
 		return new RestRequest(RestMethod.DELETE, path.toString());
+	}
+
+	/**
+	 * Request for getting information about limits in your org
+	 *
+	 * @param apiVersion    Salesforce API version.
+	 * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_limits.htm">https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_limits.htm</a>
+	 */
+	public static RestRequest getRequestForLimits(String apiVersion) {
+		StringBuilder path = new StringBuilder(RestAction.LIMITS.getPath(apiVersion));
+		return new RestRequest(RestMethod.GET, path.toString());
 	}
 
     /**
