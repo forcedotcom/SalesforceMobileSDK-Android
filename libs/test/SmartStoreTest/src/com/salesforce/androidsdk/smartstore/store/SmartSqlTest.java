@@ -396,7 +396,7 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	}
 
 	/**
-	 * Test running smart queries that matching true and false in json1 field
+	 * Test running smart queries matching true and false in json1 field
      * NB: SQLite does not have a separate Boolean storage class. Instead, Boolean values are stored as integers 0 (false) and 1 (true).
 	 */
 	@Test
@@ -419,6 +419,69 @@ public class SmartSqlTest extends SmartStoreTestCase {
         // Smart sql looking for isManager false
         result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:employeeId} from {employees} where {employees:isManager} = 0 order by {employees:employeeId}", 10), 0);
         JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[\"00020\"],[\"00060\"],[\"00070\"],[\"00310\"],[\"102\"]]"), result);
+	}
+
+	/**
+	 * Test running smart queries matching non-ASCII characters in String field
+	 */
+	@Test
+	public void testSmartQueryMachingNonAsciiInStringField() throws JSONException {
+
+		// Creating another employee from a json string with first name using non-ascii characters (Turkish)
+		createEmployeeWithJsonString("{\"employeeId\":\"101\",\"firstName\":\"Göktuğ\"}");
+
+		// Creating another employee from a json string with first name using non-ascii characters (Korean)
+		createEmployeeWithJsonString("{\"employeeId\":\"102\",\"firstName\":\"보배\"}");
+
+		// Smart sql looking for first name containing a certain non-ASCII character (ğ)
+		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:employeeId} from {employees} where {employees:firstName} like '%ğ%'", 10), 0);
+		JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[\"101\"]]"), result);
+
+		// Smart sql looking for first name containing a certain non-ASCII character (배)
+		result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:employeeId} from {employees} where {employees:firstName} like '%배%'", 10), 0);
+		JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[\"102\"]]"), result);
+	}
+
+	/**
+	 * Test running smart queries matching non-ASCII characters in Json1 field
+	 */
+	@Test
+	public void testSmartQueryMachingNonAsciiInJSON1Field() throws JSONException {
+
+		// Creating another employee from a json string with education using non-ascii characters (Turkish)
+		createEmployeeWithJsonString("{\"employeeId\":\"101\",\"education\":\"latince uzmanı\"}");
+
+		// Creating another employee from a json string with education using non-ascii characters (Korean)
+		createEmployeeWithJsonString("{\"employeeId\":\"102\",\"education\":\"라틴어 전문가\"}");
+
+		// Smart sql looking for education containing a certain non-ASCII character (ı)
+		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:employeeId} from {employees} where {employees:education} like '%ı%'", 10), 0);
+		JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[\"101\"]]"), result);
+
+		// Smart sql looking for education containing a certain non-ASCII character (문)
+		result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:employeeId} from {employees} where {employees:education} like '%문%'", 10), 0);
+		JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[\"102\"]]"), result);
+	}
+
+	/**
+	 * Test running smart queries matching non-ASCII characters in non-indexed field
+	 */
+	@Test
+	public void testSmartQueryMachingNonAsciiInNonIndexedField() throws JSONException {
+
+		// Creating another employee from a json string with country using non-ascii characters (Turkish)
+		createEmployeeWithJsonString("{\"employeeId\":\"101\",\"country\":\"Türkçe\"}");
+
+		// Creating another employee from a json string with country using non-ascii characters (Korean)
+		createEmployeeWithJsonString("{\"employeeId\":\"102\",\"country\":\"한국\"}");
+
+		// Smart sql looking for country containing a certain non-ASCII character (ç)
+		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:employeeId} from {employees} where {employees:country} like '%ç%'", 10), 0);
+		JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[\"101\"]]"), result);
+
+		// Smart sql looking for country containing a certain non-ASCII character (국)
+		result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:employeeId} from {employees} where {employees:country} like '%국%'", 10), 0);
+		JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[\"102\"]]"), result);
 	}
 
 	@Test
