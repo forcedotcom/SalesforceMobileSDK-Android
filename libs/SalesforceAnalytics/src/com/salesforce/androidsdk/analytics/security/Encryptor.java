@@ -41,7 +41,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
@@ -60,7 +59,6 @@ public class Encryptor {
     private static final String AES_CBC_CIPHER = "AES/CBC/PKCS5Padding";
     private static final String AES_GCM_CIPHER = "AES/GCM/NoPadding";
     private static final String MAC_TRANSFORMATION = "HmacSHA256";
-    private static final String SHA1PRNG = "SHA1PRNG";
     private static final String RSA_PKCS1 = "RSA/ECB/PKCS1Padding";
     private static final String BOUNCY_CASTLE = "BC";
     private static final int READ_BUFFER_LENGTH = 1024;
@@ -72,7 +70,7 @@ public class Encryptor {
      * @return Initialized cipher.
      */
     public static Cipher getEncryptingCipher(String encryptionKey)
-            throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
+            throws InvalidAlgorithmParameterException, InvalidKeyException {
         final byte[] keyBytes = Base64.decode(encryptionKey, Base64.DEFAULT);
         return getEncryptingCipher(keyBytes, generateInitVector());
     }
@@ -534,8 +532,9 @@ public class Encryptor {
         return null;
     }
 
-    private static byte[] generateInitVector() throws NoSuchAlgorithmException {
-        final SecureRandom random = SecureRandom.getInstance(SHA1PRNG);
+    private static byte[] generateInitVector() {
+        // Create the system recommended secure random number generator provider algorithm.
+        final SecureRandom random = new SecureRandom();
         byte[] iv = new byte[12];
         random.nextBytes(iv);
         return iv;

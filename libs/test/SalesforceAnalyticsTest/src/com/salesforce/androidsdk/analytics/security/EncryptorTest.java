@@ -36,7 +36,6 @@ import org.junit.runner.RunWith;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -71,7 +70,7 @@ public class EncryptorTest {
 					Encryptor.encrypt(data, null));
 		}
 	}
-	
+
 	/**
 	 * Test to make sure that decrypt does nothing when given a null key.
 	 */
@@ -114,12 +113,12 @@ public class EncryptorTest {
                 final String decryptedA = Encryptor.decrypt(encryptedA, key);
                 final String encryptedB = Encryptor.encrypt(otherData, key);
                 final String decryptedB = Encryptor.decrypt(encryptedB, key);
-				boolean sameDecrypted = decryptedA.equals(decryptedB); 
+				boolean sameDecrypted = decryptedA.equals(decryptedB);
 				boolean sameData = data.equals(otherData);
                 Assert.assertEquals("Decrypted strings '"
-						+ decryptedA + "','" + decryptedB 
+						+ decryptedA + "','" + decryptedB
 						+ "'  should be different for different strings '"
-						+ data +"','" + otherData + "'", 
+						+ data +"','" + otherData + "'",
 						sameDecrypted, sameData);
 			}
 		}
@@ -144,9 +143,9 @@ public class EncryptorTest {
                     Assert.assertEquals("Decrypted values should be the same", decryptedA, decryptedB);
 					boolean sameEncrypted = encryptedA.equals(encryptedB);
                     Assert.assertEquals("Encrypted strings '"
-							+ encryptedA + "','" + encryptedB 
+							+ encryptedA + "','" + encryptedB
 							+ "'  should be different for different keys '"
-							+ key +"','" + otherKey + "'", 
+							+ key +"','" + otherKey + "'",
 							sameEncrypted, sameKey);
 				}
 			}
@@ -158,7 +157,7 @@ public class EncryptorTest {
 	 */
 	@Test
 	public void testGetEncryptingCipher()
-		throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, InvalidKeyException {
+		throws InvalidAlgorithmParameterException, InvalidKeyException {
     	Cipher cipher = Encryptor.getEncryptingCipher(makeKey("my-key"));
     	Assert.assertEquals("Wrong algorithm", "AES/GCM/NoPadding", cipher.getAlgorithm());
 		Assert.assertEquals("Wrong iv length", 12, cipher.getIV().length);
@@ -170,7 +169,7 @@ public class EncryptorTest {
 	 */
 	@Test
 	public void testGetDecryptingCipher()
-		throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, InvalidKeyException {
+		throws InvalidAlgorithmParameterException, InvalidKeyException {
 		Cipher cipher = Encryptor.getDecryptingCipher(makeKey("my-key"), new byte[12]);
 		Assert.assertEquals("Wrong algorithm", "AES/GCM/NoPadding", cipher.getAlgorithm());
 		Assert.assertEquals("Wrong iv length", 12, cipher.getIV().length);
@@ -183,7 +182,7 @@ public class EncryptorTest {
 	 */
 	@Test
 	public void testEncryptDecryptWithCipher()
-		throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, InvalidKeyException,
+		throws InvalidAlgorithmParameterException, InvalidKeyException,
 			BadPaddingException, IllegalBlockSizeException {
     	String key = makeKey("test-key");
     	String originalText = "abcdefghijklmnopqrstuvwxyz";
