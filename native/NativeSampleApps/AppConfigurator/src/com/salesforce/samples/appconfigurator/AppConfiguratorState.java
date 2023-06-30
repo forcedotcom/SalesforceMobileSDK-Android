@@ -53,8 +53,8 @@ public class AppConfiguratorState {
     private static final String DEFAULT_TARGET_APP = "com.salesforce.samples.configuredapp";
     private static final String DEFAULT_LOGIN_SERVERS = "https://test.salesforce.com,https://login.salesforce.com";
     private static final String DEFAULT_LOGIN_SERVERS_LABELS = "sandbox,production";
-    private static final String DEFAULT_REMOTE_ACCESS_CONSUMER_KEY = "3MVG9Iu66FKeHhINkB1l7xt7kR8czFcCTUhgoA8Ol2Ltf1eYHOU4SqQRSEitYFDUpqRWcoQ2.dBv_a1Dyu5xa";
-    private static final String DEFAULT_OAUTH_REDIRECT_URI = "testsfdc:///mobilesdk/detect/oauth/done";
+    private static final String DEFAULT_REMOTE_ACCESS_CONSUMER_KEY = "3MVG9ux34Ig8G5eqGtsZfUwvvvqAVW2Ud3PsVW_pN.4cd79XOOlxVeK315e2_F6fQyj0DMbKGtlXzPaIdKRtO";
+    private static final String DEFAULT_OAUTH_REDIRECT_URI = "https://login.salesforce.com/services/oauth2/success";
 
     // State
     private String loginServers;
