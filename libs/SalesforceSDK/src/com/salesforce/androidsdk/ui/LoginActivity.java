@@ -593,7 +593,7 @@ public class LoginActivity extends AppCompatActivity
         String subtitle = SalesforceSDKManager.getInstance().getUserAccountManager()
                 .getCurrentUser().getUsername();
         return new BiometricPrompt.PromptInfo.Builder()
-                .setTitle("Login with Biometric")
+                .setTitle(getResources().getString(R.string.sf__biometric_opt_in_title))
                 .setSubtitle(subtitle)
                 .setAllowedAuthenticators(getAuthenticators())
                 .setConfirmationRequired(hasFaceUnlock)
