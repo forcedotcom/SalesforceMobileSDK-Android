@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.analytics;
 
+import static java.util.concurrent.TimeUnit.HOURS;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
@@ -53,6 +55,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
 
 /**
  * This class contains APIs that can be used to interact with
@@ -71,6 +75,7 @@ public class SalesforceAnalyticsManager {
 
     private static Map<String, SalesforceAnalyticsManager> INSTANCES;
     private static boolean sPublishHandlerActive;
+    private static ScheduledFuture<?> sScheduler;
     private static int sPublishFrequencyInHours = DEFAULT_PUBLISH_FREQUENCY_IN_HOURS;
     private static int sEventPublishBatchSize = DEFAULT_BATCH_SIZE;
 
@@ -132,7 +137,7 @@ public class SalesforceAnalyticsManager {
 
         // Adds a handler for publishing if not already active.
         if (!sPublishHandlerActive) {
-            recreateAnalyticsPublishPeriodicWorkRequest();
+            sScheduler = recreateAnalyticsPublishPeriodicWorkRequest();
             sPublishHandlerActive = true;
         }
         return instance;
@@ -188,7 +193,10 @@ public class SalesforceAnalyticsManager {
      */
     public static synchronized void setPublishFrequencyInHours(int publishFrequencyInHours) {
         sPublishFrequencyInHours = publishFrequencyInHours;
-        recreateAnalyticsPublishPeriodicWorkRequest();
+        if (sScheduler != null) {
+            sScheduler.cancel(false);
+        }
+        sScheduler = recreateAnalyticsPublishPeriodicWorkRequest();
     }
 
     /**
@@ -474,10 +482,28 @@ public class SalesforceAnalyticsManager {
         e.commit();
     }
 
-    private static void recreateAnalyticsPublishPeriodicWorkRequest() {
-        AnalyticsPublishingWorker.Companion.reEnqueueAnalyticsPublishPeriodicWorkRequest(
-                SalesforceSDKManager.getInstance().getAppContext(),
-                sPublishFrequencyInHours
-        );
+    private static ScheduledFuture<?> recreateAnalyticsPublishPeriodicWorkRequest() {
+        return Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(
+                () -> AnalyticsPublishingWorker.Companion.reEnqueueAnalyticsPublishPeriodicWorkRequest(
+                        /*
+                         * Note: There's no longer a logical need for the
+                         * `ScheduledFuture` used here. The enqueued work
+                         * request here is created with the
+                         * 'CANCEL_AND_REENQUEUE` Android Work Manager option
+                         * so cancellation would be automatic. However,
+                         * accessing the application `Context` via
+                         * `SalesforceSDKManager` as all of
+                         * `SalesforceAnalyticsManager does exposes the
+                         * caller to a circular dependency in dependency
+                         * injection.  Keeping this in an asynchronous
+                         * `Runnable` for now works-around that risk.
+                         */
+                        // TODO: Introduce a simpler access to the Android application context.
+                        SalesforceSDKManager.getInstance().getAppContext(),
+                        sPublishFrequencyInHours
+                ),
+                0,
+                sPublishFrequencyInHours,
+                HOURS);
     }
 }
