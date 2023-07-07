@@ -374,7 +374,8 @@ workflows:
             pattern: "^pull/\\d+$"
             value: << pipeline.git.branch >>
     jobs:
-      - static-analysis
+      - static-analysis:
+          context: Android Unit Tests
       - run-tests:
           name: << matrix.lib >>
           context: Android Unit Tests
