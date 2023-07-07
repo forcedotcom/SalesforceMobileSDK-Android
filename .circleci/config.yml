@@ -1,6 +1,6 @@
 aliases:
   # Docker image tags can be found here: https://circleci.com/developer/images/image/cimg/android
-  - &cimg cimg/android:2022.09.2-node
+  - &cimg cimg/android:2023.06.1-node
   # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
   - &default-api-level 30 
 
@@ -48,7 +48,7 @@ aliases:
     command: |
       sudo npm i npm@latest -g
       sudo npm install -g shelljs@0.8.5
-      sudo npm install -g cordova@8.1.2
+      sudo npm install -g cordova@12.0.0
       sudo npm install -g typescript
       cordova telemetry off
       ./install.sh
@@ -377,6 +377,7 @@ workflows:
       - static-analysis
       - run-tests:
           name: << matrix.lib >>
+          context: Android Unit Tests
           matrix:
             parameters:
               lib: ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "SalesforceReact"]
@@ -401,12 +402,14 @@ workflows:
     jobs:
       - run-tests:
           name: << matrix.lib >> API << pipeline.parameters.api-level >>
+          context: Android Unit Tests
           matrix:
             parameters:
               lib: ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "SalesforceReact"]
               api_level: [<< pipeline.parameters.api-level >>]
       - test-rest-explorer:
           name: RestExplorer API << pipeline.parameters.api-level >>
+          context: Android Unit Tests
           matrix:
             parameters:
               api_level: [<< pipeline.parameters.api-level >>]
