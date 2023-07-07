@@ -30,6 +30,8 @@ import androidx.annotation.NonNull;
 
 import java.util.regex.Pattern;
 
+
+// This comment should force SalesforceSDK CI to run.
 public final class SdkVersion implements Comparable<SdkVersion> {
     private final int major;
     private final int minor;
