@@ -24,6 +24,10 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+
+
+
+// This comment should force CI to run on this library.
 package com.salesforce.androidsdk.app;
 
 import android.accounts.Account;
