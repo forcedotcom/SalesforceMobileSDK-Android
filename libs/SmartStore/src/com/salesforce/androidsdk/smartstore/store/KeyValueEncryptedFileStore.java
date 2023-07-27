@@ -463,13 +463,7 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
     }
 
     void encryptStreamToFile(File file, InputStream stream, String encryptionKey) throws IOException {
-        final ByteArrayOutputStream b = new ByteArrayOutputStream();
-        int nextByte = stream.read();
-        while (nextByte != -1) {
-            b.write(nextByte);
-            nextByte = stream.read();
-        }
-        byte[] content = b.toByteArray();
+        byte[] content = Encryptor.getByteArrayStreamFromStream(stream).toByteArray();
         encryptBytesToFile(file, content, encryptionKey);
     }
 
