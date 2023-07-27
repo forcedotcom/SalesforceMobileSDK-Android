@@ -36,7 +36,6 @@ import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 import com.salesforce.androidsdk.util.ManagedFilesHelper;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;

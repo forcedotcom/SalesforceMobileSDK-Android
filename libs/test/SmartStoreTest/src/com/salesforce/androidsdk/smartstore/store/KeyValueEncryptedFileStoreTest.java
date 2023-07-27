@@ -53,7 +53,6 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Random;
 
 @RunWith(AndroidJUnit4.class)
