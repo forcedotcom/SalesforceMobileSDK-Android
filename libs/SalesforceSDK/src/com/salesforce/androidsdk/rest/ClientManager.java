@@ -653,12 +653,18 @@ public class ClientManager {
             final AccountManager mgr = AccountManager.get(context);
             final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
             final String refreshToken = SalesforceSDKManager.decrypt(mgr.getPassword(account), encryptionKey);
-            final String loginServer = SalesforceSDKManager.decrypt(mgr.getUserData(account,
-                    AuthenticatorService.KEY_LOGIN_URL), encryptionKey);
             final String clientId = SalesforceSDKManager.decrypt(mgr.getUserData(account,
                     AuthenticatorService.KEY_CLIENT_ID), encryptionKey);
             final String instServer = SalesforceSDKManager.decrypt(mgr.getUserData(account,
                     AuthenticatorService.KEY_INSTANCE_URL), encryptionKey);
+            final String idUrl = SalesforceSDKManager.decrypt(mgr.getUserData(account,
+                    AuthenticatorService.KEY_ID_URL), encryptionKey);
+            /*
+             * The login server we store is the actual url the user originally used to login, which
+             * could be a my domain that changes in the future.  The id url always points to the
+             * server the user exists on so it should always exist.
+             */
+            final String loginServer = idUrl.split("/id/")[0];
             final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
             Map<String, String> values = null;
             if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
