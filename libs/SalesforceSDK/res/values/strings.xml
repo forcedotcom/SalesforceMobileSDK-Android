@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!--
-      These aren't prefixed as they're expected to be overriden   
-      Strings of the SDK that are used by SDK-based applications live in sf__strings.xml
+      These aren't prefixed as they're expected to be overridden Strings of the
+      SDK that are used by SDK-based applications live in sf__strings.xml
     -->
     <string name="app_name">SalesforceSDK</string>
     <string name="account_type">com.salesforce.androidsdk</string>
