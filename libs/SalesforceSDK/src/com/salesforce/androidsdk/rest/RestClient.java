@@ -710,9 +710,18 @@ public class RestClient {
 							 * only if the host of the request was the old instance URL. This avoids
 							 * accidental manipulation of the host for requests where the caller has
 							 * passed in their own fully formed host URL that is not instance URL.
+							 *
+							 * We also need to cover the case where the host changes during refresh
+							 * because the replayed request will fail.
 							 */
-							if (isHostInstanceUrl && !currentInstanceUrl.host().equals(request.url().host())) {
-								request = adjustHostInRequest(request, currentInstanceUrl.host());
+							final URI refreshInstanceUrl = clientInfo.getInstanceUrl();
+							boolean refreshUpdatedUrl = refreshInstanceUrl != null &&
+									!refreshInstanceUrl.getHost().equals(request.url().host());
+							if (isHostInstanceUrl && refreshUpdatedUrl) {
+								final HttpUrl updatedInstanceUrl = HttpUrl.get(refreshInstanceUrl);
+								if (updatedInstanceUrl != null) {
+									request = adjustHostInRequest(request, updatedInstanceUrl.host());
+								}
 							}
 							response.close();
 							response = chain.proceed(request);
