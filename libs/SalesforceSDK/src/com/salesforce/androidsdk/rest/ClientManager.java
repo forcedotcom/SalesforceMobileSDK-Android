@@ -657,14 +657,10 @@ public class ClientManager {
                     AuthenticatorService.KEY_CLIENT_ID), encryptionKey);
             final String instServer = SalesforceSDKManager.decrypt(mgr.getUserData(account,
                     AuthenticatorService.KEY_INSTANCE_URL), encryptionKey);
-            final String idUrl = SalesforceSDKManager.decrypt(mgr.getUserData(account,
-                    AuthenticatorService.KEY_ID_URL), encryptionKey);
-            /*
-             * The login server we store is the actual url the user originally used to login, which
-             * could be a my domain that changes in the future.  The id url always points to the
-             * server the user exists on so it should always exist.
-             */
-            final String loginServer = idUrl.split("/id/")[0];
+            final String communityUrl = SalesforceSDKManager.decrypt(mgr.getUserData(account,
+                    AuthenticatorService.KEY_COMMUNITY_URL), encryptionKey);
+
+            final String url = (communityUrl != null) ? communityUrl : instServer;
             final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
             Map<String, String> values = null;
             if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
@@ -680,7 +676,7 @@ public class ClientManager {
             final Map<String,String> addlParamsMap = SalesforceSDKManager.getInstance().getLoginOptions().getAdditionalParameters();
             try {
                 final OAuth2.TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
-                        new URI(loginServer), clientId, refreshToken, addlParamsMap);
+                        new URI(url), clientId, refreshToken, addlParamsMap);
                 if (!instServer.equalsIgnoreCase(tr.instanceUrl)) {
                     mgr.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL,
                             SalesforceSDKManager.encrypt(tr.instanceUrl, encryptionKey));
