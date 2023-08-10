@@ -26,10 +26,12 @@
  */
 package com.salesforce.androidsdk.auth;
 
+import android.content.Context;
 import android.net.Uri;
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
@@ -396,7 +398,11 @@ public class OAuth2 {
                                                                   URI loginServer,
                                                                   FormBody.Builder formBodyBuilder)
             throws OAuthFailedException, IOException {
-        final StringBuilder sb = new StringBuilder(loginServer.toString());
+
+        final Context context = SalesforceSDKManager.getInstance().getAppContext();
+        final String tokenEndpointOverride = BootConfig.getBootConfig(context).getTokenEndpointUrl();
+        final String loginUrl = (tokenEndpointOverride.isEmpty()) ? loginServer.getHost() : tokenEndpointOverride;
+        final StringBuilder sb = new StringBuilder(loginUrl);
         sb.append(OAUTH_TOKEN_PATH);
         sb.append(QUESTION).append(DEVICE_ID).append(EQUAL).append(SalesforceSDKManager.getInstance().getDeviceId());
         final String refreshPath = sb.toString();

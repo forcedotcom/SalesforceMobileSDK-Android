@@ -9,4 +9,5 @@
         <item>web</item>
     </string-array>
     <string name="androidPushNotificationClientId" />
+    <string name="tokenEndpointUrl" />
 </resources>
