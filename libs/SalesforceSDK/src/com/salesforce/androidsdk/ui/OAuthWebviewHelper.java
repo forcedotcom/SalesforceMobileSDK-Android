@@ -80,6 +80,7 @@ import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.security.ScreenLockManager;
+import com.salesforce.androidsdk.util.AuthConfigTask;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.MapUtil;
@@ -473,7 +474,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
      * WebViewClient which intercepts the redirect to the oauth callback url.
      * That redirect marks the end of the user facing portion of the authentication flow.
      */
-    protected class AuthWebViewClient extends WebViewClient {
+    protected class AuthWebViewClient extends WebViewClient implements AuthConfigTask.AuthConfigCallbackInterface {
 
         @Override
 		public void onPageFinished(WebView view, String url) {
@@ -500,6 +501,34 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     }
                 }
             }
+
+            // Check if user entered a custom domain
+            if (!url.contains(getLoginUrl())) {
+                try {
+                    URI newLoginUrl = new URI(url);
+                    String baseUrl = "https://" + newLoginUrl.getHost();
+                    LoginServerManager serverManager = SalesforceSDKManager.getInstance().getLoginServerManager();
+                    LoginServerManager.LoginServer loginServer = serverManager.getLoginServerFromURL(baseUrl);
+
+                    if (isSalesforceUrl(baseUrl)) {
+                        // Check if url is already in server list
+                        if (loginServer == null) {
+                            // Add also sets as selected
+                            serverManager.addCustomLoginServer("Custom Domain", baseUrl);
+                        } else {
+                            serverManager.setSelectedLoginServer(loginServer);
+                        }
+
+                        // Set title to new login url
+                        loginOptions.setLoginUrl(baseUrl);
+                        // Checks the config for the selected login server
+                        (new AuthConfigTask(this)).execute();
+                    }
+                } catch (Exception e) {
+                    SalesforceSDKLogger.e(TAG, "Unable to retrieve auth config.");
+                }
+            }
+
             EventsObservable.get().notifyEvent(EventType.AuthWebViewPageFinished, url);
             super.onPageFinished(view, url);
 		}
@@ -522,8 +551,10 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 return true;
             }
 
-			boolean isDone = uri.toString().replace("///", "/").toLowerCase(Locale.US).startsWith(loginOptions.getOauthCallbackUrl().replace("///", "/").toLowerCase(Locale.US));
-            if (isDone) {
+            String formattedUrl = uri.toString().replace("///", "/").toLowerCase(Locale.US);
+            String callbackUrl = loginOptions.getOauthCallbackUrl().replace("///", "/").toLowerCase(Locale.US);
+			boolean authFlowFinished = formattedUrl.startsWith(callbackUrl);
+            if (authFlowFinished) {
                 Map<String, String> params = UriFragmentParser.parse(uri);
                 String error = params.get("error");
                 // Did we fail?
@@ -541,8 +572,27 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                         onAuthFlowComplete(tr);
                     }
                 }
+            } else {
+                // Only allow redirect for requests with authorization headers for Salesforce urls.
+                if (request.getRequestHeaders() != null && request.getRequestHeaders().containsKey("Authorization")) {
+                   return isSalesforceUrl(formattedUrl);
+                }
             }
-            return isDone;
+
+            return authFlowFinished;
+        }
+
+        // List from https://help.salesforce.com/s/articleView?language=en_US&id=sf.domain_name_url_formats.htm&type=5
+        private boolean isSalesforceUrl(String host) {
+            return (host != null && (host.endsWith(".salesforce.com") ||
+                    host.endsWith(".force.com") ||
+                    host.endsWith(".sfdcopens.com") ||
+                    host.endsWith(".site.com") ||
+                    host.endsWith(".lightning.com") ||
+                    host.endsWith(".salesforce-sites.com") ||
+                    host.endsWith(".force-user-content.com") ||
+                    host.endsWith(".salesforce-experience.com") ||
+                    host.endsWith(".salesforce-scrt.com")));
         }
 
         @Override
@@ -569,6 +619,15 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         public void onReceivedClientCertRequest(WebView view, ClientCertRequest request) {
             SalesforceSDKLogger.d(TAG, "Received client certificate request from server");
         	request.proceed(key, certChain);
+        }
+
+        @Override
+        public void onAuthConfigFetched() {
+            SalesforceSDKManager manager = SalesforceSDKManager.getInstance();
+            if (manager.isBrowserLoginEnabled()) {
+                // This load will trigger advanced auth and do all necessary setup.
+                doLoadPage();
+            }
         }
     }
 
