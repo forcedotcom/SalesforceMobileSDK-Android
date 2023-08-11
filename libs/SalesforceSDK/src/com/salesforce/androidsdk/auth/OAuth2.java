@@ -401,7 +401,7 @@ public class OAuth2 {
 
         final Context context = SalesforceSDKManager.getInstance().getAppContext();
         final String tokenEndpointOverride = BootConfig.getBootConfig(context).getTokenEndpointUrl();
-        final String loginUrl = (tokenEndpointOverride.isEmpty()) ? loginServer.getHost() : tokenEndpointOverride;
+        final String loginUrl = (tokenEndpointOverride.isEmpty()) ? loginServer.toString() : tokenEndpointOverride;
         final StringBuilder sb = new StringBuilder(loginUrl);
         sb.append(OAUTH_TOKEN_PATH);
         sb.append(QUESTION).append(DEVICE_ID).append(EQUAL).append(SalesforceSDKManager.getInstance().getDeviceId());
