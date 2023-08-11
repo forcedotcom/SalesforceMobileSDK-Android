@@ -502,33 +502,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 }
             }
 
-            // Check if user entered a custom domain
-            if (!url.contains(getLoginUrl())) {
-                try {
-                    URI newLoginUrl = new URI(url);
-                    String baseUrl = "https://" + newLoginUrl.getHost();
-                    LoginServerManager serverManager = SalesforceSDKManager.getInstance().getLoginServerManager();
-                    LoginServerManager.LoginServer loginServer = serverManager.getLoginServerFromURL(baseUrl);
-
-                    if (isSalesforceUrl(baseUrl)) {
-                        // Check if url is already in server list
-                        if (loginServer == null) {
-                            // Add also sets as selected
-                            serverManager.addCustomLoginServer("Custom Domain", baseUrl);
-                        } else {
-                            serverManager.setSelectedLoginServer(loginServer);
-                        }
-
-                        // Set title to new login url
-                        loginOptions.setLoginUrl(baseUrl);
-                        // Checks the config for the selected login server
-                        (new AuthConfigTask(this)).execute();
-                    }
-                } catch (Exception e) {
-                    SalesforceSDKLogger.e(TAG, "Unable to retrieve auth config.");
-                }
-            }
-
             EventsObservable.get().notifyEvent(EventType.AuthWebViewPageFinished, url);
             super.onPageFinished(view, url);
 		}
@@ -549,6 +522,30 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 }
 
                 return true;
+            }
+
+            // Check if user entered a custom domain
+            if (isNewLoginUrl(uri)) {
+                try {
+                    String baseUrl = "https://" + uri.getHost();
+                    LoginServerManager serverManager = SalesforceSDKManager.getInstance().getLoginServerManager();
+                    LoginServerManager.LoginServer loginServer = serverManager.getLoginServerFromURL(baseUrl);
+
+                    // Check if url is already in server list
+                    if (loginServer == null) {
+                        // Add also sets as selected
+                        serverManager.addCustomLoginServer("Custom Domain", baseUrl);
+                    } else {
+                        serverManager.setSelectedLoginServer(loginServer);
+                    }
+
+                    // Set title to new login url
+                    loginOptions.setLoginUrl(baseUrl);
+                    // Checks the config for the selected login server
+                    (new AuthConfigTask(this)).execute();
+                } catch (Exception e) {
+                    SalesforceSDKLogger.e(TAG, "Unable to retrieve auth config.");
+                }
             }
 
             String formattedUrl = uri.toString().replace("///", "/").toLowerCase(Locale.US);
@@ -593,6 +590,16 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     host.endsWith(".force-user-content.com") ||
                     host.endsWith(".salesforce-experience.com") ||
                     host.endsWith(".salesforce-scrt.com")));
+        }
+
+        private boolean isNewLoginUrl(Uri uri) {
+            if (!uri.toString().contains(getLoginUrl()) && isSalesforceUrl(uri.getHost())) {
+                String path = uri.getQuery();
+                return path != null &&
+                        path.startsWith("startURL=/setup/secur/RemoteAccessAuthorizationPage.apexp?source=");
+            }
+
+            return false;
         }
 
         @Override
