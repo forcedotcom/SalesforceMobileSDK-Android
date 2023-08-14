@@ -525,7 +525,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             }
 
             // Check if user entered a custom domain
-            if (isNewLoginUrl(uri)) {
+            if (SalesforceSDKManager.getInstance().shouldInferCustomDomain() && isNewLoginUrl(uri)) {
                 try {
                     String baseUrl = "https://" + uri.getHost();
                     LoginServerManager serverManager = SalesforceSDKManager.getInstance().getLoginServerManager();

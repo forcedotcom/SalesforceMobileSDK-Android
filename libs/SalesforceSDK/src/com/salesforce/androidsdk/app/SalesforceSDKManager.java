@@ -181,6 +181,9 @@ public class SalesforceSDKManager implements LifecycleObserver {
     private boolean useWebServerAuthentication = true; // web server flow ON by default - but app can opt out by calling setUseWebServerAuthentication(false)
 
     private boolean useHybridAuthentication = true; // hybrid authentication flows ON by default - but app can opt out by calling setUseHybridAuthentication(false)
+
+    private boolean shouldInferCustomDomain = true; // Detect use of Custom Domain input from login webview - but app  can opt out by calling setInferCustomDomain(false)
+
     private Theme theme =  Theme.SYSTEM_DEFAULT;
     private String appName;
 
@@ -670,6 +673,23 @@ public class SalesforceSDKManager implements LifecycleObserver {
      */
     public synchronized void setUseHybridAuthentication(boolean useHybridAuthentication) {
         this.useHybridAuthentication = useHybridAuthentication;
+    }
+
+    /**
+     * Returns whether the SDK should infer if the user has entered a new login server through
+     * the "Use Custom Domain" button on the login screen.
+     */
+    public boolean shouldInferCustomDomain() {
+        return this.shouldInferCustomDomain;
+    }
+
+    /**
+     * Sets whether the SDK should infer if the user has entered a new login server through
+     * the "Use Custom Domain" button on the login screen.
+     * @param shouldInferCustomDomain
+     */
+    public synchronized void setShouldInferCustomDomain(boolean shouldInferCustomDomain) {
+        this.shouldInferCustomDomain = shouldInferCustomDomain;
     }
 
     /**
