@@ -550,7 +550,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
             String formattedUrl = uri.toString().replace("///", "/").toLowerCase(Locale.US);
             String callbackUrl = loginOptions.getOauthCallbackUrl().replace("///", "/").toLowerCase(Locale.US);
-			boolean authFlowFinished = formattedUrl.startsWith(callbackUrl);
+            boolean authFlowFinished = formattedUrl.startsWith(callbackUrl);
             if (authFlowFinished) {
                 Map<String, String> params = UriFragmentParser.parse(uri);
                 String error = params.get("error");
@@ -569,37 +569,22 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                         onAuthFlowComplete(tr);
                     }
                 }
-            } else {
-                // Only allow redirect for requests with authorization headers for Salesforce urls.
-                if (request.getRequestHeaders() != null && request.getRequestHeaders().containsKey("Authorization")) {
-                   return isSalesforceUrl(formattedUrl);
-                }
             }
 
             return authFlowFinished;
         }
 
-        // List from https://help.salesforce.com/s/articleView?language=en_US&id=sf.domain_name_url_formats.htm&type=5
-        private boolean isSalesforceUrl(String host) {
-            return (host != null && (host.endsWith(".salesforce.com") ||
-                    host.endsWith(".force.com") ||
-                    host.endsWith(".sfdcopens.com") ||
-                    host.endsWith(".site.com") ||
-                    host.endsWith(".lightning.com") ||
-                    host.endsWith(".salesforce-sites.com") ||
-                    host.endsWith(".force-user-content.com") ||
-                    host.endsWith(".salesforce-experience.com") ||
-                    host.endsWith(".salesforce-scrt.com")));
-        }
-
         private boolean isNewLoginUrl(Uri uri) {
-            if (!uri.toString().contains(getLoginUrl()) && isSalesforceUrl(uri.getHost())) {
-                String path = uri.getQuery();
-                return path != null &&
-                        path.startsWith("startURL=/setup/secur/RemoteAccessAuthorizationPage.apexp?source=");
+            String host = uri.getHost();
+            String path = uri.getQuery();
+
+            if (host == null || path == null || getLoginUrl().contains(host)) {
+                return false;
             }
 
-            return false;
+            final String myDomainHost = ".my.salesforce.com";
+            final String loginPath = "startURL=/setup/secur/RemoteAccessAuthorizationPage.apexp";
+            return host.endsWith(myDomainHost) && path.startsWith(loginPath);
         }
 
         @Override
