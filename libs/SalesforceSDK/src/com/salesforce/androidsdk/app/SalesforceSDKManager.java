@@ -182,7 +182,7 @@ public class SalesforceSDKManager implements LifecycleObserver {
 
     private boolean useHybridAuthentication = true; // hybrid authentication flows ON by default - but app can opt out by calling setUseHybridAuthentication(false)
 
-    private boolean shouldInferCustomDomain = true; // Detect use of Custom Domain input from login webview - but app  can opt out by calling setInferCustomDomain(false)
+    private boolean shouldInferCustomDomain = false; // Do not detect use of Custom Domain input from login webview but app can opt in by calling setInferCustomDomain(ture)
 
     private Theme theme =  Theme.SYSTEM_DEFAULT;
     private String appName;
