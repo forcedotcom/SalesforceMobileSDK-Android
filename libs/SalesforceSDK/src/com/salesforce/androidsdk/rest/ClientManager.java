@@ -653,6 +653,8 @@ public class ClientManager {
             final AccountManager mgr = AccountManager.get(context);
             final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
             final String refreshToken = SalesforceSDKManager.decrypt(mgr.getPassword(account), encryptionKey);
+            final String loginServer = SalesforceSDKManager.decrypt(mgr.getUserData(account,
+                    AuthenticatorService.KEY_LOGIN_URL), encryptionKey);
             final String clientId = SalesforceSDKManager.decrypt(mgr.getUserData(account,
                     AuthenticatorService.KEY_CLIENT_ID), encryptionKey);
             final String instServer = SalesforceSDKManager.decrypt(mgr.getUserData(account,
@@ -660,7 +662,6 @@ public class ClientManager {
             final String communityUrl = SalesforceSDKManager.decrypt(mgr.getUserData(account,
                     AuthenticatorService.KEY_COMMUNITY_URL), encryptionKey);
 
-            final String url = (communityUrl != null) ? communityUrl : instServer;
             final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
             Map<String, String> values = null;
             if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
@@ -676,10 +677,14 @@ public class ClientManager {
             final Map<String,String> addlParamsMap = SalesforceSDKManager.getInstance().getLoginOptions().getAdditionalParameters();
             try {
                 final OAuth2.TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
-                        new URI(url), clientId, refreshToken, addlParamsMap);
+                        new URI(loginServer), clientId, refreshToken, addlParamsMap);
                 if (!instServer.equalsIgnoreCase(tr.instanceUrl)) {
                     mgr.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL,
                             SalesforceSDKManager.encrypt(tr.instanceUrl, encryptionKey));
+                }
+                if (communityUrl != null && !communityUrl.equalsIgnoreCase(tr.communityUrl)) {
+                    mgr.setUserData(account, AuthenticatorService.KEY_COMMUNITY_URL,
+                            SalesforceSDKManager.encrypt(tr.communityUrl, encryptionKey));
                 }
                 mgr.setUserData(account, AuthenticatorService.KEY_LIGHTNING_DOMAIN,
                             SalesforceSDKManager.encrypt(tr.lightningDomain, encryptionKey));
