@@ -576,15 +576,16 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
         private boolean isNewLoginUrl(Uri uri) {
             String host = uri.getHost();
-            String path = uri.getQuery();
+            String query = uri.getQuery();
+            String path = uri.getPath();
 
-            if (host == null || path == null || getLoginUrl().contains(host)) {
+            if (host == null || query == null || path == null || getLoginUrl().contains(host)) {
                 return false;
             }
 
             final String myDomainHost = ".my.salesforce.com";
             final String loginPath = "startURL=/setup/secur/RemoteAccessAuthorizationPage.apexp";
-            return host.endsWith(myDomainHost) && path.startsWith(loginPath);
+            return host.endsWith(myDomainHost) && query.startsWith(loginPath) && path.equals("/");
         }
 
         @Override
