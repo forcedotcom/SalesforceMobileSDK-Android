@@ -30,6 +30,8 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.text.TextUtils;
 
+import androidx.annotation.VisibleForTesting;
+
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
@@ -84,7 +86,8 @@ public class BootConfig {
 	private boolean attemptOfflineLoad;
 	private String pushNotificationClientId;
 	private String unauthenticatedStartPage;
-	private String tokenEndpointUrl;
+	@VisibleForTesting
+	String tokenEndpointUrl;
 	private static BootConfig INSTANCE = null;
 
 	/**

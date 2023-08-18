@@ -26,16 +26,32 @@
  */
 package com.salesforce.androidsdk.config;
 
+import android.app.Application;
+import android.app.Instrumentation;
 import android.content.Context;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+
+import com.salesforce.androidsdk.TestForceApp;
+import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.rest.ApiVersionStrings;
+import com.salesforce.androidsdk.util.test.TestCredentials;
 
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * Tests for BootConfig.
@@ -85,6 +101,41 @@ public class BootConfigTest {
     public void testRelativeUnauthenticatedStartPage() {
         BootConfig config = BootConfig.getHybridBootConfig(testContext, BOOTCONFIG_ASSETS_PATH_PREFIX + "bootconfig_relativeUnauthenticatedStartPage.json");
         validateBootConfig(config, "Validation should fail with relative unauthenticatedStartPage value.");
+    }
+
+    /**
+     * Test overriding Token Endpoint.
+     *
+     * Note:  This is here and not in OAuth2Tests because that would require tokenEndpointUrl to be public (at
+     * least in Java) due to how @VisibleForTesting works.
+     */
+    @Test
+    public void testOverridingTokenEndpoint() throws URISyntaxException, OAuth2.OAuthFailedException, IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+        // Setup
+        final Application app = Instrumentation.newApplication(TestForceApp.class, testContext);
+        InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
+        TestCredentials.init(testContext);
+        HttpAccess httpAccess = new HttpAccess(null, "dummy-agent");
+
+        // Modify config
+        BootConfig config = BootConfig.getBootConfig(testContext);
+        config.tokenEndpointUrl = TestCredentials.LOGIN_URL;
+        URI badUri = new URI("https://google.com");
+
+        // Make a refresh call with a URI that should fail (unless overridden)
+        OAuth2.TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,badUri,
+                TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN, null);
+        Assert.assertNotNull("Auth token should not be null", refreshResponse.authToken);
+
+        // Let's try it out.
+        Request request = new Request.Builder()
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Authorization", "Bearer " + refreshResponse.authToken)
+                .url(TestCredentials.INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER)
+                .get()
+                .build();
+        Response resourcesResponse = httpAccess.getOkHttpClient().newCall(request).execute();
+        Assert.assertEquals("HTTP response status code should have been 200 (OK)", HttpURLConnection.HTTP_OK, resourcesResponse.code());
     }
 
     private void validateBootConfig(BootConfig config, String errorMessage) {
