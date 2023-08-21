@@ -2,12 +2,4 @@
 
     <!-- Debug-Only: Post notifications permission supports the show developer support notification. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-    <application>
-
-        <!-- Debug-Only: The show developer support activity supports the show developer support notification. -->
-        <activity
-            android:name=".developer.support.activities.ShowDeveloperSupportActivity"
-            android:theme="@style/SalesforceSDK" />
-    </application>
 </manifest>
