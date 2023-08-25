@@ -100,6 +100,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Pattern;
 
 import okhttp3.Request;
 import okhttp3.Response;
@@ -525,7 +526,10 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             }
 
             // Check if user entered a custom domain
-            if (SalesforceSDKManager.getInstance().shouldInferCustomDomain() && isNewLoginUrl(uri)) {
+            String host = uri.getHost();
+            Pattern customDomainPattern = SalesforceSDKManager.getInstance().getCustomDomainInferencePattern();
+            if (host != null && !getLoginUrl().contains(host) && customDomainPattern != null
+                    && customDomainPattern.matcher(uri.toString()).find()) {
                 try {
                     String baseUrl = "https://" + uri.getHost();
                     LoginServerManager serverManager = SalesforceSDKManager.getInstance().getLoginServerManager();
@@ -572,20 +576,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             }
 
             return authFlowFinished;
-        }
-
-        private boolean isNewLoginUrl(Uri uri) {
-            String host = uri.getHost();
-            String query = uri.getQuery();
-            String path = uri.getPath();
-
-            if (host == null || query == null || path == null || getLoginUrl().contains(host)) {
-                return false;
-            }
-
-            final String myDomainHost = ".my.salesforce.com";
-            final String loginPath = "startURL=/setup/secur/RemoteAccessAuthorizationPage.apexp";
-            return host.endsWith(myDomainHost) && query.startsWith(loginPath) && path.equals("/");
         }
 
         @Override
