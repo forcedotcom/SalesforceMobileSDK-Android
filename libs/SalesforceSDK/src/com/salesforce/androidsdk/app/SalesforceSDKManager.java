@@ -48,6 +48,7 @@ import android.view.View;
 import android.webkit.CookieManager;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.OnLifecycleEvent;
@@ -100,6 +101,7 @@ import java.util.Locale;
 import java.util.SortedSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.regex.Pattern;
 
 /**
  * This class serves as an interface to the various
@@ -181,6 +183,9 @@ public class SalesforceSDKManager implements LifecycleObserver {
     private boolean useWebServerAuthentication = true; // web server flow ON by default - but app can opt out by calling setUseWebServerAuthentication(false)
 
     private boolean useHybridAuthentication = true; // hybrid authentication flows ON by default - but app can opt out by calling setUseHybridAuthentication(false)
+
+    private Pattern customDomainInferencePattern;
+
     private Theme theme =  Theme.SYSTEM_DEFAULT;
     private String appName;
 
@@ -670,6 +675,28 @@ public class SalesforceSDKManager implements LifecycleObserver {
      */
     public synchronized void setUseHybridAuthentication(boolean useHybridAuthentication) {
         this.useHybridAuthentication = useHybridAuthentication;
+    }
+
+    /**
+     * Returns the pattern used to detect the use of "Use Custom Domain" input from login web view.
+     *
+     * @return pattern if set or null
+     */
+    public synchronized Pattern getCustomDomainInferencePattern() {
+        return customDomainInferencePattern;
+    }
+
+    /**
+     *  Detect use of "Use Custom Domain" input from login web view using the given regex.
+     *  Example for a specific org:
+     *    "^https:\\/\\/mobilesdk\\.my\\.salesforce\\.com\\/\\?startURL=%2Fsetup%2Fsecur%2FRemoteAccessAuthorizationPage\\.apexp"
+     *  For any my domain:
+     *    "^https:\\/\\/[a-zA-Z0-9]+\\.my\\.salesforce\\.com/\\?startURL=%2Fsetup%2Fsecur%2FRemoteAccessAuthorizationPage\\.apexp"
+     *
+     * @param pattern regex to use when detecting use of custom domain on login
+     */
+    public synchronized void setCustomDomainInferencePattern(@Nullable Pattern pattern) {
+        this.customDomainInferencePattern = pattern;
     }
 
     /**
