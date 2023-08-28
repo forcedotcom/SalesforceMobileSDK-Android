@@ -16,7 +16,7 @@ android {
         minSdkVersion 24
     }
 
-    
+
 
     sourceSets {
         main {
@@ -37,6 +37,10 @@ android {
     lint {
         abortOnError false
         xmlReport true
+    }
+    buildFeatures {
+        renderScript true
+        aidl true
     }
 
 }

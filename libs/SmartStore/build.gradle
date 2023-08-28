@@ -31,7 +31,7 @@ android {
         targetSdkVersion 33
         minSdkVersion 24
     }
-  
+
   buildTypes {
       debug {
          testCoverageEnabled = true
@@ -69,6 +69,10 @@ android {
     lint {
         abortOnError false
         xmlReport true
+    }
+    buildFeatures {
+        renderScript true
+        aidl true
     }
 
 }

@@ -70,5 +70,9 @@ android {
         abortOnError false
         xmlReport true
     }
+    buildFeatures {
+        renderScript true
+        aidl true
+    }
 
 }
