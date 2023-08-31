@@ -1445,6 +1445,18 @@ public class RestClientTest {
         Assert.assertEquals("ALL_OR_NONE_OPERATION_ROLLED_BACK", parsedResponse.subResponses.get(1).errors.get(0).statusCode);
     }
 
+    /**
+     * Testing a limits call to the server - check response
+     * @throws Exception
+     */
+    @Test
+    public void testLimits() throws Exception {
+        RestResponse response = restClient.sendSync(RestRequest.getRequestForLimits(TestCredentials.API_VERSION));
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
+        JSONObject jsonResponse = response.asJSONObject();
+        checkKeys(jsonResponse, "DailyApiRequests");
+    }
+
     //
     // Helper methods
     //

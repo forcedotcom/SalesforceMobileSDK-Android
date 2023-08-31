@@ -119,6 +119,21 @@ internal class SPManagerTest : IDPSPManagerTestCase() {
     }
 
     @Test
+    fun testKickOffSPInitiatedLoginFlowWithNotExistentIDP() {
+        val spManager = SPManager("some-idp", TestSDKMgr(buildUser("some-org-id", "some-user-id")),
+            // the test context is not an activity so sendBroadcast will be used to send the login request to the IDP app
+            // so throwing an exception there
+            this::throwOnSend, this::throwOnSend)
+        spManager.kickOffSPInitiatedLoginFlow(context, TestStatusUpdateCallback())
+
+        // Make sure the sp got a status update indicating a non-existent IDP
+        waitForEvent("status FAILED_TO_SEND_REQUEST_TO_IDP")
+
+        // Make sure there are no more events
+        expectNoEvent()
+    }
+
+    @Test
     fun testIDPInitiatedFlowForExistingUser() {
         // Set up sp manager with a current user
         val spManager = SPManager("some-idp", TestSDKMgr(buildUser("some-org-id", "some-user-id")), this::sendBroadcast, this::startActivity)

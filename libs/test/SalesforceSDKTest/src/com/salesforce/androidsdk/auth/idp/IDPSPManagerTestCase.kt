@@ -8,6 +8,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.util.LogUtil
 import org.junit.Assert
+import java.lang.RuntimeException
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.TimeUnit
@@ -37,6 +38,10 @@ internal open class IDPSPManagerTestCase {
 
     open fun startActivity(context:Context, intent: Intent) {
         recordEvent("startActivity ${LogUtil.intentToString(intent)}")
+    }
+
+    fun throwOnSend(context: Context, intent: Intent) {
+        throw RuntimeException()
     }
 
     fun waitForEvent(expectedEvent: String) {

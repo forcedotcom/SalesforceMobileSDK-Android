@@ -24,8 +24,8 @@
 	<string name="sf__pick_server">Change Server</string>
 	<string name="sf__clear_cookies">Clear Cookies</string>
 	<string name="sf__reload">Reload</string>
-	<string name="sf__launch_idp">Login with IDP App</string>
-	<string name="sf__login_with_biometric">Login with Biometric</string>
+	<string name="sf__launch_idp">Log In with IDP App</string>
+	<string name="sf__login_with_biometric">Log In with Biometric</string>
 	<string name="sf__setup_biometric_unlock">Setup Biometric Unlock</string>
 
 	<!-- Server picker -->
@@ -50,11 +50,12 @@
     <string name="sf__account_selector_text">Select an account to use</string>
 
 	<!-- SP status updates -->
+	<string name="sf__failed_to_send_request_to_idp">Failed to send request to IDP app</string>
 	<string name="sf__login_request_sent_to_idp">Login request sent to IDP app</string>
 	<string name="sf__auth_code_received_from_idp">IDP app successfully obtained authorization code</string>
 	<string name="sf__error_received_from_idp">IDP app failed to obtain authorization code</string>
 	<string name="sf__failed_to_exchange_authorization_code">Failed to exchange authorization code</string>
-	<string name="sf__login_complete">Login complete</string>
+	<string name="sf__login_complete">Log in complete</string>
 
 	<!-- IDP status updates -->
 	<string name="sf__login_request_sent_to_sp">Login request sent to SP app</string>
@@ -62,7 +63,7 @@
 	<string name="sf__failed_to_get_authorization_code">Failed to get authorization code for SP app</string>
 	<string name="sf__auth_code_sent_to_sp">Authorization code sent to SP app</string>
 	<string name="sf__error_received_from_sp">SP app failed to exchange authorization code</string>
-	<string name="sf__sp_login_complete">SP app login complete</string>
+	<string name="sf__sp_login_complete">SP app log in complete</string>
 
     <!-- Managed app restrictions -->
     <string name="sf__app_service_hosts_description">Used to specify login hosts for the application.</string>
@@ -90,7 +91,7 @@
 
 	<!-- Biometric Authentication Opt In Dialog -->
 	<string name="sf__biometric_opt_in_title">Biometric Login</string>
-	<string name="sf__biometric_opt_in_message">Use your fingerprint to quickly login.  Biometric information is never stored.</string>
+	<string name="sf__biometric_opt_in_message">Use your fingerprint to quickly log in.  Biometric information is never stored.</string>
 	<string name="sf__biometric_opt_in_approve">Enable</string>
 	<string name="sf__biometric_opt_in_deny">Use Password</string>
 	<string name="sf__biometric_signout_user">Signing out %s.</string>

@@ -659,6 +659,9 @@ public class ClientManager {
                     AuthenticatorService.KEY_CLIENT_ID), encryptionKey);
             final String instServer = SalesforceSDKManager.decrypt(mgr.getUserData(account,
                     AuthenticatorService.KEY_INSTANCE_URL), encryptionKey);
+            final String communityUrl = SalesforceSDKManager.decrypt(mgr.getUserData(account,
+                    AuthenticatorService.KEY_COMMUNITY_URL), encryptionKey);
+
             final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
             Map<String, String> values = null;
             if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
@@ -678,6 +681,10 @@ public class ClientManager {
                 if (!instServer.equalsIgnoreCase(tr.instanceUrl)) {
                     mgr.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL,
                             SalesforceSDKManager.encrypt(tr.instanceUrl, encryptionKey));
+                }
+                if (communityUrl != null && !communityUrl.equalsIgnoreCase(tr.communityUrl)) {
+                    mgr.setUserData(account, AuthenticatorService.KEY_COMMUNITY_URL,
+                            SalesforceSDKManager.encrypt(tr.communityUrl, encryptionKey));
                 }
                 mgr.setUserData(account, AuthenticatorService.KEY_LIGHTNING_DOMAIN,
                             SalesforceSDKManager.encrypt(tr.lightningDomain, encryptionKey));
