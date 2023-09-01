@@ -84,6 +84,6 @@ ext {
     PUBLISH_ARTIFACT_ID = 'MobileSync'
 }
 
-if (rootProject.name == 'SalesforceMobileSDK-Android') {
-    apply from: "${rootProject.projectDir}/publish/publish-module.gradle"
-}
+//if (rootProject.name == 'SalesforceMobileSDK-Android') {
+//    apply from: "${rootProject.projectDir}/publish/publish-module.gradle"
+//}

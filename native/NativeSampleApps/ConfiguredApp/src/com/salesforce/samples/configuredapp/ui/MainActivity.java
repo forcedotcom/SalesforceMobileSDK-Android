@@ -26,6 +26,9 @@
  */
 package com.salesforce.samples.configuredapp.ui;
 
+import static com.salesforce.androidsdk.R.style.SalesforceSDK;
+import static com.salesforce.androidsdk.R.style.SalesforceSDK_Dark;
+
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
@@ -48,7 +51,7 @@ public class MainActivity extends SalesforceActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
-		setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark : R.style.SalesforceSDK);
+		setTheme(isDarkTheme ? SalesforceSDK_Dark : SalesforceSDK);
 		SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
 		setContentView(R.layout.main);
         String bootconfig = "";
@@ -63,7 +66,7 @@ public class MainActivity extends SalesforceActivity {
 
 	@Override
 	public void onResume(RestClient client) {
-		
+
 	}
 
 }

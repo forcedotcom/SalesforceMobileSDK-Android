@@ -5,7 +5,7 @@ aliases:
   - &default-api-level 33
 
   - &gradle-cache-key
-    gradle-cache-v2-{{ checksum "build.gradle" }}-{{
+      gradle-cache-v2-{{ checksum "build.gradle.kts" }}-{{
       checksum "gradle/wrapper/gradle-wrapper.properties" }}-{{
       checksum "libs/SalesforceAnalytics/build.gradle" }}-{{
       checksum "libs/SalesforceSDK/build.gradle" }}-{{
@@ -90,7 +90,7 @@ jobs:
             echo $TEST_CREDENTIALS > ./shared/test/test_credentials.json
       - run:
           name: Run Android Lint
-          command:  ./gradlew lint
+          command: ./gradlew lint
           when: always
       - run:
           name: Run Danger
@@ -114,7 +114,7 @@ jobs:
     parameters:
       lib:
         type: enum
-        enum: ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "SalesforceReact"]
+        enum: [ "SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "SalesforceReact" ]
         default: "SalesforceAnalytics"
       api_level:
         type: integer
@@ -146,7 +146,7 @@ jobs:
                   fi
       - run:
           name: Build for Testing
-          command:  |
+          command: |
             ./gradlew libs:SalesforceAnalytics:assembleAndroidTest
             ./gradlew libs:SalesforceSDK:assembleAndroidTest
             ./gradlew libs:SmartStore:assembleAndroidTest
@@ -156,7 +156,7 @@ jobs:
             ./gradlew native:NativeSampleApps:RestExplorer:assembleDebug
       - run:
           name: Authorize gcloud and set config defaults
-          command:  |
+          command: |
             echo $GCLOUD_SERVICE_KEY | base64 --decode --ignore-garbage > ${HOME}/gcloud-service-key.json
             gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
             gcloud --quiet config set project mobile-apps-firebase-test
@@ -233,12 +233,12 @@ jobs:
       - run: *setup-env
       - run:
           name: Build for Testing
-          command:  |
+          command: |
             ./gradlew native:NativeSampleApps:RestExplorer:assembleAndroidTest
             ./gradlew native:NativeSampleApps:RestExplorer:assembleDebug
       - run:
           name: Authorize gcloud and set config defaults
-          command:  |
+          command: |
             echo $GCLOUD_SERVICE_KEY | base64 --decode --ignore-garbage > ${HOME}/gcloud-service-key.json
             gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
             gcloud --quiet config set project mobile-apps-firebase-test
@@ -293,7 +293,7 @@ jobs:
       - save_cache: *save-node-cache
       - run:
           name: Build Libraries
-          command:  |
+          command: |
             ./gradlew :libs:SalesforceAnalytics:assemble
             ./gradlew :libs:SalesforceSDK:assemble
             ./gradlew :libs:SmartStore:assemble
@@ -322,7 +322,7 @@ jobs:
       - run:
           name: Build Native Sample Apps
           when: always
-          command:  |
+          command: |
             ./gradlew :native:NativeSampleApps:AppConfigurator:assemble
             ./gradlew :native:NativeSampleApps:ConfiguredApp:assemble
             ./gradlew :native:NativeSampleApps:RestExplorer:assemble
@@ -342,7 +342,7 @@ jobs:
       - run:
           name: Build Hybrid Sample Apps
           when: always
-          command:  |
+          command: |
             ./gradlew :hybrid:HybridSampleApps:AccountEditor:assemble
             ./gradlew :hybrid:HybridSampleApps:NoteSync:assemble
             ./gradlew :hybrid:HybridSampleApps:MobileSyncExplorerHybrid:assemble
@@ -363,7 +363,7 @@ parameters:
     type: integer
     default: *default-api-level
 
-workflows:  
+workflows:
   version: 2
 
   pr-tests:
@@ -381,9 +381,9 @@ workflows:
           context: Android Unit Tests
           matrix:
             parameters:
-              lib: ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "SalesforceReact"]
-              api_level: [<< pipeline.parameters.api-level >>]
-              pr: [true]
+              lib: [ "SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "SalesforceReact" ]
+              api_level: [ << pipeline.parameters.api-level >> ]
+              pr: [ true ]
 
   # GUI Driven "Triggers" Schedule
   # Monday    8 PM - API 24
@@ -398,7 +398,7 @@ workflows:
   # Saturday 12 AM - API 33
   nightly-tests:
     when:
-      not:  
+      not:
         equal: [ "webhook", << pipeline.trigger_source >> ]
     jobs:
       - run-tests:
@@ -406,12 +406,13 @@ workflows:
           context: Android Unit Tests
           matrix:
             parameters:
-              lib: ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "SalesforceReact"]
-              api_level: [<< pipeline.parameters.api-level >>]
+              lib: [ "SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "SalesforceReact" ]
+              api_level: [ << pipeline.parameters.api-level >> ]
       - test-rest-explorer:
           name: RestExplorer API << pipeline.parameters.api-level >>
           context: Android Unit Tests
           matrix:
             parameters:
-              api_level: [<< pipeline.parameters.api-level >>]
+              api_level: [ << pipeline.parameters.api-level >> ]
       - generate-artifacts
+

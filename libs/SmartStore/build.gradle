@@ -84,5 +84,5 @@ ext {
 }
 
 if (rootProject.name == 'SalesforceMobileSDK-Android') {
-    apply from: "${rootProject.projectDir}/publish/publish-module.gradle"
+//    apply from: "${rootProject.projectDir}/publish/publish-module.gradle"
 }

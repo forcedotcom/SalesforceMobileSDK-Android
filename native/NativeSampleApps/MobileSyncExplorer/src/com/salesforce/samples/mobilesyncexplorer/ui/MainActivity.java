@@ -28,6 +28,9 @@ package com.salesforce.samples.mobilesyncexplorer.ui;
 
 import static android.view.LayoutInflater.from;
 
+import static com.salesforce.androidsdk.R.style.SalesforceSDK;
+import static com.salesforce.androidsdk.R.style.SalesforceSDK_Dark;
+
 import android.accounts.Account;
 import android.annotation.SuppressLint;
 import android.app.LoaderManager;
@@ -124,7 +127,7 @@ public class MainActivity extends SalesforceActivity implements
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
-		setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark : R.style.SalesforceSDK);
+		setTheme(isDarkTheme ? SalesforceSDK_Dark : SalesforceSDK);
 		// This makes the navigation bar visible on light themes.
 		SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
 
