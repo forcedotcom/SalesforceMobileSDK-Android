@@ -26,10 +26,15 @@
  */
 package com.salesforce.androidsdk.app;
 
+import static com.salesforce.androidsdk.R.style.SalesforceSDK_AlertDialog;
+import static com.salesforce.androidsdk.R.style.SalesforceSDK_AlertDialog_Dark;
+
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Application;
+import android.app.Application.ActivityLifecycleCallbacks;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -40,6 +45,7 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
@@ -72,6 +78,8 @@ import com.salesforce.androidsdk.config.AdminSettingsManager;
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.RuntimeConfig;
+import com.salesforce.androidsdk.developer.support.activities.ShowDeveloperSupportActivity;
+import com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.push.PushNotificationInterface;
 import com.salesforce.androidsdk.push.PushService;
@@ -154,6 +162,19 @@ public class SalesforceSDKManager implements LifecycleObserver {
     protected Context context;
     private LoginOptions loginOptions;
     private final Class<? extends Activity> mainActivityClass;
+
+    /**
+     * Null or an authenticated Activity for private use when developer support
+     * is enabled.
+     */
+    private Activity authenticatedActivityForDeveloperSupport = null;
+
+    /**
+     * Null or the Android Activity lifecycle callbacks object registered when
+     * developer support is enabled.
+     */
+    private ActivityLifecycleCallbacks activityLifecycleCallbacksForDeveloperSupport;
+
     private Class<? extends Activity> loginActivityClass = LoginActivity.class;
     private Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
     private ScreenLockManager screenLockManager;
@@ -400,6 +421,9 @@ public class SalesforceSDKManager implements LifecycleObserver {
         if (!TextUtils.isEmpty(idpAppPackageName)) {
             INSTANCE.setIDPAppPackageName(idpAppPackageName);
         }
+
+        // Set up developer support.
+        setupDeveloperSupport(context);
     }
 
     /**
@@ -895,6 +919,113 @@ public class SalesforceSDKManager implements LifecycleObserver {
         }
 	}
 
+    /**
+     * Updates developer support features to match an Android Activity lifecycle
+     * event, including updating the app's authenticated Android Activity.
+     *
+     * @param authenticatedActivity The new authenticated Android Activity
+     *                              instance, or null
+     * @param lifecycleActivity     The Android Activity instance provided by
+     *                              the Activity lifecycle event
+     */
+    private void updateDeveloperSupportForActivityLifecycle(
+            @Nullable Activity authenticatedActivity,
+            @NonNull Activity lifecycleActivity
+    ) {
+
+        // Show the developer support dialog, if applicable.
+        if (lifecycleActivity.isDestroyed() && lifecycleActivity instanceof ShowDeveloperSupportActivity) {
+            showDevSupportDialog(authenticatedActivityForDeveloperSupport);
+            return;
+        }
+
+        // Assign the authenticated Activity.
+        authenticatedActivityForDeveloperSupport = authenticatedActivity;
+
+        // Display or hide the show developer support notification.
+        if (getUserAccountManager().getCurrentAccount() == null || authenticatedActivityForDeveloperSupport == null) {
+            ShowDeveloperSupportNotifier.Companion.hideDeveloperSupportNotification(
+                    lifecycleActivity
+            );
+        } else {
+            ShowDeveloperSupportNotifier.Companion.showDeveloperSupportNotification(
+                    lifecycleActivity
+            );
+        }
+    }
+
+    /**
+     * Sets up an Android Activity lifecycle callback to maintain the app's
+     * authenticated Android Activity reference used when developer support is
+     * enabled.
+     *
+     * @param context Either of the Android application context or an activity
+     *                context
+     */
+    private static void setupDeveloperSupport(Context context) {
+
+        // Resolve the Android application object from the provided context.
+        final Application application = context instanceof Application ? (Application) context : context instanceof Activity ? ((Activity) context).getApplication() : null;
+
+        // Guards
+        final SalesforceSDKManager salesforceSDKManager = getInstance();
+        if (!salesforceSDKManager.isDevSupportEnabled() || application == null || salesforceSDKManager.activityLifecycleCallbacksForDeveloperSupport != null) return;
+
+        /*
+         * Register an Android Activity lifecycle listener to update the
+         * authenticated  Android Activity at appropriate Activity lifecycle
+         * events.
+         */
+        final ActivityLifecycleCallbacks activityLifecycleCallbacks = new ActivityLifecycleCallbacks() {
+            @Override
+            public void onActivityCreated(@NonNull Activity activity, @Nullable Bundle savedInstanceState) {
+                /* Intentionally Blank */
+            }
+
+            @Override
+            public void onActivityStarted(@NonNull Activity activity) {
+                /* Intentionally Blank */
+            }
+
+            @Override
+            public void onActivityResumed(@NonNull Activity activity) {
+                if (activity.getClass() == salesforceSDKManager.loginActivityClass) {
+                    salesforceSDKManager.updateDeveloperSupportForActivityLifecycle(null, activity);
+                } else {
+                    salesforceSDKManager.updateDeveloperSupportForActivityLifecycle(activity, activity);
+                }
+            }
+
+            @Override
+            public void onActivityPaused(@NonNull Activity activity) {
+                /* Intentionally Blank */
+            }
+
+            @Override
+            public void onActivityStopped(@NonNull Activity activity) {
+                /* Intentionally Blank */
+            }
+
+            @Override
+            public void onActivitySaveInstanceState(@NonNull Activity activity, @NonNull Bundle outState) {
+                /* Intentionally Blank */
+            }
+
+            @Override
+            public void onActivityDestroyed(@NonNull Activity activity) {
+                // Note: "Destroyed" is only of interest for `ShowDeveloperSupportActivity`.
+                if (activity instanceof ShowDeveloperSupportActivity) {
+                    salesforceSDKManager.updateDeveloperSupportForActivityLifecycle(
+                            null,
+                            activity
+                    );
+                }
+            }
+        };
+        application.registerActivityLifecycleCallbacks(activityLifecycleCallbacks);
+        salesforceSDKManager.activityLifecycleCallbacksForDeveloperSupport = activityLifecycleCallbacks;
+    }
+
     private synchronized void unregisterPush(final ClientManager clientMgr, final boolean showLoginPage,
     		final String refreshToken, final String loginServer,
             final Account account, final Activity frontActivity, boolean isLastAccount) {
@@ -1245,32 +1376,37 @@ public class SalesforceSDKManager implements LifecycleObserver {
     }
 
     /**
-     * Show dev support dialog
+     * Displays developer support for a specified Android activity.
+     *
+     * @param frontActivity The Android activity to chose developer support
+     *                      features for and display the dialog
      */
     public void showDevSupportDialog(final Activity frontActivity) {
         if (!isDevSupportEnabled()) {
             return;
         }
 
-        frontActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                final LinkedHashMap<String, DevActionHandler> devActions = getDevActions(frontActivity);
-                final DevActionHandler[] devActionHandlers = devActions.values().toArray(new DevActionHandler[0]);
+        if (devActionsDialog != null) devActionsDialog.dismiss();
 
-                devActionsDialog =
-                        new AlertDialog.Builder(frontActivity)
-                                .setItems(
-                                        devActions.keySet().toArray(new String[0]),
-                                        (dialog, which) -> {
-                                            devActionHandlers[which].onSelected();
-                                            devActionsDialog = null;
-                                        })
-                                .setOnCancelListener(dialog -> devActionsDialog = null)
-                                .setTitle(R.string.sf__dev_support_title)
-                                .create();
-                devActionsDialog.show();
-            }
+        frontActivity.runOnUiThread(() -> {
+            final LinkedHashMap<String, DevActionHandler> devActions = getDevActions(frontActivity);
+            final DevActionHandler[] devActionHandlers = devActions.values().toArray(new DevActionHandler[0]);
+
+            devActionsDialog =
+                    new AlertDialog.Builder(
+                            frontActivity,
+                            isDarkTheme() ? SalesforceSDK_AlertDialog_Dark : SalesforceSDK_AlertDialog
+                    )
+                            .setItems(
+                                    devActions.keySet().toArray(new String[0]),
+                                    (dialog, which) -> {
+                                        devActionHandlers[which].onSelected();
+                                        devActionsDialog = null;
+                                    }
+                            ).setOnCancelListener(dialog -> devActionsDialog = null)
+                            .setTitle(R.string.sf__dev_support_title)
+                            .create();
+            devActionsDialog.show();
         });
     }
 
@@ -1492,6 +1628,13 @@ public class SalesforceSDKManager implements LifecycleObserver {
         ((ScreenLockManager) getScreenLockManager()).onAppBackgrounded();
         ((BiometricAuthenticationManager) getBiometricAuthenticationManager())
                 .onAppBackgrounded();
+
+        // Hide the Salesforce Mobile SDK "Show Developer Support" notification
+        if (authenticatedActivityForDeveloperSupport != null) {
+            ShowDeveloperSupportNotifier.Companion.hideDeveloperSupportNotification(
+                    authenticatedActivityForDeveloperSupport
+            );
+        }
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
@@ -1499,5 +1642,12 @@ public class SalesforceSDKManager implements LifecycleObserver {
         ((ScreenLockManager) getScreenLockManager()).onAppForegrounded();
         ((BiometricAuthenticationManager) getBiometricAuthenticationManager())
                 .onAppForegrounded();
+
+        // Display the Salesforce Mobile SDK "Show Developer Support" notification
+        if (getUserAccountManager().getCurrentAccount() != null && authenticatedActivityForDeveloperSupport != null) {
+            ShowDeveloperSupportNotifier.Companion.showDeveloperSupportNotification(
+                    authenticatedActivityForDeveloperSupport
+            );
+        }
     }
 }
