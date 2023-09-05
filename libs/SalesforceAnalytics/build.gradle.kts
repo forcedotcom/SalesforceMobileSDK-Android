@@ -51,6 +51,7 @@ android {
             res.srcDirs(arrayOf("../test/SalesforceAnalyticsTest/res"))
         }
     }
+
     packaging {
         resources {
             excludes += setOf("META-INF/LICENSE", "META-INF/LICENSE.txt", "META-INF/DEPENDENCIES", "META-INF/NOTICE")

@@ -1,6 +1,6 @@
 rootProject.ext["PUBLISH_GROUP_ID"] = "com.salesforce.mobilesdk"
 rootProject.ext["PUBLISH_VERSION"] = "11.1.0"
-rootProject.ext["PUBLISH_ARTIFACT_ID"] = "MobileSync"
+rootProject.ext["PUBLISH_ARTIFACT_ID"] = "SalesforceHybrid"
 
 plugins {
     `android-library`
@@ -9,9 +9,12 @@ plugins {
 }
 
 dependencies {
-    api(project(":libs:SmartStore"))
+    api(project(":libs:MobileSync"))
+    api("org.apache.cordova:framework:11.0.0")
     api("androidx.appcompat:appcompat:1.6.1")
     api("androidx.appcompat:appcompat-resources:1.6.1")
+    api("androidx.webkit:webkit:1.6.0")
+    api("androidx.core:core-splashscreen:1.0.0")
     implementation("androidx.core:core-ktx:1.9.0")
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")
@@ -19,8 +22,8 @@ dependencies {
 }
 
 android {
-    namespace = "com.salesforce.androidsdk.mobilesync"
-    testNamespace = "com.salesforce.androidsdk.mobilesync.tests"
+    namespace = "com.salesforce.androidsdk.hybrid"
+    testNamespace = "com.salesforce.androidsdk.phonegap"
 
     compileSdk = 33
 
@@ -46,10 +49,10 @@ android {
         }
 
         getByName("androidTest") {
-            setRoot("../test/MobileSyncTest")
-            java.srcDirs(arrayOf("../test/MobileSyncTest/src"))
-            resources.srcDirs(arrayOf("../test/MobileSyncTest/src"))
-            res.srcDirs(arrayOf("../test/MobileSyncTest/res"))
+            setRoot("../test/SalesforceHybridTest")
+            java.srcDirs(arrayOf("../test/SalesforceHybridTest/src"))
+            resources.srcDirs(arrayOf("../test/SalesforceHybridTest/src"))
+            res.srcDirs(arrayOf("../test/SalesforceHybridTest/res"))
         }
     }
 
@@ -60,7 +63,7 @@ android {
     }
 
     defaultConfig {
-        testApplicationId = "com.salesforce.androidsdk.mobilesync.tests"
+        testApplicationId = "com.salesforce.androidsdk.salesforcehybrid.tests"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
