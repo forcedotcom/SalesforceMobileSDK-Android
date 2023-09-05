@@ -19,13 +19,6 @@ plugins {
     `publish-module`
 }
 
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-
 dependencies {
     api(project(":libs:MobileSync"))
     api("com.facebook.react:react-native:0.70.6")
@@ -69,6 +62,7 @@ android {
             res.srcDirs(arrayOf("res"))
             assets.srcDirs(arrayOf("assets"))
         }
+
         getByName("androidTest") {
             setRoot("../test/SalesforceReactTest")
             java.srcDirs(arrayOf("../test/SalesforceReactTest/src"))
