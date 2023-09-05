@@ -9,7 +9,7 @@ dependencies {
 }
 
 android {
-    namespace = "com.salesforce.samples.accounteditor"
+    namespace = "com.salesforce.samples.notesync"
 
     compileSdk = 33
 
