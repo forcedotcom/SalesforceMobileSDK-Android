@@ -1,6 +1,7 @@
 package com.salesforce.androidsdk.developer.support.notifications.local
 
 import android.Manifest.permission.POST_NOTIFICATIONS
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
 import android.app.NotificationChannel
@@ -11,7 +12,6 @@ import android.app.PendingIntent.FLAG_IMMUTABLE
 import android.content.Context.MODE_PRIVATE
 import android.content.Context.NOTIFICATION_SERVICE
 import android.content.Intent
-import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.O
@@ -23,11 +23,9 @@ import androidx.core.app.NotificationCompat.PRIORITY_DEFAULT
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.edit
 import com.salesforce.androidsdk.R.drawable.sf__salesforce_logo
-import com.salesforce.androidsdk.R.string.sf__notifications_local_show_dev_support_action_title
 import com.salesforce.androidsdk.R.string.sf__notifications_local_show_dev_support_content
 import com.salesforce.androidsdk.R.string.sf__notifications_local_show_dev_support_text
 import com.salesforce.androidsdk.R.string.sf__notifications_local_show_dev_support_title
-import com.salesforce.androidsdk.developer.support.activities.ShowDeveloperSupportActivity
 import com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier.Companion.NotificationId.SHOW_DEVELOPER_SUPPORT
 
 /**
@@ -38,6 +36,12 @@ internal class ShowDeveloperSupportNotifier {
 
     companion object {
 
+        // region Intents
+
+        /** A broadcast intent action to show the developer support dialog */
+        const val BROADCAST_INTENT_ACTION_SHOW_DEVELOPER_SUPPORT = "SHOW_DEVELOPER_SUPPORT"
+
+        // endregion
         // region Notifications
 
         /** A shared preferences name for developer support preferences */
@@ -93,8 +97,16 @@ internal class ShowDeveloperSupportNotifier {
         /**
          * Displays the Salesforce Mobile SDK "Show Developer Support"
          * notification.
-         * * @param activity The Android activity
+         *
+         * Note, suppressing `LaunchActivityFromNotification` is intentional.
+         * This notification doesn't launch a dedicated activity as the
+         * "content" of the notification.  Rather, it has the app's visible
+         * activity show the developer support dialog.  In that way, this
+         * notification is subtly different than the use case described by
+         * Material Design.
+         * @param activity The Android activity
          */
+        @SuppressLint("LaunchActivityFromNotification")
         fun showDeveloperSupportNotification(activity: Activity?) {
             // Guards.
             if (activity == null) return
@@ -157,21 +169,12 @@ internal class ShowDeveloperSupportNotifier {
                 NOTIFICATION_CHANNEL_ID_SHOW_DEVELOPER_SUPPORT
             ).apply {
                 priority = PRIORITY_DEFAULT
-                addAction(
-                    NotificationCompat.Action(
-                        sf__salesforce_logo,
-                        activity.getString(sf__notifications_local_show_dev_support_action_title),
-                        PendingIntent.getActivity(
-                            activity,
-                            0,
-                            Intent(
-                                activity,
-                                ShowDeveloperSupportActivity::class.java
-                            ).apply {
-                                flags = FLAG_ACTIVITY_SINGLE_TOP
-                            },
-                            FLAG_IMMUTABLE
-                        )
+                setContentIntent(
+                    PendingIntent.getBroadcast(
+                        activity,
+                        0,
+                        Intent(BROADCAST_INTENT_ACTION_SHOW_DEVELOPER_SUPPORT),
+                        FLAG_IMMUTABLE
                     )
                 )
                 setContentTitle(

@@ -26,8 +26,10 @@
  */
 package com.salesforce.androidsdk.app;
 
+import static androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED;
 import static com.salesforce.androidsdk.R.style.SalesforceSDK_AlertDialog;
 import static com.salesforce.androidsdk.R.style.SalesforceSDK_AlertDialog_Dark;
+import static com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier.BROADCAST_INTENT_ACTION_SHOW_DEVELOPER_SUPPORT;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -55,6 +57,7 @@ import android.webkit.CookieManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.OnLifecycleEvent;
@@ -78,7 +81,6 @@ import com.salesforce.androidsdk.config.AdminSettingsManager;
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.RuntimeConfig;
-import com.salesforce.androidsdk.developer.support.activities.ShowDeveloperSupportActivity;
 import com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.push.PushNotificationInterface;
@@ -174,6 +176,12 @@ public class SalesforceSDKManager implements LifecycleObserver {
      * developer support is enabled.
      */
     private ActivityLifecycleCallbacks activityLifecycleCallbacksForDeveloperSupport;
+
+    /**
+     * Null or the show developer support Android broadcast Intent receiver when
+     * developer support is enabled.
+     */
+    private BroadcastReceiver showDeveloperSupportBroadcastIntentReceiver;
 
     private Class<? extends Activity> loginActivityClass = LoginActivity.class;
     private Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
@@ -933,12 +941,6 @@ public class SalesforceSDKManager implements LifecycleObserver {
             @NonNull Activity lifecycleActivity
     ) {
 
-        // Show the developer support dialog, if applicable.
-        if (lifecycleActivity.isDestroyed() && lifecycleActivity instanceof ShowDeveloperSupportActivity) {
-            showDevSupportDialog(authenticatedActivityForDeveloperSupport);
-            return;
-        }
-
         // Assign the authenticated Activity.
         authenticatedActivityForDeveloperSupport = authenticatedActivity;
 
@@ -969,7 +971,7 @@ public class SalesforceSDKManager implements LifecycleObserver {
 
         // Guards
         final SalesforceSDKManager salesforceSDKManager = getInstance();
-        if (!salesforceSDKManager.isDevSupportEnabled() || application == null || salesforceSDKManager.activityLifecycleCallbacksForDeveloperSupport != null) return;
+        if (!salesforceSDKManager.isDevSupportEnabled() || application == null || salesforceSDKManager.activityLifecycleCallbacksForDeveloperSupport != null || salesforceSDKManager.showDeveloperSupportBroadcastIntentReceiver != null) return;
 
         /*
          * Register an Android Activity lifecycle listener to update the
@@ -1013,17 +1015,27 @@ public class SalesforceSDKManager implements LifecycleObserver {
 
             @Override
             public void onActivityDestroyed(@NonNull Activity activity) {
-                // Note: "Destroyed" is only of interest for `ShowDeveloperSupportActivity`.
-                if (activity instanceof ShowDeveloperSupportActivity) {
-                    salesforceSDKManager.updateDeveloperSupportForActivityLifecycle(
-                            null,
-                            activity
-                    );
-                }
+                /* Intentionally Blank */
             }
         };
         application.registerActivityLifecycleCallbacks(activityLifecycleCallbacks);
         salesforceSDKManager.activityLifecycleCallbacksForDeveloperSupport = activityLifecycleCallbacks;
+
+        // Register an Android broadcast intent receiver to respond to the show developer support notification.
+        final BroadcastReceiver showDeveloperSupportBroadcastIntentReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                salesforceSDKManager.showDevSupportDialog(
+                        salesforceSDKManager.authenticatedActivityForDeveloperSupport
+                );
+            }
+        };
+        ContextCompat.registerReceiver(
+                application,
+                showDeveloperSupportBroadcastIntentReceiver,
+                new IntentFilter(BROADCAST_INTENT_ACTION_SHOW_DEVELOPER_SUPPORT),
+                RECEIVER_NOT_EXPORTED);
+        salesforceSDKManager.showDeveloperSupportBroadcastIntentReceiver = showDeveloperSupportBroadcastIntentReceiver;
     }
 
     private synchronized void unregisterPush(final ClientManager clientMgr, final boolean showLoginPage,
@@ -1382,7 +1394,7 @@ public class SalesforceSDKManager implements LifecycleObserver {
      *                      features for and display the dialog
      */
     public void showDevSupportDialog(final Activity frontActivity) {
-        if (!isDevSupportEnabled()) {
+        if (!isDevSupportEnabled() || frontActivity == null) {
             return;
         }
 
