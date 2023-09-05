@@ -91,7 +91,6 @@ android {
         renderScript = true
         aidl = true
     }
-
 }
 
 val assetsFolder = File("libs/test/SalesforceReactTest/assets")
