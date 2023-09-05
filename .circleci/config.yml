@@ -1,8 +1,8 @@
 aliases:
   # Docker image tags can be found here: https://circleci.com/developer/images/image/cimg/android
-  - &cimg cimg/android:2023.06.1-node
+  - &cimg cimg/android:2023.08.1-node
   # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
-  - &default-api-level 30 
+  - &default-api-level 33
 
   - &gradle-cache-key
     gradle-cache-v2-{{ checksum "build.gradle" }}-{{
