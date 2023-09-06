@@ -12,7 +12,7 @@ You have arrived at the source repository for the Salesforce Mobile SDK for Andr
 Installation (do this first - really)
 ==
 
-After cloning the SalesforceMobileSDK-Android project from github, run the install script from the command line:
+After cloning the SalesforceMobileSDK-Android project from GitHub, run the install script from the command line:
 
 `./install.sh`
 
