@@ -7,12 +7,12 @@ aliases:
   - &gradle-cache-key
       gradle-cache-v2-{{ checksum "build.gradle.kts" }}-{{
       checksum "gradle/wrapper/gradle-wrapper.properties" }}-{{
-      checksum "libs/SalesforceAnalytics/build.gradle" }}-{{
-      checksum "libs/SalesforceSDK/build.gradle" }}-{{
-      checksum "libs/SmartStore/build.gradle" }}-{{
-      checksum "libs/MobileSync/build.gradle" }}-{{
-      checksum "libs/SalesforceHybrid/build.gradle" }}-{{
-      checksum "libs/SalesforceReact/build.gradle" }}
+      checksum "libs/SalesforceAnalytics/build.gradle.kts" }}-{{
+      checksum "libs/SalesforceSDK/build.gradle.kts" }}-{{
+      checksum "libs/SmartStore/build.gradle.kts" }}-{{
+      checksum "libs/MobileSync/build.gradle.kts" }}-{{
+      checksum "libs/SalesforceHybrid/build.gradle.kts" }}-{{
+      checksum "libs/SalesforceReact/build.gradle.kts" }}
 
   - &restore-gradle-cache
     keys:
