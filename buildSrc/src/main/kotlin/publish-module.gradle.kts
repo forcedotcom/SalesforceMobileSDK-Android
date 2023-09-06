@@ -27,13 +27,13 @@ if (rootProject.name == "SalesforceMobileSDK-Android") {
         publishing {
             publications {
                 create<MavenPublication>("release") {
-                    artifactId = rootProject.ext["PUBLISH_ARTIFACT_ID"] as String
-                    groupId = rootProject.ext["PUBLISH_GROUP_ID"] as String
-                    version = rootProject.ext["PUBLISH_VERSION"] as String
+                    artifactId = rootProject.ext["PUBLISH_ARTIFACT_ID"] as? String
+                    groupId = rootProject.ext["PUBLISH_GROUP_ID"] as? String
+                    version = rootProject.ext["PUBLISH_VERSION"] as? String
                     from(components["release"])
                     artifact(sourcesJar)
                     pom {
-                        name.set(rootProject.ext["PUBLISH_ARTIFACT_ID"] as String)
+                        name.set(rootProject.ext["PUBLISH_ARTIFACT_ID"] as? String)
                         description.set("Official Salesforce Android SDK")
                         url.set("https://github.com/forcedotcom/SalesforceMobileSDK-Android")
                         licenses {
@@ -75,9 +75,9 @@ if (rootProject.name == "SalesforceMobileSDK-Android") {
 
             signing {
                 useInMemoryPgpKeys(
-                    rootProject.ext["signing.keyId"] as String,
-                    rootProject.ext["signing.key"] as String,
-                    rootProject.ext["signing.password"] as String
+                    rootProject.ext["signing.keyId"] as? String,
+                    rootProject.ext["signing.key"] as? String,
+                    rootProject.ext["signing.password"] as? String
                 )
                 sign(publishing.publications)
             }
