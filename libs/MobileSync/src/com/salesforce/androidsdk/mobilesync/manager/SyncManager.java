@@ -580,7 +580,7 @@ public class SyncManager {
      * @param operation
      * @param syncId
      */
-    private void checkNotRunning(String operation, long syncId) {
+    private synchronized void checkNotRunning(String operation, long syncId) {
         if (activeSyncs.containsKey(syncId)) {
             throw new MobileSyncException("Cannot run " + operation + " " + syncId + " - sync is still running");
         }
