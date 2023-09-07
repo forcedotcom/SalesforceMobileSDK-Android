@@ -45,6 +45,7 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 public class MobileSyncSDKManager extends SmartStoreSDKManager {
 
 	private static final String TAG = "MobileSyncSDKManager";
+	private static final String TAG2 = "MobileSyncSDKManager2";
 
 	/**
 	 * Protected constructor.

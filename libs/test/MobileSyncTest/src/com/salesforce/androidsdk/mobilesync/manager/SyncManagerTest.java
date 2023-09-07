@@ -99,7 +99,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
     	dropAccountsSoup();
     	super.tearDown();
     }
-	
+
 	/**
 	 * getSyncStatus should return null for invalid sync id
 	 * @throws JSONException
@@ -109,7 +109,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 		SyncState sync = syncManager.getSyncStatus(-1);
         Assert.assertNull("Sync status should be null", sync);
 	}
-	
+
 	/**
 	 * Sync down the test accounts, check smart store, check status during sync
 	 */
@@ -946,6 +946,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
     public void testStopResumeMultipleSyncDowns() throws JSONException {
         String syncName1 = "testStopResumeMultipleSyncDowns1";
         String syncName2 = "testStopResumeMultipleSyncDowns2";
+        String syncName3 = "testStopResumeMultipleSyncDowns3";
 
         int numberRecords1 = 5;
         int numberRecords2 = 4;
