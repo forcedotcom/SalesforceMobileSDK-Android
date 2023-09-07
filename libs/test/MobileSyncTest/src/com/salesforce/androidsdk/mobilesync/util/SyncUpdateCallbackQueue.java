@@ -28,31 +28,28 @@ package com.salesforce.androidsdk.mobilesync.util;
 
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SyncUpdateCallback;
 
-import org.json.JSONException;
-
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This tracks sync updates using a queue, allowing for tests to wait for certain sync updates to turn up.
  */
 public class SyncUpdateCallbackQueue implements SyncUpdateCallback {
 
-	private BlockingQueue<SyncState> syncs; 
-	
+	private BlockingQueue<SyncState> syncs;
+
 	public SyncUpdateCallbackQueue() {
 		syncs = new ArrayBlockingQueue<>(10);
 	}
-	
+
 	public void onUpdate(SyncState sync) {
 		try {
-			syncs.offer(sync.copy());
-		} catch (JSONException e) {
+			syncs.put(sync.copy());
+		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
     // remove any events in the queue
     public void clearQueue() {
     	syncs.clear();
@@ -61,7 +58,7 @@ public class SyncUpdateCallbackQueue implements SyncUpdateCallback {
     /** will return the next event in the queue, waiting if needed for a reasonable amount of time */
     public SyncState getNextSyncUpdate() {
         try {
-        	SyncState sync = syncs.poll(30, TimeUnit.SECONDS);
+        	SyncState sync = syncs.take();
             if (sync == null)
                 throw new RuntimeException("Failure ** Timeout waiting for a broadcast ");
             return sync;
