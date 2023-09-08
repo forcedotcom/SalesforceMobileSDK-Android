@@ -381,7 +381,7 @@ workflows:
           context: Android Unit Tests
           matrix:
             parameters:
-              lib: [ "SalesforceAnalytics", "SalesforceSDK", "SmartStore", "SalesforceHybrid", "SalesforceReact" ]
+              lib: [ "SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "SalesforceReact" ]
               api_level: [ << pipeline.parameters.api-level >> ]
               pr: [ true ]
 
@@ -406,7 +406,7 @@ workflows:
           context: Android Unit Tests
           matrix:
             parameters:
-              lib: [ "SalesforceAnalytics", "SalesforceSDK", "SmartStore", "SalesforceHybrid", "SalesforceReact" ]
+              lib: [ "SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "SalesforceReact" ]
               api_level: [ << pipeline.parameters.api-level >> ]
       - test-rest-explorer:
           name: RestExplorer API << pipeline.parameters.api-level >>
