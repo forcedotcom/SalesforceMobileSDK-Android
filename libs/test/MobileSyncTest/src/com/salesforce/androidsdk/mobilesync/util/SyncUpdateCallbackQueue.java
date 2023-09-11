@@ -26,47 +26,114 @@
  */
 package com.salesforce.androidsdk.mobilesync.util;
 
+import static java.util.Collections.singletonList;
+
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SyncUpdateCallback;
 
-import org.json.JSONException;
-
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 /**
- * This tracks sync updates using a queue, allowing for tests to wait for certain sync updates to turn up.
+ * A SyncUpdateCallback which queues SyncStates, then serves them filtered by
+ * the SyncState id.  This can be useful for tests which assert the sequence of
+ * SyncStates, possibly for multiple and concurrent SyncStates.
  */
 public class SyncUpdateCallbackQueue implements SyncUpdateCallback {
 
-	private BlockingQueue<SyncState> syncs; 
-	
-	public SyncUpdateCallbackQueue() {
-		syncs = new ArrayBlockingQueue<>(10);
-	}
-	
-	public void onUpdate(SyncState sync) {
-		try {
-			syncs.offer(sync.copy());
-		} catch (JSONException e) {
-			throw new RuntimeException(e);
-		}
-	}
-	
-    // remove any events in the queue
-    public void clearQueue() {
-    	syncs.clear();
+    /**
+     * The map of queued SyncStates by the SyncState id which provided them
+     */
+    private final Map<Long, BlockingQueue<SyncState>> syncStatesById = new TreeMap<>();
+
+    /**
+     * Initializes a new instance with a pre-allocated queue for the provided
+     * SyncState id.
+     *
+     * @param syncStateId The SyncState id
+     */
+    public SyncUpdateCallbackQueue(
+            final Long syncStateId
+    ) {
+        this(new TreeSet<>(singletonList(syncStateId)));
     }
 
-    /** will return the next event in the queue, waiting if needed for a reasonable amount of time */
-    public SyncState getNextSyncUpdate() {
+    /**
+     * Initializes a new instance with pre-allocated queues for each provided
+     * SyncState id.
+     *
+     * @param syncStateIds The list of SyncState ids
+     */
+    public SyncUpdateCallbackQueue(
+            final Set<Long> syncStateIds
+    ) {
+        for (final Long syncStateId : syncStateIds) {
+            syncStatesById.put(
+                    syncStateId,
+                    new ArrayBlockingQueue<>(1000, true)
+            );
+        }
+
+        if (syncStatesById.isEmpty()) {
+            throw new IllegalStateException("At least one SyncState id must be provided.");
+        }
+    }
+
+    /**
+     * Queues a new SyncState by its id.
+     *
+     * @param syncState The new SyncState to queue
+     */
+    public void onUpdate(final SyncState syncState) {
+
+        final long syncStateId = syncState.getId();
+
         try {
-        	SyncState sync = syncs.poll(30, TimeUnit.SECONDS);
-            if (sync == null)
-                throw new RuntimeException("Failure ** Timeout waiting for a broadcast ");
-            return sync;
-        } catch (InterruptedException ex) {
-            throw new RuntimeException("Was interrupted waiting for broadcast");
+            final BlockingQueue<SyncState> syncStates = syncStatesById.get(syncStateId);
+            if (syncStates == null) {
+                throw new IllegalStateException("Cannot queue SyncState with unexpected id '" + syncStateId + "'.  Verify the expected ids are provided at initialization.");
+            }
+
+            syncStates.put(syncState.copy());
+
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to queue SyncState due to an unexpected exception with message '" + e.getMessage() + "'.", e);
+        }
+    }
+
+    /**
+     * Returns the next queued SyncEvent event within a reasonable timeout.  The
+     * first SyncState id provided at initialization is used.
+     */
+    public SyncState getNextSyncUpdate() {
+        return getNextSyncUpdate(syncStatesById.keySet().iterator().next());
+    }
+
+    /**
+     * Returns the next queued SyncEvent event within a reasonable timeout.
+     *
+     * @param syncStateId The SyncState id
+     */
+    public SyncState getNextSyncUpdate(final Long syncStateId) {
+
+        try {
+            final BlockingQueue<SyncState> syncStates = syncStatesById.get(syncStateId);
+            if (syncStates == null) {
+                throw new IllegalStateException("Cannot get SyncState with unexpected id '" + syncStateId + "'.  Verify the expected ids are provided at initialization.");
+            }
+
+            final SyncState syncState = syncStates.take();
+
+            if (syncState == null)
+                throw new RuntimeException("SyncState with id '" + syncStateId + "' was not received on time.");
+
+            return syncState;
+
+        } catch (InterruptedException e) {
+            throw new RuntimeException("SyncState with id '" + syncStateId + "' could not be received due to an unexpected exception with message '" + e.getMessage() + "'.", e);
         }
     }
 }

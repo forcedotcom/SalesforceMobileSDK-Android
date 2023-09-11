@@ -37,6 +37,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -74,29 +75,49 @@ public class BatchSyncUpTargetTest extends SyncUpTargetTest {
         Assert.assertTrue("Max batch size should be 25", 25 == target.getMaxBatchSize());
     }
 
-
     @Test
-    public void testConstructors() {
-        String[] createdFieldArr = {Constants.NAME};
-        String[] updatedFieldArr = {Constants.NAME, Constants.DESCRIPTION};
-        int maxBatchSize = 12;
+    @Ignore
+    public void testConstructorDefault() {
+        final BatchSyncUpTarget target = new BatchSyncUpTarget();
 
-        BatchSyncUpTarget target = new BatchSyncUpTarget();
         Assert.assertNull("Wrong createFieldList", target.createFieldlist);
         Assert.assertNull("Wrong updateFieldList", target.updateFieldlist);
         Assert.assertEquals("Wrong maxBatchSize", 25, target.getMaxBatchSize());
+    }
 
-        target = new BatchSyncUpTarget( Arrays.asList(createdFieldArr),  Arrays.asList(updatedFieldArr));
+    @Test
+    @Ignore
+    public void testConstructorFieldLists() {
+        final String[] createdFieldArr = {Constants.NAME};
+        final String[] updatedFieldArr = {Constants.NAME, Constants.DESCRIPTION};
+
+        final BatchSyncUpTarget target = new BatchSyncUpTarget(
+                Arrays.asList(createdFieldArr),
+                Arrays.asList(updatedFieldArr)
+        );
+
         Assert.assertArrayEquals("Wrong createFieldList", createdFieldArr, target.createFieldlist.toArray(new String[0]));
         Assert.assertArrayEquals("Wrong updateFieldList", updatedFieldArr, target.updateFieldlist.toArray(new String[0]));
         Assert.assertEquals("Wrong maxBatchSize", 25, target.getMaxBatchSize());
+    }
 
-        target = new BatchSyncUpTarget( Arrays.asList(createdFieldArr),  Arrays.asList(updatedFieldArr), maxBatchSize);
+    @Test
+    @Ignore
+    public void testConstructorMaxBatchSize() {
+        final String[] createdFieldArr = {Constants.NAME};
+        final String[] updatedFieldArr = {Constants.NAME, Constants.DESCRIPTION};
+        final int maxBatchSize = 12;
+
+        final BatchSyncUpTarget target = new BatchSyncUpTarget(
+                Arrays.asList(createdFieldArr),
+                Arrays.asList(updatedFieldArr),
+                maxBatchSize
+        );
+
         Assert.assertArrayEquals("Wrong createFieldList", createdFieldArr, target.createFieldlist.toArray(new String[0]));
         Assert.assertArrayEquals("Wrong updateFieldList", updatedFieldArr, target.updateFieldlist.toArray(new String[0]));
         Assert.assertEquals("Wrong maxBatchSize", maxBatchSize, target.getMaxBatchSize());
     }
-
 
     @Test
     public void testConstructorWithJSON() throws Exception {

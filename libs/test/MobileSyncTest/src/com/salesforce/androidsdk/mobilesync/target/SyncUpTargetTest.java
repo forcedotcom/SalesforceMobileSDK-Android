@@ -33,10 +33,8 @@ import androidx.test.filters.SmallTest;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManagerTestCase;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions;
-import com.salesforce.androidsdk.mobilesync.util.SyncState;
-
 import com.salesforce.androidsdk.mobilesync.util.SyncState.MergeMode;
-import java.util.ArrayList;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.After;
@@ -45,6 +43,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
