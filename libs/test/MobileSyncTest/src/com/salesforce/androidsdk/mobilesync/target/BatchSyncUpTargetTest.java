@@ -37,7 +37,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -76,7 +75,6 @@ public class BatchSyncUpTargetTest extends SyncUpTargetTest {
     }
 
     @Test
-    @Ignore
     public void testConstructorDefault() {
         final BatchSyncUpTarget target = new BatchSyncUpTarget();
 
@@ -86,7 +84,6 @@ public class BatchSyncUpTargetTest extends SyncUpTargetTest {
     }
 
     @Test
-    @Ignore
     public void testConstructorFieldLists() {
         final String[] createdFieldArr = {Constants.NAME};
         final String[] updatedFieldArr = {Constants.NAME, Constants.DESCRIPTION};
@@ -102,7 +99,6 @@ public class BatchSyncUpTargetTest extends SyncUpTargetTest {
     }
 
     @Test
-    @Ignore
     public void testConstructorMaxBatchSize() {
         final String[] createdFieldArr = {Constants.NAME};
         final String[] updatedFieldArr = {Constants.NAME, Constants.DESCRIPTION};
