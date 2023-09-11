@@ -24,30 +24,29 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.mobilesync.util;
+package com.salesforce.androidsdk.mobilesync.util
 
-import static java.util.Collections.singletonList;
-
-import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SyncUpdateCallback;
-
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SyncUpdateCallback
+import java.util.TreeMap
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.BlockingQueue
+import java.util.concurrent.TimeUnit.SECONDS
 
 /**
  * A SyncUpdateCallback which queues SyncStates, then serves them filtered by
  * the SyncState id.  This can be useful for tests which assert the sequence of
  * SyncStates, possibly for multiple and concurrent SyncStates.
+ *
+ * @param syncStateIds The list of SyncState ids to pre-allocate queues for
  */
-public class SyncUpdateCallbackQueue implements SyncUpdateCallback {
+class SyncUpdateCallbackQueue(
+    syncStateIds: Set<Long>
+) : SyncUpdateCallback {
 
     /**
      * The map of queued SyncStates by the SyncState id which provided them
      */
-    private final Map<Long, BlockingQueue<SyncState>> syncStatesById = new TreeMap<>();
+    private val syncStatesById: MutableMap<Long, BlockingQueue<SyncState>> = TreeMap()
 
     /**
      * Initializes a new instance with a pre-allocated queue for the provided
@@ -55,31 +54,20 @@ public class SyncUpdateCallbackQueue implements SyncUpdateCallback {
      *
      * @param syncStateId The SyncState id
      */
-    public SyncUpdateCallbackQueue(
-            final Long syncStateId
-    ) {
-        this(new TreeSet<>(singletonList(syncStateId)));
-    }
+    constructor(
+        syncStateId: Long
+    ) : this(setOf(syncStateId))
 
     /**
      * Initializes a new instance with pre-allocated queues for each provided
      * SyncState id.
-     *
-     * @param syncStateIds The list of SyncState ids
      */
-    public SyncUpdateCallbackQueue(
-            final Set<Long> syncStateIds
-    ) {
-        for (final Long syncStateId : syncStateIds) {
-            syncStatesById.put(
-                    syncStateId,
-                    new ArrayBlockingQueue<>(1000, true)
-            );
+    init {
+        syncStateIds.forEach { syncStateId ->
+            syncStatesById[syncStateId] = ArrayBlockingQueue(1000, true)
         }
 
-        if (syncStatesById.isEmpty()) {
-            throw new IllegalStateException("At least one SyncState id must be provided.");
-        }
+        check(syncStatesById.isNotEmpty()) { "At least one SyncState id must be provided." }
     }
 
     /**
@@ -87,20 +75,13 @@ public class SyncUpdateCallbackQueue implements SyncUpdateCallback {
      *
      * @param syncState The new SyncState to queue
      */
-    public void onUpdate(final SyncState syncState) {
-
-        final long syncStateId = syncState.getId();
-
+    override fun onUpdate(syncState: SyncState) {
+        val syncStateId = syncState.id
         try {
-            final BlockingQueue<SyncState> syncStates = syncStatesById.get(syncStateId);
-            if (syncStates == null) {
-                throw new IllegalStateException("Cannot queue SyncState with unexpected id '" + syncStateId + "'.  Verify the expected ids are provided at initialization.");
-            }
-
-            syncStates.put(syncState.copy());
-
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to queue SyncState due to an unexpected exception with message '" + e.getMessage() + "'.", e);
+            val syncStates = syncStatesById[syncStateId] ?: throw IllegalStateException("Cannot queue SyncState with unexpected id '$syncStateId'.  Verify the expected ids are provided at initialization.")
+            syncStates.offer(syncState.copy())
+        } catch (e: Exception) {
+            throw RuntimeException("Unable to queue SyncState due to an unexpected exception with message '${e.message}'.", e)
         }
     }
 
@@ -108,32 +89,27 @@ public class SyncUpdateCallbackQueue implements SyncUpdateCallback {
      * Returns the next queued SyncEvent event within a reasonable timeout.  The
      * first SyncState id provided at initialization is used.
      */
-    public SyncState getNextSyncUpdate() {
-        return getNextSyncUpdate(syncStatesById.keySet().iterator().next());
-    }
+    val nextSyncUpdate: SyncState
+        get() = getNextSyncUpdate(syncStatesById.keys.first())
 
     /**
      * Returns the next queued SyncEvent event within a reasonable timeout.
      *
      * @param syncStateId The SyncState id
      */
-    public SyncState getNextSyncUpdate(final Long syncStateId) {
-
-        try {
-            final BlockingQueue<SyncState> syncStates = syncStatesById.get(syncStateId);
-            if (syncStates == null) {
-                throw new IllegalStateException("Cannot get SyncState with unexpected id '" + syncStateId + "'.  Verify the expected ids are provided at initialization.");
-            }
-
-            final SyncState syncState = syncStates.take();
-
-            if (syncState == null)
-                throw new RuntimeException("SyncState with id '" + syncStateId + "' was not received on time.");
-
-            return syncState;
-
-        } catch (InterruptedException e) {
-            throw new RuntimeException("SyncState with id '" + syncStateId + "' could not be received due to an unexpected exception with message '" + e.getMessage() + "'.", e);
+    fun getNextSyncUpdate(syncStateId: Long): SyncState {
+        return try {
+            val syncStates = syncStatesById[syncStateId] ?: throw IllegalStateException(
+                "Cannot get SyncState with unexpected id '$syncStateId'.  Verify the expected ids are provided at initialization."
+            )
+            val syncState = syncStates.poll(30, SECONDS) ?: throw RuntimeException(
+                "SyncState with id '$syncStateId' was not received on time."
+            )
+            syncState
+        } catch (e: InterruptedException) {
+            throw RuntimeException(
+                "SyncState with id '$syncStateId' could not be received due to an unexpected exception with message '${e.message}'.", e
+            )
         }
     }
 }
