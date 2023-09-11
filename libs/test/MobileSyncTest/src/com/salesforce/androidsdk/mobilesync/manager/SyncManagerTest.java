@@ -74,7 +74,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 
 /**
  * Test class for SyncManager.
@@ -962,9 +961,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         long syncId2 = SyncState.createSyncDown(smartStore, target2, options, ACCOUNTS_SOUP, syncName2).getId();
 
         // Run sync
-        final SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue(
-                new TreeSet<>(Arrays.asList(syncId1, syncId2))
-        );
+        final SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue(syncId1, syncId2);
         syncManager.reSync(syncName1, queue);
         try {
             // Sleeping a bit - to make sure it goes first

@@ -27,10 +27,11 @@
 package com.salesforce.androidsdk.mobilesync.util
 
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SyncUpdateCallback
-import java.util.TreeMap
-import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.BlockingQueue
-import java.util.concurrent.TimeUnit.SECONDS
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers.Default
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 /**
  * A SyncUpdateCallback which queues SyncStates, then serves them filtered by
@@ -40,34 +41,22 @@ import java.util.concurrent.TimeUnit.SECONDS
  * @param syncStateIds The list of SyncState ids to pre-allocate queues for
  */
 class SyncUpdateCallbackQueue(
-    syncStateIds: Set<Long>
+    vararg syncStateIds: Long
 ) : SyncUpdateCallback {
 
     /**
-     * The map of queued SyncStates by the SyncState id which provided them
+     * The map of queued SyncStates by the SyncState id which provided them.
      */
-    private val syncStatesById: MutableMap<Long, BlockingQueue<SyncState>> = TreeMap()
-
-    /**
-     * Initializes a new instance with a pre-allocated queue for the provided
-     * SyncState id.
-     *
-     * @param syncStateId The SyncState id
-     */
-    constructor(
-        syncStateId: Long
-    ) : this(setOf(syncStateId))
+    private var syncStatesById: Map<Long, Channel<SyncState>>
 
     /**
      * Initializes a new instance with pre-allocated queues for each provided
      * SyncState id.
      */
     init {
-        syncStateIds.forEach { syncStateId ->
-            syncStatesById[syncStateId] = ArrayBlockingQueue(1000, true)
-        }
+        check(syncStateIds.isNotEmpty()) { "At least one SyncState id must be provided." }
 
-        check(syncStatesById.isNotEmpty()) { "At least one SyncState id must be provided." }
+        syncStatesById = syncStateIds.associateWith { Channel() }
     }
 
     /**
@@ -76,12 +65,13 @@ class SyncUpdateCallbackQueue(
      * @param syncState The new SyncState to queue
      */
     override fun onUpdate(syncState: SyncState) {
-        val syncStateId = syncState.id
-        try {
-            val syncStates = syncStatesById[syncStateId] ?: throw IllegalStateException("Cannot queue SyncState with unexpected id '$syncStateId'.  Verify the expected ids are provided at initialization.")
-            syncStates.offer(syncState.copy())
-        } catch (e: Exception) {
-            throw RuntimeException("Unable to queue SyncState due to an unexpected exception with message '${e.message}'.", e)
+        CoroutineScope(Default).launch {
+            val syncStateId = syncState.id
+            val syncStates = syncStatesById[syncStateId]
+
+            check(syncStates != null) { "Cannot queue SyncState with unexpected id '$syncStateId'.  Verify the expected ids are provided at initialization." }
+
+            syncStates.send(syncState.copy())
         }
     }
 
@@ -97,19 +87,13 @@ class SyncUpdateCallbackQueue(
      *
      * @param syncStateId The SyncState id
      */
-    fun getNextSyncUpdate(syncStateId: Long): SyncState {
-        return try {
-            val syncStates = syncStatesById[syncStateId] ?: throw IllegalStateException(
-                "Cannot get SyncState with unexpected id '$syncStateId'.  Verify the expected ids are provided at initialization."
-            )
-            val syncState = syncStates.poll(30, SECONDS) ?: throw RuntimeException(
-                "SyncState with id '$syncStateId' was not received on time."
-            )
-            syncState
-        } catch (e: InterruptedException) {
-            throw RuntimeException(
-                "SyncState with id '$syncStateId' could not be received due to an unexpected exception with message '${e.message}'.", e
-            )
+    fun getNextSyncUpdate(syncStateId: Long) = runBlocking {
+        val syncStates = syncStatesById[syncStateId]
+
+        check(syncStates != null) {
+            "Cannot get SyncState with unexpected id '$syncStateId'.  Verify the expected ids are provided at initialization."
         }
+
+        syncStates.receive()
     }
 }
