@@ -24,152 +24,232 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.mobilesync.target;
+package com.salesforce.androidsdk.mobilesync.target
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.SmallTest;
-
-import com.salesforce.androidsdk.mobilesync.util.Constants;
-import com.salesforce.androidsdk.mobilesync.util.JSONTestHelper;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import java.util.Arrays;
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import com.salesforce.androidsdk.mobilesync.target.BatchSyncUpTarget.MAX_BATCH_SIZE
+import com.salesforce.androidsdk.mobilesync.target.BatchSyncUpTarget.MAX_SUB_REQUESTS_COMPOSITE_API
+import com.salesforce.androidsdk.mobilesync.target.SyncTarget.ANDROID_IMPL
+import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget.CREATE_FIELDLIST
+import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget.ID_FIELD_NAME
+import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget.MODIFICATION_DATE_FIELD_NAME
+import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget.UPDATE_FIELDLIST
+import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget.fromJSON
+import com.salesforce.androidsdk.mobilesync.util.Constants
+import com.salesforce.androidsdk.mobilesync.util.Constants.DESCRIPTION
+import com.salesforce.androidsdk.mobilesync.util.Constants.LAST_MODIFIED_DATE
+import com.salesforce.androidsdk.mobilesync.util.Constants.NAME
+import com.salesforce.androidsdk.mobilesync.util.JSONTestHelper.assertSameJSON
+import org.json.JSONArray
+import org.json.JSONObject
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
 
 /**
- * Test class for BatchSyncUpTarget.
- * Running all the same tests as SyncUpTargetTest but using a BatchSyncUpTarget
+ * Test class for BatchSyncUpTarget constructors.
  */
-@RunWith(AndroidJUnit4.class)
+@RunWith(AndroidJUnit4::class)
 @SmallTest
-public class BatchSyncUpTargetConstructorTest {
-
+class BatchSyncUpTargetConstructorTest {
     @Test
-    public void testMaxBatchSizeExceedingLimit() {
-        BatchSyncUpTarget target = new BatchSyncUpTarget(null, null, 26);
+    fun testMaxBatchSizeExceedingLimit() {
+        val target = BatchSyncUpTarget(
+            null,
+            null,
+            26
+        )
 
-        Assert.assertTrue("Max batch size should be 25", 25 == target.getMaxBatchSize());
+        assertTrue(
+            "Max batch size should be 25",
+            25 == target.getMaxBatchSize()
+        )
     }
 
     @Test
-    public void testMaxBatchSizeExceedingLimitInJSON() throws Exception {
-        JSONObject targetJson = new JSONObject();
-        targetJson.put(SyncTarget.ANDROID_IMPL, BatchSyncUpTarget.class.getName());
-        targetJson.put(BatchSyncUpTarget.MAX_BATCH_SIZE, 26);
+    fun testMaxBatchSizeExceedingLimitInJSON() {
+        val target = BatchSyncUpTarget(
+            JSONObject().apply {
+                put(
+                    ANDROID_IMPL, BatchSyncUpTarget::class.java.name
+                )
+                put(
+                    MAX_BATCH_SIZE, 26
+                )
+            })
 
-        BatchSyncUpTarget target = new BatchSyncUpTarget(targetJson);
-
-        Assert.assertTrue("Max batch size should be 25", 25 == target.getMaxBatchSize());
+        assertTrue(
+            "Max batch size should be 25",
+            25 == target.getMaxBatchSize()
+        )
     }
 
     @Test
-    public void testConstructorDefault() {
-        final BatchSyncUpTarget target = new BatchSyncUpTarget();
+    fun testConstructorDefault() {
+        val target = BatchSyncUpTarget()
 
-        Assert.assertNull("Wrong createFieldList", target.createFieldlist);
-        Assert.assertNull("Wrong updateFieldList", target.updateFieldlist);
-        Assert.assertEquals("Wrong maxBatchSize", 25, target.getMaxBatchSize());
+        assertNull(
+            "Wrong createFieldList",
+            target.createFieldlist
+        )
+        assertNull(
+            "Wrong updateFieldList",
+            target.updateFieldlist
+        )
+        assertEquals(
+            "Wrong maxBatchSize",
+            25,
+            target.getMaxBatchSize().toLong()
+        )
     }
 
     @Test
-    public void testConstructorFieldLists() {
-        final String[] createdFieldArr = {Constants.NAME};
-        final String[] updatedFieldArr = {Constants.NAME, Constants.DESCRIPTION};
+    fun testConstructorFieldLists() {
+        val createdFieldArr = arrayOf(NAME)
+        val updatedFieldArr = arrayOf(NAME, DESCRIPTION)
+        val target = BatchSyncUpTarget(
+            listOf(*createdFieldArr),
+            listOf(*updatedFieldArr)
+        )
 
-        final BatchSyncUpTarget target = new BatchSyncUpTarget(
-                Arrays.asList(createdFieldArr),
-                Arrays.asList(updatedFieldArr)
-        );
-
-        Assert.assertArrayEquals("Wrong createFieldList", createdFieldArr, target.createFieldlist.toArray(new String[0]));
-        Assert.assertArrayEquals("Wrong updateFieldList", updatedFieldArr, target.updateFieldlist.toArray(new String[0]));
-        Assert.assertEquals("Wrong maxBatchSize", 25, target.getMaxBatchSize());
+        assertArrayEquals(
+            "Wrong createFieldList",
+            createdFieldArr,
+            target.createFieldlist.toTypedArray()
+        )
+        assertArrayEquals(
+            "Wrong updateFieldList",
+            updatedFieldArr,
+            target.updateFieldlist.toTypedArray()
+        )
+        assertEquals(
+            "Wrong maxBatchSize",
+            25,
+            target.getMaxBatchSize().toLong()
+        )
     }
 
     @Test
-    public void testConstructorMaxBatchSize() {
-        final String[] createdFieldArr = {Constants.NAME};
-        final String[] updatedFieldArr = {Constants.NAME, Constants.DESCRIPTION};
-        final int maxBatchSize = 12;
+    fun testConstructorMaxBatchSize() {
+        val createdFieldArr = arrayOf(NAME)
+        val updatedFieldArr = arrayOf(NAME, DESCRIPTION)
+        val maxBatchSize = 12
+        val target = BatchSyncUpTarget(
+            listOf(*createdFieldArr),
+            listOf(*updatedFieldArr),
+            maxBatchSize
+        )
 
-        final BatchSyncUpTarget target = new BatchSyncUpTarget(
-                Arrays.asList(createdFieldArr),
-                Arrays.asList(updatedFieldArr),
-                maxBatchSize
-        );
-
-        Assert.assertArrayEquals("Wrong createFieldList", createdFieldArr, target.createFieldlist.toArray(new String[0]));
-        Assert.assertArrayEquals("Wrong updateFieldList", updatedFieldArr, target.updateFieldlist.toArray(new String[0]));
-        Assert.assertEquals("Wrong maxBatchSize", maxBatchSize, target.getMaxBatchSize());
+        assertArrayEquals(
+            "Wrong createFieldList",
+            createdFieldArr,
+            target.createFieldlist.toTypedArray()
+        )
+        assertArrayEquals(
+            "Wrong updateFieldList",
+            updatedFieldArr,
+            target.updateFieldlist.toTypedArray()
+        )
+        assertEquals(
+            "Wrong maxBatchSize",
+            maxBatchSize.toLong(),
+            target.getMaxBatchSize().toLong()
+        )
     }
 
     @Test
-    public void testConstructorWithJSON() throws Exception {
-        String[] createdFieldArr = {Constants.NAME};
-        String[] updatedFieldArr = {Constants.NAME, Constants.DESCRIPTION};
-        int maxBatchSize = 12;
+    fun testConstructorWithJSON() {
+        val createdFieldArr = arrayOf(NAME)
+        val updatedFieldArr = arrayOf(NAME, DESCRIPTION)
+        val maxBatchSize = 12
+        val target = BatchSyncUpTarget(JSONObject().apply {
+            put(ANDROID_IMPL, BatchSyncUpTarget::class.java.name)
+            put(CREATE_FIELDLIST, JSONArray(createdFieldArr))
+            put(UPDATE_FIELDLIST, JSONArray(updatedFieldArr))
+            put(MAX_BATCH_SIZE, maxBatchSize)
+        })
 
-        JSONObject targetJson = new JSONObject();
-        targetJson.put(SyncTarget.ANDROID_IMPL, BatchSyncUpTarget.class.getName());
-        targetJson.put(SyncUpTarget.CREATE_FIELDLIST, new JSONArray(createdFieldArr));
-        targetJson.put(SyncUpTarget.UPDATE_FIELDLIST, new JSONArray(updatedFieldArr));
-        targetJson.put(BatchSyncUpTarget.MAX_BATCH_SIZE, maxBatchSize);
-
-        BatchSyncUpTarget target = new BatchSyncUpTarget(targetJson);
-
-        Assert.assertArrayEquals("Wrong createFieldList", createdFieldArr, target.createFieldlist.toArray(new String[0]));
-        Assert.assertArrayEquals("Wrong updateFieldList", updatedFieldArr, target.updateFieldlist.toArray(new String[0]));
-        Assert.assertEquals("Wrong maxBatchSize", maxBatchSize, target.getMaxBatchSize());
-    }
-
-
-    @Test
-    public void testConstructorWithJSONWithoutOptionalFields() throws Exception {
-        JSONObject targetJson = new JSONObject();
-        targetJson.put(SyncTarget.ANDROID_IMPL, BatchSyncUpTarget.class.getName());
-
-        BatchSyncUpTarget target = new BatchSyncUpTarget(targetJson);
-
-        Assert.assertNull("Wrong createFieldList", target.createFieldlist);
-        Assert.assertNull("Wrong updateFieldList", target.updateFieldlist);
-        Assert.assertEquals("Wrong maxBatchSize", BatchSyncUpTarget.MAX_SUB_REQUESTS_COMPOSITE_API, target.getMaxBatchSize());
-    }
-
-
-    @Test
-    public void testFromJSON() throws Exception {
-        int maxBatchSize = 12;
-
-        JSONObject targetJson = new JSONObject();
-        targetJson.put(SyncTarget.ANDROID_IMPL, BatchSyncUpTarget.class.getName());
-        targetJson.put(BatchSyncUpTarget.MAX_BATCH_SIZE, maxBatchSize);
-
-        SyncUpTarget target = SyncUpTarget.fromJSON(targetJson);
-
-        Assert.assertTrue(target instanceof BatchSyncUpTarget);
-        Assert.assertEquals("Wrong maxBatchSize", maxBatchSize, ((BatchSyncUpTarget) target).getMaxBatchSize());
+        assertArrayEquals(
+            "Wrong createFieldList",
+            createdFieldArr,
+            target.createFieldlist.toTypedArray()
+        )
+        assertArrayEquals(
+            "Wrong updateFieldList",
+            updatedFieldArr,
+            target.updateFieldlist.toTypedArray()
+        )
+        assertEquals(
+            "Wrong maxBatchSize",
+            maxBatchSize.toLong(),
+            target.getMaxBatchSize().toLong()
+        )
     }
 
     @Test
-    public void testToJSON() throws Exception {
-        String[] createdFieldArr = {Constants.NAME};
-        String[] updatedFieldArr = {Constants.NAME, Constants.DESCRIPTION};
-        int maxBatchSize = 12;
+    fun testConstructorWithJSONWithoutOptionalFields() {
+        val target = BatchSyncUpTarget(JSONObject().apply {
+            put(ANDROID_IMPL, BatchSyncUpTarget::class.java.name)
+        })
 
-        BatchSyncUpTarget target = new BatchSyncUpTarget(Arrays.asList(createdFieldArr), Arrays.asList(updatedFieldArr), maxBatchSize);
+        assertNull(
+            "Wrong createFieldList",
+            target.createFieldlist
+        )
+        assertNull(
+            "Wrong updateFieldList",
+            target.updateFieldlist
+        )
+        assertEquals(
+            "Wrong maxBatchSize",
+            MAX_SUB_REQUESTS_COMPOSITE_API.toLong(),
+            target.getMaxBatchSize().toLong()
+        )
+    }
 
-        JSONObject expectedTargetJson = new JSONObject();
-        expectedTargetJson.put(SyncTarget.ANDROID_IMPL, BatchSyncUpTarget.class.getName());
-        expectedTargetJson.put(SyncUpTarget.ID_FIELD_NAME, Constants.ID);
-        expectedTargetJson.put(SyncUpTarget.MODIFICATION_DATE_FIELD_NAME, Constants.LAST_MODIFIED_DATE);
-        expectedTargetJson.put(SyncUpTarget.CREATE_FIELDLIST, new JSONArray(createdFieldArr));
-        expectedTargetJson.put(SyncUpTarget.UPDATE_FIELDLIST, new JSONArray(updatedFieldArr));
-        expectedTargetJson.put(BatchSyncUpTarget.MAX_BATCH_SIZE, maxBatchSize);
+    @Test
+    fun testFromJSON() {
+        val maxBatchSize = 12
+        val target = fromJSON(JSONObject().apply {
+            put(ANDROID_IMPL, BatchSyncUpTarget::class.java.name)
+            put(MAX_BATCH_SIZE, maxBatchSize)
+        })
 
-        JSONTestHelper.assertSameJSON("Wrong json", expectedTargetJson, target.asJSON());
+        assertTrue(target is BatchSyncUpTarget)
+        assertEquals(
+            "Wrong maxBatchSize",
+            maxBatchSize.toLong(),
+            (target as BatchSyncUpTarget).getMaxBatchSize().toLong()
+        )
+    }
+
+    @Test
+    fun testToJSON() {
+        val createdFieldArr = arrayOf(NAME)
+        val updatedFieldArr = arrayOf(NAME, DESCRIPTION)
+        val maxBatchSize = 12
+        val target = BatchSyncUpTarget(
+            listOf(*createdFieldArr),
+            listOf(*updatedFieldArr),
+            maxBatchSize
+        )
+        val expectedTargetJson = JSONObject().apply {
+            put(ANDROID_IMPL, BatchSyncUpTarget::class.java.name)
+            put(ID_FIELD_NAME, Constants.ID)
+            put(MODIFICATION_DATE_FIELD_NAME, LAST_MODIFIED_DATE)
+            put(CREATE_FIELDLIST, JSONArray(createdFieldArr))
+            put(UPDATE_FIELDLIST, JSONArray(updatedFieldArr))
+            put(MAX_BATCH_SIZE, maxBatchSize)
+        }
+
+        assertSameJSON(
+            "Wrong json",
+            expectedTargetJson,
+            target.asJSON()
+        )
     }
 }
