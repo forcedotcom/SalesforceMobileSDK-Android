@@ -901,7 +901,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, RUNNING, 50, numberOfRecords);
 
         // Stop sync manager
-        stopSyncManager(100);
+        stopSyncManager(1000);
         checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, STOPPED, 50, numberOfRecords);
         int numberOfRecordsFetched = (int) (numberOfRecords * 0.5);
         int numberOfRecordsLeft = numberOfRecords-numberOfRecordsFetched + 1 /* we refetch records at maxTimeStamp when a sync was stopped */;
@@ -928,7 +928,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkSyncState(syncId, target.dateForPosition(numberOfRecordsFetched-1).getTime(), STOPPED);
 
         // Stop sync manager
-        stopSyncManager(0);
+        stopSyncManager(1000);
 
         // Restarting sync manager restarting syncs
         syncManager.restart(true, queue);
@@ -981,7 +981,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkStatus(queue.getNextSyncUpdate(syncId1), syncDown, syncId1, target1, options, RUNNING, 20, numberRecords1);
 
         // Stop sync manager
-        stopSyncManager(200);
+        stopSyncManager(1000);
         checkStatus(queue.getNextSyncUpdate(syncId1), syncDown, syncId1, target1, options, STOPPED, 20, numberRecords1);
         checkStatus(queue.getNextSyncUpdate(syncId2), syncDown, syncId2, target2, options, STOPPED, 0, -1);
         int numberOfRecordsFetched1 = (int) (numberRecords1 * 0.2);
@@ -1007,7 +1007,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkStatus(queue.getNextSyncUpdate(syncId2), syncDown, syncId2, target2, options, RUNNING, 50, numberRecords2);
 
         // Stop sync manager
-        stopSyncManager(200);
+        stopSyncManager(1000);
         checkStatus(queue.getNextSyncUpdate(syncId2), syncDown, syncId2, target2, options, STOPPED, 50, numberRecords2);
         int numberRecordsFetched2 = (int) (numberRecords2 * 0.50);
         int numberRecordsLeft2 = numberRecords2-numberRecordsFetched2 + 1/* we refetch records at maxTimeStamp when a sync was stopped */;

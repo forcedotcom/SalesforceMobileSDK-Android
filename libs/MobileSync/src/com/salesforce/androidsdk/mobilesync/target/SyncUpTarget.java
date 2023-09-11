@@ -134,8 +134,8 @@ public class SyncUpTarget extends SyncTarget {
      */
     public SyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist, String idFieldName, String modificationDateFieldName, String externalIdFieldName) {
         super(idFieldName, modificationDateFieldName);
-        this.createFieldlist = createFieldlist;
-        this.updateFieldlist = updateFieldlist;
+        this.createFieldlist = createFieldlist; // Name?
+        this.updateFieldlist = updateFieldlist; // Name, Description?
         this.externalIdFieldName = externalIdFieldName;
     }
 
