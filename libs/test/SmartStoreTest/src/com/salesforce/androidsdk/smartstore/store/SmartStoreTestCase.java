@@ -28,20 +28,24 @@ package com.salesforce.androidsdk.smartstore.store;
 
 import android.content.Context;
 import android.database.Cursor;
+
 import androidx.test.platform.app.InstrumentationRegistry;
+
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.util.JSONTestHelper;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteOpenHelper;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Abstract super class for smart store tests
@@ -184,19 +188,6 @@ public abstract class SmartStoreTestCase {
         String detail = explainQueryPlan.getJSONArray(DBHelper.EXPLAIN_ROWS).getJSONObject(0).getString("detail");
 		Assert.assertTrue("Query plan: " + detail + " - not starting with " + expectedDetailPrefix, detail.startsWith(expectedDetailPrefix));
     }
-
-	protected void checkFileSystem(String soupName, long[] expectedIds, boolean shouldExist) {
-		String soupTableName = getSoupTableName(soupName);
-		for (long expectedId : expectedIds) {
-			File file = ((DBOpenHelper) dbOpenHelper).getSoupBlobFile(soupTableName, expectedId);
-			if (shouldExist) {
-				Assert.assertTrue("External file for " + expectedId + " should exist", file.exists());
-			}
-			else {
-				Assert.assertFalse("External file for " + expectedId + " should not exist", file.exists());
-			}
-		}
-	}
 
 	/**
 	 * Close cursor if not null

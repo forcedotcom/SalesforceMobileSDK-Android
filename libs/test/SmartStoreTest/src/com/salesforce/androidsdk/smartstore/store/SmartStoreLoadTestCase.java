@@ -27,14 +27,18 @@
 package com.salesforce.androidsdk.smartstore.store;
 
 import android.util.Log;
+
 import androidx.test.platform.app.InstrumentationRegistry;
+
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Before;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Super class for smartstore load tests

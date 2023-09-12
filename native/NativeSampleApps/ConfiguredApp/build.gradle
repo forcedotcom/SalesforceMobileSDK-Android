@@ -1,14 +1,20 @@
 apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
 
 dependencies {
     api project(':libs:SalesforceSDK')
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.appcompat:appcompat-resources:1.6.1'
+    implementation 'androidx.core:core-ktx:1.9.0'
 }
 
 android {
-    compileSdkVersion 32
+    namespace = "com.salesforce.samples.configuredapp"
+
+    compileSdkVersion 33
 
     defaultConfig {
-        targetSdkVersion 32
+        targetSdkVersion 33
         minSdkVersion 24
     }
 

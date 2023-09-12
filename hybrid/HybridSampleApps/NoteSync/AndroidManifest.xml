@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.salesforce.samples.notesync"
     android:versionCode="1"
     android:versionName="1.0"
 	android:installLocation="internalOnly">
@@ -65,43 +64,5 @@
             </intent-filter>
         </activity>
         -->
-
-        <!-- IDP account picker activity -->
-        <!--
-            To enable this app as an IDP app that's capable of handling authentication
-            requests originating from other SP apps, uncomment the lines below and replace
-            'scheme' and 'host' with the values you wish to use to define your IDP app.
-            The URI constructed from this must be unique and will be set in the SP app
-            as well. This will be used to launch the IDP app from the SP app.
-
-            In the example given below, 'scheme' is "com.salesforce.samples.notesync"
-            and 'host' is "authenticator". The full URI that needs to be set on the SP app
-            would be "com.salesforce.samples.notesync://authenticator".
-        -->
-        <!--
-        <activity android:name="com.salesforce.androidsdk.auth.idp.IDPAccountPickerActivity"
-            android:excludeFromRecents="true"
-            android:theme="@style/SalesforceSDK"
-            android:exported="true">
-
-            <intent-filter>
-                <data android:scheme="com.salesforce.samples.notesync"
-                    android:host="authenticator" />
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
-        -->
     </application>
-
-    <!--
-        GCM permission to ensure that only this application can
-        receive the messages and registration result. This must be of
-        the format <app-package-name>.C2D_MESSAGE for it to work.
-    -->
-    <permission android:name="com.salesforce.samples.notesync.C2D_MESSAGE"
-        android:protectionLevel="signature" />
-
-    <uses-permission android:name="com.salesforce.samples.notesync.C2D_MESSAGE" />
 </manifest>

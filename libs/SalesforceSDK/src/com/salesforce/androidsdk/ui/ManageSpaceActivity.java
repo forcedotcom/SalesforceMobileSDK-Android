@@ -26,10 +26,11 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -40,7 +41,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
  *
  * @author bhariharan
  */
-public class ManageSpaceActivity extends Activity {
+public class ManageSpaceActivity extends AppCompatActivity {
 
 	private AlertDialog manageSpaceDialog;
 

@@ -40,6 +40,8 @@ import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
+import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.util.ArrayList;
@@ -324,6 +326,16 @@ public class UserAccountManager {
 		storeCurrentUserInfo(user.getUserId(), user.getOrgId());
 		cm.peekRestClient(account);
 		sendUserSwitchIntent(userSwitchType, extras);
+
+		// Check if User has ScreenLock or Biometric Auth
+		BiometricAuthenticationManager bioAuthManager =
+				(BiometricAuthenticationManager) SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
+		ScreenLockManager screenLockManager = (ScreenLockManager) SalesforceSDKManager.getInstance().getScreenLockManager();
+		if (bioAuthManager.isEnabled()) {
+			bioAuthManager.lock();
+		} else if (screenLockManager.isEnabled()) {
+			screenLockManager.lock();
+		}
 	}
 
 	/**
@@ -612,6 +624,7 @@ public class UserAccountManager {
 		final Bundle reply = new Bundle();
 		final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
 		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		options.putBoolean(BiometricAuthenticationManager.SHOW_BIOMETRIC, false);
 		i.putExtras(options);
 		reply.putParcelable(AccountManager.KEY_INTENT, i);
 		context.startActivity(i);

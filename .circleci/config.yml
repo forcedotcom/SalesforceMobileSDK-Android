@@ -1,8 +1,8 @@
 aliases:
   # Docker image tags can be found here: https://circleci.com/developer/images/image/cimg/android
-  - &cimg cimg/android:2022.09.2-node
+  - &cimg cimg/android:2023.08.1-node
   # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
-  - &default-api-level 30 
+  - &default-api-level 33
 
   - &gradle-cache-key
     gradle-cache-v2-{{ checksum "build.gradle" }}-{{
@@ -48,7 +48,7 @@ aliases:
     command: |
       sudo npm i npm@latest -g
       sudo npm install -g shelljs@0.8.5
-      sudo npm install -g cordova@8.1.2
+      sudo npm install -g cordova@12.0.0
       sudo npm install -g typescript
       cordova telemetry off
       ./install.sh
@@ -101,9 +101,7 @@ jobs:
                 export CIRCLE_PULL_REQUESTS="https://github.com/forcedotcom/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
                 export CI_PULL_REQUEST="https://github.com/forcedotcom/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
                 export CI_PULL_REQUESTS="https://github.com/forcedotcom/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
-                # This token is completely harmless as it only has public permission and
-                # is owned by a bot who isn't a member of the org.
-                DANGER_GITHUB_API_TOKEN="279a29d75427e4178cef""b7b5b2d7646c540f025a" danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
+                danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
             else
                 echo "No need to run Danger."
             fi
@@ -213,9 +211,7 @@ jobs:
                   if ls libs/<< parameters.lib >>/build/outputs/androidTest-results/connected/*.xml 1> /dev/null 2>&1; then
                        mv libs/<< parameters.lib >>/build/outputs/androidTest-results/connected/*.xml libs/<< parameters.lib >>/build/outputs/androidTest-results/connected/test-results.xml
                   fi
-                  # This token is completely harmless as it only has public permission and
-                  # is owned by a bot who isn't a member of hte org.
-                  DANGER_GITHUB_API_TOKEN="279a29d75427e4178cef""b7b5b2d7646c540f025a" danger --dangerfile=.circleci/Dangerfile_Lib.rb --danger_id=<< parameters.lib >> --verbose
+                  danger --dangerfile=.circleci/Dangerfile_Lib.rb --danger_id=<< parameters.lib >> --verbose
                 background: true
                 when: always
       - store_artifacts:
@@ -378,9 +374,11 @@ workflows:
             pattern: "^pull/\\d+$"
             value: << pipeline.git.branch >>
     jobs:
-      - static-analysis
+      - static-analysis:
+          context: Android Unit Tests
       - run-tests:
           name: << matrix.lib >>
+          context: Android Unit Tests
           matrix:
             parameters:
               lib: ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "SalesforceReact"]
@@ -405,12 +403,14 @@ workflows:
     jobs:
       - run-tests:
           name: << matrix.lib >> API << pipeline.parameters.api-level >>
+          context: Android Unit Tests
           matrix:
             parameters:
               lib: ["SalesforceAnalytics", "SalesforceSDK", "SmartStore", "MobileSync", "SalesforceHybrid", "SalesforceReact"]
               api_level: [<< pipeline.parameters.api-level >>]
       - test-rest-explorer:
           name: RestExplorer API << pipeline.parameters.api-level >>
+          context: Android Unit Tests
           matrix:
             parameters:
               api_level: [<< pipeline.parameters.api-level >>]

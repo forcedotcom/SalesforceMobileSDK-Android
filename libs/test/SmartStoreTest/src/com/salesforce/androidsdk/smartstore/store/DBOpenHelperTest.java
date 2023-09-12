@@ -28,23 +28,26 @@ package com.salesforce.androidsdk.smartstore.store;
 
 import android.content.Context;
 import android.os.Bundle;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
+
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
-import java.io.File;
-import java.util.Map;
-import java.util.Set;
+
 import net.sqlcipher.database.SQLiteDatabase;
-import org.json.JSONException;
-import org.json.JSONObject;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.io.File;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Tests for obtaining and deleting databases via the DBOpenHelper.
@@ -68,10 +71,6 @@ public class DBOpenHelperTest {
 	public void setUp() {
 		this.targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
 		EventBuilderHelper.enableDisable(false);
-
-		// Delete external blobs folder for test db and test soup
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
-		helper.removeExternalBlobsDirectory(TEST_SOUP);
 	}
 
 	@After
@@ -298,231 +297,6 @@ public class DBOpenHelperTest {
 	public void testHasSmartStoreIsFalseForSpecifiedDatabase() {
         Assert.assertFalse("SmartStore for account should not exist.",
 				DBOpenHelper.smartStoreExists(targetContext, "dbdne", null, null));
-	}
-
-	/**
-	 * Ensures we get the expected soup blobs path
-	 */
-    @Test
-	public void testGetExternalSoupBlobsPath() {
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
-
-		// Test result when soup name is given
-        Assert.assertTrue("Wrong external soup blobs path returned.",
-					 helper.getExternalSoupBlobsPath(TEST_SOUP).endsWith("com.salesforce.androidsdk.smartstore.tests/databases/" + TEST_DB + ".db_external_soup_blobs/" + TEST_SOUP + "/"));
-
-		// Test result when soup name is null
-        Assert.assertTrue("Wrong external soup blobs path returned.",
-					 helper.getExternalSoupBlobsPath(null).endsWith("com.salesforce.androidsdk.smartstore.tests/databases/" + TEST_DB + ".db_external_soup_blobs/"));
-	}
-
-	/**
-	 * Ensures expected folder was created
-	 */
-    @Test
-	public void testCreateExternalBlobsDirectory() {
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
-		File folder = new File(targetContext.getApplicationInfo().dataDir + "/databases/" + TEST_DB + ".db_external_soup_blobs/" + TEST_SOUP + "/");
-
-		// Clean up if folder already exists
-		if (folder.exists()) {
-			folder.delete();
-		}
-
-		// Act
-		boolean result = helper.createExternalBlobsDirectory(TEST_SOUP);
-
-		// Test
-        Assert.assertTrue("Create operation was not successful", result);
-        Assert.assertTrue("Folder for external blobs was not created.", folder.exists());
-
-		// Clean up
-		folder.delete();
-	}
-
-	/**
-	 * Test correct size of entire blobs directory is given
-	 */
-    @Test
-	public void testGetSizeOfDir() throws JSONException {
-		final DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
-		final String contents = "{size:9}";
-		final String encryptedContents = Encryptor.encrypt(contents, PASSCODE);
-
-		// Create first subdirectory.
-		helper.createExternalBlobsDirectory(TEST_SOUP);
-		long soupEntryId = 0;
-		for (int i = 0; i < 100; i++) {
-			helper.saveSoupBlob(TEST_SOUP, soupEntryId++, new JSONObject(contents), PASSCODE);
-		}
-
-		// Create second subdirectory.
-		helper.createExternalBlobsDirectory(TEST_SOUP_2);
-		soupEntryId = 0;
-		for (int i = 0; i < 100; i++) {
-			helper.saveSoupBlob(TEST_SOUP_2, soupEntryId++, new JSONObject(contents), PASSCODE);
-		}
-
-		// Total size of all files should be 2 (since two subdirs) * 100 (since 100 files each) * filesize of each file after encryption.
-        Assert.assertEquals("Total file sizes of both subdirectories is not correct.",
-				2 * 100 * (encryptedContents.length() + 4), helper.getSizeOfDir(null));
-	}
-
-	/**
-	 * Test size of entire blobs directory if it doesnt exist
-	 */
-    @Test
-	public void testGetSizeOfDirDoesntExist() {
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
-		DBOpenHelper.deleteDatabase(targetContext, TEST_DB, null, null);
-
-		// Total size of directory that doesnt exist should be 0.
-        Assert.assertEquals("Total file size should be zero if directory doesnt exist", 0, helper.getSizeOfDir(null));
-	}
-
-	/**
-	 * Ensures files and all subdirs are removed
-	 */
-    @Test
-	public void testRemoveAllFiles() throws JSONException {
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
-		String contents = "{size:9}";
-
-		// Create subdirectory and tons of files
-		helper.createExternalBlobsDirectory(TEST_SOUP);
-		long soupEntryId = 0;
-		for (int i = 0; i < 100; i++) {
-			helper.saveSoupBlob(TEST_SOUP, soupEntryId++, new JSONObject(contents), PASSCODE);
-		}
-
-		// Act
-		DBOpenHelper.removeAllFiles(new File(helper.getExternalSoupBlobsPath(null)));
-
-		// Test that external blobs folder was removed (it cannot be removed unless all subdirectories/files have been removed
-		File folder = new File(targetContext.getApplicationInfo().dataDir + "/databases/" + TEST_DB + ".db_external_soup_blobs/");
-        Assert.assertFalse("Directory must be removed after calling removeAllFiles.", folder.exists());
-	}
-
-	/**
-	 * Ensures external blobs directory was removed
-	 */
-    @Test
-	public void testRemoveExternalBlobsDirectory() {
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
-		File folder = new File(targetContext.getApplicationInfo().dataDir + "/databases/" + TEST_DB + ".db_external_soup_blobs/" + TEST_SOUP + "/");
-
-		// Create external blobs dir
-		helper.createExternalBlobsDirectory(TEST_SOUP);
-        Assert.assertTrue("Folder for external blobs was not created.", folder.exists());
-
-		// Act - delete external blobs dir
-		boolean result = helper.removeExternalBlobsDirectory(TEST_SOUP);
-
-		// Test
-        Assert.assertTrue("Remove operation was not successful", result);
-        Assert.assertFalse("Folder for external blobs was not removed.", folder.exists());
-	}
-
-	/**
-	 * Ensures error is not thrown if dataDir is null
-	 */
-    @Test
-	public void testRemoveExternalBlobsDirectoryNullDataDir() {
-		String realDataDir = targetContext.getApplicationInfo().dataDir;
-		targetContext.getApplicationInfo().dataDir = null;
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, "test_db_null_datadir", null, null);
-
-		// Act - attempt to delete external blobs dir with null dataDir
-		boolean result = helper.removeExternalBlobsDirectory(TEST_SOUP);
-
-		// Test
-        Assert.assertFalse("Remove operation was not successful since dataDir was null", result);
-
-		// Reset dataDir back to real value (calling getOpenHelper with a new db resets the dataDir)
-		targetContext.getApplicationInfo().dataDir = realDataDir;
-		DBOpenHelper.getOpenHelper(targetContext, "some_uncached_helper", null, null);
-	}
-
-	/**
-	 * Ensures soup was created and stored on the file system.
-	 */
-    @Test
-	public void testSaveSoupBlob() throws JSONException {
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
-		helper.createExternalBlobsDirectory(TEST_SOUP);
-		long soupEntryId = System.currentTimeMillis();
-		JSONObject soupElt = new JSONObject("{test:true}");
-
-		// Act
-		helper.saveSoupBlob(TEST_SOUP, soupEntryId, soupElt, PASSCODE);
-
-		// Verify file was created
-		File blobFile = new File(helper.getExternalSoupBlobsPath(TEST_SOUP), "soupelt_" + soupEntryId);
-        Assert.assertTrue("File for blob not found on storage", blobFile.exists());
-
-		// Clean up
-		blobFile.delete();
-	}
-
-	/**
-	 * Ensures soup was successfully retrieved from file system
-	 */
-    @Test
-	public void testLoadSoupBlob() throws JSONException {
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
-		helper.createExternalBlobsDirectory(TEST_SOUP);
-		long soupEntryId = System.currentTimeMillis();
-		JSONObject soupElt = new JSONObject("{testKey:" + soupEntryId + "}");
-
-		// First place blob on file system
-		helper.saveSoupBlob(TEST_SOUP, soupEntryId, soupElt, PASSCODE);
-
-		// Act
-		JSONObject result = helper.loadSoupBlob(TEST_SOUP, soupEntryId, PASSCODE);
-
-		// Verify
-        Assert.assertTrue("Retrieved soup does not have expected keys.", result.has("testKey"));
-        Assert.assertEquals("Retrieved soup does not have expected values.", soupEntryId, result.getLong("testKey"));
-
-		// Clean up
-		File blobFile = new File(helper.getExternalSoupBlobsPath(TEST_SOUP), "soupelt_" + soupEntryId);
-		blobFile.delete();
-	}
-	/**
-	 * Ensures soup was successfully removed from file system
-	 */
-    @Test
-	public void testRemoveSoupBlob() throws JSONException {
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
-		helper.createExternalBlobsDirectory(TEST_SOUP);
-		long soupEntryId = System.currentTimeMillis();
-		JSONObject soupElt = new JSONObject("{testKey:" + soupEntryId + "}");
-
-		// First place blob on file system
-		helper.saveSoupBlob(TEST_SOUP, soupEntryId, soupElt, PASSCODE);
-
-		// Act
-		helper.removeSoupBlob(TEST_SOUP, new Long[] { soupEntryId });
-
-		// Verify
-		File blobFile = new File(helper.getExternalSoupBlobsPath(TEST_SOUP), "soupelt_" + soupEntryId);
-        Assert.assertFalse("File containing blob was not removed from file storage.", blobFile.exists());
-	}
-
-	/**
-	 * Ensures expected folder was created
-	 */
-    @Test
-	public void testGetSoupBlobFile() {
-		long soupEntryId = System.currentTimeMillis();
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
-
-		// Act
-		File soupBlobFile = helper.getSoupBlobFile(TEST_SOUP, soupEntryId);
-
-		// Verify
-        Assert.assertTrue("Soup blob file does not have expected path.",
-					 soupBlobFile.getAbsolutePath().endsWith("com.salesforce.androidsdk.smartstore.tests/databases/" + TEST_DB + ".db_external_soup_blobs/" + TEST_SOUP + "/soupelt_" + soupEntryId));
 	}
 
 	private boolean databaseExists(Context ctx, String dbName) {

@@ -56,7 +56,6 @@ public class ReactSmartStoreTest extends ReactTestCase {
         return Arrays.asList(
                 "testGetDatabaseSize",
                 "testRegisterExistsRemoveExists",
-                "testGetSoupSpec",
                 "testGetSoupIndexSpecs",
                 "testUpsertRetrieve",
                 "testQuerySoup",

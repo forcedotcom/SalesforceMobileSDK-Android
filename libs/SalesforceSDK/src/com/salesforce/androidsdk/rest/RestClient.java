@@ -30,6 +30,7 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import org.json.JSONObject;
@@ -683,11 +684,14 @@ public class RestClient {
             request = buildAuthenticatedRequest(request);
             Response response = chain.proceed(request);
 			int responseCode = response.code();
+			BiometricAuthenticationManager bioAuthManager =
+					(BiometricAuthenticationManager) SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
 
 			/*
 			 * Standard access token expiry returns 401 as the error code.
 			 */
-            if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED) {
+            if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED && bioAuthManager.shouldAllowRefresh()) {
+
 				final URI curInstanceUrl = clientInfo.getInstanceUrl();
 				if (curInstanceUrl != null) {
 					final HttpUrl currentInstanceUrl = HttpUrl.get(curInstanceUrl);
@@ -706,9 +710,18 @@ public class RestClient {
 							 * only if the host of the request was the old instance URL. This avoids
 							 * accidental manipulation of the host for requests where the caller has
 							 * passed in their own fully formed host URL that is not instance URL.
+							 *
+							 * We also need to cover the case where the host changes during refresh
+							 * because the replayed request will fail.
 							 */
-							if (isHostInstanceUrl && !currentInstanceUrl.host().equals(request.url().host())) {
-								request = adjustHostInRequest(request, currentInstanceUrl.host());
+							final URI refreshInstanceUrl = clientInfo.getInstanceUrl();
+							boolean refreshUpdatedUrl = refreshInstanceUrl != null &&
+									!refreshInstanceUrl.getHost().equals(request.url().host());
+							if (isHostInstanceUrl && refreshUpdatedUrl) {
+								final HttpUrl updatedInstanceUrl = HttpUrl.get(refreshInstanceUrl);
+								if (updatedInstanceUrl != null) {
+									request = adjustHostInRequest(request, updatedInstanceUrl.host());
+								}
 							}
 							response.close();
 							response = chain.proceed(request);
@@ -796,7 +809,7 @@ public class RestClient {
         /**
          * Swaps the existing access token for a new one.
          */
-        private void refreshAccessToken() throws IOException {
+		public void refreshAccessToken() throws IOException {
 
             // If we haven't retried already and we have an accessTokenProvider
             // Then let's try to get a new authToken

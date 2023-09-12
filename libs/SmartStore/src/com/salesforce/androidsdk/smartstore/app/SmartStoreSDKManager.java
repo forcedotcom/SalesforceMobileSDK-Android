@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.smartstore.app;
 
+import static com.salesforce.androidsdk.smartstore.store.KeyValueEncryptedFileStore.KEY_VALUE_STORES;
+
 import android.app.Activity;
 import android.content.Context;
 import android.text.TextUtils;
@@ -51,8 +53,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
-
-import static com.salesforce.androidsdk.smartstore.store.KeyValueEncryptedFileStore.KEY_VALUE_STORES;
 
 /**
  * SDK Manager for all native applications that use SmartStore

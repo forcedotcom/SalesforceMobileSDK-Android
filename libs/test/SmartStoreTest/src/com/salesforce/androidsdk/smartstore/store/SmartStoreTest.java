@@ -28,15 +28,16 @@ package com.salesforce.androidsdk.smartstore.store;
 
 import android.database.Cursor;
 import android.os.SystemClock;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
+
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.Order;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.util.JSONTestHelper;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+
 import net.sqlcipher.database.SQLiteDatabase;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -45,6 +46,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Main test suite for SmartStore
@@ -111,7 +116,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	 */
 	@Test
 	public void testSQLCipherVersion() {
-		Assert.assertEquals("Wrong sqlcipher version", "4.5.2 community", store.getSQLCipherVersion());
+		Assert.assertEquals("Wrong sqlcipher version", "4.5.4 community", store.getSQLCipherVersion());
 	}
 
 	/**
@@ -1581,28 +1586,6 @@ public class SmartStoreTest extends SmartStoreTestCase {
 
 		// Clean up
 		db.execSQL("DROP TABLE " + NEW_TEST_TABLE);
-	}
-
-	/**
-	 * Ensure correct soup spec is returned from getSoupSpec
-	 */
-	@Test
-	public void testGetSoupSpec() throws JSONException {
-		final String SOUP_SPEC_TEST = "soup_spec_test";
-		IndexSpec[] indexSpecs = new IndexSpec[]{new IndexSpec("index", Type.string)};
-		SoupSpec TEST_SPEC = new SoupSpec(SOUP_SPEC_TEST, SoupSpec.FEATURE_EXTERNAL_STORAGE);
-		store.registerSoupWithSpec(TEST_SPEC, indexSpecs);
-
-		// Act
-		SoupSpec result = store.getSoupSpec(TEST_SPEC.getSoupName());
-
-		// Verify the result
-		Assert.assertEquals("Soup name in soup spec is incorrect", SOUP_SPEC_TEST, result.getSoupName());
-		Assert.assertEquals("Feature set in soup spec is incorrect", SoupSpec.FEATURE_EXTERNAL_STORAGE, result.getFeatures().get(0));
-
-		// Verify JSON form
-		Assert.assertEquals("Soup name in json of soup spec is incorrect", SOUP_SPEC_TEST, result.toJSON().getString("name"));
-		Assert.assertEquals("Feature set in json of soup spec is incorrect", SoupSpec.FEATURE_EXTERNAL_STORAGE, result.toJSON().getJSONArray("features").get(0));
 	}
 
 	@Test

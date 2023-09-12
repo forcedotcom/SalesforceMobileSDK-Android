@@ -36,7 +36,6 @@ import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 import com.salesforce.androidsdk.util.ManagedFilesHelper;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -463,13 +462,7 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
     }
 
     void encryptStreamToFile(File file, InputStream stream, String encryptionKey) throws IOException {
-        final ByteArrayOutputStream b = new ByteArrayOutputStream();
-        int nextByte = stream.read();
-        while (nextByte != -1) {
-            b.write(nextByte);
-            nextByte = stream.read();
-        }
-        byte[] content = b.toByteArray();
+        byte[] content = Encryptor.getByteArrayStreamFromStream(stream).toByteArray();
         encryptBytesToFile(file, content, encryptionKey);
     }
 

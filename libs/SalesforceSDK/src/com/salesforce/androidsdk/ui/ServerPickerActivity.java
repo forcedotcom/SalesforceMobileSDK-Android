@@ -26,11 +26,7 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import static java.security.AccessController.getContext;
-
-import android.app.ActionBar;
 import android.app.Activity;
-import android.app.FragmentManager;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
@@ -39,6 +35,10 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
+
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.FragmentManager;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -56,7 +56,7 @@ import java.util.List;
  *
  * @author bhariharan
  */
-public class ServerPickerActivity extends Activity implements
+public class ServerPickerActivity extends AppCompatActivity implements
         android.widget.RadioGroup.OnCheckedChangeListener, AuthConfigTask.AuthConfigCallbackInterface {
 
     public static final String CHANGE_SERVER_INTENT = "com.salesforce.SERVER_CHANGED";
@@ -80,7 +80,7 @@ public class ServerPickerActivity extends Activity implements
      */
     @Override
     public void onBackPressed() {
-        (new AuthConfigTask(this)).execute();
+        reconfigureAuthorization();
     }
 
     @Override
@@ -131,7 +131,7 @@ public class ServerPickerActivity extends Activity implements
         loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
         setContentView(R.layout.sf__server_picker);
 
-        final ActionBar actionBar = getActionBar();
+        final ActionBar actionBar = getSupportActionBar();
         actionBar.setTitle(R.string.sf__server_picker_title);
         actionBar.setDisplayHomeAsUpEnabled(true);
 
@@ -148,7 +148,6 @@ public class ServerPickerActivity extends Activity implements
         final RadioGroup radioGroup = findViewById(getServerListGroupId());
         radioGroup.setOnCheckedChangeListener(this);
     	urlEditDialog = new CustomServerUrlEditor();
-    	urlEditDialog.setRetainInstance(true);
     }
 
     @Override
@@ -173,7 +172,11 @@ public class ServerPickerActivity extends Activity implements
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.sf__menu_clear_custom_url) {
+        if (item.getItemId() == android.R.id.home) {
+            reconfigureAuthorization();
+            finish();
+            return true;
+        } else if (item.getItemId() == R.id.sf__menu_clear_custom_url) {
             clearCustomUrlSetting();
             return true;
         } else {
@@ -187,7 +190,7 @@ public class ServerPickerActivity extends Activity implements
      * @param v View.
      */
     public void showCustomUrlDialog(View v) {
-    	final FragmentManager fragMgr = getFragmentManager();
+        final FragmentManager fragMgr = getSupportFragmentManager();
 
         // Adds fragment only if it has not been added already.
         if (!urlEditDialog.isAdded()) {
@@ -202,6 +205,13 @@ public class ServerPickerActivity extends Activity implements
      */
     public CustomServerUrlEditor getCustomServerUrlEditor() {
         return urlEditDialog;
+    }
+
+    /**
+     * Refreshes the authorization configuration.
+     */
+    private void reconfigureAuthorization() {
+        (new AuthConfigTask(this)).execute();
     }
 
     /**

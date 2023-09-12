@@ -28,7 +28,9 @@ package com.salesforce.androidsdk.smartstore.store;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
+
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;

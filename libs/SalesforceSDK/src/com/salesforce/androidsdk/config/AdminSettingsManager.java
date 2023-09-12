@@ -41,6 +41,6 @@ public class AdminSettingsManager extends AbstractPrefsManager {
 
     @Override
     protected boolean isOrgLevel() {
-        return true;
+        return false;
     }
 }

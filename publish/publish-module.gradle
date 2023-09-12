@@ -1,9 +1,16 @@
 apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
-task sourcesJar(type: Jar) {
+android {
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+        }
+    }
+}
+
+tasks.register('sourcesJar', Jar) {
     from android.sourceSets.main.java.srcDirs
-    archiveClassifier.set('sources')
 }
 
 artifacts {
@@ -44,9 +51,14 @@ afterEvaluate {
                             email = 'wmathurin@salesforce.com '
                         }
                         developer {
-                            id = 'bhariharan'
-                            name = 'Bharath Hariharan'
-                            email = 'bhariharan@salesforce.com'
+                            id = 'brianna.birman'
+                            name = 'Brianna Birman'
+                            email = 'brianna.birman@salesforce.com'
+                        }
+                        developer {
+                            id = 'JohnsonEricAtSalesforce'
+                            name = 'Eric Johnson'
+                            email = 'johnson.eric@salesforce.com'
                         }
                     }
                     scm {

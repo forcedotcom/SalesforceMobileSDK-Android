@@ -83,8 +83,8 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 		final Intent launchIntent = getIntent();
 		if (launchIntent != null) {
 			objectId = launchIntent.getStringExtra(MainActivity.OBJECT_ID_KEY);
-			getActionBar().setTitle(launchIntent.getStringExtra(MainActivity.OBJECT_NAME_KEY));
-			getActionBar().setSubtitle(launchIntent.getStringExtra(MainActivity.OBJECT_TITLE_KEY));
+			getSupportActionBar().setTitle(launchIntent.getStringExtra(MainActivity.OBJECT_NAME_KEY));
+			getSupportActionBar().setSubtitle(launchIntent.getStringExtra(MainActivity.OBJECT_TITLE_KEY));
 		}
 		deleteConfirmationDialog = new DeleteDialogFragment();
 	}
@@ -112,6 +112,10 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 	    logoutItem.setVisible(false);
 	    final MenuItem addItem = menu.findItem(R.id.action_add);
 	    addItem.setVisible(false);
+	    final MenuItem inspectDbItem = menu.findItem(R.id.action_inspect_db);
+	    inspectDbItem.setVisible(false);
+	    final MenuItem switchUserItem = menu.findItem(R.id.action_switch_user);
+	    switchUserItem.setVisible(false);
 	    final MenuItem refreshItem = menu.findItem(R.id.action_refresh);
 	    refreshItem.setIcon(R.drawable.ic_action_save);
 	    return super.onCreateOptionsMenu(menu);
@@ -162,7 +166,7 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 		}
 		else {
 			// it's a delete
-			deleteConfirmationDialog.show(getFragmentManager(), "DeleteDialog");
+			deleteConfirmationDialog.show(getSupportFragmentManager(), "DeleteDialog");
 		}
 	}
 

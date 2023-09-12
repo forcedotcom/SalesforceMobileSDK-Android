@@ -61,6 +61,7 @@ import okhttp3.RequestBody;
  * The class offers factory methods to build RestRequest objects for all REST API actions:
  * <ul>
  * <li> userinfo</li>
+ * <li> tokeninfo</li>
  * <li> versions</li>
  * <li> resources</li>
  * <li> describeGlobal</li>
@@ -159,6 +160,7 @@ public class RestRequest {
 	enum RestAction {
 
 		USERINFO("/services/oauth2/userinfo"),
+		TOKENINFO("/services/oauth2/introspect"),
 		VERSIONS(SERVICES_DATA),
 		RESOURCES(SERVICES_DATA + "%s/"),
 		DESCRIBE_GLOBAL(SERVICES_DATA + "%s/sobjects/"),
@@ -183,7 +185,8 @@ public class RestRequest {
 		SOBJECT_COLLECTION_UPSERT(SERVICES_DATA + "%s/composite/sobjects/%s/%s"),
         NOTIFICATIONS_STATUS(SERVICES_DATA + "%s/connect/notifications/status"),
 		NOTIFICATIONS(SERVICES_DATA + "%s/connect/notifications/%s"),
-		PRIMING_RECORDS(SERVICES_DATA + "%s/connect/briefcase/priming-records");
+		PRIMING_RECORDS(SERVICES_DATA + "%s/connect/briefcase/priming-records"),
+		LIMITS(SERVICES_DATA + "%s/limits");
 
 		private final String pathTemplate;
 
@@ -202,6 +205,7 @@ public class RestRequest {
 	private final RequestBody requestBody;
 	private final Map<String, String> additionalHttpHeaders;
 	private final JSONObject requestBodyAsJson; // needed for composite and batch requests
+	private static final String TAG = "RestRequest";
 
     /**
      * Generic constructor for arbitrary requests without a body.
@@ -940,6 +944,17 @@ public class RestRequest {
 		path.append("?allOrNone=" + allOrNone + "&ids=");
 		path.append(URLEncoder.encode(TextUtils.join(",", objectIds), UTF_8));
 		return new RestRequest(RestMethod.DELETE, path.toString());
+	}
+
+	/**
+	 * Request for getting information about limits in your org
+	 *
+	 * @param apiVersion    Salesforce API version.
+	 * @see <a href="https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_limits.htm">https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_limits.htm</a>
+	 */
+	public static RestRequest getRequestForLimits(String apiVersion) {
+		StringBuilder path = new StringBuilder(RestAction.LIMITS.getPath(apiVersion));
+		return new RestRequest(RestMethod.GET, path.toString());
 	}
 
     /**

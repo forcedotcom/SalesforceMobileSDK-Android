@@ -26,15 +26,15 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
+import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
+
+import net.sqlcipher.database.SQLiteDatabase;
+
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import net.sqlcipher.database.SQLiteDatabase;
-
-import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 
 /**
  * SmartSqlHelper "smart" sql Helper
@@ -119,7 +119,6 @@ public class SmartSqlHelper  {
 			String soupTableName = getSoupTableNameForSmartSql(db, soupName, position);
 			boolean tableQualified = smartSql.charAt(position-1) == '.';
 			String tableQualifier = tableQualified ? "" : soupTableName + ".";
-			boolean useExternalStorage = DBHelper.getInstance(db).getFeatures(db, soupName).contains(SoupSpec.FEATURE_EXTERNAL_STORAGE);
 
 			// {soupName}
 			if (parts.length == 1) {
@@ -128,31 +127,27 @@ public class SmartSqlHelper  {
 				String path = parts[1];
 
 				// {soupName:_soup}
-				if (path.equals(SOUP)) {
-					if (useExternalStorage) {
-						// Since soup column doesn't exist, create new columns for the soup name and soup entry id so they can be retrieved from storage
-						String newColumn = String.format("'%s' as '%s', %s%s as '%s'", soupTableName, SoupSpec.FEATURE_EXTERNAL_STORAGE, tableQualifier, SmartStore.ID_COL, SmartStore.SOUP_ENTRY_ID);
-						matcher.appendReplacement(sql, newColumn);
-					} else {
+				switch (path) {
+					case SOUP:
 						matcher.appendReplacement(sql, tableQualifier + SmartStore.SOUP_COL);
-					}
-				}
-				// {soupName:_soupEntryId}
-				else if (path.equals(SmartStore.SOUP_ENTRY_ID)) {
-					matcher.appendReplacement(sql, tableQualifier + SmartStore.ID_COL);
-				}
-				// {soupName:_soupCreatedDate}
-				else if (path.equals(SmartStore.SOUP_CREATED_DATE)) {
-					matcher.appendReplacement(sql, tableQualifier + SmartStore.CREATED_COL);
-				}
-				// {soupName:_soupLastModifiedDate}
-				else if (path.equals(SmartStore.SOUP_LAST_MODIFIED_DATE)) {
-					matcher.appendReplacement(sql, tableQualifier + SmartStore.LAST_MODIFIED_COL);
-				}
-				// {soupName:path}
-				else {
-					String columnName = getColumnNameForPathForSmartSql(db, soupName, path, position, !useExternalStorage);
-					matcher.appendReplacement(sql, columnName.replace("$", "\\$") /* treat any $ as litteral */);
+						break;
+					// {soupName:_soupEntryId}
+					case SmartStore.SOUP_ENTRY_ID:
+						matcher.appendReplacement(sql, tableQualifier + SmartStore.ID_COL);
+						break;
+					// {soupName:_soupCreatedDate}
+					case SmartStore.SOUP_CREATED_DATE:
+						matcher.appendReplacement(sql, tableQualifier + SmartStore.CREATED_COL);
+						break;
+					// {soupName:_soupLastModifiedDate}
+					case SmartStore.SOUP_LAST_MODIFIED_DATE:
+						matcher.appendReplacement(sql, tableQualifier + SmartStore.LAST_MODIFIED_COL);
+						break;
+					// {soupName:path}
+					default:
+						String columnName = getColumnNameForPathForSmartSql(db, soupName, path, position);
+						matcher.appendReplacement(sql, columnName.replace("$", "\\$") /* treat any $ as litteral */);
+						break;
 				}
 			} else if (parts.length > 2) {
 				reportSmartSqlError("Invalid soup/path reference " + fullMatch, position);
@@ -172,12 +167,12 @@ public class SmartSqlHelper  {
 		return sqlStr;
 	}
 	
-	private String getColumnNameForPathForSmartSql(SQLiteDatabase db, String soupName, String path, int position, boolean storedInDb) {
+	private String getColumnNameForPathForSmartSql(SQLiteDatabase db, String soupName, String path, int position) {
 		String columnName = null;
 		boolean indexed = DBHelper.getInstance(db).hasIndexForPath(db, soupName, path);
 
-		if (!indexed && storedInDb) {
-			// Thanks to the json1 extension we can query the data even if it is not indexed (as long as the data is stored in the database)
+		if (!indexed) {
+			// Thanks to the json1 extension we can query the data even if it is not indexed
 			columnName = "json_extract(" + SmartStore.SOUP_COL + ", '$." + path + "')";
 		} else {
 			try {

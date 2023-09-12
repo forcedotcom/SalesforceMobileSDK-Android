@@ -26,35 +26,8 @@
  */
 package com.salesforce.samples.restexplorer;
 
-import android.app.Fragment;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
-import android.view.View;
-import android.view.ViewGroup;
-import android.view.ViewParent;
-
-import androidx.test.espresso.ViewInteraction;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.SmallTest;
-import androidx.test.rule.ActivityTestRule;
-
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.ui.CustomServerUrlEditor;
-import com.salesforce.androidsdk.ui.ServerPickerActivity;
-import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import com.salesforce.androidsdk.util.test.EventsListenerQueue;
-
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
+import static androidx.test.espresso.Espresso.onData;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.Espresso.openActionBarOverflowOrOptionsMenu;
 import static androidx.test.espresso.action.ViewActions.click;
@@ -67,6 +40,37 @@ import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.Matchers.allOf;
+
+import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewParent;
+
+import androidx.appcompat.widget.MenuPopupWindow.MenuDropDownListView;
+import androidx.test.espresso.ViewInteraction;
+import androidx.test.espresso.matcher.RootMatchers;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+import androidx.test.rule.ActivityTestRule;
+
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.ui.CustomServerUrlEditor;
+import com.salesforce.androidsdk.ui.ServerPickerActivity;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.test.EventsListenerQueue;
+
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Tests for ServerPickerActivity.
@@ -183,7 +187,7 @@ public class ServerPickerActivityTest {
      * @throws Throwable
      */
     @Test
-    public void testRestButton() throws Throwable {
+    public void testResetButton() throws Throwable {
         String label = "Server%d";
         String url = "https://login.test.com/%d";
         String entry = label + "\n" + url;
@@ -285,8 +289,13 @@ public class ServerPickerActivityTest {
     private static void tapResetButton() {
         openActionBarOverflowOrOptionsMenu(getInstrumentation().getTargetContext());
         try {
-            onView(allOf(withId(android.R.id.title), withText("Reset"), findUiElement()))
-                    .perform(click());
+            onData(CoreMatchers.anything())
+                    .inRoot(RootMatchers.isPlatformPopup())
+                    .inAdapterView(CoreMatchers.instanceOf(
+                            MenuDropDownListView.class))
+                    .atPosition(0)
+                    .perform(click()
+                    );
         } catch (Throwable t) {
             Assert.fail("Unable to tap reset button.  Error: " + t.getLocalizedMessage());
         }

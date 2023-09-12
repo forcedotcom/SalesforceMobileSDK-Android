@@ -28,10 +28,10 @@ package com.salesforce.androidsdk.smartstore.config;
 
 import android.content.Context;
 
-import com.salesforce.androidsdk.util.ResourceReaderHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
+import com.salesforce.androidsdk.util.ResourceReaderHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;

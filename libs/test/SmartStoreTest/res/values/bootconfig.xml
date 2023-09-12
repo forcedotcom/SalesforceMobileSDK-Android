@@ -7,7 +7,6 @@
         <item>api</item>
         <item>web</item>
     </string-array>
-    <string name="androidPushNotificationClientId"></string>
     <string name="account_type">com.salesforce.androidsdk.smartstoretest.login</string>
     <string name="encoding">UTF-8</string>
 </resources>

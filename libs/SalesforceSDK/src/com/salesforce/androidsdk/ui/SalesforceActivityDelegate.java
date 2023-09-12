@@ -34,7 +34,6 @@ import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.LogoutCompleteReceiver;
 import com.salesforce.androidsdk.util.UserSwitchReceiver;
@@ -46,7 +45,6 @@ import com.salesforce.androidsdk.util.UserSwitchReceiver;
 public class SalesforceActivityDelegate {
 
     private final Activity activity;
-    private ScreenLockManager screenLockManager;
     private UserSwitchReceiver userSwitchReceiver;
     private LogoutCompleteReceiver logoutCompleteReceiver;
 
@@ -56,7 +54,6 @@ public class SalesforceActivityDelegate {
     }
 
     public void onCreate() {
-        screenLockManager = SalesforceSDKManager.getInstance().getScreenLockManager();
         userSwitchReceiver = new ActivityUserSwitchReceiver();
         activity.registerReceiver(userSwitchReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
         logoutCompleteReceiver = new ActivityLogoutCompleteReceiver();
