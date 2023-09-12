@@ -128,11 +128,11 @@ open class SoqlSyncDownTarget : SyncDownTarget {
      * @throws JSONException
      */
     @Throws(JSONException::class)
-    override fun asJSON(): JSONObject? {
-        val target = super.asJSON()
-        if (query != null) target!!.put(QUERY, query)
-        target!!.put(MAX_BATCH_SIZE, maxBatchSize)
-        return target
+    override fun asJSON(): JSONObject {
+        return with(super.asJSON()) {
+            if (query != null) put(QUERY, query)
+            put(MAX_BATCH_SIZE, maxBatchSize)
+        }
     }
 
     @Throws(IOException::class, JSONException::class)

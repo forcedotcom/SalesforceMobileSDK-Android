@@ -81,10 +81,10 @@ abstract class SyncDownTarget : SyncTarget {
      * @throws JSONException
      */
     @Throws(JSONException::class)
-    override fun asJSON(): JSONObject? {
-        val target = super.asJSON()
-        target!!.put(QUERY_TYPE, queryType!!.name)
-        return target
+    override fun asJSON(): JSONObject {
+        return with(super.asJSON()) {
+            put(QUERY_TYPE, queryType!!.name)
+        }
     }
 
     /**

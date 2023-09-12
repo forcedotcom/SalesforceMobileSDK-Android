@@ -95,7 +95,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
      * @param target
      * @throws JSONException
      */
-    constructor(target: JSONObject?) : super(target) {
+    constructor(target: JSONObject) : super(target) {
         maxBatchSize = Math.min(
             target!!.optInt(MAX_BATCH_SIZE, MAX_SUB_REQUESTS_COMPOSITE_API),
             MAX_SUB_REQUESTS_COMPOSITE_API
@@ -107,10 +107,10 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
      * @throws JSONException
      */
     @Throws(JSONException::class)
-    override fun asJSON(): JSONObject? {
-        val target = super.asJSON()
-        target!!.put(MAX_BATCH_SIZE, maxBatchSize)
-        return target
+    override fun asJSON(): JSONObject {
+        return with(super.asJSON()) {
+            put(MAX_BATCH_SIZE, maxBatchSize)
+        }
     }
 
     @Throws(JSONException::class, IOException::class)

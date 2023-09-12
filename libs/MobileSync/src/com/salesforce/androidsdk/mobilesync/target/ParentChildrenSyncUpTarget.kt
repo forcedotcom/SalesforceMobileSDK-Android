@@ -77,22 +77,14 @@ class ParentChildrenSyncUpTarget(
     }
 
     @Throws(JSONException::class)
-    override fun asJSON(): JSONObject? {
-        val target = super.asJSON()
-        target!!.put(ParentChildrenSyncTargetHelper.PARENT, parentInfo.asJSON())
-        target.put(ParentChildrenSyncTargetHelper.CHILDREN, childrenInfo.asJSON())
-        target.put(
-            CHILDREN_CREATE_FIELDLIST, JSONArray(
-                childrenCreateFieldlist
-            )
-        )
-        target.put(
-            CHILDREN_UPDATE_FIELDLIST, JSONArray(
-                childrenUpdateFieldlist
-            )
-        )
-        target.put(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE, relationshipType.name)
-        return target
+    override fun asJSON(): JSONObject {
+        return with(super.asJSON()) {
+            put(ParentChildrenSyncTargetHelper.PARENT, parentInfo.asJSON())
+            put(ParentChildrenSyncTargetHelper.CHILDREN, childrenInfo.asJSON())
+            put(CHILDREN_CREATE_FIELDLIST, JSONArray(childrenCreateFieldlist))
+            put(CHILDREN_UPDATE_FIELDLIST, JSONArray(childrenUpdateFieldlist))
+            put(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE, relationshipType.name)
+        }
     }
 
     override fun getDirtyRecordIdsSql(soupName: String?, idField: String?): String? {
@@ -485,7 +477,7 @@ class ParentChildrenSyncUpTarget(
         val idToLocalTimestamps = getLocalLastModifiedDates(syncManager, record)
         val idToRemoteTimestamps = fetchLastModifiedDates(syncManager, record)
         for (id in idToLocalTimestamps.keys) {
-            val localModDate = idToLocalTimestamps[id]
+            val localModDate = idToLocalTimestamps[id] ?: throw MobileSyncException("No mod date for id $id")
             val remoteTimestamp = idToRemoteTimestamps[id]
             val remoteModDate = RecordModDate(
                 remoteTimestamp,
@@ -526,7 +518,7 @@ class ParentChildrenSyncUpTarget(
             val childRecord = children.getJSONObject(i)
             val childModDate = RecordModDate(
                 JSONObjectHelper.optString(childRecord, childrenInfo.modificationDateFieldName),
-                (isLocallyDeleted(childRecord) || isParentDeleted) && relationshipType == RelationshipType.MASTER_DETAIL
+                isLocallyDeleted(childRecord) || isParentDeleted && relationshipType == RelationshipType.MASTER_DETAIL
             )
             idToLocalTimestamps[childRecord.getString(childrenInfo.idFieldName)] = childModDate
         }

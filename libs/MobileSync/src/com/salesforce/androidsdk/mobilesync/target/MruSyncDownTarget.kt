@@ -79,11 +79,11 @@ class MruSyncDownTarget : SyncDownTarget {
      * @throws JSONException
      */
     @Throws(JSONException::class)
-    override fun asJSON(): JSONObject? {
-        val target = super.asJSON()
-        target!!.put(FIELDLIST, JSONArray(fieldlist))
-        target.put(SOBJECT_TYPE, objectType)
-        return target
+    override fun asJSON(): JSONObject {
+        return with(super.asJSON()) {
+            put(FIELDLIST, JSONArray(fieldlist))
+            put(SOBJECT_TYPE, objectType)
+        }
     }
 
     @Throws(IOException::class, JSONException::class)

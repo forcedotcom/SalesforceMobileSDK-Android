@@ -102,15 +102,15 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
      * @throws JSONException
      */
     @Throws(JSONException::class)
-    override fun asJSON(): JSONObject? {
-        val target = super.asJSON()
-        target!!.put(ParentChildrenSyncTargetHelper.PARENT, parentInfo!!.asJSON())
-        target.put(PARENT_FIELDLIST, JSONArray(parentFieldlist))
-        target.put(PARENT_SOQL_FILTER, parentSoqlFilter)
-        target.put(ParentChildrenSyncTargetHelper.CHILDREN, childrenInfo!!.asJSON())
-        target.put(CHILDREN_FIELDLIST, JSONArray(childrenFieldlist))
-        target.put(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE, relationshipType!!.name)
-        return target
+    override fun asJSON(): JSONObject {
+        return with(super.asJSON()) {
+            put(ParentChildrenSyncTargetHelper.PARENT, parentInfo!!.asJSON())
+            put(PARENT_FIELDLIST, JSONArray(parentFieldlist))
+            put(PARENT_SOQL_FILTER, parentSoqlFilter)
+            put(ParentChildrenSyncTargetHelper.CHILDREN, childrenInfo!!.asJSON())
+            put(CHILDREN_FIELDLIST, JSONArray(childrenFieldlist))
+            put(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE, relationshipType!!.name)
+        }
     }
 
     // This is for clean re-sync ghosts

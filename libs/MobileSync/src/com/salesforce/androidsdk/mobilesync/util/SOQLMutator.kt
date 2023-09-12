@@ -34,8 +34,8 @@ import java.util.Arrays
  * Better than doing regexp maybe it's time to start using a proper parser (e.g. https://github.com/mulesoft/salesforce-soql-parser)
  *
  */
-class SOQLMutator(private val originalSoql: String?) {
-    private val clauses: MutableMap<String, String?> = HashMap()
+class SOQLMutator(private val originalSoql: String) {
+    private val clauses: MutableMap<String, String> = HashMap()
     private val clausesWithoutSubqueries: MutableMap<String, String> = HashMap()
 
     /**

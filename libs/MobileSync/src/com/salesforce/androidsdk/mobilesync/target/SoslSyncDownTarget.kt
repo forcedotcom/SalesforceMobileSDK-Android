@@ -66,10 +66,10 @@ class SoslSyncDownTarget : SyncDownTarget {
      * @throws JSONException
      */
     @Throws(JSONException::class)
-    override fun asJSON(): JSONObject? {
-        val target = super.asJSON()
-        target!!.put(QUERY, query)
-        return target
+    override fun asJSON(): JSONObject {
+        return with(super.asJSON()) {
+            put(QUERY, query)
+        }
     }
 
     @Throws(IOException::class, JSONException::class)

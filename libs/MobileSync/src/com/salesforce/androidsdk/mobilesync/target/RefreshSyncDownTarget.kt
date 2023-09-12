@@ -108,13 +108,13 @@ class RefreshSyncDownTarget internal constructor(
      * @throws JSONException
      */
     @Throws(JSONException::class)
-    override fun asJSON(): JSONObject? {
-        val target = super.asJSON()
-        target!!.put(FIELDLIST, JSONArray(fieldlist))
-        target.put(SOBJECT_TYPE, objectType)
-        target.put(SOUP_NAME, soupName)
-        target.put(COUNT_IDS_PER_SOQL, countIdsPerSoql)
-        return target
+    override fun asJSON(): JSONObject {
+        return with(asJSON()) {
+            put(FIELDLIST, JSONArray(fieldlist))
+            put(SOBJECT_TYPE, objectType)
+            put(SOUP_NAME, soupName)
+            put(COUNT_IDS_PER_SOQL, countIdsPerSoql)
+        }
     }
 
     @Throws(IOException::class, JSONException::class)

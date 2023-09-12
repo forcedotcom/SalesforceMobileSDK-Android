@@ -41,21 +41,21 @@ import com.salesforce.androidsdk.util.EventsObservable
  * SDK Manager for all native applications that use MobileSync.
  */
 open class MobileSyncSDKManager
-/**
- * Protected constructor.
- *
- * @param context Application context.
- * @param mainActivity Activity that should be launched after the login flow.
- * @param loginActivity Login activity.
- */
-protected constructor(
-    context: Context?, mainActivity: Class<out Activity?>?,
-    loginActivity: Class<out Activity?>?
-) : SmartStoreSDKManager(context, mainActivity, loginActivity) {
-    override fun cleanUp(userAccount: UserAccount) {
-        SyncManager.Companion.reset(userAccount)
-        super.cleanUp(userAccount)
-    }
+    /**
+     * Protected constructor.
+     *
+     * @param context Application context.
+     * @param mainActivity Activity that should be launched after the login flow.
+     * @param loginActivity Login activity.
+     */
+    protected constructor(
+        context: Context, mainActivity: Class<out Activity>,
+        loginActivity: Class<out Activity>
+    ) : SmartStoreSDKManager(context, mainActivity, loginActivity) {
+        override fun cleanUp(userAccount: UserAccount) {
+            SyncManager.reset(userAccount)
+            super.cleanUp(userAccount)
+        }
 
     /**
      * Setup global syncs using config found in res/raw/globalsyncs.json
@@ -88,15 +88,15 @@ protected constructor(
     companion object {
         private const val TAG = "MobileSyncSDKManager"
         private fun init(
-            context: Context, mainActivity: Class<out Activity?>,
-            loginActivity: Class<out Activity?>
+            context: Context, mainActivity: Class<out Activity>,
+            loginActivity: Class<out Activity>
         ) {
             if (INSTANCE == null) {
                 INSTANCE = MobileSyncSDKManager(context, mainActivity, loginActivity)
             }
 
             // Upgrade to the latest version.
-            MobileSyncUpgradeManager.Companion.getInstance().upgrade()
+            MobileSyncUpgradeManager.instance.upgrade()
             initInternal(context)
             EventsObservable.get().notifyEvent(EventsObservable.EventType.AppCreateComplete)
         }
@@ -109,7 +109,7 @@ protected constructor(
          * @param context Application context.
          * @param mainActivity Activity that should be launched after the login flow.
          */
-        fun initNative(context: Context, mainActivity: Class<out Activity?>) {
+        fun initNative(context: Context, mainActivity: Class<out Activity>) {
             init(context, mainActivity, LoginActivity::class.java)
         }
 
@@ -123,8 +123,8 @@ protected constructor(
          * @param loginActivity Login activity.
          */
         fun initNative(
-            context: Context, mainActivity: Class<out Activity?>,
-            loginActivity: Class<out Activity?>
+            context: Context, mainActivity: Class<out Activity>,
+            loginActivity: Class<out Activity>
         ) {
             init(context, mainActivity, loginActivity)
         }
@@ -134,12 +134,9 @@ protected constructor(
          *
          * @return Singleton instance of MobileSyncSDKManager.
          */
-        @kotlin.jvm.JvmStatic
-        val instance: MobileSyncSDKManager
-            get() = if (INSTANCE != null) {
-                INSTANCE as MobileSyncSDKManager
-            } else {
-                throw RuntimeException("Applications need to call MobileSyncSDKManager.init() first.")
-            }
+        @JvmStatic
+        open val instance: MobileSyncSDKManager
+            get() = INSTANCE as? MobileSyncSDKManager
+                ?: throw RuntimeException("Applications need to call MobileSyncSDKManager.init() first.")
     }
 }

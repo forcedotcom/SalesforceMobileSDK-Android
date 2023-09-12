@@ -85,9 +85,9 @@ open class SyncUpTask(syncManager: SyncManager, sync: SyncState, callback: SyncU
 
     @Throws(IOException::class, JSONException::class)
     protected fun shouldSyncUpRecord(
-        target: SyncUpTarget?,
-        record: JSONObject?,
-        options: SyncOptions?
+        target: SyncUpTarget,
+        record: JSONObject,
+        options: SyncOptions
     ): Boolean {
         /*
          * Checks if we are attempting to sync up a record that has been updated
@@ -95,8 +95,8 @@ open class SyncUpTask(syncManager: SyncManager, sync: SyncState, callback: SyncU
          * passed in tells us to leave the record alone under these
          * circumstances, we will do nothing and return here.
          */
-        return if (options.getMergeMode() == MergeMode.LEAVE_IF_CHANGED &&
-            !target!!.isNewerThanServer(syncManager, record)
+        return if (options.mergeMode == MergeMode.LEAVE_IF_CHANGED &&
+            !target.isNewerThanServer(syncManager, record)
         ) {
 
             // Nothing to do for this record

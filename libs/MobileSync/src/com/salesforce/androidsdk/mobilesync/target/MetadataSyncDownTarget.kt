@@ -75,10 +75,10 @@ class MetadataSyncDownTarget : SyncDownTarget {
      * @throws JSONException Exception thrown.
      */
     @Throws(JSONException::class)
-    override fun asJSON(): JSONObject? {
-        val target = super.asJSON()
-        target!!.put(SOBJECT_TYPE, objectType)
-        return target
+    override fun asJSON(): JSONObject {
+        return with(super.asJSON()) {
+            put(SOBJECT_TYPE, objectType)
+        }
     }
 
     @Throws(IOException::class, JSONException::class)

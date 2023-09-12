@@ -68,8 +68,8 @@ abstract class SyncTask(// Fields
             runSync()
             updateSync(sync, SyncState.Status.DONE, 100, callback)
         } catch (se: SyncManagerStoppedException) {
-            MobileSyncLogger.d(TAG, "Sync stopped", se)
-            // Update status to failed
+            MobileSyncLogger.d(TAG, "Sync stopped")
+            // Update status to stopped
             updateSync(sync, SyncState.Status.STOPPED, UNCHANGED, callback)
         } catch (re: RefreshTokenRevokedException) {
             MobileSyncLogger.e(TAG, "Exception thrown running sync", re)

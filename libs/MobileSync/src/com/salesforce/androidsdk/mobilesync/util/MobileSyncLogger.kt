@@ -39,8 +39,6 @@ import java.io.StringWriter
 /**
  * A simple logger util class for the MobileSync library. This class simply acts
  * as a wrapper around SalesforceLogger specific to the MobileSync library.
- *
- * @author bhariharan
  */
 object MobileSyncLogger {
     private const val COMPONENT_NAME = "MobileSync"
@@ -73,10 +71,10 @@ object MobileSyncLogger {
      * @param msg Log message.
      * @param obj Object to be logged.
      */
-    fun e(tag: String?, msg: String, obj: Any?) {
-        val objStr = toString(obj)
-        e(tag, "$msg: $objStr")
-    }
+//    fun e(tag: String?, msg: String, obj: Any?) {
+//        val objStr = toString(obj)
+//        e(tag, "$msg: $objStr")
+//    }
 
     /**
      * Logs a warning log line.
@@ -158,17 +156,6 @@ object MobileSyncLogger {
      * Logs a debug log line.
      *
      * @param tag Log tag.
-     * @param message Log message.
-     * @param e Exception to be logged.
-     */
-    fun d(tag: String?, message: String?, e: Throwable?) {
-        logger.d(tag, message, e)
-    }
-
-    /**
-     * Logs a debug log line.
-     *
-     * @param tag Log tag.
      * @param msg Log message.
      * @param obj Object to be logged.
      */
@@ -215,56 +202,65 @@ object MobileSyncLogger {
      *
      * @param level Log level.
      */
-    @kotlin.jvm.JvmStatic
+    @JvmStatic
     fun setLogLevel(level: SalesforceLogger.Level?) {
         logger.logLevel = level
     }
 
     private val logger: SalesforceLogger
-        private get() = SalesforceLogger.getLogger(
+        get() = SalesforceLogger.getLogger(
             COMPONENT_NAME,
             SalesforceSDKManager.getInstance().appContext
         )
 
     private fun toString(obj: Any?): String {
-        return if (obj == null) {
-            "null"
-        } else if (obj is Throwable) {
-            val sw = StringWriter()
-            val pw = PrintWriter(sw)
-            val err = obj
-            pw.print(err.message)
-            err.printStackTrace(pw)
-            sw.toString()
-        } else if (obj is RestResponse) {
-            val response = obj
-            try {
-                toString(response.asJSONObject())
-            } catch (e: Exception) {
+        return when (obj) {
+            null -> {
+                "null"
+            }
+            is Throwable -> {
+                val sw = StringWriter()
+                val pw = PrintWriter(sw)
+                pw.print(obj.message)
+                obj.printStackTrace(pw)
+                sw.toString()
+            }
+
+            is RestResponse -> {
                 try {
-                    toString(response.asJSONArray())
-                } catch (e1: Exception) {
+                    toString(obj.asJSONObject())
+                } catch (e: Exception) {
                     try {
-                        response.asString()
-                    } catch (e2: IOException) {
-                        obj.toString()
+                        toString(obj.asJSONArray())
+                    } catch (e1: Exception) {
+                        try {
+                            obj.asString()
+                        } catch (e2: IOException) {
+                            obj.toString()
+                        }
                     }
                 }
             }
-        } else if (obj is JSONObject) {
-            try {
-                obj.toString(2)
-            } catch (e: JSONException) {
+
+            is JSONObject -> {
+                try {
+                    obj.toString(2)
+                } catch (e: JSONException) {
+                    obj.toString()
+                }
+            }
+
+            is JSONArray -> {
+                try {
+                    obj.toString(2)
+                } catch (e: JSONException) {
+                    obj.toString()
+                }
+            }
+
+            else -> {
                 obj.toString()
             }
-        } else if (obj is JSONArray) {
-            try {
-                obj.toString(2)
-            } catch (e: JSONException) {
-                obj.toString()
-            }
-        } else {
-            obj.toString()
         }
     }
 }

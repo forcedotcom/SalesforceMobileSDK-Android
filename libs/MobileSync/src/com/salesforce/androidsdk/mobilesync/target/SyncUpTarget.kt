@@ -108,8 +108,8 @@ open class SyncUpTarget : SyncTarget {
      * @param target
      * @throws JSONException
      */
-    constructor(target: JSONObject?) : super(target) {
-        createFieldlist = JSONObjectHelper.toList(target!!.optJSONArray(CREATE_FIELDLIST))
+    constructor(target: JSONObject) : super(target) {
+        createFieldlist = JSONObjectHelper.toList(target.optJSONArray(CREATE_FIELDLIST))
         updateFieldlist = JSONObjectHelper.toList(target.optJSONArray(UPDATE_FIELDLIST))
         externalIdFieldName = JSONObjectHelper.optString(target, EXTERNAL_ID_FIELD_NAME)
     }
@@ -119,12 +119,13 @@ open class SyncUpTarget : SyncTarget {
      * @throws JSONException
      */
     @Throws(JSONException::class)
-    override fun asJSON(): JSONObject? {
-        val target = super.asJSON()
-        if (createFieldlist != null) target!!.put(CREATE_FIELDLIST, JSONArray(createFieldlist))
-        if (updateFieldlist != null) target!!.put(UPDATE_FIELDLIST, JSONArray(updateFieldlist))
-        if (externalIdFieldName != null) target!!.put(EXTERNAL_ID_FIELD_NAME, externalIdFieldName)
-        return target
+    override fun asJSON(): JSONObject {
+        return with (super.asJSON()) {
+            if (createFieldlist != null) put(CREATE_FIELDLIST, JSONArray(createFieldlist))
+            if (updateFieldlist != null) put(UPDATE_FIELDLIST, JSONArray(updateFieldlist))
+            if (externalIdFieldName != null) put(EXTERNAL_ID_FIELD_NAME, externalIdFieldName)
+            this
+        }
     }
 
     /**
@@ -338,7 +339,7 @@ open class SyncUpTarget : SyncTarget {
         val request =
             RestRequest.getRequestForUpdate(syncManager.apiVersion, objectType, objectId, fields)
         val response = syncManager.sendSyncWithMobileSyncUserAgent(request)
-        if (!response!!.isSuccess) {
+        if (!response.isSuccess) {
             lastError = response.asString()
         }
         return response.statusCode
@@ -364,7 +365,7 @@ open class SyncUpTarget : SyncTarget {
         )
         val lastModResponse = syncManager.sendSyncWithMobileSyncUserAgent(lastModRequest)
         return RecordModDate(
-            if (lastModResponse!!.isSuccess) lastModResponse.asJSONObject().getString(
+            if (lastModResponse.isSuccess) lastModResponse.asJSONObject().getString(
                 modificationDateFieldName
             ) else null,
             lastModResponse.statusCode == HttpURLConnection.HTTP_NOT_FOUND
@@ -409,7 +410,7 @@ open class SyncUpTarget : SyncTarget {
                         )
                     )
                     val response = syncManager.sendSyncWithMobileSyncUserAgent(request)
-                    val responseAsArray = response!!.asJSONArray()
+                    val responseAsArray = response.asJSONArray()
                     for (j in 0 until responseAsArray.length()) {
                         val storeId = batchStoreIds[j]
                         val lastModResponse =
@@ -441,8 +442,8 @@ open class SyncUpTarget : SyncTarget {
      * @throws IOException
      */
     @Throws(JSONException::class, IOException::class)
-    open fun isNewerThanServer(syncManager: SyncManager, record: JSONObject?): Boolean {
-        if (isLocallyCreated(record!!)) {
+    open fun isNewerThanServer(syncManager: SyncManager, record: JSONObject): Boolean {
+        if (isLocallyCreated(record)) {
             return true
         }
         val localModDate = RecordModDate(
@@ -485,10 +486,10 @@ open class SyncUpTarget : SyncTarget {
      * @return
      */
     protected fun isNewerThanServer(
-        localModDate: RecordModDate?,
+        localModDate: RecordModDate,
         remoteModDate: RecordModDate
     ): Boolean {
-        return localModDate!!.timestamp != null && remoteModDate.timestamp != null && localModDate.timestamp.compareTo(
+        return localModDate.timestamp != null && remoteModDate.timestamp != null && localModDate.timestamp.compareTo(
             remoteModDate.timestamp
         ) >= 0 || localModDate.isDeleted && remoteModDate.isDeleted || localModDate.timestamp == null
     }

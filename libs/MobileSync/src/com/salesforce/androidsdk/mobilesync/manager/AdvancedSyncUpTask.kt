@@ -63,9 +63,9 @@ class AdvancedSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: Sy
         // Syncing up records
         for (i in 0 until totalSize) {
             checkIfStopRequested()
-            val record = dirtyRecords!![i]
-            val recordId = record!!.getString(SmartStore.SOUP_ENTRY_ID)
-            if (java.lang.Boolean.TRUE == recordIdToShouldSyncUp!![recordId]) {
+            val record = dirtyRecords[i]
+            val recordId = record.getString(SmartStore.SOUP_ENTRY_ID)
+            if (java.lang.Boolean.TRUE == recordIdToShouldSyncUp[recordId]) {
                 batch.add(record)
             }
 
@@ -74,8 +74,8 @@ class AdvancedSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: Sy
                 (target as AdvancedSyncUpTarget).syncUpRecords(
                     syncManager,
                     batch,
-                    options.fieldlist,
-                    options.mergeMode,
+                    options?.fieldlist,
+                    options?.mergeMode,
                     sync.soupName
                 )
                 batch.clear()
@@ -92,18 +92,18 @@ class AdvancedSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: Sy
     @Throws(IOException::class, JSONException::class)
     protected fun shouldSyncUpRecords(
         syncManager: SyncManager,
-        target: SyncUpTarget?,
-        records: List<JSONObject?>?,
+        target: SyncUpTarget,
+        records: List<JSONObject?>,
         options: SyncOptions?
-    ): Map<String?, Boolean?>? {
-        var recordIdToShouldSyncUp: MutableMap<String?, Boolean?>? = HashMap()
-        if (options.getMergeMode() == MergeMode.OVERWRITE) {
-            for (record in records!!) {
-                val recordId = record!!.getString(SmartStore.SOUP_ENTRY_ID)
-                recordIdToShouldSyncUp!![recordId] = true
+    ): Map<String, Boolean> {
+        var recordIdToShouldSyncUp: MutableMap<String, Boolean> = HashMap()
+        if (options?.mergeMode == MergeMode.OVERWRITE) {
+            for (record in records) {
+                val recordId = record?.getString(SmartStore.SOUP_ENTRY_ID) ?: throw SyncManager.MobileSyncException("No id found on record")
+                recordIdToShouldSyncUp[recordId] = true
             }
         } else {
-            recordIdToShouldSyncUp = target!!.areNewerThanServer(syncManager, records)
+            recordIdToShouldSyncUp = target.areNewerThanServer(syncManager, records)
         }
         return recordIdToShouldSyncUp
     }

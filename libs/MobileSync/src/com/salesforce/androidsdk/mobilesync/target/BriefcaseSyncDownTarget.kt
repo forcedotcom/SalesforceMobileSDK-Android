@@ -73,20 +73,19 @@ class BriefcaseSyncDownTarget internal constructor(
     constructor(target: JSONObject) : this(
         BriefcaseObjectInfo.Companion.fromJSONArray(target.getJSONArray(INFOS)),
         target.optInt(COUNT_IDS_PER_RETRIEVE, MAX_COUNT_IDS_PER_RETRIEVE)
-    ) {
-    }
+    )
 
     /**
      * Construct BriefcaseSyncDownTarget
      *
      * @param infos
      */
-    constructor(infos: List<BriefcaseObjectInfo>) : this(infos, MAX_COUNT_IDS_PER_RETRIEVE) {}
+    constructor(infos: List<BriefcaseObjectInfo>) : this(infos, MAX_COUNT_IDS_PER_RETRIEVE)
 
     init {
         queryType = QueryType.briefcase
         this.countIdsPerRetrieve = Math.min(countIdsPerRetrieve, MAX_COUNT_IDS_PER_RETRIEVE)
-        MobileSyncSDKManager.Companion.getInstance()
+        MobileSyncSDKManager.instance
             .registerUsedAppFeature(Features.FEATURE_BRIEFCASE)
 
         // Build infosMap
@@ -101,19 +100,19 @@ class BriefcaseSyncDownTarget internal constructor(
      * @throws JSONException
      */
     @Throws(JSONException::class)
-    override fun asJSON(): JSONObject? {
-        val target = super.asJSON()
-        val infosJson = JSONArray()
-        for (info in infos) {
-            infosJson.put(info.asJSON())
+    override fun asJSON(): JSONObject {
+        return with(super.asJSON()) {
+            val infosJson = JSONArray()
+            for (info in infos) {
+                infosJson.put(info.asJSON())
+            }
+            put(INFOS, infosJson)
+            put(COUNT_IDS_PER_RETRIEVE, countIdsPerRetrieve)
         }
-        target!!.put(INFOS, infosJson)
-        target.put(COUNT_IDS_PER_RETRIEVE, countIdsPerRetrieve)
-        return target
     }
 
     @Throws(IOException::class, JSONException::class)
-    override fun startFetch(syncManager: SyncManager, maxTimeStamp: Long): JSONArray? {
+    override fun startFetch(syncManager: SyncManager, maxTimeStamp: Long): JSONArray {
         this.maxTimeStamp = maxTimeStamp
         relayToken = null
         totalSize = -1
@@ -162,7 +161,7 @@ class BriefcaseSyncDownTarget internal constructor(
     }
 
     @Throws(JSONException::class)
-    override fun getIdsToSkip(syncManager: SyncManager?, soupName: String?): Set<String?>? {
+    override fun getIdsToSkip(syncManager: SyncManager?, soupName: String?): Set<String?> {
         val dirtyRecordIds: MutableSet<String?> = HashSet()
         // Aggregating ids of dirty records across all the soups
         for (info in infos) {
@@ -297,7 +296,7 @@ class BriefcaseSyncDownTarget internal constructor(
             fieldlist
         )
         val response = syncManager.sendSyncWithMobileSyncUserAgent(request)
-        return response!!.asJSONArray()
+        return response.asJSONArray()
     }
 
     /**
@@ -348,12 +347,8 @@ class BriefcaseSyncDownTarget internal constructor(
 
     @Throws(JSONException::class)
     protected fun getObjectType(record: JSONObject): String? {
-        val attributes = record.getJSONObject(Constants.ATTRIBUTES)
-        return if (attributes != null) {
-            attributes.getString(Constants.LTYPE)
-        } else {
-            null
-        }
+        val attributes = record.optJSONObject(Constants.ATTRIBUTES)
+        return attributes?.getString(Constants.LTYPE)
     }
 
     @Throws(JSONException::class)
@@ -372,7 +367,7 @@ class BriefcaseSyncDownTarget internal constructor(
     }
 }
 
-internal class TypedId(var sobjectType: String?, var id: String)
+class TypedId(var sobjectType: String?, var id: String)
 class TypedIds @JvmOverloads constructor(var listTypedIds: MutableList<TypedId> = ArrayList()) {
     fun add(objectType: String?, id: String) {
         listTypedIds.add(TypedId(objectType, id))

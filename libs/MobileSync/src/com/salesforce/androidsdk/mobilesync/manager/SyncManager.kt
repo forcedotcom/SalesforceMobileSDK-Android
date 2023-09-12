@@ -50,7 +50,7 @@ import java.util.concurrent.Executors
 /**
  * Sync Manager
  */
-class SyncManager private constructor(smartStore: SmartStore?, restClient: RestClient?) {
+class SyncManager private constructor(smartStore: SmartStore, restClient: RestClient?) {
     // Keeping track of active syncs (could be waiting for thread or running on a thread)
     private val activeSyncs: MutableMap<Long?, SyncTask> = HashMap()
 
@@ -64,7 +64,7 @@ class SyncManager private constructor(smartStore: SmartStore?, restClient: RestC
      * @return SmartStore used by this SyncManager
      */
     // Backing smartstore
-    val smartStore: SmartStore?
+    val smartStore: SmartStore
     /**
      * @return rest client in use
      */
@@ -246,7 +246,7 @@ class SyncManager private constructor(smartStore: SmartStore?, restClient: RestC
      */
     @Throws(JSONException::class)
     fun syncDown(
-        target: SyncDownTarget?,
+        target: SyncDownTarget,
         soupName: String?,
         callback: SyncUpdateCallback?
     ): SyncState {
@@ -266,8 +266,8 @@ class SyncManager private constructor(smartStore: SmartStore?, restClient: RestC
      */
     @Throws(JSONException::class)
     fun syncDown(
-        target: SyncDownTarget?,
-        options: SyncOptions?,
+        target: SyncDownTarget,
+        options: SyncOptions,
         soupName: String?,
         callback: SyncUpdateCallback?
     ): SyncState {
@@ -287,8 +287,8 @@ class SyncManager private constructor(smartStore: SmartStore?, restClient: RestC
      */
     @Throws(JSONException::class)
     fun syncDown(
-        target: SyncDownTarget?,
-        options: SyncOptions?,
+        target: SyncDownTarget,
+        options: SyncOptions,
         soupName: String?,
         syncName: String?,
         callback: SyncUpdateCallback?
@@ -311,12 +311,12 @@ class SyncManager private constructor(smartStore: SmartStore?, restClient: RestC
      */
     @Throws(JSONException::class)
     fun createSyncDown(
-        target: SyncDownTarget?,
-        options: SyncOptions?,
+        target: SyncDownTarget,
+        options: SyncOptions,
         soupName: String?,
         syncName: String?
     ): SyncState {
-        return SyncState.Companion.createSyncDown(smartStore, target, options, soupName, syncName)
+        return SyncState.createSyncDown(smartStore, target, options, soupName, syncName)
     }
 
     /**
@@ -396,7 +396,7 @@ class SyncManager private constructor(smartStore: SmartStore?, restClient: RestC
     @Throws(JSONException::class)
     fun syncUp(
         target: SyncUpTarget,
-        options: SyncOptions?,
+        options: SyncOptions,
         soupName: String?,
         callback: SyncUpdateCallback?
     ): SyncState {
@@ -416,7 +416,7 @@ class SyncManager private constructor(smartStore: SmartStore?, restClient: RestC
     @Throws(JSONException::class)
     fun syncUp(
         target: SyncUpTarget,
-        options: SyncOptions?,
+        options: SyncOptions,
         soupName: String?,
         syncName: String?,
         callback: SyncUpdateCallback?
@@ -440,11 +440,11 @@ class SyncManager private constructor(smartStore: SmartStore?, restClient: RestC
     @Throws(JSONException::class)
     fun createSyncUp(
         target: SyncUpTarget,
-        options: SyncOptions?,
+        options: SyncOptions,
         soupName: String?,
         syncName: String?
     ): SyncState {
-        return SyncState.Companion.createSyncUp(smartStore, target, options, soupName, syncName)
+        return SyncState.createSyncUp(smartStore, target, options, soupName, syncName)
     }
     /**
      * Removes local copies of records that have been deleted on the server
@@ -660,16 +660,8 @@ class SyncManager private constructor(smartStore: SmartStore?, restClient: RestC
             communityId: String?,
             smartStore: SmartStore?
         ): SyncManager {
-            var account = account
-            var smartStore = smartStore
-            if (account == null) {
-                account = MobileSyncSDKManager.Companion.getInstance().getUserAccountManager()
-                    .getCachedCurrentUser()
-            }
-            if (smartStore == null) {
-                smartStore =
-                    MobileSyncSDKManager.Companion.getInstance().getSmartStore(account, communityId)
-            }
+            val account = account ?: MobileSyncSDKManager.instance.getUserAccountManager().getCachedCurrentUser()
+            val smartStore = smartStore ?: MobileSyncSDKManager.instance.getSmartStore(account, communityId)
             val uniqueId = ((if (account != null) account.userId else "") + ":"
                     + smartStore.database.path)
             var instance = INSTANCES[uniqueId]

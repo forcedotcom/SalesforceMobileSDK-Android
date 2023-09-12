@@ -103,7 +103,7 @@ class SyncsConfig private constructor(str: String?) {
      * @return
      */
     fun hasSyncs(): Boolean {
-        return syncConfigs != null && syncConfigs.length() > 0
+        return syncConfigs?.let { it.length() > 0 } == true
     }
 
     /**
@@ -112,11 +112,8 @@ class SyncsConfig private constructor(str: String?) {
      * @param store
      */
     fun createSyncs(store: SmartStore?) {
-        if (syncConfigs == null) {
-            MobileSyncLogger.d(TAG, "No syncs config available")
-            return
-        }
-        val syncManager: SyncManager = SyncManager.Companion.getInstance(null, null, store)
+        val syncConfigs = syncConfigs ?: return
+        val syncManager: SyncManager = SyncManager.getInstance(null, null, store)
         for (i in 0 until syncConfigs.length()) {
             try {
                 val syncConfig = syncConfigs.getJSONObject(i)
@@ -128,7 +125,7 @@ class SyncsConfig private constructor(str: String?) {
                     continue
                 }
                 val syncType = SyncState.Type.valueOf(syncConfig.getString(SYNC_TYPE))
-                val options: SyncOptions = SyncOptions.Companion.fromJSON(
+                val options: SyncOptions? = SyncOptions.fromJSON(
                     syncConfig.getJSONObject(
                         OPTIONS
                     )
@@ -145,7 +142,7 @@ class SyncsConfig private constructor(str: String?) {
                     )
 
                     SyncState.Type.syncUp -> syncManager.createSyncUp(
-                        SyncUpTarget.Companion.fromJSON(
+                        SyncUpTarget.fromJSON(
                             syncConfig.getJSONObject(
                                 TARGET
                             )

@@ -123,14 +123,14 @@ class LayoutSyncDownTarget : SyncDownTarget {
      * @throws JSONException Exception thrown.
      */
     @Throws(JSONException::class)
-    override fun asJSON(): JSONObject? {
-        val target = super.asJSON()
-        target!!.put(SOBJECT_TYPE, objectAPIName)
-        target.put(FORM_FACTOR, formFactor)
-        target.put(LAYOUT_TYPE, layoutType)
-        target.put(MODE, mode)
-        target.put(RECORD_TYPE_ID, recordTypeId)
-        return target
+    override fun asJSON(): JSONObject {
+        return with(super.asJSON()) {
+            put(SOBJECT_TYPE, objectAPIName)
+            put(FORM_FACTOR, formFactor)
+            put(LAYOUT_TYPE, layoutType)
+            put(MODE, mode)
+            put(RECORD_TYPE_ID, recordTypeId)
+        }
     }
 
     @Throws(IOException::class, JSONException::class)

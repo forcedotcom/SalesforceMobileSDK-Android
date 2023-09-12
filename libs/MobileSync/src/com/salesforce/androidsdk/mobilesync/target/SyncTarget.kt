@@ -84,12 +84,12 @@ abstract class SyncTarget @JvmOverloads constructor(
      * @throws JSONException
      */
     @Throws(JSONException::class)
-    open fun asJSON(): JSONObject? {
-        val target = JSONObject()
-        target.put(ANDROID_IMPL, javaClass.name)
-        target.put(ID_FIELD_NAME, idFieldName)
-        target.put(MODIFICATION_DATE_FIELD_NAME, modificationDateFieldName)
-        return target
+    open fun asJSON(): JSONObject {
+        return with(JSONObject()) {
+            put(ANDROID_IMPL, javaClass.name)
+            put(ID_FIELD_NAME, idFieldName)
+            put(MODIFICATION_DATE_FIELD_NAME, modificationDateFieldName)
+        }
     }
 
     /**

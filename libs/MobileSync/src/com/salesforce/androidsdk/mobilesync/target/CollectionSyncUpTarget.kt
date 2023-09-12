@@ -126,7 +126,7 @@ class CollectionSyncUpTarget : BatchSyncUpTarget {
                 JSONObjectHelper.optString(record, modificationDateFieldName),
                 isLocallyDeleted(record)
             )
-            val remoteModDate = recordIdToRemoteModDate!![storeId]
+            val remoteModDate = recordIdToRemoteModDate[storeId]
             storeIdToNewerThanServer[storeId] = isNewerThanServer(localModDate, remoteModDate!!)
         }
         return storeIdToNewerThanServer

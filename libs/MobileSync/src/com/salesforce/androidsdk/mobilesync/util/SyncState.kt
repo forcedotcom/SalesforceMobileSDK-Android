@@ -41,28 +41,31 @@ import org.json.JSONObject
 /**
  * State of a sync-down or sync-up
  */
-class SyncState {
-    var id: Long = 0
-        private set
-    var type: Type? = null
-        private set
-    var name: String? = null
-        private set
-    var target: SyncTarget? = null
-        private set
-    var options: SyncOptions? = null
-        private set
-    var soupName: String? = null
-        private set
+class SyncState(
+    val id: Long,
+    val type: Type,
+    val name: String?,
+    val target: SyncTarget,
+    val options: SyncOptions,
+    val soupName: String
+) {
     var status: Status? = null
-        private set
-    private var progress = 0
-    private var totalSize = 0
-    private var maxTimeStamp: Long = 0
+        set(status) {
+            if (field != Status.RUNNING && status == Status.RUNNING) {
+                startTime = System.currentTimeMillis()
+            }
+            if (field == Status.RUNNING && (status == Status.DONE || status == Status.FAILED || status == Status.STOPPED)) {
+                endTime = System.currentTimeMillis()
+            }
+            field = status
+        }
+    internal var progress = 0
+    internal var totalSize = 0
+    internal var maxTimeStamp: Long = 0
 
     // Start and end time in milliseconds since 1970
-    private var startTime: Long = 0
-    private var endTime: Long = 0
+    internal var startTime: Long = 0
+    internal var endTime: Long = 0
 
     //Error return from SFDC API
     var error: String? = null
@@ -114,19 +117,7 @@ class SyncState {
     }
 
     val mergeMode: MergeMode?
-        get() = if (options != null && options.getMergeMode() != null) options.getMergeMode() else MergeMode.OVERWRITE
-
-    fun getProgress(): Int {
-        return progress
-    }
-
-    fun getTotalSize(): Int {
-        return totalSize
-    }
-
-    fun getMaxTimeStamp(): Long {
-        return maxTimeStamp
-    }
+        get() = if (options != null && options?.mergeMode != null) options?.mergeMode else MergeMode.OVERWRITE
 
     fun getStartTime(): Double {
         return startTime.toDouble()
@@ -134,28 +125,6 @@ class SyncState {
 
     fun getEndTime(): Double {
         return endTime.toDouble()
-    }
-
-    fun setMaxTimeStamp(maxTimeStamp: Long) {
-        this.maxTimeStamp = maxTimeStamp
-    }
-
-    fun setProgress(progress: Int) {
-        this.progress = progress
-    }
-
-    fun setTotalSize(totalSize: Int) {
-        this.totalSize = totalSize
-    }
-
-    fun setStatus(status: Status) {
-        if (this.status != Status.RUNNING && status == Status.RUNNING) {
-            startTime = System.currentTimeMillis()
-        }
-        if (this.status == Status.RUNNING && (status == Status.DONE || status == Status.FAILED || status) == Status.STOPPED) {
-            endTime = System.currentTimeMillis()
-        }
-        this.status = status
     }
 
     val isDone: Boolean
@@ -219,7 +188,9 @@ class SyncState {
          */
         @kotlin.jvm.JvmStatic
         fun setupSyncsSoupIfNeeded(store: SmartStore?) {
-            if (store!!.hasSoup(SYNCS_SOUP) && store.getSoupIndexSpecs(SYNCS_SOUP).size == 3) {
+            if (store == null) return
+
+            if (store.hasSoup(SYNCS_SOUP) && store.getSoupIndexSpecs(SYNCS_SOUP).size == 3) {
                 return
             }
             val indexSpecs = arrayOf(
@@ -251,7 +222,7 @@ class SyncState {
             try {
                 val syncs = getSyncsWithStatus(store, Status.RUNNING)
                 for (sync in syncs) {
-                    sync.setStatus(Status.STOPPED)
+                    sync.status = Status.STOPPED
                     sync.save(store)
                 }
             } catch (e: JSONException) {
@@ -300,33 +271,33 @@ class SyncState {
         @kotlin.jvm.JvmStatic
         @Throws(JSONException::class)
         fun createSyncDown(
-            store: SmartStore?,
-            target: SyncDownTarget?,
-            options: SyncOptions?,
+            store: SmartStore,
+            target: SyncDownTarget,
+            options: SyncOptions,
             soupName: String?,
             name: String?
         ): SyncState {
-            var sync: JSONObject? = JSONObject()
-            sync!!.put(SYNC_TYPE, Type.syncDown)
-            if (name != null) sync.put(SYNC_NAME, name)
-            sync.put(SYNC_TARGET, target!!.asJSON())
-            sync.put(SYNC_OPTIONS, options!!.asJSON())
-            sync.put(SYNC_SOUP_NAME, soupName)
-            sync.put(SYNC_STATUS, Status.NEW.name)
-            sync.put(SYNC_PROGRESS, 0)
-            sync.put(SYNC_TOTAL_SIZE, -1)
-            sync.put(SYNC_MAX_TIME_STAMP, -1)
-            sync.put(SYNC_START_TIME, 0)
-            sync.put(SYNC_END_TIME, 0)
-            sync.put(SYNC_ERROR, "")
+            val sync = JSONObject()
+            with(sync) {
+                put(SYNC_TYPE, Type.syncDown)
+                if (name != null) put(SYNC_NAME, name)
+                put(SYNC_TARGET, target.asJSON())
+                put(SYNC_OPTIONS, options.asJSON())
+                put(SYNC_SOUP_NAME, soupName)
+                put(SYNC_STATUS, Status.NEW.name)
+                put(SYNC_PROGRESS, 0)
+                put(SYNC_TOTAL_SIZE, -1)
+                put(SYNC_MAX_TIME_STAMP, -1)
+                put(SYNC_START_TIME, 0)
+                put(SYNC_END_TIME, 0)
+                put(SYNC_ERROR, "")
+            }
             if (name != null && hasSyncWithName(store, name)) {
                 throw MobileSyncException("Failed to create sync down: there is already a sync with name:$name")
             }
-            sync = store!!.upsert(SYNCS_SOUP, sync)
-            if (sync == null) {
-                throw MobileSyncException("Failed to create sync down")
-            }
-            return fromJSON(sync)
+            val syncSaved = store.upsert(SYNCS_SOUP, sync)
+                ?: throw MobileSyncException("Failed to create sync down")
+            return fromJSON(syncSaved)
         }
 
         /**
@@ -344,33 +315,33 @@ class SyncState {
         @kotlin.jvm.JvmStatic
         @Throws(JSONException::class)
         fun createSyncUp(
-            store: SmartStore?,
+            store: SmartStore,
             target: SyncUpTarget,
-            options: SyncOptions?,
+            options: SyncOptions,
             soupName: String?,
             name: String?
         ): SyncState {
-            var sync: JSONObject? = JSONObject()
-            sync!!.put(SYNC_TYPE, Type.syncUp)
-            if (name != null) sync.put(SYNC_NAME, name)
-            sync.put(SYNC_TARGET, target.asJSON())
-            sync.put(SYNC_SOUP_NAME, soupName)
-            sync.put(SYNC_OPTIONS, options!!.asJSON())
-            sync.put(SYNC_STATUS, Status.NEW.name)
-            sync.put(SYNC_PROGRESS, 0)
-            sync.put(SYNC_TOTAL_SIZE, -1)
-            sync.put(SYNC_MAX_TIME_STAMP, -1)
-            sync.put(SYNC_START_TIME, 0)
-            sync.put(SYNC_END_TIME, 0)
-            sync.put(SYNC_ERROR, "")
+            val sync = JSONObject()
+            with (sync) {
+                put(SYNC_TYPE, Type.syncUp)
+                if (name != null) put(SYNC_NAME, name)
+                put(SYNC_TARGET, target.asJSON())
+                put(SYNC_SOUP_NAME, soupName)
+                put(SYNC_OPTIONS, options.asJSON())
+                put(SYNC_STATUS, Status.NEW.name)
+                put(SYNC_PROGRESS, 0)
+                put(SYNC_TOTAL_SIZE, -1)
+                put(SYNC_MAX_TIME_STAMP, -1)
+                put(SYNC_START_TIME, 0)
+                put(SYNC_END_TIME, 0)
+                put(SYNC_ERROR, "")
+            }
             if (name != null && hasSyncWithName(store, name)) {
                 throw MobileSyncException("Failed to create sync up: there is already a sync with name:$name")
             }
-            sync = store!!.upsert(SYNCS_SOUP, sync)
-            if (sync == null) {
-                throw MobileSyncException("Failed to create sync up")
-            }
-            return fromJSON(sync)
+            val syncSaved = store.upsert(SYNCS_SOUP, sync)
+                ?: throw MobileSyncException("Failed to create sync up")
+            return fromJSON(syncSaved)
         }
 
         /**
@@ -381,17 +352,19 @@ class SyncState {
          */
         @Throws(JSONException::class)
         fun fromJSON(sync: JSONObject): SyncState {
-            val state = SyncState()
-            state.id = sync.getLong(SmartStore.SOUP_ENTRY_ID)
-            state.type = Type.valueOf(sync.getString(SYNC_TYPE))
-            state.name = JSONObjectHelper.optString(sync, SYNC_NAME)
+            val id = sync.getLong(SmartStore.SOUP_ENTRY_ID)
+            val type = Type.valueOf(sync.getString(SYNC_TYPE))
+            val name = JSONObjectHelper.optString(sync, SYNC_NAME)
             val jsonTarget = sync.optJSONObject(SYNC_TARGET)
-            state.target =
-                if (state.type == Type.syncDown) SyncDownTarget.Companion.fromJSON(jsonTarget) else SyncUpTarget.Companion.fromJSON(
-                    jsonTarget
-                )
-            state.options = SyncOptions.Companion.fromJSON(sync.optJSONObject(SYNC_OPTIONS))
-            state.soupName = sync.getString(SYNC_SOUP_NAME)
+            val target =
+                (if (type == Type.syncDown) SyncDownTarget.fromJSON(jsonTarget)
+                else SyncUpTarget.fromJSON(jsonTarget))
+                    ?: throw MobileSyncException("No target found in json")
+            val options = SyncOptions.fromJSON(sync.optJSONObject(SYNC_OPTIONS))
+                ?: throw MobileSyncException("No options found in json")
+            val soupName = sync.getString(SYNC_SOUP_NAME)
+
+            val state = SyncState(id, type, name, target, options, soupName)
             state.status = Status.valueOf(sync.getString(SYNC_STATUS))
             state.progress = sync.getInt(SYNC_PROGRESS)
             state.totalSize = sync.getInt(SYNC_TOTAL_SIZE)

@@ -78,12 +78,12 @@ open class MobileSyncUpgradeManager : SmartStoreUpgradeManager() {
          * @return Instance of this class.
          */
         @get:Synchronized
-        val instance: MobileSyncUpgradeManager?
+        val instance: MobileSyncUpgradeManager
             get() {
                 if (INSTANCE == null) {
                     INSTANCE = MobileSyncUpgradeManager()
                 }
-                return INSTANCE
+                return INSTANCE!!
             }
     }
 }
