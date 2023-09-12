@@ -27,9 +27,12 @@
 package com.salesforce.androidsdk.mobilesync.util
 
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SyncUpdateCallback
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.trySendBlocking
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import java.util.concurrent.Executors.newSingleThreadExecutor
 
 /**
  * A SyncUpdateCallback which queues SyncStates, then serves them filtered by
@@ -57,20 +60,25 @@ class SyncUpdateCallbackQueue(
         syncStatesById = syncStateIds.associateWith { Channel() }
     }
 
+    /** A single-thread Coroutine context to synchronize sync state updates. */
+    private val syncStateUpdateCoroutineContext = newSingleThreadExecutor().asCoroutineDispatcher()
+
     /**
      * Queues a new SyncState by its id.
      *
      * @param syncState The new SyncState to queue
      */
     override fun onUpdate(syncState: SyncState) {
-        val syncStateId = syncState.id
-        val syncStates = syncStatesById[syncStateId]
+        CoroutineScope(syncStateUpdateCoroutineContext).launch {
+            val syncStateId = syncState.id
+            val syncStates = syncStatesById[syncStateId]
 
-        check(syncStates != null) {
-            "Cannot queue SyncState with unexpected id '$syncStateId'.  Verify the expected ids are provided at initialization."
+            check(syncStates != null) {
+                "Cannot queue SyncState with unexpected id '$syncStateId'.  Verify the expected ids are provided at initialization."
+            }
+
+            syncStates.send(syncState.copy())
         }
-
-        syncStates.trySendBlocking(syncState.copy())
     }
 
     /**
