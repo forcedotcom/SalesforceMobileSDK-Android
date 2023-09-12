@@ -879,7 +879,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
      * @throws JSONException
      */
     @Test
-    @Ignore
     public void testStopResumeSingleSyncDown() throws JSONException {
         String syncName = "testStopResumeSingleSyncDown";
         int numberOfRecords = 10;
@@ -949,7 +948,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
      * @throws JSONException
      */
     @Test
-    @Ignore
     public void testStopResumeMultipleSyncDowns() throws JSONException {
         String syncName1 = "testStopResumeMultipleSyncDowns1";
         String syncName2 = "testStopResumeMultipleSyncDowns2";

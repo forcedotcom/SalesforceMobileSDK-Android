@@ -40,7 +40,6 @@ import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -530,7 +529,6 @@ public class SyncUpTargetTest extends SyncManagerTestCase {
      * Sync down the test accounts, delete record on server and update same record locally, sync up, check smartstore and server afterwards
      */
     @Test
-    @Ignore
     public void testSyncUpWithLocallyUpdatedRemotelyDeletedRecords() throws Exception {
         // First sync down
         trySyncDown(MergeMode.OVERWRITE);
@@ -738,7 +736,6 @@ public class SyncUpTargetTest extends SyncManagerTestCase {
      * Create many accounts locally, sync up with merge mode OVERWRITE, check smartstore and server afterwards
      */
     @Test
-    @Ignore
     public void testSyncUpManyLocallyCreatedRecords() throws Exception {
         trySyncUpWithLocallyCreatedRecords(500, MergeMode.OVERWRITE);
     }
