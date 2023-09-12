@@ -27,12 +27,10 @@
 package com.salesforce.androidsdk.mobilesync.util
 
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SyncUpdateCallback
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
+import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.runBlocking
-import java.util.concurrent.Executors.newSingleThreadExecutor
 
 /**
  * A SyncUpdateCallback which queues SyncStates, then serves them filtered by
@@ -57,11 +55,8 @@ class SyncUpdateCallbackQueue(
     init {
         check(syncStateIds.isNotEmpty()) { "At least one SyncState id must be provided." }
 
-        syncStatesById = syncStateIds.associateWith { Channel() }
+        syncStatesById = syncStateIds.associateWith { Channel(UNLIMITED) }
     }
-
-    /** A single-thread Coroutine context to synchronize sync state updates. */
-    private val syncStateUpdateCoroutineContext = newSingleThreadExecutor().asCoroutineDispatcher()
 
     /**
      * Queues a new SyncState by its id.
@@ -69,16 +64,14 @@ class SyncUpdateCallbackQueue(
      * @param syncState The new SyncState to queue
      */
     override fun onUpdate(syncState: SyncState) {
-        CoroutineScope(syncStateUpdateCoroutineContext).launch {
-            val syncStateId = syncState.id
-            val syncStates = syncStatesById[syncStateId]
+        val syncStateId = syncState.id
+        val syncStates = syncStatesById[syncStateId]
 
-            check(syncStates != null) {
-                "Cannot queue SyncState with unexpected id '$syncStateId'.  Verify the expected ids are provided at initialization."
-            }
-
-            syncStates.send(syncState.copy())
+        check(syncStates != null) {
+            "Cannot queue SyncState with unexpected id '$syncStateId'.  Verify the expected ids are provided at initialization."
         }
+
+        syncStates.trySendBlocking(syncState.copy())
     }
 
     /**
