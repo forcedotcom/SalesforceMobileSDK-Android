@@ -30,12 +30,12 @@ import android.app.AlertDialog.Builder
 import android.app.Dialog
 import android.os.Bundle
 import androidx.fragment.app.DialogFragment
+import com.salesforce.androidsdk.R.style.SalesforceSDK_Dialog
+import com.salesforce.androidsdk.R.style.SalesforceSDK_Dialog_Dark
 import com.salesforce.androidsdk.app.SalesforceSDKManager.getInstance
 import com.salesforce.samples.mobilesyncexplorer.R.string.cancel
 import com.salesforce.samples.mobilesyncexplorer.R.string.logout_title
 import com.salesforce.samples.mobilesyncexplorer.R.string.yes
-import com.salesforce.samples.mobilesyncexplorer.R.style.SalesforceSDK_Dialog
-import com.salesforce.samples.mobilesyncexplorer.R.style.SalesforceSDK_Dialog_Dark
 
 /**
  * A simple dialog fragment to provide options at logout.
