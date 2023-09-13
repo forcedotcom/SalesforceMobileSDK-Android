@@ -134,13 +134,13 @@ class LayoutSyncDownTarget : SyncDownTarget {
     }
 
     @Throws(IOException::class, JSONException::class)
-    override fun startFetch(syncManager: SyncManager, maxTimeStamp: Long): JSONArray? {
+    override fun startFetch(syncManager: SyncManager, maxTimeStamp: Long): JSONArray {
         val request = RestRequest.getRequestForObjectLayout(
             syncManager.apiVersion,
             objectAPIName, formFactor, layoutType, mode, recordTypeId
         )
         val response = syncManager.sendSyncWithMobileSyncUserAgent(request)
-        val responseJSON = response!!.asJSONObject()
+        val responseJSON = response.asJSONObject()
         responseJSON?.put(
             Constants.ID, String.format(
                 ID_FIELD_VALUE, objectAPIName,
@@ -163,7 +163,7 @@ class LayoutSyncDownTarget : SyncDownTarget {
         return null
     }
 
-    override fun cleanGhosts(syncManager: SyncManager, soupName: String?, syncId: Long): Int {
+    override fun cleanGhosts(syncManager: SyncManager, soupName: String, syncId: Long): Int {
         return 0
     }
 

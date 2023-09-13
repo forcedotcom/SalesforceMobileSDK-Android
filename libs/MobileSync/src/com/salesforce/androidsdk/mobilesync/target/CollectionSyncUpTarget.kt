@@ -46,8 +46,7 @@ class CollectionSyncUpTarget : BatchSyncUpTarget {
         createFieldlist: List<String?>?,
         updateFieldlist: List<String?>?,
         maxBatchSize: Int
-    ) : this(createFieldlist, updateFieldlist, null, null, null, maxBatchSize) {
-    }
+    ) : this(createFieldlist, updateFieldlist, null, null, null, maxBatchSize)
     /**
      * Construct CollectionSyncUpTarget with a different maxBatchSize and id/modifiedDate/externalId fields
      */
@@ -100,7 +99,7 @@ class CollectionSyncUpTarget : BatchSyncUpTarget {
     override fun sendRecordRequests(
         syncManager: SyncManager,
         recordRequests: List<RecordRequest>
-    ): Map<String?, RecordResponse?>? {
+    ): Map<String?, RecordResponse?> {
         return CompositeRequestHelper.sendAsCollectionRequests(syncManager, false, recordRequests)
     }
 

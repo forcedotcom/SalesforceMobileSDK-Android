@@ -66,7 +66,7 @@ class SyncOptions
          * @return
          * @throws JSONException
          */
-        @kotlin.jvm.JvmStatic
+        @JvmStatic
 		@Throws(JSONException::class)
         fun fromJSON(options: JSONObject?): SyncOptions? {
             if (options == null) return null
@@ -89,7 +89,7 @@ class SyncOptions
          * @param mergeMode
          * @return
          */
-		@kotlin.jvm.JvmStatic
+		@JvmStatic
 		fun optionsForSyncUp(fieldlist: List<String?>?, mergeMode: MergeMode?): SyncOptions {
             return SyncOptions(fieldlist, mergeMode)
         }
@@ -98,7 +98,7 @@ class SyncOptions
          * @param mergeMode
          * @return
          */
-		@kotlin.jvm.JvmStatic
+		@JvmStatic
 		fun optionsForSyncDown(mergeMode: MergeMode?): SyncOptions {
             return SyncOptions(null, mergeMode)
         }

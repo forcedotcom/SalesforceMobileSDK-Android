@@ -73,7 +73,7 @@ class SoslSyncDownTarget : SyncDownTarget {
     }
 
     @Throws(IOException::class, JSONException::class)
-    override fun startFetch(syncManager: SyncManager, maxTimeStamp: Long): JSONArray? {
+    override fun startFetch(syncManager: SyncManager, maxTimeStamp: Long): JSONArray {
         return startFetch(syncManager, maxTimeStamp, query)
     }
 
@@ -85,7 +85,7 @@ class SoslSyncDownTarget : SyncDownTarget {
     ): JSONArray {
         val request = RestRequest.getRequestForSearch(syncManager.apiVersion, queryRun)
         val response = syncManager.sendSyncWithMobileSyncUserAgent(request)
-        val records = response!!.asJSONObject().getJSONArray(SEARCH_RECORDS)
+        val records = response.asJSONObject().getJSONArray(SEARCH_RECORDS)
 
         // Recording total size
         totalSize = records.length()
@@ -97,11 +97,7 @@ class SoslSyncDownTarget : SyncDownTarget {
     }
 
     @Throws(IOException::class, JSONException::class)
-    override fun getRemoteIds(syncManager: SyncManager, localIds: Set<String?>?): Set<String?>? {
-        if (localIds == null) {
-            return null
-        }
-
+    override fun getRemoteIds(syncManager: SyncManager, localIds: Set<String>): Set<String> {
         // Makes network request and parses the response.
         val records = startFetch(syncManager, 0, query)
         return HashSet(parseIdsFromResponse(records))

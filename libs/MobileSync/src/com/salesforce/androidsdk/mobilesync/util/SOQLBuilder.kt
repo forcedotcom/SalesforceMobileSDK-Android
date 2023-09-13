@@ -183,7 +183,7 @@ class SOQLBuilder private constructor() {
      *
      * @return Query.
      */
-    fun build(): String? {
+    fun build(): String {
         val query = StringBuilder()
         val fieldList = properties["fields"] as String?
         if (fieldList == null || fieldList.length == 0) {

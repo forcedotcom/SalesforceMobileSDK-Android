@@ -60,12 +60,11 @@ abstract class SyncDownTarget : SyncTarget {
     /**
      * Construct SyncDownTarget
      */
-    constructor() : super() {}
+    constructor() : super()
     constructor(idFieldName: String?, modificationDateFieldName: String?) : super(
         idFieldName,
         modificationDateFieldName
-    ) {
-    }
+    )
 
     /**
      * Construct SyncDownTarget from json
@@ -115,10 +114,10 @@ abstract class SyncDownTarget : SyncTarget {
      * @throws JSONException, IOException
      */
     @Throws(JSONException::class, IOException::class)
-    open fun cleanGhosts(syncManager: SyncManager, soupName: String?, syncId: Long): Int {
+    open fun cleanGhosts(syncManager: SyncManager, soupName: String, syncId: Long): Int {
 
         // Fetches list of IDs present in local soup that have not been modified locally.
-        val localIds: MutableSet<String?>? = getNonDirtyRecordIds(
+        val localIds: MutableSet<String> = getNonDirtyRecordIds(
             syncManager, soupName, idFieldName,
             buildSyncIdPredicateIfIndexed(syncManager, soupName, syncId)
         )
@@ -127,11 +126,11 @@ abstract class SyncDownTarget : SyncTarget {
         // and removes the list of IDs that are still present on the server.
         val remoteIds = getRemoteIds(syncManager, localIds)
         if (remoteIds != null) {
-            localIds!!.removeAll(remoteIds)
+            localIds.removeAll(remoteIds)
         }
 
         // Deletes extra IDs from SmartStore.
-        val localIdSize = localIds!!.size
+        val localIdSize = localIds.size
         if (localIdSize > 0) {
             deleteRecordsFromLocalStore(syncManager, soupName, localIds, idFieldName)
         }
@@ -178,11 +177,11 @@ abstract class SyncDownTarget : SyncTarget {
      */
     @Throws(JSONException::class)
     fun getNonDirtyRecordIds(
-        syncManager: SyncManager?, soupName: String?,
-        idField: String?, additionalPredicate: String?
-    ): SortedSet<String?>? {
+        syncManager: SyncManager, soupName: String,
+        idField: String, additionalPredicate: String
+    ): SortedSet<String> {
         val nonDirtyRecordsSql = getNonDirtyRecordIdsSql(soupName, idField, additionalPredicate)
-        return getIdsWithQuery(syncManager!!, nonDirtyRecordsSql)
+        return getIdsWithQuery(syncManager, nonDirtyRecordsSql)
     }
 
     /**
@@ -193,17 +192,17 @@ abstract class SyncDownTarget : SyncTarget {
      * @return
      */
     protected open fun getNonDirtyRecordIdsSql(
-        soupName: String?,
-        idField: String?,
-        additionalPredicate: String?
-    ): String? {
+        soupName: String,
+        idField: String,
+        additionalPredicate: String
+    ): String {
         return String.format(
             "SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'false' %s ORDER BY {%s:%s} ASC",
             soupName,
             idField,
             soupName,
             soupName,
-            SyncTarget.Companion.LOCAL,
+            LOCAL,
             additionalPredicate,
             soupName,
             idField
@@ -219,8 +218,8 @@ abstract class SyncDownTarget : SyncTarget {
     @Throws(IOException::class, JSONException::class)
     protected abstract fun getRemoteIds(
         syncManager: SyncManager,
-        localIds: Set<String?>?
-    ): Set<String?>?
+        localIds: Set<String>
+    ): Set<String>
 
     /**
      * Gets the latest modification timestamp from the array of records.
@@ -266,7 +265,7 @@ abstract class SyncDownTarget : SyncTarget {
                 val timeStamp = Constants.TIMESTAMP_FORMAT.parse(timeStampStr).time
                 maxTimeStamp = Math.max(timeStamp, maxTimeStamp)
             } catch (e: Exception) {
-                MobileSyncLogger.w(
+                MobileSyncLogger.d(
                     TAG,
                     "Could not parse modification date field: $modifiedDateFieldName",
                     e
@@ -326,7 +325,7 @@ abstract class SyncDownTarget : SyncTarget {
          * @return
          * @throws JSONException
          */
-        @kotlin.jvm.JvmStatic
+        @JvmStatic
         @Throws(JSONException::class)
         fun fromJSON(target: JSONObject?): SyncDownTarget? {
             if (target == null) {

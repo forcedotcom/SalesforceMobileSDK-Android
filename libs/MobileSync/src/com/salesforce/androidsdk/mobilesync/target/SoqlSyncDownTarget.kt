@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.mobilesync.target
 
-import android.text.TextUtils
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager.MobileSyncException
 import com.salesforce.androidsdk.mobilesync.util.Constants
@@ -44,8 +43,8 @@ import java.util.Date
  * Target for sync defined by a SOQL query
  */
 open class SoqlSyncDownTarget : SyncDownTarget {
+    private val query: String
     protected var maxBatchSize = 0
-    private var query: String? = null
     private var nextRecordsUrl: String? = null
 
     /**
@@ -54,7 +53,9 @@ open class SoqlSyncDownTarget : SyncDownTarget {
      * @throws JSONException
      */
     constructor(target: JSONObject) : super(target) {
-        query = modifyQueryIfNeeded(JSONObjectHelper.optString(target, QUERY))
+        val queryFromJson = JSONObjectHelper.optString(target, QUERY)
+            ?: throw MobileSyncException("No query defined")
+        query = modifyQueryIfNeeded(queryFromJson)
         maxBatchSize = target.optInt(MAX_BATCH_SIZE, RestRequest.DEFAULT_BATCH_SIZE)
     }
 
@@ -62,7 +63,7 @@ open class SoqlSyncDownTarget : SyncDownTarget {
      * Construct SoqlSyncDownTarget from soql query
      * @param query
      */
-    constructor(query: String?) : this(null, null, query) {}
+    constructor(query: String) : this(null, null, query)
     /**
      * Construct SoqlSyncDownTarget from soql query
      * @param idFieldName
@@ -80,7 +81,7 @@ open class SoqlSyncDownTarget : SyncDownTarget {
     constructor(
         idFieldName: String?,
         modificationDateFieldName: String?,
-        query: String?,
+        query: String,
         maxBatchSize: Int = RestRequest.DEFAULT_BATCH_SIZE
     ) : super(idFieldName, modificationDateFieldName) {
         queryType = QueryType.soql
@@ -88,36 +89,34 @@ open class SoqlSyncDownTarget : SyncDownTarget {
         this.maxBatchSize = maxBatchSize
     }
 
-    private fun modifyQueryIfNeeded(query: String?): String? {
-        var query = query
-        if (!TextUtils.isEmpty(query)) {
-            val mutator = SOQLMutator(query)
-            var mutated = false
+    private fun modifyQueryIfNeeded(query: String): String {
+        val mutator = SOQLMutator(query)
+        var mutated = false
 
-            // Inserts the mandatory 'LastModifiedDate' field if it doesn't exist.
-            val lastModFieldName = modificationDateFieldName
-            if (!mutator.isSelectingField(lastModFieldName)) {
-                mutated = true
-                mutator.addSelectFields(lastModFieldName)
-            }
-
-            // Inserts the mandatory 'Id' field if it doesn't exist.
-            val idFieldName = idFieldName
-            if (!mutator.isSelectingField(idFieldName)) {
-                mutated = true
-                mutator.addSelectFields(idFieldName)
-            }
-
-            // Order by 'LastModifiedDate' field if no order by specified
-            if (!mutator.hasOrderBy()) {
-                mutated = true
-                mutator.replaceOrderBy(lastModFieldName)
-            }
-            if (mutated) {
-                query = mutator.asBuilder().build()
-            }
+        // Inserts the mandatory 'LastModifiedDate' field if it doesn't exist.
+        val lastModFieldName = modificationDateFieldName
+        if (!mutator.isSelectingField(lastModFieldName)) {
+            mutated = true
+            mutator.addSelectFields(lastModFieldName)
         }
-        return query
+
+        // Inserts the mandatory 'Id' field if it doesn't exist.
+        val idFieldName = idFieldName
+        if (!mutator.isSelectingField(idFieldName)) {
+            mutated = true
+            mutator.addSelectFields(idFieldName)
+        }
+
+        // Order by 'LastModifiedDate' field if no order by specified
+        if (!mutator.hasOrderBy()) {
+            mutated = true
+            mutator.replaceOrderBy(lastModFieldName)
+        }
+        return if (mutated) {
+            mutator.asBuilder().build()
+        } else {
+            query
+        }
     }
 
     override val isSyncDownSortedByLatestModification: Boolean
@@ -222,7 +221,7 @@ open class SoqlSyncDownTarget : SyncDownTarget {
     /**
      * @return soql query for this target
      */
-    fun getQuery(): String? {
+    fun getQuery(): String {
         return getQuery(0)
     }
 
@@ -230,7 +229,7 @@ open class SoqlSyncDownTarget : SyncDownTarget {
      * @return soql query for this target
      * @param maxTimeStamp
      */
-    open fun getQuery(maxTimeStamp: Long): String? {
+    open fun getQuery(maxTimeStamp: Long): String {
         return if (maxTimeStamp > 0) addFilterForReSync(
             query,
             modificationDateFieldName,
@@ -241,21 +240,21 @@ open class SoqlSyncDownTarget : SyncDownTarget {
     companion object {
         const val QUERY = "query"
         const val MAX_BATCH_SIZE = "maxBatchSize"
-        @kotlin.jvm.JvmStatic
+        @JvmStatic
         fun addFilterForReSync(
-            query: String?,
+            query: String,
             modificationFieldDatName: String?,
             maxTimeStamp: Long
-        ): String? {
-            var query = query
-            if (maxTimeStamp > 0) {
+        ): String {
+            return if (maxTimeStamp > 0) {
                 val extraPredicate =
                     modificationFieldDatName + " > " + Constants.TIMESTAMP_FORMAT.format(
                         Date(maxTimeStamp)
                     )
-                query = SOQLMutator(query).addWherePredicates(extraPredicate).asBuilder().build()
+                SOQLMutator(query).addWherePredicates(extraPredicate).asBuilder().build()
+            } else {
+                query
             }
-            return query
         }
     }
 }

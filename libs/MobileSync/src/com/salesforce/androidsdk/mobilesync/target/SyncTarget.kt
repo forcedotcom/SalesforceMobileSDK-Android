@@ -70,8 +70,7 @@ abstract class SyncTarget @JvmOverloads constructor(
             target,
             MODIFICATION_DATE_FIELD_NAME
         ) else null
-    ) {
-    }
+    )
 
     init {
         this.idFieldName = idFieldName ?: Constants.ID
@@ -231,7 +230,7 @@ abstract class SyncTarget @JvmOverloads constructor(
         syncId: Long
     ) {
         val smartStore = syncManager.smartStore
-        synchronized(smartStore!!.database) {
+        synchronized(smartStore.database) {
             try {
                 smartStore.beginTransaction()
                 for (i in 0 until records.length()) {
@@ -402,7 +401,7 @@ abstract class SyncTarget @JvmOverloads constructor(
          * Generate local id for record
          * @return generated id
          */
-        @kotlin.jvm.JvmStatic
+        @JvmStatic
         fun createLocalId(): String {
             return LOCAL_ID_PREFIX + System.nanoTime()
         }

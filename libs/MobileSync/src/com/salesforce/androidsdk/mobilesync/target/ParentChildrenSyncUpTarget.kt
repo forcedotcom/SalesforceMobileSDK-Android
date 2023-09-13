@@ -68,11 +68,10 @@ class ParentChildrenSyncUpTarget(
         JSONObjectHelper.toList<String?>(target.optJSONArray(CHILDREN_CREATE_FIELDLIST)),
         JSONObjectHelper.toList<String?>(target.optJSONArray(CHILDREN_UPDATE_FIELDLIST)),
         RelationshipType.valueOf(target.getString(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE))
-    ) {
-    }
+    )
 
     init {
-        MobileSyncSDKManager.Companion.getInstance()
+        MobileSyncSDKManager.instance
             .registerUsedAppFeature(Features.FEATURE_RELATED_RECORDS)
     }
 
@@ -87,7 +86,7 @@ class ParentChildrenSyncUpTarget(
         }
     }
 
-    override fun getDirtyRecordIdsSql(soupName: String?, idField: String?): String? {
+    override fun getDirtyRecordIdsSql(soupName: String?, idField: String?): String {
         return ParentChildrenSyncTargetHelper.getDirtyRecordIdsSql(
             parentInfo,
             childrenInfo,
@@ -221,7 +220,7 @@ class ParentChildrenSyncUpTarget(
         if (isDirty(record)) {
             needReRun = updateParentRecordInLocalStore(
                 syncManager, record, children, mergeMode, refIdToServerId,
-                refIdToRecordResponses!![record.getString(idFieldName)]
+                refIdToRecordResponses[record.getString(idFieldName)]
             )
         }
 
@@ -231,7 +230,7 @@ class ParentChildrenSyncUpTarget(
             if (isDirty(childRecord) || isCreate) {
                 needReRun = needReRun || updateChildRecordInLocalStore(
                     syncManager, childRecord, record, mergeMode, refIdToServerId,
-                    refIdToRecordResponses!![childRecord.getString(childrenInfo.idFieldName)]
+                    refIdToRecordResponses[childRecord.getString(childrenInfo.idFieldName)]
                 )
             }
         }
@@ -433,7 +432,7 @@ class ParentChildrenSyncUpTarget(
             val fields =
                 buildFieldsMap(record, fieldlist, info.idFieldName, info.modificationDateFieldName)
             if (parentId != null) {
-                fields!![(info as ChildrenInfo).parentIdFieldName] =
+                fields[(info as ChildrenInfo).parentIdFieldName] =
                     if (useParentIdReference) String.format(
                         "@{%s.%s}",
                         parentId,
@@ -514,7 +513,7 @@ class ParentChildrenSyncUpTarget(
             childrenInfo,
             record
         )
-        for (i in 0 until children!!.length()) {
+        for (i in 0 until children.length()) {
             val childRecord = children.getJSONObject(i)
             val childModDate = RecordModDate(
                 JSONObjectHelper.optString(childRecord, childrenInfo.modificationDateFieldName),
@@ -541,7 +540,7 @@ class ParentChildrenSyncUpTarget(
             val parentId = record.getString(idFieldName)
             val lastModRequest = getRequestForTimestamps(syncManager.apiVersion, parentId)
             val lastModResponse = syncManager.sendSyncWithMobileSyncUserAgent(lastModRequest)
-            val rows = if (lastModResponse!!.isSuccess) lastModResponse.asJSONObject().getJSONArray(
+            val rows = if (lastModResponse.isSuccess) lastModResponse.asJSONObject().getJSONArray(
                 Constants.RECORDS
             ) else null
             if (rows != null && rows.length() > 0) {

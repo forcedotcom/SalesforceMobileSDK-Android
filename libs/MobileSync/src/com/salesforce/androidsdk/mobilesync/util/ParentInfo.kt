@@ -50,8 +50,7 @@ open class ParentInfo @JvmOverloads constructor(// Fields
         JSONObjectHelper.optString(json, ID_FIELD_NAME),
         JSONObjectHelper.optString(json, MODIFICATION_DATE_FIELD_NAME),
         JSONObjectHelper.optString(json, EXTERNAL_ID_FIELD_NAME)
-    ) {
-    }
+    )
 
     init {
         this.idFieldName = idFieldName ?: Constants.ID

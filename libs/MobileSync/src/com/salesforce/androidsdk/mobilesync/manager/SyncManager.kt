@@ -552,8 +552,8 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
      * Exception thrown by mobile sync manager
      */
     open class MobileSyncException : RuntimeException {
-        constructor(message: String?) : super(message) {}
-        constructor(e: Throwable?) : super(e) {}
+        constructor(message: String?) : super(message)
+        constructor(e: Throwable?) : super(e)
 
         companion object {
             private const val serialVersionUID = 1L
@@ -564,8 +564,8 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
      * Exception thrown when sync manager is stopped
      */
     class SyncManagerStoppedException : MobileSyncException {
-        constructor(message: String?) : super(message) {}
-        constructor(e: Throwable?) : super(e) {}
+        constructor(message: String?) : super(message)
+        constructor(e: Throwable?) : super(e)
     }
 
     /**
@@ -617,7 +617,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
          *
          * @return Instance of this class.
          */
-        @kotlin.jvm.JvmStatic
+        @JvmStatic
         @get:Synchronized
         val instance: SyncManager
             get() = getInstance(null, null)
@@ -660,7 +660,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
             communityId: String?,
             smartStore: SmartStore?
         ): SyncManager {
-            val account = account ?: MobileSyncSDKManager.instance.getUserAccountManager().getCachedCurrentUser()
+            val account = account ?: MobileSyncSDKManager.instance.userAccountManager.cachedCurrentUser
             val smartStore = smartStore ?: MobileSyncSDKManager.instance.getSmartStore(account, communityId)
             val uniqueId = ((if (account != null) account.userId else "") + ":"
                     + smartStore.database.path)

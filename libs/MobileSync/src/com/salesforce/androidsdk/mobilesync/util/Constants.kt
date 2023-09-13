@@ -79,7 +79,7 @@ object Constants {
     /**
      * Salesforce timestamp format.
      */
-    @kotlin.jvm.JvmField
+    @JvmField
     val TIMESTAMP_FORMAT = RestRequest.ISO8601_DATE_FORMAT
 
     /**

@@ -65,8 +65,7 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
         ChildrenInfo(target.getJSONObject(ParentChildrenSyncTargetHelper.CHILDREN)),
         JSONObjectHelper.toList<String?>(target.optJSONArray(CHILDREN_FIELDLIST)),
         RelationshipType.valueOf(target.getString(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE))
-    ) {
-    }
+    )
 
     /**
      * Construct ParentChildrenSyncDownTarget from parentType, childrenType etc
@@ -116,7 +115,7 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
     // This is for clean re-sync ghosts
     //
     // This is the soql to identify parents
-    override val soqlForRemoteIds: String?
+    override val soqlForRemoteIds: String
         get() {
             // This is for clean re-sync ghosts
             //
@@ -140,9 +139,6 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
 
     // Nested query
     protected val soqlForRemoteChildrenIds: String
-
-    // Parent query
-    ?
         protected get() {
             // This is for clean re-sync ghosts
             //
@@ -180,7 +176,7 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
 
         // NB: ParentChildrenSyncDownTarget's getNonDirtyRecordIdsSql does a join between parent and children soups
         // We only want to look at the children soup, so using SoqlSyncDownTarget's getNonDirtyRecordIdsSql
-        val localChildrenIds: MutableSet<String?>? = getIdsWithQuery(
+        val localChildrenIds: MutableSet<String?> = getIdsWithQuery(
             syncManager, super.getNonDirtyRecordIdsSql(
                 childrenInfo!!.soupName,
                 childrenInfo!!.idFieldName,
@@ -235,7 +231,7 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
         return remoteChildrenIds
     }
 
-    override fun getQuery(maxTimeStamp: Long): String? {
+    override fun getQuery(maxTimeStamp: Long): String {
         val childrenWhere = StringBuilder()
         val parentWhere = StringBuilder()
         if (maxTimeStamp > 0) {
@@ -343,7 +339,7 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
         return maxTimeStamp
     }
 
-    public override fun getDirtyRecordIdsSql(soupName: String?, idField: String?): String? {
+    public override fun getDirtyRecordIdsSql(soupName: String?, idField: String?): String {
         return ParentChildrenSyncTargetHelper.getDirtyRecordIdsSql(
             parentInfo,
             childrenInfo,
@@ -351,11 +347,11 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
         )
     }
 
-    public override fun getNonDirtyRecordIdsSql(
+    override fun getNonDirtyRecordIdsSql(
         soupName: String?,
         idField: String?,
         additionalPredicate: String?
-    ): String? {
+    ): String {
         return ParentChildrenSyncTargetHelper.getNonDirtyRecordIdsSql(
             parentInfo,
             childrenInfo,

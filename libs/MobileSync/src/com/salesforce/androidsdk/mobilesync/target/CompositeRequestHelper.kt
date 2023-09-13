@@ -67,7 +67,7 @@ object CompositeRequestHelper {
         val compositeRequest: RestRequest =
             RestRequest.getCompositeRequest(syncManager.apiVersion, allOrNone, refIdToRequests)
         val response = syncManager.sendSyncWithMobileSyncUserAgent(compositeRequest)
-        if (!response!!.isSuccess) {
+        if (!response.isSuccess) {
             throw MobileSyncException("sendCompositeRequest:$response")
         }
         val compositeResponse = CompositeResponse(response.asJSONObject())
@@ -105,7 +105,7 @@ object CompositeRequestHelper {
                     requestType
                 )
                 val response = syncManager.sendSyncWithMobileSyncUserAgent(request)
-                if (!response!!.isSuccess) {
+                if (!response.isSuccess) {
                     throw MobileSyncException(
                         "sendAsCollectionRequests:$response"
                     )
@@ -130,12 +130,10 @@ object CompositeRequestHelper {
      * @return ref id to server id map if successful
      */
     @Throws(JSONException::class)
-    fun parseIdsFromResponses(refIdToRecordResponse: Map<String?, RecordResponse?>?): Map<String?, String?> {
-        val refIdToServerId: MutableMap<String?, String?> = HashMap()
-        for ((refId, recordResponse) in refIdToRecordResponse!!) {
-            if (recordResponse!!.id != null) {
-                refIdToServerId[refId] = recordResponse.id
-            }
+    fun parseIdsFromResponses(refIdToRecordResponse: Map<String, RecordResponse>): Map<String, String> {
+        val refIdToServerId: MutableMap<String, String> = HashMap()
+        for ((refId, recordResponse) in refIdToRecordResponse) {
+            refIdToServerId[refId] = recordResponse.id ?: continue
         }
         return refIdToServerId
     }
@@ -149,13 +147,13 @@ object CompositeRequestHelper {
      */
     @Throws(JSONException::class)
     fun updateReferences(
-        record: JSONObject?,
-        fieldWithRefId: String?,
-        refIdToServerId: Map<String?, String?>?
+        record: JSONObject,
+        fieldWithRefId: String,
+        refIdToServerId: Map<String, String>
     ) {
         val refId = JSONObjectHelper.optString(record, fieldWithRefId)
-        if (refId != null && refIdToServerId!!.containsKey(refId)) {
-            record!!.put(fieldWithRefId, refIdToServerId[refId])
+        if (refId != null && refIdToServerId.containsKey(refId)) {
+            record.put(fieldWithRefId, refIdToServerId[refId])
         }
     }
 

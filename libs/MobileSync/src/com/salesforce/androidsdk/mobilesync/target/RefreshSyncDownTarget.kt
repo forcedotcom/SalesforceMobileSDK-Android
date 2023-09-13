@@ -39,6 +39,7 @@ import org.json.JSONObject
 import java.io.IOException
 import java.util.Arrays
 import java.util.Date
+import kotlin.math.min
 
 /**
  * Target for sync which syncs down the records currently in a soup
@@ -79,8 +80,7 @@ class RefreshSyncDownTarget internal constructor(
         target.getString(SOBJECT_TYPE),
         target.getString(SOUP_NAME),
         target.optInt(COUNT_IDS_PER_SOQL, MAX_COUNT_IDS_PER_SOQL)
-    ) {
-    }
+    )
 
     /**
      * Constructor
@@ -92,8 +92,7 @@ class RefreshSyncDownTarget internal constructor(
         objectType,
         soupName,
         MAX_COUNT_IDS_PER_SOQL
-    ) {
-    }
+    )
 
     init {
         queryType = QueryType.refresh
@@ -215,26 +214,23 @@ class RefreshSyncDownTarget internal constructor(
             .where(whereClause).build()
         val request = RestRequest.getRequestForQuery(syncManager.apiVersion, soql)
         val response = syncManager.sendSyncWithMobileSyncUserAgent(request)
-        val responseJson = response!!.asJSONObject()
+        val responseJson = response.asJSONObject()
         return responseJson.getJSONArray(Constants.RECORDS)
     }
 
     @Throws(IOException::class, JSONException::class)
-    override fun getRemoteIds(syncManager: SyncManager, localIds: Set<String?>?): Set<String?>? {
-        if (localIds == null) {
-            return null
-        }
-        val remoteIds: MutableSet<String?> = HashSet()
-        val localIdsList: List<String?> = ArrayList(localIds)
+    override fun getRemoteIds(syncManager: SyncManager, localIds: Set<String>): Set<String> {
+        val remoteIds: MutableSet<String> = HashSet()
+        val localIdsList: List<String> = ArrayList(localIds)
         val countSlices = Math.ceil(localIds.size.toDouble() / countIdsPerSoql).toInt()
         for (slice in 0 until countSlices) {
             syncManager.checkAcceptingSyncs()
             val idsToFetch = localIdsList.subList(
                 slice * countIdsPerSoql,
-                Math.min(localIdsList.size, (slice + 1) * countIdsPerSoql)
+                min(localIdsList.size, (slice + 1) * countIdsPerSoql)
             )
             val records = fetchFromServer(
-                syncManager, idsToFetch, Arrays.asList(
+                syncManager, idsToFetch, listOf(
                     idFieldName
                 ), 0 /* get all */
             )

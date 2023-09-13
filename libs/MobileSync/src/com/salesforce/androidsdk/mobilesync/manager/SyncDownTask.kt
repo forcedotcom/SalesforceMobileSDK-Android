@@ -33,6 +33,7 @@ import com.salesforce.androidsdk.mobilesync.util.SyncState.MergeMode
 import com.salesforce.androidsdk.util.JSONObjectHelper
 import org.json.JSONArray
 import org.json.JSONException
+import kotlin.math.max
 
 /**
  * Runnable class responsible for running a sync down
@@ -66,7 +67,7 @@ class SyncDownTask(syncManager: SyncManager, sync: SyncState, callback: SyncUpda
             // Save to smartstore.
             target.saveRecordsToLocalStore(syncManager, soupName, recordsToSave, sync.id)
             countSaved += records.length()
-            maxTimeStamp = Math.max(maxTimeStamp, target.getLatestModificationTimeStamp(records))
+            maxTimeStamp = max(maxTimeStamp, target.getLatestModificationTimeStamp(records))
 
             // Updating maxTimeStamp as we go if records are ordered by latest modification
             if (target.isSyncDownSortedByLatestModification) {

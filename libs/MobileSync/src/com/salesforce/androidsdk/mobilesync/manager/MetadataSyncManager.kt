@@ -211,8 +211,8 @@ class MetadataSyncManager private constructor(
             account: UserAccount?, communityId: String?,
             smartStore: SmartStore?
         ): MetadataSyncManager {
-            val account = account ?: MobileSyncSDKManager.instance.getUserAccountManager()
-                .getCachedCurrentUser()
+            val account = account ?: MobileSyncSDKManager.instance.userAccountManager
+                .cachedCurrentUser
             val smartStore = smartStore ?: MobileSyncSDKManager.instance.getSmartStore(account, communityId)
             val syncManager: SyncManager =
                 SyncManager.getInstance(account, communityId, smartStore)

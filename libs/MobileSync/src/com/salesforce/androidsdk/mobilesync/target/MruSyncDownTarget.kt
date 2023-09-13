@@ -87,31 +87,30 @@ class MruSyncDownTarget : SyncDownTarget {
     }
 
     @Throws(IOException::class, JSONException::class)
-    override fun startFetch(syncManager: SyncManager, maxTimeStamp: Long): JSONArray? {
+    override fun startFetch(syncManager: SyncManager, maxTimeStamp: Long): JSONArray {
         val request = RestRequest.getRequestForMetadata(syncManager.apiVersion, objectType)
         val response = syncManager.sendSyncWithMobileSyncUserAgent(request)
         val recentItems = JSONObjectHelper.pluck<String?>(
-            response!!.asJSONObject().getJSONArray(Constants.RECENT_ITEMS), Constants.ID
+            response.asJSONObject().getJSONArray(Constants.RECENT_ITEMS), Constants.ID
         )
 
         // Building SOQL query to get requested at.
         val soql: String =
-            SOQLBuilder.Companion.getInstanceWithFields(fieldlist).from(objectType).where(
+            SOQLBuilder.getInstanceWithFields(fieldlist).from(objectType).where(
                 idFieldName
                         + " IN ('" + TextUtils.join("', '", recentItems) + "')"
             ).build()
-        return startFetch(syncManager, maxTimeStamp, soql)
+        return startFetch(syncManager, soql)
     }
 
     @Throws(IOException::class, JSONException::class)
     private fun startFetch(
         syncManager: SyncManager,
-        maxTimeStamp: Long,
-        queryRun: String?
+        queryRun: String
     ): JSONArray {
         val request = RestRequest.getRequestForQuery(syncManager.apiVersion, queryRun)
         val response = syncManager.sendSyncWithMobileSyncUserAgent(request)
-        val responseJson = response!!.asJSONObject()
+        val responseJson = response.asJSONObject()
         val records = responseJson.getJSONArray(Constants.RECORDS)
 
         // Recording total size
@@ -124,21 +123,18 @@ class MruSyncDownTarget : SyncDownTarget {
     }
 
     @Throws(IOException::class, JSONException::class)
-    override fun getRemoteIds(syncManager: SyncManager, localIds: Set<String?>?): Set<String?>? {
-        if (localIds == null) {
-            return null
-        }
+    override fun getRemoteIds(syncManager: SyncManager, localIds: Set<String>): Set<String> {
         val idFieldName = idFieldName
 
         // Alters the SOQL query to get only IDs.
         val soql: String =
-            SOQLBuilder.Companion.getInstanceWithFields(idFieldName).from(objectType).where(
+            SOQLBuilder.getInstanceWithFields(idFieldName).from(objectType).where(
                 idFieldName
                         + " IN ('" + TextUtils.join("', '", localIds) + "')"
             ).build()
 
         // Makes network request and parses the response.
-        val records = startFetch(syncManager, 0, soql)
+        val records = startFetch(syncManager, soql)
         return HashSet(parseIdsFromResponse(records))
     }
 

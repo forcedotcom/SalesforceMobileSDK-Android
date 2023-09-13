@@ -78,10 +78,10 @@ class SyncState(
     fun asJSON(): JSONObject {
         val sync = JSONObject()
         sync.put(SmartStore.SOUP_ENTRY_ID, id)
-        sync.put(SYNC_TYPE, type!!.name)
+        sync.put(SYNC_TYPE, type.name)
         if (name != null) sync.put(SYNC_NAME, name)
-        if (target != null) sync.put(SYNC_TARGET, target!!.asJSON())
-        if (options != null) sync.put(SYNC_OPTIONS, options!!.asJSON())
+        if (target != null) sync.put(SYNC_TARGET, target.asJSON())
+        if (options != null) sync.put(SYNC_OPTIONS, options.asJSON())
         sync.put(SYNC_SOUP_NAME, soupName)
         sync.put(SYNC_STATUS, status!!.name)
         sync.put(SYNC_PROGRESS, progress)
@@ -116,8 +116,8 @@ class SyncState(
             ?: throw MobileSyncException("Failed to save sync state")
     }
 
-    val mergeMode: MergeMode?
-        get() = if (options != null && options?.mergeMode != null) options?.mergeMode else MergeMode.OVERWRITE
+    val mergeMode: MergeMode
+        get() = if (options != null && options.mergeMode != null) options.mergeMode else MergeMode.OVERWRITE
 
     fun getStartTime(): Double {
         return startTime.toDouble()
@@ -186,7 +186,7 @@ class SyncState(
          * Create syncs soup if needed
          * @param store
          */
-        @kotlin.jvm.JvmStatic
+        @JvmStatic
         fun setupSyncsSoupIfNeeded(store: SmartStore?) {
             if (store == null) return
 
@@ -217,7 +217,7 @@ class SyncState(
          * If a sync is in the running state, we change it to stopped
          * @param store
          */
-        @kotlin.jvm.JvmStatic
+        @JvmStatic
         fun cleanupSyncsSoupIfNeeded(store: SmartStore?) {
             try {
                 val syncs = getSyncsWithStatus(store, Status.RUNNING)
@@ -268,7 +268,7 @@ class SyncState(
          * @return
          * @throws JSONException
          */
-        @kotlin.jvm.JvmStatic
+        @JvmStatic
         @Throws(JSONException::class)
         fun createSyncDown(
             store: SmartStore,
@@ -312,7 +312,7 @@ class SyncState(
          * @return
          * @throws JSONException
          */
-        @kotlin.jvm.JvmStatic
+        @JvmStatic
         @Throws(JSONException::class)
         fun createSyncUp(
             store: SmartStore,
@@ -383,7 +383,7 @@ class SyncState(
          * @return
          * @throws JSONException
          */
-        @kotlin.jvm.JvmStatic
+        @JvmStatic
         @Throws(JSONException::class)
         fun byId(store: SmartStore?, id: Long): SyncState? {
             val syncs = store!!.retrieve(SYNCS_SOUP, id)
@@ -400,7 +400,7 @@ class SyncState(
          * @return
          * @throws JSONException
          */
-        @kotlin.jvm.JvmStatic
+        @JvmStatic
         @Throws(JSONException::class)
         fun byName(store: SmartStore?, name: String?): SyncState? {
             if (name == null) {
@@ -427,7 +427,7 @@ class SyncState(
          * @param store
          * @param name
          */
-        @kotlin.jvm.JvmStatic
+        @JvmStatic
         fun deleteSync(store: SmartStore?, name: String?) {
             if (name == null) {
                 throw MobileSyncException("name must not be null")

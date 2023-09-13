@@ -300,8 +300,8 @@ class LayoutSyncManager private constructor(
             smartStore: SmartStore?
         ): LayoutSyncManager {
             val account = account ?: MobileSyncSDKManager.instance
-                .getUserAccountManager()
-                .getCachedCurrentUser()
+                .userAccountManager
+                .cachedCurrentUser
             val smartStore = smartStore ?: MobileSyncSDKManager.instance.getSmartStore(account, communityId)
             val syncManager: SyncManager =
                 SyncManager.getInstance(account, communityId, smartStore)

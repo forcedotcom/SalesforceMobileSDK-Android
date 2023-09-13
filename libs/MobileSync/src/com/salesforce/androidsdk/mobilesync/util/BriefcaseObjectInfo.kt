@@ -50,8 +50,7 @@ class BriefcaseObjectInfo @JvmOverloads constructor(
         JSONObjectHelper.toList<String?>(json.getJSONArray(FIELD_LIST)),
         JSONObjectHelper.optString(json, ID_FIELD_NAME),
         JSONObjectHelper.optString(json, MODIFICATION_DATE_FIELD_NAME)
-    ) {
-    }
+    )
 
     init {
         this.idFieldName = idFieldName ?: Constants.ID

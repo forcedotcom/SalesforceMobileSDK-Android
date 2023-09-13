@@ -151,7 +151,7 @@ class SOSLReturningBuilder private constructor() {
          * @param name Object name.
          * @return Instance of this class.
          */
-        @kotlin.jvm.JvmStatic
+        @JvmStatic
         fun getInstanceWithObjectName(name: String): SOSLReturningBuilder {
             val instance = SOSLReturningBuilder()
             instance.objectName(name)

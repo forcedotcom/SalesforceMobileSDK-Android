@@ -45,7 +45,7 @@ open class SalesforceObject(`object`: JSONObject) {
      *
      * @param objectType Object type.
      */
-    @kotlin.jvm.JvmField
+    @JvmField
     var objectType: String? = null
     /**
      * Returns the name.
@@ -57,7 +57,7 @@ open class SalesforceObject(`object`: JSONObject) {
      *
      * @param name Object name.
      */
-    @kotlin.jvm.JvmField
+    @JvmField
     var name: String? = null
 
     /**
@@ -73,7 +73,7 @@ open class SalesforceObject(`object`: JSONObject) {
      *
      * @return Complete metadata.
      */
-    @kotlin.jvm.JvmField
+    @JvmField
     val rawData: JSONObject
 
     /**
@@ -118,9 +118,7 @@ open class SalesforceObject(`object`: JSONObject) {
         if (name == null || obj.name == null || name != obj.name) {
             return false
         }
-        return if (objectType == null || obj.objectType == null || objectType != obj.objectType) {
-            false
-        } else true
+        return !(objectType == null || obj.objectType == null || objectType != obj.objectType)
     }
 
     override fun hashCode(): Int {

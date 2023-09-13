@@ -340,6 +340,6 @@ class SOQLMutator(private val originalSoql: String) {
         private const val LIMIT = "limit"
         private const val OFFSET = "offset"
         private val CLAUSE_TYPE_KEYWORDS =
-            arrayOf(SELECT, FROM, WHERE, HAVING, GROUP_BY, ORDER_BY, LIMIT, OFFSET)
+            arrayOf(SELECT, FROM, WHERE, HAVING, GROUP_BY, ORDER_BY, LIMIT, OFFSET).map { Regex(it) }
     }
 }

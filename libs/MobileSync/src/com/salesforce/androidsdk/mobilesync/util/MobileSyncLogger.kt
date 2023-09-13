@@ -90,17 +90,6 @@ object MobileSyncLogger {
      * Logs a warning log line.
      *
      * @param tag Log tag.
-     * @param message Log message.
-     * @param e Exception to be logged.
-     */
-    fun w(tag: String?, message: String?, e: Throwable?) {
-        logger.w(tag, message, e)
-    }
-
-    /**
-     * Logs a warning log line.
-     *
-     * @param tag Log tag.
      * @param msg Log message.
      * @param obj Object to be logged.
      */
@@ -117,17 +106,6 @@ object MobileSyncLogger {
      */
     fun i(tag: String?, message: String?) {
         logger.i(tag, message)
-    }
-
-    /**
-     * Logs an info log line.
-     *
-     * @param tag Log tag.
-     * @param message Log message.
-     * @param e Exception to be logged.
-     */
-    fun i(tag: String?, message: String?, e: Throwable?) {
-        logger.i(tag, message, e)
     }
 
     /**

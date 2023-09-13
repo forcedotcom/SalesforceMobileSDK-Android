@@ -69,8 +69,7 @@ class SyncsConfig private constructor(str: String?) {
             ctx,
             resourceId
         )
-    ) {
-    }
+    )
 
     /**
      * Constructor for config stored in asset file
@@ -82,8 +81,7 @@ class SyncsConfig private constructor(str: String?) {
             ctx,
             assetPath
         )
-    ) {
-    }
+    )
 
     init {
         try {
@@ -125,29 +123,21 @@ class SyncsConfig private constructor(str: String?) {
                     continue
                 }
                 val syncType = SyncState.Type.valueOf(syncConfig.getString(SYNC_TYPE))
-                val options: SyncOptions? = SyncOptions.fromJSON(
-                    syncConfig.getJSONObject(
-                        OPTIONS
-                    )
-                )
+                val targetJson = syncConfig.getJSONObject(TARGET)
+                val options: SyncOptions = SyncOptions.fromJSON(syncConfig.getJSONObject(OPTIONS))
+                    ?: throw SyncManager.MobileSyncException("Options not defined in config")
                 val soupName = syncConfig.getString(StoreConfig.SOUP_NAME)
                 MobileSyncLogger.d(TAG, "Creating sync:$syncName")
                 when (syncType) {
-                    SyncState.Type.syncDown -> syncManager.createSyncDown(
-                        SyncDownTarget.Companion.fromJSON(
-                            syncConfig.getJSONObject(
-                                TARGET
-                            )
-                        ), options, soupName, syncName
-                    )
-
-                    SyncState.Type.syncUp -> syncManager.createSyncUp(
-                        SyncUpTarget.fromJSON(
-                            syncConfig.getJSONObject(
-                                TARGET
-                            )
-                        ), options, soupName, syncName
-                    )
+                    SyncState.Type.syncDown -> {
+                        val target = SyncDownTarget.fromJSON(targetJson)
+                            ?: throw SyncManager.MobileSyncException("Target not defined in config")
+                        syncManager.createSyncDown(target, options, soupName, syncName)
+                    }
+                    SyncState.Type.syncUp -> {
+                        val target = SyncUpTarget.fromJSON(targetJson)
+                        syncManager.createSyncUp(target, options, soupName, syncName)
+                    }
                 }
             } catch (e: JSONException) {
                 MobileSyncLogger.e(TAG, "Unhandled exception parsing json", e)

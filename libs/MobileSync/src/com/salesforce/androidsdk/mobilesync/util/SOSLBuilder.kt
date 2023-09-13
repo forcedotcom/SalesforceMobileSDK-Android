@@ -220,7 +220,7 @@ class SOSLBuilder private constructor() {
          * @param searchTerm Search term.
          * @return Instance of this class.
          */
-        @kotlin.jvm.JvmStatic
+        @JvmStatic
         fun getInstanceWithSearchTerm(searchTerm: String?): SOSLBuilder {
             val instance = SOSLBuilder()
             instance.searchTerm(searchTerm)

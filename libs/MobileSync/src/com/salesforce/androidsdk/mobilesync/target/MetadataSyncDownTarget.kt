@@ -82,10 +82,10 @@ class MetadataSyncDownTarget : SyncDownTarget {
     }
 
     @Throws(IOException::class, JSONException::class)
-    override fun startFetch(syncManager: SyncManager, maxTimeStamp: Long): JSONArray? {
+    override fun startFetch(syncManager: SyncManager, maxTimeStamp: Long): JSONArray {
         val request = RestRequest.getRequestForDescribe(syncManager.apiVersion, objectType)
         val response = syncManager.sendSyncWithMobileSyncUserAgent(request)
-        val responseJSON = response!!.asJSONObject()
+        val responseJSON = response.asJSONObject()
         responseJSON?.put(Constants.ID, objectType)
         val records = JSONArray()
         records.put(response.asJSONObject())

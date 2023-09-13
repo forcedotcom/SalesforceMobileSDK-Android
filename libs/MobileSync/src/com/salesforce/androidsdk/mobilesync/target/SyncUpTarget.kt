@@ -68,10 +68,10 @@ import java.util.Arrays
  */
 open class SyncUpTarget : SyncTarget {
     // Fields
-    @kotlin.jvm.JvmField
-    var createFieldlist: List<String?>?
-    @kotlin.jvm.JvmField
-    var updateFieldlist: List<String?>?
+    @JvmField
+    var createFieldlist: List<String>?
+    @JvmField
+    var updateFieldlist: List<String>?
 
     /**
      * @return The field name of an external id field of the record.  Default to null.
@@ -92,8 +92,8 @@ open class SyncUpTarget : SyncTarget {
      */
     @JvmOverloads
     constructor(
-        createFieldlist: List<String?>? = null,
-        updateFieldlist: List<String?>? = null,
+        createFieldlist: List<String>? = null,
+        updateFieldlist: List<String>? = null,
         idFieldName: String? = null,
         modificationDateFieldName: String? = null,
         externalIdFieldName: String? = null
@@ -137,9 +137,9 @@ open class SyncUpTarget : SyncTarget {
      */
     @Throws(JSONException::class)
     fun saveRecordToLocalStoreWithLastError(
-        syncManager: SyncManager?,
-        soupName: String?,
-        record: JSONObject?
+        syncManager: SyncManager,
+        soupName: String,
+        record: JSONObject
     ) {
         saveRecordToLocalStoreWithError(syncManager, soupName, record, lastError)
         lastError = null
@@ -147,14 +147,14 @@ open class SyncUpTarget : SyncTarget {
 
     @Throws(JSONException::class)
     protected fun saveRecordToLocalStoreWithError(
-        syncManager: SyncManager?,
-        soupName: String?,
-        record: JSONObject?,
+        syncManager: SyncManager,
+        soupName: String,
+        record: JSONObject,
         error: String?
     ) {
         if (error != null) {
-            record!!.put(SyncTarget.Companion.LAST_ERROR, error)
-            saveInLocalStore(syncManager!!, soupName, record)
+            record.put(LAST_ERROR, error)
+            saveInLocalStore(syncManager, soupName, record)
         }
     }
 
@@ -170,11 +170,10 @@ open class SyncUpTarget : SyncTarget {
     @Throws(JSONException::class, IOException::class)
     open fun createOnServer(
         syncManager: SyncManager,
-        record: JSONObject?,
-        fieldlist: List<String?>?
+        record: JSONObject,
+        fieldlist: List<String>
     ): String? {
-        var fieldlist = fieldlist
-        fieldlist = if (createFieldlist != null) createFieldlist else fieldlist
+        val fieldlist = createFieldlist ?: fieldlist
         val objectType = SmartStore.project(record, Constants.SOBJECT_TYPE) as String
         val fields = buildFieldsMap(record, fieldlist, idFieldName, modificationDateFieldName)
         val externalId = if (externalIdFieldName != null) JSONObjectHelper.optString(
@@ -205,8 +204,8 @@ open class SyncUpTarget : SyncTarget {
     @Throws(IOException::class, JSONException::class)
     protected open fun createOnServer(
         syncManager: SyncManager,
-        objectType: String?,
-        fields: Map<String?, Any?>?
+        objectType: String,
+        fields: Map<String, Any?>
     ): String? {
         val request = RestRequest.getRequestForCreate(syncManager.apiVersion, objectType, fields)
         return sendCreateOrUpsertRequest(syncManager, request)
@@ -227,7 +226,7 @@ open class SyncUpTarget : SyncTarget {
     protected fun upsertOnServer(
         syncManager: SyncManager,
         objectType: String?,
-        fields: Map<String?, Any?>?,
+        fields: Map<String, Any?>,
         externalId: String?
     ): String? {
         val request = RestRequest.getRequestForUpsert(
@@ -252,7 +251,7 @@ open class SyncUpTarget : SyncTarget {
         request: RestRequest?
     ): String? {
         val response = syncManager.sendSyncWithMobileSyncUserAgent(request)
-        if (!response!!.isSuccess) {
+        if (!response.isSuccess) {
             lastError = response.asString()
         }
         return if (response.isSuccess) response.asJSONObject().getString(Constants.LID) else null
@@ -290,7 +289,7 @@ open class SyncUpTarget : SyncTarget {
     ): Int {
         val request = RestRequest.getRequestForDelete(syncManager.apiVersion, objectType, objectId)
         val response = syncManager.sendSyncWithMobileSyncUserAgent(request)
-        if (!response!!.isSuccess) {
+        if (!response.isSuccess) {
             lastError = response.asString()
         }
         return response.statusCode
@@ -308,13 +307,13 @@ open class SyncUpTarget : SyncTarget {
     @Throws(JSONException::class, IOException::class)
     open fun updateOnServer(
         syncManager: SyncManager,
-        record: JSONObject?,
-        fieldlist: List<String?>?
+        record: JSONObject,
+        fieldlist: List<String>
     ): Int {
         var fieldlist = fieldlist
-        fieldlist = if (updateFieldlist != null) updateFieldlist else fieldlist
+        fieldlist = updateFieldlist ?: fieldlist
         val objectType = SmartStore.project(record, Constants.SOBJECT_TYPE) as String
-        val objectId = record!!.getString(idFieldName)
+        val objectId = record.getString(idFieldName)
         val fields = buildFieldsMap(record, fieldlist, idFieldName, modificationDateFieldName)
         return updateOnServer(syncManager, objectType, objectId, fields)
     }
@@ -332,9 +331,9 @@ open class SyncUpTarget : SyncTarget {
     @Throws(IOException::class)
     protected open fun updateOnServer(
         syncManager: SyncManager,
-        objectType: String?,
-        objectId: String?,
-        fields: Map<String?, Any?>?
+        objectType: String,
+        objectId: String,
+        fields: Map<String, Any?>
     ): Int {
         val request =
             RestRequest.getRequestForUpdate(syncManager.apiVersion, objectType, objectId, fields)
@@ -501,8 +500,8 @@ open class SyncUpTarget : SyncTarget {
      * @return
      */
     @Throws(JSONException::class)
-    fun getIdsOfRecordsToSyncUp(syncManager: SyncManager?, soupName: String?): Set<String?>? {
-        return getDirtyRecordIds(syncManager!!, soupName, SmartStore.SOUP_ENTRY_ID)
+    fun getIdsOfRecordsToSyncUp(syncManager: SyncManager, soupName: String): Set<String> {
+        return getDirtyRecordIds(syncManager, soupName, SmartStore.SOUP_ENTRY_ID)
     }
 
     /**
@@ -514,13 +513,13 @@ open class SyncUpTarget : SyncTarget {
      * @return
      */
     protected fun buildFieldsMap(
-        record: JSONObject?,
-        fieldlist: List<String?>?,
-        idFieldName: String?,
-        modificationDateFieldName: String?
-    ): Map<String?, Any?> {
-        val fields: MutableMap<String?, Any?> = HashMap()
-        for (fieldName in fieldlist!!) {
+        record: JSONObject,
+        fieldlist: List<String>,
+        idFieldName: String,
+        modificationDateFieldName: String
+    ): Map<String, Any?> {
+        val fields: MutableMap<String, Any?> = HashMap()
+        for (fieldName in fieldlist) {
             if (fieldName != idFieldName && fieldName != modificationDateFieldName) {
                 val fieldValue = SmartStore.projectReturningNULLObject(record, fieldName)
                 if (fieldValue != null) {
@@ -553,15 +552,15 @@ open class SyncUpTarget : SyncTarget {
          * @return
          * @throws JSONException
          */
-        @kotlin.jvm.JvmStatic
+        @JvmStatic
         @Throws(JSONException::class)
         fun fromJSON(target: JSONObject?): SyncUpTarget {
             // Default sync up target (it's CollectionSyncUpTarget starting in Mobile SDK 10.1)
-            return if (target == null || target.isNull(SyncTarget.Companion.ANDROID_IMPL)) {
+            return if (target == null || target.isNull(ANDROID_IMPL)) {
                 CollectionSyncUpTarget(target)
             } else try {
                 val implClass =
-                    Class.forName(target.getString(SyncTarget.Companion.ANDROID_IMPL)) as Class<out SyncUpTarget>
+                    Class.forName(target.getString(ANDROID_IMPL)) as Class<out SyncUpTarget>
                 val constructor = implClass.getConstructor(
                     JSONObject::class.java
                 )

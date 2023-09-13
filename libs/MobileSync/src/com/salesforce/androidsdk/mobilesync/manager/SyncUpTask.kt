@@ -113,14 +113,14 @@ open class SyncUpTask(syncManager: SyncManager, sync: SyncState, callback: SyncU
 
     @Throws(JSONException::class, IOException::class)
     private fun syncUpOneRecord(
-        target: SyncUpTarget?, soupName: String?,
-        record: JSONObject?, options: SyncOptions?
+        target: SyncUpTarget, soupName: String,
+        record: JSONObject, options: SyncOptions
     ) {
         MobileSyncLogger.d(TAG, "syncUpOneRecord called", record)
 
 
         // Do we need to do a create, update or delete
-        val locallyDeleted = target!!.isLocallyDeleted(record!!)
+        val locallyDeleted = target.isLocallyDeleted(record)
         val locallyCreated = target.isLocallyCreated(record)
         val locallyUpdated = target.isLocallyUpdated(record)
         var action: Action? = null
@@ -136,7 +136,7 @@ open class SyncUpTask(syncManager: SyncManager, sync: SyncState, callback: SyncU
         val statusCode: Int
         when (action) {
             Action.create -> {
-                recordServerId = target.createOnServer(syncManager, record, options.getFieldlist())
+                recordServerId = target.createOnServer(syncManager, record, options.fieldlist)
                 // Success
                 if (recordServerId != null) {
                     record.put(target.idFieldName, recordServerId)
@@ -159,14 +159,14 @@ open class SyncUpTask(syncManager: SyncManager, sync: SyncState, callback: SyncU
             }
 
             Action.update -> {
-                statusCode = target.updateOnServer(syncManager, record, options.getFieldlist())
+                statusCode = target.updateOnServer(syncManager, record, options.fieldlist)
                 // Success
                 if (RestResponse.isSuccess(statusCode)) {
                     target.cleanAndSaveInLocalStore(syncManager, soupName, record)
                 } else if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
-                    if (options.getMergeMode() == MergeMode.OVERWRITE) {
+                    if (options.mergeMode == MergeMode.OVERWRITE) {
                         recordServerId =
-                            target.createOnServer(syncManager, record, options.getFieldlist())
+                            target.createOnServer(syncManager, record, options.fieldlist)
                         if (recordServerId != null) {
                             record.put(target.idFieldName, recordServerId)
                             target.cleanAndSaveInLocalStore(syncManager, soupName, record)

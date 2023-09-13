@@ -129,7 +129,7 @@ class BriefcaseSyncDownTarget internal constructor(
     }
 
     @Throws(JSONException::class, IOException::class)
-    override fun cleanGhosts(syncManager: SyncManager, soupName: String?, syncId: Long): Int {
+    override fun cleanGhosts(syncManager: SyncManager, soupName: String, syncId: Long): Int {
         var countGhosts = 0
 
         // Get all ids
@@ -150,7 +150,7 @@ class BriefcaseSyncDownTarget internal constructor(
                 syncManager, info!!.soupName, info.idFieldName,
                 buildSyncIdPredicateIfIndexed(syncManager, info.soupName, syncId)
             )
-            localIds!!.removeAll(remoteIds)
+            localIds.removeAll(remoteIds)
             val localIdSize = localIds.size
             if (localIdSize > 0) {
                 deleteRecordsFromLocalStore(syncManager, info.soupName, localIds, info.idFieldName)
@@ -270,8 +270,7 @@ class BriefcaseSyncDownTarget internal constructor(
         val allPrimingRecords = response.primingRecords
         for (info in infos) {
             if (allPrimingRecords.containsKey(info.sobjectType)) {
-                for (primingRecords in allPrimingRecords[info.sobjectType]
-                    .values) {
+                for (primingRecords in allPrimingRecords[info.sobjectType].values) {
                     for (primingRecord in primingRecords) {
                         typedIds.add(info.sobjectType, primingRecord.id)
                     }
@@ -314,7 +313,7 @@ class BriefcaseSyncDownTarget internal constructor(
         syncId: Long
     ) {
         val smartStore = syncManager.smartStore
-        synchronized(smartStore!!.database) {
+        synchronized(smartStore.database) {
             try {
                 smartStore.beginTransaction()
                 for (i in 0 until records.length()) {

@@ -44,7 +44,7 @@ import java.util.LinkedList
  */
 open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
     // Max batch size
-    override var maxBatchSize: Int
+    final override var maxBatchSize: Int
         protected set
 
     /**
@@ -54,8 +54,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
         createFieldlist: List<String?>?,
         updateFieldlist: List<String?>?,
         maxBatchSize: Int
-    ) : this(createFieldlist, updateFieldlist, null, null, null, maxBatchSize) {
-    }
+    ) : this(createFieldlist, updateFieldlist, null, null, null, maxBatchSize)
     /**
      * Construct BatchSyncUpTarget with a different maxBatchSize and id/modifiedDate/externalId fields
      */
@@ -70,8 +69,8 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
      */
     @JvmOverloads
     constructor(
-        createFieldlist: List<String?>? = null,
-        updateFieldlist: List<String?>? = null,
+        createFieldlist: List<String>? = null,
+        updateFieldlist: List<String>? = null,
         idFieldName: String? = null,
         modificationDateFieldName: String? = null,
         externalIdFieldName: String? = null,
@@ -97,7 +96,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
      */
     constructor(target: JSONObject) : super(target) {
         maxBatchSize = Math.min(
-            target!!.optInt(MAX_BATCH_SIZE, MAX_SUB_REQUESTS_COMPOSITE_API),
+            target.optInt(MAX_BATCH_SIZE, MAX_SUB_REQUESTS_COMPOSITE_API),
             MAX_SUB_REQUESTS_COMPOSITE_API
         ) // composite api allows up to 25 subrequests
     }
@@ -116,10 +115,10 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
     @Throws(JSONException::class, IOException::class)
     override fun syncUpRecords(
         syncManager: SyncManager,
-        records: List<JSONObject?>,
-        fieldlist: List<String?>?,
-        mergeMode: MergeMode?,
-        syncSoupName: String?
+        records: List<JSONObject>,
+        fieldlist: List<String>,
+        mergeMode: MergeMode,
+        syncSoupName: String
     ) {
         syncUpRecords(syncManager, records, fieldlist, mergeMode, syncSoupName, false)
     }
@@ -127,10 +126,10 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
     @Throws(JSONException::class, IOException::class)
     private fun syncUpRecords(
         syncManager: SyncManager,
-        records: List<JSONObject?>,
-        fieldlist: List<String?>?,
-        mergeMode: MergeMode?,
-        syncSoupName: String?,
+        records: List<JSONObject>,
+        fieldlist: List<String>,
+        mergeMode: MergeMode,
+        syncSoupName: String,
         isReRun: Boolean
     ) {
         if (records.size > maxBatchSize) {
@@ -146,7 +145,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
             if (id == null) {
                 // create local id - needed for refId
                 id = SyncTarget.Companion.createLocalId()
-                record!!.put(idFieldName, id)
+                record.put(idFieldName, id)
             }
             val request = buildRequestForRecord(record, fieldlist)
             if (request != null) {
@@ -167,7 +166,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
         // Update local store
         for (i in records.indices) {
             val record = records[i]
-            val id = record!!.getString(idFieldName)
+            val id = record.getString(idFieldName)
             if (isDirty(record)) {
                 needReRun = needReRun || updateRecordInLocalStore(
                     syncManager,
@@ -175,7 +174,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
                     record,
                     mergeMode,
                     refIdToServerId,
-                    refIdToRecordResponses!![id],
+                    refIdToRecordResponses[id],
                     isReRun
                 )
             }
@@ -191,7 +190,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
     protected open fun sendRecordRequests(
         syncManager: SyncManager,
         recordRequests: List<RecordRequest>
-    ): Map<String?, RecordResponse?>? {
+    ): Map<String, RecordResponse> {
         return CompositeRequestHelper.sendAsCompositeBatchRequest(
             syncManager,
             false,
@@ -202,7 +201,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
     @Throws(JSONException::class)
     protected fun buildRequestForRecord(
         record: JSONObject?,
-        fieldlist: List<String?>?
+        fieldlist: List<String>
     ): RecordRequest? {
         var fieldlist = fieldlist
         if (!isDirty(record!!)) {
@@ -221,13 +220,13 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
                 RecordRequest.Companion.requestForDelete(objectType, id)
             }
         } else {
-            val fields: Map<String?, Any?>?
+            val fields: Map<String, Any>
             if (isCreate) {
                 fieldlist = if (createFieldlist != null) createFieldlist else fieldlist
                 fields = buildFieldsMap(record, fieldlist, idFieldName, modificationDateFieldName)
-                val externalId = if (getExternalIdFieldName() != null) JSONObjectHelper.optString(
+                val externalId = if (externalIdFieldName != null) JSONObjectHelper.optString(
                     record,
-                    getExternalIdFieldName()
+                    externalIdFieldName
                 ) else null
 
                 // Do upsert if externalId specified
@@ -238,7 +237,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
                 ) {
                     RecordRequest.Companion.requestForUpsert(
                         objectType,
-                        getExternalIdFieldName(),
+                        externalIdFieldName,
                         externalId,
                         fields
                     )
@@ -255,11 +254,11 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
 
     @Throws(JSONException::class, IOException::class)
     protected fun updateRecordInLocalStore(
-        syncManager: SyncManager?,
-        soupName: String?,
-        record: JSONObject?,
-        mergeMode: MergeMode?,
-        refIdToServerId: Map<String?, String?>?,
+        syncManager: SyncManager,
+        soupName: String,
+        record: JSONObject,
+        mergeMode: MergeMode,
+        refIdToServerId: Map<String, String>,
         response: RecordResponse?,
         isReRun: Boolean
     ): Boolean {
@@ -268,13 +267,13 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
             if (response != null && response.errorJson != null) response.errorJson.toString() else null
 
         // Delete case
-        if (isLocallyDeleted(record!!)) {
+        if (isLocallyDeleted(record)) {
             if (isLocallyCreated(record) // we didn't go to the sever
                 || response!!.success // or we successfully deleted on the server
                 || response.recordDoesNotExist
             ) // or the record was already deleted on the server
             {
-                deleteFromLocalStore(syncManager!!, soupName, record)
+                deleteFromLocalStore(syncManager, soupName, record)
             } else {
                 saveRecordToLocalStoreWithError(syncManager, soupName, record, lastError)
             }
@@ -285,7 +284,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
                 CompositeRequestHelper.updateReferences(record, idFieldName, refIdToServerId)
 
                 // Clean and save
-                cleanAndSaveInLocalStore(syncManager!!, soupName, record)
+                cleanAndSaveInLocalStore(syncManager, soupName, record)
             } else if (response.recordDoesNotExist && mergeMode == MergeMode.OVERWRITE // Record needs to be recreated
                 && !isReRun
             ) {
