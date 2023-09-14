@@ -93,8 +93,8 @@ object CompositeRequestHelper {
         syncManager: SyncManager,
         allOrNone: Boolean,
         recordRequests: List<RecordRequest>
-    ): Map<String?, RecordResponse> {
-        val refIdToRecordResponses: MutableMap<String?, RecordResponse> = LinkedHashMap()
+    ): Map<String, RecordResponse> {
+        val refIdToRecordResponses: MutableMap<String, RecordResponse> = LinkedHashMap()
         for (requestType in RequestType.values()) {
             val refIds = RecordRequest.getRefIds(recordRequests, requestType)
             if (refIds.size > 0) {
@@ -114,7 +114,7 @@ object CompositeRequestHelper {
                         response.asJSONArray()
                     ).subResponses
                     for (i in subResponses.indices) {
-                        val refId = refIds[i]
+                        val refId = refIds[i]!!
                         val recordResponse = RecordResponse.fromCollectionSubResponse(
                             subResponses[i]
                         )
@@ -234,7 +234,7 @@ object CompositeRequestHelper {
     class RecordRequest private constructor(
         var requestType: RequestType,
         var objectType: String?,
-        var fields: Map<String?, Any?>?,
+        var fields: Map<String, Any?>?,
         var id: String?,
         var externalId: String?,
         var externalIdFieldName: String?
@@ -294,23 +294,23 @@ object CompositeRequestHelper {
         }
 
         companion object {
-            fun requestForCreate(objectType: String?, fields: Map<String?, Any?>?): RecordRequest {
+            fun requestForCreate(objectType: String?, fields: Map<String, Any?>): RecordRequest {
                 return RecordRequest(RequestType.CREATE, objectType, fields, null, null, null)
             }
 
             fun requestForUpdate(
-                objectType: String?,
+                objectType: String,
                 id: String?,
-                fields: Map<String?, Any?>?
+                fields: Map<String, Any?>
             ): RecordRequest {
                 return RecordRequest(RequestType.UPDATE, objectType, fields, id, null, null)
             }
 
             fun requestForUpsert(
-                objectType: String?,
+                objectType: String,
                 externalIdFieldName: String?,
                 externalId: String?,
-                fields: Map<String?, Any?>?
+                fields: Map<String, Any?>
             ): RecordRequest {
                 return RecordRequest(
                     RequestType.UPSERT,

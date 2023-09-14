@@ -77,7 +77,7 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
         childrenInfo: ChildrenInfo?,
         childrenFieldlist: List<String?>?,
         relationshipType: RelationshipType?
-    ) : super(parentInfo.idFieldName, parentInfo.modificationDateFieldName, null) {
+    ) : super(parentInfo.idFieldName, parentInfo.modificationDateFieldName, "") {
         queryType = QueryType.parent_children
         this.parentInfo = parentInfo
         this.parentFieldlist = parentFieldlist
@@ -85,14 +85,14 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
         this.childrenInfo = childrenInfo
         this.childrenFieldlist = childrenFieldlist
         this.relationshipType = relationshipType
-        MobileSyncSDKManager.Companion.getInstance()
+        MobileSyncSDKManager.instance
             .registerUsedAppFeature(Features.FEATURE_RELATED_RECORDS)
     }
 
     /**
      * Construct ParentChildrenSyncDownTarget from soql query - not allowed
      */
-    constructor(query: String?) : super(query) {
+    constructor(query: String) : super(query) {
         throw UnsupportedOperationException("Cannot construct ParentChildrenSyncDownTarget from SOQL query")
     }
 
@@ -168,7 +168,7 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
         }
 
     @Throws(JSONException::class, IOException::class)
-    override fun cleanGhosts(syncManager: SyncManager, soupName: String?, syncId: Long): Int {
+    override fun cleanGhosts(syncManager: SyncManager, soupName: String, syncId: Long): Int {
         // Taking care of ghost parents
         val localIdsSize = super.cleanGhosts(syncManager, soupName, syncId)
 
@@ -207,11 +207,10 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
         // Makes network request and parses the response.
         var records = startFetch(syncManager, soqlForChildrenRemoteIds)
         val remoteChildrenIds: MutableSet<String?> = HashSet(parseChildrenIdsFromResponse(records))
-        while (records != null) {
+        while (true) {
             syncManager.checkAcceptingSyncs()
-
             // Fetch next records, if any.
-            records = continueFetch(syncManager)
+            records = continueFetch(syncManager) ?: break
             remoteChildrenIds.addAll(parseIdsFromResponse(records))
         }
         return remoteChildrenIds
@@ -348,9 +347,9 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
     }
 
     override fun getNonDirtyRecordIdsSql(
-        soupName: String?,
-        idField: String?,
-        additionalPredicate: String?
+        soupName: String,
+        idField: String,
+        additionalPredicate: String
     ): String {
         return ParentChildrenSyncTargetHelper.getNonDirtyRecordIdsSql(
             parentInfo,

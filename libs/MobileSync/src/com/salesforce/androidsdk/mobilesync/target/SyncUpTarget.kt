@@ -171,9 +171,9 @@ open class SyncUpTarget : SyncTarget {
     open fun createOnServer(
         syncManager: SyncManager,
         record: JSONObject,
-        fieldlist: List<String>
+        fieldlist: List<String>?
     ): String? {
-        val fieldlist = createFieldlist ?: fieldlist
+        val fieldlist = createFieldlist ?: fieldlist ?: throw MobileSyncException("No fields specified")
         val objectType = SmartStore.project(record, Constants.SOBJECT_TYPE) as String
         val fields = buildFieldsMap(record, fieldlist, idFieldName, modificationDateFieldName)
         val externalId = if (externalIdFieldName != null) JSONObjectHelper.optString(
@@ -308,10 +308,9 @@ open class SyncUpTarget : SyncTarget {
     open fun updateOnServer(
         syncManager: SyncManager,
         record: JSONObject,
-        fieldlist: List<String>
+        fieldlist: List<String>?
     ): Int {
-        var fieldlist = fieldlist
-        fieldlist = updateFieldlist ?: fieldlist
+        val fieldlist = updateFieldlist ?: fieldlist ?: throw MobileSyncException("No fields specified")
         val objectType = SmartStore.project(record, Constants.SOBJECT_TYPE) as String
         val objectId = record.getString(idFieldName)
         val fields = buildFieldsMap(record, fieldlist, idFieldName, modificationDateFieldName)
@@ -466,11 +465,11 @@ open class SyncUpTarget : SyncTarget {
     @Throws(JSONException::class, IOException::class)
     open fun areNewerThanServer(
         syncManager: SyncManager,
-        records: List<JSONObject?>?
+        records: List<JSONObject>
     ): MutableMap<String, Boolean> {
         val storeIdToNewerThanServer: MutableMap<String, Boolean> = HashMap()
-        for (record in records!!) {
-            val storeId = record!!.getString(SmartStore.SOUP_ENTRY_ID)
+        for (record in records) {
+            val storeId = record.getString(SmartStore.SOUP_ENTRY_ID)
             storeIdToNewerThanServer[storeId] = isNewerThanServer(syncManager, record)
         }
         return storeIdToNewerThanServer
@@ -554,9 +553,9 @@ open class SyncUpTarget : SyncTarget {
          */
         @JvmStatic
         @Throws(JSONException::class)
-        fun fromJSON(target: JSONObject?): SyncUpTarget {
+        fun fromJSON(target: JSONObject): SyncUpTarget {
             // Default sync up target (it's CollectionSyncUpTarget starting in Mobile SDK 10.1)
-            return if (target == null || target.isNull(ANDROID_IMPL)) {
+            return if (target.isNull(ANDROID_IMPL)) {
                 CollectionSyncUpTarget(target)
             } else try {
                 val implClass =

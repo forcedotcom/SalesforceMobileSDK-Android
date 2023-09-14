@@ -59,7 +59,7 @@ class Layout {
      */
     var mode: String? = null
         private set
-    private var sections: MutableList<LayoutSection?>? = null
+    private var sections: MutableList<LayoutSection>? = null
 
     /**
      * Returns the raw data of this layout.
@@ -152,14 +152,14 @@ class Layout {
          * @see [https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_responses_record_layout_row.htm.ui_api_responses_record_layout_row](https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_responses_record_layout_row.htm.ui_api_responses_record_layout_row)
          */
         class Row {
-            private var layoutItems: MutableList<Item?>? = null
+            private var layoutItems: MutableList<Item>? = null
 
             /**
              * Returns the layout items present in this layout row.
              *
              * @return Layout items present in this layout row.
              */
-            fun getLayoutItems(): List<Item?>? {
+            fun getLayoutItems(): List<Item>? {
                 return layoutItems
             }
 

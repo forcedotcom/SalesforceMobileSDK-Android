@@ -99,11 +99,11 @@ class MetadataSyncDownTarget : SyncDownTarget {
         return null
     }
 
-    override fun getRemoteIds(syncManager: SyncManager, localIds: Set<String?>?): Set<String?>? {
-        return null
+    override fun getRemoteIds(syncManager: SyncManager, localIds: Set<String>): Set<String> {
+        return emptySet()
     }
 
-    override fun cleanGhosts(syncManager: SyncManager, soupName: String?, syncId: Long): Int {
+    override fun cleanGhosts(syncManager: SyncManager, soupName: String, syncId: Long): Int {
         return 0
     }
 

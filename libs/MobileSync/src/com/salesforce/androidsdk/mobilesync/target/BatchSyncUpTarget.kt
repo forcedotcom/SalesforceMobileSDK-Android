@@ -51,8 +51,8 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
      * Construct SyncUpTarget with a different maxBatchSize (NB: cannot exceed MAX_SUB_REQUESTS_COMPOSITE_API)
      */
     constructor(
-        createFieldlist: List<String?>?,
-        updateFieldlist: List<String?>?,
+        createFieldlist: List<String>?,
+        updateFieldlist: List<String>?,
         maxBatchSize: Int
     ) : this(createFieldlist, updateFieldlist, null, null, null, maxBatchSize)
     /**
@@ -116,7 +116,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
     override fun syncUpRecords(
         syncManager: SyncManager,
         records: List<JSONObject>,
-        fieldlist: List<String>,
+        fieldlist: List<String>?,
         mergeMode: MergeMode,
         syncSoupName: String
     ) {
@@ -127,7 +127,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
     private fun syncUpRecords(
         syncManager: SyncManager,
         records: List<JSONObject>,
-        fieldlist: List<String>,
+        fieldlist: List<String>?,
         mergeMode: MergeMode,
         syncSoupName: String,
         isReRun: Boolean
@@ -200,11 +200,10 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
 
     @Throws(JSONException::class)
     protected fun buildRequestForRecord(
-        record: JSONObject?,
-        fieldlist: List<String>
+        record: JSONObject,
+        fieldlist: List<String>?
     ): RecordRequest? {
-        var fieldlist = fieldlist
-        if (!isDirty(record!!)) {
+        if (!isDirty(record)) {
             return null // nothing to do
         }
         val objectType = SmartStore.project(record, Constants.SOBJECT_TYPE) as String
@@ -220,9 +219,9 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
                 RecordRequest.Companion.requestForDelete(objectType, id)
             }
         } else {
-            val fields: Map<String, Any>
+            val fields: Map<String, Any?>
             if (isCreate) {
-                fieldlist = if (createFieldlist != null) createFieldlist else fieldlist
+                val fieldlist = createFieldlist ?: fieldlist ?: throw MobileSyncException("No field specified")
                 fields = buildFieldsMap(record, fieldlist, idFieldName, modificationDateFieldName)
                 val externalId = if (externalIdFieldName != null) JSONObjectHelper.optString(
                     record,
@@ -233,19 +232,19 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
                 if (externalId != null // the following check is there for the case
                     // where the the external id field is the id field
                     // and the field is populated by a local id
-                    && !SyncTarget.Companion.isLocalId(externalId)
+                    && !SyncTarget.isLocalId(externalId)
                 ) {
-                    RecordRequest.Companion.requestForUpsert(
+                    RecordRequest.requestForUpsert(
                         objectType,
                         externalIdFieldName,
                         externalId,
                         fields
                     )
                 } else {
-                    RecordRequest.Companion.requestForCreate(objectType, fields)
+                    RecordRequest.requestForCreate(objectType, fields)
                 }
             } else {
-                fieldlist = if (updateFieldlist != null) updateFieldlist else fieldlist
+                val fieldlist = updateFieldlist ?: fieldlist ?: throw MobileSyncException("No field specified")
                 fields = buildFieldsMap(record, fieldlist, idFieldName, modificationDateFieldName)
                 RecordRequest.Companion.requestForUpdate(objectType, id, fields)
             }

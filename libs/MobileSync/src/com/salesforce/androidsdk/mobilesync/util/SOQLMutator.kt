@@ -52,7 +52,7 @@ class SOQLMutator(private val originalSoql: String) {
         val tokenizer = SOQLTokenizer(originalSoql)
         for (token in tokenizer.tokenize()) {
             for (clauseType in CLAUSE_TYPE_KEYWORDS) {
-                if (token.lowercase().matches(clauseType)) {
+                if (token.lowercase().matches(Regex(clauseType))) {
                     matchingClauseType = clauseType
                     break
                 }
@@ -81,7 +81,7 @@ class SOQLMutator(private val originalSoql: String) {
      * Replace fields being selected
      * @param commaSeparatedFields Comma separated fields to use in top level query's select.
      */
-    fun replaceSelectFields(commaSeparatedFields: String?): SOQLMutator {
+    fun replaceSelectFields(commaSeparatedFields: String): SOQLMutator {
         clauses[SELECT] = commaSeparatedFields
         return this
     }
@@ -90,7 +90,7 @@ class SOQLMutator(private val originalSoql: String) {
      * Add fields to select
      * @param commaSeparatedFields Comma separated fields to add to top level query's select.
      */
-    fun addSelectFields(commaSeparatedFields: String?): SOQLMutator {
+    fun addSelectFields(commaSeparatedFields: String): SOQLMutator {
         clauses[SELECT] = commaSeparatedFields + "," + trimmedClause(SELECT)
         return this
     }
@@ -112,7 +112,7 @@ class SOQLMutator(private val originalSoql: String) {
      * Replace order by clause (or add one if none)
      * @param commaSeparatedFields Comma separated fields to add to top level query's select.
      */
-    fun replaceOrderBy(commaSeparatedFields: String?): SOQLMutator {
+    fun replaceOrderBy(commaSeparatedFields: String): SOQLMutator {
         clauses[ORDER_BY] = commaSeparatedFields
         return this
     }
@@ -177,7 +177,7 @@ class SOQLMutator(private val originalSoql: String) {
     }
 
     private fun clauseAsInteger(clauseType: String): Int? {
-        return if (clauses.containsKey(clauseType)) clauses[clauseType]!!.trim { it <= ' ' } else null
+        return clauses[clauseType]?.trim()?.toIntOrNull()
     }
 
     /**
@@ -340,6 +340,6 @@ class SOQLMutator(private val originalSoql: String) {
         private const val LIMIT = "limit"
         private const val OFFSET = "offset"
         private val CLAUSE_TYPE_KEYWORDS =
-            arrayOf(SELECT, FROM, WHERE, HAVING, GROUP_BY, ORDER_BY, LIMIT, OFFSET).map { Regex(it) }
+            arrayOf(SELECT, FROM, WHERE, HAVING, GROUP_BY, ORDER_BY, LIMIT, OFFSET)
     }
 }

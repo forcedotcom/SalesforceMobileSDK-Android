@@ -187,16 +187,16 @@ open class SoqlSyncDownTarget : SyncDownTarget {
     }
 
     @Throws(IOException::class, JSONException::class)
-    override fun getRemoteIds(syncManager: SyncManager, localIds: Set<String?>?): Set<String?>? {
+    override fun getRemoteIds(syncManager: SyncManager, localIds: Set<String>): Set<String> {
         return getRemoteIdsWithSoql(syncManager, soqlForRemoteIds)
     }
 
     @Throws(IOException::class, JSONException::class)
     protected fun getRemoteIdsWithSoql(
         syncManager: SyncManager,
-        soqlForRemoteIds: String?
-    ): Set<String?> {
-        val remoteIds: MutableSet<String?> = HashSet()
+        soqlForRemoteIds: String
+    ): Set<String> {
+        val remoteIds: MutableSet<String> = HashSet()
 
         // Makes network request and parses the response.
         var records: JSONArray? = startFetch(syncManager, soqlForRemoteIds)
@@ -211,7 +211,7 @@ open class SoqlSyncDownTarget : SyncDownTarget {
         return remoteIds
     }
 
-    open val soqlForRemoteIds: String?
+    open val soqlForRemoteIds: String
         get() {
             val fullQuery = getQuery(0)
             return SOQLMutator(fullQuery).replaceSelectFields(idFieldName).replaceOrderBy("")

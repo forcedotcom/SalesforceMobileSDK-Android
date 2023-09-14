@@ -171,9 +171,9 @@ class BriefcaseSyncDownTarget internal constructor(
     }
 
     @Throws(IOException::class, JSONException::class)
-    override fun getRemoteIds(syncManager: SyncManager, localIds: Set<String?>?): Set<String?>? {
+    override fun getRemoteIds(syncManager: SyncManager, localIds: Set<String>): Set<String> {
         // Not used - we are overriding cleanGhosts entirely since we could have multiple soups
-        return null
+        return emptySet()
     }
 
     /**
@@ -269,11 +269,9 @@ class BriefcaseSyncDownTarget internal constructor(
         }
         val allPrimingRecords = response.primingRecords
         for (info in infos) {
-            if (allPrimingRecords.containsKey(info.sobjectType)) {
-                for (primingRecords in allPrimingRecords[info.sobjectType].values) {
-                    for (primingRecord in primingRecords) {
-                        typedIds.add(info.sobjectType, primingRecord.id)
-                    }
+            allPrimingRecords[info.sobjectType]?.values?.forEach { primingRecords ->
+                primingRecords.forEach { primingRecord ->
+                    typedIds.add(info.sobjectType, primingRecord.id)
                 }
             }
         }

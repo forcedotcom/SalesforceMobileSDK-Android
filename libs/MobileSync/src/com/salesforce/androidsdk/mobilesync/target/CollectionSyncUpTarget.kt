@@ -43,8 +43,8 @@ class CollectionSyncUpTarget : BatchSyncUpTarget {
      * Construct CollectionSyncUpTarget with a different maxBatchSize (NB: cannot exceed MAX_RECORDS_SOBJECT_COLLECTION_API)
      */
     constructor(
-        createFieldlist: List<String?>?,
-        updateFieldlist: List<String?>?,
+        createFieldlist: List<String>?,
+        updateFieldlist: List<String>?,
         maxBatchSize: Int
     ) : this(createFieldlist, updateFieldlist, null, null, null, maxBatchSize)
     /**
@@ -61,8 +61,8 @@ class CollectionSyncUpTarget : BatchSyncUpTarget {
      */
     @JvmOverloads
     constructor(
-        createFieldlist: List<String?>? = null,
-        updateFieldlist: List<String?>? = null,
+        createFieldlist: List<String>? = null,
+        updateFieldlist: List<String>? = null,
         idFieldName: String? = null,
         modificationDateFieldName: String? = null,
         externalIdFieldName: String? = null,
@@ -86,10 +86,10 @@ class CollectionSyncUpTarget : BatchSyncUpTarget {
      * @param target
      * @throws JSONException
      */
-    constructor(target: JSONObject?) : super(target) {
+    constructor(target: JSONObject) : super(target) {
         maxBatchSize = Math.min(
-            target!!.optInt(
-                BatchSyncUpTarget.Companion.MAX_BATCH_SIZE,
+            target.optInt(
+                BatchSyncUpTarget.MAX_BATCH_SIZE,
                 MAX_RECORDS_SOBJECT_COLLECTION_API
             ), MAX_RECORDS_SOBJECT_COLLECTION_API
         ) // soject collection apis allows up to 200 records
@@ -99,19 +99,19 @@ class CollectionSyncUpTarget : BatchSyncUpTarget {
     override fun sendRecordRequests(
         syncManager: SyncManager,
         recordRequests: List<RecordRequest>
-    ): Map<String?, RecordResponse?> {
+    ): Map<String, RecordResponse> {
         return CompositeRequestHelper.sendAsCollectionRequests(syncManager, false, recordRequests)
     }
 
     @Throws(JSONException::class, IOException::class)
     override fun areNewerThanServer(
         syncManager: SyncManager,
-        records: List<JSONObject?>?
+        records: List<JSONObject>
     ): MutableMap<String, Boolean> {
         val storeIdToNewerThanServer: MutableMap<String, Boolean> = HashMap()
-        val nonLocallyCreatedRecords: MutableList<JSONObject?> = ArrayList()
+        val nonLocallyCreatedRecords: MutableList<JSONObject> = ArrayList()
         for (record in records!!) {
-            if (isLocallyCreated(record!!) || !record.has(idFieldName)) {
+            if (isLocallyCreated(record) || !record.has(idFieldName)) {
                 val storeId = record.getString(SmartStore.SOUP_ENTRY_ID)
                 storeIdToNewerThanServer[storeId] = true
             } else {
@@ -120,7 +120,7 @@ class CollectionSyncUpTarget : BatchSyncUpTarget {
         }
         val recordIdToRemoteModDate = fetchLastModifiedDates(syncManager, nonLocallyCreatedRecords)
         for (record in nonLocallyCreatedRecords) {
-            val storeId = record!!.getString(SmartStore.SOUP_ENTRY_ID)
+            val storeId = record.getString(SmartStore.SOUP_ENTRY_ID)
             val localModDate = RecordModDate(
                 JSONObjectHelper.optString(record, modificationDateFieldName),
                 isLocallyDeleted(record)

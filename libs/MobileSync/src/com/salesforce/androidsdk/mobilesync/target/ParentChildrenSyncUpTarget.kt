@@ -53,20 +53,20 @@ import java.util.LinkedList
  */
 class ParentChildrenSyncUpTarget(
     private val parentInfo: ParentInfo,
-    parentCreateFieldlist: List<String?>?,
-    parentUpdateFieldlist: List<String?>?,
+    parentCreateFieldlist: List<String>?,
+    parentUpdateFieldlist: List<String>?,
     private val childrenInfo: ChildrenInfo,
-    private val childrenCreateFieldlist: List<String?>,
-    private val childrenUpdateFieldlist: List<String?>,
+    private val childrenCreateFieldlist: List<String>,
+    private val childrenUpdateFieldlist: List<String>,
     private val relationshipType: RelationshipType
 ) : SyncUpTarget(parentCreateFieldlist, parentUpdateFieldlist), AdvancedSyncUpTarget {
     constructor(target: JSONObject) : this(
         ParentInfo(target.getJSONObject(ParentChildrenSyncTargetHelper.PARENT)),
-        JSONObjectHelper.toList<String?>(target.optJSONArray(SyncUpTarget.Companion.CREATE_FIELDLIST)),
-        JSONObjectHelper.toList<String?>(target.optJSONArray(SyncUpTarget.Companion.UPDATE_FIELDLIST)),
+        JSONObjectHelper.toList<String>(target.optJSONArray(CREATE_FIELDLIST)),
+        JSONObjectHelper.toList<String>(target.optJSONArray(UPDATE_FIELDLIST)),
         ChildrenInfo(target.getJSONObject(ParentChildrenSyncTargetHelper.CHILDREN)),
-        JSONObjectHelper.toList<String?>(target.optJSONArray(CHILDREN_CREATE_FIELDLIST)),
-        JSONObjectHelper.toList<String?>(target.optJSONArray(CHILDREN_UPDATE_FIELDLIST)),
+        JSONObjectHelper.toList<String>(target.optJSONArray(CHILDREN_CREATE_FIELDLIST)),
+        JSONObjectHelper.toList<String>(target.optJSONArray(CHILDREN_UPDATE_FIELDLIST)),
         RelationshipType.valueOf(target.getString(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE))
     )
 
@@ -96,9 +96,9 @@ class ParentChildrenSyncUpTarget(
 
     override fun createOnServer(
         syncManager: SyncManager,
-        record: JSONObject?,
-        fieldlist: List<String?>?
-    ): String? {
+        record: JSONObject,
+        fieldlist: List<String>?
+    ): String {
         throw UnsupportedOperationException("For advanced sync up target, call syncUpOneRecord")
     }
 
@@ -108,8 +108,8 @@ class ParentChildrenSyncUpTarget(
 
     override fun updateOnServer(
         syncManager: SyncManager,
-        record: JSONObject?,
-        fieldlist: List<String?>?
+        record: JSONObject,
+        fieldlist: List<String>?
     ): Int {
         throw UnsupportedOperationException("For advanced sync up target, call syncUpOneRecord")
     }
@@ -120,10 +120,10 @@ class ParentChildrenSyncUpTarget(
     @Throws(JSONException::class, IOException::class)
     override fun syncUpRecords(
         syncManager: SyncManager,
-        records: List<JSONObject?>,
-        fieldlist: List<String?>?,
-        mergeMode: MergeMode?,
-        syncSoupName: String?
+        records: List<JSONObject>,
+        fieldlist: List<String>?,
+        mergeMode: MergeMode,
+        syncSoupName: String
     ) {
         if (records.size > 1) {
             throw MobileSyncException(javaClass.simpleName + ":syncUpRecords can handle only 1 record at a time")
@@ -248,7 +248,7 @@ class ParentChildrenSyncUpTarget(
         record: JSONObject?,
         children: JSONArray,
         mergeMode: MergeMode?,
-        refIdToServerId: Map<String?, String?>?,
+        refIdToServerId: Map<String, String>,
         response: RecordResponse?
     ): Boolean {
         var needReRun = false
@@ -308,11 +308,11 @@ class ParentChildrenSyncUpTarget(
 
     @Throws(JSONException::class)
     protected fun updateChildRecordInLocalStore(
-        syncManager: SyncManager?,
+        syncManager: SyncManager,
         record: JSONObject,
-        parentRecord: JSONObject?,
+        parentRecord: JSONObject,
         mergeMode: MergeMode?,
-        refIdToServerId: Map<String?, String?>?,
+        refIdToServerId: Map<String, String>,
         response: RecordResponse?
     ): Boolean {
         var needReRun = false
@@ -327,7 +327,7 @@ class ParentChildrenSyncUpTarget(
                 || response.recordDoesNotExist
             ) // or the record was already deleted on the server
             {
-                deleteFromLocalStore(syncManager!!, soupName, record)
+                deleteFromLocalStore(syncManager, soupName, record)
             } else {
                 saveRecordToLocalStoreWithError(syncManager, soupName, record, lastError)
             }
@@ -349,7 +349,7 @@ class ParentChildrenSyncUpTarget(
                 )
 
                 // Clean and save
-                cleanAndSaveInLocalStore(syncManager!!, soupName, record)
+                cleanAndSaveInLocalStore(syncManager, soupName, record)
             } else if (response.recordDoesNotExist) {
                 // Record needs to be recreated
                 if (mergeMode == MergeMode.OVERWRITE) {
@@ -362,7 +362,7 @@ class ParentChildrenSyncUpTarget(
             } else if (response.relatedRecordDoesNotExist) {
                 // Parent record needs to be recreated
                 if (mergeMode == MergeMode.OVERWRITE) {
-                    parentRecord!!.put(SyncTarget.Companion.LOCAL, true)
+                    parentRecord.put(SyncTarget.Companion.LOCAL, true)
                     parentRecord.put(SyncTarget.Companion.LOCALLY_CREATED, true)
 
                     // We need a re-run
@@ -379,7 +379,7 @@ class ParentChildrenSyncUpTarget(
     protected fun buildRequestForParentRecord(
         apiVersion: String?,
         record: JSONObject?,
-        fieldlist: List<String?>?
+        fieldlist: List<String>?
     ): RecordRequest? {
         return buildRequestForRecord(apiVersion, record, fieldlist, true, false, null)
     }
@@ -405,12 +405,11 @@ class ParentChildrenSyncUpTarget(
     protected fun buildRequestForRecord(
         apiVersion: String?,
         record: JSONObject?,
-        fieldlist: List<String?>?,
+        fieldlist: List<String>?,
         isParent: Boolean,
         useParentIdReference: Boolean,
         parentId: String?
     ): RecordRequest? {
-        var fieldlist = fieldlist
         if (!isDirty(record!!)) {
             return null // nothing to do
         }
@@ -427,8 +426,19 @@ class ParentChildrenSyncUpTarget(
                 RecordRequest.Companion.requestForDelete(info.sobjectType, id)
             }
         } else {
-            fieldlist =
-                if (isParent) if (isCreate) (if (createFieldlist == null) fieldlist else createFieldlist) else (if (updateFieldlist == null) fieldlist else updateFieldlist) else if (isCreate) childrenCreateFieldlist else childrenUpdateFieldlist
+            val fieldlist = if (isParent) {
+                if (isCreate) {
+                    createFieldlist ?: fieldlist
+                } else {
+                    updateFieldlist ?: fieldlist
+                }
+            } else {
+                if (isCreate) {
+                    childrenCreateFieldlist
+                } else {
+                    childrenUpdateFieldlist
+                }
+            } ?: throw MobileSyncException("No field specified")
             val fields =
                 buildFieldsMap(record, fieldlist, info.idFieldName, info.modificationDateFieldName)
             if (parentId != null) {
@@ -469,8 +479,8 @@ class ParentChildrenSyncUpTarget(
     }
 
     @Throws(JSONException::class, IOException::class)
-    override fun isNewerThanServer(syncManager: SyncManager, record: JSONObject?): Boolean {
-        if (isLocallyCreated(record!!)) {
+    override fun isNewerThanServer(syncManager: SyncManager, record: JSONObject): Boolean {
+        if (isLocallyCreated(record)) {
             return true
         }
         val idToLocalTimestamps = getLocalLastModifiedDates(syncManager, record)

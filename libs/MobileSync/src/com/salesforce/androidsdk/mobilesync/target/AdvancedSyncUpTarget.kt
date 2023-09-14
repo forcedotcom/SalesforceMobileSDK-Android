@@ -56,9 +56,9 @@ interface AdvancedSyncUpTarget {
     @Throws(JSONException::class, IOException::class)
     fun syncUpRecords(
         syncManager: SyncManager,
-        records: List<JSONObject?>,
-        fieldlist: List<String?>?,
-        mergeMode: MergeMode?,
-        syncSoupName: String?
+        records: List<JSONObject>,
+        fieldlist: List<String>?,
+        mergeMode: MergeMode,
+        syncSoupName: String
     )
 }

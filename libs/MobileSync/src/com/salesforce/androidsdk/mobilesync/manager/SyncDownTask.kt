@@ -58,16 +58,17 @@ class SyncDownTask(syncManager: SyncManager, sync: SyncState, callback: SyncUpda
         if (mergeMode == MergeMode.LEAVE_IF_CHANGED) {
             idsToSkip = target.getIdsToSkip(syncManager, soupName)
         }
-        while (records != null) {
+        while (true) {
+            val recordsIn = records ?: break
             checkIfStopRequested()
 
             // Figure out records to save
-            val recordsToSave = idsToSkip?.let { removeWithIds(records, it, idField) } ?: records
+            val recordsToSave = idsToSkip?.let { removeWithIds(recordsIn, it, idField) } ?: recordsIn
 
             // Save to smartstore.
             target.saveRecordsToLocalStore(syncManager, soupName, recordsToSave, sync.id)
-            countSaved += records.length()
-            maxTimeStamp = max(maxTimeStamp, target.getLatestModificationTimeStamp(records))
+            countSaved += recordsIn.length()
+            maxTimeStamp = max(maxTimeStamp, target.getLatestModificationTimeStamp(recordsIn))
 
             // Updating maxTimeStamp as we go if records are ordered by latest modification
             if (target.isSyncDownSortedByLatestModification) {

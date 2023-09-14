@@ -40,7 +40,7 @@ class SyncOptions
  * Private constructor
  * @param fieldlist
  * @param mergeMode
- */ private constructor(val fieldlist: List<String?>?, val mergeMode: MergeMode?) {
+ */ private constructor(val fieldlist: List<String>?, val mergeMode: MergeMode?) {
 
     /**
      * @return json representation of target
@@ -48,10 +48,11 @@ class SyncOptions
      */
     @Throws(JSONException::class)
     fun asJSON(): JSONObject {
-        val options = JSONObject()
-        if (mergeMode != null) options.put(MERGEMODE, mergeMode.name)
-        if (fieldlist != null) options.put(FIELDLIST, JSONArray(fieldlist))
-        return options
+        return with(JSONObject()) {
+            if (fieldlist != null) put(FIELDLIST, JSONArray(fieldlist))
+            if (mergeMode != null) put(MERGEMODE, mergeMode.name)
+            this
+        }
     }
 
     companion object {
@@ -80,7 +81,7 @@ class SyncOptions
          * @param fieldlist
          * @return
          */
-        fun optionsForSyncUp(fieldlist: List<String?>?): SyncOptions {
+        fun optionsForSyncUp(fieldlist: List<String>): SyncOptions {
             return SyncOptions(fieldlist, MergeMode.OVERWRITE)
         }
 
@@ -90,7 +91,7 @@ class SyncOptions
          * @return
          */
 		@JvmStatic
-		fun optionsForSyncUp(fieldlist: List<String?>?, mergeMode: MergeMode?): SyncOptions {
+		fun optionsForSyncUp(fieldlist: List<String>, mergeMode: MergeMode): SyncOptions {
             return SyncOptions(fieldlist, mergeMode)
         }
 
@@ -99,7 +100,7 @@ class SyncOptions
          * @return
          */
 		@JvmStatic
-		fun optionsForSyncDown(mergeMode: MergeMode?): SyncOptions {
+		fun optionsForSyncDown(mergeMode: MergeMode): SyncOptions {
             return SyncOptions(null, mergeMode)
         }
     }

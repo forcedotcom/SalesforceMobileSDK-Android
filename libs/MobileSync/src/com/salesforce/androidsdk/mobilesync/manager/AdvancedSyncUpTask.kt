@@ -53,7 +53,7 @@ class AdvancedSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: Sy
         val options = sync.options
         val totalSize = dirtyRecordIds.size
         val maxBatchSize = (target as AdvancedSyncUpTarget).maxBatchSize
-        val batch: MutableList<JSONObject?> = ArrayList()
+        val batch: MutableList<JSONObject> = ArrayList()
         updateSync(sync, SyncState.Status.RUNNING, 0, callback)
         val dirtyRecords = target.getFromLocalStore(syncManager, soupName, dirtyRecordIds)
 
@@ -74,8 +74,8 @@ class AdvancedSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: Sy
                 (target as AdvancedSyncUpTarget).syncUpRecords(
                     syncManager,
                     batch,
-                    options.fieldlist,
-                    options.mergeMode,
+                    options.fieldlist!!,
+                    options.mergeMode!!,
                     sync.soupName
                 )
                 batch.clear()
@@ -93,7 +93,7 @@ class AdvancedSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: Sy
     protected fun shouldSyncUpRecords(
         syncManager: SyncManager,
         target: SyncUpTarget,
-        records: List<JSONObject?>,
+        records: List<JSONObject>,
         options: SyncOptions?
     ): Map<String, Boolean> {
         var recordIdToShouldSyncUp: MutableMap<String, Boolean> = HashMap()
