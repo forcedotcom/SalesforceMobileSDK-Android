@@ -1,8 +1,11 @@
+rootProject.ext["PUBLISH_GROUP_ID"] = "com.salesforce.mobilesdk"
+rootProject.ext["PUBLISH_VERSION"] = "11.1.0"
+rootProject.ext["PUBLISH_ARTIFACT_ID"] = "SalesforceHybrid"
+
 plugins {
     `android-library`
     `kotlin-android`
-    `maven-publish`
-    signing
+    `publish-module`
 }
 
 dependencies {
@@ -72,81 +75,5 @@ android {
     buildFeatures {
         renderScript = true
         aidl = true
-    }
-
-    publishing {
-        singleVariant("release") {
-            withSourcesJar()
-        }
-    }
-}
-
-val sourcesJar by tasks.creating(Jar::class) {
-    archiveClassifier.set("sources")
-    from(android.sourceSets.getByName("main").java.srcDirs)
-}
-
-artifacts {
-    archives(sourcesJar)
-}
-
-afterEvaluate {
-    publishing {
-        publications {
-            create<MavenPublication>("release") {
-                artifactId = "SalesforceHybrid"
-                groupId = "com.salesforce.mobilesdk"
-                version = "11.1.0"
-                from(components["release"])
-                artifact(sourcesJar)
-                pom {
-                    name.set("SalesforceHybrid")
-                    description.set("Official Salesforce Android SDK")
-                    url.set("https://github.com/forcedotcom/SalesforceMobileSDK-Android")
-                    licenses {
-                        license {
-                            name.set("The Apache Software License, Version 2.0")
-                            url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
-                        }
-                    }
-                    developers {
-                        developer {
-                            id.set("bpage")
-                            name.set("Brandon Page")
-                            email.set("bpage@salesforce.com")
-                        }
-                        developer {
-                            id.set("wmathurin")
-                            name.set("Wolfgang Mathurin")
-                            email.set("wmathurin@salesforce.com ")
-                        }
-                        developer {
-                            id.set("brianna.birman")
-                            name.set("Brianna Birman")
-                            email.set("brianna.birman@salesforce.com")
-                        }
-                        developer {
-                            id.set("JohnsonEricAtSalesforce")
-                            name.set("Eric C. Johnson")
-                            email.set("Johnson.Eric@Salesforce.com")
-                        }
-                        scm {
-                            connection.set("https://github.com/forcedotcom/SalesforceMobileSDK-Android.git")
-                            developerConnection.set("https://github.com/forcedotcom/SalesforceMobileSDK-Android.git")
-                            url.set("https://github.com/forcedotcom/SalesforceMobileSDK-Android")
-                        }
-                    }
-                }
-            }
-        }
-
-        signing {
-            useInMemoryPgpKeys(
-                rootProject.ext["signing.keyId"] as? String,
-                rootProject.ext["signing.key"] as? String,
-                rootProject.ext["signing.password"] as? String
-            )
-            sign(publishing.publications)
-        }
     }
 }
