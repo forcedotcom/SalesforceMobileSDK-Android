@@ -74,7 +74,7 @@ class Layout {
      *
      * @return Layout sections of this layout.
      */
-    fun getSections(): List<LayoutSection?>? {
+    fun getSections(): List<LayoutSection>? {
         return sections
     }
 
@@ -116,7 +116,7 @@ class Layout {
          */
         var id: String? = null
             private set
-        private var layoutRows: MutableList<Row?>? = null
+        private var layoutRows: MutableList<Row>? = null
 
         /**
          * Returns the number of rows in this layout section.
@@ -132,7 +132,7 @@ class Layout {
          *
          * @return Rows present in this layout section.
          */
-        fun getLayoutRows(): List<Row?>? {
+        fun getLayoutRows(): List<Row>? {
             return layoutRows
         }
 
@@ -241,19 +241,17 @@ class Layout {
                      * @param object JSON object.
                      * @return Instance of this class.
                      */
-                    fun fromJSON(`object`: JSONObject?): Item? {
-                        var item: Item? = null
-                        if (`object` != null) {
-                            item = Item()
-                            item.isEditableForNew = `object`.optBoolean(EDITABLE_FOR_NEW)
-                            item.isEditableForUpdate = `object`.optBoolean(EDITABLE_FOR_UPDATE)
-                            item.label = `object`.optString(LABEL)
-                            item.layoutComponents = `object`.optJSONArray(LAYOUT_COMPONENTS)
-                            item.lookupIdApiName = `object`.optString(LOOKUP_ID_API_NAME)
-                            item.isRequired = `object`.optBoolean(REQUIRED)
-                            item.isSortable = `object`.optBoolean(SORTABLE)
+                    fun fromJSON(obj: JSONObject): Item {
+                        return with(Item()) {
+                            isEditableForNew = obj.optBoolean(EDITABLE_FOR_NEW)
+                            isEditableForUpdate = obj.optBoolean(EDITABLE_FOR_UPDATE)
+                            label = obj.optString(LABEL)
+                            layoutComponents = obj.optJSONArray(LAYOUT_COMPONENTS)
+                            lookupIdApiName = obj.optString(LOOKUP_ID_API_NAME)
+                            isRequired = obj.optBoolean(REQUIRED)
+                            isSortable = obj.optBoolean(SORTABLE)
+                            this
                         }
-                        return item
                     }
                 }
             }
@@ -264,25 +262,21 @@ class Layout {
                 /**
                  * Creates an instance of this class from its JSON representation.
                  *
-                 * @param object JSON object.
+                 * @param obj JSON object.
                  * @return Instance of this class.
                  */
-                fun fromJSON(`object`: JSONObject?): Row? {
-                    var row: Row? = null
-                    if (`object` != null) {
-                        row = Row()
-                        val items = `object`.optJSONArray(LAYOUT_ITEMS)
-                        if (items != null) {
-                            row.layoutItems = ArrayList()
-                            for (i in 0 until items.length()) {
-                                val item = items.optJSONObject(i)
-                                if (item != null) {
-                                    row.layoutItems.add(Item.fromJSON(item))
-                                }
+                fun fromJSON(obj: JSONObject): Row {
+                    return with(Row()) {
+                        val jsonItems = obj.optJSONArray(LAYOUT_ITEMS)
+                        if (jsonItems != null) {
+                            val layoutItems = ArrayList<Item>()
+                            for (i in 0 until jsonItems.length()) {
+                                layoutItems.add(Item.fromJSON(jsonItems.getJSONObject(i)))
                             }
+                            this.layoutItems = layoutItems
                         }
+                        this
                     }
-                    return row
                 }
             }
         }
@@ -298,31 +292,27 @@ class Layout {
             /**
              * Creates an instance of this class from its JSON representation.
              *
-             * @param object JSON object.
+             * @param `object` JSON object.
              * @return Instance of this class.
              */
-            fun fromJSON(`object`: JSONObject?): LayoutSection? {
-                var section: LayoutSection? = null
-                if (`object` != null) {
-                    section = LayoutSection()
-                    section.isCollapsible = `object`.optBoolean(COLLAPSIBLE)
-                    section.columns = `object`.optInt(COLUMNS)
-                    section.heading = `object`.optString(HEADING)
-                    section.id = `object`.optString(ID)
-                    val rows = `object`.optJSONArray(LAYOUT_ROWS)
-                    if (rows != null) {
-                        section.layoutRows = ArrayList()
-                        for (i in 0 until rows.length()) {
-                            val row = rows.optJSONObject(i)
-                            if (row != null) {
-                                section.layoutRows.add(Row.fromJSON(row))
-                            }
+            fun fromJSON(obj: JSONObject): LayoutSection {
+                return with(LayoutSection()) {
+                    isCollapsible = obj.optBoolean(COLLAPSIBLE)
+                    columns = obj.optInt(COLUMNS)
+                    heading = obj.optString(HEADING)
+                    id = obj.optString(ID)
+                    val jsonRows = obj.optJSONArray(LAYOUT_ROWS)
+                    if (jsonRows != null) {
+                        val layoutRows = ArrayList<Row>()
+                        for (i in 0 until jsonRows.length()) {
+                            layoutRows.add(Row.fromJSON(jsonRows.getJSONObject(i)))
                         }
+                        this.layoutRows = layoutRows
                     }
-                    section.rows = `object`.optInt(ROWS)
-                    section.useHeading = `object`.optBoolean(USE_HEADING)
+                    rows = obj.optInt(ROWS)
+                    useHeading = obj.optBoolean(USE_HEADING)
+                    this
                 }
-                return section
             }
         }
     }
@@ -336,29 +326,25 @@ class Layout {
         /**
          * Creates an instance of this class from its JSON representation.
          *
-         * @param object JSON object.
+         * @param `object` JSON object.
          * @return Instance of this class.
          */
-        fun fromJSON(`object`: JSONObject?): Layout? {
-            var layout: Layout? = null
-            if (`object` != null) {
-                layout = Layout()
-                layout.rawData = `object`
-                layout.id = `object`.optString(ID)
-                layout.layoutType = `object`.optString(LAYOUT_TYPE)
-                layout.mode = `object`.optString(MODE)
-                val sections = `object`.optJSONArray(SECTIONS)
-                if (sections != null) {
-                    layout.sections = ArrayList()
-                    for (i in 0 until sections.length()) {
-                        val section = sections.optJSONObject(i)
-                        if (section != null) {
-                            layout.sections.add(LayoutSection.fromJSON(section))
-                        }
+        fun fromJSON(obj: JSONObject): Layout {
+            return with(Layout()) {
+                rawData = obj
+                id = obj.optString(ID)
+                layoutType = obj.optString(LAYOUT_TYPE)
+                mode = obj.optString(MODE)
+                val jsonSections = obj.optJSONArray(SECTIONS)
+                if (jsonSections != null) {
+                    val sections = ArrayList<LayoutSection>()
+                    for (i in 0 until jsonSections.length()) {
+                        sections.add(LayoutSection.fromJSON(jsonSections.getJSONObject(i)))
                     }
+                    this.sections = sections
                 }
+                this
             }
-            return layout
         }
     }
 }

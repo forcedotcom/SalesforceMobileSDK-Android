@@ -34,7 +34,7 @@ import org.json.JSONObject
  *
  * @author bhariharan
  */
-open class SalesforceObject(`object`: JSONObject) {
+open class SalesforceObject(obj: JSONObject) {
     /**
      * Returns the object type.
      *
@@ -66,7 +66,6 @@ open class SalesforceObject(`object`: JSONObject) {
      * @return Object ID.
      */
     var objectId: String?
-        protected set
 
     /**
      * Returns the complete metadata.
@@ -82,22 +81,22 @@ open class SalesforceObject(`object`: JSONObject) {
      * @param object Raw data for object.
      */
     init {
-        objectId = `object`.optString(Constants.ID)
+        objectId = obj.optString(Constants.ID)
         if (objectId == null || Constants.EMPTY_STRING == objectId) {
-            objectId = `object`.optString(Constants.ID.lowercase())
-            objectType = `object`.optString(Constants.TYPE.lowercase())
-            name = `object`.optString(Constants.NAME.lowercase())
+            objectId = obj.optString(Constants.ID.lowercase())
+            objectType = obj.optString(Constants.TYPE.lowercase())
+            name = obj.optString(Constants.NAME.lowercase())
         } else {
-            name = `object`.optString(Constants.NAME)
-            val attributes = `object`.optJSONObject(Constants.ATTRIBUTES)
+            name = obj.optString(Constants.NAME)
+            val attributes = obj.optJSONObject(Constants.ATTRIBUTES)
             if (attributes != null) {
                 objectType = attributes.optString(Constants.TYPE.lowercase())
                 if (objectType == null || Constants.RECENTLY_VIEWED == objectType || Constants.NULL_STRING == objectType) {
-                    objectType = `object`.optString(Constants.TYPE)
+                    objectType = obj.optString(Constants.TYPE)
                 }
             }
         }
-        rawData = `object`
+        rawData = obj
     }
 
     override fun toString(): String {
@@ -107,11 +106,11 @@ open class SalesforceObject(`object`: JSONObject) {
         )
     }
 
-    override fun equals(`object`: Any?): Boolean {
-        if (`object` == null || `object` !is SalesforceObject) {
+    override fun equals(obj: Any?): Boolean {
+        if (obj == null || obj !is SalesforceObject) {
             return false
         }
-        val obj = `object`
+        val obj = obj
         if (objectId == null || obj.objectId == null || objectId != obj.objectId) {
             return false
         }

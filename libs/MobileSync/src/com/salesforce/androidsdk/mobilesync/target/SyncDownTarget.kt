@@ -48,14 +48,11 @@ abstract class SyncDownTarget : SyncTarget {
      */
     // Fields
     var queryType: QueryType? = null
-        protected set
 
     /**
      * @return number of records expected to be fetched - is set when startFetch() is called
      */
-    open var totalSize // set during a fetch
-            = 0
-        protected set
+    open var totalSize = 0 // set during a fetch
 
     /**
      * Construct SyncDownTarget

@@ -136,11 +136,11 @@ class ParentChildrenSyncUpTarget(
     @Throws(JSONException::class, IOException::class)
     private fun syncUpRecord(
         syncManager: SyncManager,
-        record: JSONObject?,
-        fieldlist: List<String?>?,
+        record: JSONObject,
+        fieldlist: List<String>?,
         mergeMode: MergeMode?
     ) {
-        val isCreate = isLocallyCreated(record!!)
+        val isCreate = isLocallyCreated(record)
         val isDelete = isLocallyDeleted(record)
 
         // Getting children
@@ -159,12 +159,12 @@ class ParentChildrenSyncUpTarget(
     @Throws(JSONException::class, IOException::class)
     private fun syncUpRecord(
         syncManager: SyncManager,
-        record: JSONObject?,
+        record: JSONObject,
         children: JSONArray,
-        fieldlist: List<String?>?,
+        fieldlist: List<String>?,
         mergeMode: MergeMode?
     ) {
-        val isCreate = isLocallyCreated(record!!)
+        val isCreate = isLocallyCreated(record)
         val isDelete = isLocallyDeleted(record)
 
         // Preparing request for parent

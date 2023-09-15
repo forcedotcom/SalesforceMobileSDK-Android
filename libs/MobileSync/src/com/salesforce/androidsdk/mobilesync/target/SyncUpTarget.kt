@@ -516,7 +516,7 @@ open class SyncUpTarget : SyncTarget {
         fieldlist: List<String>,
         idFieldName: String,
         modificationDateFieldName: String
-    ): Map<String, Any?> {
+    ): MutableMap<String, Any?> {
         val fields: MutableMap<String, Any?> = HashMap()
         for (fieldName in fieldlist) {
             if (fieldName != idFieldName && fieldName != modificationDateFieldName) {

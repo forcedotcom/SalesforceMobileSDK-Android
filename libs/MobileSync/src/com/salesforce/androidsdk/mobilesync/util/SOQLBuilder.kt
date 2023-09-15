@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.mobilesync.util
 
 import android.net.Uri
 import android.text.TextUtils
+import com.salesforce.androidsdk.mobilesync.manager.SyncManager
 import java.util.Locale
 
 /**
@@ -185,15 +186,15 @@ class SOQLBuilder private constructor() {
      */
     fun build(): String {
         val query = StringBuilder()
-        val fieldList = properties["fields"] as String?
+        val fieldList = properties["fields"] as? String
         if (fieldList == null || fieldList.length == 0) {
-            return null
+            throw SyncManager.MobileSyncException("No field selected")
         }
         query.append("select ")
         query.append(fieldList)
         val from = properties["from"] as String?
         if (from == null || from.length == 0) {
-            return null
+            throw SyncManager.MobileSyncException("No table specified")
         }
         query.append(" from ")
         query.append(from)
