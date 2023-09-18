@@ -129,7 +129,7 @@ open class SoqlSyncDownTarget : SyncDownTarget {
     @Throws(JSONException::class)
     override fun asJSON(): JSONObject {
         return with(super.asJSON()) {
-            if (query != null) put(QUERY, query)
+            put(QUERY, query)
             put(MAX_BATCH_SIZE, maxBatchSize)
         }
     }

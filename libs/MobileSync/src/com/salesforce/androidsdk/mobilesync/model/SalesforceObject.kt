@@ -34,69 +34,30 @@ import org.json.JSONObject
  *
  * @author bhariharan
  */
-open class SalesforceObject(obj: JSONObject) {
-    /**
-     * Returns the object type.
-     *
-     * @return Object type.
-     */
-    /**
-     * Sets the object type.
-     *
-     * @param objectType Object type.
-     */
-    @JvmField
-    var objectType: String? = null
-    /**
-     * Returns the name.
-     *
-     * @return Name.
-     */
-    /**
-     * Sets the object name.
-     *
-     * @param name Object name.
-     */
-    @JvmField
-    var name: String? = null
+open class SalesforceObject(@JvmField val rawData: JSONObject) {
 
-    /**
-     * Returns the object ID.
-     *
-     * @return Object ID.
-     */
-    var objectId: String?
+    @JvmField var objectType: String?
+    @JvmField var name: String?
+    @JvmField var objectId: String
 
-    /**
-     * Returns the complete metadata.
-     *
-     * @return Complete metadata.
-     */
-    @JvmField
-    val rawData: JSONObject
-
-    /**
-     * Parameterized constructor.
-     *
-     * @param object Raw data for object.
-     */
     init {
-        objectId = obj.optString(Constants.ID)
-        if (objectId == null || Constants.EMPTY_STRING == objectId) {
-            objectId = obj.optString(Constants.ID.lowercase())
-            objectType = obj.optString(Constants.TYPE.lowercase())
-            name = obj.optString(Constants.NAME.lowercase())
+        if (rawData.optString(Constants.ID).isNullOrEmpty()) {
+            objectType = rawData.optString(Constants.TYPE.lowercase())
+            name = rawData.optString(Constants.NAME.lowercase())
+            objectId = rawData.optString(Constants.ID.lowercase())
         } else {
-            name = obj.optString(Constants.NAME)
-            val attributes = obj.optJSONObject(Constants.ATTRIBUTES)
+            var oType: String? = null
+            val attributes = rawData.optJSONObject(Constants.ATTRIBUTES)
             if (attributes != null) {
-                objectType = attributes.optString(Constants.TYPE.lowercase())
-                if (objectType == null || Constants.RECENTLY_VIEWED == objectType || Constants.NULL_STRING == objectType) {
-                    objectType = obj.optString(Constants.TYPE)
+                oType = attributes.optString(Constants.TYPE.lowercase())
+                if (oType == null || Constants.RECENTLY_VIEWED == oType || Constants.NULL_STRING == oType) {
+                    oType = rawData.optString(Constants.TYPE)
                 }
             }
+            objectType = oType
+            objectId = rawData.optString(Constants.ID)
+            name = rawData.optString(Constants.NAME)
         }
-        rawData = obj
     }
 
     override fun toString(): String {
@@ -106,23 +67,15 @@ open class SalesforceObject(obj: JSONObject) {
         )
     }
 
-    override fun equals(obj: Any?): Boolean {
-        if (obj == null || obj !is SalesforceObject) {
-            return false
-        }
-        val obj = obj
-        if (objectId == null || obj.objectId == null || objectId != obj.objectId) {
-            return false
-        }
-        if (name == null || obj.name == null || name != obj.name) {
-            return false
-        }
-        return !(objectType == null || obj.objectType == null || objectType != obj.objectType)
+    override fun equals(other: Any?): Boolean {
+        return (other is SalesforceObject) &&
+                (objectId == other.objectId) &&
+                (name == other.name) &&
+                (objectType == other.objectType)
     }
 
     override fun hashCode(): Int {
-        var result = objectId.hashCode()
-        result = result xor rawData.hashCode() + result * 37
-        return result
+        val result = objectId.hashCode()
+        return result xor rawData.hashCode() + result * 37
     }
 }

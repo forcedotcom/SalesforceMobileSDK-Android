@@ -381,7 +381,7 @@ class ParentChildrenSyncUpTarget(
         record: JSONObject?,
         fieldlist: List<String>?
     ): RecordRequest? {
-        return buildRequestForRecord(apiVersion, record, fieldlist, true, false, null)
+        return buildRequestForRecord(record, fieldlist, true, false, null)
     }
 
     @Throws(IOException::class, JSONException::class)
@@ -392,7 +392,6 @@ class ParentChildrenSyncUpTarget(
         parentId: String?
     ): RecordRequest? {
         return buildRequestForRecord(
-            apiVersion,
             record,
             null,
             false,
@@ -403,7 +402,6 @@ class ParentChildrenSyncUpTarget(
 
     @Throws(IOException::class, JSONException::class)
     protected fun buildRequestForRecord(
-        apiVersion: String?,
         record: JSONObject?,
         fieldlist: List<String>?,
         isParent: Boolean,
@@ -426,7 +424,7 @@ class ParentChildrenSyncUpTarget(
                 RecordRequest.Companion.requestForDelete(info.sobjectType, id)
             }
         } else {
-            val fieldlist = if (isParent) {
+            val fieldlistToUse = if (isParent) {
                 if (isCreate) {
                     createFieldlist ?: fieldlist
                 } else {
@@ -440,7 +438,7 @@ class ParentChildrenSyncUpTarget(
                 }
             } ?: throw MobileSyncException("No field specified")
             val fields =
-                buildFieldsMap(record, fieldlist, info.idFieldName, info.modificationDateFieldName)
+                buildFieldsMap(record, fieldlistToUse, info.idFieldName, info.modificationDateFieldName)
             if (parentId != null) {
                 fields[(info as ChildrenInfo).parentIdFieldName] =
                     if (useParentIdReference) String.format(

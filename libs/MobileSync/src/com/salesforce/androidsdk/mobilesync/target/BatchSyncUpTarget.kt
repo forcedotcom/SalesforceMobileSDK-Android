@@ -221,8 +221,8 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
         } else {
             val fields: Map<String, Any?>
             if (isCreate) {
-                val fieldlist = createFieldlist ?: fieldlist ?: throw MobileSyncException("No field specified")
-                fields = buildFieldsMap(record, fieldlist, idFieldName, modificationDateFieldName)
+                val fieldlistToUse = createFieldlist ?: fieldlist ?: throw MobileSyncException("No field specified")
+                fields = buildFieldsMap(record, fieldlistToUse, idFieldName, modificationDateFieldName)
                 val externalId = if (externalIdFieldName != null) JSONObjectHelper.optString(
                     record,
                     externalIdFieldName
@@ -244,8 +244,8 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
                     RecordRequest.requestForCreate(objectType, fields)
                 }
             } else {
-                val fieldlist = updateFieldlist ?: fieldlist ?: throw MobileSyncException("No field specified")
-                fields = buildFieldsMap(record, fieldlist, idFieldName, modificationDateFieldName)
+                val fieldlistToUse = updateFieldlist ?: fieldlist ?: throw MobileSyncException("No field specified")
+                fields = buildFieldsMap(record, fieldlistToUse, idFieldName, modificationDateFieldName)
                 RecordRequest.Companion.requestForUpdate(objectType, id, fields)
             }
         }
@@ -299,7 +299,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
 
     companion object {
         // Constants
-        const val MAX_SUB_REQUESTS_COMPOSITE_API = 25
-        const val MAX_BATCH_SIZE = "maxBatchSize"
+        @JvmField val MAX_SUB_REQUESTS_COMPOSITE_API = 25
+        @JvmField val MAX_BATCH_SIZE = "maxBatchSize"
     }
 }

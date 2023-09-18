@@ -34,6 +34,7 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
+import java.text.ParseException
 import java.util.Locale
 import java.util.SortedSet
 
@@ -52,7 +53,7 @@ abstract class SyncDownTarget : SyncTarget {
     /**
      * @return number of records expected to be fetched - is set when startFetch() is called
      */
-    open var totalSize = 0 // set during a fetch
+    @JvmField var totalSize = 0 // set during a fetch
 
     /**
      * Construct SyncDownTarget
@@ -122,9 +123,7 @@ abstract class SyncDownTarget : SyncTarget {
         // Fetches list of IDs still present on the server from the list of local IDs
         // and removes the list of IDs that are still present on the server.
         val remoteIds = getRemoteIds(syncManager, localIds)
-        if (remoteIds != null) {
-            localIds.removeAll(remoteIds)
-        }
+        localIds.removeAll(remoteIds)
 
         // Deletes extra IDs from SmartStore.
         val localIdSize = localIds.size
@@ -259,7 +258,7 @@ abstract class SyncDownTarget : SyncTarget {
                 break // field not present
             }
             try {
-                val timeStamp = Constants.TIMESTAMP_FORMAT.parse(timeStampStr).time
+                val timeStamp = Constants.TIMESTAMP_FORMAT.parse(timeStampStr)!!.time
                 maxTimeStamp = Math.max(timeStamp, maxTimeStamp)
             } catch (e: Exception) {
                 MobileSyncLogger.d(
@@ -330,34 +329,54 @@ abstract class SyncDownTarget : SyncTarget {
             }
             val queryType = QueryType.valueOf(target.getString(QUERY_TYPE))
             return when (queryType) {
-                QueryType.mru -> MruSyncDownTarget(target)
-                QueryType.sosl -> SoslSyncDownTarget(target)
-                QueryType.soql -> SoqlSyncDownTarget(target)
-                QueryType.refresh -> RefreshSyncDownTarget(target)
-                QueryType.parent_children -> ParentChildrenSyncDownTarget(target)
-                QueryType.metadata -> MetadataSyncDownTarget(target)
-                QueryType.layout -> LayoutSyncDownTarget(target)
-                QueryType.briefcase -> BriefcaseSyncDownTarget(target)
-                QueryType.custom -> try {
-                    val implClass =
-                        Class.forName(target.getString(SyncTarget.Companion.ANDROID_IMPL)) as Class<out SyncDownTarget>
-                    val constructor = implClass.getConstructor(
-                        JSONObject::class.java
-                    )
-                    constructor.newInstance(target)
-                } catch (e: Exception) {
-                    throw RuntimeException(e)
+                QueryType.mru -> {
+                    MruSyncDownTarget(target)
+                }
+                QueryType.sosl -> {
+                    SoslSyncDownTarget(target)
+                }
+                QueryType.soql -> {
+                    SoqlSyncDownTarget(target)
+                }
+                QueryType.refresh -> {
+                    RefreshSyncDownTarget(target)
+                }
+                QueryType.parent_children -> {
+                    ParentChildrenSyncDownTarget(target)
+                }
+                QueryType.metadata -> {
+                    MetadataSyncDownTarget(target)
+                }
+                QueryType.layout -> {
+                    LayoutSyncDownTarget(target)
+                }
+                QueryType.briefcase -> {
+                    BriefcaseSyncDownTarget(target)
+                }
+                QueryType.custom -> {
+                    try {
+                        val implClass =
+                            Class.forName(target.getString(SyncTarget.ANDROID_IMPL)) as Class<out SyncDownTarget>
+                        val constructor = implClass.getConstructor(
+                            JSONObject::class.java
+                        )
+                        constructor.newInstance(target)
+                    } catch (e: Exception) {
+                        throw RuntimeException(e)
+                    }
                 }
 
-                else -> try {
-                    val implClass =
-                        Class.forName(target.getString(SyncTarget.Companion.ANDROID_IMPL)) as Class<out SyncDownTarget>
-                    val constructor = implClass.getConstructor(
-                        JSONObject::class.java
-                    )
-                    constructor.newInstance(target)
-                } catch (e: Exception) {
-                    throw RuntimeException(e)
+                else -> {
+                    try {
+                        val implClass =
+                            Class.forName(target.getString(SyncTarget.ANDROID_IMPL)) as Class<out SyncDownTarget>
+                        val constructor = implClass.getConstructor(
+                            JSONObject::class.java
+                        )
+                        constructor.newInstance(target)
+                    } catch (e: Exception) {
+                        throw RuntimeException(e)
+                    }
                 }
             }
         }

@@ -366,8 +366,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     fun runSync(sync: SyncState, callback: SyncUpdateCallback?) {
         checkNotRunning("runSync", sync.id)
         checkAcceptingSyncs()
-        var syncTask: SyncTask? = null
-        syncTask = when (sync.type) {
+        var syncTask: SyncTask? = when (sync.type) {
             SyncState.Type.syncDown -> SyncDownTask(
                 this,
                 sync,
@@ -618,9 +617,10 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
          * @return Instance of this class.
          */
         @JvmStatic
-        @get:Synchronized
-        val instance: SyncManager
-            get() = getInstance(null, null)
+        @Synchronized
+        fun getInstance(): SyncManager {
+            return getInstance(null, null)
+        }
 
         /**
          * Returns the instance of this class associated with this user account.
@@ -628,6 +628,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
          * @param account User account.
          * @return Instance of this class.
          */
+        @JvmStatic
         @Synchronized
         fun getInstance(account: UserAccount?): SyncManager {
             return getInstance(account, null)
@@ -641,6 +642,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
          * @param communityId Community ID.
          * @return Instance of this class.
          */
+        @JvmStatic
         @Synchronized
         fun getInstance(account: UserAccount?, communityId: String?): SyncManager {
             return getInstance(account, communityId, null)
@@ -654,30 +656,29 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
          * @param smartStore  SmartStore instance. Pass null to use current user default smartstore.
          * @return Instance of this class.
          */
+        @JvmStatic
         @Synchronized
         fun getInstance(
             account: UserAccount?,
             communityId: String?,
             smartStore: SmartStore?
         ): SyncManager {
-            val account = account ?: MobileSyncSDKManager.instance.userAccountManager.cachedCurrentUser
-            val smartStore = smartStore ?: MobileSyncSDKManager.instance.getSmartStore(account, communityId)
-            val uniqueId = ((if (account != null) account.userId else "") + ":"
-                    + smartStore.database.path)
+            val user = account ?: MobileSyncSDKManager.instance.userAccountManager.cachedCurrentUser
+            val store = smartStore ?: MobileSyncSDKManager.instance.getSmartStore(user, communityId)
+            val uniqueId = ((if (user != null) user.userId else "") + ":" + store.database.path)
             var instance = INSTANCES[uniqueId]
             if (instance == null) {
-                var restClient: RestClient? = null
-
                 /*
-             * If account is still null, there is no user logged in, which means, the default
-             * RestClient should be set to the unauthenticated RestClient instance.
-             */restClient = if (account == null) {
+                 * If account is still null, there is no user logged in, which means, the default
+                 * RestClient should be set to the unauthenticated RestClient instance.
+                 */
+                val restClient: RestClient? = if (user == null) {
                     SalesforceSDKManager.getInstance().clientManager.peekUnauthenticatedRestClient()
                 } else {
-                    SalesforceSDKManager.getInstance().clientManager.peekRestClient(account)
+                    SalesforceSDKManager.getInstance().clientManager.peekRestClient(user)
                 }
-                instance = SyncManager(smartStore, restClient)
-                INSTANCES[uniqueId] = instance
+                instance = SyncManager(store, restClient)
+                instance.also { INSTANCES[uniqueId] = it }
             }
             SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_MOBILE_SYNC)
             return instance

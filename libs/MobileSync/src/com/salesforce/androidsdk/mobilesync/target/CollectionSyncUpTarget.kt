@@ -110,7 +110,7 @@ class CollectionSyncUpTarget : BatchSyncUpTarget {
     ): MutableMap<String, Boolean> {
         val storeIdToNewerThanServer: MutableMap<String, Boolean> = HashMap()
         val nonLocallyCreatedRecords: MutableList<JSONObject> = ArrayList()
-        for (record in records!!) {
+        for (record in records) {
             if (isLocallyCreated(record) || !record.has(idFieldName)) {
                 val storeId = record.getString(SmartStore.SOUP_ENTRY_ID)
                 storeIdToNewerThanServer[storeId] = true

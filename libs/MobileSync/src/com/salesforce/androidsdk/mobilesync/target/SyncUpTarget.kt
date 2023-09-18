@@ -173,9 +173,9 @@ open class SyncUpTarget : SyncTarget {
         record: JSONObject,
         fieldlist: List<String>?
     ): String? {
-        val fieldlist = createFieldlist ?: fieldlist ?: throw MobileSyncException("No fields specified")
+        val fieldlistToUse = createFieldlist ?: fieldlist ?: throw MobileSyncException("No fields specified")
         val objectType = SmartStore.project(record, Constants.SOBJECT_TYPE) as String
-        val fields = buildFieldsMap(record, fieldlist, idFieldName, modificationDateFieldName)
+        val fields = buildFieldsMap(record, fieldlistToUse, idFieldName, modificationDateFieldName)
         val externalId = if (externalIdFieldName != null) JSONObjectHelper.optString(
             record,
             externalIdFieldName
@@ -310,10 +310,10 @@ open class SyncUpTarget : SyncTarget {
         record: JSONObject,
         fieldlist: List<String>?
     ): Int {
-        val fieldlist = updateFieldlist ?: fieldlist ?: throw MobileSyncException("No fields specified")
+        val fieldlistToUse = updateFieldlist ?: fieldlist ?: throw MobileSyncException("No fields specified")
         val objectType = SmartStore.project(record, Constants.SOBJECT_TYPE) as String
         val objectId = record.getString(idFieldName)
-        val fields = buildFieldsMap(record, fieldlist, idFieldName, modificationDateFieldName)
+        val fields = buildFieldsMap(record, fieldlistToUse, idFieldName, modificationDateFieldName)
         return updateOnServer(syncManager, objectType, objectId, fields)
     }
 
@@ -540,7 +540,7 @@ open class SyncUpTarget : SyncTarget {
     companion object {
         // Constants
         const val TAG = "SyncUpTarget"
-        const val CREATE_FIELDLIST = "createFieldlist"
+        @JvmStatic val CREATE_FIELDLIST = "createFieldlist"
         const val UPDATE_FIELDLIST = "updateFieldlist"
         const val EXTERNAL_ID_FIELD_NAME = "externalIdFieldName"
 

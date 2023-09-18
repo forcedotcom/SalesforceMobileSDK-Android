@@ -109,6 +109,7 @@ open class MobileSyncSDKManager
          * @param context Application context.
          * @param mainActivity Activity that should be launched after the login flow.
          */
+        @JvmStatic @Override
         fun initNative(context: Context, mainActivity: Class<out Activity>) {
             init(context, mainActivity, LoginActivity::class.java)
         }
@@ -122,6 +123,7 @@ open class MobileSyncSDKManager
          * @param mainActivity Activity that should be launched after the login flow.
          * @param loginActivity Login activity.
          */
+        @JvmStatic @Override
         fun initNative(
             context: Context, mainActivity: Class<out Activity>,
             loginActivity: Class<out Activity>

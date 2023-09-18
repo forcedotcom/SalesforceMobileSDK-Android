@@ -47,10 +47,10 @@ import java.util.Date
  */
 class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
     private var parentInfo: ParentInfo? = null
-    private var parentFieldlist: List<String?>? = null
+    private var parentFieldlist: List<String>? = null
     private var parentSoqlFilter: String? = null
     private var childrenInfo: ChildrenInfo? = null
-    private var childrenFieldlist: List<String?>? = null
+    private var childrenFieldlist: List<String>? = null
     private var relationshipType: RelationshipType? = null
 
     /**
@@ -72,10 +72,10 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
      */
     constructor(
         parentInfo: ParentInfo,
-        parentFieldlist: List<String?>?,
+        parentFieldlist: List<String>?,
         parentSoqlFilter: String?,
         childrenInfo: ChildrenInfo?,
-        childrenFieldlist: List<String?>?,
+        childrenFieldlist: List<String>?,
         relationshipType: RelationshipType?
     ) : super(parentInfo.idFieldName, parentInfo.modificationDateFieldName, "") {
         queryType = QueryType.parent_children
@@ -139,7 +139,7 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
 
     // Nested query
     protected val soqlForRemoteChildrenIds: String
-        protected get() {
+        get() {
             // This is for clean re-sync ghosts
             //
             // This is the soql to identify children
@@ -184,10 +184,8 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
             )
         )
         val remoteChildrenIds = getChildrenRemoteIdsWithSoql(syncManager, soqlForRemoteChildrenIds)
-        if (remoteChildrenIds != null) {
-            localChildrenIds!!.removeAll(remoteChildrenIds)
-        }
-        if (localChildrenIds!!.size > 0) {
+        localChildrenIds.removeAll(remoteChildrenIds)
+        if (localChildrenIds.size > 0) {
             deleteRecordsFromLocalStore(
                 syncManager,
                 childrenInfo!!.soupName,
@@ -265,7 +263,7 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
         parentWhere.append(parentSoqlFilter)
 
         // Nested query
-        val nestedFields: MutableList<String?> = ArrayList(childrenFieldlist)
+        val nestedFields: MutableList<String> = childrenFieldlist?.let { ArrayList(it) } ?: throw SyncManager.MobileSyncException("No child field specified")
         if (!nestedFields.contains(childrenInfo!!.idFieldName)) nestedFields.add(childrenInfo!!.idFieldName)
         if (!nestedFields.contains(childrenInfo!!.modificationDateFieldName)) nestedFields.add(
             childrenInfo!!.modificationDateFieldName
@@ -275,7 +273,7 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
         builderNested.where(childrenWhere.toString())
 
         // Parent query
-        val fields: MutableList<String?> = ArrayList(parentFieldlist)
+        val fields: MutableList<String?> = parentFieldlist?.let { ArrayList(it) } ?: throw SyncManager.MobileSyncException("No parent field specified")
         if (!fields.contains(idFieldName)) fields.add(idFieldName)
         if (!fields.contains(modificationDateFieldName)) fields.add(modificationDateFieldName)
         fields.add("(" + builderNested.build() + ")")

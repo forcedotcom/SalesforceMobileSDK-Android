@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.mobilesync.target
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager
 import com.salesforce.androidsdk.mobilesync.util.Constants
 import com.salesforce.androidsdk.rest.RestRequest
+import com.salesforce.androidsdk.util.JSONObjectHelper
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -54,7 +55,7 @@ class LayoutSyncDownTarget : SyncDownTarget {
      *
      * @return Form factor.
      */
-    var formFactor: String
+    var formFactor: String?
         private set
 
     /**
@@ -89,10 +90,10 @@ class LayoutSyncDownTarget : SyncDownTarget {
      */
     constructor(target: JSONObject) : super(target) {
         objectAPIName = target.getString(SOBJECT_TYPE)
-        formFactor = target.optString(FORM_FACTOR, null)
-        layoutType = target.optString(LAYOUT_TYPE, null)
-        mode = target.optString(MODE, null)
-        recordTypeId = target.optString(RECORD_TYPE_ID, null)
+        formFactor = JSONObjectHelper.optString(target, FORM_FACTOR)
+        layoutType = JSONObjectHelper.optString(target, LAYOUT_TYPE)
+        mode =  JSONObjectHelper.optString(target, MODE)
+        recordTypeId = JSONObjectHelper.optString(target, RECORD_TYPE_ID)
     }
 
     /**
