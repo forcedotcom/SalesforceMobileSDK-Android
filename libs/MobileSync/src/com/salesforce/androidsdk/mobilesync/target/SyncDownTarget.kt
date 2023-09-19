@@ -48,7 +48,7 @@ abstract class SyncDownTarget : SyncTarget {
      * @return QueryType of this target
      */
     // Fields
-    var queryType: QueryType? = null
+    @JvmField var queryType: QueryType? = null
 
     /**
      * @return number of records expected to be fetched - is set when startFetch() is called

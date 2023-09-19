@@ -59,9 +59,9 @@ class SyncState(
             }
             field = status
         }
-    internal var progress = 0
-    internal var totalSize = 0
-    internal var maxTimeStamp: Long = 0
+    var progress = 0
+    var totalSize = 0
+    var maxTimeStamp: Long = 0
 
     // Start and end time in milliseconds since 1970
     internal var startTime: Long = 0
@@ -418,6 +418,7 @@ class SyncState(
          * @param store
          * @param id
          */
+        @JvmStatic
         fun deleteSync(store: SmartStore?, id: Long) {
             store!!.delete(SYNCS_SOUP, id)
         }

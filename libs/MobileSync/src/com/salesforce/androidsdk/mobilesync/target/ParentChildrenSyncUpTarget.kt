@@ -102,7 +102,7 @@ class ParentChildrenSyncUpTarget(
         throw UnsupportedOperationException("For advanced sync up target, call syncUpOneRecord")
     }
 
-    override fun deleteOnServer(syncManager: SyncManager, record: JSONObject?): Int {
+    override fun deleteOnServer(syncManager: SyncManager, record: JSONObject): Int {
         throw UnsupportedOperationException("For advanced sync up target, call syncUpOneRecord")
     }
 

@@ -81,6 +81,7 @@ class SyncOptions
          * @param fieldlist
          * @return
          */
+        @JvmStatic
         fun optionsForSyncUp(fieldlist: List<String>): SyncOptions {
             return SyncOptions(fieldlist, MergeMode.OVERWRITE)
         }

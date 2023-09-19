@@ -259,9 +259,10 @@ class LayoutSyncManager private constructor(
          *
          * @return Instance of this class.
          */
-        @get:Synchronized
-        val instance: LayoutSyncManager
-            get() = getInstance(null, null)
+        @Synchronized @JvmStatic
+        fun getInstance(): LayoutSyncManager {
+            return getInstance(null, null)
+        }
 
         /**
          * Returns the instance of this class associated with this user account.
@@ -318,6 +319,7 @@ class LayoutSyncManager private constructor(
          * Resets all the layout sync managers.
          */
         @Synchronized
+        @JvmStatic
         fun reset() {
             INSTANCES.clear()
         }

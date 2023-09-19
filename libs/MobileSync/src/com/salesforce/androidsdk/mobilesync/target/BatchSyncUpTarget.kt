@@ -301,6 +301,6 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
     companion object {
         // Constants
         @JvmField val MAX_SUB_REQUESTS_COMPOSITE_API = 25
-        @JvmStatic val MAX_BATCH_SIZE = "maxBatchSize"
+        @JvmField val MAX_BATCH_SIZE = "maxBatchSize"
     }
 }

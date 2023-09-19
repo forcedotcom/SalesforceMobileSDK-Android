@@ -688,6 +688,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
          * Resets all the sync managers
          */
         @Synchronized
+        @JvmStatic
         fun reset() {
             for (syncManager in INSTANCES.values) {
                 syncManager.stop()

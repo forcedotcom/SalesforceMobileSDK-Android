@@ -171,9 +171,10 @@ class MetadataSyncManager private constructor(
          *
          * @return Instance of this class.
          */
-        @get:Synchronized
-        val instance: MetadataSyncManager
-            get() = getInstance(null, null)
+        @Synchronized @JvmStatic
+        fun getInstance(): MetadataSyncManager {
+            return getInstance(null, null)
+        }
 
         /**
          * Returns the instance of this class associated with this user account.
@@ -231,6 +232,7 @@ class MetadataSyncManager private constructor(
          * Resets all the metadata sync managers.
          */
         @Synchronized
+        @JvmStatic
         fun reset() {
             INSTANCES.clear()
         }
@@ -241,6 +243,7 @@ class MetadataSyncManager private constructor(
          * @param account User account.
          */
         @Synchronized
+        @JvmStatic
         fun reset(account: UserAccount?) {
             if (account != null) {
                 val keysToRemove: MutableSet<String> = HashSet()

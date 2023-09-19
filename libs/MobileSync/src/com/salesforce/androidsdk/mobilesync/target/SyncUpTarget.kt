@@ -183,7 +183,7 @@ open class SyncUpTarget : SyncTarget {
         return if (externalId != null // the following check is there for the case
             // where the the external id field is the id field
             // and the field is populated by a local id
-            && !SyncTarget.Companion.isLocalId(externalId)
+            && !SyncTarget.isLocalId(externalId)
         ) {
             upsertOnServer(syncManager, objectType, fields, externalId)
         } else {
@@ -205,7 +205,7 @@ open class SyncUpTarget : SyncTarget {
     protected open fun createOnServer(
         syncManager: SyncManager,
         objectType: String,
-        fields: Map<String, Any?>
+        fields: Map<String, Any>
     ): String? {
         val request = RestRequest.getRequestForCreate(syncManager.apiVersion, objectType, fields)
         return sendCreateOrUpsertRequest(syncManager, request)
@@ -225,8 +225,8 @@ open class SyncUpTarget : SyncTarget {
     @Throws(IOException::class, JSONException::class)
     protected fun upsertOnServer(
         syncManager: SyncManager,
-        objectType: String?,
-        fields: Map<String, Any?>,
+        objectType: String,
+        fields: Map<String, Any>,
         externalId: String?
     ): String? {
         val request = RestRequest.getRequestForUpsert(
@@ -248,7 +248,7 @@ open class SyncUpTarget : SyncTarget {
     @Throws(IOException::class, JSONException::class)
     protected fun sendCreateOrUpsertRequest(
         syncManager: SyncManager,
-        request: RestRequest?
+        request: RestRequest
     ): String? {
         val response = syncManager.sendSyncWithMobileSyncUserAgent(request)
         if (!response.isSuccess) {
@@ -266,9 +266,9 @@ open class SyncUpTarget : SyncTarget {
      * @throws IOException
      */
     @Throws(JSONException::class, IOException::class)
-    open fun deleteOnServer(syncManager: SyncManager, record: JSONObject?): Int {
+    open fun deleteOnServer(syncManager: SyncManager, record: JSONObject): Int {
         val objectType = SmartStore.project(record, Constants.SOBJECT_TYPE) as String
-        val objectId = record!!.getString(idFieldName)
+        val objectId = record.getString(idFieldName)
         return deleteOnServer(syncManager, objectType, objectId)
     }
 
@@ -284,8 +284,8 @@ open class SyncUpTarget : SyncTarget {
     @Throws(IOException::class)
     protected open fun deleteOnServer(
         syncManager: SyncManager,
-        objectType: String?,
-        objectId: String?
+        objectType: String,
+        objectId: String
     ): Int {
         val request = RestRequest.getRequestForDelete(syncManager.apiVersion, objectType, objectId)
         val response = syncManager.sendSyncWithMobileSyncUserAgent(request)
@@ -332,7 +332,7 @@ open class SyncUpTarget : SyncTarget {
         syncManager: SyncManager,
         objectType: String,
         objectId: String,
-        fields: Map<String, Any?>
+        fields: Map<String, Any>
     ): Int {
         val request =
             RestRequest.getRequestForUpdate(syncManager.apiVersion, objectType, objectId, fields)
@@ -516,13 +516,13 @@ open class SyncUpTarget : SyncTarget {
         fieldlist: List<String>,
         idFieldName: String,
         modificationDateFieldName: String
-    ): MutableMap<String, Any?> {
-        val fields: MutableMap<String, Any?> = HashMap()
+    ): MutableMap<String, Any> {
+        val fields: MutableMap<String, Any> = HashMap()
         for (fieldName in fieldlist) {
             if (fieldName != idFieldName && fieldName != modificationDateFieldName) {
                 val fieldValue = SmartStore.projectReturningNULLObject(record, fieldName)
                 if (fieldValue != null) {
-                    fields[fieldName] = if (fieldValue === JSONObject.NULL) null else fieldValue
+                    fields[fieldName] = fieldValue
                 }
             }
         }
@@ -540,7 +540,7 @@ open class SyncUpTarget : SyncTarget {
     companion object {
         // Constants
         const val TAG = "SyncUpTarget"
-        @JvmStatic val CREATE_FIELDLIST = "createFieldlist"
+        @JvmField val CREATE_FIELDLIST = "createFieldlist"
         const val UPDATE_FIELDLIST = "updateFieldlist"
         const val EXTERNAL_ID_FIELD_NAME = "externalIdFieldName"
 
