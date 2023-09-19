@@ -85,7 +85,7 @@ class BriefcaseSyncDownTarget internal constructor(
     init {
         queryType = QueryType.briefcase
         this.countIdsPerRetrieve = Math.min(countIdsPerRetrieve, MAX_COUNT_IDS_PER_RETRIEVE)
-        MobileSyncSDKManager.instance
+        MobileSyncSDKManager.getInstance()
             .registerUsedAppFeature(Features.FEATURE_BRIEFCASE)
 
         // Build infosMap

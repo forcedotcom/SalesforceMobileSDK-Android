@@ -55,6 +55,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
         updateFieldlist: List<String>?,
         maxBatchSize: Int
     ) : this(createFieldlist, updateFieldlist, null, null, null, maxBatchSize)
+
     /**
      * Construct BatchSyncUpTarget with a different maxBatchSize and id/modifiedDate/externalId fields
      */
@@ -300,6 +301,6 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
     companion object {
         // Constants
         @JvmField val MAX_SUB_REQUESTS_COMPOSITE_API = 25
-        @JvmField val MAX_BATCH_SIZE = "maxBatchSize"
+        @JvmStatic val MAX_BATCH_SIZE = "maxBatchSize"
     }
 }

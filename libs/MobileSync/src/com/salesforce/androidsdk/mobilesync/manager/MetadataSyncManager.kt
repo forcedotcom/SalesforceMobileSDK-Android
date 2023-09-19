@@ -73,7 +73,7 @@ class MetadataSyncManager private constructor(
      * @param syncCallback Metadata sync callback.
      */
     fun fetchMetadata(
-        objectType: String, mode: Constants.Mode?,
+        objectType: String, mode: Constants.Mode,
         syncCallback: MetadataSyncCallback
     ) {
         when (mode) {
@@ -211,16 +211,15 @@ class MetadataSyncManager private constructor(
             account: UserAccount?, communityId: String?,
             smartStore: SmartStore?
         ): MetadataSyncManager {
-            val account = account ?: MobileSyncSDKManager.instance.userAccountManager
-                .cachedCurrentUser
-            val smartStore = smartStore ?: MobileSyncSDKManager.instance.getSmartStore(account, communityId)
+            val user = account ?: MobileSyncSDKManager.getInstance().userAccountManager.cachedCurrentUser
+            val store = smartStore ?: MobileSyncSDKManager.getInstance().getSmartStore(user, communityId)
             val syncManager: SyncManager =
-                SyncManager.getInstance(account, communityId, smartStore)
-            val uniqueId = ((if (account != null) account.userId else "") + ":"
-                    + smartStore.database.path)
+                SyncManager.getInstance(user, communityId, store)
+            val uniqueId = ((if (user != null) user.userId else "") + ":"
+                    + store.database.path)
             var instance = INSTANCES[uniqueId]
             if (instance == null) {
-                instance = MetadataSyncManager(smartStore, syncManager)
+                instance = MetadataSyncManager(store, syncManager)
                 INSTANCES[uniqueId] = instance
             }
             SalesforceSDKManager.getInstance()

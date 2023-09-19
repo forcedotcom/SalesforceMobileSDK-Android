@@ -85,7 +85,7 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
         this.childrenInfo = childrenInfo
         this.childrenFieldlist = childrenFieldlist
         this.relationshipType = relationshipType
-        MobileSyncSDKManager.instance
+        MobileSyncSDKManager.getInstance()
             .registerUsedAppFeature(Features.FEATURE_RELATED_RECORDS)
     }
 

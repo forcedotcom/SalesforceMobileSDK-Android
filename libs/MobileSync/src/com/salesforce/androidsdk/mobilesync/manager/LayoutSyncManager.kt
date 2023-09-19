@@ -78,7 +78,7 @@ class LayoutSyncManager private constructor(
      */
     fun fetchLayout(
         objectAPIName: String, formFactor: String, layoutType: String, mode: String,
-        recordTypeId: String, syncMode: Constants.Mode?, syncCallback: LayoutSyncCallback
+        recordTypeId: String, syncMode: Constants.Mode, syncCallback: LayoutSyncCallback
     ) {
         when (syncMode) {
             Constants.Mode.CACHE_ONLY -> fetchFromCache(
@@ -299,17 +299,15 @@ class LayoutSyncManager private constructor(
             account: UserAccount?, communityId: String?,
             smartStore: SmartStore?
         ): LayoutSyncManager {
-            val account = account ?: MobileSyncSDKManager.instance
-                .userAccountManager
-                .cachedCurrentUser
-            val smartStore = smartStore ?: MobileSyncSDKManager.instance.getSmartStore(account, communityId)
+            val user = account ?: MobileSyncSDKManager.getInstance().userAccountManager.cachedCurrentUser
+            val store = smartStore ?: MobileSyncSDKManager.getInstance().getSmartStore(user, communityId)
             val syncManager: SyncManager =
-                SyncManager.getInstance(account, communityId, smartStore)
-            val uniqueId = ((if (account != null) account.userId else "") + ":"
-                    + smartStore.database.path)
+                SyncManager.getInstance(user, communityId, store)
+            val uniqueId = ((if (user != null) user.userId else "") + ":"
+                    + store.database.path)
             var instance = INSTANCES[uniqueId]
             if (instance == null) {
-                instance = LayoutSyncManager(smartStore, syncManager)
+                instance = LayoutSyncManager(store, syncManager)
                 INSTANCES[uniqueId] = instance
             }
             SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_LAYOUT_SYNC)

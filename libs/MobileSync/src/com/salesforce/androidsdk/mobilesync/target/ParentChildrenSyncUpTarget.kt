@@ -71,7 +71,7 @@ class ParentChildrenSyncUpTarget(
     )
 
     init {
-        MobileSyncSDKManager.instance
+        MobileSyncSDKManager.getInstance()
             .registerUsedAppFeature(Features.FEATURE_RELATED_RECORDS)
     }
 
@@ -170,7 +170,7 @@ class ParentChildrenSyncUpTarget(
         // Preparing request for parent
         val recordRequests: MutableList<RecordRequest> = LinkedList()
         val parentId = record.getString(idFieldName)
-        val parentRequest = buildRequestForParentRecord(syncManager.apiVersion, record, fieldlist)
+        val parentRequest = buildRequestForParentRecord(record, fieldlist)
 
         // Parent request goes first unless it's a delete
         if (parentRequest != null && !isDelete) {
@@ -190,8 +190,7 @@ class ParentChildrenSyncUpTarget(
                 childRecord.put(SyncTarget.Companion.LOCALLY_UPDATED, true)
             }
             val childRequest = buildRequestForChildRecord(
-                syncManager.apiVersion, childRecord,
-                isCreate,
+                childRecord, isCreate,
                 if (isDelete) null else parentId
             )
             if (childRequest != null) {
@@ -377,7 +376,6 @@ class ParentChildrenSyncUpTarget(
 
     @Throws(IOException::class, JSONException::class)
     protected fun buildRequestForParentRecord(
-        apiVersion: String?,
         record: JSONObject?,
         fieldlist: List<String>?
     ): RecordRequest? {
@@ -386,7 +384,6 @@ class ParentChildrenSyncUpTarget(
 
     @Throws(IOException::class, JSONException::class)
     protected fun buildRequestForChildRecord(
-        apiVersion: String?,
         record: JSONObject?,
         useParentIdReference: Boolean,
         parentId: String?
