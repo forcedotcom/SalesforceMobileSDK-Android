@@ -210,7 +210,7 @@ class RefreshSyncDownTarget internal constructor(
                 + if (maxTimeStamp > 0) " AND " + modificationDateFieldName + " > " + Constants.TIMESTAMP_FORMAT.format(
             Date(maxTimeStamp)
         ) else "")
-        val soql: String = SOQLBuilder.Companion.getInstanceWithFields(fieldlist).from(objectType)
+        val soql: String = SOQLBuilder.getInstanceWithFields(fieldlist).from(objectType)
             .where(whereClause).build()
         val request = RestRequest.getRequestForQuery(syncManager.apiVersion, soql)
         val response = syncManager.sendSyncWithMobileSyncUserAgent(request)

@@ -115,7 +115,7 @@ object ParentChildrenSyncTargetHelper {
             parentFieldToSelect,
             parentInfo.soupName,
             parentInfo.soupName,
-            SyncTarget.Companion.LOCAL,
+            SyncTarget.LOCAL,
             childrenInfo!!.soupName,
             childrenInfo.idFieldName,
             childrenInfo.soupName,
@@ -124,7 +124,7 @@ object ParentChildrenSyncTargetHelper {
             parentInfo.soupName,
             parentInfo.idFieldName,
             childrenInfo.soupName,
-            SyncTarget.Companion.LOCAL
+            SyncTarget.LOCAL
         )
     }
 
@@ -140,7 +140,7 @@ object ParentChildrenSyncTargetHelper {
             parentFieldToSelect,
             parentInfo.soupName,
             parentInfo.soupName,
-            SyncTarget.Companion.LOCAL,
+            SyncTarget.LOCAL,
             additionalPredicate,
             childrenInfo!!.soupName,
             childrenInfo.idFieldName,
@@ -150,7 +150,7 @@ object ParentChildrenSyncTargetHelper {
             parentInfo.soupName,
             parentInfo.idFieldName,
             childrenInfo.soupName,
-            SyncTarget.Companion.LOCAL
+            SyncTarget.LOCAL
         )
     }
 

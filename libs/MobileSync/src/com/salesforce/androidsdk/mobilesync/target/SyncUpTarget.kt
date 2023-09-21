@@ -183,7 +183,7 @@ open class SyncUpTarget : SyncTarget {
         return if (externalId != null // the following check is there for the case
             // where the the external id field is the id field
             // and the field is populated by a local id
-            && !SyncTarget.isLocalId(externalId)
+            && !isLocalId(externalId)
         ) {
             upsertOnServer(syncManager, objectType, fields, externalId)
         } else {

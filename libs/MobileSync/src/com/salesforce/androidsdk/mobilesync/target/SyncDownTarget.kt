@@ -148,12 +148,12 @@ abstract class SyncDownTarget : SyncTarget {
         var additionalPredicate = ""
         val indexSpecs = syncManager.smartStore.getSoupIndexSpecs(soupName)
         for (indexSpec in indexSpecs) {
-            if (indexSpec.path == SyncTarget.Companion.SYNC_ID) {
+            if (indexSpec.path == SYNC_ID) {
                 additionalPredicate = String.format(
                     Locale.US,
                     "AND {%s:%s} = %d",
                     soupName,
-                    SyncTarget.Companion.SYNC_ID,
+                    SYNC_ID,
                     syncId
                 )
                 break
@@ -356,7 +356,7 @@ abstract class SyncDownTarget : SyncTarget {
                 QueryType.custom -> {
                     try {
                         val implClass =
-                            Class.forName(target.getString(SyncTarget.ANDROID_IMPL)) as Class<out SyncDownTarget>
+                            Class.forName(target.getString(ANDROID_IMPL)) as Class<out SyncDownTarget>
                         val constructor = implClass.getConstructor(
                             JSONObject::class.java
                         )
@@ -369,7 +369,7 @@ abstract class SyncDownTarget : SyncTarget {
                 else -> {
                     try {
                         val implClass =
-                            Class.forName(target.getString(SyncTarget.ANDROID_IMPL)) as Class<out SyncDownTarget>
+                            Class.forName(target.getString(ANDROID_IMPL)) as Class<out SyncDownTarget>
                         val constructor = implClass.getConstructor(
                             JSONObject::class.java
                         )

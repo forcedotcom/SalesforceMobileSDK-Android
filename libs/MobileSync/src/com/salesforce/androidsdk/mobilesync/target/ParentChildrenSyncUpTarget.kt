@@ -186,8 +186,8 @@ class ParentChildrenSyncUpTarget(
             // Parent will get a server id
             // Children need to be updated
             if (isCreate) {
-                childRecord.put(SyncTarget.Companion.LOCAL, true)
-                childRecord.put(SyncTarget.Companion.LOCALLY_UPDATED, true)
+                childRecord.put(LOCAL, true)
+                childRecord.put(LOCALLY_UPDATED, true)
             }
             val childRequest = buildRequestForChildRecord(
                 childRecord, isCreate,
@@ -236,7 +236,7 @@ class ParentChildrenSyncUpTarget(
 
         // Re-run if required
         if (needReRun) {
-            MobileSyncLogger.d(SyncUpTarget.Companion.TAG, "syncUpOneRecord", record)
+            MobileSyncLogger.d(TAG, "syncUpOneRecord", record)
             syncUpRecord(syncManager, record, children, fieldlist, mergeMode)
         }
     }
@@ -284,15 +284,15 @@ class ParentChildrenSyncUpTarget(
             } else if (response.recordDoesNotExist) {
                 // Record needs to be recreated
                 if (mergeMode == MergeMode.OVERWRITE) {
-                    record.put(SyncTarget.Companion.LOCAL, true)
-                    record.put(SyncTarget.Companion.LOCALLY_CREATED, true)
+                    record.put(LOCAL, true)
+                    record.put(LOCALLY_CREATED, true)
 
                     // Children need to be updated or recreated as well (since the parent will get a new server id)
                     for (i in 0 until children.length()) {
                         val childRecord = children.getJSONObject(i)
-                        childRecord.put(SyncTarget.Companion.LOCAL, true)
+                        childRecord.put(LOCAL, true)
                         childRecord.put(
-                            if (relationshipType == RelationshipType.MASTER_DETAIL) SyncTarget.Companion.LOCALLY_CREATED else SyncTarget.Companion.LOCALLY_UPDATED,
+                            if (relationshipType == RelationshipType.MASTER_DETAIL) SyncTarget.Companion.LOCALLY_CREATED else LOCALLY_UPDATED,
                             true
                         )
                     }
@@ -352,8 +352,8 @@ class ParentChildrenSyncUpTarget(
             } else if (response.recordDoesNotExist) {
                 // Record needs to be recreated
                 if (mergeMode == MergeMode.OVERWRITE) {
-                    record.put(SyncTarget.Companion.LOCAL, true)
-                    record.put(SyncTarget.Companion.LOCALLY_CREATED, true)
+                    record.put(LOCAL, true)
+                    record.put(LOCALLY_CREATED, true)
 
                     // We need a re-run
                     needReRun = true
@@ -361,8 +361,8 @@ class ParentChildrenSyncUpTarget(
             } else if (response.relatedRecordDoesNotExist) {
                 // Parent record needs to be recreated
                 if (mergeMode == MergeMode.OVERWRITE) {
-                    parentRecord.put(SyncTarget.Companion.LOCAL, true)
-                    parentRecord.put(SyncTarget.Companion.LOCALLY_CREATED, true)
+                    parentRecord.put(LOCAL, true)
+                    parentRecord.put(LOCALLY_CREATED, true)
 
                     // We need a re-run
                     needReRun = true
@@ -418,7 +418,7 @@ class ParentChildrenSyncUpTarget(
             if (isCreate) {
                 null // no need to go to server
             } else {
-                RecordRequest.Companion.requestForDelete(info.sobjectType, id)
+                RecordRequest.requestForDelete(info.sobjectType, id)
             }
         } else {
             val fieldlistToUse = if (isParent) {
@@ -452,19 +452,19 @@ class ParentChildrenSyncUpTarget(
                 if (externalId != null // the following check is there for the case
                     // where the the external id field is the id field
                     // and the field is populated by a local id
-                    && !SyncTarget.Companion.isLocalId(externalId)
+                    && !isLocalId(externalId)
                 ) {
-                    RecordRequest.Companion.requestForUpsert(
+                    RecordRequest.requestForUpsert(
                         info.sobjectType,
                         info.externalIdFieldName,
                         externalId,
                         fields
                     )
                 } else {
-                    RecordRequest.Companion.requestForCreate(info.sobjectType, fields)
+                    RecordRequest.requestForCreate(info.sobjectType, fields)
                 }
             } else {
-                RecordRequest.Companion.requestForUpdate(
+                RecordRequest.requestForUpdate(
                     info.sobjectType,
                     id,
                     fields
@@ -581,12 +581,12 @@ class ParentChildrenSyncUpTarget(
      */
     @Throws(UnsupportedEncodingException::class)
     protected fun getRequestForTimestamps(apiVersion: String?, parentId: String?): RestRequest {
-        val builderNested: SOQLBuilder = SOQLBuilder.Companion.getInstanceWithFields(
+        val builderNested: SOQLBuilder = SOQLBuilder.getInstanceWithFields(
             childrenInfo.idFieldName,
             childrenInfo.modificationDateFieldName
         )
         builderNested.from(childrenInfo.sobjectTypePlural)
-        val builder: SOQLBuilder = SOQLBuilder.Companion.getInstanceWithFields(
+        val builder: SOQLBuilder = SOQLBuilder.getInstanceWithFields(
             idFieldName,
             modificationDateFieldName,
             String.format("(%s)", builderNested.build())

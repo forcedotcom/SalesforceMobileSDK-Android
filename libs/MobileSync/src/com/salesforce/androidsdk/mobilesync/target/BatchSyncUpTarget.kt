@@ -145,7 +145,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
             var id = JSONObjectHelper.optString(record, idFieldName)
             if (id == null) {
                 // create local id - needed for refId
-                id = SyncTarget.Companion.createLocalId()
+                id = createLocalId()
                 record.put(idFieldName, id)
             }
             val request = buildRequestForRecord(record, fieldlist)
@@ -207,7 +207,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
         if (!isDirty(record)) {
             return null // nothing to do
         }
-        val objectType = SmartStore.project(record, Constants.SOBJECT_TYPE) as String
+        val objectType = SmartStore.project(record, Constants.SOBJECT_TYPE) as? String ?: "null"
         val id = record.getString(idFieldName)
 
         // Delete case
@@ -217,7 +217,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
             if (isCreate) {
                 null // no need to go to server
             } else {
-                RecordRequest.Companion.requestForDelete(objectType, id)
+                RecordRequest.requestForDelete(objectType, id)
             }
         } else {
             val fields: Map<String, Any?>
@@ -233,7 +233,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
                 if (externalId != null // the following check is there for the case
                     // where the the external id field is the id field
                     // and the field is populated by a local id
-                    && !SyncTarget.isLocalId(externalId)
+                    && !isLocalId(externalId)
                 ) {
                     RecordRequest.requestForUpsert(
                         objectType,
@@ -247,7 +247,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
             } else {
                 val fieldlistToUse = updateFieldlist ?: fieldlist ?: throw MobileSyncException("No field specified")
                 fields = buildFieldsMap(record, fieldlistToUse, idFieldName, modificationDateFieldName)
-                RecordRequest.Companion.requestForUpdate(objectType, id, fields)
+                RecordRequest.requestForUpdate(objectType, id, fields)
             }
         }
     }
@@ -288,8 +288,8 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
             } else if (response.recordDoesNotExist && mergeMode == MergeMode.OVERWRITE // Record needs to be recreated
                 && !isReRun
             ) {
-                record.put(SyncTarget.Companion.LOCAL, true)
-                record.put(SyncTarget.Companion.LOCALLY_CREATED, true)
+                record.put(LOCAL, true)
+                record.put(LOCALLY_CREATED, true)
                 needReRun = true
             } else {
                 saveRecordToLocalStoreWithError(syncManager, soupName, record, lastError)

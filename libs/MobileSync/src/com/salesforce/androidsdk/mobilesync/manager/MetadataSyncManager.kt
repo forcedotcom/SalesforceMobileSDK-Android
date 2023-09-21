@@ -89,7 +89,7 @@ class MetadataSyncManager private constructor(
 
     private fun fetchFromServer(objectType: String, syncCallback: MetadataSyncCallback) {
         val target: SyncDownTarget = MetadataSyncDownTarget(objectType)
-        val options: SyncOptions = SyncOptions.Companion.optionsForSyncDown(MergeMode.OVERWRITE)
+        val options: SyncOptions = SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE)
         try {
             syncManager.syncDown(target, options, SOUP_NAME, object:SyncManager.SyncUpdateCallback {
                 override fun onUpdate(sync: SyncState) {
@@ -124,7 +124,7 @@ class MetadataSyncManager private constructor(
             } else {
                 onSyncComplete(
                     syncCallback,
-                    Metadata.Companion.fromJSON(results.optJSONArray(0).optJSONObject(0))
+                    Metadata.fromJSON(results.optJSONArray(0).optJSONObject(0))
                 )
             }
         } catch (e: Exception) {

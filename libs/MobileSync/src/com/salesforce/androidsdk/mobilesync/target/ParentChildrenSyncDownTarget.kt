@@ -122,7 +122,7 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
             // This is the soql to identify parents
             val fields: MutableList<String?> = ArrayList()
             fields.add(idFieldName)
-            val builder: SOQLBuilder = SOQLBuilder.Companion.getInstanceWithFields(fields)
+            val builder: SOQLBuilder = SOQLBuilder.getInstanceWithFields(fields)
             builder.from(parentInfo!!.sobjectType)
             builder.where(parentSoqlFilter)
             return builder.build()
@@ -154,14 +154,14 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
             val nestedFields: MutableList<String?> = ArrayList()
             nestedFields.add(childrenInfo!!.idFieldName)
             val builderNested: SOQLBuilder =
-                SOQLBuilder.Companion.getInstanceWithFields(nestedFields)
+                SOQLBuilder.getInstanceWithFields(nestedFields)
             builderNested.from(childrenInfo!!.sobjectTypePlural)
 
             // Parent query
             val fields: MutableList<String?> = ArrayList()
             fields.add(idFieldName)
             fields.add("(" + builderNested.build() + ")")
-            val builder: SOQLBuilder = SOQLBuilder.Companion.getInstanceWithFields(fields)
+            val builder: SOQLBuilder = SOQLBuilder.getInstanceWithFields(fields)
             builder.from(parentInfo!!.sobjectType)
             builder.where(parentSoqlFilter)
             return builder.build()
@@ -268,7 +268,7 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
         if (!nestedFields.contains(childrenInfo!!.modificationDateFieldName)) nestedFields.add(
             childrenInfo!!.modificationDateFieldName
         )
-        val builderNested: SOQLBuilder = SOQLBuilder.Companion.getInstanceWithFields(nestedFields)
+        val builderNested: SOQLBuilder = SOQLBuilder.getInstanceWithFields(nestedFields)
         builderNested.from(childrenInfo!!.sobjectTypePlural)
         builderNested.where(childrenWhere.toString())
 
@@ -277,7 +277,7 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
         if (!fields.contains(idFieldName)) fields.add(idFieldName)
         if (!fields.contains(modificationDateFieldName)) fields.add(modificationDateFieldName)
         fields.add("(" + builderNested.build() + ")")
-        val builder: SOQLBuilder = SOQLBuilder.Companion.getInstanceWithFields(fields)
+        val builder: SOQLBuilder = SOQLBuilder.getInstanceWithFields(fields)
         builder.from(parentInfo!!.sobjectType)
         builder.where(parentWhere.toString())
         builder.orderBy(parentInfo!!.modificationDateFieldName)

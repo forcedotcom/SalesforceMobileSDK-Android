@@ -89,7 +89,7 @@ class CollectionSyncUpTarget : BatchSyncUpTarget {
     constructor(target: JSONObject) : super(target) {
         maxBatchSize = Math.min(
             target.optInt(
-                BatchSyncUpTarget.MAX_BATCH_SIZE,
+                MAX_BATCH_SIZE,
                 MAX_RECORDS_SOBJECT_COLLECTION_API
             ), MAX_RECORDS_SOBJECT_COLLECTION_API
         ) // soject collection apis allows up to 200 records

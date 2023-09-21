@@ -123,7 +123,7 @@ class LayoutSyncManager private constructor(
     ) {
         val target: SyncDownTarget =
             LayoutSyncDownTarget(objectAPIName, formFactor, layoutType, mode, recordTypeId)
-        val options: SyncOptions = SyncOptions.Companion.optionsForSyncDown(MergeMode.OVERWRITE)
+        val options: SyncOptions = SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE)
         try {
             syncManager.syncDown(target, options, SOUP_NAME, object:SyncManager.SyncUpdateCallback {
                 override fun onUpdate(sync: SyncState) {
@@ -180,7 +180,7 @@ class LayoutSyncManager private constructor(
             } else {
                 onSyncComplete(
                     objectAPIName, formFactor, layoutType, mode, recordTypeId, syncCallback,
-                    Layout.Companion.fromJSON(results.optJSONArray(0).optJSONObject(0))
+                    Layout.fromJSON(results.optJSONArray(0).optJSONObject(0))
                 )
             }
         } catch (e: Exception) {

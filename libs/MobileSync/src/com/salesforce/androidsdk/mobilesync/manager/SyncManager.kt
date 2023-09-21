@@ -90,8 +90,8 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
         this.smartStore = smartStore
         this.restClient = restClient
         state = State.ACCEPTING_SYNCS
-        SyncState.Companion.setupSyncsSoupIfNeeded(smartStore)
-        SyncState.Companion.cleanupSyncsSoupIfNeeded(smartStore)
+        SyncState.setupSyncsSoupIfNeeded(smartStore)
+        SyncState.cleanupSyncsSoupIfNeeded(smartStore)
     }
 
     /**
@@ -144,7 +144,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
         if (isStopped || isStopping) {
             state = State.ACCEPTING_SYNCS
             if (restartStoppedSyncs) {
-                val stoppedSyncs: List<SyncState> = SyncState.Companion.getSyncsWithStatus(
+                val stoppedSyncs: List<SyncState> = SyncState.getSyncsWithStatus(
                     smartStore, SyncState.Status.STOPPED
                 )
                 for (sync in stoppedSyncs) {
@@ -190,7 +190,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
      */
     @Throws(JSONException::class)
     fun getSyncStatus(syncId: Long): SyncState? {
-        return SyncState.Companion.byId(smartStore, syncId)
+        return SyncState.byId(smartStore, syncId)
     }
 
     /**
@@ -202,7 +202,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
      */
     @Throws(JSONException::class)
     fun getSyncStatus(name: String?): SyncState? {
-        return SyncState.Companion.byName(smartStore, name)
+        return SyncState.byName(smartStore, name)
     }
 
     /**
@@ -212,7 +212,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
      * @return
      */
     fun hasSyncWithName(name: String?): Boolean {
-        return SyncState.Companion.hasSyncWithName(smartStore, name)
+        return SyncState.hasSyncWithName(smartStore, name)
     }
 
     /**
@@ -222,7 +222,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
      * @return
      */
     fun deleteSync(syncId: Long) {
-        SyncState.Companion.deleteSync(smartStore, syncId)
+        SyncState.deleteSync(smartStore, syncId)
     }
 
     /**
@@ -232,7 +232,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
      * @return
      */
     fun deleteSync(name: String?) {
-        SyncState.Companion.deleteSync(smartStore, name)
+        SyncState.deleteSync(smartStore, name)
     }
 
     /**
@@ -250,7 +250,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
         soupName: String?,
         callback: SyncUpdateCallback?
     ): SyncState {
-        val options: SyncOptions = SyncOptions.Companion.optionsForSyncDown(MergeMode.OVERWRITE)
+        val options: SyncOptions = SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE)
         return syncDown(target, options, soupName, callback)
     }
 

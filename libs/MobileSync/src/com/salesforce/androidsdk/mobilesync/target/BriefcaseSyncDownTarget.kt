@@ -71,7 +71,7 @@ class BriefcaseSyncDownTarget internal constructor(
      * @throws JSONException
      */
     constructor(target: JSONObject) : this(
-        BriefcaseObjectInfo.Companion.fromJSONArray(target.getJSONArray(INFOS)),
+        BriefcaseObjectInfo.fromJSONArray(target.getJSONArray(INFOS)),
         target.optInt(COUNT_IDS_PER_RETRIEVE, MAX_COUNT_IDS_PER_RETRIEVE)
     )
 
