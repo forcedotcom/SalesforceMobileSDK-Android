@@ -174,7 +174,7 @@ open class SyncUpTarget : SyncTarget {
         fieldlist: List<String>?
     ): String? {
         val fieldlistToUse = createFieldlist ?: fieldlist ?: throw MobileSyncException("No fields specified")
-        val objectType = SmartStore.project(record, Constants.SOBJECT_TYPE) as String
+        val objectType = SmartStore.project(record, Constants.SOBJECT_TYPE) as? String ?: "null"
         val fields = buildFieldsMap(record, fieldlistToUse, idFieldName, modificationDateFieldName)
         val externalId = if (externalIdFieldName != null) JSONObjectHelper.optString(
             record,
