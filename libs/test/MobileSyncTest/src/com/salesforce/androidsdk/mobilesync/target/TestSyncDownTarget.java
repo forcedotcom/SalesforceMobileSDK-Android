@@ -114,7 +114,6 @@ public class TestSyncDownTarget extends SyncDownTarget {
         return true;
     }
 
-    @Override
     public int getTotalSize() {
         return this.totalSize;
     }
