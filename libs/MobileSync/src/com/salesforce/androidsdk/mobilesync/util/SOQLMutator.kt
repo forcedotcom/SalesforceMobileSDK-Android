@@ -122,11 +122,9 @@ class SOQLMutator(private val originalSoql: String) {
      * @param commaSeparatedFields Comma separated fields to look for.
      * @return true if it is the case.
      */
-    fun isOrderingBy(commaSeparatedFields: String?): Boolean {
-        return clauses.containsKey(ORDER_BY) && equalsIgnoringWhiteSpaces(
-            commaSeparatedFields,
-            clauses[ORDER_BY]
-        )
+    fun isOrderingBy(commaSeparatedFields: String): Boolean {
+        return clauses.containsKey(ORDER_BY)
+                && equalsIgnoringWhiteSpaces(commaSeparatedFields, clauses[ORDER_BY] ?: "")
     }
 
     /**
@@ -143,9 +141,9 @@ class SOQLMutator(private val originalSoql: String) {
      * @return true if it is the case.
      */
     fun isSelectingField(field: String?): Boolean {
-        val selectedFields = Arrays.asList(*clausesWithoutSubqueries[SELECT]!!
+        val selectClause = clausesWithoutSubqueries[SELECT] ?: return false
+        val selectedFields = selectClause
             .split("[, ]+".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-        )
         return selectedFields.contains(field)
     }
 
@@ -164,16 +162,16 @@ class SOQLMutator(private val originalSoql: String) {
     }
 
     // Helper methods
-    private fun equalsIgnoringWhiteSpaces(s1: String?, s2: String?): Boolean {
+    private fun equalsIgnoringWhiteSpaces(s1: String, s2: String): Boolean {
         return removeWhiteSpaces(s1) == removeWhiteSpaces(s2)
     }
 
-    private fun removeWhiteSpaces(s: String?): String {
-        return s!!.replace("[ ]*".toRegex(), "")
+    private fun removeWhiteSpaces(s: String): String {
+        return s.replace("[ ]*".toRegex(), "")
     }
 
     private fun trimmedClause(clauseType: String): String {
-        return if (clauses.containsKey(clauseType)) clauses[clauseType]!!.trim { it <= ' ' } else ""
+        return clauses[clauseType]?.trim() ?: ""
     }
 
     private fun clauseAsInteger(clauseType: String): Int? {
@@ -189,7 +187,7 @@ class SOQLMutator(private val originalSoql: String) {
      * - strings without white spaces
      * - white spaces
      */
-    class SOQLTokenizer(private val soql: String?) {
+    class SOQLTokenizer(private val soql: String) {
         // Used during tokenization
         private val tokens: MutableList<String> = ArrayList()
         private var inWhiteSpace = false
@@ -282,7 +280,7 @@ class SOQLMutator(private val originalSoql: String) {
         }
 
         fun tokenize(): List<String> {
-            val chars = soql!!.toCharArray()
+            val chars = soql.toCharArray()
             for (ch in chars) {
                 when (ch) {
                     '\'' -> if (!inQuotes) { // starting '' expression

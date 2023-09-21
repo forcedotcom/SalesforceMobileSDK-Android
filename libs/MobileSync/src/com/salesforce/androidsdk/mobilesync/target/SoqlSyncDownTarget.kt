@@ -71,12 +71,6 @@ open class SoqlSyncDownTarget : SyncDownTarget {
      * @param query
      * @param maxBatchSize - must be between 200 and 2000
      */
-    /**
-     * Construct SoqlSyncDownTarget from soql query
-     * @param idFieldName
-     * @param modificationDateFieldName
-     * @param query
-     */
     @JvmOverloads
     constructor(
         idFieldName: String?,
@@ -90,6 +84,9 @@ open class SoqlSyncDownTarget : SyncDownTarget {
     }
 
     private fun modifyQueryIfNeeded(query: String): String {
+        if (query.isEmpty())
+            return query
+
         val mutator = SOQLMutator(query)
         var mutated = false
 

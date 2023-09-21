@@ -79,7 +79,7 @@ class LayoutSyncDownTarget : SyncDownTarget {
      *
      * @return Record type ID.
      */
-    var recordTypeId: String
+    var recordTypeId: String?
         private set
 
     /**
@@ -107,7 +107,7 @@ class LayoutSyncDownTarget : SyncDownTarget {
      */
     constructor(
         objectAPIName: String, formFactor: String, layoutType: String,
-        mode: String, recordTypeId: String
+        mode: String, recordTypeId: String?
     ) : super() {
         queryType = QueryType.layout
         this.objectAPIName = objectAPIName

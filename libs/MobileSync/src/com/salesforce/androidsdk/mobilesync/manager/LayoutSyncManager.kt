@@ -78,7 +78,7 @@ class LayoutSyncManager private constructor(
      */
     fun fetchLayout(
         objectAPIName: String, formFactor: String, layoutType: String, mode: String,
-        recordTypeId: String, syncMode: Constants.Mode, syncCallback: LayoutSyncCallback
+        recordTypeId: String?, syncMode: Constants.Mode, syncCallback: LayoutSyncCallback
     ) {
         when (syncMode) {
             Constants.Mode.CACHE_ONLY -> fetchFromCache(
@@ -119,22 +119,12 @@ class LayoutSyncManager private constructor(
     private fun fetchFromServer(
         objectAPIName: String, formFactor: String,
         layoutType: String, mode: String,
-        recordTypeId: String, syncCallback: LayoutSyncCallback
+        recordTypeId: String?, syncCallback: LayoutSyncCallback
     ) {
         val target: SyncDownTarget =
             LayoutSyncDownTarget(objectAPIName, formFactor, layoutType, mode, recordTypeId)
         val options: SyncOptions = SyncOptions.Companion.optionsForSyncDown(MergeMode.OVERWRITE)
         try {
-//<<<<<<< Updated upstream
-//            syncManager.syncDown(target, options, SOUP_NAME) { sync ->
-//                if (SyncState.Status.DONE == sync.status) {
-//                    fetchFromCache(
-//                        objectAPIName, formFactor, layoutType, mode, recordTypeId,
-//                        syncCallback, false
-//                    )
-//                }
-//            }
-//=======
             syncManager.syncDown(target, options, SOUP_NAME, object:SyncManager.SyncUpdateCallback {
                 override fun onUpdate(sync: SyncState) {
                     if (SyncState.Status.DONE == sync.status) {
@@ -156,7 +146,7 @@ class LayoutSyncManager private constructor(
 
     private fun fetchFromCache(
         objectAPIName: String, formFactor: String, layoutType: String, mode: String,
-        recordTypeId: String, syncCallback: LayoutSyncCallback, fallbackOnServer: Boolean
+        recordTypeId: String?, syncCallback: LayoutSyncCallback, fallbackOnServer: Boolean
     ) {
         val querySpec = QuerySpec.buildSmartQuerySpec(
             String.format(
@@ -204,7 +194,7 @@ class LayoutSyncManager private constructor(
 
     private fun onSyncComplete(
         objectAPIName: String, formFactor: String, layoutType: String, mode: String,
-        recordTypeId: String, syncCallback: LayoutSyncCallback?, layout: Layout?
+        recordTypeId: String?, syncCallback: LayoutSyncCallback?, layout: Layout?
     ) {
         syncCallback?.onSyncComplete(
             objectAPIName,

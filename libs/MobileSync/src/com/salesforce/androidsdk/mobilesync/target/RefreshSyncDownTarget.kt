@@ -108,7 +108,7 @@ class RefreshSyncDownTarget internal constructor(
      */
     @Throws(JSONException::class)
     override fun asJSON(): JSONObject {
-        return with(asJSON()) {
+        return with(super.asJSON()) {
             put(FIELDLIST, JSONArray(fieldlist))
             put(SOBJECT_TYPE, objectType)
             put(SOUP_NAME, soupName)

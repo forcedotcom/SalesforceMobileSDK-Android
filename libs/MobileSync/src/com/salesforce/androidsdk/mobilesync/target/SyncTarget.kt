@@ -85,7 +85,7 @@ abstract class SyncTarget @JvmOverloads constructor(
     @Throws(JSONException::class)
     open fun asJSON(): JSONObject {
         return with(JSONObject()) {
-            put(ANDROID_IMPL, javaClass.name)
+            put(ANDROID_IMPL, this@SyncTarget.javaClass.name)
             put(ID_FIELD_NAME, idFieldName)
             put(MODIFICATION_DATE_FIELD_NAME, modificationDateFieldName)
         }

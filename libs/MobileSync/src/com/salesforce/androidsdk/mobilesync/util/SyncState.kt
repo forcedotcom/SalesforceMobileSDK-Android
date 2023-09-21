@@ -107,13 +107,12 @@ class SyncState(
      * @throws JSONException
      */
     @Throws(JSONException::class)
-    fun save(store: SmartStore?) {
-        val sync = store!!.update(
+    fun save(store: SmartStore) {
+        store.update(
             SYNCS_SOUP,
             asJSON(),
             id
-        )
-            ?: throw MobileSyncException("Failed to save sync state")
+        ) ?: throw MobileSyncException("Failed to save sync state")
     }
 
     val mergeMode: MergeMode
@@ -218,7 +217,7 @@ class SyncState(
          * @param store
          */
         @JvmStatic
-        fun cleanupSyncsSoupIfNeeded(store: SmartStore?) {
+        fun cleanupSyncsSoupIfNeeded(store: SmartStore) {
             try {
                 val syncs = getSyncsWithStatus(store, Status.RUNNING)
                 for (sync in syncs) {
