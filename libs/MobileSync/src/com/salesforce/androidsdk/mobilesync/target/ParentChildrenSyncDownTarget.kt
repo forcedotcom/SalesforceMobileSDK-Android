@@ -48,7 +48,7 @@ import java.util.Date
 class ParentChildrenSyncDownTarget(
     private val parentInfo: ParentInfo,
     private val parentFieldlist: List<String>,
-    private val parentSoqlFilter: String,
+    private val parentSoqlFilter: String?,
     private val childrenInfo: ChildrenInfo,
     private val childrenFieldlist: List<String>,
     private val relationshipType: RelationshipType)
@@ -76,13 +76,6 @@ class ParentChildrenSyncDownTarget(
         JSONObjectHelper.toList<String>(target.optJSONArray(CHILDREN_FIELDLIST)),
         RelationshipType.valueOf(target.getString(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE))
     )
-
-//    /**
-//     * Construct ParentChildrenSyncDownTarget from soql query - not allowed
-//     */
-//    constructor(query: String) : this(JSONObject()) {
-//        throw UnsupportedOperationException("Cannot construct ParentChildrenSyncDownTarget from SOQL query")
-//    }
 
     /**
      * @return json representation of target

@@ -267,7 +267,7 @@ abstract class SyncTarget @JvmOverloads constructor(
      */
     protected fun deleteRecordsFromLocalStore(
         syncManager: SyncManager,
-        soupName: String?,
+        soupName: String,
         ids: Set<String>,
         idField: String?
     ) {
@@ -338,7 +338,7 @@ abstract class SyncTarget @JvmOverloads constructor(
     @Throws(JSONException::class)
     fun getFromLocalStore(
         syncManager: SyncManager,
-        soupName: String?,
+        soupName: String,
         storeId: String?
     ): JSONObject {
         return syncManager.smartStore.retrieve(soupName, java.lang.Long.valueOf(storeId))
@@ -354,7 +354,7 @@ abstract class SyncTarget @JvmOverloads constructor(
     @Throws(JSONException::class)
     fun getFromLocalStore(
         syncManager: SyncManager,
-        soupName: String?,
+        soupName: String,
         storeIds: List<String>
     ): List<JSONObject> {
         val storeIdsLong = arrayOfNulls<Long>(storeIds.size)
@@ -371,7 +371,7 @@ abstract class SyncTarget @JvmOverloads constructor(
      * @param record
      */
     @Throws(JSONException::class)
-    fun deleteFromLocalStore(syncManager: SyncManager, soupName: String?, record: JSONObject) {
+    fun deleteFromLocalStore(syncManager: SyncManager, soupName: String, record: JSONObject) {
         MobileSyncLogger.d(TAG, "deleteFromLocalStore", record)
         syncManager.smartStore.delete(soupName, record.getLong(SmartStore.SOUP_ENTRY_ID))
     }

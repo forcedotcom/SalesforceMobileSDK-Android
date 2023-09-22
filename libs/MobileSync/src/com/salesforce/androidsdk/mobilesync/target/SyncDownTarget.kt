@@ -143,7 +143,7 @@ abstract class SyncDownTarget : SyncTarget {
      */
     protected fun buildSyncIdPredicateIfIndexed(
         syncManager: SyncManager,
-        soupName: String?,
+        soupName: String,
         syncId: Long
     ): String {
         var additionalPredicate = ""

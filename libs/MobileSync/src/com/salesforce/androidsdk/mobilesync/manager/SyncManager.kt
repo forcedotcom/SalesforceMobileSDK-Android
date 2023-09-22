@@ -247,7 +247,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     @Throws(JSONException::class)
     fun syncDown(
         target: SyncDownTarget,
-        soupName: String?,
+        soupName: String,
         callback: SyncUpdateCallback?
     ): SyncState {
         val options: SyncOptions = SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE)
@@ -268,7 +268,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     fun syncDown(
         target: SyncDownTarget,
         options: SyncOptions,
-        soupName: String?,
+        soupName: String,
         callback: SyncUpdateCallback?
     ): SyncState {
         return syncDown(target, options, soupName, null, callback)
@@ -289,7 +289,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     fun syncDown(
         target: SyncDownTarget,
         options: SyncOptions,
-        soupName: String?,
+        soupName: String,
         syncName: String?,
         callback: SyncUpdateCallback?
     ): SyncState {
@@ -313,7 +313,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     fun createSyncDown(
         target: SyncDownTarget,
         options: SyncOptions,
-        soupName: String?,
+        soupName: String,
         syncName: String?
     ): SyncState {
         return SyncState.createSyncDown(smartStore, target, options, soupName, syncName)
@@ -396,7 +396,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     fun syncUp(
         target: SyncUpTarget,
         options: SyncOptions,
-        soupName: String?,
+        soupName: String,
         callback: SyncUpdateCallback?
     ): SyncState {
         return syncUp(target, options, soupName, null, callback)
@@ -416,7 +416,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     fun syncUp(
         target: SyncUpTarget,
         options: SyncOptions,
-        soupName: String?,
+        soupName: String,
         syncName: String?,
         callback: SyncUpdateCallback?
     ): SyncState {
@@ -440,7 +440,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     fun createSyncUp(
         target: SyncUpTarget,
         options: SyncOptions,
-        soupName: String?,
+        soupName: String,
         syncName: String?
     ): SyncState {
         return SyncState.createSyncUp(smartStore, target, options, soupName, syncName)

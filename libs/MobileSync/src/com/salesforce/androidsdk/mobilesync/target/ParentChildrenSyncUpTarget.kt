@@ -217,11 +217,10 @@ class ParentChildrenSyncUpTarget(
 
         // Update parent in local store
         if (isDirty(record)) {
-            val parentRecordResponse = refIdToRecordResponses[record.getString(idFieldName)]
-                ?: throw MobileSyncException("No parent record response found")
             needReRun = updateParentRecordInLocalStore(
                 syncManager, record, children, mergeMode, refIdToServerId,
-                parentRecordResponse
+                refIdToRecordResponses[record.getString(idFieldName)]
+                    ?: throw MobileSyncException("No parent record response found")
             )
         }
 
@@ -229,11 +228,10 @@ class ParentChildrenSyncUpTarget(
         for (i in 0 until children.length()) {
             val childRecord = children.getJSONObject(i)
             if (isDirty(childRecord) || isCreate) {
-                val childRecordResponse = refIdToRecordResponses[childRecord.getString(childrenInfo.idFieldName)]
-                    ?: throw MobileSyncException("No child record response found")
                 needReRun = needReRun || updateChildRecordInLocalStore(
                     syncManager, childRecord, record, mergeMode, refIdToServerId,
-                    childRecordResponse
+                    refIdToRecordResponses[childRecord.getString(childrenInfo.idFieldName)]
+                        ?: throw MobileSyncException("No child record response found")
                 )
             }
         }

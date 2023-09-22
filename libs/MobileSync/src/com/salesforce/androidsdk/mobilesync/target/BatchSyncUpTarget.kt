@@ -169,15 +169,13 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
             val record = records[i]
             val id = record.getString(idFieldName)
             if (isDirty(record)) {
-                val recordResponse = refIdToRecordResponses[id]
-                    ?: throw MobileSyncException("No record response found")
                 needReRun = needReRun || updateRecordInLocalStore(
                     syncManager,
                     syncSoupName,
                     record,
                     mergeMode,
                     refIdToServerId,
-                    recordResponse,
+                    refIdToRecordResponses[id] ?: throw MobileSyncException("No record response found"),
                     isReRun
                 )
             }

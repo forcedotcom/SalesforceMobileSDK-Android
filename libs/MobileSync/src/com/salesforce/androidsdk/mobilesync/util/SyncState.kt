@@ -273,7 +273,7 @@ class SyncState(
             store: SmartStore,
             target: SyncDownTarget,
             options: SyncOptions,
-            soupName: String?,
+            soupName: String,
             name: String?
         ): SyncState {
             val sync = JSONObject()
@@ -317,7 +317,7 @@ class SyncState(
             store: SmartStore,
             target: SyncUpTarget,
             options: SyncOptions,
-            soupName: String?,
+            soupName: String,
             name: String?
         ): SyncState {
             val sync = JSONObject()

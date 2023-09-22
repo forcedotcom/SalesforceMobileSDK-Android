@@ -45,7 +45,7 @@ import kotlin.math.min
  * Target for sync which syncs down the records currently in a soup
  */
 class RefreshSyncDownTarget internal constructor(
-    fieldlist: List<String>?,
+    fieldlist: List<String>,
     objectType: String,
     soupName: String,
     countIdsPerSoql: Int
@@ -87,7 +87,7 @@ class RefreshSyncDownTarget internal constructor(
      * @param fieldlist
      * @param objectType
      */
-    constructor(fieldlist: List<String>?, objectType: String, soupName: String) : this(
+    constructor(fieldlist: List<String>, objectType: String, soupName: String) : this(
         fieldlist,
         objectType,
         soupName,
