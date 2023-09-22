@@ -220,7 +220,6 @@ class ParentChildrenSyncUpTarget(
             needReRun = updateParentRecordInLocalStore(
                 syncManager, record, children, mergeMode, refIdToServerId,
                 refIdToRecordResponses[record.getString(idFieldName)]
-                    ?: throw MobileSyncException("No parent record response found")
             )
         }
 
@@ -231,7 +230,6 @@ class ParentChildrenSyncUpTarget(
                 needReRun = needReRun || updateChildRecordInLocalStore(
                     syncManager, childRecord, record, mergeMode, refIdToServerId,
                     refIdToRecordResponses[childRecord.getString(childrenInfo.idFieldName)]
-                        ?: throw MobileSyncException("No child record response found")
                 )
             }
         }
@@ -250,18 +248,18 @@ class ParentChildrenSyncUpTarget(
         children: JSONArray,
         mergeMode: MergeMode?,
         refIdToServerId: Map<String, String>,
-        response: RecordResponse
+        response: RecordResponse?
     ): Boolean {
         var needReRun = false
         val soupName = parentInfo.soupName
-        val lastError = response.errorJson?.toString()
+        val lastError = response?.errorJson?.toString()
 
         // Delete case
         if (isLocallyDeleted(record)) {
             if (isLocallyCreated(record) // we didn't go to the sever
-                || response.success // or we successfully deleted on the server
-                || response.recordDoesNotExist
-            ) // or the record was already deleted on the server
+                || response?.success == true // or we successfully deleted on the server
+                || response?.recordDoesNotExist == true // or the record was already deleted on the server
+            )
             {
                 if (relationshipType == RelationshipType.MASTER_DETAIL) {
                     ParentChildrenSyncTargetHelper.deleteChildrenFromLocalStore(
@@ -276,13 +274,13 @@ class ParentChildrenSyncUpTarget(
             }
         } else {
             // Success case
-            if (response.success) {
+            if (response?.success == true) {
                 // Plugging server id in id field
                 CompositeRequestHelper.updateReferences(record, idFieldName, refIdToServerId)
 
                 // Clean and save
                 cleanAndSaveInLocalStore(syncManager, soupName, record)
-            } else if (response.recordDoesNotExist) {
+            } else if (response?.recordDoesNotExist == true) {
                 // Record needs to be recreated
                 if (mergeMode == MergeMode.OVERWRITE) {
                     record.put(LOCAL, true)
@@ -313,18 +311,18 @@ class ParentChildrenSyncUpTarget(
         parentRecord: JSONObject,
         mergeMode: MergeMode?,
         refIdToServerId: Map<String, String>,
-        response: RecordResponse
+        response: RecordResponse?
     ): Boolean {
         var needReRun = false
         val soupName = childrenInfo.soupName
-        val lastError = response.errorJson?.toString()
+        val lastError = response?.errorJson?.toString()
 
         // Delete case
         if (isLocallyDeleted(record)) {
             if (isLocallyCreated(record) // we didn't go to the sever
-                || response.success // or we successfully deleted on the server
-                || response.recordDoesNotExist
-            ) // or the record was already deleted on the server
+                || response?.success == true // or we successfully deleted on the server
+                || response?.recordDoesNotExist == true // or the record was already deleted on the server
+            )
             {
                 deleteFromLocalStore(syncManager, soupName, record)
             } else {
@@ -332,7 +330,7 @@ class ParentChildrenSyncUpTarget(
             }
         } else {
             // Success case
-            if (response.success) {
+            if (response?.success == true) {
                 // Plugging server id in id field
                 CompositeRequestHelper.updateReferences(
                     record,
@@ -349,7 +347,7 @@ class ParentChildrenSyncUpTarget(
 
                 // Clean and save
                 cleanAndSaveInLocalStore(syncManager, soupName, record)
-            } else if (response.recordDoesNotExist) {
+            } else if (response?.recordDoesNotExist == true) {
                 // Record needs to be recreated
                 if (mergeMode == MergeMode.OVERWRITE) {
                     record.put(LOCAL, true)
@@ -358,7 +356,7 @@ class ParentChildrenSyncUpTarget(
                     // We need a re-run
                     needReRun = true
                 }
-            } else if (response.relatedRecordDoesNotExist) {
+            } else if (response?.relatedRecordDoesNotExist == true) {
                 // Parent record needs to be recreated
                 if (mergeMode == MergeMode.OVERWRITE) {
                     parentRecord.put(LOCAL, true)
@@ -433,7 +431,7 @@ class ParentChildrenSyncUpTarget(
                 } else {
                     childrenUpdateFieldlist
                 }
-            } ?: throw MobileSyncException("No field specified")
+            } ?: throw MobileSyncException("No fields specified")
             val fields =
                 buildFieldsMap(record, fieldlistToUse, info.idFieldName, info.modificationDateFieldName)
             if (parentId != null) {
@@ -481,7 +479,7 @@ class ParentChildrenSyncUpTarget(
         val idToLocalTimestamps = getLocalLastModifiedDates(syncManager, record)
         val idToRemoteTimestamps = fetchLastModifiedDates(syncManager, record)
         for (id in idToLocalTimestamps.keys) {
-            val localModDate = idToLocalTimestamps[id] ?: throw MobileSyncException("No mod date for id $id")
+            val localModDate = idToLocalTimestamps[id]
             val remoteTimestamp = idToRemoteTimestamps[id]
             val remoteModDate = RecordModDate(
                 remoteTimestamp,

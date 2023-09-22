@@ -484,12 +484,12 @@ open class SyncUpTarget : SyncTarget {
      * @return
      */
     protected fun isNewerThanServer(
-        localModDate: RecordModDate,
+        localModDate: RecordModDate?,
         remoteModDate: RecordModDate
     ): Boolean {
-        return localModDate.timestamp != null && remoteModDate.timestamp != null && localModDate.timestamp.compareTo(
+        return localModDate?.timestamp != null && remoteModDate.timestamp != null && localModDate.timestamp.compareTo(
             remoteModDate.timestamp
-        ) >= 0 || localModDate.isDeleted && remoteModDate.isDeleted || localModDate.timestamp == null
+        ) >= 0 || localModDate?.isDeleted == true && remoteModDate.isDeleted || localModDate?.timestamp == null
     }
 
     /**

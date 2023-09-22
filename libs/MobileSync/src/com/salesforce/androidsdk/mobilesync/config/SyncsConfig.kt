@@ -123,8 +123,8 @@ class SyncsConfig private constructor(str: String?) {
                     continue
                 }
                 val syncType = SyncState.Type.valueOf(syncConfig.getString(SYNC_TYPE))
-                val targetJson = syncConfig.getJSONObject(TARGET)
-                val options: SyncOptions = SyncOptions.fromJSON(syncConfig.getJSONObject(OPTIONS))
+                val targetJson = syncConfig.optJSONObject(TARGET)
+                val options: SyncOptions = SyncOptions.fromJSON(syncConfig.optJSONObject(OPTIONS))
                     ?: throw SyncManager.MobileSyncException("Options not defined in config")
                 val soupName = syncConfig.getString(StoreConfig.SOUP_NAME)
                 MobileSyncLogger.d(TAG, "Creating sync:$syncName")

@@ -366,19 +366,6 @@ abstract class SyncDownTarget : SyncTarget {
                         throw RuntimeException(e)
                     }
                 }
-
-                else -> {
-                    try {
-                        val implClass =
-                            Class.forName(target.getString(ANDROID_IMPL)) as Class<out SyncDownTarget>
-                        val constructor = implClass.getConstructor(
-                            JSONObject::class.java
-                        )
-                        constructor.newInstance(target)
-                    } catch (e: Exception) {
-                        throw RuntimeException(e)
-                    }
-                }
             }
         }
     }

@@ -43,6 +43,8 @@ import java.text.ParseException
 import java.util.Arrays
 import java.util.SortedSet
 import java.util.TreeSet
+import kotlin.math.ceil
+import kotlin.math.min
 
 /**
  * Target for sync that downloads records using the briefcase (priming records) API
@@ -257,8 +259,7 @@ class BriefcaseSyncDownTarget internal constructor(
             relayToken,
             maxTimeStamp
         )
-        val response: PrimingRecordsResponse
-        response = try {
+        val response: PrimingRecordsResponse = try {
             PrimingRecordsResponse(
                 syncManager.sendSyncWithMobileSyncUserAgent(request).asJSONObject()
             )
@@ -362,14 +363,14 @@ class BriefcaseSyncDownTarget internal constructor(
     }
 }
 
-class TypedId(var sobjectType: String?, var id: String)
+class TypedId(var sobjectType: String, var id: String)
 class TypedIds @JvmOverloads constructor(var listTypedIds: MutableList<TypedId> = ArrayList()) {
-    fun add(objectType: String?, id: String) {
+    fun add(objectType: String, id: String) {
         listTypedIds.add(TypedId(objectType, id))
     }
 
     fun countSlices(sliceSize: Int): Int {
-        return Math.ceil(listTypedIds.size.toDouble() / sliceSize).toInt()
+        return ceil(listTypedIds.size.toDouble() / sliceSize).toInt()
     }
 
     fun size(): Int {
@@ -380,17 +381,17 @@ class TypedIds @JvmOverloads constructor(var listTypedIds: MutableList<TypedId> 
         val idsOfSlice = listTypedIds
             .subList(
                 sliceIndex * sliceSize,
-                Math.min(listTypedIds.size, (sliceIndex + 1) * sliceSize)
+                min(listTypedIds.size, (sliceIndex + 1) * sliceSize)
             )
         return TypedIds(idsOfSlice)
     }
 
     fun toMap(): Map<String, MutableList<String>> {
-        val typeToIds: MutableMap<String, MutableList<String>> = HashMap()
+        val typeToIds = mutableMapOf<String, MutableList<String>>()
         for (typedId in listTypedIds) {
-            val objectType = typedId.sobjectType ?: continue
-            typeToIds[objectType] ?: arrayListOf<String>().also { typeToIds[objectType] = it }
-                .add(typedId.id)
+            val objectType = typedId.sobjectType
+            val listIds = typeToIds.getOrPut(objectType) { mutableListOf() }
+            listIds.add(typedId.id)
         }
         return typeToIds
     }

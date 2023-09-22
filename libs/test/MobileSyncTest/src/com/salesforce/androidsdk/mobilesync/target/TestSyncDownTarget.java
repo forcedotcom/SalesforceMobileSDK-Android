@@ -59,7 +59,6 @@ public class TestSyncDownTarget extends SyncDownTarget {
 
     // Target state
     private int position = 0;
-    private int totalSize;
 
     // All the records
     private final JSONObject[] records;
@@ -112,10 +111,6 @@ public class TestSyncDownTarget extends SyncDownTarget {
     @Override
     public boolean isSyncDownSortedByLatestModification() {
         return true;
-    }
-
-    public int getTotalSize() {
-        return this.totalSize;
     }
 
     @Override

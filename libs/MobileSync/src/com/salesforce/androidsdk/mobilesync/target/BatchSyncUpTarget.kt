@@ -175,7 +175,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
                     record,
                     mergeMode,
                     refIdToServerId,
-                    refIdToRecordResponses[id] ?: throw MobileSyncException("No record response found"),
+                    refIdToRecordResponses[id],
                     isReRun
                 )
             }
@@ -222,7 +222,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
         } else {
             val fields: Map<String, Any?>
             if (isCreate) {
-                val fieldlistToUse = createFieldlist ?: fieldlist ?: throw MobileSyncException("No field specified")
+                val fieldlistToUse = createFieldlist ?: fieldlist ?: throw MobileSyncException("No fields specified")
                 fields = buildFieldsMap(record, fieldlistToUse, idFieldName, modificationDateFieldName)
                 val externalId = if (externalIdFieldName != null) JSONObjectHelper.optString(
                     record,
@@ -245,7 +245,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
                     RecordRequest.requestForCreate(objectType, fields)
                 }
             } else {
-                val fieldlistToUse = updateFieldlist ?: fieldlist ?: throw MobileSyncException("No field specified")
+                val fieldlistToUse = updateFieldlist ?: fieldlist ?: throw MobileSyncException("No fields specified")
                 fields = buildFieldsMap(record, fieldlistToUse, idFieldName, modificationDateFieldName)
                 RecordRequest.requestForUpdate(objectType, id, fields)
             }
@@ -259,18 +259,18 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
         record: JSONObject,
         mergeMode: MergeMode,
         refIdToServerId: Map<String, String>,
-        response: RecordResponse,
+        response: RecordResponse?,
         isReRun: Boolean
     ): Boolean {
         var needReRun = false
-        val lastError = response.errorJson?.toString()
+        val lastError = response?.errorJson?.toString()
 
         // Delete case
         if (isLocallyDeleted(record)) {
             if (isLocallyCreated(record) // we didn't go to the sever
-                || response.success // or we successfully deleted on the server
-                || response.recordDoesNotExist
-            ) // or the record was already deleted on the server
+                || response?.success == true     // or we successfully deleted on the server
+                || response?.recordDoesNotExist == true // or the record was already deleted on the server
+            )
             {
                 deleteFromLocalStore(syncManager, soupName, record)
             } else {
@@ -278,13 +278,13 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
             }
         } else {
             // Success case
-            if (response.success) {
+            if (response?.success == true) {
                 // Plugging server id in id field
                 CompositeRequestHelper.updateReferences(record, idFieldName, refIdToServerId)
 
                 // Clean and save
                 cleanAndSaveInLocalStore(syncManager, soupName, record)
-            } else if (response.recordDoesNotExist && mergeMode == MergeMode.OVERWRITE // Record needs to be recreated
+            } else if (response?.recordDoesNotExist == true && mergeMode == MergeMode.OVERWRITE // Record needs to be recreated
                 && !isReRun
             ) {
                 record.put(LOCAL, true)
