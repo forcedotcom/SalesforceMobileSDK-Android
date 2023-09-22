@@ -51,7 +51,7 @@ class BriefcaseSyncDownTarget internal constructor(
     private val infos: List<BriefcaseObjectInfo>,
     countIdsPerRetrieve: Int
 ) : SyncDownTarget() {
-    private val infosMap: MutableMap<String?, BriefcaseObjectInfo>
+    private val infosMap: MutableMap<String, BriefcaseObjectInfo>
 
     // NB: For each sync run - a fresh sync down target is created (by deserializing it from smartstore)
     // The following members are specific to a run
@@ -103,9 +103,7 @@ class BriefcaseSyncDownTarget internal constructor(
     override fun asJSON(): JSONObject {
         return with(super.asJSON()) {
             val infosJson = JSONArray()
-            for (info in infos) {
-                infosJson.put(info.asJSON())
-            }
+            infos.forEach { info -> infosJson.put(info.asJSON()) }
             put(INFOS, infosJson)
             put(COUNT_IDS_PER_RETRIEVE, countIdsPerRetrieve)
         }
@@ -143,7 +141,7 @@ class BriefcaseSyncDownTarget internal constructor(
         // Cleaning up ghosts one object type at a time
         for ((objectType, value) in objectTypeToIds) {
             val info = infosMap[objectType]
-            val remoteIds: SortedSet<String?> = TreeSet(
+            val remoteIds: SortedSet<String> = TreeSet(
                 value
             )
             val localIds = getNonDirtyRecordIds(
@@ -161,11 +159,11 @@ class BriefcaseSyncDownTarget internal constructor(
     }
 
     @Throws(JSONException::class)
-    override fun getIdsToSkip(syncManager: SyncManager?, soupName: String?): Set<String?> {
-        val dirtyRecordIds: MutableSet<String?> = HashSet()
+    override fun getIdsToSkip(syncManager: SyncManager, soupName: String): Set<String> {
+        val dirtyRecordIds: MutableSet<String> = HashSet()
         // Aggregating ids of dirty records across all the soups
         for (info in infos) {
-            dirtyRecordIds.addAll(getDirtyRecordIds(syncManager!!, info.soupName, info.idFieldName))
+            dirtyRecordIds.addAll(getDirtyRecordIds(syncManager, info.soupName, info.idFieldName))
         }
         return dirtyRecordIds
     }
@@ -203,7 +201,7 @@ class BriefcaseSyncDownTarget internal constructor(
 
         // Get records using sObject collection retrieve one object type at a time
         for ((objectType, idsToFetch) in objectTypeToIds) {
-            if (idsToFetch!!.size > 0) {
+            if (idsToFetch.size > 0) {
                 val info = infosMap[objectType]
                 val fieldlistToFetch = ArrayList(
                     info!!.fieldlist
@@ -253,7 +251,7 @@ class BriefcaseSyncDownTarget internal constructor(
         typedIds: TypedIds,
         relayToken: String?,
         maxTimeStamp: Long
-    ): String {
+    ): String? {
         val request = RestRequest.getRequestForPrimingRecords(
             syncManager.apiVersion,
             relayToken,
@@ -282,8 +280,8 @@ class BriefcaseSyncDownTarget internal constructor(
     protected fun fetchFromServer(
         syncManager: SyncManager,
         sobjectType: String?,
-        ids: List<String?>?,
-        fieldlist: List<String?>?
+        ids: List<String>?,
+        fieldlist: List<String>?
     ): JSONArray {
         syncManager.checkAcceptingSyncs()
         val request = RestRequest.getRequestForCollectionRetrieve(
@@ -387,13 +385,12 @@ class TypedIds @JvmOverloads constructor(var listTypedIds: MutableList<TypedId> 
         return TypedIds(idsOfSlice)
     }
 
-    fun toMap(): Map<String?, MutableList<String?>?> {
-        val typeToIds: MutableMap<String?, MutableList<String?>?> = HashMap()
+    fun toMap(): Map<String, MutableList<String>> {
+        val typeToIds: MutableMap<String, MutableList<String>> = HashMap()
         for (typedId in listTypedIds) {
-            if (typeToIds[typedId.sobjectType] == null) {
-                typeToIds[typedId.sobjectType] = ArrayList()
-            }
-            typeToIds[typedId.sobjectType]!!.add(typedId.id)
+            val objectType = typedId.sobjectType ?: continue
+            typeToIds[objectType] ?: arrayListOf<String>().also { typeToIds[objectType] = it }
+                .add(typedId.id)
         }
         return typeToIds
     }

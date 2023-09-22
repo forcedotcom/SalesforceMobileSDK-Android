@@ -46,7 +46,7 @@ open class SyncUpTask(syncManager: SyncManager, sync: SyncState, callback: SyncU
     @Throws(Exception::class)
     override fun runSync() {
         val target = sync.target as SyncUpTarget
-        val dirtyRecordIds: List<String?> = ArrayList(
+        val dirtyRecordIds: List<String> = ArrayList(
             target.getIdsOfRecordsToSyncUp(syncManager, sync.soupName)
         )
         sync.totalSize = dirtyRecordIds.size
@@ -57,7 +57,7 @@ open class SyncUpTask(syncManager: SyncManager, sync: SyncState, callback: SyncU
     protected open fun syncUp(
         sync: SyncState,
         callback: SyncUpdateCallback?,
-        dirtyRecordIds: List<String?>
+        dirtyRecordIds: List<String>
     ) {
         val soupName = sync.soupName
         val target = sync.target as SyncUpTarget

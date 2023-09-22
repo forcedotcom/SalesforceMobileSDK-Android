@@ -268,7 +268,7 @@ abstract class SyncTarget @JvmOverloads constructor(
     protected fun deleteRecordsFromLocalStore(
         syncManager: SyncManager,
         soupName: String?,
-        ids: Set<String?>,
+        ids: Set<String>,
         idField: String?
     ) {
         if (ids.size > 0) {
@@ -355,7 +355,7 @@ abstract class SyncTarget @JvmOverloads constructor(
     fun getFromLocalStore(
         syncManager: SyncManager,
         soupName: String?,
-        storeIds: List<String?>
+        storeIds: List<String>
     ): List<JSONObject> {
         val storeIdsLong = arrayOfNulls<Long>(storeIds.size)
         for (i in storeIds.indices) {

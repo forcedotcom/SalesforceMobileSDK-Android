@@ -44,7 +44,7 @@ class MruSyncDownTarget : SyncDownTarget {
     /**
      * @return field list for this target
      */
-    var fieldlist: List<String?>
+    var fieldlist: List<String>
         private set
 
     /**
@@ -68,7 +68,7 @@ class MruSyncDownTarget : SyncDownTarget {
      * @param fieldlist
      * @param objectType
      */
-    constructor(fieldlist: List<String?>, objectType: String) : super() {
+    constructor(fieldlist: List<String>, objectType: String) : super() {
         queryType = QueryType.mru
         this.fieldlist = fieldlist
         this.objectType = objectType
@@ -90,7 +90,7 @@ class MruSyncDownTarget : SyncDownTarget {
     override fun startFetch(syncManager: SyncManager, maxTimeStamp: Long): JSONArray {
         val request = RestRequest.getRequestForMetadata(syncManager.apiVersion, objectType)
         val response = syncManager.sendSyncWithMobileSyncUserAgent(request)
-        val recentItems = JSONObjectHelper.pluck<String?>(
+        val recentItems = JSONObjectHelper.pluck<String>(
             response.asJSONObject().getJSONArray(Constants.RECENT_ITEMS), Constants.ID
         )
 

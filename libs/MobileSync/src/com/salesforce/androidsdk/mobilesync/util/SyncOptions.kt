@@ -73,7 +73,7 @@ class SyncOptions
             if (options == null) return null
             val mergeModeStr = JSONObjectHelper.optString(options, MERGEMODE)
             val mergeMode = if (mergeModeStr == null) null else MergeMode.valueOf(mergeModeStr)
-            val fieldlist = JSONObjectHelper.toList<String?>(options.optJSONArray(FIELDLIST))
+            val fieldlist = JSONObjectHelper.toList<String>(options.optJSONArray(FIELDLIST))
             return SyncOptions(fieldlist, mergeMode)
         }
 

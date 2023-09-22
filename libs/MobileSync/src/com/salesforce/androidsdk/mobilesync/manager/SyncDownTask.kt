@@ -54,7 +54,7 @@ class SyncDownTask(syncManager: SyncManager, sync: SyncState, callback: SyncUpda
         val idField = sync.target.idFieldName
 
         // Get ids of records to leave alone
-        var idsToSkip: Set<String?>? = null
+        var idsToSkip: Set<String>? = null
         if (mergeMode == MergeMode.LEAVE_IF_CHANGED) {
             idsToSkip = target.getIdsToSkip(syncManager, soupName)
         }
@@ -93,7 +93,7 @@ class SyncDownTask(syncManager: SyncManager, sync: SyncState, callback: SyncUpda
     @Throws(JSONException::class)
     private fun removeWithIds(
         records: JSONArray,
-        idsToSkip: Set<String?>,
+        idsToSkip: Set<String>,
         idField: String?
     ): JSONArray {
         val arr = JSONArray()

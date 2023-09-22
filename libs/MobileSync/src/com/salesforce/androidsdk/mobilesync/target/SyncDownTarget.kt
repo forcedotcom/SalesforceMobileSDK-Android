@@ -280,8 +280,8 @@ abstract class SyncDownTarget : SyncTarget {
      * @throws JSONException
      */
     @Throws(JSONException::class)
-    open fun getIdsToSkip(syncManager: SyncManager?, soupName: String?): Set<String?>? {
-        return getDirtyRecordIds(syncManager!!, soupName, idFieldName)
+    open fun getIdsToSkip(syncManager: SyncManager, soupName: String): Set<String> {
+        return getDirtyRecordIds(syncManager, soupName, idFieldName)
     }
 
     /**

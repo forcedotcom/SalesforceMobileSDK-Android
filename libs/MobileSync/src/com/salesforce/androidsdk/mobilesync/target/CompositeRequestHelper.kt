@@ -59,10 +59,10 @@ object CompositeRequestHelper {
         allOrNone: Boolean,
         recordRequests: List<RecordRequest>
     ): Map<String, RecordResponse> {
-        val refIdToRequests = LinkedHashMap<String?, RestRequest?>()
+        val refIdToRequests = LinkedHashMap<String, RestRequest?>()
         for (recordRequest in recordRequests) {
-            refIdToRequests[recordRequest.referenceId] =
-                recordRequest.asRestRequest(syncManager.apiVersion)
+            val refId = recordRequest.referenceId ?: continue
+            refIdToRequests[refId] = recordRequest.asRestRequest(syncManager.apiVersion)
         }
         val compositeRequest: RestRequest =
             RestRequest.getCompositeRequest(syncManager.apiVersion, allOrNone, refIdToRequests)
@@ -114,7 +114,7 @@ object CompositeRequestHelper {
                         response.asJSONArray()
                     ).subResponses
                     for (i in subResponses.indices) {
-                        val refId = refIds[i]!!
+                        val refId = refIds[i]
                         val recordResponse = RecordResponse.fromCollectionSubResponse(
                             subResponses[i]
                         )
@@ -269,8 +269,6 @@ object CompositeRequestHelper {
                     id
                 )
             }
-            // We should never get here
-            return null
         }
 
         @Throws(JSONException::class)
@@ -329,53 +327,37 @@ object CompositeRequestHelper {
             fun getRefIds(
                 recordRequests: List<RecordRequest>,
                 requestType: RequestType
-            ): List<String?> {
-                val refIds: MutableList<String?> = LinkedList()
-                for (recordRequest in recordRequests) {
-                    if (recordRequest.requestType == requestType) {
-                        refIds.add(recordRequest.referenceId)
-                    }
-                }
-                return refIds
+            ): List<String> {
+                return recordRequests
+                    .filter { it.requestType == requestType}
+                    .mapNotNull { it.referenceId }
             }
 
             fun getIds(
                 recordRequests: List<RecordRequest>,
                 requestType: RequestType
-            ): List<String?> {
-                val ids: MutableList<String?> = LinkedList()
-                for (recordRequest in recordRequests) {
-                    if (recordRequest.requestType == requestType) {
-                        ids.add(recordRequest.id)
-                    }
-                }
-                return ids
+            ): List<String> {
+                return recordRequests
+                    .filter { it.requestType == requestType}
+                    .mapNotNull { it.id }
             }
 
             fun getObjectTypes(
                 recordRequests: List<RecordRequest>,
                 requestType: RequestType
-            ): List<String?> {
-                val objectTypes: MutableList<String?> = LinkedList()
-                for (recordRequest in recordRequests) {
-                    if (recordRequest.requestType == requestType) {
-                        objectTypes.add(recordRequest.objectType)
-                    }
-                }
-                return objectTypes
+            ): List<String> {
+                return recordRequests
+                    .filter { it.requestType == requestType}
+                    .mapNotNull { it.objectType }
             }
 
             fun getExternalIdFieldNames(
                 recordRequests: List<RecordRequest>,
                 requestType: RequestType
-            ): List<String?> {
-                val externalIdFieldNames: MutableList<String?> = LinkedList()
-                for (recordRequest in recordRequests) {
-                    if (recordRequest.requestType == requestType) {
-                        externalIdFieldNames.add(recordRequest.externalIdFieldName)
-                    }
-                }
-                return externalIdFieldNames
+            ): List<String> {
+                return recordRequests
+                    .filter { it.requestType == requestType}
+                    .mapNotNull { it.externalIdFieldName }
             }
 
             @Throws(JSONException::class)
@@ -383,13 +365,11 @@ object CompositeRequestHelper {
                 recordRequests: List<RecordRequest>,
                 requestType: RequestType
             ): JSONArray {
-                val jsonArray = JSONArray()
-                for (recordRequest in recordRequests) {
-                    if (recordRequest.requestType == requestType) {
-                        jsonArray.put(recordRequest.asJSONObjectForCollectionRequest())
-                    }
+                return JSONArray().also { jsonArr ->
+                    recordRequests
+                        .filter { it.requestType == requestType }
+                        .forEach { jsonArr.put(it.asJSONObjectForCollectionRequest()) }
                 }
-                return jsonArray
             }
 
             @Throws(JSONException::class, UnsupportedEncodingException::class)
@@ -448,10 +428,11 @@ object CompositeRequestHelper {
                         false,
                         getIds(recordRequests, RequestType.DELETE)
                     )
-                }
 
-                // We should never get here
-                return null
+                    else -> {
+                        return null
+                    }
+                }
             }
         }
     }

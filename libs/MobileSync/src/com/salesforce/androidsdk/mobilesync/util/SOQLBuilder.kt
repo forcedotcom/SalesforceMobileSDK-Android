@@ -267,8 +267,8 @@ class SOQLBuilder private constructor() {
          * @param fields Fields.
          * @return Instance of this class.
          */
-        fun getInstanceWithFields(fields: List<String?>?): SOQLBuilder {
-            return getInstanceWithFields(TextUtils.join(", ", fields!!))
+        fun getInstanceWithFields(fields: List<String>): SOQLBuilder {
+            return getInstanceWithFields(TextUtils.join(", ", fields))
         }
     }
 }

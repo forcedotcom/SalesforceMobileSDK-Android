@@ -45,20 +45,20 @@ import kotlin.math.min
  * Target for sync which syncs down the records currently in a soup
  */
 class RefreshSyncDownTarget internal constructor(
-    fieldlist: List<String?>?,
-    objectType: String?,
+    fieldlist: List<String>?,
+    objectType: String,
     soupName: String,
     countIdsPerSoql: Int
 ) : SyncDownTarget() {
     /**
      * @return field list for this target
      */
-    val fieldlist: List<String?>?
+    val fieldlist: List<String>?
 
     /**
      * @return object type for this target
      */
-    val objectType: String?
+    val objectType: String
     private val soupName: String
     private val countIdsPerSoql: Int
 
@@ -76,7 +76,7 @@ class RefreshSyncDownTarget internal constructor(
      * @throws JSONException
      */
     constructor(target: JSONObject) : this(
-        JSONObjectHelper.toList<String?>(target.getJSONArray(FIELDLIST)),
+        JSONObjectHelper.toList<String>(target.getJSONArray(FIELDLIST)),
         target.getString(SOBJECT_TYPE),
         target.getString(SOUP_NAME),
         target.optInt(COUNT_IDS_PER_SOQL, MAX_COUNT_IDS_PER_SOQL)
@@ -87,7 +87,7 @@ class RefreshSyncDownTarget internal constructor(
      * @param fieldlist
      * @param objectType
      */
-    constructor(fieldlist: List<String?>?, objectType: String?, soupName: String) : this(
+    constructor(fieldlist: List<String>?, objectType: String, soupName: String) : this(
         fieldlist,
         objectType,
         soupName,
@@ -134,7 +134,7 @@ class RefreshSyncDownTarget internal constructor(
     private fun getIdsFromSmartStoreAndFetchFromServer(syncManager: SyncManager): JSONArray? {
         // Read from smartstore
         val querySpec: QuerySpec
-        val idsInSmartStore: MutableList<String?> = ArrayList()
+        val idsInSmartStore: MutableList<String> = ArrayList()
         val maxTimeStamp: Long
         if (isResync) {
             // Getting full records from SmartStore to compute maxTimeStamp
@@ -201,8 +201,8 @@ class RefreshSyncDownTarget internal constructor(
     @Throws(IOException::class, JSONException::class)
     private fun fetchFromServer(
         syncManager: SyncManager,
-        ids: List<String?>,
-        fieldlist: List<String?>,
+        ids: List<String>,
+        fieldlist: List<String>,
         maxTimeStamp: Long
     ): JSONArray {
         val whereClause = (""

@@ -46,7 +46,7 @@ class AdvancedSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: Sy
     override fun syncUp(
         sync: SyncState,
         callback: SyncUpdateCallback?,
-        dirtyRecordIds: List<String?>
+        dirtyRecordIds: List<String>
     ) {
         val soupName = sync.soupName
         val target = sync.target as SyncUpTarget

@@ -60,10 +60,10 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
      */
     constructor(target: JSONObject) : this(
         ParentInfo(target.getJSONObject(ParentChildrenSyncTargetHelper.PARENT)),
-        JSONObjectHelper.toList<String?>(target.optJSONArray(PARENT_FIELDLIST)),
+        JSONObjectHelper.toList<String>(target.optJSONArray(PARENT_FIELDLIST)),
         target.getString(PARENT_SOQL_FILTER),
         ChildrenInfo(target.getJSONObject(ParentChildrenSyncTargetHelper.CHILDREN)),
-        JSONObjectHelper.toList<String?>(target.optJSONArray(CHILDREN_FIELDLIST)),
+        JSONObjectHelper.toList<String>(target.optJSONArray(CHILDREN_FIELDLIST)),
         RelationshipType.valueOf(target.getString(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE))
     )
 
@@ -120,7 +120,7 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
             // This is for clean re-sync ghosts
             //
             // This is the soql to identify parents
-            val fields: MutableList<String?> = ArrayList()
+            val fields: MutableList<String> = ArrayList()
             fields.add(idFieldName)
             val builder: SOQLBuilder = SOQLBuilder.getInstanceWithFields(fields)
             builder.from(parentInfo!!.sobjectType)
@@ -151,14 +151,14 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
             // But "qualifying" parentSoqlFilter without parsing it could prove tricky
 
             // Nested query
-            val nestedFields: MutableList<String?> = ArrayList()
+            val nestedFields: MutableList<String> = ArrayList()
             nestedFields.add(childrenInfo!!.idFieldName)
             val builderNested: SOQLBuilder =
                 SOQLBuilder.getInstanceWithFields(nestedFields)
             builderNested.from(childrenInfo!!.sobjectTypePlural)
 
             // Parent query
-            val fields: MutableList<String?> = ArrayList()
+            val fields: MutableList<String> = ArrayList()
             fields.add(idFieldName)
             fields.add("(" + builderNested.build() + ")")
             val builder: SOQLBuilder = SOQLBuilder.getInstanceWithFields(fields)
@@ -176,7 +176,7 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
 
         // NB: ParentChildrenSyncDownTarget's getNonDirtyRecordIdsSql does a join between parent and children soups
         // We only want to look at the children soup, so using SoqlSyncDownTarget's getNonDirtyRecordIdsSql
-        val localChildrenIds: MutableSet<String?> = getIdsWithQuery(
+        val localChildrenIds: MutableSet<String> = getIdsWithQuery(
             syncManager, super.getNonDirtyRecordIdsSql(
                 childrenInfo!!.soupName,
                 childrenInfo!!.idFieldName,
@@ -200,11 +200,11 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
     protected fun getChildrenRemoteIdsWithSoql(
         syncManager: SyncManager,
         soqlForChildrenRemoteIds: String?
-    ): Set<String?> {
+    ): Set<String> {
 
         // Makes network request and parses the response.
         var records = startFetch(syncManager, soqlForChildrenRemoteIds)
-        val remoteChildrenIds: MutableSet<String?> = HashSet(parseChildrenIdsFromResponse(records))
+        val remoteChildrenIds: MutableSet<String> = HashSet(parseChildrenIdsFromResponse(records))
         while (true) {
             syncManager.checkAcceptingSyncs()
             // Fetch next records, if any.
@@ -214,8 +214,8 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
         return remoteChildrenIds
     }
 
-    protected fun parseChildrenIdsFromResponse(records: JSONArray?): Set<String?> {
-        val remoteChildrenIds: MutableSet<String?> = HashSet()
+    protected fun parseChildrenIdsFromResponse(records: JSONArray?): Set<String> {
+        val remoteChildrenIds: MutableSet<String> = HashSet()
         if (records != null) {
             for (i in 0 until records.length()) {
                 val record = records.optJSONObject(i)
@@ -273,7 +273,7 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
         builderNested.where(childrenWhere.toString())
 
         // Parent query
-        val fields: MutableList<String?> = parentFieldlist?.let { ArrayList(it) } ?: throw SyncManager.MobileSyncException("No parent field specified")
+        val fields: MutableList<String> = parentFieldlist?.let { ArrayList(it) } ?: throw SyncManager.MobileSyncException("No parent field specified")
         if (!fields.contains(idFieldName)) fields.add(idFieldName)
         if (!fields.contains(modificationDateFieldName)) fields.add(modificationDateFieldName)
         fields.add("(" + builderNested.build() + ")")
