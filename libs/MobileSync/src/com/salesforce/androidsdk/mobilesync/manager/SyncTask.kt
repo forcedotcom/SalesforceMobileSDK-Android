@@ -39,7 +39,7 @@ import org.json.JSONObject
 /**
  * Abstract super class of runnable classes responsible for running syncs
  */
-abstract class SyncTask(// Fields
+abstract class SyncTask(
     protected val syncManager: SyncManager,
     protected val sync: SyncState,
     protected val callback: SyncUpdateCallback?

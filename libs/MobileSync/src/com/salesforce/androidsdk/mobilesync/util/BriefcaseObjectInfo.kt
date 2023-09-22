@@ -35,7 +35,7 @@ import org.json.JSONObject
  * Capture fields that we want to sync down for a given object type (and record type) in a briefcase
  */
 class BriefcaseObjectInfo @JvmOverloads constructor(
-    val soupName: String, // Fields
+    val soupName: String,
     val sobjectType: String,
     val fieldlist: List<String>,
     idFieldName: String? = null,
@@ -60,13 +60,13 @@ class BriefcaseObjectInfo @JvmOverloads constructor(
 
     @Throws(JSONException::class)
     fun asJSON(): JSONObject {
-        val json = JSONObject()
-        json.put(SOUP_NAME, soupName)
-        json.put(SOBJECT_TYPE, sobjectType)
-        json.put(FIELD_LIST, JSONArray(fieldlist))
-        json.put(ID_FIELD_NAME, idFieldName)
-        json.put(MODIFICATION_DATE_FIELD_NAME, modificationDateFieldName)
-        return json
+        return with (JSONObject()) {
+            put(SOUP_NAME, soupName)
+            put(SOBJECT_TYPE, sobjectType)
+            put(FIELD_LIST, JSONArray(fieldlist))
+            put(ID_FIELD_NAME, idFieldName)
+            put(MODIFICATION_DATE_FIELD_NAME, modificationDateFieldName)
+        }
     }
 
     companion object {
@@ -78,11 +78,9 @@ class BriefcaseObjectInfo @JvmOverloads constructor(
         const val MODIFICATION_DATE_FIELD_NAME = "modificationDateFieldName"
         @Throws(JSONException::class)
         fun fromJSONArray(json: JSONArray): List<BriefcaseObjectInfo> {
-            val infos = ArrayList<BriefcaseObjectInfo>()
-            for (i in 0 until json.length()) {
-                infos.add(BriefcaseObjectInfo(json.getJSONObject(i)))
-            }
-            return infos
+            return JSONObjectHelper
+                .toList<JSONObject>(json)
+                .map { BriefcaseObjectInfo(it) }
         }
     }
 }

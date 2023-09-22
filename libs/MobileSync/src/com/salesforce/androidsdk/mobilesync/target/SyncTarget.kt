@@ -129,7 +129,7 @@ abstract class SyncTarget @JvmOverloads constructor(
     }
 
     @Throws(JSONException::class)
-    protected fun getIdsWithQuery(syncManager: SyncManager, idsSql: String?): SortedSet<String> {
+    protected fun getIdsWithQuery(syncManager: SyncManager, idsSql: String): SortedSet<String> {
         val ids: SortedSet<String> = TreeSet()
         val smartQuerySpec = QuerySpec.buildSmartQuerySpec(idsSql, PAGE_SIZE)
         var hasMore = true

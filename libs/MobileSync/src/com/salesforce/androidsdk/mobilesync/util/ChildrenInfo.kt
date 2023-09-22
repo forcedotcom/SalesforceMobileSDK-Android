@@ -34,7 +34,7 @@ import org.json.JSONObject
  * Simple object to capture details of children in parent-child relationship
  */
 class ChildrenInfo @JvmOverloads constructor(
-    sobjectType: String, // Fields
+    sobjectType: String,
     val sobjectTypePlural: String,
     soupName: String,
     val parentIdFieldName: String,

@@ -94,10 +94,10 @@ class AdvancedSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: Sy
         syncManager: SyncManager,
         target: SyncUpTarget,
         records: List<JSONObject>,
-        options: SyncOptions?
+        options: SyncOptions
     ): Map<String, Boolean> {
         var recordIdToShouldSyncUp: MutableMap<String, Boolean> = HashMap()
-        if (options?.mergeMode == MergeMode.OVERWRITE) {
+        if (options.mergeMode == MergeMode.OVERWRITE) {
             for (record in records) {
                 val recordId = record.getString(SmartStore.SOUP_ENTRY_ID) ?: throw SyncManager.MobileSyncException("No id found on record")
                 recordIdToShouldSyncUp[recordId] = true

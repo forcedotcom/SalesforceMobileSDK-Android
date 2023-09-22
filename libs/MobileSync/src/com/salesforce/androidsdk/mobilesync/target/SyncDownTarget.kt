@@ -34,7 +34,6 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
-import java.text.ParseException
 import java.util.Locale
 import java.util.SortedSet
 
@@ -298,17 +297,15 @@ abstract class SyncDownTarget : SyncTarget {
      * @param records SObject records.
      * @return Set of IDs.
      */
-    protected fun parseIdsFromResponse(records: JSONArray?): Set<String> {
-        val remoteIds: MutableSet<String> = HashSet()
-        if (records != null) {
-            for (i in 0 until records.length()) {
-                val idJson = records.optJSONObject(i)
-                if (idJson != null) {
-                    remoteIds.add(idJson.optString(idFieldName))
+    protected fun parseIdsFromResponse(records: JSONArray): Set<String> {
+        return with(HashSet<String>()) {
+            JSONObjectHelper
+                .toList<JSONObject>(records)
+                .forEach { idJson ->
+                    this.add(idJson.optString(idFieldName))
                 }
-            }
+            this
         }
-        return remoteIds
     }
 
     companion object {
@@ -324,10 +321,7 @@ abstract class SyncDownTarget : SyncTarget {
          */
         @JvmStatic
         @Throws(JSONException::class)
-        fun fromJSON(target: JSONObject?): SyncDownTarget? {
-            if (target == null) {
-                return null
-            }
+        fun fromJSON(target: JSONObject): SyncDownTarget {
             val queryType = QueryType.valueOf(target.getString(QUERY_TYPE))
             return when (queryType) {
                 QueryType.mru -> {

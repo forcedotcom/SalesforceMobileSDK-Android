@@ -69,8 +69,7 @@ class SyncOptions
          */
         @JvmStatic
 		@Throws(JSONException::class)
-        fun fromJSON(options: JSONObject?): SyncOptions? {
-            if (options == null) return null
+        fun fromJSON(options: JSONObject): SyncOptions {
             val mergeModeStr = JSONObjectHelper.optString(options, MERGEMODE)
             val mergeMode = if (mergeModeStr == null) null else MergeMode.valueOf(mergeModeStr)
             val fieldlist = JSONObjectHelper.toList<String>(options.optJSONArray(FIELDLIST))

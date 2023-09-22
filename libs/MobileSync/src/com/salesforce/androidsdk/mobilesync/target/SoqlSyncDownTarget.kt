@@ -137,7 +137,7 @@ open class SoqlSyncDownTarget : SyncDownTarget {
     }
 
     @Throws(IOException::class, JSONException::class)
-    protected fun startFetch(syncManager: SyncManager, query: String?): JSONArray {
+    protected fun startFetch(syncManager: SyncManager, query: String): JSONArray {
         val request = RestRequest.getRequestForQuery(syncManager.apiVersion, query, maxBatchSize)
         val response = syncManager.sendSyncWithMobileSyncUserAgent(request)
         val responseJson = getResponseJson(response)
@@ -196,13 +196,12 @@ open class SoqlSyncDownTarget : SyncDownTarget {
         val remoteIds: MutableSet<String> = HashSet()
 
         // Makes network request and parses the response.
-        var records: JSONArray? = startFetch(syncManager, soqlForRemoteIds)
-        remoteIds.addAll(parseIdsFromResponse(records))
-        while (records != null) {
+        remoteIds.addAll(parseIdsFromResponse(startFetch(syncManager, soqlForRemoteIds)))
+        while (true) {
             syncManager.checkAcceptingSyncs()
 
             // Fetch next records, if any.
-            records = continueFetch(syncManager)
+            val records = continueFetch(syncManager) ?: break
             remoteIds.addAll(parseIdsFromResponse(records))
         }
         return remoteIds

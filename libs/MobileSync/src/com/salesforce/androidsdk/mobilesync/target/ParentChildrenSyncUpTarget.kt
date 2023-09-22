@@ -578,7 +578,7 @@ class ParentChildrenSyncUpTarget(
      * @throws UnsupportedEncodingException
      */
     @Throws(UnsupportedEncodingException::class)
-    protected fun getRequestForTimestamps(apiVersion: String?, parentId: String?): RestRequest {
+    protected fun getRequestForTimestamps(apiVersion: String, parentId: String): RestRequest {
         val builderNested: SOQLBuilder = SOQLBuilder.getInstanceWithFields(
             childrenInfo.idFieldName,
             childrenInfo.modificationDateFieldName

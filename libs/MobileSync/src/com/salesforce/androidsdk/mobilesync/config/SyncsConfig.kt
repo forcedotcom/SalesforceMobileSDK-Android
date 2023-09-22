@@ -35,6 +35,7 @@ import com.salesforce.androidsdk.mobilesync.util.SyncOptions
 import com.salesforce.androidsdk.mobilesync.util.SyncState
 import com.salesforce.androidsdk.smartstore.config.StoreConfig
 import com.salesforce.androidsdk.smartstore.store.SmartStore
+import com.salesforce.androidsdk.util.JSONObjectHelper
 import com.salesforce.androidsdk.util.ResourceReaderHelper
 import org.json.JSONArray
 import org.json.JSONException
@@ -109,34 +110,35 @@ class SyncsConfig private constructor(str: String?) {
      * NB: only feedback is through the logs - the config is static so getting it right is something the developer should do while writing the app
      * @param store
      */
-    fun createSyncs(store: SmartStore?) {
+    fun createSyncs(store: SmartStore) {
         val syncConfigs = syncConfigs ?: return
         val syncManager: SyncManager = SyncManager.getInstance(null, null, store)
-        for (i in 0 until syncConfigs.length()) {
+        JSONObjectHelper.toList<JSONObject>(syncConfigs).forEach { syncConfig ->
             try {
-                val syncConfig = syncConfigs.getJSONObject(i)
                 val syncName = syncConfig.getString(SYNC_NAME)
-
                 // Leaving sync alone if it already exists
                 if (syncManager.hasSyncWithName(syncName)) {
                     MobileSyncLogger.d(TAG, "Sync already exists:$syncName - skipping")
-                    continue
                 }
-                val syncType = SyncState.Type.valueOf(syncConfig.getString(SYNC_TYPE))
-                val targetJson = syncConfig.optJSONObject(TARGET)
-                val options: SyncOptions = SyncOptions.fromJSON(syncConfig.optJSONObject(OPTIONS))
-                    ?: throw SyncManager.MobileSyncException("Options not defined in config")
-                val soupName = syncConfig.getString(StoreConfig.SOUP_NAME)
-                MobileSyncLogger.d(TAG, "Creating sync:$syncName")
-                when (syncType) {
-                    SyncState.Type.syncDown -> {
-                        val target = SyncDownTarget.fromJSON(targetJson)
-                            ?: throw SyncManager.MobileSyncException("Target not defined in config")
-                        syncManager.createSyncDown(target, options, soupName, syncName)
-                    }
-                    SyncState.Type.syncUp -> {
-                        val target = SyncUpTarget.fromJSON(targetJson)
-                        syncManager.createSyncUp(target, options, soupName, syncName)
+                else {
+                    val syncType = SyncState.Type.valueOf(syncConfig.getString(SYNC_TYPE))
+                    val targetJson = syncConfig.optJSONObject(TARGET)
+                        ?: throw SyncManager.MobileSyncException("Target not defined in config")
+                    val optionsJson = syncConfig.optJSONObject(OPTIONS)
+                        ?: throw SyncManager.MobileSyncException("Options not defined in config")
+                    val options: SyncOptions = SyncOptions.fromJSON(optionsJson)
+                    val soupName = syncConfig.getString(StoreConfig.SOUP_NAME)
+                    MobileSyncLogger.d(TAG, "Creating sync:$syncName")
+                    when (syncType) {
+                        SyncState.Type.syncDown -> {
+                            val target = SyncDownTarget.fromJSON(targetJson)
+                            syncManager.createSyncDown(target, options, soupName, syncName)
+                        }
+
+                        SyncState.Type.syncUp -> {
+                            val target = SyncUpTarget.fromJSON(targetJson)
+                            syncManager.createSyncUp(target, options, soupName, syncName)
+                        }
                     }
                 }
             } catch (e: JSONException) {

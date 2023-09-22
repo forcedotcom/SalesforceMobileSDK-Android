@@ -33,7 +33,7 @@ import org.json.JSONObject
 /**
  * Simple object to capture details of parent in parent-child relationship
  */
-open class ParentInfo @JvmOverloads constructor(// Fields
+open class ParentInfo @JvmOverloads constructor(
     val sobjectType: String,
     val soupName: String,
     idFieldName: String? = null,

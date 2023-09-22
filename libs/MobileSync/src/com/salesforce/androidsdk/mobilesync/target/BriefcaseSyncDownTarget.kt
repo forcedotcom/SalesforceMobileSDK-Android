@@ -61,7 +61,7 @@ class BriefcaseSyncDownTarget internal constructor(
     protected var relayToken: String? = null
 
     // When we get many ids, we don't fetch all the records for them at once
-    protected var fetchedTypedIds: TypedIds? = null
+    protected val fetchedTypedIds = TypedIds()
     protected var currentSliceIndex = 0
 
     // Number of records to fetch per call (with ids obtained from priming record api)
@@ -121,7 +121,7 @@ class BriefcaseSyncDownTarget internal constructor(
 
     @Throws(IOException::class, JSONException::class)
     override fun continueFetch(syncManager: SyncManager): JSONArray? {
-        return if (relayToken == null && fetchedTypedIds == null) {
+        return if (relayToken == null && fetchedTypedIds.isEmpty()) {
             null
         } else {
             getIdsFromBriefcasesAndFetchFromServer(syncManager)
@@ -188,15 +188,14 @@ class BriefcaseSyncDownTarget internal constructor(
         val records = JSONArray()
 
         // Run priming record request unless we have fetched typed ids we have not yet processed
-        if (fetchedTypedIds == null) {
-            fetchedTypedIds = TypedIds()
+        if (fetchedTypedIds.isEmpty()) {
             currentSliceIndex = 0
             relayToken =
-                getIdsFromBriefcases(syncManager, fetchedTypedIds!!, relayToken, maxTimeStamp)
+                getIdsFromBriefcases(syncManager, fetchedTypedIds, relayToken, maxTimeStamp)
         }
 
         // Getting ids of records to fetch in a map
-        val objectTypeToIds = fetchedTypedIds!!.slice(
+        val objectTypeToIds = fetchedTypedIds.slice(
             currentSliceIndex,
             countIdsPerRetrieve
         ).toMap()
@@ -224,13 +223,13 @@ class BriefcaseSyncDownTarget internal constructor(
             //  - using response.stats.recordCountTotal would only be correct if the filtering by
             //  timestamp did not exclude any results
             //  - also in 236, response.stats.recordCountTotal seems wrong (it says 1000 all the time)
-            totalSize = fetchedTypedIds!!.size()
+            totalSize = fetchedTypedIds.size()
         }
 
         // Incrementing current slice index and checking if we have reached the end
         currentSliceIndex++
-        if (currentSliceIndex >= fetchedTypedIds!!.countSlices(countIdsPerRetrieve)) {
-            fetchedTypedIds = null
+        if (currentSliceIndex >= fetchedTypedIds.countSlices(countIdsPerRetrieve)) {
+            fetchedTypedIds.clear()
             currentSliceIndex = 0
         }
         return records
@@ -318,11 +317,7 @@ class BriefcaseSyncDownTarget internal constructor(
                     val info = getMatchingBriefcaseInfo(record)
                     if (info != null) {
                         addSyncId(record, syncId)
-                        cleanAndSaveInSmartStore(
-                            smartStore, info.soupName, record,
-                            info.idFieldName,
-                            false
-                        )
+                        cleanAndSaveInSmartStore(smartStore, info.soupName, record, info.idFieldName, false)
                     } else {
                         // That should never happened
                         MobileSyncLogger.e(
@@ -394,5 +389,13 @@ class TypedIds @JvmOverloads constructor(var listTypedIds: MutableList<TypedId> 
             listIds.add(typedId.id)
         }
         return typeToIds
+    }
+
+    fun clear() {
+        listTypedIds.clear()
+    }
+
+    fun isEmpty(): Boolean {
+        return listTypedIds.isEmpty()
     }
 }

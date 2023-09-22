@@ -50,7 +50,7 @@ object MobileSyncLogger {
      * @param message Log message.
      */
     @JvmStatic
-    fun e(tag: String?, message: String?) {
+    fun e(tag: String, message: String) {
         logger.e(tag, message)
     }
 
@@ -62,21 +62,9 @@ object MobileSyncLogger {
      * @param e Exception to be logged.
      */
     @JvmStatic
-    fun e(tag: String?, message: String?, e: Throwable?) {
+    fun e(tag: String, message: String, e: Throwable) {
         logger.e(tag, message, e)
     }
-
-    /**
-     * Logs an error log line.
-     *
-     * @param tag Log tag.
-     * @param msg Log message.
-     * @param obj Object to be logged.
-     */
-//    fun e(tag: String?, msg: String, obj: Any?) {
-//        val objStr = toString(obj)
-//        e(tag, "$msg: $objStr")
-//    }
 
     /**
      * Logs a warning log line.
@@ -85,7 +73,7 @@ object MobileSyncLogger {
      * @param message Log message.
      */
     @JvmStatic
-    fun w(tag: String?, message: String?) {
+    fun w(tag: String, message: String) {
         logger.w(tag, message)
     }
 
@@ -97,7 +85,7 @@ object MobileSyncLogger {
      * @param obj Object to be logged.
      */
     @JvmStatic
-    fun w(tag: String?, msg: String, obj: Any?) {
+    fun w(tag: String, msg: String, obj: Any) {
         val objStr = toString(obj)
         w(tag, "$msg: $objStr")
     }
@@ -109,7 +97,7 @@ object MobileSyncLogger {
      * @param message Log message.
      */
     @JvmStatic
-    fun i(tag: String?, message: String?) {
+    fun i(tag: String, message: String) {
         logger.i(tag, message)
     }
 
@@ -121,7 +109,7 @@ object MobileSyncLogger {
      * @param obj Object to be logged.
      */
     @JvmStatic
-    fun i(tag: String?, msg: String, obj: Any?) {
+    fun i(tag: String, msg: String, obj: Any) {
         val objStr = toString(obj)
         i(tag, "$msg: $objStr")
     }
@@ -133,7 +121,7 @@ object MobileSyncLogger {
      * @param message Log message.
      */
     @JvmStatic
-    fun d(tag: String?, message: String?) {
+    fun d(tag: String, message: String) {
         logger.d(tag, message)
     }
 
@@ -145,7 +133,7 @@ object MobileSyncLogger {
      * @param obj Object to be logged.
      */
     @JvmStatic
-    fun d(tag: String?, msg: String, obj: Any?) {
+    fun d(tag: String, msg: String, obj: Any) {
         val objStr = toString(obj)
         d(tag, "$msg: $objStr")
     }
@@ -157,7 +145,7 @@ object MobileSyncLogger {
      * @param message Log message.
      */
     @JvmStatic
-    fun v(tag: String?, message: String?) {
+    fun v(tag: String, message: String) {
         logger.v(tag, message)
     }
 
@@ -169,7 +157,7 @@ object MobileSyncLogger {
      * @param e Exception to be logged.
      */
     @JvmStatic
-    fun v(tag: String?, message: String?, e: Throwable?) {
+    fun v(tag: String, message: String, e: Throwable) {
         logger.v(tag, message, e)
     }
 
@@ -181,7 +169,7 @@ object MobileSyncLogger {
      * @param obj Object to be logged.
      */
     @JvmStatic
-    fun v(tag: String?, msg: String, obj: Any?) {
+    fun v(tag: String, msg: String, obj: Any) {
         val objStr = toString(obj)
         v(tag, "$msg: $objStr")
     }
@@ -192,7 +180,7 @@ object MobileSyncLogger {
      * @param level Log level.
      */
     @JvmStatic
-    fun setLogLevel(level: SalesforceLogger.Level?) {
+    fun setLogLevel(level: SalesforceLogger.Level) {
         logger.logLevel = level
     }
 

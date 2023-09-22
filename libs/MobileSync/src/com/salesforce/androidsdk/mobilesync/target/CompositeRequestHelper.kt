@@ -41,7 +41,6 @@ import org.json.JSONObject
 import java.io.IOException
 import java.io.UnsupportedEncodingException
 import java.net.HttpURLConnection
-import java.util.LinkedList
 
 object CompositeRequestHelper {
     /**
@@ -240,7 +239,7 @@ object CompositeRequestHelper {
         var externalIdFieldName: String?
     ) {
         var referenceId: String? = null
-        fun asRestRequest(apiVersion: String?): RestRequest? {
+        fun asRestRequest(apiVersion: String): RestRequest {
             return when (requestType) {
                 RequestType.CREATE -> RestRequest.getRequestForCreate(
                     apiVersion,
@@ -318,7 +317,7 @@ object CompositeRequestHelper {
                 )
             }
 
-            fun requestForDelete(objectType: String?, id: String?): RecordRequest {
+            fun requestForDelete(objectType: String, id: String): RecordRequest {
                 return RecordRequest(RequestType.DELETE, objectType, null, id, null, null)
             }
 

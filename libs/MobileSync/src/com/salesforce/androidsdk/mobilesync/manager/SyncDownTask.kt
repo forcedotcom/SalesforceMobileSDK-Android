@@ -94,7 +94,7 @@ class SyncDownTask(syncManager: SyncManager, sync: SyncState, callback: SyncUpda
     private fun removeWithIds(
         records: JSONArray,
         idsToSkip: Set<String>,
-        idField: String?
+        idField: String
     ): JSONArray {
         val arr = JSONArray()
         for (i in 0 until records.length()) {

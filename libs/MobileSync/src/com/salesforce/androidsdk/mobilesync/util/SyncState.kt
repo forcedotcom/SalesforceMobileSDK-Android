@@ -186,9 +186,7 @@ class SyncState(
          * @param store
          */
         @JvmStatic
-        fun setupSyncsSoupIfNeeded(store: SmartStore?) {
-            if (store == null) return
-
+        fun setupSyncsSoupIfNeeded(store: SmartStore) {
             if (store.hasSoup(SYNCS_SOUP) && store.getSoupIndexSpecs(SYNCS_SOUP).size == 3) {
                 return
             }
@@ -276,8 +274,7 @@ class SyncState(
             soupName: String,
             name: String?
         ): SyncState {
-            val sync = JSONObject()
-            with(sync) {
+            val sync = with(JSONObject()) {
                 put(SYNC_TYPE, Type.syncDown)
                 if (name != null) put(SYNC_NAME, name)
                 put(SYNC_TARGET, target.asJSON())
@@ -354,13 +351,10 @@ class SyncState(
             val id = sync.getLong(SmartStore.SOUP_ENTRY_ID)
             val type = Type.valueOf(sync.getString(SYNC_TYPE))
             val name = JSONObjectHelper.optString(sync, SYNC_NAME)
+            val jsonOptions = sync.optJSONObject(SYNC_OPTIONS) ?: throw MobileSyncException("No options specified")
+            val options = SyncOptions.fromJSON(jsonOptions)
             val jsonTarget = sync.optJSONObject(SYNC_TARGET) ?: throw MobileSyncException("No target specified")
-            val target =
-                (if (type == Type.syncDown) SyncDownTarget.fromJSON(jsonTarget)
-                else SyncUpTarget.fromJSON(jsonTarget))
-                    ?: throw MobileSyncException("No target found in json")
-            val options = SyncOptions.fromJSON(sync.optJSONObject(SYNC_OPTIONS))
-                ?: throw MobileSyncException("No options found in json")
+            val target = if (type == Type.syncDown) SyncDownTarget.fromJSON(jsonTarget) else SyncUpTarget.fromJSON(jsonTarget)
             val soupName = sync.getString(SYNC_SOUP_NAME)
 
             val state = SyncState(id, type, name, target, options, soupName)

@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.mobilesync.util
 
-import java.util.Arrays
-
 /**
  * To manipulate a SOQL query given by a String
  *

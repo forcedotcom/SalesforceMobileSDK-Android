@@ -532,17 +532,17 @@ open class SyncUpTarget : SyncTarget {
     /**
      * Helper class used by isNewerThanServer
      */
-    protected class RecordModDate(// time stamp in the Constants.TIMESTAMP_FORMAT format - can be null if unknown
-        val timestamp: String?, // true if the record was deleted
-        val isDeleted: Boolean
+    protected class RecordModDate(
+        val timestamp: String?, // time stamp in the Constants.TIMESTAMP_FORMAT format - can be null if unknown
+        val isDeleted: Boolean  // true if the record was deleted
     )
 
     companion object {
         // Constants
         const val TAG = "SyncUpTarget"
         @JvmField val CREATE_FIELDLIST = "createFieldlist"
-        const val UPDATE_FIELDLIST = "updateFieldlist"
-        const val EXTERNAL_ID_FIELD_NAME = "externalIdFieldName"
+        @JvmField val UPDATE_FIELDLIST = "updateFieldlist"
+        @JvmField val EXTERNAL_ID_FIELD_NAME = "externalIdFieldName"
 
         /**
          * Build SyncUpTarget from json

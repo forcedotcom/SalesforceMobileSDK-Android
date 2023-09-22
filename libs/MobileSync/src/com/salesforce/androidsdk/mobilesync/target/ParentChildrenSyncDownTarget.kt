@@ -180,7 +180,7 @@ class ParentChildrenSyncDownTarget(
     @Throws(IOException::class, JSONException::class)
     protected fun getChildrenRemoteIdsWithSoql(
         syncManager: SyncManager,
-        soqlForChildrenRemoteIds: String?
+        soqlForChildrenRemoteIds: String
     ): Set<String> {
 
         // Makes network request and parses the response.
@@ -195,18 +195,16 @@ class ParentChildrenSyncDownTarget(
         return remoteChildrenIds
     }
 
-    protected fun parseChildrenIdsFromResponse(records: JSONArray?): Set<String> {
-        val remoteChildrenIds: MutableSet<String> = HashSet()
-        if (records != null) {
-            for (i in 0 until records.length()) {
-                val record = records.optJSONObject(i)
-                if (record != null) {
+    protected fun parseChildrenIdsFromResponse(records: JSONArray): Set<String> {
+        return with(HashSet<String>()) {
+            JSONObjectHelper
+                .toList<JSONObject>(records)
+                .forEach { record ->
                     val childrenRecords = record.optJSONArray(childrenInfo.sobjectTypePlural)
-                    remoteChildrenIds.addAll(parseIdsFromResponse(childrenRecords))
+                    this.addAll(parseIdsFromResponse(childrenRecords))
                 }
-            }
+            this
         }
-        return remoteChildrenIds
     }
 
     override fun getQuery(maxTimeStamp: Long): String {
