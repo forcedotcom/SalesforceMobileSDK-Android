@@ -31,255 +31,40 @@ import org.json.JSONObject
 
 /**
  * Represents the metadata of a Salesforce object.
- *
- * @author bhariharan
  * @see [https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_sobject_describe.htm](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_sobject_describe.htm)
  */
-class Metadata {
-    /**
-     * Returns whether this object is activateable or not.
-     *
-     * @return True - if activateable, False - otherwise.
-     */
-    var isActivateable = false
-        private set
-
-    /**
-     * Returns whether this object is compact layoutable or not.
-     *
-     * @return True - if compact layoutable, False - otherwise.
-     */
-    var isCompactLayoutable = false
-        private set
-
-    /**
-     * Returns whether this object is createable or not.
-     *
-     * @return True - if createable, False - otherwise.
-     */
-    var isCreateable = false
-        private set
-
-    /**
-     * Returns whether this object is custom or not.
-     *
-     * @return True - if custom, False - otherwise.
-     */
-    var isCustom = false
-        private set
-
-    /**
-     * Returns whether this object has a custom setting or not.
-     *
-     * @return True - if it has a custom setting, False - otherwise.
-     */
-    var isCustomSetting = false
-        private set
-
-    /**
-     * Returns whether this object is deletable or not.
-     *
-     * @return True - if deletable, False - otherwise.
-     */
-    var isDeletable = false
-        private set
-
-    /**
-     * Returns whether this object is deprecated and hidden or not.
-     *
-     * @return True - if deprecated and hidden, False - otherwise.
-     */
-    var isDeprecatedAndHidden = false
-        private set
-
-    /**
-     * Returns whether this object has feed enabled or not.
-     *
-     * @return True - if it has feed enabled, False - otherwise.
-     */
-    var isFeedEnabled = false
-        private set
-
-    /**
-     * Returns the child relationships of this object.
-     *
-     * @return Child relationships of this object.
-     */
-    var childRelationships: JSONArray? = null
-        private set
-    private var hasSubtypes = false
-
-    /**
-     * Returns whether this object is a subtype or not.
-     *
-     * @return True - if subtype, False - otherwise.
-     */
-    var isSubtype = false
-        private set
-
-    /**
-     * Returns the key prefix of this object.
-     *
-     * @return Key prefix of this object.
-     */
-    var keyPrefix: String? = null
-        private set
-
-    /**
-     * Returns the label of this object.
-     *
-     * @return Label of this object.
-     */
-    var label: String? = null
-        private set
-
-    /**
-     * Returns the label plural of this object.
-     *
-     * @return Label plural of this object.
-     */
-    var labelPlural: String? = null
-        private set
-
-    /**
-     * Returns whether this object is layoutable or not.
-     *
-     * @return True - if layoutable, False - otherwise.
-     */
-    var isLayoutable = false
-        private set
-
-    /**
-     * Returns whether this object is mergeable or not.
-     *
-     * @return True - if mergeable, False - otherwise.
-     */
-    var isMergeable = false
-        private set
-    private var mruEnabled = false
-
-    /**
-     * Returns the name of this object.
-     *
-     * @return Name of this object.
-     */
-    var name: String? = null
-        private set
-
-    /**
-     * Returns the fields of this object.
-     *
-     * @return Fields of this object.
-     */
-    var fields: JSONArray? = null
-        private set
-
-    /**
-     * Returns the network scope field name associated with this object.
-     *
-     * @return Network scope field name associated with this object.
-     */
-    var networkScopeFieldName: String? = null
-        private set
-
-    /**
-     * Returns whether this object is queryable or not.
-     *
-     * @return True - if queryable, False - otherwise.
-     */
-    var isQueryable = false
-        private set
-
-    /**
-     * Returns whether this object is replicateable or not.
-     *
-     * @return True - if replicateable, False - otherwise.
-     */
-    var isReplicateable = false
-        private set
-
-    /**
-     * Returns whether this object is retrieveable or not.
-     *
-     * @return True - if retrieveable, False - otherwise.
-     */
-    var isRetrieveable = false
-        private set
-
-    /**
-     * Returns whether this object is search layoutable or not.
-     *
-     * @return True - if search layoutable, False - otherwise.
-     */
-    var isSearchLayoutable = false
-        private set
-
-    /**
-     * Returns whether this object is searchable or not.
-     *
-     * @return True - if searchable, False - otherwise.
-     */
-    var isSearchable = false
-        private set
-
-    /**
-     * Returns whether this object is triggerable or not.
-     *
-     * @return True - if triggerable, False - otherwise.
-     */
-    var isTriggerable = false
-        private set
-
-    /**
-     * Returns whether this object is undeletable or not.
-     *
-     * @return True - if undeletable, False - otherwise.
-     */
-    var isUndeletable = false
-        private set
-
-    /**
-     * Returns whether this object is updateable or not.
-     *
-     * @return True - if updateable, False - otherwise.
-     */
-    var isUpdateable = false
-        private set
-
-    /**
-     * Returns the URLs associated with this object.
-     *
-     * @return URLs associated with this object.
-     */
-    var urls: JSONObject? = null
-        private set
-
-    /**
-     * Returns the raw data of this object metadata.
-     *
-     * @return Raw data of this object metadata.
-     */
-    var rawData: JSONObject? = null
-        private set
-
-    /**
-     * Returns whether this object has subtypes or not.
-     *
-     * @return True - if it has subtypes, False - otherwise.
-     */
-    fun hasSubtypes(): Boolean {
-        return hasSubtypes
-    }
-
-    /**
-     * Returns whether this object has MRU enabled or not.
-     *
-     * @return True - if it has MRU enabled, False - otherwise.
-     */
-    fun hasMruEnabled(): Boolean {
-        return mruEnabled
-    }
-
+data class Metadata (
+    val isActivateable : Boolean,
+    val isCompactLayoutable : Boolean,
+    val isCreateable : Boolean,
+    val isCustom : Boolean,
+    val isCustomSetting : Boolean,
+    val isDeletable : Boolean,
+    val isDeprecatedAndHidden : Boolean,
+    val isFeedEnabled: Boolean,
+    val childRelationships: JSONArray,
+    val hasSubtypes: Boolean,
+    val isSubtype: Boolean,
+    val keyPrefix: String,
+    val label: String,
+    val labelPlural: String,
+    val isLayoutable: Boolean,
+    val isMergeable: Boolean,
+    val mruEnabled: Boolean,
+    val name: String,
+    val fields: JSONArray,
+    val networkScopeFieldName: String,
+    val isQueryable: Boolean,
+    val isReplicateable: Boolean,
+    val isRetrieveable: Boolean,
+    val isSearchLayoutable: Boolean,
+    val isSearchable: Boolean,
+    val isTriggerable: Boolean,
+    val isUndeletable: Boolean,
+    val isUpdateable: Boolean,
+    val urls: JSONObject,
+    val rawData: JSONObject
+) {
     companion object {
         private const val ACTIVATEABLE = "activateable"
         private const val COMPACT_LAYOUTABLE = "compactLayoutable"
@@ -317,42 +102,39 @@ class Metadata {
          * @param object JSON object.
          * @return Instance of this class.
          */
-        fun fromJSON(`object`: JSONObject?): Metadata? {
-            var metadata: Metadata? = null
-            if (`object` != null) {
-                metadata = Metadata()
-                metadata.rawData = `object`
-                metadata.isActivateable = `object`.optBoolean(ACTIVATEABLE)
-                metadata.isCompactLayoutable = `object`.optBoolean(COMPACT_LAYOUTABLE)
-                metadata.isCreateable = `object`.optBoolean(CREATEABLE)
-                metadata.isCustom = `object`.optBoolean(CUSTOM)
-                metadata.isCustomSetting = `object`.optBoolean(CUSTOM_SETTING)
-                metadata.isDeletable = `object`.optBoolean(DELETABLE)
-                metadata.isDeprecatedAndHidden = `object`.optBoolean(DEPRECATED_AND_HIDDEN)
-                metadata.isFeedEnabled = `object`.optBoolean(FEED_ENABLED)
-                metadata.childRelationships = `object`.optJSONArray(CHILD_RELATIONSHIPS)
-                metadata.hasSubtypes = `object`.optBoolean(HAS_SUBTYPES)
-                metadata.isSubtype = `object`.optBoolean(IS_SUBTYPE)
-                metadata.keyPrefix = `object`.optString(KEY_PREFIX)
-                metadata.label = `object`.optString(LABEL)
-                metadata.labelPlural = `object`.optString(LABEL_PLURAL)
-                metadata.isLayoutable = `object`.optBoolean(LAYOUTABLE)
-                metadata.isMergeable = `object`.optBoolean(MERGEABLE)
-                metadata.mruEnabled = `object`.optBoolean(MRU_ENABLED)
-                metadata.name = `object`.optString(NAME)
-                metadata.fields = `object`.optJSONArray(FIELDS)
-                metadata.networkScopeFieldName = `object`.optString(NETWORK_SCOPE_FIELD_NAME)
-                metadata.isQueryable = `object`.optBoolean(QUERYABLE)
-                metadata.isReplicateable = `object`.optBoolean(REPLICATEABLE)
-                metadata.isRetrieveable = `object`.optBoolean(RETRIEVEABLE)
-                metadata.isSearchLayoutable = `object`.optBoolean(SERACH_LAYOUTABLE)
-                metadata.isSearchable = `object`.optBoolean(SEARCHABLE)
-                metadata.isTriggerable = `object`.optBoolean(TRIGGERABLE)
-                metadata.isUndeletable = `object`.optBoolean(UNDELETABLE)
-                metadata.isUpdateable = `object`.optBoolean(UPDATEABLE)
-                metadata.urls = `object`.optJSONObject(URLS)
-            }
-            return metadata
+        fun fromJSON(obj: JSONObject): Metadata {
+            return Metadata(
+                obj.optBoolean(ACTIVATEABLE),
+                obj.optBoolean(COMPACT_LAYOUTABLE),
+                obj.optBoolean(CREATEABLE),
+                obj.optBoolean(CUSTOM),
+                obj.optBoolean(CUSTOM_SETTING),
+                obj.optBoolean(DELETABLE),
+                obj.optBoolean(DEPRECATED_AND_HIDDEN),
+                obj.optBoolean(FEED_ENABLED),
+                obj.optJSONArray(CHILD_RELATIONSHIPS) ?: JSONArray(),
+                obj.optBoolean(HAS_SUBTYPES),
+                obj.optBoolean(IS_SUBTYPE),
+                obj.optString(KEY_PREFIX),
+                obj.optString(LABEL),
+                obj.optString(LABEL_PLURAL),
+                obj.optBoolean(LAYOUTABLE),
+                obj.optBoolean(MERGEABLE),
+                obj.optBoolean(MRU_ENABLED),
+                obj.optString(NAME),
+                obj.optJSONArray(FIELDS) ?: JSONArray(),
+                obj.optString(NETWORK_SCOPE_FIELD_NAME),
+                obj.optBoolean(QUERYABLE),
+                obj.optBoolean(REPLICATEABLE),
+                obj.optBoolean(RETRIEVEABLE),
+                obj.optBoolean(SERACH_LAYOUTABLE),
+                obj.optBoolean(SEARCHABLE),
+                obj.optBoolean(TRIGGERABLE),
+                obj.optBoolean(UNDELETABLE),
+                obj.optBoolean(UPDATEABLE),
+                obj.optJSONObject(URLS) ?: JSONObject(),
+                obj
+            )
         }
     }
 }

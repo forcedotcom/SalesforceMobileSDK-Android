@@ -26,57 +26,21 @@
  */
 package com.salesforce.androidsdk.mobilesync.model
 
+import com.salesforce.androidsdk.util.JSONObjectHelper
 import org.json.JSONArray
 import org.json.JSONObject
 
 /**
  * Represents the layout of a Salesforce object.
- *
- * @author bhariharan
  * @see [https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_responses_record_layout.htm](https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_responses_record_layout.htm)
  */
-class Layout {
-    /**
-     * Returns the ID of this layout.
-     *
-     * @return ID of this layout.
-     */
-    var id: String? = null
-        private set
-
-    /**
-     * Returns the layout type of this layout.
-     *
-     * @return Layout type of this layout.
-     */
-    var layoutType: String? = null
-        private set
-
-    /**
-     * Returns the mode of this layout.
-     *
-     * @return Mode of this layout.
-     */
-    var mode: String? = null
-        private set
-    private var sections: MutableList<LayoutSection>? = null
-
-    /**
-     * Returns the raw data of this layout.
-     *
-     * @return Raw data of this layout.
-     */
-    var rawData: JSONObject? = null
-        private set
-
-    /**
-     * Returns the layout sections of this layout.
-     *
-     * @return Layout sections of this layout.
-     */
-    fun getSections(): List<LayoutSection>? {
-        return sections
-    }
+data class Layout (
+    val id: String,
+    val layoutType: String,
+    val mode: String,
+    val sections: List<LayoutSection>,
+    val rawData: JSONObject
+) {
 
     /**
      * Represents a record layout section.
@@ -84,148 +48,34 @@ class Layout {
      * @author bhariharan
      * @see [https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_responses_record_layout_section.htm.ui_api_responses_record_layout_section](https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_responses_record_layout_section.htm.ui_api_responses_record_layout_section)
      */
-    class LayoutSection {
-        /**
-         * Returns whether this layout section is collapsible or not.
-         *
-         * @return True - if collapsible, False - otherwise.
-         */
-        var isCollapsible = false
-            private set
-
-        /**
-         * Returns the number of columns in this layout section.
-         *
-         * @return Number of columns in this layout section.
-         */
-        var columns = 0
-            private set
-
-        /**
-         * Returns the heading of this layout section.
-         *
-         * @return Heading of this layout section.
-         */
-        var heading: String? = null
-            private set
-
-        /**
-         * Returns the ID of this layout section.
-         *
-         * @return ID of this layout section.
-         */
-        var id: String? = null
-            private set
-        private var layoutRows: MutableList<Row>? = null
-
-        /**
-         * Returns the number of rows in this layout section.
-         *
-         * @return Number of rows in this layout section.
-         */
-        var rows = 0
-            private set
-        private var useHeading = false
-
-        /**
-         * Returns the rows present in this layout section.
-         *
-         * @return Rows present in this layout section.
-         */
-        fun getLayoutRows(): List<Row>? {
-            return layoutRows
-        }
-
-        /**
-         * Returns whether this layout section uses a heading or not.
-         *
-         * @return True - if it uses a heading, False - otherwise.
-         */
-        fun usesHeading(): Boolean {
-            return useHeading
-        }
-
+    data class LayoutSection (
+        val isCollapsible: Boolean,
+        val columns: Int,
+        val heading: String,
+        val id: String,
+        val layoutRows: List<Row>,
+        val usesHeading: Boolean
+    ) {
         /**
          * Represents a record layout row.
-         *
-         * @author bhariharan
          * @see [https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_responses_record_layout_row.htm.ui_api_responses_record_layout_row](https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_responses_record_layout_row.htm.ui_api_responses_record_layout_row)
          */
-        class Row {
-            private var layoutItems: MutableList<Item>? = null
-
-            /**
-             * Returns the layout items present in this layout row.
-             *
-             * @return Layout items present in this layout row.
-             */
-            fun getLayoutItems(): List<Item>? {
-                return layoutItems
-            }
-
+        data class Row(
+            val layoutItems: List<Item>
+        ) {
             /**
              * Represents a record layout item.
-             *
-             * @author bhariharan
              * @see [https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_responses_record_layout_item.htm.ui_api_responses_record_layout_item](https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_responses_record_layout_item.htm.ui_api_responses_record_layout_item)
              */
-            class Item {
-                /**
-                 * Returns whether this item is editable for new.
-                 *
-                 * @return True - if editable, False - otherwise.
-                 */
-                var isEditableForNew = false
-                    private set
-
-                /**
-                 * Returns whether this item is editable for update.
-                 *
-                 * @return True - if editable, False - otherwise.
-                 */
-                var isEditableForUpdate = false
-                    private set
-
-                /**
-                 * Returns the label associated with this row.
-                 *
-                 * @return Label associated with this row.
-                 */
-                var label: String? = null
-                    private set
-
-                /**
-                 * Returns the layout components associated with this row.
-                 *
-                 * @return Layout components associated with this row.
-                 */
-                var layoutComponents: JSONArray? = null
-                    private set
-
-                /**
-                 * Returns the lookup ID API name associated with this row.
-                 *
-                 * @return Lookup ID API name associated with this row.
-                 */
-                var lookupIdApiName: String? = null
-                    private set
-
-                /**
-                 * Returns whether this item is required.
-                 *
-                 * @return True - if required, False - otherwise.
-                 */
-                var isRequired = false
-                    private set
-
-                /**
-                 * Returns whether this item is sortable.
-                 *
-                 * @return True - if sortable, False - otherwise.
-                 */
-                var isSortable = false
-                    private set
-
+            data class Item (
+                val isEditableForNew: Boolean,
+                val isEditableForUpdate: Boolean,
+                val label: String,
+                val layoutComponents: JSONArray,
+                val lookupIdApiName: String,
+                val isRequired: Boolean,
+                val isSortable: Boolean
+            ) {
                 companion object {
                     private const val EDITABLE_FOR_NEW = "editableForNew"
                     private const val EDITABLE_FOR_UPDATE = "editableForUpdate"
@@ -242,16 +92,15 @@ class Layout {
                      * @return Instance of this class.
                      */
                     fun fromJSON(obj: JSONObject): Item {
-                        return with(Item()) {
-                            isEditableForNew = obj.optBoolean(EDITABLE_FOR_NEW)
-                            isEditableForUpdate = obj.optBoolean(EDITABLE_FOR_UPDATE)
-                            label = obj.optString(LABEL)
-                            layoutComponents = obj.optJSONArray(LAYOUT_COMPONENTS)
-                            lookupIdApiName = obj.optString(LOOKUP_ID_API_NAME)
-                            isRequired = obj.optBoolean(REQUIRED)
-                            isSortable = obj.optBoolean(SORTABLE)
-                            this
-                        }
+                        return Item(
+                            obj.optBoolean(EDITABLE_FOR_NEW),
+                            obj.optBoolean(EDITABLE_FOR_UPDATE),
+                            obj.optString(LABEL),
+                            obj.optJSONArray(LAYOUT_COMPONENTS) ?: JSONArray(),
+                            obj.optString(LOOKUP_ID_API_NAME),
+                            obj.optBoolean(REQUIRED),
+                            obj.optBoolean(SORTABLE)
+                        )
                     }
                 }
             }
@@ -266,17 +115,11 @@ class Layout {
                  * @return Instance of this class.
                  */
                 fun fromJSON(obj: JSONObject): Row {
-                    return with(Row()) {
-                        val jsonItems = obj.optJSONArray(LAYOUT_ITEMS)
-                        if (jsonItems != null) {
-                            val layoutItems = ArrayList<Item>()
-                            for (i in 0 until jsonItems.length()) {
-                                layoutItems.add(Item.fromJSON(jsonItems.getJSONObject(i)))
-                            }
-                            this.layoutItems = layoutItems
-                        }
-                        this
-                    }
+                    return Row (
+                        JSONObjectHelper
+                            .toList<JSONObject>(obj.optJSONArray(LAYOUT_ITEMS) ?: JSONArray())
+                            .map { Item.fromJSON(it) }
+                    )
                 }
             }
         }
@@ -296,23 +139,16 @@ class Layout {
              * @return Instance of this class.
              */
             fun fromJSON(obj: JSONObject): LayoutSection {
-                return with(LayoutSection()) {
-                    isCollapsible = obj.optBoolean(COLLAPSIBLE)
-                    columns = obj.optInt(COLUMNS)
-                    heading = obj.optString(HEADING)
-                    id = obj.optString(ID)
-                    val jsonRows = obj.optJSONArray(LAYOUT_ROWS)
-                    if (jsonRows != null) {
-                        val layoutRows = ArrayList<Row>()
-                        for (i in 0 until jsonRows.length()) {
-                            layoutRows.add(Row.fromJSON(jsonRows.getJSONObject(i)))
-                        }
-                        this.layoutRows = layoutRows
-                    }
-                    rows = obj.optInt(ROWS)
-                    useHeading = obj.optBoolean(USE_HEADING)
-                    this
-                }
+                return LayoutSection(
+                    obj.optBoolean(COLLAPSIBLE),
+                    obj.optInt(COLUMNS),
+                    obj.optString(HEADING),
+                    obj.optString(ID),
+                    JSONObjectHelper
+                        .toList<JSONObject>(obj.optJSONArray(LAYOUT_ROWS) ?: JSONArray())
+                        .map { Row.fromJSON(it) },
+                    obj.optBoolean(USE_HEADING)
+                )
             }
         }
     }
@@ -330,21 +166,15 @@ class Layout {
          * @return Instance of this class.
          */
         fun fromJSON(obj: JSONObject): Layout {
-            return with(Layout()) {
-                rawData = obj
-                id = obj.optString(ID)
-                layoutType = obj.optString(LAYOUT_TYPE)
-                mode = obj.optString(MODE)
-                val jsonSections = obj.optJSONArray(SECTIONS)
-                if (jsonSections != null) {
-                    val sections = ArrayList<LayoutSection>()
-                    for (i in 0 until jsonSections.length()) {
-                        sections.add(LayoutSection.fromJSON(jsonSections.getJSONObject(i)))
-                    }
-                    this.sections = sections
-                }
-                this
-            }
+            return Layout (
+                obj.optString(ID),
+                obj.optString(LAYOUT_TYPE),
+                obj.optString(MODE),
+                JSONObjectHelper
+                    .toList<JSONObject>(obj.optJSONArray(SECTIONS) ?: JSONArray())
+                    .map { LayoutSection.fromJSON(it) },
+                obj
+            )
         }
     }
 }
