@@ -503,16 +503,16 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
      * @throws IOException
      */
     @Throws(IOException::class)
-    fun sendSyncWithMobileSyncUserAgent(restRequest: RestRequest?): RestResponse {
+    fun sendSyncWithMobileSyncUserAgent(restRequest: RestRequest): RestResponse {
         MobileSyncLogger.d(
             TAG,
             "sendSyncWithMobileSyncUserAgent called with request: ",
             restRequest
         )
-        return restClient!!.sendSync(
+        return restClient?.sendSync(
             restRequest,
             UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(MOBILE_SYNC))
-        )
+        ) ?: throw MobileSyncException("No rest client")
     }
 
     /**
@@ -710,8 +710,8 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
                 for (key in INSTANCES.keys) {
                     if (key.startsWith(account.userId)) {
                         keysToRemove.add(key)
-                        val syncManager = INSTANCES[key]
-                        syncManager!!.stop()
+                        val syncManager = INSTANCES[key] ?: continue
+                        syncManager.stop()
                         syncManager.threadPool.shutdownNow()
                     }
                 }

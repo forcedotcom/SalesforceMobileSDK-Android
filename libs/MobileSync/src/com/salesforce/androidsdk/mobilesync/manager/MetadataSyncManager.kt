@@ -55,7 +55,7 @@ class MetadataSyncManager private constructor(
      *
      * @return SmartStore instance.
      */
-    val smartStore: SmartStore?,
+    val smartStore: SmartStore,
     /**
      * Returns the SyncManager instance used by this instance of MetadataSyncManager.
      *
@@ -114,7 +114,7 @@ class MetadataSyncManager private constructor(
             ), 1
         )
         try {
-            val results = smartStore?.query(querySpec, 0)
+            val results = smartStore.query(querySpec, 0)
             if ((results == null) || (results.length() == 0)) {
                 if (fallbackOnServer) {
                     fetchFromServer(objectType, syncCallback)
@@ -137,7 +137,7 @@ class MetadataSyncManager private constructor(
     }
 
     private fun initializeSoup() {
-        if (!smartStore!!.hasSoup(SOUP_NAME)) {
+        if (!smartStore.hasSoup(SOUP_NAME)) {
             smartStore.registerSoup(SOUP_NAME, INDEX_SPECS)
         }
     }

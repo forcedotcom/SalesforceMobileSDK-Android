@@ -79,11 +79,11 @@ class SyncState(
         return with(JSONObject()) {
             put(SmartStore.SOUP_ENTRY_ID, id)
             put(SYNC_TYPE, type.name)
-            if (name != null) put(SYNC_NAME, name)
+            name?.let { put(SYNC_NAME, it) }
             put(SYNC_TARGET, target.asJSON())
             put(SYNC_OPTIONS, options.asJSON())
             put(SYNC_SOUP_NAME, soupName)
-            put(SYNC_STATUS, status!!.name)
+            status?.let { put(SYNC_STATUS, it.name) }
             put(SYNC_PROGRESS, progress)
             put(SYNC_TOTAL_SIZE, totalSize)
             put(SYNC_MAX_TIME_STAMP, maxTimeStamp)
@@ -237,7 +237,7 @@ class SyncState(
          * @throws JSONException
          */
         @Throws(JSONException::class)
-        fun getSyncsWithStatus(store: SmartStore?, status: Status): List<SyncState> {
+        fun getSyncsWithStatus(store: SmartStore, status: Status): List<SyncState> {
             val syncs: MutableList<SyncState> = ArrayList()
             val query = QuerySpec.buildSmartQuerySpec(
                 String.format(
@@ -248,7 +248,7 @@ class SyncState(
                     status.name
                 ), Int.MAX_VALUE
             )
-            val rows = store!!.query(query, 0)
+            val rows = store.query(query, 0)
             for (i in 0 until rows.length()) {
                 syncs.add(fromJSON(rows.getJSONArray(i).getJSONObject(0)))
             }
@@ -354,7 +354,7 @@ class SyncState(
             val id = sync.getLong(SmartStore.SOUP_ENTRY_ID)
             val type = Type.valueOf(sync.getString(SYNC_TYPE))
             val name = JSONObjectHelper.optString(sync, SYNC_NAME)
-            val jsonTarget = sync.optJSONObject(SYNC_TARGET)
+            val jsonTarget = sync.optJSONObject(SYNC_TARGET) ?: throw MobileSyncException("No target specified")
             val target =
                 (if (type == Type.syncDown) SyncDownTarget.fromJSON(jsonTarget)
                 else SyncUpTarget.fromJSON(jsonTarget))
@@ -384,8 +384,8 @@ class SyncState(
          */
         @JvmStatic
         @Throws(JSONException::class)
-        fun byId(store: SmartStore?, id: Long): SyncState? {
-            val syncs = store!!.retrieve(SYNCS_SOUP, id)
+        fun byId(store: SmartStore, id: Long): SyncState? {
+            val syncs = store.retrieve(SYNCS_SOUP, id)
             return if (syncs == null || syncs.length() == 0) null else fromJSON(
                 syncs.getJSONObject(0)
             )
@@ -401,11 +401,11 @@ class SyncState(
          */
         @JvmStatic
         @Throws(JSONException::class)
-        fun byName(store: SmartStore?, name: String?): SyncState? {
+        fun byName(store: SmartStore, name: String?): SyncState? {
             if (name == null) {
                 throw MobileSyncException("name must not be null")
             }
-            val syncId = store!!.lookupSoupEntryId(SYNCS_SOUP, SYNC_NAME, name)
+            val syncId = store.lookupSoupEntryId(SYNCS_SOUP, SYNC_NAME, name)
             return if (syncId < 0) null else byId(
                 store,
                 syncId
@@ -418,8 +418,8 @@ class SyncState(
          * @param id
          */
         @JvmStatic
-        fun deleteSync(store: SmartStore?, id: Long) {
-            store!!.delete(SYNCS_SOUP, id)
+        fun deleteSync(store: SmartStore, id: Long) {
+            store.delete(SYNCS_SOUP, id)
         }
 
         /**
@@ -428,11 +428,11 @@ class SyncState(
          * @param name
          */
         @JvmStatic
-        fun deleteSync(store: SmartStore?, name: String?) {
+        fun deleteSync(store: SmartStore, name: String?) {
             if (name == null) {
                 throw MobileSyncException("name must not be null")
             }
-            val syncId = store!!.lookupSoupEntryId(SYNCS_SOUP, SYNC_NAME, name)
+            val syncId = store.lookupSoupEntryId(SYNCS_SOUP, SYNC_NAME, name)
             if (syncId < 0) return
             deleteSync(store, syncId)
         }
@@ -444,11 +444,11 @@ class SyncState(
          * @param name
          * @return
          */
-        fun hasSyncWithName(store: SmartStore?, name: String?): Boolean {
+        fun hasSyncWithName(store: SmartStore, name: String?): Boolean {
             if (name == null) {
                 throw MobileSyncException("name must not be null")
             }
-            val syncId = store!!.lookupSoupEntryId(SYNCS_SOUP, SYNC_NAME, name)
+            val syncId = store.lookupSoupEntryId(SYNCS_SOUP, SYNC_NAME, name)
             return syncId != -1L
         }
     }

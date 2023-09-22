@@ -102,8 +102,8 @@ abstract class SyncTarget @JvmOverloads constructor(
     @Throws(JSONException::class)
     fun getDirtyRecordIds(
         syncManager: SyncManager,
-        soupName: String?,
-        idField: String?
+        soupName: String,
+        idField: String
     ): SortedSet<String> {
         val dirtyRecordsSql = getDirtyRecordIdsSql(soupName, idField)
         return getIdsWithQuery(syncManager, dirtyRecordsSql)
@@ -115,7 +115,7 @@ abstract class SyncTarget @JvmOverloads constructor(
      * @param idField
      * @return
      */
-    protected open fun getDirtyRecordIdsSql(soupName: String?, idField: String?): String? {
+    protected open fun getDirtyRecordIdsSql(soupName: String, idField: String): String {
         return String.format(
             "SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'true' ORDER BY {%s:%s} ASC",
             soupName,
@@ -150,7 +150,7 @@ abstract class SyncTarget @JvmOverloads constructor(
      * @param record
      */
     @Throws(JSONException::class)
-    fun cleanAndSaveInLocalStore(syncManager: SyncManager, soupName: String?, record: JSONObject) {
+    fun cleanAndSaveInLocalStore(syncManager: SyncManager, soupName: String, record: JSONObject) {
         cleanAndSaveInSmartStore(syncManager.smartStore, soupName, record, idFieldName, true)
         MobileSyncLogger.d(TAG, "cleanAndSaveInLocalStore", record)
     }
@@ -164,7 +164,7 @@ abstract class SyncTarget @JvmOverloads constructor(
     @Throws(JSONException::class)
     protected fun saveInLocalStore(
         syncManager: SyncManager,
-        soupName: String?,
+        soupName: String,
         record: JSONObject
     ) {
         saveInSmartStore(syncManager.smartStore, soupName, record, idFieldName, true)
@@ -173,8 +173,8 @@ abstract class SyncTarget @JvmOverloads constructor(
 
     @Throws(JSONException::class)
     fun cleanAndSaveInSmartStore(
-        smartStore: SmartStore?,
-        soupName: String?,
+        smartStore: SmartStore,
+        soupName: String,
         record: JSONObject,
         idFieldName: String?,
         handleTx: Boolean
@@ -185,15 +185,15 @@ abstract class SyncTarget @JvmOverloads constructor(
 
     @Throws(JSONException::class)
     protected fun saveInSmartStore(
-        smartStore: SmartStore?,
-        soupName: String?,
+        smartStore: SmartStore,
+        soupName: String,
         record: JSONObject,
         idFieldName: String?,
         handleTx: Boolean
     ) {
         if (record.has(SmartStore.SOUP_ENTRY_ID)) {
             // Record came from smartstore
-            smartStore!!.update(
+            smartStore.update(
                 soupName,
                 record,
                 record.getLong(SmartStore.SOUP_ENTRY_ID),
@@ -201,7 +201,7 @@ abstract class SyncTarget @JvmOverloads constructor(
             )
         } else {
             // Record came from server
-            smartStore!!.upsert(soupName, record, idFieldName, handleTx)
+            smartStore.upsert(soupName, record, idFieldName, handleTx)
         }
     }
 
@@ -225,7 +225,7 @@ abstract class SyncTarget @JvmOverloads constructor(
     @Throws(JSONException::class)
     open fun saveRecordsToLocalStore(
         syncManager: SyncManager,
-        soupName: String?,
+        soupName: String,
         records: JSONArray,
         syncId: Long
     ) {

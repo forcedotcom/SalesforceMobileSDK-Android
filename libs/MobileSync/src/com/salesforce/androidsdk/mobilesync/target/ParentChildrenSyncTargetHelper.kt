@@ -48,8 +48,8 @@ object ParentChildrenSyncTargetHelper {
     fun saveRecordTreesToLocalStore(
         syncManager: SyncManager,
         target: SyncTarget,
-        parentInfo: ParentInfo?,
-        childrenInfo: ChildrenInfo?,
+        parentInfo: ParentInfo,
+        childrenInfo: ChildrenInfo,
         recordTrees: JSONArray,
         syncId: Long
     ) {
@@ -62,39 +62,37 @@ object ParentChildrenSyncTargetHelper {
                     val parent = JSONObject(record.toString())
 
                     // Separating parent from children
-                    val children = parent.remove(childrenInfo!!.sobjectTypePlural) as JSONArray
+                    val children = parent.remove(childrenInfo.sobjectTypePlural) as JSONArray
 
                     // Saving parent
                     target.addSyncId(parent, syncId)
                     target.cleanRecord(parent)
                     target.cleanAndSaveInSmartStore(
                         smartStore,
-                        parentInfo!!.soupName,
+                        parentInfo.soupName,
                         parent,
                         parentInfo.idFieldName,
                         false
                     )
 
                     // Put server id of parent in children
-                    if (children != null) {
-                        for (j in 0 until children.length()) {
-                            val child = children.getJSONObject(j)
-                            child.put(
-                                childrenInfo.parentIdFieldName,
-                                parent[parentInfo.idFieldName]
-                            )
+                    for (j in 0 until children.length()) {
+                        val child = children.getJSONObject(j)
+                        child.put(
+                            childrenInfo.parentIdFieldName,
+                            parent[parentInfo.idFieldName]
+                        )
 
-                            // Saving child
-                            target.addSyncId(child, syncId)
-                            target.cleanRecord(child)
-                            target.cleanAndSaveInSmartStore(
-                                smartStore,
-                                childrenInfo.soupName,
-                                child,
-                                childrenInfo.idFieldName,
-                                false
-                            )
-                        }
+                        // Saving child
+                        target.addSyncId(child, syncId)
+                        target.cleanRecord(child)
+                        target.cleanAndSaveInSmartStore(
+                            smartStore,
+                            childrenInfo.soupName,
+                            child,
+                            childrenInfo.idFieldName,
+                            false
+                        )
                     }
                 }
                 smartStore.setTransactionSuccessful()
@@ -105,18 +103,18 @@ object ParentChildrenSyncTargetHelper {
     }
 
     fun getDirtyRecordIdsSql(
-        parentInfo: ParentInfo?,
-        childrenInfo: ChildrenInfo?,
-        parentFieldToSelect: String?
+        parentInfo: ParentInfo,
+        childrenInfo: ChildrenInfo,
+        parentFieldToSelect: String
     ): String {
         return String.format(
             "SELECT DISTINCT {%s:%s} FROM {%s} WHERE {%s:%s} = 'true' OR EXISTS (SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = {%s:%s} AND {%s:%s} = 'true')",
-            parentInfo!!.soupName,
+            parentInfo.soupName,
             parentFieldToSelect,
             parentInfo.soupName,
             parentInfo.soupName,
             SyncTarget.LOCAL,
-            childrenInfo!!.soupName,
+            childrenInfo.soupName,
             childrenInfo.idFieldName,
             childrenInfo.soupName,
             childrenInfo.soupName,
@@ -129,20 +127,20 @@ object ParentChildrenSyncTargetHelper {
     }
 
     fun getNonDirtyRecordIdsSql(
-        parentInfo: ParentInfo?,
-        childrenInfo: ChildrenInfo?,
-        parentFieldToSelect: String?,
-        additionalPredicate: String?
+        parentInfo: ParentInfo,
+        childrenInfo: ChildrenInfo,
+        parentFieldToSelect: String,
+        additionalPredicate: String
     ): String {
         return String.format(
             "SELECT DISTINCT {%s:%s} FROM {%s} WHERE {%s:%s} = 'false' %s AND NOT EXISTS (SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = {%s:%s} AND {%s:%s} = 'true')",
-            parentInfo!!.soupName,
+            parentInfo.soupName,
             parentFieldToSelect,
             parentInfo.soupName,
             parentInfo.soupName,
             SyncTarget.LOCAL,
             additionalPredicate,
-            childrenInfo!!.soupName,
+            childrenInfo.soupName,
             childrenInfo.idFieldName,
             childrenInfo.soupName,
             childrenInfo.soupName,
@@ -155,30 +153,30 @@ object ParentChildrenSyncTargetHelper {
     }
 
     fun deleteChildrenFromLocalStore(
-        smartStore: SmartStore?,
+        smartStore: SmartStore,
         parentInfo: ParentInfo,
         childrenInfo: ChildrenInfo,
-        vararg parentIds: String?
+        vararg parentIds: String
     ) {
         val querySpec =
             getQueryForChildren(parentInfo, childrenInfo, SmartStore.SOUP_ENTRY_ID, *parentIds)
-        smartStore!!.deleteByQuery(childrenInfo.soupName, querySpec)
+        smartStore.deleteByQuery(childrenInfo.soupName, querySpec)
     }
 
     @Throws(JSONException::class)
     fun getChildrenFromLocalStore(
-        smartStore: SmartStore?,
+        smartStore: SmartStore,
         parentInfo: ParentInfo,
         childrenInfo: ChildrenInfo,
-        parent: JSONObject?
+        parent: JSONObject
     ): JSONArray {
         val querySpec = getQueryForChildren(
             parentInfo,
             childrenInfo,
             SmartSqlHelper.SOUP,
-            parent!!.getString(parentInfo.idFieldName)
+            parent.getString(parentInfo.idFieldName)
         )
-        val rows = smartStore!!.query(querySpec, 0)
+        val rows = smartStore.query(querySpec, 0)
         val children = JSONArray()
         for (i in 0 until rows.length()) {
             val row = rows.getJSONArray(i)
@@ -190,8 +188,8 @@ object ParentChildrenSyncTargetHelper {
     internal fun getQueryForChildren(
         parentInfo: ParentInfo,
         childrenInfo: ChildrenInfo,
-        childFieldToSelect: String?,
-        vararg parentIds: String?
+        childFieldToSelect: String,
+        vararg parentIds: String
     ): QuerySpec {
         val smartSql = String.format(
             "SELECT {%s:%s} FROM {%s},{%s} WHERE {%s:%s} = {%s:%s} AND {%s:%s} IN (%s)",

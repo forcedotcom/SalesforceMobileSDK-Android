@@ -45,13 +45,23 @@ import java.util.Date
 /**
  * Target for sync that downloads parent with children records
  */
-class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
-    private var parentInfo: ParentInfo? = null
-    private var parentFieldlist: List<String>? = null
-    private var parentSoqlFilter: String? = null
-    private var childrenInfo: ChildrenInfo? = null
-    private var childrenFieldlist: List<String>? = null
-    private var relationshipType: RelationshipType? = null
+class ParentChildrenSyncDownTarget(
+    private val parentInfo: ParentInfo,
+    private val parentFieldlist: List<String>,
+    private val parentSoqlFilter: String,
+    private val childrenInfo: ChildrenInfo,
+    private val childrenFieldlist: List<String>,
+    private val relationshipType: RelationshipType)
+    : SoqlSyncDownTarget(parentInfo.idFieldName, parentInfo.modificationDateFieldName, "") {
+
+    /**
+     * Construct ParentChildrenSyncDownTarget from parentType, childrenType etc
+     */
+    init {
+        queryType = QueryType.parent_children
+        MobileSyncSDKManager.getInstance()
+            .registerUsedAppFeature(Features.FEATURE_RELATED_RECORDS)
+    }
 
     /**
      * Construct ParentChildrenSyncDownTarget from json
@@ -67,34 +77,12 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
         RelationshipType.valueOf(target.getString(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE))
     )
 
-    /**
-     * Construct ParentChildrenSyncDownTarget from parentType, childrenType etc
-     */
-    constructor(
-        parentInfo: ParentInfo,
-        parentFieldlist: List<String>?,
-        parentSoqlFilter: String?,
-        childrenInfo: ChildrenInfo?,
-        childrenFieldlist: List<String>?,
-        relationshipType: RelationshipType?
-    ) : super(parentInfo.idFieldName, parentInfo.modificationDateFieldName, "") {
-        queryType = QueryType.parent_children
-        this.parentInfo = parentInfo
-        this.parentFieldlist = parentFieldlist
-        this.parentSoqlFilter = parentSoqlFilter
-        this.childrenInfo = childrenInfo
-        this.childrenFieldlist = childrenFieldlist
-        this.relationshipType = relationshipType
-        MobileSyncSDKManager.getInstance()
-            .registerUsedAppFeature(Features.FEATURE_RELATED_RECORDS)
-    }
-
-    /**
-     * Construct ParentChildrenSyncDownTarget from soql query - not allowed
-     */
-    constructor(query: String) : super(query) {
-        throw UnsupportedOperationException("Cannot construct ParentChildrenSyncDownTarget from SOQL query")
-    }
+//    /**
+//     * Construct ParentChildrenSyncDownTarget from soql query - not allowed
+//     */
+//    constructor(query: String) : this(JSONObject()) {
+//        throw UnsupportedOperationException("Cannot construct ParentChildrenSyncDownTarget from SOQL query")
+//    }
 
     /**
      * @return json representation of target
@@ -103,12 +91,12 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
     @Throws(JSONException::class)
     override fun asJSON(): JSONObject {
         return with(super.asJSON()) {
-            put(ParentChildrenSyncTargetHelper.PARENT, parentInfo!!.asJSON())
+            put(ParentChildrenSyncTargetHelper.PARENT, parentInfo.asJSON())
             put(PARENT_FIELDLIST, JSONArray(parentFieldlist))
             put(PARENT_SOQL_FILTER, parentSoqlFilter)
-            put(ParentChildrenSyncTargetHelper.CHILDREN, childrenInfo!!.asJSON())
+            put(ParentChildrenSyncTargetHelper.CHILDREN, childrenInfo.asJSON())
             put(CHILDREN_FIELDLIST, JSONArray(childrenFieldlist))
-            put(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE, relationshipType!!.name)
+            put(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE, relationshipType.name)
         }
     }
 
@@ -123,7 +111,7 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
             val fields: MutableList<String> = ArrayList()
             fields.add(idFieldName)
             val builder: SOQLBuilder = SOQLBuilder.getInstanceWithFields(fields)
-            builder.from(parentInfo!!.sobjectType)
+            builder.from(parentInfo.sobjectType)
             builder.where(parentSoqlFilter)
             return builder.build()
         }
@@ -152,17 +140,17 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
 
             // Nested query
             val nestedFields: MutableList<String> = ArrayList()
-            nestedFields.add(childrenInfo!!.idFieldName)
+            nestedFields.add(childrenInfo.idFieldName)
             val builderNested: SOQLBuilder =
                 SOQLBuilder.getInstanceWithFields(nestedFields)
-            builderNested.from(childrenInfo!!.sobjectTypePlural)
+            builderNested.from(childrenInfo.sobjectTypePlural)
 
             // Parent query
             val fields: MutableList<String> = ArrayList()
             fields.add(idFieldName)
             fields.add("(" + builderNested.build() + ")")
             val builder: SOQLBuilder = SOQLBuilder.getInstanceWithFields(fields)
-            builder.from(parentInfo!!.sobjectType)
+            builder.from(parentInfo.sobjectType)
             builder.where(parentSoqlFilter)
             return builder.build()
         }
@@ -178,9 +166,9 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
         // We only want to look at the children soup, so using SoqlSyncDownTarget's getNonDirtyRecordIdsSql
         val localChildrenIds: MutableSet<String> = getIdsWithQuery(
             syncManager, super.getNonDirtyRecordIdsSql(
-                childrenInfo!!.soupName,
-                childrenInfo!!.idFieldName,
-                buildSyncIdPredicateIfIndexed(syncManager, childrenInfo!!.soupName, syncId)
+                childrenInfo.soupName,
+                childrenInfo.idFieldName,
+                buildSyncIdPredicateIfIndexed(syncManager, childrenInfo.soupName, syncId)
             )
         )
         val remoteChildrenIds = getChildrenRemoteIdsWithSoql(syncManager, soqlForRemoteChildrenIds)
@@ -188,9 +176,9 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
         if (localChildrenIds.size > 0) {
             deleteRecordsFromLocalStore(
                 syncManager,
-                childrenInfo!!.soupName,
+                childrenInfo.soupName,
                 localChildrenIds,
-                childrenInfo!!.idFieldName
+                childrenInfo.idFieldName
             )
         }
         return localIdsSize
@@ -220,7 +208,7 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
             for (i in 0 until records.length()) {
                 val record = records.optJSONObject(i)
                 if (record != null) {
-                    val childrenRecords = record.optJSONArray(childrenInfo!!.sobjectTypePlural)
+                    val childrenRecords = record.optJSONArray(childrenInfo.sobjectTypePlural)
                     remoteChildrenIds.addAll(parseIdsFromResponse(childrenRecords))
                 }
             }
@@ -253,7 +241,7 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
             // And we only download the changed children
             childrenWhere.append(
                 buildModificationDateFilter(
-                    childrenInfo!!.modificationDateFieldName,
+                    childrenInfo.modificationDateFieldName,
                     maxTimeStamp
                 )
             )
@@ -263,24 +251,24 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
         parentWhere.append(parentSoqlFilter)
 
         // Nested query
-        val nestedFields: MutableList<String> = childrenFieldlist?.let { ArrayList(it) } ?: throw SyncManager.MobileSyncException("No child field specified")
-        if (!nestedFields.contains(childrenInfo!!.idFieldName)) nestedFields.add(childrenInfo!!.idFieldName)
-        if (!nestedFields.contains(childrenInfo!!.modificationDateFieldName)) nestedFields.add(
-            childrenInfo!!.modificationDateFieldName
+        val nestedFields: MutableList<String> = childrenFieldlist.let { ArrayList(it) }
+        if (!nestedFields.contains(childrenInfo.idFieldName)) nestedFields.add(childrenInfo.idFieldName)
+        if (!nestedFields.contains(childrenInfo.modificationDateFieldName)) nestedFields.add(
+            childrenInfo.modificationDateFieldName
         )
         val builderNested: SOQLBuilder = SOQLBuilder.getInstanceWithFields(nestedFields)
-        builderNested.from(childrenInfo!!.sobjectTypePlural)
+        builderNested.from(childrenInfo.sobjectTypePlural)
         builderNested.where(childrenWhere.toString())
 
         // Parent query
-        val fields: MutableList<String> = parentFieldlist?.let { ArrayList(it) } ?: throw SyncManager.MobileSyncException("No parent field specified")
+        val fields: MutableList<String> = parentFieldlist.let { ArrayList(it) }
         if (!fields.contains(idFieldName)) fields.add(idFieldName)
         if (!fields.contains(modificationDateFieldName)) fields.add(modificationDateFieldName)
         fields.add("(" + builderNested.build() + ")")
         val builder: SOQLBuilder = SOQLBuilder.getInstanceWithFields(fields)
-        builder.from(parentInfo!!.sobjectType)
+        builder.from(parentInfo.sobjectType)
         builder.where(parentWhere.toString())
-        builder.orderBy(parentInfo!!.modificationDateFieldName)
+        builder.orderBy(parentInfo.modificationDateFieldName)
         return builder.build()
     }
 
@@ -304,14 +292,14 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
         for (i in 0 until records.length()) {
             val record = records.getJSONObject(i)
             val childrenRecords =
-                if (record.has(childrenInfo!!.sobjectTypePlural) && !record.isNull(
-                        childrenInfo!!.sobjectTypePlural
+                if (record.has(childrenInfo.sobjectTypePlural) && !record.isNull(
+                        childrenInfo.sobjectTypePlural
                     )
-                ) record.getJSONObject(childrenInfo!!.sobjectTypePlural).getJSONArray(
+                ) record.getJSONObject(childrenInfo.sobjectTypePlural).getJSONArray(
                     Constants.RECORDS
                 ) else JSONArray()
             // Cleaning up record
-            record.put(childrenInfo!!.sobjectTypePlural, childrenRecords)
+            record.put(childrenInfo.sobjectTypePlural, childrenRecords)
             // XXX what if not all children were fetched
         }
         return records
@@ -327,16 +315,16 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
         // Compute max time stamp of parents and children
         for (i in 0 until records.length()) {
             val record = records.getJSONObject(i)
-            val children = record.getJSONArray(childrenInfo!!.sobjectTypePlural)
+            val children = record.getJSONArray(childrenInfo.sobjectTypePlural)
             maxTimeStamp = Math.max(
                 maxTimeStamp,
-                getLatestModificationTimeStamp(children, childrenInfo!!.modificationDateFieldName)
+                getLatestModificationTimeStamp(children, childrenInfo.modificationDateFieldName)
             )
         }
         return maxTimeStamp
     }
 
-    public override fun getDirtyRecordIdsSql(soupName: String?, idField: String?): String {
+    public override fun getDirtyRecordIdsSql(soupName: String, idField: String): String {
         return ParentChildrenSyncTargetHelper.getDirtyRecordIdsSql(
             parentInfo,
             childrenInfo,
@@ -360,7 +348,7 @@ class ParentChildrenSyncDownTarget : SoqlSyncDownTarget {
     @Throws(JSONException::class)
     override fun saveRecordsToLocalStore(
         syncManager: SyncManager,
-        soupName: String?,
+        soupName: String,
         records: JSONArray,
         syncId: Long
     ) {

@@ -169,13 +169,15 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
             val record = records[i]
             val id = record.getString(idFieldName)
             if (isDirty(record)) {
+                val recordResponse = refIdToRecordResponses[id]
+                    ?: throw MobileSyncException("No record response found")
                 needReRun = needReRun || updateRecordInLocalStore(
                     syncManager,
                     syncSoupName,
                     record,
                     mergeMode,
                     refIdToServerId,
-                    refIdToRecordResponses[id],
+                    recordResponse,
                     isReRun
                 )
             }
@@ -259,17 +261,16 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
         record: JSONObject,
         mergeMode: MergeMode,
         refIdToServerId: Map<String, String>,
-        response: RecordResponse?,
+        response: RecordResponse,
         isReRun: Boolean
     ): Boolean {
         var needReRun = false
-        val lastError =
-            if (response != null && response.errorJson != null) response.errorJson.toString() else null
+        val lastError = response.errorJson?.toString()
 
         // Delete case
         if (isLocallyDeleted(record)) {
             if (isLocallyCreated(record) // we didn't go to the sever
-                || response!!.success // or we successfully deleted on the server
+                || response.success // or we successfully deleted on the server
                 || response.recordDoesNotExist
             ) // or the record was already deleted on the server
             {
@@ -279,7 +280,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
             }
         } else {
             // Success case
-            if (response!!.success) {
+            if (response.success) {
                 // Plugging server id in id field
                 CompositeRequestHelper.updateReferences(record, idFieldName, refIdToServerId)
 

@@ -35,7 +35,7 @@ import android.net.Uri
  */
 class SOSLBuilder private constructor() {
     private val properties: HashMap<String, Any>
-    private val returning: MutableList<Any>?
+    private val returning: MutableList<Any>
 
     /**
      * Private constructor.
@@ -63,7 +63,7 @@ class SOSLBuilder private constructor() {
      * @return Instance with 'returningSpec' clause.
      */
     fun returning(returningSpec: SOSLReturningBuilder): SOSLBuilder {
-        returning!!.add(returningSpec)
+        returning.add(returningSpec)
         return this
     }
 

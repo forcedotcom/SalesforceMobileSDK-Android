@@ -60,14 +60,14 @@ open class ParentInfo @JvmOverloads constructor(// Fields
     }
 
     @Throws(JSONException::class)
-    open fun asJSON(): JSONObject? {
-        val json = JSONObject()
-        json.put(SOUP_NAME, soupName)
-        json.put(SOBJECT_TYPE, sobjectType)
-        json.put(ID_FIELD_NAME, idFieldName)
-        json.put(MODIFICATION_DATE_FIELD_NAME, modificationDateFieldName)
-        json.put(EXTERNAL_ID_FIELD_NAME, externalIdFieldName)
-        return json
+    open fun asJSON(): JSONObject {
+        return with (JSONObject()) {
+            put(SOUP_NAME, soupName)
+            put(SOBJECT_TYPE, sobjectType)
+            put(ID_FIELD_NAME, idFieldName)
+            put(MODIFICATION_DATE_FIELD_NAME, modificationDateFieldName)
+            put(EXTERNAL_ID_FIELD_NAME, externalIdFieldName)
+        }
     }
 
     companion object {

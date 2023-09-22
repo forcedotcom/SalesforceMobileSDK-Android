@@ -80,7 +80,8 @@ abstract class SyncDownTarget : SyncTarget {
     @Throws(JSONException::class)
     override fun asJSON(): JSONObject {
         return with(super.asJSON()) {
-            put(QUERY_TYPE, queryType!!.name)
+            queryType?.let { put(QUERY_TYPE, it.name) }
+            this
         }
     }
 
@@ -258,7 +259,7 @@ abstract class SyncDownTarget : SyncTarget {
                 break // field not present
             }
             try {
-                val timeStamp = Constants.TIMESTAMP_FORMAT.parse(timeStampStr)!!.time
+                val timeStamp = Constants.TIMESTAMP_FORMAT.parse(timeStampStr)?.time ?: -1
                 maxTimeStamp = Math.max(timeStamp, maxTimeStamp)
             } catch (e: Exception) {
                 MobileSyncLogger.d(

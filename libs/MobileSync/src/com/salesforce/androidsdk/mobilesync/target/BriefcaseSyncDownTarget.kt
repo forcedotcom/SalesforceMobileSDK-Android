@@ -140,12 +140,12 @@ class BriefcaseSyncDownTarget internal constructor(
 
         // Cleaning up ghosts one object type at a time
         for ((objectType, value) in objectTypeToIds) {
-            val info = infosMap[objectType]
+            val info = infosMap[objectType] ?: continue
             val remoteIds: SortedSet<String> = TreeSet(
                 value
             )
             val localIds = getNonDirtyRecordIds(
-                syncManager, info!!.soupName, info.idFieldName,
+                syncManager, info.soupName, info.idFieldName,
                 buildSyncIdPredicateIfIndexed(syncManager, info.soupName, syncId)
             )
             localIds.removeAll(remoteIds)
@@ -202,9 +202,9 @@ class BriefcaseSyncDownTarget internal constructor(
         // Get records using sObject collection retrieve one object type at a time
         for ((objectType, idsToFetch) in objectTypeToIds) {
             if (idsToFetch.size > 0) {
-                val info = infosMap[objectType]
+                val info = infosMap[objectType] ?: continue
                 val fieldlistToFetch = ArrayList(
-                    info!!.fieldlist
+                    info.fieldlist
                 )
                 for (fieldName in Arrays.asList(info.idFieldName, info.modificationDateFieldName)) {
                     if (!fieldlistToFetch.contains(fieldName)) {
@@ -305,7 +305,7 @@ class BriefcaseSyncDownTarget internal constructor(
      */
     @Throws(JSONException::class)
     override fun saveRecordsToLocalStore(
-        syncManager: SyncManager, soupName: String?, records: JSONArray,
+        syncManager: SyncManager, soupName: String, records: JSONArray,
         syncId: Long
     ) {
         val smartStore = syncManager.smartStore

@@ -74,7 +74,7 @@ class AdvancedSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: Sy
                 (target as AdvancedSyncUpTarget).syncUpRecords(
                     syncManager,
                     batch,
-                    options.fieldlist!!,
+                    options.fieldlist,
                     options.mergeMode!!,
                     sync.soupName
                 )

@@ -352,10 +352,10 @@ open class SyncUpTarget : SyncTarget {
     @Throws(JSONException::class, IOException::class)
     protected fun fetchLastModifiedDate(
         syncManager: SyncManager,
-        record: JSONObject?
+        record: JSONObject
     ): RecordModDate {
         val objectType = SmartStore.project(record, Constants.SOBJECT_TYPE) as String
-        val objectId = record!!.getString(idFieldName)
+        val objectId = record.getString(idFieldName)
         val lastModRequest = RestRequest.getRequestForRetrieve(
             syncManager.apiVersion, objectType, objectId, Arrays.asList(
                 modificationDateFieldName

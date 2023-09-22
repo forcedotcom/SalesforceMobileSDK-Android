@@ -86,7 +86,7 @@ class ParentChildrenSyncUpTarget(
         }
     }
 
-    override fun getDirtyRecordIdsSql(soupName: String?, idField: String?): String {
+    override fun getDirtyRecordIdsSql(soupName: String, idField: String): String {
         return ParentChildrenSyncTargetHelper.getDirtyRecordIdsSql(
             parentInfo,
             childrenInfo,
@@ -217,9 +217,11 @@ class ParentChildrenSyncUpTarget(
 
         // Update parent in local store
         if (isDirty(record)) {
+            val parentRecordResponse = refIdToRecordResponses[record.getString(idFieldName)]
+                ?: throw MobileSyncException("No parent record response found")
             needReRun = updateParentRecordInLocalStore(
                 syncManager, record, children, mergeMode, refIdToServerId,
-                refIdToRecordResponses[record.getString(idFieldName)]
+                parentRecordResponse
             )
         }
 
@@ -227,9 +229,11 @@ class ParentChildrenSyncUpTarget(
         for (i in 0 until children.length()) {
             val childRecord = children.getJSONObject(i)
             if (isDirty(childRecord) || isCreate) {
+                val childRecordResponse = refIdToRecordResponses[childRecord.getString(childrenInfo.idFieldName)]
+                    ?: throw MobileSyncException("No child record response found")
                 needReRun = needReRun || updateChildRecordInLocalStore(
                     syncManager, childRecord, record, mergeMode, refIdToServerId,
-                    refIdToRecordResponses[childRecord.getString(childrenInfo.idFieldName)]
+                    childRecordResponse
                 )
             }
         }
@@ -244,21 +248,20 @@ class ParentChildrenSyncUpTarget(
     @Throws(JSONException::class, IOException::class)
     protected fun updateParentRecordInLocalStore(
         syncManager: SyncManager,
-        record: JSONObject?,
+        record: JSONObject,
         children: JSONArray,
         mergeMode: MergeMode?,
         refIdToServerId: Map<String, String>,
-        response: RecordResponse?
+        response: RecordResponse
     ): Boolean {
         var needReRun = false
         val soupName = parentInfo.soupName
-        val lastError =
-            if (response != null && response.errorJson != null) response.errorJson.toString() else null
+        val lastError = response.errorJson?.toString()
 
         // Delete case
-        if (isLocallyDeleted(record!!)) {
+        if (isLocallyDeleted(record)) {
             if (isLocallyCreated(record) // we didn't go to the sever
-                || response!!.success // or we successfully deleted on the server
+                || response.success // or we successfully deleted on the server
                 || response.recordDoesNotExist
             ) // or the record was already deleted on the server
             {
@@ -275,7 +278,7 @@ class ParentChildrenSyncUpTarget(
             }
         } else {
             // Success case
-            if (response!!.success) {
+            if (response.success) {
                 // Plugging server id in id field
                 CompositeRequestHelper.updateReferences(record, idFieldName, refIdToServerId)
 
@@ -312,17 +315,16 @@ class ParentChildrenSyncUpTarget(
         parentRecord: JSONObject,
         mergeMode: MergeMode?,
         refIdToServerId: Map<String, String>,
-        response: RecordResponse?
+        response: RecordResponse
     ): Boolean {
         var needReRun = false
         val soupName = childrenInfo.soupName
-        val lastError =
-            if (response != null && response.errorJson != null) response.errorJson.toString() else null
+        val lastError = response.errorJson?.toString()
 
         // Delete case
         if (isLocallyDeleted(record)) {
             if (isLocallyCreated(record) // we didn't go to the sever
-                || response!!.success // or we successfully deleted on the server
+                || response.success // or we successfully deleted on the server
                 || response.recordDoesNotExist
             ) // or the record was already deleted on the server
             {
@@ -332,7 +334,7 @@ class ParentChildrenSyncUpTarget(
             }
         } else {
             // Success case
-            if (response!!.success) {
+            if (response.success) {
                 // Plugging server id in id field
                 CompositeRequestHelper.updateReferences(
                     record,
@@ -376,7 +378,7 @@ class ParentChildrenSyncUpTarget(
 
     @Throws(IOException::class, JSONException::class)
     protected fun buildRequestForParentRecord(
-        record: JSONObject?,
+        record: JSONObject,
         fieldlist: List<String>?
     ): RecordRequest? {
         return buildRequestForRecord(record, fieldlist, true, false, null)
@@ -384,7 +386,7 @@ class ParentChildrenSyncUpTarget(
 
     @Throws(IOException::class, JSONException::class)
     protected fun buildRequestForChildRecord(
-        record: JSONObject?,
+        record: JSONObject,
         useParentIdReference: Boolean,
         parentId: String?
     ): RecordRequest? {
@@ -399,13 +401,13 @@ class ParentChildrenSyncUpTarget(
 
     @Throws(IOException::class, JSONException::class)
     protected fun buildRequestForRecord(
-        record: JSONObject?,
+        record: JSONObject,
         fieldlist: List<String>?,
         isParent: Boolean,
         useParentIdReference: Boolean,
         parentId: String?
     ): RecordRequest? {
-        if (!isDirty(record!!)) {
+        if (!isDirty(record)) {
             return null // nothing to do
         }
         val info = if (isParent) parentInfo else childrenInfo
@@ -503,10 +505,10 @@ class ParentChildrenSyncUpTarget(
     @Throws(JSONException::class)
     protected fun getLocalLastModifiedDates(
         syncManager: SyncManager,
-        record: JSONObject?
+        record: JSONObject
     ): Map<String, RecordModDate> {
         val idToLocalTimestamps: MutableMap<String, RecordModDate> = HashMap()
-        val isParentDeleted = isLocallyDeleted(record!!)
+        val isParentDeleted = isLocallyDeleted(record)
         val parentModDate = RecordModDate(
             JSONObjectHelper.optString(record, modificationDateFieldName),
             isParentDeleted
@@ -538,10 +540,10 @@ class ParentChildrenSyncUpTarget(
     @Throws(JSONException::class, IOException::class)
     protected fun fetchLastModifiedDates(
         syncManager: SyncManager,
-        record: JSONObject?
+        record: JSONObject
     ): Map<String, String> {
         val idToRemoteTimestamps: MutableMap<String, String> = HashMap()
-        if (!isLocallyCreated(record!!)) {
+        if (!isLocallyCreated(record)) {
             val parentId = record.getString(idFieldName)
             val lastModRequest = getRequestForTimestamps(syncManager.apiVersion, parentId)
             val lastModResponse = syncManager.sendSyncWithMobileSyncUserAgent(lastModRequest)

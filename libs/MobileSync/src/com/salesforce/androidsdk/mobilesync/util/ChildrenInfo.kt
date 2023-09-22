@@ -54,10 +54,10 @@ class ChildrenInfo @JvmOverloads constructor(
 
     @Throws(JSONException::class)
     override fun asJSON(): JSONObject {
-        val json = super.asJSON()
-        json!!.put(SOBJECT_TYPE_PLURAL, sobjectTypePlural)
-        json.put(PARENT_ID_FIELD_NAME, parentIdFieldName)
-        return json
+        return with(super.asJSON()) {
+            put(SOBJECT_TYPE_PLURAL, sobjectTypePlural)
+            put(PARENT_ID_FIELD_NAME, parentIdFieldName)
+        }
     }
 
     companion object {

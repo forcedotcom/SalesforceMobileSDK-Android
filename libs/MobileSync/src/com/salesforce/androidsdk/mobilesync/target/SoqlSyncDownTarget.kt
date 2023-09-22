@@ -152,13 +152,13 @@ open class SoqlSyncDownTarget : SyncDownTarget {
     }
 
     @Throws(IOException::class)
-    protected fun getResponseJson(response: RestResponse?): JSONObject {
+    protected fun getResponseJson(response: RestResponse): JSONObject {
         val responseJson: JSONObject
         responseJson = try {
-            response!!.asJSONObject()
+            response.asJSONObject()
         } catch (e: JSONException) {
             // Rest API errors are returned as JSON array
-            throw MobileSyncException(response!!.asString())
+            throw MobileSyncException(response.asString())
         }
         return responseJson
     }

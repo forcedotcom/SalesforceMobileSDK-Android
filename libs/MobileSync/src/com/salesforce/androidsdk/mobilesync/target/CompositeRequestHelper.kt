@@ -277,16 +277,14 @@ object CompositeRequestHelper {
             val attributes = JSONObject()
             attributes.put(Constants.LTYPE, objectType)
             record.put(Constants.ATTRIBUTES, attributes)
-            if (fields != null) {
-                for ((key, value) in fields!!) {
-                    record.put(key, value)
-                }
+            fields?.forEach { (key, value) ->
+                record.put(key, value)
             }
             if (requestType == RequestType.UPDATE) {
                 record.put(Constants.ID, id)
             }
             if (requestType == RequestType.UPSERT) {
-                record.put(externalIdFieldName, externalId)
+                externalIdFieldName?.let { record.put(it, externalId) }
             }
             return record
         }
@@ -377,8 +375,8 @@ object CompositeRequestHelper {
                 apiVersion: String?,
                 allOrNone: Boolean,
                 recordRequests: List<RecordRequest>,
-                requestType: RequestType?
-            ): RestRequest? {
+                requestType: RequestType
+            ): RestRequest {
                 when (requestType) {
                     RequestType.CREATE -> return RestRequest.getRequestForCollectionCreate(
                         apiVersion,
@@ -428,10 +426,6 @@ object CompositeRequestHelper {
                         false,
                         getIds(recordRequests, RequestType.DELETE)
                     )
-
-                    else -> {
-                        return null
-                    }
                 }
             }
         }
