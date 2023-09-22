@@ -43,9 +43,14 @@ import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.rest.RestResponse
 import com.salesforce.androidsdk.smartstore.store.SmartStore
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import org.json.JSONException
 import java.io.IOException
 import java.util.concurrent.Executors
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 import kotlin.math.max
 
 /**
@@ -409,6 +414,45 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
         runSync(sync, callback)
         return sync
     }
+    /**
+     * Coroutine wrapper around the "reSync" operation. This operation is _not_
+     * cancellable via coroutine cancellation semantics due to the non-cancellable nature of individual
+     * MobileSync operations.
+     */
+    @Throws(ReSyncException::class)
+    suspend fun suspendReSync(syncName: String): SyncState = withContext(NonCancellable) {
+        suspendCoroutine { cont ->
+            val callback: (SyncState) -> Unit = {
+                when (it.status) {
+                    // terminal states
+                    SyncState.Status.DONE -> cont.resume(it)
+
+                    SyncState.Status.FAILED,
+                    SyncState.Status.STOPPED -> cont.resumeWithException(
+                        ReSyncException.FailedToFinish(
+                            message = "Re sync operation failed with terminal Sync State = $it"
+                        )
+                    )
+
+                    SyncState.Status.NEW,
+                    SyncState.Status.RUNNING,
+                    null -> {
+                        /* no-op; suspending for terminal state */
+                    }
+                }
+            }
+
+            try {
+                reSync(syncName, object:SyncUpdateCallback {
+                    override fun onUpdate(sync: SyncState) {
+                        callback(sync)
+                    }
+                })
+            } catch (ex: Exception) {
+                cont.resumeWithException(ReSyncException.FailedToStart(cause = ex))
+            }
+        }
+    }
 
     /**
      * Create a sync up
@@ -444,6 +488,38 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     fun cleanResyncGhosts(syncId: Long, callback: CleanResyncGhostsCallback? = null) {
         val sync = checkExistsById(syncId)
         cleanResyncGhosts(sync, callback)
+    }
+
+    /**
+     * Coroutine wrapper around the "clean resync ghosts" operation in MobileSync. This operation is _not_
+     * cancellable via coroutine cancellation semantics due to the non-cancellable nature of individual
+     * MobileSync operations.
+     */
+    @Throws(CleanResyncGhostsException::class)
+    suspend fun suspendCleanResyncGhosts(syncName: String) = withContext(NonCancellable) {
+        suspendCoroutine<Int> { cont ->
+            val callback = object : CleanResyncGhostsCallback {
+                override fun onSuccess(numRecords: Int) = cont.resume(numRecords)
+
+                override fun onError(e: java.lang.Exception?) {
+                    cont.resumeWithException(
+                        CleanResyncGhostsException.FailedToFinish(
+                            message = "Clean Resync Ghosts failed to run to completion",
+                            cause = e
+                        )
+                    )
+                }
+            }
+
+            try {
+                cleanResyncGhosts(syncName, callback)
+            } catch (ex: Exception) {
+                throw CleanResyncGhostsException.FailedToStart(
+                    message = "Clean Resync Ghosts operation failed to start",
+                    cause = ex
+                )
+            }
+        }
     }
 
     /**
@@ -527,21 +603,46 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     /**
      * Exception thrown by mobile sync manager
      */
-    open class MobileSyncException : RuntimeException {
-        constructor(message: String?) : super(message)
-        constructor(e: Throwable?) : super(e)
-
-        companion object {
-            private const val serialVersionUID = 1L
-        }
-    }
+    open class MobileSyncException(
+        override val message: String? = null,
+        override val cause: Throwable? = null
+    ) : RuntimeException(message, cause)
 
     /**
      * Exception thrown when sync manager is stopped
      */
-    class SyncManagerStoppedException : MobileSyncException {
-        constructor(message: String?) : super(message)
-        constructor(e: Throwable?) : super(e)
+    class SyncManagerStoppedException (
+        message: String?,
+        cause: Throwable? = null) : MobileSyncException(message, cause)
+
+    /**
+     * Sealed class representing the failure modes for suspendCleanResyncGhosts
+     */
+    sealed class CleanResyncGhostsException(message: String?, cause: Throwable?)
+        : MobileSyncException(message, cause) {
+        data class FailedToFinish(
+            override val message: String?,
+            override val cause: Throwable? = null
+        ) : CleanResyncGhostsException(message, cause)
+        data class FailedToStart(
+            override val message: String?,
+            override val cause: Throwable?
+        ) : CleanResyncGhostsException(message, cause)
+    }
+
+    /**
+     * Sealed class representing the failure modes for suspendResync
+     */
+    sealed class ReSyncException(message: String?, cause: Throwable?)
+        : MobileSyncException(message, cause) {
+        data class FailedToFinish(
+            override val message: String? = null,
+            override val cause: Throwable? = null
+        ) : CleanResyncGhostsException(message, cause)
+        data class FailedToStart(
+            override val message: String? = null,
+            override val cause: Throwable? = null
+        ) : CleanResyncGhostsException(message, cause)
     }
 
     /**

@@ -201,7 +201,7 @@ class SyncState(
                 try {
                     store.alterSoup(SYNCS_SOUP, indexSpecs, true /* reindexing to json1 is quick */)
                 } catch (e: JSONException) {
-                    throw MobileSyncException(e)
+                    throw MobileSyncException(cause = e)
                 }
             } else {
                 store.registerSoup(SYNCS_SOUP, indexSpecs)
@@ -223,7 +223,7 @@ class SyncState(
                     sync.save(store)
                 }
             } catch (e: JSONException) {
-                throw MobileSyncException(e)
+                throw MobileSyncException(cause = e)
             }
         }
 
