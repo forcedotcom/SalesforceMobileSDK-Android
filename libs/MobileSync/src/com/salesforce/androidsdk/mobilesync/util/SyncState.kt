@@ -112,7 +112,7 @@ class SyncState(
             SYNCS_SOUP,
             asJSON(),
             id
-        ) ?: throw MobileSyncException("Failed to save sync state")
+        ) // ?: throw MobileSyncException("Failed to save sync state")
     }
 
     val mergeMode: MergeMode
