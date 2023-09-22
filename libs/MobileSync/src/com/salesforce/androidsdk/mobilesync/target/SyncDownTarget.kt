@@ -36,6 +36,7 @@ import org.json.JSONObject
 import java.io.IOException
 import java.util.Locale
 import java.util.SortedSet
+import kotlin.math.max
 
 /**
  * Target for sync down:
@@ -259,7 +260,7 @@ abstract class SyncDownTarget : SyncTarget {
             }
             try {
                 val timeStamp = Constants.TIMESTAMP_FORMAT.parse(timeStampStr)?.time ?: -1
-                maxTimeStamp = Math.max(timeStamp, maxTimeStamp)
+                maxTimeStamp = max(timeStamp, maxTimeStamp)
             } catch (e: Exception) {
                 MobileSyncLogger.d(
                     TAG,
@@ -322,8 +323,7 @@ abstract class SyncDownTarget : SyncTarget {
         @JvmStatic
         @Throws(JSONException::class)
         fun fromJSON(target: JSONObject): SyncDownTarget {
-            val queryType = QueryType.valueOf(target.getString(QUERY_TYPE))
-            return when (queryType) {
+            return when (QueryType.valueOf(target.getString(QUERY_TYPE))) {
                 QueryType.mru -> {
                     MruSyncDownTarget(target)
                 }

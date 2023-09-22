@@ -34,14 +34,13 @@ import android.net.Uri
  * @author bhariharan
  */
 class SOSLBuilder private constructor() {
-    private val properties: HashMap<String, Any>
+    private val properties: HashMap<String, Any> = HashMap()
     private val returning: MutableList<Any>
 
     /**
      * Private constructor.
      */
     init {
-        properties = HashMap()
         returning = ArrayList()
     }
 
@@ -153,16 +152,16 @@ class SOSLBuilder private constructor() {
     fun build(): String? {
         val query = StringBuilder()
         val searchTerm = properties["searchTerm"] as String?
-        if (searchTerm == null || searchTerm.length == 0) {
+        if (searchTerm.isNullOrEmpty()) {
             return null
         }
         query.append(String.format("find {%s}", searchTerm))
         val searchGroup = properties["searchGroup"] as String?
-        if (searchGroup != null && searchGroup.length > 0) {
+        if (!searchGroup.isNullOrEmpty()) {
             query.append(" in ")
             query.append(searchGroup)
         }
-        if (returning != null && returning.size > 0) {
+        if (returning.size > 0) {
             query.append(" returning ")
             query.append((returning[0] as SOSLReturningBuilder).build())
             for (i in 1 until returning.size) {
@@ -171,12 +170,12 @@ class SOSLBuilder private constructor() {
             }
         }
         val divisionFilter = properties["divisionFilter"] as String?
-        if (divisionFilter != null && divisionFilter.length > 0) {
+        if (!divisionFilter.isNullOrEmpty()) {
             query.append(" with ")
             query.append(divisionFilter)
         }
         val dataCategory = properties["dataCategory"] as String?
-        if (dataCategory != null && dataCategory.length > 0) {
+        if (!dataCategory.isNullOrEmpty()) {
             query.append(" with data category ")
             query.append(dataCategory)
         }

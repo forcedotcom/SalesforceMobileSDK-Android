@@ -357,7 +357,7 @@ open class SyncUpTarget : SyncTarget {
         val objectType = SmartStore.project(record, Constants.SOBJECT_TYPE) as String
         val objectId = record.getString(idFieldName)
         val lastModRequest = RestRequest.getRequestForRetrieve(
-            syncManager.apiVersion, objectType, objectId, Arrays.asList(
+            syncManager.apiVersion, objectType, objectId, listOf(
                 modificationDateFieldName
             )
         )
@@ -403,7 +403,7 @@ open class SyncUpTarget : SyncTarget {
                 // Process batch if max batch size reached or at the end of records
                 if (batchServerIds.size == RestRequest.MAX_COLLECTION_RETRIEVE_SIZE || i == totalSize - 1) {
                     val request = RestRequest.getRequestForCollectionRetrieve(
-                        syncManager.apiVersion, objectType, batchServerIds, Arrays.asList(
+                        syncManager.apiVersion, objectType, batchServerIds, listOf(
                             modificationDateFieldName
                         )
                     )
@@ -487,9 +487,9 @@ open class SyncUpTarget : SyncTarget {
         localModDate: RecordModDate?,
         remoteModDate: RecordModDate
     ): Boolean {
-        return localModDate?.timestamp != null && remoteModDate.timestamp != null && localModDate.timestamp.compareTo(
-            remoteModDate.timestamp
-        ) >= 0 || localModDate?.isDeleted == true && remoteModDate.isDeleted || localModDate?.timestamp == null
+        return (localModDate?.timestamp != null && remoteModDate.timestamp != null && localModDate.timestamp >= remoteModDate.timestamp)
+                || (localModDate?.isDeleted == true && remoteModDate.isDeleted)
+                || (localModDate?.timestamp == null)
     }
 
     /**

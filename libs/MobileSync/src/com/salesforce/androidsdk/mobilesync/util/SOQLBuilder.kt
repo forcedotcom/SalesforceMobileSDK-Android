@@ -37,14 +37,7 @@ import java.util.Locale
  * @author bhariharan
  */
 class SOQLBuilder private constructor() {
-    private val properties: HashMap<String, Any?>
-
-    /**
-     * Private constructor.
-     */
-    init {
-        properties = HashMap()
-    }
+    private val properties: HashMap<String, Any?> = HashMap()
 
     /**
      * Adds the 'from' clause.
@@ -187,34 +180,34 @@ class SOQLBuilder private constructor() {
     fun build(): String {
         val query = StringBuilder()
         val fieldList = properties["fields"] as? String
-        if (fieldList == null || fieldList.length == 0) {
+        if (fieldList.isNullOrEmpty()) {
             throw SyncManager.MobileSyncException("No field selected")
         }
         query.append("select ")
         query.append(fieldList)
         val from = properties["from"] as String?
-        if (from == null || from.length == 0) {
+        if (from.isNullOrEmpty()) {
             throw SyncManager.MobileSyncException("No table specified")
         }
         query.append(" from ")
         query.append(from)
         val where = properties["where"] as String?
-        if (where != null && where.length > 0) {
+        if (!where.isNullOrEmpty()) {
             query.append(" where ")
             query.append(where)
         }
         val groupBy = properties["groupBy"] as String?
-        if (groupBy != null && groupBy.length > 0) {
+        if (!groupBy.isNullOrEmpty()) {
             query.append(" group by ")
             query.append(groupBy)
         }
         val having = properties["having"] as String?
-        if (having != null && having.length > 0) {
+        if (!having.isNullOrEmpty()) {
             query.append(" having ")
             query.append(having)
         }
         val orderBy = properties["orderBy"] as String?
-        if (orderBy != null && orderBy.length > 0) {
+        if (!orderBy.isNullOrEmpty()) {
             query.append(" order by ")
             query.append(orderBy)
         }

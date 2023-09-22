@@ -96,7 +96,7 @@ object CompositeRequestHelper {
         val refIdToRecordResponses: MutableMap<String, RecordResponse> = LinkedHashMap()
         for (requestType in RequestType.values()) {
             val refIds = RecordRequest.getRefIds(recordRequests, requestType)
-            if (refIds.size > 0) {
+            if (refIds.isNotEmpty()) {
                 val request = RecordRequest.getCollectionRequest(
                     syncManager.apiVersion,
                     allOrNone,
@@ -209,7 +209,7 @@ object CompositeRequestHelper {
                 var recordDoesNotExist = false
                 var relatedRecordDoesNotExist = false
                 var errorJson: JSONObject? = null
-                if (!collectionSubResponse.success && !collectionSubResponse.errors.isEmpty()) {
+                if (!collectionSubResponse.success && collectionSubResponse.errors.isNotEmpty()) {
                     errorJson = collectionSubResponse.errors[0].json
                     val error = collectionSubResponse.errors[0].statusCode
                     recordDoesNotExist = "INVALID_CROSS_REFERENCE_KEY" == error || "ENTITY_IS_DELETED" == error
@@ -396,7 +396,7 @@ object CompositeRequestHelper {
                             val objectTypes = getObjectTypes(recordRequests, RequestType.UPSERT)
                             val externalIdFieldNames =
                                 getExternalIdFieldNames(recordRequests, RequestType.UPSERT)
-                            if (objectTypes.size == 0 || externalIdFieldNames.size == 0) {
+                            if (objectTypes.size == 0 || externalIdFieldNames.isEmpty()) {
                                 throw MobileSyncException("Missing sobjectType or externalIdFieldName")
                             }
                             if (HashSet(objectTypes).size > 1) {

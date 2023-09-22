@@ -54,6 +54,7 @@ data class Layout (
         val heading: String,
         val id: String,
         val layoutRows: List<Row>,
+        val rows: Int,
         val usesHeading: Boolean
     ) {
         /**
@@ -88,18 +89,18 @@ data class Layout (
                     /**
                      * Creates an instance of this class from its JSON representation.
                      *
-                     * @param object JSON object.
+                     * @param obj JSON object.
                      * @return Instance of this class.
                      */
                     fun fromJSON(obj: JSONObject): Item {
                         return Item(
-                            obj.optBoolean(EDITABLE_FOR_NEW),
-                            obj.optBoolean(EDITABLE_FOR_UPDATE),
-                            obj.optString(LABEL),
-                            obj.optJSONArray(LAYOUT_COMPONENTS) ?: JSONArray(),
-                            obj.optString(LOOKUP_ID_API_NAME),
-                            obj.optBoolean(REQUIRED),
-                            obj.optBoolean(SORTABLE)
+                            isEditableForNew = obj.optBoolean(EDITABLE_FOR_NEW),
+                            isEditableForUpdate = obj.optBoolean(EDITABLE_FOR_UPDATE),
+                            label = obj.optString(LABEL),
+                            layoutComponents = obj.optJSONArray(LAYOUT_COMPONENTS) ?: JSONArray(),
+                            lookupIdApiName = obj.optString(LOOKUP_ID_API_NAME),
+                            isRequired = obj.optBoolean(REQUIRED),
+                            isSortable = obj.optBoolean(SORTABLE)
                         )
                     }
                 }
@@ -140,14 +141,15 @@ data class Layout (
              */
             fun fromJSON(obj: JSONObject): LayoutSection {
                 return LayoutSection(
-                    obj.optBoolean(COLLAPSIBLE),
-                    obj.optInt(COLUMNS),
-                    obj.optString(HEADING),
-                    obj.optString(ID),
-                    JSONObjectHelper
+                    isCollapsible = obj.optBoolean(COLLAPSIBLE),
+                    columns = obj.optInt(COLUMNS),
+                    heading = obj.optString(HEADING),
+                    id = obj.optString(ID),
+                    layoutRows = JSONObjectHelper
                         .toList<JSONObject>(obj.optJSONArray(LAYOUT_ROWS) ?: JSONArray())
                         .map { Row.fromJSON(it) },
-                    obj.optBoolean(USE_HEADING)
+                    rows = obj.optInt(ROWS),
+                    usesHeading = obj.optBoolean(USE_HEADING)
                 )
             }
         }
@@ -167,13 +169,13 @@ data class Layout (
          */
         fun fromJSON(obj: JSONObject): Layout {
             return Layout (
-                obj.optString(ID),
-                obj.optString(LAYOUT_TYPE),
-                obj.optString(MODE),
-                JSONObjectHelper
+                id = obj.optString(ID),
+                layoutType = obj.optString(LAYOUT_TYPE),
+                mode = obj.optString(MODE),
+                sections = JSONObjectHelper
                     .toList<JSONObject>(obj.optJSONArray(SECTIONS) ?: JSONArray())
                     .map { LayoutSection.fromJSON(it) },
-                obj
+                rawData = obj
             )
         }
     }

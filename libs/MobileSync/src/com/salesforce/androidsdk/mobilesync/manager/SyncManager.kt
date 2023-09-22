@@ -46,6 +46,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore
 import org.json.JSONException
 import java.io.IOException
 import java.util.concurrent.Executors
+import kotlin.math.max
 
 /**
  * Sync Manager
@@ -60,33 +61,16 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     // Thread pool for running syncs
     private val threadPool = Executors.newFixedThreadPool(1)
 
-    /**
-     * @return SmartStore used by this SyncManager
-     */
     // Backing smartstore
     val smartStore: SmartStore
-    /**
-     * @return rest client in use
-     */
-    /**
-     * Sets the rest client to be used.
-     *
-     * @param restClient
-     */
+
     // Rest client for network calls
     var restClient: RestClient?
 
     // Api version
-    val apiVersion: String
+    val apiVersion: String = ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().appContext)
 
-    /**
-     * Private constructor
-     *
-     * @param smartStore
-     */
     init {
-        apiVersion =
-            ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().appContext)
         this.smartStore = smartStore
         this.restClient = restClient
         state = State.ACCEPTING_SYNCS
@@ -101,10 +85,10 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
      */
     @Synchronized
     fun stop() {
-        if (activeSyncs.size == 0) {
-            state = State.STOPPED
+        state = if (activeSyncs.isEmpty()) {
+            State.STOPPED
         } else {
-            state = State.STOP_REQUESTED
+            State.STOP_REQUESTED
         }
     }
 
@@ -176,7 +160,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     @Synchronized
     fun removeFromActiveSyncs(syncTask: SyncTask) {
         activeSyncs.remove(syncTask.syncId)
-        if (state == State.STOP_REQUESTED && activeSyncs.size == 0) {
+        if (state == State.STOP_REQUESTED && activeSyncs.isEmpty()) {
             state = State.STOPPED
         }
     }
@@ -350,7 +334,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
         if (sync.isStopped) {
             // Sync was interrupted, refetch records including those with maxTimeStamp
             val maxTimeStamp = sync.maxTimeStamp
-            sync.maxTimeStamp = Math.max(maxTimeStamp - 1, -1L)
+            sync.maxTimeStamp = max(maxTimeStamp - 1, -1L)
         }
         MobileSyncLogger.d(TAG, "reSync called", sync)
         runSync(sync, callback)
@@ -366,7 +350,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     fun runSync(sync: SyncState, callback: SyncUpdateCallback?) {
         checkNotRunning("runSync", sync.id)
         checkAcceptingSyncs()
-        var syncTask: SyncTask? = when (sync.type) {
+        val syncTask = when (sync.type) {
             SyncState.Type.syncDown -> SyncDownTask(
                 this,
                 sync,
@@ -445,20 +429,13 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     ): SyncState {
         return SyncState.createSyncUp(smartStore, target, options, soupName, syncName)
     }
+
     /**
      * Removes local copies of records that have been deleted on the server
      * or do not match the query results on the server anymore.
      *
      * @param syncId
      * @param callback Callback to get clean resync ghosts completion status.
-     * @throws JSONException
-     * @throws IOException
-     */
-    /**
-     * Removes local copies of records that have been deleted on the server
-     * or do not match the query results on the server anymore.
-     *
-     * @param syncId Sync ID.
      * @throws JSONException
      * @throws IOException
      */

@@ -34,14 +34,7 @@ import java.util.Locale
  * @author bhariharan
  */
 class SOSLReturningBuilder private constructor() {
-    private val properties: HashMap<String, Any>
-
-    /**
-     * Private constructor.
-     */
-    init {
-        properties = HashMap()
-    }
+    private val properties: HashMap<String, Any> = HashMap()
 
     /**
      * Adds the 'fields' clause.
@@ -106,26 +99,26 @@ class SOSLReturningBuilder private constructor() {
     fun build(): String? {
         val query = StringBuilder()
         val objectName = properties["objectName"] as String?
-        if (objectName == null || objectName.length == 0) {
+        if (objectName.isNullOrEmpty()) {
             return null
         }
         query.append(" ")
         query.append(objectName)
         val fields = properties["fields"] as String?
-        if (fields != null && fields.length > 0) {
+        if (!fields.isNullOrEmpty()) {
             query.append(String.format("(%s", fields))
             val where = properties["where"] as String?
-            if (where != null && where.length > 0) {
+            if (!where.isNullOrEmpty()) {
                 query.append(" where ")
                 query.append(where)
             }
             val orderBy = properties["orderBy"] as String?
-            if (orderBy != null && orderBy.length > 0) {
+            if (!orderBy.isNullOrEmpty()) {
                 query.append(" order by ")
                 query.append(orderBy)
             }
             val withNetwork = properties["withNetwork"] as String?
-            if (withNetwork != null && withNetwork.length > 0) {
+            if (!withNetwork.isNullOrEmpty()) {
                 query.append(" with network = ")
                 query.append(withNetwork)
             }

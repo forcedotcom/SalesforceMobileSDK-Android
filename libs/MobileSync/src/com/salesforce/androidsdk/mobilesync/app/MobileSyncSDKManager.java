@@ -41,11 +41,11 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
  * SDK Manager for all native applications that use MobileSync.
- *
- * Note: keeping the java implementation
- *       otherwise calling MobileSyncSDKManager.init from java calls SmartStoreSDKManager.init
- *       see https://youtrack.jetbrains.com/issue/KT-12993
  */
+
+// Note: keeping the java implementation
+//       otherwise calling MobileSyncSDKManager.init from java calls SmartStoreSDKManager.init
+//       see https://youtrack.jetbrains.com/issue/KT-12993
 public class MobileSyncSDKManager extends SmartStoreSDKManager {
 
     private static final String TAG = "MobileSyncSDKManager";

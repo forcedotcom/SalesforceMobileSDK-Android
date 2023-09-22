@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.mobilesync.util
 
 import com.salesforce.androidsdk.rest.RestRequest
+import java.text.DateFormat
 
 /**
  * This class contains commonly used constants, such as field names,
@@ -80,7 +81,7 @@ object Constants {
      * Salesforce timestamp format.
      */
     @JvmField
-    val TIMESTAMP_FORMAT = RestRequest.ISO8601_DATE_FORMAT
+    val TIMESTAMP_FORMAT: DateFormat = RestRequest.ISO8601_DATE_FORMAT
 
     /**
      * Enum for available data fetch modes.

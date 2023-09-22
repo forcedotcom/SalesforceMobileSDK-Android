@@ -153,8 +153,7 @@ open class SoqlSyncDownTarget : SyncDownTarget {
 
     @Throws(IOException::class)
     protected fun getResponseJson(response: RestResponse): JSONObject {
-        val responseJson: JSONObject
-        responseJson = try {
+        val responseJson: JSONObject = try {
             response.asJSONObject()
         } catch (e: JSONException) {
             // Rest API errors are returned as JSON array
@@ -243,10 +242,11 @@ open class SoqlSyncDownTarget : SyncDownTarget {
             maxTimeStamp: Long
         ): String {
             return if (maxTimeStamp > 0) {
-                val extraPredicate =
-                    modificationFieldDatName + " > " + Constants.TIMESTAMP_FORMAT.format(
-                        Date(maxTimeStamp)
-                    )
+                val extraPredicate = buildString {
+                    append(modificationFieldDatName)
+                    append(" > ")
+                    append(Constants.TIMESTAMP_FORMAT.format(Date(maxTimeStamp)))
+                }
                 SOQLMutator(query).addWherePredicates(extraPredicate).asBuilder().build()
             } else {
                 query

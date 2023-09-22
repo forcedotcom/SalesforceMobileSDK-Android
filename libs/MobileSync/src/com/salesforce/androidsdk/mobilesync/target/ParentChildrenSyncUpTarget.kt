@@ -51,7 +51,7 @@ import java.util.LinkedList
 /**
  * Target for sync that uploads parent with children records
  */
-class ParentChildrenSyncUpTarget(
+open class ParentChildrenSyncUpTarget(
     private val parentInfo: ParentInfo,
     parentCreateFieldlist: List<String>?,
     parentUpdateFieldlist: List<String>?,
@@ -128,7 +128,7 @@ class ParentChildrenSyncUpTarget(
         if (records.size > 1) {
             throw MobileSyncException(javaClass.simpleName + ":syncUpRecords can handle only 1 record at a time")
         }
-        if (!records.isEmpty()) {
+        if (records.isNotEmpty()) {
             syncUpRecord(syncManager, records[0], fieldlist, mergeMode)
         }
     }
@@ -291,7 +291,7 @@ class ParentChildrenSyncUpTarget(
                         val childRecord = children.getJSONObject(i)
                         childRecord.put(LOCAL, true)
                         childRecord.put(
-                            if (relationshipType == RelationshipType.MASTER_DETAIL) SyncTarget.Companion.LOCALLY_CREATED else LOCALLY_UPDATED,
+                            if (relationshipType == RelationshipType.MASTER_DETAIL) LOCALLY_CREATED else LOCALLY_UPDATED,
                             true
                         )
                     }
@@ -377,7 +377,11 @@ class ParentChildrenSyncUpTarget(
         record: JSONObject,
         fieldlist: List<String>?
     ): RecordRequest? {
-        return buildRequestForRecord(record, fieldlist, true, false, null)
+        return buildRequestForRecord(record, fieldlist,
+            isParent = true,
+            useParentIdReference = false,
+            parentId = null
+        )
     }
 
     @Throws(IOException::class, JSONException::class)
@@ -598,6 +602,5 @@ class ParentChildrenSyncUpTarget(
         // Constants
         const val CHILDREN_CREATE_FIELDLIST = "childrenCreateFieldlist"
         const val CHILDREN_UPDATE_FIELDLIST = "childrenUpdateFieldlist"
-        const val BODY = "body"
     }
 }

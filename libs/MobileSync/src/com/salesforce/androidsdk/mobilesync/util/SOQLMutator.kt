@@ -36,10 +36,6 @@ class SOQLMutator(private val originalSoql: String) {
     private val clauses: MutableMap<String, String> = HashMap()
     private val clausesWithoutSubqueries: MutableMap<String, String> = HashMap()
 
-    /**
-     * Initialize this SOQLMutator with the soql query to manipulate
-     * @param soql
-     */
     init {
         parseQuery()
     }
@@ -149,7 +145,7 @@ class SOQLMutator(private val originalSoql: String) {
      * @return a SOQL builder with mutations applied
      */
     fun asBuilder(): SOQLBuilder {
-        return SOQLBuilder.Companion.getInstanceWithFields(trimmedClause(SELECT))
+        return SOQLBuilder.getInstanceWithFields(trimmedClause(SELECT))
             .from(trimmedClause(FROM))
             .where(trimmedClause(WHERE))
             .having(trimmedClause(HAVING))
@@ -316,7 +312,7 @@ class SOQLMutator(private val originalSoql: String) {
                 lastCh = ch
             }
             // Don't forget last token
-            if (currentToken.length > 0) {
+            if (currentToken.isNotEmpty()) {
                 tokens.add(currentToken.toString())
             }
 

@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.mobilesync.target
 
-import android.text.TextUtils
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager
 import com.salesforce.androidsdk.mobilesync.util.Constants
 import com.salesforce.androidsdk.mobilesync.util.SOQLBuilder
@@ -37,14 +36,14 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
-import java.util.Arrays
 import java.util.Date
+import kotlin.math.ceil
 import kotlin.math.min
 
 /**
  * Target for sync which syncs down the records currently in a soup
  */
-class RefreshSyncDownTarget internal constructor(
+open class RefreshSyncDownTarget internal constructor(
     fieldlist: List<String>,
     objectType: String,
     soupName: String,
@@ -53,7 +52,7 @@ class RefreshSyncDownTarget internal constructor(
     /**
      * @return field list for this target
      */
-    val fieldlist: List<String>?
+    val fieldlist: List<String>
 
     /**
      * @return object type for this target
@@ -99,7 +98,7 @@ class RefreshSyncDownTarget internal constructor(
         this.fieldlist = fieldlist
         this.objectType = objectType
         this.soupName = soupName
-        this.countIdsPerSoql = Math.min(countIdsPerSoql, MAX_COUNT_IDS_PER_SOQL)
+        this.countIdsPerSoql = min(countIdsPerSoql, MAX_COUNT_IDS_PER_SOQL)
     }
 
     /**
@@ -180,7 +179,7 @@ class RefreshSyncDownTarget internal constructor(
         return if (idsInSmartStore.size > 0) {
             // Get records from server that have changed after maxTimeStamp
             val fieldlistToFetch = ArrayList(fieldlist)
-            for (fieldName in Arrays.asList(idFieldName, modificationDateFieldName)) {
+            for (fieldName in listOf(idFieldName, modificationDateFieldName)) {
                 if (!fieldlistToFetch.contains(fieldName)) {
                     fieldlistToFetch.add(fieldName)
                 }
@@ -205,11 +204,16 @@ class RefreshSyncDownTarget internal constructor(
         fieldlist: List<String>,
         maxTimeStamp: Long
     ): JSONArray {
-        val whereClause = (""
-                + idFieldName + " IN ('" + TextUtils.join("', '", ids) + "')"
-                + if (maxTimeStamp > 0) " AND " + modificationDateFieldName + " > " + Constants.TIMESTAMP_FORMAT.format(
-            Date(maxTimeStamp)
-        ) else "")
+        val whereClause = buildString {
+            append(idFieldName)
+            append(" IN ('")
+            append(ids.joinToString("', '"))
+            append("')")
+
+            if (maxTimeStamp > 0) {
+                append(" AND $modificationDateFieldName > ${Constants.TIMESTAMP_FORMAT.format(Date(maxTimeStamp))}")
+            }
+        }
         val soql: String = SOQLBuilder.getInstanceWithFields(fieldlist).from(objectType)
             .where(whereClause).build()
         val request = RestRequest.getRequestForQuery(syncManager.apiVersion, soql)
@@ -222,7 +226,7 @@ class RefreshSyncDownTarget internal constructor(
     override fun getRemoteIds(syncManager: SyncManager, localIds: Set<String>): Set<String> {
         val remoteIds: MutableSet<String> = HashSet()
         val localIdsList: List<String> = ArrayList(localIds)
-        val countSlices = Math.ceil(localIds.size.toDouble() / countIdsPerSoql).toInt()
+        val countSlices = ceil(localIds.size.toDouble() / countIdsPerSoql).toInt()
         for (slice in 0 until countSlices) {
             syncManager.checkAcceptingSyncs()
             val idsToFetch = localIdsList.subList(

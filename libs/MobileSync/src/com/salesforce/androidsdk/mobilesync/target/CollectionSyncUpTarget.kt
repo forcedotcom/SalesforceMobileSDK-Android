@@ -34,11 +34,12 @@ import com.salesforce.androidsdk.util.JSONObjectHelper
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
+import kotlin.math.min
 
 /**
  * Subclass of SyncUpTarget that batches create/update/delete operations by using sobject collection apis
  */
-class CollectionSyncUpTarget : BatchSyncUpTarget {
+open class CollectionSyncUpTarget : BatchSyncUpTarget {
     /**
      * Construct CollectionSyncUpTarget with a different maxBatchSize (NB: cannot exceed MAX_RECORDS_SOBJECT_COLLECTION_API)
      */
@@ -74,7 +75,7 @@ class CollectionSyncUpTarget : BatchSyncUpTarget {
         modificationDateFieldName,
         externalIdFieldName
     ) {
-        this.maxBatchSize = Math.min(
+        this.maxBatchSize = min(
             maxBatchSize,
             MAX_RECORDS_SOBJECT_COLLECTION_API
         ) // soject collection apis allows up to 200 records
@@ -87,7 +88,7 @@ class CollectionSyncUpTarget : BatchSyncUpTarget {
      * @throws JSONException
      */
     constructor(target: JSONObject) : super(target) {
-        maxBatchSize = Math.min(
+        maxBatchSize = min(
             target.optInt(
                 MAX_BATCH_SIZE,
                 MAX_RECORDS_SOBJECT_COLLECTION_API

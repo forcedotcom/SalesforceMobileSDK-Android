@@ -38,6 +38,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
 import java.util.LinkedList
+import kotlin.math.min
 
 /**
  * Subclass of SyncUpTarget that batches create/update/delete operations by using composite api
@@ -83,7 +84,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
         modificationDateFieldName,
         externalIdFieldName
     ) {
-        this.maxBatchSize = Math.min(
+        this.maxBatchSize = min(
             maxBatchSize,
             MAX_SUB_REQUESTS_COMPOSITE_API
         ) // composite api allows up to 25 subrequests
@@ -96,7 +97,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
      * @throws JSONException
      */
     constructor(target: JSONObject) : super(target) {
-        maxBatchSize = Math.min(
+        maxBatchSize = min(
             target.optInt(MAX_BATCH_SIZE, MAX_SUB_REQUESTS_COMPOSITE_API),
             MAX_SUB_REQUESTS_COMPOSITE_API
         ) // composite api allows up to 25 subrequests

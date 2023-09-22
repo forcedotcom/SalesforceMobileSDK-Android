@@ -99,41 +99,41 @@ data class Metadata (
         /**
          * Creates an instance of this class from its JSON representation.
          *
-         * @param object JSON object.
+         * @param obj JSON object.
          * @return Instance of this class.
          */
         fun fromJSON(obj: JSONObject): Metadata {
             return Metadata(
-                obj.optBoolean(ACTIVATEABLE),
-                obj.optBoolean(COMPACT_LAYOUTABLE),
-                obj.optBoolean(CREATEABLE),
-                obj.optBoolean(CUSTOM),
-                obj.optBoolean(CUSTOM_SETTING),
-                obj.optBoolean(DELETABLE),
-                obj.optBoolean(DEPRECATED_AND_HIDDEN),
-                obj.optBoolean(FEED_ENABLED),
-                obj.optJSONArray(CHILD_RELATIONSHIPS) ?: JSONArray(),
-                obj.optBoolean(HAS_SUBTYPES),
-                obj.optBoolean(IS_SUBTYPE),
-                obj.optString(KEY_PREFIX),
-                obj.optString(LABEL),
-                obj.optString(LABEL_PLURAL),
-                obj.optBoolean(LAYOUTABLE),
-                obj.optBoolean(MERGEABLE),
-                obj.optBoolean(MRU_ENABLED),
-                obj.optString(NAME),
-                obj.optJSONArray(FIELDS) ?: JSONArray(),
-                obj.optString(NETWORK_SCOPE_FIELD_NAME),
-                obj.optBoolean(QUERYABLE),
-                obj.optBoolean(REPLICATEABLE),
-                obj.optBoolean(RETRIEVEABLE),
-                obj.optBoolean(SERACH_LAYOUTABLE),
-                obj.optBoolean(SEARCHABLE),
-                obj.optBoolean(TRIGGERABLE),
-                obj.optBoolean(UNDELETABLE),
-                obj.optBoolean(UPDATEABLE),
-                obj.optJSONObject(URLS) ?: JSONObject(),
-                obj
+                isActivateable = obj.optBoolean(ACTIVATEABLE),
+                isCompactLayoutable = obj.optBoolean(COMPACT_LAYOUTABLE),
+                isCreateable = obj.optBoolean(CREATEABLE),
+                isCustom = obj.optBoolean(CUSTOM),
+                isCustomSetting = obj.optBoolean(CUSTOM_SETTING),
+                isDeletable = obj.optBoolean(DELETABLE),
+                isDeprecatedAndHidden = obj.optBoolean(DEPRECATED_AND_HIDDEN),
+                isFeedEnabled = obj.optBoolean(FEED_ENABLED),
+                childRelationships = obj.optJSONArray(CHILD_RELATIONSHIPS) ?: JSONArray(),
+                hasSubtypes = obj.optBoolean(HAS_SUBTYPES),
+                isSubtype = obj.optBoolean(IS_SUBTYPE),
+                keyPrefix = obj.optString(KEY_PREFIX),
+                label = obj.optString(LABEL),
+                labelPlural = obj.optString(LABEL_PLURAL),
+                isLayoutable = obj.optBoolean(LAYOUTABLE),
+                isMergeable = obj.optBoolean(MERGEABLE),
+                mruEnabled = obj.optBoolean(MRU_ENABLED),
+                name = obj.optString(NAME),
+                fields = obj.optJSONArray(FIELDS) ?: JSONArray(),
+                networkScopeFieldName = obj.optString(NETWORK_SCOPE_FIELD_NAME),
+                isQueryable = obj.optBoolean(QUERYABLE),
+                isReplicateable = obj.optBoolean(REPLICATEABLE),
+                isRetrieveable = obj.optBoolean(RETRIEVEABLE),
+                isSearchLayoutable = obj.optBoolean(SERACH_LAYOUTABLE),
+                isSearchable = obj.optBoolean(SEARCHABLE),
+                isTriggerable = obj.optBoolean(TRIGGERABLE),
+                isUndeletable = obj.optBoolean(UNDELETABLE),
+                isUpdateable = obj.optBoolean(UPDATEABLE),
+                urls = obj.optJSONObject(URLS) ?: JSONObject(),
+                rawData = obj
             )
         }
     }

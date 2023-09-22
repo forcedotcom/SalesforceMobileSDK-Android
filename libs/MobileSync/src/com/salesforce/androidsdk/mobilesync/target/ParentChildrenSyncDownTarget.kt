@@ -41,11 +41,12 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
 import java.util.Date
+import kotlin.math.max
 
 /**
  * Target for sync that downloads parent with children records
  */
-class ParentChildrenSyncDownTarget(
+open class ParentChildrenSyncDownTarget(
     private val parentInfo: ParentInfo,
     private val parentFieldlist: List<String>,
     private val parentSoqlFilter: String?,
@@ -200,7 +201,7 @@ class ParentChildrenSyncDownTarget(
             JSONObjectHelper
                 .toList<JSONObject>(records)
                 .forEach { record ->
-                    val childrenRecords = record.optJSONArray(childrenInfo.sobjectTypePlural)
+                    val childrenRecords = record.optJSONArray(childrenInfo.sobjectTypePlural) ?: JSONArray()
                     this.addAll(parseIdsFromResponse(childrenRecords))
                 }
             this
@@ -242,7 +243,7 @@ class ParentChildrenSyncDownTarget(
         parentWhere.append(parentSoqlFilter)
 
         // Nested query
-        val nestedFields: MutableList<String> = childrenFieldlist.let { ArrayList(it) }
+        val nestedFields: MutableList<String> = ArrayList(childrenFieldlist)
         if (!nestedFields.contains(childrenInfo.idFieldName)) nestedFields.add(childrenInfo.idFieldName)
         if (!nestedFields.contains(childrenInfo.modificationDateFieldName)) nestedFields.add(
             childrenInfo.modificationDateFieldName
@@ -252,7 +253,7 @@ class ParentChildrenSyncDownTarget(
         builderNested.where(childrenWhere.toString())
 
         // Parent query
-        val fields: MutableList<String> = parentFieldlist.let { ArrayList(it) }
+        val fields: MutableList<String> = ArrayList(parentFieldlist)
         if (!fields.contains(idFieldName)) fields.add(idFieldName)
         if (!fields.contains(modificationDateFieldName)) fields.add(modificationDateFieldName)
         fields.add("(" + builderNested.build() + ")")
@@ -307,7 +308,7 @@ class ParentChildrenSyncDownTarget(
         for (i in 0 until records.length()) {
             val record = records.getJSONObject(i)
             val children = record.getJSONArray(childrenInfo.sobjectTypePlural)
-            maxTimeStamp = Math.max(
+            maxTimeStamp = max(
                 maxTimeStamp,
                 getLatestModificationTimeStamp(children, childrenInfo.modificationDateFieldName)
             )

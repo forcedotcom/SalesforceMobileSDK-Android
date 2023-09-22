@@ -64,8 +64,7 @@ open class SyncUpTask(syncManager: SyncManager, sync: SyncState, callback: SyncU
         val options = sync.options
         val totalSize = dirtyRecordIds.size
         updateSync(sync, SyncState.Status.RUNNING, 0, callback)
-        var i = 0
-        for (id in dirtyRecordIds) {
+        for ((i, id) in dirtyRecordIds.withIndex()) {
             checkIfStopRequested()
             val record = target.getFromLocalStore(syncManager, soupName, id)
             if (shouldSyncUpRecord(target, record, options)) {
@@ -79,7 +78,6 @@ open class SyncUpTask(syncManager: SyncManager, sync: SyncState, callback: SyncU
             }
 
             // Incrementing i
-            i++
         }
     }
 

@@ -36,6 +36,7 @@ import com.salesforce.androidsdk.util.JSONObjectHelper
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+import java.lang.Long.valueOf
 import java.util.SortedSet
 import java.util.TreeSet
 
@@ -271,7 +272,7 @@ abstract class SyncTarget @JvmOverloads constructor(
         ids: Set<String>,
         idField: String?
     ) {
-        if (ids.size > 0) {
+        if (ids.isNotEmpty()) {
             val smartSql = String.format(
                 "SELECT {%s:%s} FROM {%s} WHERE {%s:%s} IN (%s)",
                 soupName, SmartStore.SOUP_ENTRY_ID, soupName, soupName, idField,
@@ -339,9 +340,9 @@ abstract class SyncTarget @JvmOverloads constructor(
     fun getFromLocalStore(
         syncManager: SyncManager,
         soupName: String,
-        storeId: String?
+        storeId: String
     ): JSONObject {
-        return syncManager.smartStore.retrieve(soupName, java.lang.Long.valueOf(storeId))
+        return syncManager.smartStore.retrieve(soupName, valueOf(storeId))
             .getJSONObject(0)
     }
 
@@ -359,7 +360,7 @@ abstract class SyncTarget @JvmOverloads constructor(
     ): List<JSONObject> {
         val storeIdsLong = arrayOfNulls<Long>(storeIds.size)
         for (i in storeIds.indices) {
-            storeIdsLong[i] = java.lang.Long.valueOf(storeIds[i])
+            storeIdsLong[i] = valueOf(storeIds[i])
         }
         return JSONObjectHelper.toList(syncManager.smartStore.retrieve(soupName, *storeIdsLong))
     }

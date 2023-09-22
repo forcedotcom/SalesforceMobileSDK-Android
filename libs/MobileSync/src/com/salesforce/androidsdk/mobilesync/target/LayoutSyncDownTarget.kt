@@ -41,7 +41,7 @@ import java.io.IOException
  *
  * @author bhariharan
  */
-class LayoutSyncDownTarget : SyncDownTarget {
+open class LayoutSyncDownTarget : SyncDownTarget {
     /**
      * Returns the object API name associated with this target.
      *

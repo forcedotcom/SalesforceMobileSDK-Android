@@ -40,7 +40,6 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
 import java.text.ParseException
-import java.util.Arrays
 import java.util.SortedSet
 import java.util.TreeSet
 import kotlin.math.ceil
@@ -49,7 +48,7 @@ import kotlin.math.min
 /**
  * Target for sync that downloads records using the briefcase (priming records) API
  */
-class BriefcaseSyncDownTarget internal constructor(
+open class BriefcaseSyncDownTarget internal constructor(
     private val infos: List<BriefcaseObjectInfo>,
     countIdsPerRetrieve: Int
 ) : SyncDownTarget() {
@@ -86,7 +85,7 @@ class BriefcaseSyncDownTarget internal constructor(
 
     init {
         queryType = QueryType.briefcase
-        this.countIdsPerRetrieve = Math.min(countIdsPerRetrieve, MAX_COUNT_IDS_PER_RETRIEVE)
+        this.countIdsPerRetrieve = min(countIdsPerRetrieve, MAX_COUNT_IDS_PER_RETRIEVE)
         MobileSyncSDKManager.getInstance()
             .registerUsedAppFeature(Features.FEATURE_BRIEFCASE)
 
@@ -207,7 +206,7 @@ class BriefcaseSyncDownTarget internal constructor(
                 val fieldlistToFetch = ArrayList(
                     info.fieldlist
                 )
-                for (fieldName in Arrays.asList(info.idFieldName, info.modificationDateFieldName)) {
+                for (fieldName in listOf(info.idFieldName, info.modificationDateFieldName)) {
                     if (!fieldlistToFetch.contains(fieldName)) {
                         fieldlistToFetch.add(fieldName)
                     }

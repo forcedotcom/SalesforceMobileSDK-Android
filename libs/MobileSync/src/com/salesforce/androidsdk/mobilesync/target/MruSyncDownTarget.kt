@@ -40,7 +40,7 @@ import java.io.IOException
 /**
  * Target for sync that downloads most recently used records
  */
-class MruSyncDownTarget : SyncDownTarget {
+open class MruSyncDownTarget : SyncDownTarget {
     /**
      * @return field list for this target
      */

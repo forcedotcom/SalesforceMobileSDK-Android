@@ -39,7 +39,7 @@ import java.io.IOException
  *
  * @author bhariharan
  */
-class MetadataSyncDownTarget : SyncDownTarget {
+open class MetadataSyncDownTarget : SyncDownTarget {
     /**
      * Returns the object type associated with this target.
      *

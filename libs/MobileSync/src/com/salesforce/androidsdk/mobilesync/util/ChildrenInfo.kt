@@ -43,13 +43,13 @@ class ChildrenInfo @JvmOverloads constructor(
     externalIdFieldName: String? = null
 ) : ParentInfo(sobjectType, soupName, idFieldName, modificationDateFieldName, externalIdFieldName) {
     constructor(json: JSONObject) : this(
-        json.getString(ParentInfo.Companion.SOBJECT_TYPE),
+        json.getString(SOBJECT_TYPE),
         json.getString(SOBJECT_TYPE_PLURAL),
-        json.getString(ParentInfo.Companion.SOUP_NAME),
+        json.getString(SOUP_NAME),
         json.getString(PARENT_ID_FIELD_NAME),
-        JSONObjectHelper.optString(json, ParentInfo.Companion.ID_FIELD_NAME),
-        JSONObjectHelper.optString(json, ParentInfo.Companion.MODIFICATION_DATE_FIELD_NAME),
-        JSONObjectHelper.optString(json, ParentInfo.Companion.EXTERNAL_ID_FIELD_NAME)
+        JSONObjectHelper.optString(json, ID_FIELD_NAME),
+        JSONObjectHelper.optString(json, MODIFICATION_DATE_FIELD_NAME),
+        JSONObjectHelper.optString(json, EXTERNAL_ID_FIELD_NAME)
     )
 
     @Throws(JSONException::class)

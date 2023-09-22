@@ -36,7 +36,7 @@ import java.io.IOException
 /**
  * Target for sync defined by a SOSL query
  */
-class SoslSyncDownTarget : SyncDownTarget {
+open class SoslSyncDownTarget : SyncDownTarget {
     /**
      * @return sosl query for this target
      */
