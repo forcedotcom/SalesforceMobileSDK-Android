@@ -603,7 +603,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     /**
      * Exception thrown by mobile sync manager
      */
-    open class MobileSyncException(
+    open class MobileSyncException @JvmOverloads constructor(
         override val message: String? = null,
         override val cause: Throwable? = null
     ) : RuntimeException(message, cause)
