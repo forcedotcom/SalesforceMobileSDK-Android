@@ -76,21 +76,21 @@ class SyncState(
      */
     @Throws(JSONException::class)
     fun asJSON(): JSONObject {
-        val sync = JSONObject()
-        sync.put(SmartStore.SOUP_ENTRY_ID, id)
-        sync.put(SYNC_TYPE, type.name)
-        if (name != null) sync.put(SYNC_NAME, name)
-        if (target != null) sync.put(SYNC_TARGET, target.asJSON())
-        if (options != null) sync.put(SYNC_OPTIONS, options.asJSON())
-        sync.put(SYNC_SOUP_NAME, soupName)
-        sync.put(SYNC_STATUS, status!!.name)
-        sync.put(SYNC_PROGRESS, progress)
-        sync.put(SYNC_TOTAL_SIZE, totalSize)
-        sync.put(SYNC_MAX_TIME_STAMP, maxTimeStamp)
-        sync.put(SYNC_START_TIME, startTime)
-        sync.put(SYNC_END_TIME, endTime)
-        sync.put(SYNC_ERROR, error)
-        return sync
+        return with(JSONObject()) {
+            put(SmartStore.SOUP_ENTRY_ID, id)
+            put(SYNC_TYPE, type.name)
+            if (name != null) put(SYNC_NAME, name)
+            put(SYNC_TARGET, target.asJSON())
+            put(SYNC_OPTIONS, options.asJSON())
+            put(SYNC_SOUP_NAME, soupName)
+            put(SYNC_STATUS, status!!.name)
+            put(SYNC_PROGRESS, progress)
+            put(SYNC_TOTAL_SIZE, totalSize)
+            put(SYNC_MAX_TIME_STAMP, maxTimeStamp)
+            put(SYNC_START_TIME, startTime)
+            put(SYNC_END_TIME, endTime)
+            put(SYNC_ERROR, error)
+        }
     }
 
     override fun toString(): String {
@@ -116,7 +116,7 @@ class SyncState(
     }
 
     val mergeMode: MergeMode
-        get() = if (options != null && options.mergeMode != null) options.mergeMode else MergeMode.OVERWRITE
+        get() = options.mergeMode ?: MergeMode.OVERWRITE
 
     fun getStartTime(): Double {
         return startTime.toDouble()
