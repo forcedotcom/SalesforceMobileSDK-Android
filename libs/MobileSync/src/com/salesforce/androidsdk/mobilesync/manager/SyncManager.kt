@@ -414,13 +414,42 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
         runSync(sync, callback)
         return sync
     }
+
     /**
-     * Coroutine wrapper around the "reSync" operation. This operation is _not_
-     * cancellable via coroutine cancellation semantics due to the non-cancellable nature of individual
-     * MobileSync operations.
+     * Co-routine wrapper for reSync(syncId)
+     *
+     * @param syncId: id of sync
      */
-    @Throws(ReSyncException::class)
-    suspend fun suspendReSync(syncName: String): SyncState = withContext(NonCancellable) {
+    suspend fun suspendReSync(syncId: Long): SyncState {
+        try {
+            val sync = checkExistsById(syncId)
+            return suspendReSync(sync)
+        } catch (ex: Exception) {
+            throw ReSyncException.FailedToStart(
+                message = "Resync operation failed to start",
+                cause = ex
+            )
+        }
+    }
+
+    /**
+     * Co-routine wrapper for reSync(syncName)
+     *
+     * @param syncName: name of sync
+     */
+    suspend fun suspendReSync(syncName: String): SyncState {
+        try {
+            val sync = checkExistsByName(syncName)
+            return suspendReSync(sync)
+        } catch (ex: Exception) {
+            throw ReSyncException.FailedToStart(
+                message = "Resync operation failed to start",
+                cause = ex
+            )
+        }
+    }
+
+    private suspend fun suspendReSync(sync: SyncState): SyncState = withContext(NonCancellable) {
         suspendCoroutine { cont ->
             val callback: (SyncState) -> Unit = {
                 when (it.status) {
@@ -442,15 +471,11 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
                 }
             }
 
-            try {
-                reSync(syncName, object:SyncUpdateCallback {
-                    override fun onUpdate(sync: SyncState) {
-                        callback(sync)
-                    }
-                })
-            } catch (ex: Exception) {
-                cont.resumeWithException(ReSyncException.FailedToStart(cause = ex))
-            }
+            reSync(sync, object:SyncUpdateCallback {
+                override fun onUpdate(sync: SyncState) {
+                    callback(sync)
+                }
+            })
         }
     }
 
@@ -491,12 +516,42 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     }
 
     /**
-     * Coroutine wrapper around the "clean resync ghosts" operation in MobileSync. This operation is _not_
-     * cancellable via coroutine cancellation semantics due to the non-cancellable nature of individual
-     * MobileSync operations.
+     * Co-routine wrapper for cleanResyncGhosts(syncName)
+     *
+     * @param syncName: name of sync
      */
     @Throws(CleanResyncGhostsException::class)
-    suspend fun suspendCleanResyncGhosts(syncName: String) = withContext(NonCancellable) {
+    suspend fun suspendCleanResyncGhosts(syncName: String): Int {
+        try {
+            val sync = checkExistsByName(syncName)
+            return suspendCleanResyncGhosts(sync)
+        } catch (ex: Exception) {
+            throw CleanResyncGhostsException.FailedToStart(
+                message = "Clean Resync Ghosts operation failed to start",
+                cause = ex
+            )
+        }
+    }
+
+    /**
+     * Co-routine wrapper for cleanResyncGhosts(syncId)
+     *
+     * @param syncId: id of sync
+     */
+    @Throws(CleanResyncGhostsException::class)
+    suspend fun suspendCleanResyncGhosts(syncId: Long): Int {
+        try {
+            val sync = checkExistsById(syncId)
+            return suspendCleanResyncGhosts(sync)
+        } catch (ex: Exception) {
+            throw CleanResyncGhostsException.FailedToStart(
+                message = "Clean Resync Ghosts operation failed to start",
+                cause = ex
+            )
+        }
+    }
+
+    private suspend fun suspendCleanResyncGhosts(sync: SyncState) = withContext(NonCancellable) {
         suspendCoroutine<Int> { cont ->
             val callback = object : CleanResyncGhostsCallback {
                 override fun onSuccess(numRecords: Int) = cont.resume(numRecords)
@@ -511,14 +566,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
                 }
             }
 
-            try {
-                cleanResyncGhosts(syncName, callback)
-            } catch (ex: Exception) {
-                throw CleanResyncGhostsException.FailedToStart(
-                    message = "Clean Resync Ghosts operation failed to start",
-                    cause = ex
-                )
-            }
+            cleanResyncGhosts(sync, callback)
         }
     }
 
