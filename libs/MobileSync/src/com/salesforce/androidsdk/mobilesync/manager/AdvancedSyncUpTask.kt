@@ -75,7 +75,7 @@ class AdvancedSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: Sy
                     syncManager,
                     batch,
                     options.fieldlist,
-                    options.mergeMode!!,
+                    options.mergeMode,
                     sync.soupName
                 )
                 batch.clear()

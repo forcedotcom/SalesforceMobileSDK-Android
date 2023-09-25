@@ -40,7 +40,7 @@ class SyncOptions
  * Private constructor
  * @param fieldlist
  * @param mergeMode
- */ private constructor(val fieldlist: List<String>?, val mergeMode: MergeMode?) {
+ */ private constructor(val fieldlist: List<String>?, val mergeMode: MergeMode) {
 
     /**
      * @return json representation of target
@@ -50,8 +50,7 @@ class SyncOptions
     fun asJSON(): JSONObject {
         return with(JSONObject()) {
             if (fieldlist != null) put(FIELDLIST, JSONArray(fieldlist))
-            if (mergeMode != null) put(MERGEMODE, mergeMode.name)
-            this
+            put(MERGEMODE, mergeMode.name)
         }
     }
 
@@ -70,8 +69,7 @@ class SyncOptions
         @JvmStatic
 		@Throws(JSONException::class)
         fun fromJSON(options: JSONObject): SyncOptions {
-            val mergeModeStr = JSONObjectHelper.optString(options, MERGEMODE)
-            val mergeMode = if (mergeModeStr == null) null else MergeMode.valueOf(mergeModeStr)
+            val mergeMode = MergeMode.valueOf(options.getString(MERGEMODE))
             val fieldlist = JSONObjectHelper.toList<String>(options.optJSONArray(FIELDLIST))
             return SyncOptions(fieldlist, mergeMode)
         }

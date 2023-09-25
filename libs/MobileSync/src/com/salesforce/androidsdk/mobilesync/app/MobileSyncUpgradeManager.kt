@@ -69,7 +69,6 @@ open class MobileSyncUpgradeManager : SmartStoreUpgradeManager() {
          * Key in shared preference file for mobile sync version.
          */
         private const val MOBILE_SYNC_KEY = "mobile_sync_version"
-        private const val TAG = "MobileSyncUpgradeManager"
         private var INSTANCE: MobileSyncUpgradeManager? = null
 
         /**
