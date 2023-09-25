@@ -127,7 +127,8 @@ open class CollectionSyncUpTarget : BatchSyncUpTarget {
                 isLocallyDeleted(record)
             )
             val remoteModDate = recordIdToRemoteModDate[storeId]
-            storeIdToNewerThanServer[storeId] = isNewerThanServer(localModDate, remoteModDate!!)
+                ?: throw SyncManager.MobileSyncException("No remote mod date for $storeId") // NB should never happened
+            storeIdToNewerThanServer[storeId] = isNewerThanServer(localModDate, remoteModDate)
         }
         return storeIdToNewerThanServer
     }
