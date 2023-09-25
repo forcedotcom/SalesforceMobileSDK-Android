@@ -10,7 +10,7 @@ plugins {
 
 dependencies {
     api(project(":libs:MobileSync"))
-    api("org.apache.cordova:framework:11.0.0")
+    api("org.apache.cordova:framework:12.0.1")
     api("androidx.appcompat:appcompat:1.6.1")
     api("androidx.appcompat:appcompat-resources:1.6.1")
     api("androidx.webkit:webkit:1.6.0")
