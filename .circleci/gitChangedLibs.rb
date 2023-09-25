@@ -17,9 +17,6 @@ prfiles = JSON.parse(pullfiles)
 
 libsModified = Set.new
 
-libsModified.add("SalesforceHybrid")
-libsModified.add("SalesforceReact")
-
 for prfile in prfiles
   path = prfile["filename"]
   for lib in libsTopoSorted
