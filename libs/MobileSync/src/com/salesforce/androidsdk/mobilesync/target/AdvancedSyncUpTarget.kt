@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-present, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,54 +24,41 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.util
+package com.salesforce.androidsdk.mobilesync.target
 
-import android.content.Intent
-import android.os.Bundle
+import com.salesforce.androidsdk.mobilesync.manager.SyncManager
+import com.salesforce.androidsdk.mobilesync.util.SyncState.MergeMode
+import org.json.JSONException
+import org.json.JSONObject
+import java.io.IOException
 
 /**
- * Helper methods for logging
+ * Interface for advanced sync up target where records are not simply created/updated/deleted
+ * With advanced sync up target, sync manager simply calls the method: syncUpRecords
  */
-object LogUtil {
+interface AdvancedSyncUpTarget {
     /**
-     * Helper method for printing out intent
-     * @param intent
-     * @return string representation
+     * @return max number of records that can be passed to syncUpRecord at once
      */
-	@JvmStatic
-	fun intentToString(intent: Intent?): String {
-        return objectToString(intent)
-    }
+    val maxBatchSize: Int
 
     /**
-     * Helper method for printing out bundle
-     * @param bundle
-     * @return string representation
+     * Sync up a batch of records
+     *
+     * @param syncManager
+     * @param records
+     * @param fieldlist
+     * @param mergeMode
+     * @param syncSoupName
+     * @throws JSONException
+     * @throws IOException
      */
-    @JvmStatic
-    fun bundleToString(bundle: Bundle?): String {
-        return objectToString(bundle)
-    }
-
-    @Suppress("DEPRECATION")
-    private fun objectToString(obj: Any?): String {
-        return when (obj) {
-            null -> {
-                "null"
-            }
-            is Intent -> {
-                "$obj extras = ${objectToString(obj.extras)}"
-            }
-
-            is Bundle -> {
-                obj.keySet().map { key ->
-                    "$key = ${objectToString(obj[key])}"
-                }.joinToString(" ", "{ ", " }")
-            }
-
-            else -> {
-                obj.toString()
-            }
-        }
-    }
+    @Throws(JSONException::class, IOException::class)
+    fun syncUpRecords(
+        syncManager: SyncManager,
+        records: List<JSONObject>,
+        fieldlist: List<String>?,
+        mergeMode: MergeMode,
+        syncSoupName: String
+    )
 }

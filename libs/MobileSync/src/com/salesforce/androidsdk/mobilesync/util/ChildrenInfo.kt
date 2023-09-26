@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-present, salesforce.com, inc.
+ * Copyright (c) 2017-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,54 +24,46 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.util
+package com.salesforce.androidsdk.mobilesync.util
 
-import android.content.Intent
-import android.os.Bundle
+import com.salesforce.androidsdk.util.JSONObjectHelper
+import org.json.JSONException
+import org.json.JSONObject
 
 /**
- * Helper methods for logging
+ * Simple object to capture details of children in parent-child relationship
  */
-object LogUtil {
-    /**
-     * Helper method for printing out intent
-     * @param intent
-     * @return string representation
-     */
-	@JvmStatic
-	fun intentToString(intent: Intent?): String {
-        return objectToString(intent)
-    }
+class ChildrenInfo @JvmOverloads constructor(
+    sobjectType: String,
+    val sobjectTypePlural: String,
+    soupName: String,
+    val parentIdFieldName: String,
+    idFieldName: String? = null,
+    modificationDateFieldName: String? = null,
+    externalIdFieldName: String? = null
+) : ParentInfo(sobjectType, soupName, idFieldName, modificationDateFieldName, externalIdFieldName) {
+    constructor(json: JSONObject) : this(
+        json.getString(SOBJECT_TYPE),
+        json.getString(SOBJECT_TYPE_PLURAL),
+        json.getString(SOUP_NAME),
+        json.getString(PARENT_ID_FIELD_NAME),
+        JSONObjectHelper.optString(json, ID_FIELD_NAME),
+        JSONObjectHelper.optString(json, MODIFICATION_DATE_FIELD_NAME),
+        JSONObjectHelper.optString(json, EXTERNAL_ID_FIELD_NAME)
+    )
 
-    /**
-     * Helper method for printing out bundle
-     * @param bundle
-     * @return string representation
-     */
-    @JvmStatic
-    fun bundleToString(bundle: Bundle?): String {
-        return objectToString(bundle)
-    }
-
-    @Suppress("DEPRECATION")
-    private fun objectToString(obj: Any?): String {
-        return when (obj) {
-            null -> {
-                "null"
-            }
-            is Intent -> {
-                "$obj extras = ${objectToString(obj.extras)}"
-            }
-
-            is Bundle -> {
-                obj.keySet().map { key ->
-                    "$key = ${objectToString(obj[key])}"
-                }.joinToString(" ", "{ ", " }")
-            }
-
-            else -> {
-                obj.toString()
-            }
+    @Throws(JSONException::class)
+    override fun asJSON(): JSONObject {
+        return with(super.asJSON()) {
+            put(SOBJECT_TYPE_PLURAL, sobjectTypePlural)
+            put(PARENT_ID_FIELD_NAME, parentIdFieldName)
         }
+    }
+
+    companion object {
+        // Constants
+        const val SOBJECT_TYPE_PLURAL = "sobjectTypePlural"
+        const val PARENT_ID_FIELD_NAME =
+            "parentIdFieldName" // name of field on  holding parent server id
     }
 }

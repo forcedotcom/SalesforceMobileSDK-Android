@@ -344,13 +344,9 @@ jobs:
           when: always
           command: |
             ./gradlew :hybrid:HybridSampleApps:AccountEditor:assemble
-            ./gradlew :hybrid:HybridSampleApps:NoteSync:assemble
             ./gradlew :hybrid:HybridSampleApps:MobileSyncExplorerHybrid:assemble
       - store_artifacts:
           path: hybrid/HybridSampleApps/AccountEditor/build/outputs/apk/
-          destination: hybrid-apps
-      - store_artifacts:
-          path: hybrid/HybridSampleApps/NoteSync/build/outputs/apk/
           destination: hybrid-apps
       - store_artifacts:
           path: hybrid/HybridSampleApps/MobileSyncExplorerHybrid/build/outputs/apk/
