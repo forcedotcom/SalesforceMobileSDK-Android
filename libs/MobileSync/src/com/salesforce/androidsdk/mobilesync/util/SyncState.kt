@@ -380,7 +380,9 @@ class SyncState(
         @Throws(JSONException::class)
         fun byId(store: SmartStore, id: Long): SyncState? {
             val syncs = store.retrieve(SYNCS_SOUP, id)
-            return if (syncs == null || syncs.length() == 0) null else fromJSON(
+            return if (syncs == null || syncs.length() == 0) {
+                null
+            } else fromJSON(
                 syncs.getJSONObject(0)
             )
         }

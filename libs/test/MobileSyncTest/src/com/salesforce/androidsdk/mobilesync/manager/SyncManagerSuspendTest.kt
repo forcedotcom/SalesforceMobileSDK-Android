@@ -49,7 +49,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class SyncManagerSuspendTest : SyncManagerTestCase() {
-    private var idToFields: MutableMap<String, Map<String, Any>>? = null
+    private lateinit var idToFields: MutableMap<String, Map<String, Any>>
 
     @Before
     @Throws(Exception::class)
@@ -62,9 +62,7 @@ class SyncManagerSuspendTest : SyncManagerTestCase() {
     @After
     @Throws(Exception::class)
     override fun tearDown() {
-        if (idToFields != null) {
-            deleteRecordsByIdOnServer(idToFields!!.keys, Constants.ACCOUNT)
-        }
+        idToFields?.let { deleteRecordsByIdOnServer(it.keys, Constants.ACCOUNT) }
         dropAccountsSoup()
         super.tearDown()
     }
@@ -107,9 +105,10 @@ class SyncManagerSuspendTest : SyncManagerTestCase() {
         checkDb(idToFieldsUpdated, ACCOUNTS_SOUP)
 
         // Check sync time stamp
+        val dbState = syncManager.getSyncStatus(syncId) ?: throw AssertionError("State should not be null")
         Assert.assertTrue(
             "Wrong time stamp",
-            syncManager.getSyncStatus(syncId)!!.maxTimeStamp > maxTimeStamp
+            dbState.maxTimeStamp > maxTimeStamp
         )
     }
 

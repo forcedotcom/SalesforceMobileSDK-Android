@@ -118,17 +118,20 @@ class MetadataSyncManager private constructor(
         )
         try {
             val results = smartStore.query(querySpec, 0)
-            if ((results == null) || (results.length() == 0)) {
-                if (fallbackOnServer) {
-                    fetchFromServer(objectType, syncCallback)
-                } else {
-                    onSyncComplete(syncCallback, null)
+            when {
+                results == null || results.length() == 0 -> {
+                    if (fallbackOnServer) {
+                        fetchFromServer(objectType, syncCallback)
+                    } else {
+                        onSyncComplete(syncCallback, null)
+                    }
                 }
-            } else {
-                onSyncComplete(
-                    syncCallback,
-                    Metadata.fromJSON(results.optJSONArray(0).optJSONObject(0))
-                )
+                else -> {
+                    onSyncComplete(
+                        syncCallback,
+                        Metadata.fromJSON(results.optJSONArray(0).optJSONObject(0))
+                    )
+                }
             }
         } catch (e: Exception) {
             MobileSyncLogger.e(TAG, "Exception occurred while reading metadata from the cache", e)

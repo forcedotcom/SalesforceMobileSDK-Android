@@ -141,14 +141,12 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
             return
         }
         val recordRequests: MutableList<RecordRequest> = LinkedList()
-        for (i in records.indices) {
-            val record = records[i]
-            var id = JSONObjectHelper.optString(record, idFieldName)
-            if (id == null) {
+        records.forEach { record ->
+            val id = JSONObjectHelper.optString(record, idFieldName)
                 // create local id - needed for refId
-                id = createLocalId()
-                record.put(idFieldName, id)
-            }
+                ?: createLocalId().also {
+                    record.put(idFieldName, it)
+                }
             val request = buildRequestForRecord(record, fieldlist)
             if (request != null) {
                 request.referenceId = id

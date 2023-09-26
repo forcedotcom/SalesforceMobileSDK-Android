@@ -296,11 +296,7 @@ class LayoutSyncManager private constructor(
                 SyncManager.getInstance(user, communityId, store)
             val uniqueId = ((if (user != null) user.userId else "") + ":"
                     + store.database.path)
-            var instance = INSTANCES[uniqueId]
-            if (instance == null) {
-                instance = LayoutSyncManager(store, syncManager)
-                INSTANCES[uniqueId] = instance
-            }
+            val instance = INSTANCES[uniqueId] ?: LayoutSyncManager(store, syncManager).also { INSTANCES[uniqueId] = it }
             SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_LAYOUT_SYNC)
             return instance
         }

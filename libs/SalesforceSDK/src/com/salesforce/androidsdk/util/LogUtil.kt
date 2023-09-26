@@ -55,16 +55,23 @@ object LogUtil {
 
     @Suppress("DEPRECATION")
     private fun objectToString(obj: Any?): String {
-        return if (obj == null) {
-            "null"
-        } else if (obj is Intent) {
-            "$obj extras = ${objectToString(obj.extras)}"
-        } else if (obj is Bundle) {
-            obj.keySet().map { key ->
-                "$key = ${objectToString(obj[key])}"
-            }.joinToString(" ", "{ ", " }")
-        } else {
-            obj.toString()
+        return when (obj) {
+            null -> {
+                "null"
+            }
+            is Intent -> {
+                "$obj extras = ${objectToString(obj.extras)}"
+            }
+
+            is Bundle -> {
+                obj.keySet().map { key ->
+                    "$key = ${objectToString(obj[key])}"
+                }.joinToString(" ", "{ ", " }")
+            }
+
+            else -> {
+                obj.toString()
+            }
         }
     }
 }
