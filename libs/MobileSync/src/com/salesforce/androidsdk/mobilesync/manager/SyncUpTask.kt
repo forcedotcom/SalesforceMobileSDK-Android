@@ -124,7 +124,8 @@ open class SyncUpTask(syncManager: SyncManager, sync: SyncState, callback: SyncU
         val locallyDeleted = target.isLocallyDeleted(record)
         val locallyCreated = target.isLocallyCreated(record)
         val locallyUpdated = target.isLocallyUpdated(record)
-        val action: Action = if (locallyDeleted) delete else if (locallyCreated) create else if (locallyUpdated) update else return
+        val action: Action =
+            if (locallyDeleted) delete else if (locallyCreated) create else if (locallyUpdated) update else return
 
         // Create/update/delete record on server and update smartstore
         val recordServerId: String?

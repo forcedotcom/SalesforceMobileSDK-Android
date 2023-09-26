@@ -50,7 +50,8 @@ class AdvancedSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: Sy
         dirtyRecordIds: List<String>
     ) {
         val soupName = sync.soupName
-        val target = sync.target as? SyncUpTarget ?: throw MobileSyncException("A SyncUpTarget was expected")
+        val target =
+            sync.target as? SyncUpTarget ?: throw MobileSyncException("A SyncUpTarget was expected")
         val options = sync.options
         val totalSize = dirtyRecordIds.size
         val maxBatchSize = (target as AdvancedSyncUpTarget).maxBatchSize
@@ -100,7 +101,8 @@ class AdvancedSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: Sy
         var recordIdToShouldSyncUp: MutableMap<String, Boolean> = HashMap()
         if (options.mergeMode == MergeMode.OVERWRITE) {
             for (record in records) {
-                val recordId = record.getString(SmartStore.SOUP_ENTRY_ID) ?: throw MobileSyncException("No id found on record")
+                val recordId = record.getString(SmartStore.SOUP_ENTRY_ID)
+                    ?: throw MobileSyncException("No id found on record")
                 recordIdToShouldSyncUp[recordId] = true
             }
         } else {

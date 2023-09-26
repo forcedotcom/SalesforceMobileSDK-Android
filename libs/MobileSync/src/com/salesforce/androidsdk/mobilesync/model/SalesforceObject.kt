@@ -36,9 +36,12 @@ import org.json.JSONObject
  */
 open class SalesforceObject(@JvmField val rawData: JSONObject) {
 
-    @JvmField var objectType: String?
-    @JvmField var name: String?
-    @JvmField var objectId: String
+    @JvmField
+    var objectType: String?
+    @JvmField
+    var name: String?
+    @JvmField
+    var objectId: String
 
     init {
         if (rawData.optString(Constants.ID).isNullOrEmpty()) {

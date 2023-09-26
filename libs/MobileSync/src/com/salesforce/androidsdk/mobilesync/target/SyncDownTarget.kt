@@ -57,12 +57,14 @@ abstract class SyncDownTarget : SyncTarget {
      * @return QueryType of this target
      */
     // Fields
-    @JvmField var queryType: QueryType? = null
+    @JvmField
+    var queryType: QueryType? = null
 
     /**
      * @return number of records expected to be fetched - is set when startFetch() is called
      */
-    @JvmField var totalSize = 0 // set during a fetch
+    @JvmField
+    var totalSize = 0 // set during a fetch
 
     /**
      * Construct SyncDownTarget
@@ -335,27 +337,35 @@ abstract class SyncDownTarget : SyncTarget {
                 mru -> {
                     MruSyncDownTarget(target)
                 }
+
                 sosl -> {
                     SoslSyncDownTarget(target)
                 }
+
                 soql -> {
                     SoqlSyncDownTarget(target)
                 }
+
                 refresh -> {
                     RefreshSyncDownTarget(target)
                 }
+
                 parent_children -> {
                     ParentChildrenSyncDownTarget(target)
                 }
+
                 metadata -> {
                     MetadataSyncDownTarget(target)
                 }
+
                 layout -> {
                     LayoutSyncDownTarget(target)
                 }
+
                 briefcase -> {
                     BriefcaseSyncDownTarget(target)
                 }
+
                 custom -> {
                     try {
                         val implClass =

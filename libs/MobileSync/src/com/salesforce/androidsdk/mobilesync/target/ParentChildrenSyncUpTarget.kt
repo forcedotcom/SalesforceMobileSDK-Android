@@ -259,8 +259,7 @@ open class ParentChildrenSyncUpTarget(
             if (isLocallyCreated(record) // we didn't go to the server
                 || response?.success == true // or we successfully deleted on the server
                 || response?.recordDoesNotExist == true // or the record was already deleted on the server
-            )
-            {
+            ) {
                 if (relationshipType == RelationshipType.MASTER_DETAIL) {
                     ParentChildrenSyncTargetHelper.deleteChildrenFromLocalStore(
                         syncManager.smartStore, parentInfo, childrenInfo, record.getString(
@@ -322,8 +321,7 @@ open class ParentChildrenSyncUpTarget(
             if (isLocallyCreated(record) // we didn't go to the server
                 || response?.success == true // or we successfully deleted on the server
                 || response?.recordDoesNotExist == true // or the record was already deleted on the server
-            )
-            {
+            ) {
                 deleteFromLocalStore(syncManager, soupName, record)
             } else {
                 saveRecordToLocalStoreWithError(syncManager, soupName, record, lastError)
@@ -377,7 +375,8 @@ open class ParentChildrenSyncUpTarget(
         record: JSONObject,
         fieldlist: List<String>?
     ): RecordRequest? {
-        return buildRequestForRecord(record, fieldlist,
+        return buildRequestForRecord(
+            record, fieldlist,
             isParent = true,
             useParentIdReference = false,
             parentId = null
@@ -437,7 +436,12 @@ open class ParentChildrenSyncUpTarget(
                 }
             } ?: throw MobileSyncException("No fields specified")
             val fields =
-                buildFieldsMap(record, fieldlistToUse, info.idFieldName, info.modificationDateFieldName)
+                buildFieldsMap(
+                    record,
+                    fieldlistToUse,
+                    info.idFieldName,
+                    info.modificationDateFieldName
+                )
             if (parentId != null) {
                 fields[(info as ChildrenInfo).parentIdFieldName] =
                     if (useParentIdReference) String.format(

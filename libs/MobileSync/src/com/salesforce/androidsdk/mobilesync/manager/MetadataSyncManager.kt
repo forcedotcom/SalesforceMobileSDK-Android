@@ -94,13 +94,17 @@ class MetadataSyncManager private constructor(
         val target: SyncDownTarget = MetadataSyncDownTarget(objectType)
         val options: SyncOptions = SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE)
         try {
-            syncManager.syncDown(target, options, SOUP_NAME, object:SyncManager.SyncUpdateCallback {
-                override fun onUpdate(sync: SyncState) {
-                    if (SyncState.Status.DONE == sync.status) {
-                        fetchFromCache(objectType, syncCallback, false)
+            syncManager.syncDown(
+                target,
+                options,
+                SOUP_NAME,
+                object : SyncManager.SyncUpdateCallback {
+                    override fun onUpdate(sync: SyncState) {
+                        if (SyncState.Status.DONE == sync.status) {
+                            fetchFromCache(objectType, syncCallback, false)
+                        }
                     }
-                }
-            })
+                })
         } catch (e: Exception) {
             MobileSyncLogger.e(TAG, "Exception occurred while reading metadata from the server", e)
         }
@@ -126,6 +130,7 @@ class MetadataSyncManager private constructor(
                         onSyncComplete(syncCallback, null)
                     }
                 }
+
                 else -> {
                     onSyncComplete(
                         syncCallback,
@@ -177,7 +182,8 @@ class MetadataSyncManager private constructor(
          *
          * @return Instance of this class.
          */
-        @Synchronized @JvmStatic
+        @Synchronized
+        @JvmStatic
         fun getInstance(): MetadataSyncManager {
             return getInstance(null, null)
         }
@@ -218,8 +224,10 @@ class MetadataSyncManager private constructor(
             account: UserAccount?, communityId: String?,
             smartStore: SmartStore?
         ): MetadataSyncManager {
-            val user = account ?: MobileSyncSDKManager.getInstance().userAccountManager.cachedCurrentUser
-            val store = smartStore ?: MobileSyncSDKManager.getInstance().getSmartStore(user, communityId)
+            val user =
+                account ?: MobileSyncSDKManager.getInstance().userAccountManager.cachedCurrentUser
+            val store =
+                smartStore ?: MobileSyncSDKManager.getInstance().getSmartStore(user, communityId)
             val syncManager: SyncManager =
                 SyncManager.getInstance(user, communityId, store)
             val uniqueId = ((if (user != null) user.userId else "") + ":"

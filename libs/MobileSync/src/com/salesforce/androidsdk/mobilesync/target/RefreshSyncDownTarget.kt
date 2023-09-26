@@ -210,7 +210,15 @@ open class RefreshSyncDownTarget internal constructor(
             append("')")
 
             if (maxTimeStamp > 0) {
-                append(" AND $modificationDateFieldName > ${Constants.TIMESTAMP_FORMAT.format(Date(maxTimeStamp))}")
+                append(
+                    " AND $modificationDateFieldName > ${
+                        Constants.TIMESTAMP_FORMAT.format(
+                            Date(
+                                maxTimeStamp
+                            )
+                        )
+                    }"
+                )
             }
         }
         val soql: String = SOQLBuilder.getInstanceWithFields(fieldlist).from(objectType)

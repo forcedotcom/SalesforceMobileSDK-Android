@@ -69,6 +69,7 @@ open class SyncUpTarget : SyncTarget {
     // Fields
     @JvmField
     var createFieldlist: List<String>?
+
     @JvmField
     var updateFieldlist: List<String>?
 
@@ -80,6 +81,7 @@ open class SyncUpTarget : SyncTarget {
 
     // Last sync error
     protected var lastError: String? = null
+
     /**
      * Construct SyncUpTarget
      */
@@ -113,7 +115,7 @@ open class SyncUpTarget : SyncTarget {
      */
     @Throws(JSONException::class)
     override fun asJSON(): JSONObject {
-        return with (super.asJSON()) {
+        return with(super.asJSON()) {
             if (createFieldlist != null) put(CREATE_FIELDLIST, JSONArray(createFieldlist))
             if (updateFieldlist != null) put(UPDATE_FIELDLIST, JSONArray(updateFieldlist))
             if (externalIdFieldName != null) put(EXTERNAL_ID_FIELD_NAME, externalIdFieldName)
@@ -166,7 +168,8 @@ open class SyncUpTarget : SyncTarget {
         record: JSONObject,
         fieldlist: List<String>?
     ): String? {
-        val fieldlistToUse = createFieldlist ?: fieldlist ?: throw MobileSyncException("No fields specified")
+        val fieldlistToUse =
+            createFieldlist ?: fieldlist ?: throw MobileSyncException("No fields specified")
         val objectType = SmartStore.project(record, Constants.SOBJECT_TYPE) as? String ?: "null"
         val fields = buildFieldsMap(record, fieldlistToUse, idFieldName, modificationDateFieldName)
         val externalId = if (externalIdFieldName != null) JSONObjectHelper.optString(
@@ -303,7 +306,8 @@ open class SyncUpTarget : SyncTarget {
         record: JSONObject,
         fieldlist: List<String>?
     ): Int {
-        val fieldlistToUse = updateFieldlist ?: fieldlist ?: throw MobileSyncException("No fields specified")
+        val fieldlistToUse =
+            updateFieldlist ?: fieldlist ?: throw MobileSyncException("No fields specified")
         val objectType = SmartStore.project(record, Constants.SOBJECT_TYPE) as String
         val objectId = record.getString(idFieldName)
         val fields = buildFieldsMap(record, fieldlistToUse, idFieldName, modificationDateFieldName)
@@ -533,9 +537,12 @@ open class SyncUpTarget : SyncTarget {
     companion object {
         // Constants
         const val TAG = "SyncUpTarget"
-        @JvmField val CREATE_FIELDLIST = "createFieldlist"
-        @JvmField val UPDATE_FIELDLIST = "updateFieldlist"
-        @JvmField val EXTERNAL_ID_FIELD_NAME = "externalIdFieldName"
+        @JvmField
+        val CREATE_FIELDLIST = "createFieldlist"
+        @JvmField
+        val UPDATE_FIELDLIST = "updateFieldlist"
+        @JvmField
+        val EXTERNAL_ID_FIELD_NAME = "externalIdFieldName"
 
         /**
          * Build SyncUpTarget from json

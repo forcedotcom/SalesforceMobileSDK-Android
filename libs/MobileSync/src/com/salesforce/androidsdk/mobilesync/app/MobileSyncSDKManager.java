@@ -53,17 +53,17 @@ public class MobileSyncSDKManager extends SmartStoreSDKManager {
     /**
      * Protected constructor.
      *
-     * @param context Application context.
-     * @param mainActivity Activity that should be launched after the login flow.
+     * @param context       Application context.
+     * @param mainActivity  Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
      */
     protected MobileSyncSDKManager(Context context, Class<? extends Activity> mainActivity,
-    Class<? extends Activity> loginActivity) {
+                                   Class<? extends Activity> loginActivity) {
         super(context, mainActivity, loginActivity);
     }
 
     private static void init(Context context, Class<? extends Activity> mainActivity,
-    Class<? extends Activity> loginActivity) {
+                             Class<? extends Activity> loginActivity) {
         if (INSTANCE == null) {
             INSTANCE = new MobileSyncSDKManager(context, mainActivity, loginActivity);
         }
@@ -80,7 +80,7 @@ public class MobileSyncSDKManager extends SmartStoreSDKManager {
      * to properly function. This method should be called
      * by native apps using the Salesforce Mobile SDK.
      *
-     * @param context Application context.
+     * @param context      Application context.
      * @param mainActivity Activity that should be launched after the login flow.
      */
     public static void initNative(Context context, Class<? extends Activity> mainActivity) {
@@ -92,12 +92,12 @@ public class MobileSyncSDKManager extends SmartStoreSDKManager {
      * to properly function. This method should be called
      * by native apps using the Salesforce Mobile SDK.
      *
-     * @param context Application context.
-     * @param mainActivity Activity that should be launched after the login flow.
+     * @param context       Application context.
+     * @param mainActivity  Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
      */
     public static void initNative(Context context, Class<? extends Activity> mainActivity,
-    Class<? extends Activity> loginActivity) {
+                                  Class<? extends Activity> loginActivity) {
         MobileSyncSDKManager.init(context, mainActivity, loginActivity);
     }
 

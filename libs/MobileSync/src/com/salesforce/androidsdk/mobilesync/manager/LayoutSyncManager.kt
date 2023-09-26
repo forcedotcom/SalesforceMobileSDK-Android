@@ -125,16 +125,20 @@ class LayoutSyncManager private constructor(
             LayoutSyncDownTarget(objectAPIName, formFactor, layoutType, mode, recordTypeId)
         val options: SyncOptions = SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE)
         try {
-            syncManager.syncDown(target, options, SOUP_NAME, object:SyncManager.SyncUpdateCallback {
-                override fun onUpdate(sync: SyncState) {
-                    if (SyncState.Status.DONE == sync.status) {
-                        fetchFromCache(
-                            objectAPIName, formFactor, layoutType, mode, recordTypeId,
-                            syncCallback, false
-                        )
+            syncManager.syncDown(
+                target,
+                options,
+                SOUP_NAME,
+                object : SyncManager.SyncUpdateCallback {
+                    override fun onUpdate(sync: SyncState) {
+                        if (SyncState.Status.DONE == sync.status) {
+                            fetchFromCache(
+                                objectAPIName, formFactor, layoutType, mode, recordTypeId,
+                                syncCallback, false
+                            )
+                        }
                     }
-                }
-            })
+                })
         } catch (e: Exception) {
             MobileSyncLogger.e(
                 TAG,
@@ -249,7 +253,8 @@ class LayoutSyncManager private constructor(
          *
          * @return Instance of this class.
          */
-        @Synchronized @JvmStatic
+        @Synchronized
+        @JvmStatic
         fun getInstance(): LayoutSyncManager {
             return getInstance(null, null)
         }
@@ -290,13 +295,18 @@ class LayoutSyncManager private constructor(
             account: UserAccount?, communityId: String?,
             smartStore: SmartStore?
         ): LayoutSyncManager {
-            val user = account ?: MobileSyncSDKManager.getInstance().userAccountManager.cachedCurrentUser
-            val store = smartStore ?: MobileSyncSDKManager.getInstance().getSmartStore(user, communityId)
+            val user =
+                account ?: MobileSyncSDKManager.getInstance().userAccountManager.cachedCurrentUser
+            val store =
+                smartStore ?: MobileSyncSDKManager.getInstance().getSmartStore(user, communityId)
             val syncManager: SyncManager =
                 SyncManager.getInstance(user, communityId, store)
             val uniqueId = ((if (user != null) user.userId else "") + ":"
                     + store.database.path)
-            val instance = INSTANCES[uniqueId] ?: LayoutSyncManager(store, syncManager).also { INSTANCES[uniqueId] = it }
+            val instance = INSTANCES[uniqueId] ?: LayoutSyncManager(
+                store,
+                syncManager
+            ).also { INSTANCES[uniqueId] = it }
             SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_LAYOUT_SYNC)
             return instance
         }

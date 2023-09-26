@@ -316,7 +316,13 @@ open class BriefcaseSyncDownTarget internal constructor(
                     val info = getMatchingBriefcaseInfo(record)
                     if (info != null) {
                         addSyncId(record, syncId)
-                        cleanAndSaveInSmartStore(smartStore, info.soupName, record, info.idFieldName, false)
+                        cleanAndSaveInSmartStore(
+                            smartStore,
+                            info.soupName,
+                            record,
+                            info.idFieldName,
+                            false
+                        )
                     } else {
                         // That should never happened
                         MobileSyncLogger.e(

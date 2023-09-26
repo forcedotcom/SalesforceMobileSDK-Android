@@ -134,7 +134,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
         val recordRequests: MutableList<RecordRequest> = LinkedList()
         records.forEach { record ->
             val id = JSONObjectHelper.optString(record, idFieldName)
-                // create local id - needed for refId
+            // create local id - needed for refId
                 ?: createLocalId().also {
                     record.put(idFieldName, it)
                 }
@@ -212,8 +212,10 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
         } else {
             val fields: Map<String, Any?>
             if (isCreate) {
-                val fieldlistToUse = createFieldlist ?: fieldlist ?: throw MobileSyncException("No fields specified")
-                fields = buildFieldsMap(record, fieldlistToUse, idFieldName, modificationDateFieldName)
+                val fieldlistToUse =
+                    createFieldlist ?: fieldlist ?: throw MobileSyncException("No fields specified")
+                fields =
+                    buildFieldsMap(record, fieldlistToUse, idFieldName, modificationDateFieldName)
                 val externalId = if (externalIdFieldName != null) JSONObjectHelper.optString(
                     record,
                     externalIdFieldName
@@ -235,8 +237,10 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
                     RecordRequest.requestForCreate(objectType, fields)
                 }
             } else {
-                val fieldlistToUse = updateFieldlist ?: fieldlist ?: throw MobileSyncException("No fields specified")
-                fields = buildFieldsMap(record, fieldlistToUse, idFieldName, modificationDateFieldName)
+                val fieldlistToUse =
+                    updateFieldlist ?: fieldlist ?: throw MobileSyncException("No fields specified")
+                fields =
+                    buildFieldsMap(record, fieldlistToUse, idFieldName, modificationDateFieldName)
                 RecordRequest.requestForUpdate(objectType, id, fields)
             }
         }
@@ -260,8 +264,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
             if (isLocallyCreated(record) // we didn't go to the server
                 || response?.success == true     // or we successfully deleted on the server
                 || response?.recordDoesNotExist == true // or the record was already deleted on the server
-            )
-            {
+            ) {
                 deleteFromLocalStore(syncManager, soupName, record)
             } else {
                 saveRecordToLocalStoreWithError(syncManager, soupName, record, lastError)
@@ -289,7 +292,9 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
 
     companion object {
         // Constants
-        @JvmField val MAX_SUB_REQUESTS_COMPOSITE_API = 25
-        @JvmField val MAX_BATCH_SIZE = "maxBatchSize"
+        @JvmField
+        val MAX_SUB_REQUESTS_COMPOSITE_API = 25
+        @JvmField
+        val MAX_BATCH_SIZE = "maxBatchSize"
     }
 }

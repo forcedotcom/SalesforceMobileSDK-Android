@@ -92,7 +92,7 @@ open class LayoutSyncDownTarget : SyncDownTarget {
         objectAPIName = target.getString(SOBJECT_TYPE)
         formFactor = JSONObjectHelper.optString(target, FORM_FACTOR)
         layoutType = JSONObjectHelper.optString(target, LAYOUT_TYPE)
-        mode =  JSONObjectHelper.optString(target, MODE)
+        mode = JSONObjectHelper.optString(target, MODE)
         recordTypeId = JSONObjectHelper.optString(target, RECORD_TYPE_ID)
     }
 

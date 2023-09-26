@@ -33,14 +33,14 @@ import org.json.JSONObject
  * Represents the metadata of a Salesforce object.
  * @see [https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_sobject_describe.htm](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_sobject_describe.htm)
  */
-data class Metadata (
-    val isActivateable : Boolean,
-    val isCompactLayoutable : Boolean,
-    val isCreateable : Boolean,
-    val isCustom : Boolean,
-    val isCustomSetting : Boolean,
-    val isDeletable : Boolean,
-    val isDeprecatedAndHidden : Boolean,
+data class Metadata(
+    val isActivateable: Boolean,
+    val isCompactLayoutable: Boolean,
+    val isCreateable: Boolean,
+    val isCustom: Boolean,
+    val isCustomSetting: Boolean,
+    val isDeletable: Boolean,
+    val isDeprecatedAndHidden: Boolean,
     val isFeedEnabled: Boolean,
     val childRelationships: JSONArray,
     val hasSubtypes: Boolean,

@@ -61,7 +61,7 @@ open class ParentInfo @JvmOverloads constructor(
 
     @Throws(JSONException::class)
     open fun asJSON(): JSONObject {
-        return with (JSONObject()) {
+        return with(JSONObject()) {
             put(SOUP_NAME, soupName)
             put(SOBJECT_TYPE, sobjectType)
             put(ID_FIELD_NAME, idFieldName)

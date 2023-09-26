@@ -195,6 +195,7 @@ object MobileSyncLogger {
             null -> {
                 "null"
             }
+
             is Throwable -> {
                 val sw = StringWriter()
                 val pw = PrintWriter(sw)

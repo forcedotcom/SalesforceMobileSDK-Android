@@ -67,7 +67,7 @@ class SyncOptions
          * @throws JSONException
          */
         @JvmStatic
-		@Throws(JSONException::class)
+        @Throws(JSONException::class)
         fun fromJSON(options: JSONObject): SyncOptions {
             val mergeMode = MergeMode.valueOf(options.getString(MERGEMODE))
             val fieldlist = JSONObjectHelper.toList<String>(options.optJSONArray(FIELDLIST))
@@ -88,8 +88,8 @@ class SyncOptions
          * @param mergeMode
          * @return
          */
-		@JvmStatic
-		fun optionsForSyncUp(fieldlist: List<String>, mergeMode: MergeMode): SyncOptions {
+        @JvmStatic
+        fun optionsForSyncUp(fieldlist: List<String>, mergeMode: MergeMode): SyncOptions {
             return SyncOptions(fieldlist, mergeMode)
         }
 
@@ -97,8 +97,8 @@ class SyncOptions
          * @param mergeMode
          * @return
          */
-		@JvmStatic
-		fun optionsForSyncDown(mergeMode: MergeMode): SyncOptions {
+        @JvmStatic
+        fun optionsForSyncDown(mergeMode: MergeMode): SyncOptions {
             return SyncOptions(null, mergeMode)
         }
     }

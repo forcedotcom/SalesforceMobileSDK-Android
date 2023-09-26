@@ -80,7 +80,8 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     var restClient: RestClient?
 
     // Api version
-    val apiVersion: String = ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().appContext)
+    val apiVersion: String =
+        ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().appContext)
 
     init {
         this.smartStore = smartStore
@@ -479,7 +480,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
                 }
             }
 
-            reSync(sync, object:SyncUpdateCallback {
+            reSync(sync, object : SyncUpdateCallback {
                 override fun onUpdate(sync: SyncState) {
                     callback(sync)
                 }
@@ -599,11 +600,11 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
         checkAcceptingSyncs()
         if (sync.type != syncDown) {
             throw MobileSyncException(buildString {
-        append("Cannot run cleanResyncGhosts:")
-        append(sync.id)
-        append(": wrong type:")
-        append(sync.type)
-    })
+                append("Cannot run cleanResyncGhosts:")
+                append(sync.id)
+                append(": wrong type:")
+                append(sync.type)
+            })
         }
 
         // Ask target to clean up ghosts
@@ -674,19 +675,21 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     /**
      * Exception thrown when sync manager is stopped
      */
-    class SyncManagerStoppedException (
+    class SyncManagerStoppedException(
         message: String?,
-        cause: Throwable? = null) : MobileSyncException(message, cause)
+        cause: Throwable? = null
+    ) : MobileSyncException(message, cause)
 
     /**
      * Sealed class representing the failure modes for suspendCleanResyncGhosts
      */
-    sealed class CleanResyncGhostsException(message: String?, cause: Throwable?)
-        : MobileSyncException(message, cause) {
+    sealed class CleanResyncGhostsException(message: String?, cause: Throwable?) :
+        MobileSyncException(message, cause) {
         data class FailedToFinish(
             override val message: String?,
             override val cause: Throwable? = null
         ) : CleanResyncGhostsException(message, cause)
+
         data class FailedToStart(
             override val message: String?,
             override val cause: Throwable?
@@ -696,12 +699,13 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     /**
      * Sealed class representing the failure modes for suspendResync
      */
-    sealed class ReSyncException(message: String?, cause: Throwable?)
-        : MobileSyncException(message, cause) {
+    sealed class ReSyncException(message: String?, cause: Throwable?) :
+        MobileSyncException(message, cause) {
         data class FailedToFinish(
             override val message: String? = null,
             override val cause: Throwable? = null
         ) : CleanResyncGhostsException(message, cause)
+
         data class FailedToStart(
             override val message: String? = null,
             override val cause: Throwable? = null
@@ -804,8 +808,10 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
             communityId: String?,
             smartStore: SmartStore?
         ): SyncManager {
-            val user = account ?: MobileSyncSDKManager.getInstance().userAccountManager.cachedCurrentUser
-            val store = smartStore ?: MobileSyncSDKManager.getInstance().getSmartStore(user, communityId)
+            val user =
+                account ?: MobileSyncSDKManager.getInstance().userAccountManager.cachedCurrentUser
+            val store =
+                smartStore ?: MobileSyncSDKManager.getInstance().getSmartStore(user, communityId)
             val uniqueId = ((if (user != null) user.userId else "") + ":" + store.database.path)
             var instance = INSTANCES[uniqueId]
             if (instance == null) {

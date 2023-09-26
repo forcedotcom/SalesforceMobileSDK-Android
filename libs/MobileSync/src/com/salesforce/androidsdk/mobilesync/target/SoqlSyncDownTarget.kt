@@ -65,6 +65,7 @@ open class SoqlSyncDownTarget : SyncDownTarget {
      * @param query
      */
     constructor(query: String) : this(null, null, query)
+
     /**
      * Construct SoqlSyncDownTarget from soql query
      * @param idFieldName
@@ -234,6 +235,7 @@ open class SoqlSyncDownTarget : SyncDownTarget {
     companion object {
         const val QUERY = "query"
         const val MAX_BATCH_SIZE = "maxBatchSize"
+
         @JvmStatic
         fun addFilterForReSync(
             query: String,

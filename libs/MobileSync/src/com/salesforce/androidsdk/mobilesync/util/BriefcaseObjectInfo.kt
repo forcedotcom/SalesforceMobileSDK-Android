@@ -60,7 +60,7 @@ class BriefcaseObjectInfo @JvmOverloads constructor(
 
     @Throws(JSONException::class)
     fun asJSON(): JSONObject {
-        return with (JSONObject()) {
+        return with(JSONObject()) {
             put(SOUP_NAME, soupName)
             put(SOBJECT_TYPE, sobjectType)
             put(FIELD_LIST, JSONArray(fieldlist))
@@ -76,6 +76,7 @@ class BriefcaseObjectInfo @JvmOverloads constructor(
         const val FIELD_LIST = "fieldlist"
         const val ID_FIELD_NAME = "idFieldName"
         const val MODIFICATION_DATE_FIELD_NAME = "modificationDateFieldName"
+
         @Throws(JSONException::class)
         fun fromJSONArray(json: JSONArray): List<BriefcaseObjectInfo> {
             return JSONObjectHelper

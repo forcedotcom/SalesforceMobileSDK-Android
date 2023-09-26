@@ -48,6 +48,7 @@ open class CollectionSyncUpTarget : BatchSyncUpTarget {
         updateFieldlist: List<String>?,
         maxBatchSize: Int
     ) : this(createFieldlist, updateFieldlist, null, null, null, maxBatchSize)
+
     /**
      * Construct CollectionSyncUpTarget
      */

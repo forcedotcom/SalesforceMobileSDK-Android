@@ -216,7 +216,8 @@ object CompositeRequestHelper {
                 if (!collectionSubResponse.success && collectionSubResponse.errors.isNotEmpty()) {
                     errorJson = collectionSubResponse.errors[0].json
                     val error = collectionSubResponse.errors[0].statusCode
-                    recordDoesNotExist = "INVALID_CROSS_REFERENCE_KEY" == error || "ENTITY_IS_DELETED" == error
+                    recordDoesNotExist =
+                        "INVALID_CROSS_REFERENCE_KEY" == error || "ENTITY_IS_DELETED" == error
                     relatedRecordDoesNotExist = "ENTITY_IS_DELETED" == error // XXX ambiguous
                 }
                 return RecordResponse(
@@ -330,7 +331,7 @@ object CompositeRequestHelper {
                 requestType: RequestType
             ): List<String> {
                 return recordRequests
-                    .filter { it.requestType == requestType}
+                    .filter { it.requestType == requestType }
                     .mapNotNull { it.referenceId }
             }
 
@@ -339,7 +340,7 @@ object CompositeRequestHelper {
                 requestType: RequestType
             ): List<String> {
                 return recordRequests
-                    .filter { it.requestType == requestType}
+                    .filter { it.requestType == requestType }
                     .mapNotNull { it.id }
             }
 
@@ -348,7 +349,7 @@ object CompositeRequestHelper {
                 requestType: RequestType
             ): List<String> {
                 return recordRequests
-                    .filter { it.requestType == requestType}
+                    .filter { it.requestType == requestType }
                     .mapNotNull { it.objectType }
             }
 
@@ -357,7 +358,7 @@ object CompositeRequestHelper {
                 requestType: RequestType
             ): List<String> {
                 return recordRequests
-                    .filter { it.requestType == requestType}
+                    .filter { it.requestType == requestType }
                     .mapNotNull { it.externalIdFieldName }
             }
 
@@ -373,7 +374,8 @@ object CompositeRequestHelper {
                 }
             }
 
-            @Throws(JSONException::class, UnsupportedEncodingException::class,
+            @Throws(
+                JSONException::class, UnsupportedEncodingException::class,
                 MobileSyncException::class
             )
             fun getCollectionRequest(

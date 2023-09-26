@@ -34,7 +34,7 @@ import org.json.JSONObject
  * Represents the layout of a Salesforce object.
  * @see [https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_responses_record_layout.htm](https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_responses_record_layout.htm)
  */
-data class Layout (
+data class Layout(
     val id: String,
     val layoutType: String,
     val mode: String,
@@ -48,7 +48,7 @@ data class Layout (
      * @author bhariharan
      * @see [https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_responses_record_layout_section.htm.ui_api_responses_record_layout_section](https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_responses_record_layout_section.htm.ui_api_responses_record_layout_section)
      */
-    data class LayoutSection (
+    data class LayoutSection(
         val isCollapsible: Boolean,
         val columns: Int,
         val heading: String,
@@ -68,7 +68,7 @@ data class Layout (
              * Represents a record layout item.
              * @see [https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_responses_record_layout_item.htm.ui_api_responses_record_layout_item](https://developer.salesforce.com/docs/atlas.en-us.uiapi.meta/uiapi/ui_api_responses_record_layout_item.htm.ui_api_responses_record_layout_item)
              */
-            data class Item (
+            data class Item(
                 val isEditableForNew: Boolean,
                 val isEditableForUpdate: Boolean,
                 val label: String,
@@ -116,7 +116,7 @@ data class Layout (
                  * @return Instance of this class.
                  */
                 fun fromJSON(obj: JSONObject): Row {
-                    return Row (
+                    return Row(
                         JSONObjectHelper
                             .toList<JSONObject>(obj.optJSONArray(LAYOUT_ITEMS) ?: JSONArray())
                             .map { Item.fromJSON(it) }
@@ -168,7 +168,7 @@ data class Layout (
          * @return Instance of this class.
          */
         fun fromJSON(obj: JSONObject): Layout {
-            return Layout (
+            return Layout(
                 id = obj.optString(ID),
                 layoutType = obj.optString(LAYOUT_TYPE),
                 mode = obj.optString(MODE),

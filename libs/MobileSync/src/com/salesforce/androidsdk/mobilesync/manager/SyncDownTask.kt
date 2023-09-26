@@ -63,7 +63,8 @@ class SyncDownTask(syncManager: SyncManager, sync: SyncState, callback: SyncUpda
             checkIfStopRequested()
 
             // Figure out records to save
-            val recordsToSave = idsToSkip?.let { removeWithIds(recordsIn, it, idField) } ?: recordsIn
+            val recordsToSave =
+                idsToSkip?.let { removeWithIds(recordsIn, it, idField) } ?: recordsIn
 
             // Save to smartstore.
             target.saveRecordsToLocalStore(syncManager, soupName, recordsToSave, sync.id)

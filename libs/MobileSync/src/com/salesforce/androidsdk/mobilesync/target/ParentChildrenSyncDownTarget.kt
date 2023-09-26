@@ -52,8 +52,8 @@ open class ParentChildrenSyncDownTarget(
     private val parentSoqlFilter: String?,
     private val childrenInfo: ChildrenInfo,
     private val childrenFieldlist: List<String>,
-    private val relationshipType: RelationshipType)
-    : SoqlSyncDownTarget(parentInfo.idFieldName, parentInfo.modificationDateFieldName, "") {
+    private val relationshipType: RelationshipType
+) : SoqlSyncDownTarget(parentInfo.idFieldName, parentInfo.modificationDateFieldName, "") {
 
     /**
      * Construct ParentChildrenSyncDownTarget from parentType, childrenType etc
@@ -201,7 +201,8 @@ open class ParentChildrenSyncDownTarget(
             JSONObjectHelper
                 .toList<JSONObject>(records)
                 .forEach { record ->
-                    val childrenRecords = record.optJSONArray(childrenInfo.sobjectTypePlural) ?: JSONArray()
+                    val childrenRecords =
+                        record.optJSONArray(childrenInfo.sobjectTypePlural) ?: JSONArray()
                     this.addAll(parseIdsFromResponse(childrenRecords))
                 }
             this

@@ -119,8 +119,7 @@ class SyncsConfig private constructor(str: String?) {
                 // Leaving sync alone if it already exists
                 if (syncManager.hasSyncWithName(syncName)) {
                     MobileSyncLogger.d(TAG, "Sync already exists:$syncName - skipping")
-                }
-                else {
+                } else {
                     val syncType = SyncState.Type.valueOf(syncConfig.getString(SYNC_TYPE))
                     val targetJson = syncConfig.optJSONObject(TARGET)
                         ?: throw SyncManager.MobileSyncException("Target not defined in config")

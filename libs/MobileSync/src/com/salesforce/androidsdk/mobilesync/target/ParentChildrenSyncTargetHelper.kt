@@ -45,6 +45,7 @@ object ParentChildrenSyncTargetHelper {
     const val PARENT = "parent"
     const val CHILDREN = "children"
     const val RELATIONSHIP_TYPE = "relationshipType"
+
     @Throws(JSONException::class)
     fun saveRecordTreesToLocalStore(
         syncManager: SyncManager,
