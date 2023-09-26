@@ -34,6 +34,9 @@ import com.salesforce.androidsdk.mobilesync.model.Metadata
 import com.salesforce.androidsdk.mobilesync.target.MetadataSyncDownTarget
 import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget
 import com.salesforce.androidsdk.mobilesync.util.Constants
+import com.salesforce.androidsdk.mobilesync.util.Constants.Mode.CACHE_FIRST
+import com.salesforce.androidsdk.mobilesync.util.Constants.Mode.CACHE_ONLY
+import com.salesforce.androidsdk.mobilesync.util.Constants.Mode.SERVER_FIRST
 import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions
 import com.salesforce.androidsdk.mobilesync.util.SyncState
@@ -77,9 +80,9 @@ class MetadataSyncManager private constructor(
         syncCallback: MetadataSyncCallback
     ) {
         when (mode) {
-            Constants.Mode.CACHE_ONLY -> fetchFromCache(objectType, syncCallback, false)
-            Constants.Mode.CACHE_FIRST -> fetchFromCache(objectType, syncCallback, true)
-            Constants.Mode.SERVER_FIRST -> fetchFromServer(objectType, syncCallback)
+            CACHE_ONLY -> fetchFromCache(objectType, syncCallback, false)
+            CACHE_FIRST -> fetchFromCache(objectType, syncCallback, true)
+            SERVER_FIRST -> fetchFromServer(objectType, syncCallback)
         }
     }
 

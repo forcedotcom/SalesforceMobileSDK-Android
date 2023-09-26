@@ -28,6 +28,10 @@ package com.salesforce.androidsdk.mobilesync.target
 
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager.MobileSyncException
+import com.salesforce.androidsdk.mobilesync.target.CompositeRequestHelper.RequestType.CREATE
+import com.salesforce.androidsdk.mobilesync.target.CompositeRequestHelper.RequestType.DELETE
+import com.salesforce.androidsdk.mobilesync.target.CompositeRequestHelper.RequestType.UPDATE
+import com.salesforce.androidsdk.mobilesync.target.CompositeRequestHelper.RequestType.UPSERT
 import com.salesforce.androidsdk.mobilesync.util.Constants
 import com.salesforce.androidsdk.rest.CollectionResponse
 import com.salesforce.androidsdk.rest.CollectionResponse.CollectionSubResponse
@@ -241,20 +245,20 @@ object CompositeRequestHelper {
         var referenceId: String? = null
         fun asRestRequest(apiVersion: String): RestRequest {
             return when (requestType) {
-                RequestType.CREATE -> RestRequest.getRequestForCreate(
+                CREATE -> RestRequest.getRequestForCreate(
                     apiVersion,
                     objectType,
                     fields
                 )
 
-                RequestType.UPDATE -> RestRequest.getRequestForUpdate(
+                UPDATE -> RestRequest.getRequestForUpdate(
                     apiVersion,
                     objectType,
                     id,
                     fields
                 )
 
-                RequestType.UPSERT -> RestRequest.getRequestForUpsert(
+                UPSERT -> RestRequest.getRequestForUpsert(
                     apiVersion,
                     objectType,
                     externalIdFieldName,
@@ -262,7 +266,7 @@ object CompositeRequestHelper {
                     fields
                 )
 
-                RequestType.DELETE -> RestRequest.getRequestForDelete(
+                DELETE -> RestRequest.getRequestForDelete(
                     apiVersion,
                     objectType,
                     id
@@ -279,10 +283,10 @@ object CompositeRequestHelper {
             fields?.forEach { (key, value) ->
                 record.put(key, value)
             }
-            if (requestType == RequestType.UPDATE) {
+            if (requestType == UPDATE) {
                 record.put(Constants.ID, id)
             }
-            if (requestType == RequestType.UPSERT) {
+            if (requestType == UPSERT) {
                 externalIdFieldName?.let { record.put(it, externalId) }
             }
             return record
@@ -290,7 +294,7 @@ object CompositeRequestHelper {
 
         companion object {
             fun requestForCreate(objectType: String?, fields: Map<String, Any?>): RecordRequest {
-                return RecordRequest(RequestType.CREATE, objectType, fields, null, null, null)
+                return RecordRequest(CREATE, objectType, fields, null, null, null)
             }
 
             fun requestForUpdate(
@@ -298,7 +302,7 @@ object CompositeRequestHelper {
                 id: String?,
                 fields: Map<String, Any?>
             ): RecordRequest {
-                return RecordRequest(RequestType.UPDATE, objectType, fields, id, null, null)
+                return RecordRequest(UPDATE, objectType, fields, id, null, null)
             }
 
             fun requestForUpsert(
@@ -308,7 +312,7 @@ object CompositeRequestHelper {
                 fields: Map<String, Any?>
             ): RecordRequest {
                 return RecordRequest(
-                    RequestType.UPSERT,
+                    UPSERT,
                     objectType,
                     fields,
                     null,
@@ -318,7 +322,7 @@ object CompositeRequestHelper {
             }
 
             fun requestForDelete(objectType: String, id: String): RecordRequest {
-                return RecordRequest(RequestType.DELETE, objectType, null, id, null, null)
+                return RecordRequest(DELETE, objectType, null, id, null, null)
             }
 
             fun getRefIds(
@@ -377,25 +381,25 @@ object CompositeRequestHelper {
                 requestType: RequestType
             ): RestRequest {
                 when (requestType) {
-                    RequestType.CREATE -> return RestRequest.getRequestForCollectionCreate(
+                    CREATE -> return RestRequest.getRequestForCollectionCreate(
                         apiVersion,
                         allOrNone,
-                        getJSONArrayForCollectionRequest(recordRequests, RequestType.CREATE)
+                        getJSONArrayForCollectionRequest(recordRequests, CREATE)
                     )
 
-                    RequestType.UPDATE -> return RestRequest.getRequestForCollectionUpdate(
+                    UPDATE -> return RestRequest.getRequestForCollectionUpdate(
                         apiVersion,
                         allOrNone,
-                        getJSONArrayForCollectionRequest(recordRequests, RequestType.UPDATE)
+                        getJSONArrayForCollectionRequest(recordRequests, UPDATE)
                     )
 
-                    RequestType.UPSERT -> {
+                    UPSERT -> {
                         val records =
-                            getJSONArrayForCollectionRequest(recordRequests, RequestType.UPSERT)
+                            getJSONArrayForCollectionRequest(recordRequests, UPSERT)
                         if (records.length() > 0) {
-                            val objectTypes = getObjectTypes(recordRequests, RequestType.UPSERT)
+                            val objectTypes = getObjectTypes(recordRequests, UPSERT)
                             val externalIdFieldNames =
-                                getExternalIdFieldNames(recordRequests, RequestType.UPSERT)
+                                getExternalIdFieldNames(recordRequests, UPSERT)
                             if (objectTypes.size == 0 || externalIdFieldNames.isEmpty()) {
                                 throw MobileSyncException("Missing sobjectType or externalIdFieldName")
                             }
@@ -416,14 +420,14 @@ object CompositeRequestHelper {
                         return RestRequest.getRequestForCollectionDelete(
                             apiVersion,
                             false,
-                            getIds(recordRequests, RequestType.DELETE)
+                            getIds(recordRequests, DELETE)
                         )
                     }
 
-                    RequestType.DELETE -> return RestRequest.getRequestForCollectionDelete(
+                    DELETE -> return RestRequest.getRequestForCollectionDelete(
                         apiVersion,
                         false,
-                        getIds(recordRequests, RequestType.DELETE)
+                        getIds(recordRequests, DELETE)
                     )
                 }
             }

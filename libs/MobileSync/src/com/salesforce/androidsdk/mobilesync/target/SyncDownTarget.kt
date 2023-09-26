@@ -27,6 +27,15 @@
 package com.salesforce.androidsdk.mobilesync.target
 
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager
+import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget.QueryType.briefcase
+import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget.QueryType.custom
+import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget.QueryType.layout
+import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget.QueryType.metadata
+import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget.QueryType.mru
+import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget.QueryType.parent_children
+import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget.QueryType.refresh
+import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget.QueryType.soql
+import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget.QueryType.sosl
 import com.salesforce.androidsdk.mobilesync.util.Constants
 import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger
 import com.salesforce.androidsdk.util.JSONObjectHelper
@@ -324,31 +333,31 @@ abstract class SyncDownTarget : SyncTarget {
         @Throws(JSONException::class)
         fun fromJSON(target: JSONObject): SyncDownTarget {
             return when (QueryType.valueOf(target.getString(QUERY_TYPE))) {
-                QueryType.mru -> {
+                mru -> {
                     MruSyncDownTarget(target)
                 }
-                QueryType.sosl -> {
+                sosl -> {
                     SoslSyncDownTarget(target)
                 }
-                QueryType.soql -> {
+                soql -> {
                     SoqlSyncDownTarget(target)
                 }
-                QueryType.refresh -> {
+                refresh -> {
                     RefreshSyncDownTarget(target)
                 }
-                QueryType.parent_children -> {
+                parent_children -> {
                     ParentChildrenSyncDownTarget(target)
                 }
-                QueryType.metadata -> {
+                metadata -> {
                     MetadataSyncDownTarget(target)
                 }
-                QueryType.layout -> {
+                layout -> {
                     LayoutSyncDownTarget(target)
                 }
-                QueryType.briefcase -> {
+                briefcase -> {
                     BriefcaseSyncDownTarget(target)
                 }
-                QueryType.custom -> {
+                custom -> {
                     try {
                         val implClass =
                             Class.forName(target.getString(ANDROID_IMPL)) as Class<out SyncDownTarget>

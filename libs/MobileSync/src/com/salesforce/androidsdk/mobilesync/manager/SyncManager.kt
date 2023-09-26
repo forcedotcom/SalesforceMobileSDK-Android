@@ -38,6 +38,13 @@ import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions
 import com.salesforce.androidsdk.mobilesync.util.SyncState
 import com.salesforce.androidsdk.mobilesync.util.SyncState.MergeMode
+import com.salesforce.androidsdk.mobilesync.util.SyncState.Status.DONE
+import com.salesforce.androidsdk.mobilesync.util.SyncState.Status.FAILED
+import com.salesforce.androidsdk.mobilesync.util.SyncState.Status.NEW
+import com.salesforce.androidsdk.mobilesync.util.SyncState.Status.RUNNING
+import com.salesforce.androidsdk.mobilesync.util.SyncState.Status.STOPPED
+import com.salesforce.androidsdk.mobilesync.util.SyncState.Type.syncDown
+import com.salesforce.androidsdk.mobilesync.util.SyncState.Type.syncUp
 import com.salesforce.androidsdk.rest.ApiVersionStrings
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestRequest
@@ -134,7 +141,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
             state = State.ACCEPTING_SYNCS
             if (restartStoppedSyncs) {
                 val stoppedSyncs: List<SyncState> = SyncState.getSyncsWithStatus(
-                    smartStore, SyncState.Status.STOPPED
+                    smartStore, STOPPED
                 )
                 for (sync in stoppedSyncs) {
                     MobileSyncLogger.d(TAG, "restarting", sync)
@@ -356,13 +363,13 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
         checkNotRunning("runSync", sync.id)
         checkAcceptingSyncs()
         val syncTask = when (sync.type) {
-            SyncState.Type.syncDown -> SyncDownTask(
+            syncDown -> SyncDownTask(
                 this,
                 sync,
                 callback
             )
 
-            SyncState.Type.syncUp -> if (sync.target is AdvancedSyncUpTarget) {
+            syncUp -> if (sync.target is AdvancedSyncUpTarget) {
                 AdvancedSyncUpTask(this, sync, callback)
             } else {
                 SyncUpTask(this, sync, callback)
@@ -454,17 +461,17 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
             val callback: (SyncState) -> Unit = {
                 when (it.status) {
                     // terminal states
-                    SyncState.Status.DONE -> cont.resume(it)
+                    DONE -> cont.resume(it)
 
-                    SyncState.Status.FAILED,
-                    SyncState.Status.STOPPED -> cont.resumeWithException(
+                    FAILED,
+                    STOPPED -> cont.resumeWithException(
                         ReSyncException.FailedToFinish(
                             message = "Re sync operation failed with terminal Sync State = $it"
                         )
                     )
 
-                    SyncState.Status.NEW,
-                    SyncState.Status.RUNNING,
+                    NEW,
+                    RUNNING,
                     null -> {
                         /* no-op; suspending for terminal state */
                     }
@@ -588,7 +595,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     private fun cleanResyncGhosts(sync: SyncState, callback: CleanResyncGhostsCallback?) {
         checkNotRunning("cleanResyncGhosts", sync.id)
         checkAcceptingSyncs()
-        if (sync.type != SyncState.Type.syncDown) {
+        if (sync.type != syncDown) {
             throw MobileSyncException("Cannot run cleanResyncGhosts:" + sync.id + ": wrong type:" + sync.type)
         }
 

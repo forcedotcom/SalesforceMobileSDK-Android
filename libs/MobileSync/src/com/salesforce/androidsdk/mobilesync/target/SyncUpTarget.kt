@@ -37,7 +37,6 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
 import java.net.HttpURLConnection
-import java.util.Arrays
 
 /**
  * Target for sync up:

@@ -27,6 +27,9 @@
 package com.salesforce.androidsdk.mobilesync.manager
 
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SyncUpdateCallback
+import com.salesforce.androidsdk.mobilesync.manager.SyncUpTask.Action.create
+import com.salesforce.androidsdk.mobilesync.manager.SyncUpTask.Action.delete
+import com.salesforce.androidsdk.mobilesync.manager.SyncUpTask.Action.update
 import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget
 import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions
@@ -122,8 +125,8 @@ open class SyncUpTask(syncManager: SyncManager, sync: SyncState, callback: SyncU
         val locallyCreated = target.isLocallyCreated(record)
         val locallyUpdated = target.isLocallyUpdated(record)
         var action: Action? = null
-        if (locallyDeleted) action = Action.delete else if (locallyCreated) action =
-            Action.create else if (locallyUpdated) action = Action.update
+        if (locallyDeleted) action = delete else if (locallyCreated) action =
+            create else if (locallyUpdated) action = update
         if (action == null) {
             // Nothing to do for this record
             return
@@ -133,7 +136,7 @@ open class SyncUpTask(syncManager: SyncManager, sync: SyncState, callback: SyncU
         val recordServerId: String?
         val statusCode: Int
         when (action) {
-            Action.create -> {
+            create -> {
                 recordServerId = target.createOnServer(syncManager, record, options.fieldlist)
                 // Success
                 if (recordServerId != null) {
@@ -144,7 +147,7 @@ open class SyncUpTask(syncManager: SyncManager, sync: SyncState, callback: SyncU
                 }
             }
 
-            Action.delete -> {
+            delete -> {
                 statusCode =
                     if (locallyCreated) HttpURLConnection.HTTP_NOT_FOUND // if locally created it can't exist on the server - we don't need to actually do the deleteOnServer call
                     else target.deleteOnServer(syncManager, record)
@@ -156,7 +159,7 @@ open class SyncUpTask(syncManager: SyncManager, sync: SyncState, callback: SyncU
                 }
             }
 
-            Action.update -> {
+            update -> {
                 statusCode = target.updateOnServer(syncManager, record, options.fieldlist)
                 // Success
                 if (RestResponse.isSuccess(statusCode)) {

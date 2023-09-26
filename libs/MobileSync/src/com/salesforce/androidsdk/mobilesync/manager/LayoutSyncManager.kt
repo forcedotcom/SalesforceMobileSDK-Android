@@ -236,13 +236,13 @@ class LayoutSyncManager private constructor(
 
     companion object {
         const val SOUP_NAME = "sfdcLayouts"
-        const val QUERY = "SELECT {" + SOUP_NAME + ":_soup} FROM {" + SOUP_NAME +
-                "} WHERE {" + SOUP_NAME + ":" + Constants.ID + "} = '%s-%s-%s-%s-%s'"
+        const val QUERY =
+            "SELECT {$SOUP_NAME:_soup} FROM {$SOUP_NAME} WHERE {$SOUP_NAME:${Constants.ID}} = '%s-%s-%s-%s-%s'"
         private const val TAG = "LayoutSyncManager"
         private val INDEX_SPECS = arrayOf(
             IndexSpec(Constants.ID, SmartStore.Type.json1)
         )
-        private val INSTANCES: MutableMap<String, LayoutSyncManager> = HashMap()
+        private val INSTANCES = HashMap<String, LayoutSyncManager>()
 
         /**
          * Returns the instance of this class associated with current user.

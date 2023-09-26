@@ -53,7 +53,7 @@ class AdvancedSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: Sy
         val options = sync.options
         val totalSize = dirtyRecordIds.size
         val maxBatchSize = (target as AdvancedSyncUpTarget).maxBatchSize
-        val batch: MutableList<JSONObject> = ArrayList()
+        val batch = ArrayList<JSONObject>()
         updateSync(sync, SyncState.Status.RUNNING, 0, callback)
         val dirtyRecords = target.getFromLocalStore(syncManager, soupName, dirtyRecordIds)
 
@@ -65,7 +65,7 @@ class AdvancedSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: Sy
             checkIfStopRequested()
             val record = dirtyRecords[i]
             val recordId = record.getString(SmartStore.SOUP_ENTRY_ID)
-            if (java.lang.Boolean.TRUE == recordIdToShouldSyncUp[recordId]) {
+            if (recordIdToShouldSyncUp[recordId] == true) {
                 batch.add(record)
             }
 

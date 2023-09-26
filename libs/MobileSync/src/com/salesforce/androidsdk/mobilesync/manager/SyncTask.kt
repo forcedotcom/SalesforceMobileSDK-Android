@@ -31,6 +31,9 @@ import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SyncManagerStopp
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SyncUpdateCallback
 import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger
 import com.salesforce.androidsdk.mobilesync.util.SyncState
+import com.salesforce.androidsdk.mobilesync.util.SyncState.Status.NEW
+import com.salesforce.androidsdk.mobilesync.util.SyncState.Status.RUNNING
+import com.salesforce.androidsdk.mobilesync.util.SyncState.Status.STOPPED
 import com.salesforce.androidsdk.rest.RestClient.RefreshTokenRevokedException
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException
 import org.json.JSONException
@@ -46,7 +49,7 @@ abstract class SyncTask(
 ) : Runnable {
     init {
         syncManager.addToActiveSyncs(this)
-        updateSync(sync, SyncState.Status.RUNNING, 0, callback)
+        updateSync(sync, RUNNING, 0, callback)
         // XXX not actually running on worker thread until run() gets invoked
         //     may be we should introduce another state?
     }
@@ -70,7 +73,7 @@ abstract class SyncTask(
         } catch (se: SyncManagerStoppedException) {
             MobileSyncLogger.d(TAG, "Sync stopped")
             // Update status to stopped
-            updateSync(sync, SyncState.Status.STOPPED, UNCHANGED, callback)
+            updateSync(sync, STOPPED, UNCHANGED, callback)
         } catch (re: RefreshTokenRevokedException) {
             MobileSyncLogger.e(TAG, "Exception thrown running sync", re)
             // Do not do anything - let the logout go through!
@@ -104,8 +107,8 @@ abstract class SyncTask(
                 sync.progress = progress
             }
             when (status) {
-                SyncState.Status.NEW, SyncState.Status.RUNNING -> {}
-                SyncState.Status.STOPPED, SyncState.Status.DONE, SyncState.Status.FAILED -> {
+                NEW, RUNNING -> {}
+                STOPPED, SyncState.Status.DONE, SyncState.Status.FAILED -> {
                     val totalSize = sync.totalSize
                     val attributes = JSONObject()
                     try {
