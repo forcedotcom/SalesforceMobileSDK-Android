@@ -83,12 +83,6 @@ open class SyncUpTarget : SyncTarget {
     /**
      * Construct SyncUpTarget
      */
-    /**
-     * Construct SyncUpTarget
-     */
-    /**
-     * Construct SyncUpTarget
-     */
     @JvmOverloads
     constructor(
         createFieldlist: List<String>? = null,

@@ -58,16 +58,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
     ) : this(createFieldlist, updateFieldlist, null, null, null, maxBatchSize)
 
     /**
-     * Construct BatchSyncUpTarget with a different maxBatchSize and id/modifiedDate/externalId fields
-     */
-    /**
-     * Construct SyncUpTarget
-     */
-    /**
-     * Construct SyncUpTarget
-     */
-    /**
-     * Construct SyncUpTarget with given id/modifiedDate/externalId fields
+     * Construct BatchSyncUpTarget
      */
     @JvmOverloads
     constructor(
