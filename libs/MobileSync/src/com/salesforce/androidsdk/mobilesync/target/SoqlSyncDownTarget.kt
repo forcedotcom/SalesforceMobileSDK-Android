@@ -195,13 +195,11 @@ open class SoqlSyncDownTarget : SyncDownTarget {
         val remoteIds: MutableSet<String> = HashSet()
 
         // Makes network request and parses the response.
-        remoteIds.addAll(parseIdsFromResponse(startFetch(syncManager, soqlForRemoteIds)))
-        while (true) {
+        var records = startFetch(syncManager, soqlForRemoteIds)
+        while (records.length() > 0) {
             syncManager.checkAcceptingSyncs()
-
-            // Fetch next records, if any.
-            val records = continueFetch(syncManager) ?: break
             remoteIds.addAll(parseIdsFromResponse(records))
+            records = continueFetch(syncManager) ?: JSONArray()
         }
         return remoteIds
     }
