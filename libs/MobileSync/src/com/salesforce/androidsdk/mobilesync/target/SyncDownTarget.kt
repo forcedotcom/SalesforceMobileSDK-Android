@@ -244,8 +244,7 @@ abstract class SyncDownTarget : SyncTarget {
      * does not refetch all records.
      * @return true if sync down is sorted by latest modification time stamp
      */
-    open val isSyncDownSortedByLatestModification: Boolean
-        get() = false
+    open val isSyncDownSortedByLatestModification: Boolean = false
 
     /**
      * Gets the latest modification timestamp from the array of records.
