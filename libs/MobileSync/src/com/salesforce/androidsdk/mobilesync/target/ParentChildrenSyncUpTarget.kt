@@ -256,7 +256,7 @@ open class ParentChildrenSyncUpTarget(
 
         // Delete case
         if (isLocallyDeleted(record)) {
-            if (isLocallyCreated(record) // we didn't go to the sever
+            if (isLocallyCreated(record) // we didn't go to the server
                 || response?.success == true // or we successfully deleted on the server
                 || response?.recordDoesNotExist == true // or the record was already deleted on the server
             )
@@ -319,7 +319,7 @@ open class ParentChildrenSyncUpTarget(
 
         // Delete case
         if (isLocallyDeleted(record)) {
-            if (isLocallyCreated(record) // we didn't go to the sever
+            if (isLocallyCreated(record) // we didn't go to the server
                 || response?.success == true // or we successfully deleted on the server
                 || response?.recordDoesNotExist == true // or the record was already deleted on the server
             )
