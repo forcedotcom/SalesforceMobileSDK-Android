@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.mobilesync.target
 
 import android.text.TextUtils
+import android.text.TextUtils.*
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager
 import com.salesforce.androidsdk.mobilesync.util.Constants
 import com.salesforce.androidsdk.mobilesync.util.SOQLBuilder
@@ -97,8 +98,7 @@ open class MruSyncDownTarget : SyncDownTarget {
         // Building SOQL query to get requested at.
         val soql: String =
             SOQLBuilder.getInstanceWithFields(fieldlist).from(objectType).where(
-                idFieldName
-                        + " IN ('" + TextUtils.join("', '", recentItems) + "')"
+                "$idFieldName IN ('${join("', '", recentItems)}')"
             ).build()
         return startFetch(syncManager, soql)
     }
@@ -130,7 +130,7 @@ open class MruSyncDownTarget : SyncDownTarget {
         val soql: String =
             SOQLBuilder.getInstanceWithFields(idFieldName).from(objectType).where(
                 idFieldName
-                        + " IN ('" + TextUtils.join("', '", localIds) + "')"
+                        + " IN ('" + join("', '", localIds) + "')"
             ).build()
 
         // Makes network request and parses the response.

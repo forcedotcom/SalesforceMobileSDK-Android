@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.mobilesync.target
 
 import android.text.TextUtils
+import android.text.TextUtils.join
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager
 import com.salesforce.androidsdk.mobilesync.util.Constants
 import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger
@@ -273,11 +274,10 @@ abstract class SyncTarget @JvmOverloads constructor(
         idField: String?
     ) {
         if (ids.isNotEmpty()) {
-            val smartSql = String.format(
-                "SELECT {%s:%s} FROM {%s} WHERE {%s:%s} IN (%s)",
-                soupName, SmartStore.SOUP_ENTRY_ID, soupName, soupName, idField,
-                "'" + TextUtils.join("', '", ids) + "'"
-            )
+            val smartSql =
+                "SELECT {$soupName:${SmartStore.SOUP_ENTRY_ID}} FROM {$soupName} WHERE {$soupName:$idField} IN ('${
+                    join(/* delimiter = */ "', '", /* tokens = */ ids)
+                }')"
             val querySpec = QuerySpec.buildSmartQuerySpec(smartSql, Int.MAX_VALUE)
             syncManager.smartStore.deleteByQuery(soupName, querySpec)
         }

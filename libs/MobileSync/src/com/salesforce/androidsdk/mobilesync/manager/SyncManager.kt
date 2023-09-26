@@ -120,9 +120,10 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
      * Check if syncs are allowed to run
      * Throw a SyncManagerStoppedException if sync manager is stopping/stopped
      */
+    @Throws(SyncManagerStoppedException::class)
     fun checkAcceptingSyncs() {
         if (state != State.ACCEPTING_SYNCS) {
-            throw SyncManagerStoppedException("sync manager has state:" + state.name)
+            throw SyncManagerStoppedException("sync manager has state:${state.name}")
         }
     }
 
@@ -592,11 +593,17 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
         cleanResyncGhosts(sync, callback)
     }
 
+    @Throws(MobileSyncException::class)
     private fun cleanResyncGhosts(sync: SyncState, callback: CleanResyncGhostsCallback?) {
         checkNotRunning("cleanResyncGhosts", sync.id)
         checkAcceptingSyncs()
         if (sync.type != syncDown) {
-            throw MobileSyncException("Cannot run cleanResyncGhosts:" + sync.id + ": wrong type:" + sync.type)
+            throw MobileSyncException(buildString {
+        append("Cannot run cleanResyncGhosts:")
+        append(sync.id)
+        append(": wrong type:")
+        append(sync.type)
+    })
         }
 
         // Ask target to clean up ghosts

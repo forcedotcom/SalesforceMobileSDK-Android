@@ -61,10 +61,7 @@ open class SalesforceObject(@JvmField val rawData: JSONObject) {
     }
 
     override fun toString(): String {
-        return String.format(
-            "name: [%s], objectId: [%s], type: [%s], rawData: " +
-                    "[%s]", name, objectId, objectType, rawData
-        )
+        return "name: [$name], objectId: [$objectId], type: [$objectType], rawData: [$rawData]"
     }
 
     override fun equals(other: Any?): Boolean {

@@ -135,7 +135,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
         isReRun: Boolean
     ) {
         if (records.size > maxBatchSize) {
-            throw MobileSyncException(javaClass.simpleName + ":syncUpRecords can handle up to " + maxBatchSize + " records")
+            throw MobileSyncException("${javaClass.simpleName}:syncUpRecords can handle up to $maxBatchSize records")
         }
         if (records.isEmpty()) {
             return

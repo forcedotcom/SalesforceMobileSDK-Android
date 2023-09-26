@@ -155,8 +155,7 @@ open class RefreshSyncDownTarget internal constructor(
             }
         } else {
             querySpec = QuerySpec.buildSmartQuerySpec(
-                "SELECT {" + soupName + ":" + idFieldName
-                        + "} FROM {" + soupName + "} ORDER BY {" + soupName + ":" + idFieldName + "} ASC",
+                "SELECT {$soupName:$idFieldName} FROM {$soupName} ORDER BY {$soupName:$idFieldName} ASC",
                 countIdsPerSoql
             )
             val result = syncManager.smartStore.query(querySpec, page)

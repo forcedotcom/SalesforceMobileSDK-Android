@@ -146,7 +146,7 @@ class SyncManagerSuspendTest : SyncManagerTestCase() {
         val accountIds = accounts.keys.toTypedArray()
 
         // Builds SOQL sync down target and performs initial sync.
-        val soql = "SELECT Id, Name FROM Account WHERE Id IN " + makeInClause(accountIds)
+        val soql = "SELECT Id, Name FROM Account WHERE Id IN ${makeInClause(accountIds)}"
 
         val syncId = trySyncDownWithCoroutine(MergeMode.LEAVE_IF_CHANGED, query = soql)
         checkDbExist(ACCOUNTS_SOUP, accountIds, Constants.ID)

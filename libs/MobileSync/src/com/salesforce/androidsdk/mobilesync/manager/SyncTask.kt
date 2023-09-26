@@ -127,9 +127,9 @@ abstract class SyncTask(
             }
             sync.save(syncManager.smartStore)
         } catch (e: JSONException) {
-            MobileSyncLogger.e(TAG, "Unexpected JSON error for sync: " + sync.id, e)
+            MobileSyncLogger.e(TAG, "Unexpected JSON error for sync: ${sync.id}", e)
         } catch (e: SmartStoreException) {
-            MobileSyncLogger.e(TAG, "Unexpected smart store error for sync: " + sync.id, e)
+            MobileSyncLogger.e(TAG, "Unexpected smart store error for sync: ${sync.id}", e)
         } finally {
             // Removing from active syncs before calling callback
             if (!sync.isRunning) {

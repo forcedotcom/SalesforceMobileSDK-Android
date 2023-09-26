@@ -161,8 +161,8 @@ class MetadataSyncManager private constructor(
 
     companion object {
         const val SOUP_NAME = "sfdcMetadata"
-        const val QUERY = "SELECT {" + SOUP_NAME + ":_soup} FROM {" + SOUP_NAME +
-                "} WHERE {" + SOUP_NAME + ":" + Constants.ID + "} = '%s'"
+        const val QUERY =
+            "SELECT {$SOUP_NAME:_soup} FROM {$SOUP_NAME} WHERE {$SOUP_NAME:${Constants.ID}} = '%s'"
         private const val TAG = "MetadataSyncManager"
         private val INDEX_SPECS = arrayOf(
             IndexSpec(Constants.ID, SmartStore.Type.json1)
@@ -221,10 +221,8 @@ class MetadataSyncManager private constructor(
                 SyncManager.getInstance(user, communityId, store)
             val uniqueId = ((if (user != null) user.userId else "") + ":"
                     + store.database.path)
-            var instance = INSTANCES[uniqueId]
-            if (instance == null) {
-                instance = MetadataSyncManager(store, syncManager)
-                INSTANCES[uniqueId] = instance
+            val instance = INSTANCES[uniqueId] ?: MetadataSyncManager(store, syncManager).also {
+                INSTANCES[uniqueId] = it
             }
             SalesforceSDKManager.getInstance()
                 .registerUsedAppFeature(Features.FEATURE_METADATA_SYNC)

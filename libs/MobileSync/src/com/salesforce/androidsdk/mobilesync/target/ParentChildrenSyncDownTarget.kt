@@ -142,7 +142,7 @@ open class ParentChildrenSyncDownTarget(
             // Parent query
             val fields: MutableList<String> = ArrayList()
             fields.add(idFieldName)
-            fields.add("(" + builderNested.build() + ")")
+            fields.add("(${builderNested.build()})")
             val builder: SOQLBuilder = SOQLBuilder.getInstanceWithFields(fields)
             builder.from(parentInfo.sobjectType)
             builder.where(parentSoqlFilter)

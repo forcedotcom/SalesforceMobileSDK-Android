@@ -85,7 +85,7 @@ class SOQLMutator(private val originalSoql: String) {
      * @param commaSeparatedFields Comma separated fields to add to top level query's select.
      */
     fun addSelectFields(commaSeparatedFields: String): SOQLMutator {
-        clauses[SELECT] = commaSeparatedFields + "," + trimmedClause(SELECT)
+        clauses[SELECT] = "$commaSeparatedFields,${trimmedClause(SELECT)}"
         return this
     }
 

@@ -75,7 +75,7 @@ class CleanSyncGhostsTask(
                 } catch (e: JSONException) {
                     MobileSyncLogger.e(
                         TAG,
-                        "Unexpected JSON error for cleanResyncGhosts sync tag: " + sync.id,
+                        "Unexpected JSON error for cleanResyncGhosts sync tag: ${sync.id}",
                         e
                     )
                 }
