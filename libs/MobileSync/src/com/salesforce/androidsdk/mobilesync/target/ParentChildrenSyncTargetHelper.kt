@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.mobilesync.target
 
 import android.text.TextUtils
+import android.text.TextUtils.join
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager
 import com.salesforce.androidsdk.mobilesync.util.ChildrenInfo
 import com.salesforce.androidsdk.mobilesync.util.ParentInfo
@@ -198,7 +199,7 @@ object ParentChildrenSyncTargetHelper {
             childrenInfo.soupName, childrenInfo.parentIdFieldName,
             parentInfo.soupName, parentInfo.idFieldName,
             parentInfo.soupName, parentInfo.idFieldName,
-            "'${TextUtils.join("', '", parentIds)}'"
+            "'${join("', '", parentIds)}'"
         )
         return QuerySpec.buildSmartQuerySpec(smartSql, Int.MAX_VALUE)
     }

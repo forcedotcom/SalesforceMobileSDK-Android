@@ -187,7 +187,7 @@ open class ParentChildrenSyncDownTarget(
         // Makes network request and parses the response.
         var records = startFetch(syncManager, soqlForChildrenRemoteIds)
         val remoteChildrenIds: MutableSet<String> = HashSet(parseChildrenIdsFromResponse(records))
-        while (true) {
+        while (records != null) {
             syncManager.checkAcceptingSyncs()
             // Fetch next records, if any.
             records = continueFetch(syncManager) ?: break
@@ -238,7 +238,7 @@ open class ParentChildrenSyncDownTarget(
                 )
             )
             parentWhere.append(buildModificationDateFilter(modificationDateFieldName, maxTimeStamp))
-                .append(if (TextUtils.isEmpty(parentSoqlFilter)) "" else " and ")
+                .append(if (parentSoqlFilter.isNullOrEmpty()) "" else " and ")
         }
         parentWhere.append(parentSoqlFilter)
 

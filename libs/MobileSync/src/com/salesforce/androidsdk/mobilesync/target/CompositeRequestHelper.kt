@@ -161,7 +161,7 @@ object CompositeRequestHelper {
     }
 
     /**
-     * Response object abstracting away differences between /composite/batch and /commposite/sobject sub-responses
+     * Response object abstracting away differences between /composite/batch and /composite/sobject sub-responses
      */
     class RecordResponse private constructor(
         var success: Boolean,
@@ -232,7 +232,7 @@ object CompositeRequestHelper {
     }
 
     /**
-     * Request object abstracting away differences between /composite/batch and /commposite/sobject sub-requests
+     * Request object abstracting away differences between /composite/batch and /composite/sobject sub-requests
      */
     class RecordRequest private constructor(
         var requestType: RequestType,

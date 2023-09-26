@@ -58,8 +58,8 @@ class SyncDownTask(syncManager: SyncManager, sync: SyncState, callback: SyncUpda
         if (mergeMode == MergeMode.LEAVE_IF_CHANGED) {
             idsToSkip = target.getIdsToSkip(syncManager, soupName)
         }
-        while (true) {
-            val recordsIn = records ?: break
+        while (records != null) {
+            val recordsIn = records
             checkIfStopRequested()
 
             // Figure out records to save
