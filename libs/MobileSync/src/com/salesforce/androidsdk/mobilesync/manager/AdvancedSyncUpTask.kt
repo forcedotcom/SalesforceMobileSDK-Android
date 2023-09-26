@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.mobilesync.manager
 
+import com.salesforce.androidsdk.mobilesync.manager.SyncManager.MobileSyncException
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager.SyncUpdateCallback
 import com.salesforce.androidsdk.mobilesync.target.AdvancedSyncUpTarget
 import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget
@@ -42,14 +43,14 @@ import java.io.IOException
  */
 class AdvancedSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: SyncUpdateCallback?) :
     SyncUpTask(syncManager, sync, callback) {
-    @Throws(JSONException::class, IOException::class)
+    @Throws(JSONException::class, IOException::class, MobileSyncException::class)
     override fun syncUp(
         sync: SyncState,
         callback: SyncUpdateCallback?,
         dirtyRecordIds: List<String>
     ) {
         val soupName = sync.soupName
-        val target = sync.target as SyncUpTarget
+        val target = sync.target as? SyncUpTarget ?: throw MobileSyncException("A SyncUpTarget was expected")
         val options = sync.options
         val totalSize = dirtyRecordIds.size
         val maxBatchSize = (target as AdvancedSyncUpTarget).maxBatchSize
@@ -89,7 +90,7 @@ class AdvancedSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: Sy
         }
     }
 
-    @Throws(IOException::class, JSONException::class)
+    @Throws(IOException::class, JSONException::class, MobileSyncException::class)
     protected fun shouldSyncUpRecords(
         syncManager: SyncManager,
         target: SyncUpTarget,
@@ -99,7 +100,7 @@ class AdvancedSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: Sy
         var recordIdToShouldSyncUp: MutableMap<String, Boolean> = HashMap()
         if (options.mergeMode == MergeMode.OVERWRITE) {
             for (record in records) {
-                val recordId = record.getString(SmartStore.SOUP_ENTRY_ID) ?: throw SyncManager.MobileSyncException("No id found on record")
+                val recordId = record.getString(SmartStore.SOUP_ENTRY_ID) ?: throw MobileSyncException("No id found on record")
                 recordIdToShouldSyncUp[recordId] = true
             }
         } else {

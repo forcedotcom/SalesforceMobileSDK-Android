@@ -52,6 +52,7 @@ open class SoqlSyncDownTarget : SyncDownTarget {
      * @param target
      * @throws JSONException
      */
+    @Throws(MobileSyncException::class)
     constructor(target: JSONObject) : super(target) {
         val queryFromJson = JSONObjectHelper.optString(target, QUERY)
             ?: throw MobileSyncException("No query defined")
@@ -151,7 +152,7 @@ open class SoqlSyncDownTarget : SyncDownTarget {
         return records
     }
 
-    @Throws(IOException::class)
+    @Throws(IOException::class, MobileSyncException::class)
     protected fun getResponseJson(response: RestResponse): JSONObject {
         val responseJson: JSONObject = try {
             response.asJSONObject()

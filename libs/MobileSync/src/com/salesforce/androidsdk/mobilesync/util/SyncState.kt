@@ -106,7 +106,7 @@ class SyncState(
      * @param store
      * @throws JSONException
      */
-    @Throws(JSONException::class)
+    @Throws(JSONException::class, MobileSyncException::class)
     fun save(store: SmartStore) {
         store.update(
             SYNCS_SOUP,
@@ -185,6 +185,7 @@ class SyncState(
          * Create syncs soup if needed
          * @param store
          */
+        @Throws(MobileSyncException::class)
         @JvmStatic
         fun setupSyncsSoupIfNeeded(store: SmartStore) {
             if (store.hasSoup(SYNCS_SOUP) && store.getSoupIndexSpecs(SYNCS_SOUP).size == 3) {
@@ -214,6 +215,7 @@ class SyncState(
          * If a sync is in the running state, we change it to stopped
          * @param store
          */
+        @Throws(MobileSyncException::class)
         @JvmStatic
         fun cleanupSyncsSoupIfNeeded(store: SmartStore) {
             try {
@@ -266,7 +268,7 @@ class SyncState(
          * @throws JSONException
          */
         @JvmStatic
-        @Throws(JSONException::class)
+        @Throws(JSONException::class, MobileSyncException::class)
         fun createSyncDown(
             store: SmartStore,
             target: SyncDownTarget,
@@ -309,7 +311,7 @@ class SyncState(
          * @throws JSONException
          */
         @JvmStatic
-        @Throws(JSONException::class)
+        @Throws(JSONException::class, MobileSyncException::class)
         fun createSyncUp(
             store: SmartStore,
             target: SyncUpTarget,
@@ -346,7 +348,7 @@ class SyncState(
          * @return
          * @throws JSONException
          */
-        @Throws(JSONException::class)
+        @Throws(JSONException::class, MobileSyncException::class)
         fun fromJSON(sync: JSONObject): SyncState {
             val id = sync.getLong(SmartStore.SOUP_ENTRY_ID)
             val type = Type.valueOf(sync.getString(SYNC_TYPE))
@@ -396,7 +398,7 @@ class SyncState(
          * @throws JSONException
          */
         @JvmStatic
-        @Throws(JSONException::class)
+        @Throws(JSONException::class, MobileSyncException::class)
         fun byName(store: SmartStore, name: String?): SyncState? {
             if (name == null) {
                 throw MobileSyncException("name must not be null")
@@ -423,6 +425,7 @@ class SyncState(
          * @param store
          * @param name
          */
+        @Throws(MobileSyncException::class)
         @JvmStatic
         fun deleteSync(store: SmartStore, name: String?) {
             if (name == null) {
@@ -440,6 +443,7 @@ class SyncState(
          * @param name
          * @return
          */
+        @Throws(MobileSyncException::class)
         fun hasSyncWithName(store: SmartStore, name: String?): Boolean {
             if (name == null) {
                 throw MobileSyncException("name must not be null")

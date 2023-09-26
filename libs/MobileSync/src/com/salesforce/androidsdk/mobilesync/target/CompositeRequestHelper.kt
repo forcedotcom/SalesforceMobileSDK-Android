@@ -56,7 +56,7 @@ object CompositeRequestHelper {
      * @throws JSONException
      * @throws IOException
      */
-    @Throws(JSONException::class, IOException::class)
+    @Throws(JSONException::class, IOException::class, MobileSyncException::class)
     fun sendAsCompositeBatchRequest(
         syncManager: SyncManager,
         allOrNone: Boolean,
@@ -91,7 +91,7 @@ object CompositeRequestHelper {
      * @throws JSONException
      * @throws IOException
      */
-    @Throws(JSONException::class, IOException::class)
+    @Throws(JSONException::class, IOException::class, MobileSyncException::class)
     fun sendAsCollectionRequests(
         syncManager: SyncManager,
         allOrNone: Boolean,
@@ -373,7 +373,9 @@ object CompositeRequestHelper {
                 }
             }
 
-            @Throws(JSONException::class, UnsupportedEncodingException::class)
+            @Throws(JSONException::class, UnsupportedEncodingException::class,
+                MobileSyncException::class
+            )
             fun getCollectionRequest(
                 apiVersion: String?,
                 allOrNone: Boolean,

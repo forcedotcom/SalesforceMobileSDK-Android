@@ -116,7 +116,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
         syncUpRecords(syncManager, records, fieldlist, mergeMode, syncSoupName, false)
     }
 
-    @Throws(JSONException::class, IOException::class)
+    @Throws(JSONException::class, IOException::class, MobileSyncException::class)
     private fun syncUpRecords(
         syncManager: SyncManager,
         records: List<JSONObject>,
@@ -189,7 +189,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
         )
     }
 
-    @Throws(JSONException::class)
+    @Throws(JSONException::class, MobileSyncException::class)
     protected fun buildRequestForRecord(
         record: JSONObject,
         fieldlist: List<String>?

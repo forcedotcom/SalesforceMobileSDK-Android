@@ -617,7 +617,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
      * @return
      * @throws IOException
      */
-    @Throws(IOException::class)
+    @Throws(IOException::class, MobileSyncException::class)
     fun sendSyncWithMobileSyncUserAgent(restRequest: RestRequest): RestResponse {
         MobileSyncLogger.d(
             TAG,
@@ -635,6 +635,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
      * @param operation
      * @param syncId
      */
+    @Throws(MobileSyncException::class)
     private fun checkNotRunning(operation: String, syncId: Long) {
         if (activeSyncs.containsKey(syncId)) {
             throw MobileSyncException("Cannot run $operation $syncId - sync is still running")
@@ -646,7 +647,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
      * @param syncId Id of sync to look for.
      * @return sync if found.
      */
-    @Throws(JSONException::class)
+    @Throws(JSONException::class, MobileSyncException::class)
     private fun checkExistsById(syncId: Long): SyncState {
         return getSyncStatus(syncId) ?: throw MobileSyncException("Sync $syncId does not exist")
     }
@@ -656,7 +657,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
      * @param syncName Name of sync to look for.
      * @return sync if found.
      */
-    @Throws(JSONException::class)
+    @Throws(JSONException::class, MobileSyncException::class)
     private fun checkExistsByName(syncName: String): SyncState {
         return getSyncStatus(syncName)
             ?: throw MobileSyncException("Sync $syncName does not exist")

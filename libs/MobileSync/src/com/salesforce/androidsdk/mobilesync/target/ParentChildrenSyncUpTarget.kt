@@ -117,7 +117,7 @@ open class ParentChildrenSyncUpTarget(
     override val maxBatchSize: Int
         get() = 1
 
-    @Throws(JSONException::class, IOException::class)
+    @Throws(JSONException::class, IOException::class, MobileSyncException::class)
     override fun syncUpRecords(
         syncManager: SyncManager,
         records: List<JSONObject>,
@@ -399,7 +399,7 @@ open class ParentChildrenSyncUpTarget(
         )
     }
 
-    @Throws(IOException::class, JSONException::class)
+    @Throws(IOException::class, JSONException::class, MobileSyncException::class)
     protected fun buildRequestForRecord(
         record: JSONObject,
         fieldlist: List<String>?,

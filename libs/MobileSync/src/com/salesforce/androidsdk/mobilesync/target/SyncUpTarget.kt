@@ -160,7 +160,7 @@ open class SyncUpTarget : SyncTarget {
      * @throws JSONException
      * @throws IOException
      */
-    @Throws(JSONException::class, IOException::class)
+    @Throws(JSONException::class, IOException::class, MobileSyncException::class)
     open fun createOnServer(
         syncManager: SyncManager,
         record: JSONObject,
@@ -297,7 +297,7 @@ open class SyncUpTarget : SyncTarget {
      * @throws JSONException
      * @throws IOException
      */
-    @Throws(JSONException::class, IOException::class)
+    @Throws(JSONException::class, IOException::class, MobileSyncException::class)
     open fun updateOnServer(
         syncManager: SyncManager,
         record: JSONObject,
@@ -370,7 +370,7 @@ open class SyncUpTarget : SyncTarget {
      * @param records
      * @return
      */
-    @Throws(JSONException::class, IOException::class)
+    @Throws(JSONException::class, IOException::class, MobileSyncException::class)
     protected fun fetchLastModifiedDates(
         syncManager: SyncManager,
         records: List<JSONObject>
