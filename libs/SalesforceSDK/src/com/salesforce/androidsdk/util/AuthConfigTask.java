@@ -40,7 +40,11 @@ import okhttp3.HttpUrl;
  * not fetched for production and sandbox.
  *
  * @author bhariharan
+ *
+ * @deprecated This class will be rewritten to use a non-deprecated
+ * superclass in Mobile SDK 12.0.
  */
+@Deprecated
 public class AuthConfigTask extends AsyncTask<Void, Void, Void> {
 
     /**
