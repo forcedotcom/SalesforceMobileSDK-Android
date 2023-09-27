@@ -82,7 +82,9 @@ internal class ShowDeveloperSupportNotifier {
          */
         fun hideDeveloperSupportNotification(activity: Activity?) {
             // Guards.
-            if (activity == null) return
+            if (activity == null) {
+                return
+            }
 
             // Conveniences.
             val notificationManager = NotificationManagerCompat.from(activity)
@@ -109,7 +111,9 @@ internal class ShowDeveloperSupportNotifier {
         @SuppressLint("LaunchActivityFromNotification")
         fun showDeveloperSupportNotification(activity: Activity?) {
             // Guards.
-            if (activity == null) return
+            if (activity == null) {
+                return
+            }
 
             // Conveniences.
             val notificationManager = NotificationManagerCompat.from(activity)

@@ -28,14 +28,14 @@ package com.salesforce.androidsdk.mobilesync.target
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
-import com.salesforce.androidsdk.mobilesync.target.BatchSyncUpTarget.MAX_BATCH_SIZE
-import com.salesforce.androidsdk.mobilesync.target.BatchSyncUpTarget.MAX_SUB_REQUESTS_COMPOSITE_API
-import com.salesforce.androidsdk.mobilesync.target.SyncTarget.ANDROID_IMPL
-import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget.CREATE_FIELDLIST
-import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget.ID_FIELD_NAME
-import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget.MODIFICATION_DATE_FIELD_NAME
-import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget.UPDATE_FIELDLIST
-import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget.fromJSON
+import com.salesforce.androidsdk.mobilesync.target.BatchSyncUpTarget.Companion.MAX_BATCH_SIZE
+import com.salesforce.androidsdk.mobilesync.target.BatchSyncUpTarget.Companion.MAX_SUB_REQUESTS_COMPOSITE_API
+import com.salesforce.androidsdk.mobilesync.target.SyncTarget.Companion.ANDROID_IMPL
+import com.salesforce.androidsdk.mobilesync.target.SyncTarget.Companion.ID_FIELD_NAME
+import com.salesforce.androidsdk.mobilesync.target.SyncTarget.Companion.MODIFICATION_DATE_FIELD_NAME
+import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget.Companion.CREATE_FIELDLIST
+import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget.Companion.UPDATE_FIELDLIST
+import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget.Companion.fromJSON
 import com.salesforce.androidsdk.mobilesync.util.Constants
 import com.salesforce.androidsdk.mobilesync.util.Constants.DESCRIPTION
 import com.salesforce.androidsdk.mobilesync.util.Constants.LAST_MODIFIED_DATE
@@ -47,6 +47,7 @@ import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -66,7 +67,7 @@ class BatchSyncUpTargetConstructorTest {
 
         assertTrue(
             "Max batch size should be 25",
-            25 == target.getMaxBatchSize()
+            25 == target.maxBatchSize
         )
     }
 
@@ -84,7 +85,7 @@ class BatchSyncUpTargetConstructorTest {
 
         assertTrue(
             "Max batch size should be 25",
-            25 == target.getMaxBatchSize()
+            25 == target.maxBatchSize
         )
     }
 
@@ -103,7 +104,7 @@ class BatchSyncUpTargetConstructorTest {
         assertEquals(
             "Wrong maxBatchSize",
             25,
-            target.getMaxBatchSize().toLong()
+            target.maxBatchSize.toLong()
         )
     }
 
@@ -116,20 +117,23 @@ class BatchSyncUpTargetConstructorTest {
             listOf(*updatedFieldArr)
         )
 
+        val targetCreateFieldlist = target.createFieldlist ?: throw AssertionError("Target create field list is null")
+        val targetUpdateFieldlist = target.updateFieldlist ?: throw AssertionError("Target update field list is null")
+
         assertArrayEquals(
             "Wrong createFieldList",
             createdFieldArr,
-            target.createFieldlist.toTypedArray()
+            targetCreateFieldlist.toTypedArray()
         )
         assertArrayEquals(
             "Wrong updateFieldList",
             updatedFieldArr,
-            target.updateFieldlist.toTypedArray()
+            targetUpdateFieldlist.toTypedArray()
         )
         assertEquals(
             "Wrong maxBatchSize",
             25,
-            target.getMaxBatchSize().toLong()
+            target.maxBatchSize.toLong()
         )
     }
 
@@ -144,20 +148,23 @@ class BatchSyncUpTargetConstructorTest {
             maxBatchSize
         )
 
+        val targetCreateFieldlist = target.createFieldlist ?: throw AssertionError("Target create field list is null")
+        val targetUpdateFieldlist = target.updateFieldlist ?: throw AssertionError("Target update field list is null")
+
         assertArrayEquals(
             "Wrong createFieldList",
             createdFieldArr,
-            target.createFieldlist.toTypedArray()
+            targetCreateFieldlist.toTypedArray()
         )
         assertArrayEquals(
             "Wrong updateFieldList",
             updatedFieldArr,
-            target.updateFieldlist.toTypedArray()
+            targetUpdateFieldlist.toTypedArray()
         )
         assertEquals(
             "Wrong maxBatchSize",
             maxBatchSize.toLong(),
-            target.getMaxBatchSize().toLong()
+            target.maxBatchSize.toLong()
         )
     }
 
@@ -173,20 +180,23 @@ class BatchSyncUpTargetConstructorTest {
             put(MAX_BATCH_SIZE, maxBatchSize)
         })
 
+        val targetCreateFieldlist = target.createFieldlist ?: throw AssertionError("Target create field list is null")
+        val targetUpdateFieldlist = target.updateFieldlist ?: throw AssertionError("Target update field list is null")
+
         assertArrayEquals(
             "Wrong createFieldList",
             createdFieldArr,
-            target.createFieldlist.toTypedArray()
+            targetCreateFieldlist.toTypedArray()
         )
         assertArrayEquals(
             "Wrong updateFieldList",
             updatedFieldArr,
-            target.updateFieldlist.toTypedArray()
+            targetUpdateFieldlist.toTypedArray()
         )
         assertEquals(
             "Wrong maxBatchSize",
             maxBatchSize.toLong(),
-            target.getMaxBatchSize().toLong()
+            target.maxBatchSize.toLong()
         )
     }
 
@@ -207,7 +217,7 @@ class BatchSyncUpTargetConstructorTest {
         assertEquals(
             "Wrong maxBatchSize",
             MAX_SUB_REQUESTS_COMPOSITE_API.toLong(),
-            target.getMaxBatchSize().toLong()
+            target.maxBatchSize.toLong()
         )
     }
 
@@ -223,7 +233,7 @@ class BatchSyncUpTargetConstructorTest {
         assertEquals(
             "Wrong maxBatchSize",
             maxBatchSize.toLong(),
-            (target as BatchSyncUpTarget).getMaxBatchSize().toLong()
+            (target as BatchSyncUpTarget).maxBatchSize.toLong()
         )
     }
 

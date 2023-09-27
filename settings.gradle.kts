@@ -9,7 +9,6 @@ include("native:NativeSampleApps:MobileSyncExplorer")
 include("native:NativeSampleApps:AppConfigurator")
 include("native:NativeSampleApps:ConfiguredApp")
 include("hybrid:HybridSampleApps:AccountEditor")
-include("hybrid:HybridSampleApps:NoteSync")
 include("hybrid:HybridSampleApps:MobileSyncExplorerHybrid")
 
 dependencyResolutionManagement {

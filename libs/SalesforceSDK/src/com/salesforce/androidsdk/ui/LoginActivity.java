@@ -82,6 +82,7 @@ import com.salesforce.androidsdk.util.UriFragmentParser;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Login Activity: takes care of authenticating the user.
@@ -105,6 +106,7 @@ public class LoginActivity extends AppCompatActivity
     private AccountAuthenticatorResponse accountAuthenticatorResponse = null;
     private Bundle accountAuthenticatorResult = null;
     private Button biometricAuthenticationButton = null;
+    private long AUTH_CONFIG_TASK_TIMEOUT_MILLS = 5000;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -127,7 +129,8 @@ public class LoginActivity extends AppCompatActivity
 
         // Fetches auth config if required.
         try {
-            (new AuthConfigTask(null)).execute().get();
+            // If the task takes more than 5 seconds it can cause an ANR.
+            (new AuthConfigTask(null)).execute().get(AUTH_CONFIG_TASK_TIMEOUT_MILLS, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Exception occurred while fetching auth config", e);
         }

@@ -16,6 +16,7 @@ pullfiles = `#{"curl %s" % [prFilesAPI]}`
 prfiles = JSON.parse(pullfiles)
 
 libsModified = Set.new
+
 for prfile in prfiles
   path = prfile["filename"]
   for lib in libsTopoSorted

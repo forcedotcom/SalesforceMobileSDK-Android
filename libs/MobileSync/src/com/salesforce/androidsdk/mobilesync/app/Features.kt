@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-present, salesforce.com, inc.
+ * Copyright (c) 2018-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,54 +24,15 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.util
-
-import android.content.Intent
-import android.os.Bundle
+package com.salesforce.androidsdk.mobilesync.app
 
 /**
- * Helper methods for logging
+ * Flags for ftr_ field in user agent
  */
-object LogUtil {
-    /**
-     * Helper method for printing out intent
-     * @param intent
-     * @return string representation
-     */
-	@JvmStatic
-	fun intentToString(intent: Intent?): String {
-        return objectToString(intent)
-    }
-
-    /**
-     * Helper method for printing out bundle
-     * @param bundle
-     * @return string representation
-     */
-    @JvmStatic
-    fun bundleToString(bundle: Bundle?): String {
-        return objectToString(bundle)
-    }
-
-    @Suppress("DEPRECATION")
-    private fun objectToString(obj: Any?): String {
-        return when (obj) {
-            null -> {
-                "null"
-            }
-            is Intent -> {
-                "$obj extras = ${objectToString(obj.extras)}"
-            }
-
-            is Bundle -> {
-                obj.keySet().map { key ->
-                    "$key = ${objectToString(obj[key])}"
-                }.joinToString(" ", "{ ", " }")
-            }
-
-            else -> {
-                obj.toString()
-            }
-        }
-    }
+object Features {
+    const val FEATURE_LAYOUT_SYNC = "LY"
+    const val FEATURE_METADATA_SYNC = "MD"
+    const val FEATURE_RELATED_RECORDS = "RR"
+    const val FEATURE_BRIEFCASE = "BC"
+    const val FEATURE_MOBILE_SYNC = "SY"
 }

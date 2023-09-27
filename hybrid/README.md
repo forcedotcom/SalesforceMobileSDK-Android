@@ -20,7 +20,6 @@ Inside the HYBRID_DIR, you will find several projects:
 
 1. **SampleApps/AccountEditor**: The AccountEditor sample app allows you to search / create / edit / delete accounts online and offline using the new MobileSync library (mobilesync.js)
 2. **SampleApps/MobileSyncExplorerHybrid**: The MobileSyncExplorerHybrid sample app demonstrates two way synching of Salesforce records
-3. **SampleApps/NoteSync**: The NoteSync sample app demonstrates two way synching of Salesforce Note objects with custom sync down and sync up targets
 
 # Running sample apps from Android Studio
 

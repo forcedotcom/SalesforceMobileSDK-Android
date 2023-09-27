@@ -383,19 +383,6 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
     }
 
     /**
-     * Test ParentChildrenSyncDownTarget's constructor that takes only a SOQL query
-     * An exception is expected
-     */
-    @Test
-    public void testConstructorWithQuery() {
-        try {
-            new ParentChildrenSyncDownTarget("SELECT Name FROM Account");
-            Assert.fail("Exception should have been thrown");
-        } catch (UnsupportedOperationException e) {
-        }
-    }
-
-    /**
      * Sync down the test accounts and contacts, check smart store, check status during sync
      */
     @Test

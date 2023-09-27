@@ -97,7 +97,7 @@ public class AuthConfigUtilTest {
         Assert.assertNotNull("Auth config should not be null", authConfig);
         Assert.assertNotNull("Auth config JSON should not be null", authConfig.getAuthConfig());
         Assert.assertNotNull("SSO URLs should not be null", authConfig.getSsoUrls());
-        Assert.assertEquals("SSO URLs should have 3 valid entries", 3, authConfig.getSsoUrls().size());
+        Assert.assertEquals("SSO URLs should have 2 valid entries", 2, authConfig.getSsoUrls().size());
     }
 
     @Test

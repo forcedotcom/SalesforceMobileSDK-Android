@@ -74,7 +74,7 @@ public class TestSyncUpTarget extends SyncUpTarget {
     }
 
     @Override
-    public String createOnServer(SyncManager syncManager, String objectType, Map<String, Object> fields) throws JSONException, IOException {
+    public String createOnServer(SyncManager syncManager, String objectType, Map<String, ? extends Object> fields) throws JSONException, IOException {
         switch (syncBehavior) {
             case SOFT_FAIL_ON_SYNC:
                 return null;
@@ -104,8 +104,10 @@ public class TestSyncUpTarget extends SyncUpTarget {
         }
     }
 
+
+
     @Override
-    public int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws IOException {
+    public int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, ? extends Object> fields) throws IOException {
         switch (syncBehavior) {
             case SOFT_FAIL_ON_SYNC:
                 return HttpURLConnection.HTTP_NOT_FOUND;
