@@ -1,3 +1,5 @@
+@file:Suppress("UnstableApiUsage")
+
 rootProject.ext["PUBLISH_GROUP_ID"] = "com.salesforce.mobilesdk"
 rootProject.ext["PUBLISH_VERSION"] = "11.1.0"
 rootProject.ext["PUBLISH_ARTIFACT_ID"] = "SalesforceHybrid"
@@ -10,7 +12,7 @@ plugins {
 
 dependencies {
     api(project(":libs:MobileSync"))
-    api("org.apache.cordova:framework:11.0.0")
+    api("org.apache.cordova:framework:12.0.1")
     api("androidx.appcompat:appcompat:1.6.1")
     api("androidx.appcompat:appcompat-resources:1.6.1")
     api("androidx.webkit:webkit:1.6.0")
@@ -56,7 +58,7 @@ android {
         }
     }
 
-    packaging {
+    packagingOptions {
         resources {
             excludes += setOf("META-INF/LICENSE", "META-INF/LICENSE.txt", "META-INF/DEPENDENCIES", "META-INF/NOTICE")
         }

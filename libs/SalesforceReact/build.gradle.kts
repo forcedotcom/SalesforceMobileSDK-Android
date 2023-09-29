@@ -1,3 +1,5 @@
+@file:Suppress("UnstableApiUsage")
+
 import org.apache.tools.ant.taskdefs.condition.Os
 
 /**
@@ -71,7 +73,7 @@ android {
         }
     }
 
-    packaging {
+    packagingOptions {
         resources {
             excludes += setOf("META-INF/LICENSE", "META-INF/LICENSE.txt", "META-INF/DEPENDENCIES", "META-INF/NOTICE")
         }
