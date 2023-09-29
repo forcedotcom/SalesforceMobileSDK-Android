@@ -1,3 +1,5 @@
+@file:Suppress("UnstableApiUsage")
+
 plugins {
     android
     `kotlin-android`
@@ -33,7 +35,7 @@ android {
         }
     }
 
-    packaging {
+    packagingOptions {
         resources {
             excludes += setOf("META-INF/LICENSE", "META-INF/LICENSE.txt", "META-INF/DEPENDENCIES", "META-INF/NOTICE")
         }
