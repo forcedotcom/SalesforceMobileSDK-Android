@@ -3,6 +3,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     android:versionCode="82"
     android:versionName="11.1.0.dev">
-
-    <application />
+    
+    <application>
+        <activity android:name=".ui.SalesforceReactActivity"
+            android:enableOnBackInvokedCallback="false" />
+    </application>
 </manifest>

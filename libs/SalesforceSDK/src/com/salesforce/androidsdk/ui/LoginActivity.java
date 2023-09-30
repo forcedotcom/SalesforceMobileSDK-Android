@@ -54,6 +54,7 @@ import android.webkit.WebSettings.LayoutAlgorithm;
 import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.Toast;
+import android.window.OnBackInvokedDispatcher;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
@@ -176,6 +177,14 @@ public class LoginActivity extends AppCompatActivity
             final IntentFilter changeServerFilter = new IntentFilter(ServerPickerActivity.CHANGE_SERVER_INTENT);
             registerReceiver(changeServerReceiver, changeServerFilter);
             receiverRegistered = true;
+        }
+
+        // TODO:  Remove this when min API > 33
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                    this::handleBackBehavior
+            );
         }
     }
 
@@ -303,23 +312,7 @@ public class LoginActivity extends AppCompatActivity
      */
     protected boolean fixBackButtonBehavior(int keyCode) {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
-
-            if (!SalesforceSDKManager.getInstance().getBiometricAuthenticationManager().isLocked()) {
-
-                /*
-                 * If there are no accounts signed in, we need the login screen
-                 * to go away, and go back to the home screen. However, if the
-                 * login screen has been brought up from the switcher screen,
-                 * the back button should take the user back to the previous screen.
-                 */
-                final UserAccountManager accMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
-                wasBackgrounded = true;
-                if (accMgr.getAuthenticatedUsers() == null) {
-                    moveTaskToBack(true);
-                } else {
-                    finish();
-                }
-            }
+            handleBackBehavior();
 
             //  Do not execute back button behavior.
             return true;
@@ -327,6 +320,26 @@ public class LoginActivity extends AppCompatActivity
 
 		return false;
 	}
+
+    private void handleBackBehavior() {
+        // Do nothing if locked
+        if (!SalesforceSDKManager.getInstance().getBiometricAuthenticationManager().isLocked()) {
+
+            /*
+             * If there are no accounts signed in, we need the login screen
+             * to go away, and go back to the home screen. However, if the
+             * login screen has been brought up from the switcher screen,
+             * the back button should take the user back to the previous screen.
+             */
+            final UserAccountManager accMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
+            wasBackgrounded = true;
+            if (accMgr.getAuthenticatedUsers() == null) {
+                moveTaskToBack(true);
+            } else {
+                finish();
+            }
+        }
+    }
 
     /**************************************************************************************************
      *

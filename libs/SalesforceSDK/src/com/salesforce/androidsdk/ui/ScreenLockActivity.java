@@ -48,12 +48,15 @@ import android.view.accessibility.AccessibilityManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.window.OnBackInvokedDispatcher;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.OptIn;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
+import androidx.core.os.BuildCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import com.salesforce.androidsdk.R;
@@ -99,6 +102,14 @@ public class ScreenLockActivity extends FragmentActivity {
         } catch (PackageManager.NameNotFoundException e) {
             SalesforceSDKLogger.e(TAG, "Unable to retrieve host app icon.  NameNotFoundException: " + e.getMessage());
             appIcon.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.sf__salesforce_logo, null));
+        }
+
+        // TODO:  Remove this when min API > 33
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                    () -> { /* purposefully blank */ }
+            );
         }
 
         presentAuth();
