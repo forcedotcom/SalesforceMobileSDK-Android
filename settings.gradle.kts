@@ -15,9 +15,11 @@ dependencyResolutionManagement {
     repositories {
         mavenLocal()
         // All of React Native (JS, Objective-C sources, Android binaries) is installed from NPM.
-        maven("${rootProject.projectDir}/libs/SalesforceReact/node_modules/react-native/android")
+        maven("${rootProject.projectDir}/libs/SalesforceReact/node_modules/react-native/android") // For stand-alone MSDK builds.
+        maven("${rootProject.projectDir}/../../node_modules/react-native/android") // For template app builds.
         // Android JSC is installed from NPM.
-        maven("${rootProject.projectDir}/libs/SalesforceReact/node_modules/jsc-android/dist")
+        maven("${rootProject.projectDir}/libs/SalesforceReact/node_modules/jsc-android/dist") // For stand-alone MSDK builds.
+        maven("${rootProject.projectDir}/../../node_modules/jsc-android/dist") // For template app builds.
         google()
         mavenCentral()
     }
