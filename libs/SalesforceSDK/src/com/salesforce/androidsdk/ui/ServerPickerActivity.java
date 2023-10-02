@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.ui;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -35,6 +36,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
+import android.window.OnBackInvokedDispatcher;
 
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
@@ -147,7 +149,15 @@ public class ServerPickerActivity extends AppCompatActivity implements
         }
         final RadioGroup radioGroup = findViewById(getServerListGroupId());
         radioGroup.setOnCheckedChangeListener(this);
-    	urlEditDialog = new CustomServerUrlEditor();
+        urlEditDialog = new CustomServerUrlEditor();
+
+        // TODO:  Remove this when min API > 33
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                    this::onBackPressed
+            );
+        }
     }
 
     @Override
