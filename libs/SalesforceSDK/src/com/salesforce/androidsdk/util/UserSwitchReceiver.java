@@ -32,6 +32,8 @@ import android.content.Intent;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 
+import java.util.Objects;
+
 /**
  * Listens for the user switch event, and acts on it.
  *
@@ -41,7 +43,7 @@ public abstract class UserSwitchReceiver extends BroadcastReceiver {
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		if (intent != null && intent.getAction().equals(UserAccountManager.USER_SWITCH_INTENT_ACTION)) {
+		if (Objects.equals(intent.getAction(), UserAccountManager.USER_SWITCH_INTENT_ACTION)) {
 			onUserSwitch();
 		}
 	}

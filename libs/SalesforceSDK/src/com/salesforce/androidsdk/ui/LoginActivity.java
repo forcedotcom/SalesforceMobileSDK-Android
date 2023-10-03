@@ -175,7 +175,8 @@ public class LoginActivity extends AppCompatActivity
         if (!receiverRegistered) {
             changeServerReceiver = new ChangeServerReceiver();
             final IntentFilter changeServerFilter = new IntentFilter(ServerPickerActivity.CHANGE_SERVER_INTENT);
-            registerReceiver(changeServerReceiver, changeServerFilter);
+            ContextCompat.registerReceiver(this, changeServerReceiver, changeServerFilter,
+                    ContextCompat.RECEIVER_NOT_EXPORTED);
             receiverRegistered = true;
         }
 

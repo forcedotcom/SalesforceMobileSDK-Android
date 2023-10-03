@@ -30,6 +30,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+
+import androidx.core.content.ContextCompat;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -128,8 +130,9 @@ public class AuthConfigUtilTest {
 
     private void testBroadcast(String endpoint, Boolean expected) throws InterruptedException, ExecutionException {
         final TestBroadcastReceiver receiver = new TestBroadcastReceiver();
-        SalesforceSDKManager.getInstance().getAppContext().registerReceiver(receiver,
-                new IntentFilter(AuthConfigUtil.AUTH_CONFIG_COMPLETE_INTENT_ACTION));
+        ContextCompat.registerReceiver(SalesforceSDKManager.getInstance().getAppContext(), receiver,
+                new IntentFilter(AuthConfigUtil.AUTH_CONFIG_COMPLETE_INTENT_ACTION), ContextCompat.RECEIVER_NOT_EXPORTED);
+
         try {
             AuthConfigUtil.getMyDomainAuthConfig(endpoint);
 

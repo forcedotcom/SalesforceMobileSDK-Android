@@ -32,6 +32,8 @@ import android.content.Intent;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
+import java.util.Objects;
+
 /**
  * Listens for the logout complete event, and acts on it.
  *
@@ -41,7 +43,7 @@ public abstract class LogoutCompleteReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (intent != null && intent.getAction().equals(SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION)) {
+        if (Objects.equals(intent.getAction(), SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION)) {
             onLogoutComplete();
         }
     }

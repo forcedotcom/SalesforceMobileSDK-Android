@@ -321,7 +321,8 @@ public class SalesforceSDKManager implements LifecycleObserver {
 
         // If your app runs in multiple processes, all the SalesforceSDKManager need to run cleanup during a logout
         final CleanupReceiver cleanupReceiver = new CleanupReceiver();
-        context.registerReceiver(cleanupReceiver, new IntentFilter(SalesforceSDKManager.CLEANUP_INTENT_ACTION));
+        ContextCompat.registerReceiver(context, cleanupReceiver,
+                new IntentFilter(SalesforceSDKManager.CLEANUP_INTENT_ACTION), RECEIVER_NOT_EXPORTED);
         new Handler(Looper.getMainLooper()).post(() -> {
             ProcessLifecycleOwner.get().getLifecycle().addObserver(this);
         });
@@ -1052,7 +1053,7 @@ public class SalesforceSDKManager implements LifecycleObserver {
                 }
             }
         };
-        context.registerReceiver(pushUnregisterReceiver, intentFilter);
+        ContextCompat.registerReceiver(context, pushUnregisterReceiver, intentFilter, RECEIVER_NOT_EXPORTED);
 
         // Unregisters from notifications on logout.
 		final UserAccount userAcc = getUserAccountManager().buildUserAccount(account);
