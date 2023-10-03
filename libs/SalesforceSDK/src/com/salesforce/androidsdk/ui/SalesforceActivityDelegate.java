@@ -30,6 +30,9 @@ import android.app.Activity;
 import android.content.IntentFilter;
 import android.view.KeyEvent;
 
+import androidx.core.content.ContextCompat;
+import static androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED;
+
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
@@ -55,9 +58,11 @@ public class SalesforceActivityDelegate {
 
     public void onCreate() {
         userSwitchReceiver = new ActivityUserSwitchReceiver();
-        activity.registerReceiver(userSwitchReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
+        ContextCompat.registerReceiver(activity, userSwitchReceiver,
+                new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION), RECEIVER_NOT_EXPORTED);
         logoutCompleteReceiver = new ActivityLogoutCompleteReceiver();
-        activity.registerReceiver(logoutCompleteReceiver, new IntentFilter(SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION));
+        ContextCompat.registerReceiver(activity, logoutCompleteReceiver,
+                new IntentFilter(SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION), RECEIVER_NOT_EXPORTED);
 
         // Lets observers know that activity creation is complete.
         EventsObservable.get().notifyEvent(EventsObservable.EventType.MainActivityCreateComplete, this);

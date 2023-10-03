@@ -58,6 +58,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -167,8 +168,8 @@ public class MainActivity extends SalesforceActivity implements
 		// Loader initialization and receiver registration
 		getLoaderManager().initLoader(CONTACT_LOADER_ID, null, this);
 		if (!isRegistered.get()) {
-			registerReceiver(loadCompleteReceiver,
-					new IntentFilter(ContactListLoader.LOAD_COMPLETE_INTENT_ACTION));
+			ContextCompat.registerReceiver(this, loadCompleteReceiver,
+					new IntentFilter(ContactListLoader.LOAD_COMPLETE_INTENT_ACTION), ContextCompat.RECEIVER_NOT_EXPORTED);
 		}
 		isRegistered.set(true);
 
