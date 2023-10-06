@@ -1035,7 +1035,7 @@ public class SalesforceSDKManager implements LifecycleObserver {
                 application,
                 showDeveloperSupportBroadcastIntentReceiver,
                 new IntentFilter(BROADCAST_INTENT_ACTION_SHOW_DEVELOPER_SUPPORT),
-                RECEIVER_NOT_EXPORTED);
+                ContextCompat.RECEIVER_EXPORTED);
         salesforceSDKManager.showDeveloperSupportBroadcastIntentReceiver = showDeveloperSupportBroadcastIntentReceiver;
     }
 
