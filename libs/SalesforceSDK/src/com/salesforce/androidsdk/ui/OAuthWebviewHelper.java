@@ -405,9 +405,9 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         try {
             customTabsIntent.launchUrl(activity, url);
         } catch (ActivityNotFoundException e) {
-            SalesforceSDKLogger.w(TAG, "Browser not installed on this device", e);
-            Toast.makeText(getContext(), "Browser not installed on this device",
-                    Toast.LENGTH_LONG).show();
+            SalesforceSDKLogger.e(TAG, "Unable to launch Advanced Authentication, " +
+                    "Chrome browser not installed.", e);
+            Toast.makeText(getContext(), "To log in, install Chrome.", Toast.LENGTH_LONG).show();
             callback.finish(null);
         }
     }
