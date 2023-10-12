@@ -67,7 +67,7 @@ executors:
     docker:
       - image: *cimg
     environment:
-      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'
+      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx4096m -XX:+HeapDumpOnOutOfMemoryError" -Dorg.gradle.daemon=false'
 
 jobs:
   static-analysis:
