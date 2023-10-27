@@ -23,7 +23,7 @@ plugins {
 
 dependencies {
     api(project(":libs:MobileSync"))
-    api("com.facebook.react:react-native:0.70.13")
+    api("com.facebook.react:react-native:0.70.14")
     implementation("androidx.core:core-ktx:1.9.0")
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")
