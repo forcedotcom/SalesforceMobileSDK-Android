@@ -27,7 +27,6 @@
 package com.salesforce.samples.mobilesyncexplorer.ui;
 
 import static android.view.LayoutInflater.from;
-
 import static com.salesforce.androidsdk.R.style.SalesforceSDK;
 import static com.salesforce.androidsdk.R.style.SalesforceSDK_Dark;
 
@@ -168,8 +167,10 @@ public class MainActivity extends SalesforceActivity implements
 		// Loader initialization and receiver registration
 		getLoaderManager().initLoader(CONTACT_LOADER_ID, null, this);
 		if (!isRegistered.get()) {
-			ContextCompat.registerReceiver(this, loadCompleteReceiver,
-					new IntentFilter(ContactListLoader.LOAD_COMPLETE_INTENT_ACTION), ContextCompat.RECEIVER_NOT_EXPORTED);
+			ContextCompat.registerReceiver(this,
+					loadCompleteReceiver,
+					new IntentFilter(ContactListLoader.LOAD_COMPLETE_INTENT_ACTION),
+					ContextCompat.RECEIVER_EXPORTED);
 		}
 		isRegistered.set(true);
 
