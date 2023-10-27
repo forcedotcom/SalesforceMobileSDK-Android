@@ -170,7 +170,7 @@ public class MainActivity extends SalesforceActivity implements
 			ContextCompat.registerReceiver(this,
 					loadCompleteReceiver,
 					new IntentFilter(ContactListLoader.LOAD_COMPLETE_INTENT_ACTION),
-					ContextCompat.RECEIVER_EXPORTED);
+					ContextCompat.RECEIVER_NOT_EXPORTED);
 		}
 		isRegistered.set(true);
 

@@ -280,6 +280,9 @@ public class ServerPickerActivity extends AppCompatActivity implements
     public void onAuthConfigFetched() {
         setResult(Activity.RESULT_OK, null);
         final Intent changeServerIntent = new Intent(CHANGE_SERVER_INTENT);
+        // Android 14 requires non-exported receiver to be invoked with explicit intents
+        // See https://developer.android.com/about/versions/14/behavior-changes-14#safer-intents
+        changeServerIntent.setPackage(getPackageName());
         sendBroadcast(changeServerIntent);
         finish();
     }
