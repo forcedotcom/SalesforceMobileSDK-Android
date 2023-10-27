@@ -50,6 +50,11 @@ public class RestExplorerApp extends Application {
 		 */
 		RestExplorerSDKManager.initNative(getApplicationContext(), ExplorerActivity.class);
 
+		/**
+		 * Let's use the default browser for advanced authentication
+		 */
+		RestExplorerSDKManager.getInstance().setCustomTabBrowser(null);
+
 		/*
          * Uncomment the following line to enable IDP login flow. This will allow the user to
          * either authenticate using the current app or use the designated IDP app for login.
