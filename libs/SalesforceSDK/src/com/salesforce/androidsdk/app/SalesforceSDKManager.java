@@ -735,8 +735,9 @@ public class SalesforceSDKManager implements LifecycleObserver {
 
     /**
      * Return the custom tab browser to use during advanced authentication
-     * NB: the default browser on the device is used is null is specified or if the specified browser
-     *     is not installed
+     * NB: the default browser on the device is used
+     * - if null is specified
+     * - or if the specified browser is not installed
      * @return custom tab browser
      */
     public synchronized String getCustomTabBrowser() {
@@ -745,8 +746,9 @@ public class SalesforceSDKManager implements LifecycleObserver {
 
     /**
      * Set the custom tab browser to use during advanced authentication
-     * NB: the default browser on the device is used is null is specified or if the specified browser
-     *     is not installed
+     * NB: the default browser on the device is used
+     * - if null is specified
+     * - or if the specified browser is not installed
      * @param customTabBrowser pass null to use the default browser on the device
      */
     public synchronized void setCustomTabBrowser(String customTabBrowser) {

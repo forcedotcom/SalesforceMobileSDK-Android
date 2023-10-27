@@ -386,10 +386,10 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         final CustomTabsIntent customTabsIntent = intentBuilder.build();
 
         /*
-         * Sets the package explicitly to Google Chrome to avoid other browsers. This
-         * ensures that we don't display a popup allowing the user to select a browser
-         * because some browsers don't support certain authentication schemes. If Chrome
-         * is not available, we will use the default browser that the device uses.
+         * Sets the package explicitly to the browser configured by the application if any.
+         * NB: the default browser on the device is used
+         * - if getCustomTabBrowser() returns null
+         * - or if the specified browser is not installed
          */
         String customTabBrowser = SalesforceSDKManager.getInstance().getCustomTabBrowser();
         if (doesBrowserExist(customTabBrowser)) {
