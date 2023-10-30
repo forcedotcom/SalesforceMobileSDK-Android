@@ -202,6 +202,7 @@ public class SalesforceSDKManager implements LifecycleObserver {
     private String loginBrand;
     private boolean browserLoginEnabled;
     private boolean shareBrowserSessionEnabled;
+    private String customTabBrowser = "com.android.chrome"; // defaults to Chrome
 
     /**
      * When true, Salesforce integration users will be prohibited from initial
@@ -730,6 +731,28 @@ public class SalesforceSDKManager implements LifecycleObserver {
      */
     public synchronized void setCustomDomainInferencePattern(@Nullable Pattern pattern) {
         this.customDomainInferencePattern = pattern;
+    }
+
+    /**
+     * Return the custom tab browser to use during advanced authentication
+     * NB: the default browser on the device is used
+     * - if null is specified
+     * - or if the specified browser is not installed
+     * @return custom tab browser
+     */
+    public synchronized String getCustomTabBrowser() {
+        return customTabBrowser;
+    }
+
+    /**
+     * Set the custom tab browser to use during advanced authentication
+     * NB: the default browser on the device is used
+     * - if null is specified
+     * - or if the specified browser is not installed
+     * @param customTabBrowser pass null to use the default browser on the device
+     */
+    public synchronized void setCustomTabBrowser(String customTabBrowser) {
+        this.customTabBrowser = customTabBrowser;
     }
 
     /**

@@ -386,13 +386,14 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         final CustomTabsIntent customTabsIntent = intentBuilder.build();
 
         /*
-         * Sets the package explicitly to Google Chrome to avoid other browsers. This
-         * ensures that we don't display a popup allowing the user to select a browser
-         * because some browsers don't support certain authentication schemes. If Chrome
-         * is not available, we will use the default browser that the device uses.
+         * Sets the package explicitly to the browser configured by the application if any.
+         * NB: the default browser on the device is used
+         * - if getCustomTabBrowser() returns null
+         * - or if the specified browser is not installed
          */
-        if (doesChromeExist()) {
-            customTabsIntent.intent.setPackage("com.android.chrome");
+        String customTabBrowser = SalesforceSDKManager.getInstance().getCustomTabBrowser();
+        if (doesBrowserExist(customTabBrowser)) {
+            customTabsIntent.intent.setPackage(customTabBrowser);
         }
 
         /*
@@ -412,19 +413,18 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         }
     }
 
-    private boolean doesChromeExist() {
-        boolean exists = false;
-        final PackageManager packageManager = activity.getPackageManager();
-        ApplicationInfo applicationInfo = null;
-        try {
-            applicationInfo = packageManager.getApplicationInfo("com.android.chrome", 0);
-        } catch (PackageManager.NameNotFoundException e) {
-            SalesforceSDKLogger.w(TAG, "Chrome does not exist on this device", e);
+    private boolean doesBrowserExist(String customTabBrowser) {
+        if (customTabBrowser == null) {
+            return false;
+        } else {
+            final PackageManager packageManager = activity.getPackageManager();
+            try {
+                return packageManager.getApplicationInfo(customTabBrowser, 0) != null;
+            } catch (PackageManager.NameNotFoundException e) {
+                SalesforceSDKLogger.w(TAG, customTabBrowser + " does not exist on this device", e);
+                return false;
+            }
         }
-        if (applicationInfo != null) {
-            exists = true;
-        }
-        return exists;
     }
 
     protected String getOAuthClientId() {
