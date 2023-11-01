@@ -350,7 +350,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
                      * but a stale session ID will cause the WebView to redirect
                      * to the web login.
                      */
-                    SalesforceDroidGapActivity.this.client.sendAsync(RestRequest.getRequestForLimits(ApiVersionStrings.VERSION_NUMBER), new AsyncRequestCallback() {
+                    SalesforceDroidGapActivity.this.client.sendAsync(RestRequest.getCheapRequest(ApiVersionStrings.VERSION_NUMBER), new AsyncRequestCallback() {
 
                         @Override
                         public void onSuccess(RestRequest request, RestResponse response) {
@@ -423,7 +423,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity implements Sales
             });
             return;
         }
-        client.sendAsync(RestRequest.getRequestForLimits(ApiVersionStrings.VERSION_NUMBER), new AsyncRequestCallback() {
+        client.sendAsync(RestRequest.getCheapRequest(ApiVersionStrings.VERSION_NUMBER), new AsyncRequestCallback() {
 
             @Override
             public void onSuccess(RestRequest request, RestResponse response) {
