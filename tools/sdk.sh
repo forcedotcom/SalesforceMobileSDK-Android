@@ -170,7 +170,6 @@ else
         build_project_if_requested    "RestExplorer"                  :native:NativeSampleApps:RestExplorer
         build_project_if_requested    "AppConfigurator"               :native:NativeSampleApps:AppConfigurator
         build_project_if_requested    "ConfiguredApp"                 :native:NativeSampleApps:ConfiguredApp
-        build_project_if_requested    "MobileSyncExplorer"            :native:NativeSampleApps:MobileSyncExplorer
         build_project_if_requested    "AccountEditor"                 :hybrid:HybridSampleApps:AccountEditor
         build_project_if_requested    "MobileSyncExplorerHybrid"      :hybrid:HybridSampleApps:MobileSyncExplorerHybrid
     fi

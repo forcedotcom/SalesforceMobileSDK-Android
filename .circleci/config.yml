@@ -326,7 +326,6 @@ jobs:
             ./gradlew :native:NativeSampleApps:AppConfigurator:assemble
             ./gradlew :native:NativeSampleApps:ConfiguredApp:assemble
             ./gradlew :native:NativeSampleApps:RestExplorer:assemble
-            ./gradlew :native:NativeSampleApps:MobileSyncExplorer:assemble
       - store_artifacts:
           path: native/NativeSampleApps/AppConfigurator/build/outputs/apk/
           destination: native-apps
@@ -335,9 +334,6 @@ jobs:
           destination: native-apps
       - store_artifacts:
           path: native/NativeSampleApps/RestExplorer/build/outputs/apk/
-          destination: native-apps
-      - store_artifacts:
-          path: native/NativeSampleApps/MobileSyncExplorer/build/outputs/apk/
           destination: native-apps
       - run:
           name: Build Hybrid Sample Apps
