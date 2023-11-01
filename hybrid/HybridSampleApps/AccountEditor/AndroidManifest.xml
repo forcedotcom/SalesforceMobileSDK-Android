@@ -51,7 +51,7 @@
         <!--
         <activity android:name="com.salesforce.androidsdk.ui.LoginActivity"
             android:theme="@style/SalesforceSDK"
-            android:launchMode="singleInstance"
+            android:launchMode="singleTop"
             android:exported="true">
 
             <intent-filter>
