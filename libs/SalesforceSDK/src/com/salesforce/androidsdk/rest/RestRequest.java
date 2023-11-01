@@ -957,6 +957,15 @@ public class RestRequest {
 		return new RestRequest(RestMethod.GET, path.toString());
 	}
 
+	/**
+	 * Cheap request to re-hydrate access token
+	 * @param apiVersion
+	 * @return a rest request
+	 */
+	public static RestRequest getCheapRequest(String apiVersion) {
+		return getRequestForResources(apiVersion);
+	}
+
     /**
      * Helper method for creating conditional HTTP header.
      *
