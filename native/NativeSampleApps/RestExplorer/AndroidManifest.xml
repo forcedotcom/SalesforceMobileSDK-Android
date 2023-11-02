@@ -42,7 +42,7 @@
             'scheme' would be "sfdc", 'host' would be "login.salesforce.com",
             and 'path' would be "/oauth/done".
         -->
-        <activity android:name="com.salesforce.samples.restexplorer.CustomLoginActivity"
+        <activity android:name="com.salesforce.androidsdk.ui.LoginActivity"
             android:theme="@style/SalesforceSDK"
             android:launchMode="singleTop"
 			android:exported="true">
