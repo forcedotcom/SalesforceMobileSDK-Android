@@ -37,11 +37,6 @@
         </service>
 
         <!-- Login activity -->
-        <!--
-            Launch mode of "singleInstance" ensures that the activity isn't restarted
-            by a callback from Chrome custom tab when auth flow is complete. This is
-            required for the Chrome custom tab auth flow to work correctly.
-        -->
         <activity android:name="com.salesforce.androidsdk.ui.LoginActivity"
             android:theme="@style/SalesforceSDK"
             android:launchMode="singleTop"
