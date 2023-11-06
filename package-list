@@ -11,11 +11,6 @@ com.salesforce.androidsdk.app
 com.salesforce.androidsdk.auth
 com.salesforce.androidsdk.config
 com.salesforce.androidsdk.mobilesync.app
-com.salesforce.androidsdk.mobilesync.config
-com.salesforce.androidsdk.mobilesync.manager
-com.salesforce.androidsdk.mobilesync.model
-com.salesforce.androidsdk.mobilesync.target
-com.salesforce.androidsdk.mobilesync.util
 com.salesforce.androidsdk.phonegap.app
 com.salesforce.androidsdk.phonegap.plugin
 com.salesforce.androidsdk.phonegap.ui
