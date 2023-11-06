@@ -96,6 +96,9 @@
 	<string name="sf__biometric_opt_in_deny">Use Password</string>
 	<string name="sf__biometric_signout_user">Signing out %s.</string>
 
-	<!-- Dev support -->
-	<string name="sf__dev_support_title">Mobile SDK Dev Support</string>
+	<!-- Developer Support -->
+	<string name="sf__dev_support_title">Mobile SDK Developer Support</string>
+	<string name="sf__notifications_local_show_dev_support_content">Show Salesforce Mobile SDK developer support</string>
+	<string name="sf__notifications_local_show_dev_support_text">Tap to display Salesforce Mobile SDK developer support in the active app.</string>
+	<string name="sf__notifications_local_show_dev_support_title">Salesforce Mobile Developer Support</string>
 </resources>

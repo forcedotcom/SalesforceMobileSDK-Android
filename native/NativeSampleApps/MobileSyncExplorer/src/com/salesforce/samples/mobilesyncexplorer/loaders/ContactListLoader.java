@@ -157,6 +157,9 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	 */
 	private void fireLoadCompleteIntent() {
 		final Intent intent = new Intent(LOAD_COMPLETE_INTENT_ACTION);
+		// Android 14 requires non-exported receiver to be invoked with explicit intents
+		// See https://developer.android.com/about/versions/14/behavior-changes-14#safer-intents
+		intent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
 		SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
 	}
 }

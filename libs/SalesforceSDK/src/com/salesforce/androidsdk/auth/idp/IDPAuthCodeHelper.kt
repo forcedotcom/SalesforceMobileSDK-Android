@@ -120,7 +120,7 @@ internal class IDPAuthCodeHelper private constructor(
         SalesforceSDKLogger.d(TAG, "Obtaining valid access token")
         buildRestClient()?.let {restClient ->
             val restResponse = try {
-                restClient.sendSync(RestRequest.getRequestForLimits(ApiVersionStrings.VERSION_NUMBER))
+                restClient.sendSync(RestRequest.getCheapRequest(ApiVersionStrings.VERSION_NUMBER))
             } catch (e: IOException) {
                 SalesforceSDKLogger.e(TAG, "Failed to obtain valid access token", e)
                 null

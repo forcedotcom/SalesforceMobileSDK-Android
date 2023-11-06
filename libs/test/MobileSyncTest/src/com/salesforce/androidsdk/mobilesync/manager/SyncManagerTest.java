@@ -26,13 +26,19 @@
  */
 package com.salesforce.androidsdk.mobilesync.manager;
 
+import static com.salesforce.androidsdk.mobilesync.util.SyncState.Status.DONE;
+import static com.salesforce.androidsdk.mobilesync.util.SyncState.Status.NEW;
+import static com.salesforce.androidsdk.mobilesync.util.SyncState.Status.RUNNING;
+import static com.salesforce.androidsdk.mobilesync.util.SyncState.Status.STOPPED;
+import static com.salesforce.androidsdk.mobilesync.util.SyncState.Type.syncDown;
+import static java.util.Collections.singletonList;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 
 import com.salesforce.androidsdk.mobilesync.target.LayoutSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.MetadataSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.MruSyncDownTarget;
-import com.salesforce.androidsdk.mobilesync.target.RefreshSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.SoqlSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.SoslSyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget;
@@ -69,8 +75,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static java.util.Collections.singletonList;
-
 /**
  * Test class for SyncManager.
  */
@@ -99,7 +103,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
     	dropAccountsSoup();
     	super.tearDown();
     }
-	
+
 	/**
 	 * getSyncStatus should return null for invalid sync id
 	 * @throws JSONException
@@ -109,7 +113,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 		SyncState sync = syncManager.getSyncStatus(-1);
         Assert.assertNull("Sync status should be null", sync);
 	}
-	
+
 	/**
 	 * Sync down the test accounts, check smart store, check status during sync
 	 */
@@ -211,13 +215,13 @@ public class SyncManagerTest extends SyncManagerTestCase {
         Map<String, Map<String, Object>> idToFieldsUpdated = makeRemoteChanges(idToFields, Constants.ACCOUNT);
 
         // Call reSync
-        SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+        final SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue(syncId);
         syncManager.reSync(syncId, queue);
 
         // Check status updates
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, -1);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, idToFieldsUpdated.size());
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100, idToFieldsUpdated.size());
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, RUNNING, 0, -1);
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, RUNNING, 0, idToFieldsUpdated.size());
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, DONE, 100, idToFieldsUpdated.size());
 
         // Check db
         checkDb(idToFieldsUpdated, ACCOUNTS_SOUP);
@@ -247,13 +251,13 @@ public class SyncManagerTest extends SyncManagerTestCase {
         Map<String, Map<String, Object>> idToFieldsUpdated = makeRemoteChanges(idToFields, Constants.ACCOUNT);
 
         // Call reSync
-        SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+        final SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue(syncId);
         syncManager.reSync(syncName, queue);
 
         // Check status updates
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, -1);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, idToFieldsUpdated.size());
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100, idToFieldsUpdated.size());
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, RUNNING, 0, -1);
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, RUNNING, 0, idToFieldsUpdated.size());
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, DONE, 100, idToFieldsUpdated.size());
 
         // Check db
         checkDb(idToFieldsUpdated, ACCOUNTS_SOUP);
@@ -544,10 +548,10 @@ public class SyncManagerTest extends SyncManagerTestCase {
         SyncOptions options = SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED);
         SyncState sync = SyncState.createSyncDown(smartStore, target, options, ACCOUNTS_SOUP, null);
         long syncId = sync.getId();
-        checkStatus(sync, SyncState.Type.syncDown, syncId, target, options, SyncState.Status.NEW, 0, -1);
+        checkStatus(sync, syncDown, syncId, target, options, NEW, 0, -1);
 
         // Run sync - will freeze during fetch
-        SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+        final SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue(syncId);
         syncManager.runSync(sync, queue);
 
         // Wait for sync to be running
@@ -725,7 +729,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkDbDeleted(ACCOUNTS_SOUP, new String[] { accountIds[0]}, Constants.ID);
 
         // Calls reSync
-        SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+        final SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue(syncId);
         try {
             syncManager.reSync(syncId, queue);
         } catch (SyncManager.MobileSyncException e) {
@@ -883,21 +887,21 @@ public class SyncManagerTest extends SyncManagerTestCase {
         long syncId = sync.getId();
 
         // Run sync
-        SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+        final SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue(syncId);
         syncManager.reSync(syncName, queue);
 
         // Check status updates
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, -1);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, numberOfRecords);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 10, numberOfRecords);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 20, numberOfRecords);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 30, numberOfRecords);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 40, numberOfRecords);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 50, numberOfRecords);
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, RUNNING, 0, -1);
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, RUNNING, 0, numberOfRecords);
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, RUNNING, 10, numberOfRecords);
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, RUNNING, 20, numberOfRecords);
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, RUNNING, 30, numberOfRecords);
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, RUNNING, 40, numberOfRecords);
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, RUNNING, 50, numberOfRecords);
 
         // Stop sync manager
-        stopSyncManager(100);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.STOPPED, 50, numberOfRecords);
+        stopSyncManager(1000);
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, STOPPED, 50, numberOfRecords);
         int numberOfRecordsFetched = (int) (numberOfRecords * 0.5);
         int numberOfRecordsLeft = numberOfRecords-numberOfRecordsFetched + 1 /* we refetch records at maxTimeStamp when a sync was stopped */;
 
@@ -905,7 +909,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkDbForAfterTestSyncDown(target, ACCOUNTS_SOUP, numberOfRecordsFetched);
 
         // Check sync time stamp and status
-        checkSyncState(syncId, target.dateForPosition(numberOfRecordsFetched-1).getTime(), SyncState.Status.STOPPED);
+        checkSyncState(syncId, target.dateForPosition(numberOfRecordsFetched-1).getTime(), STOPPED);
 
         // Try to restart sync while sync manager is paused
         try {
@@ -920,21 +924,21 @@ public class SyncManagerTest extends SyncManagerTestCase {
         Assert.assertFalse("Stopped should be false", syncManager.isStopped());
 
         // Check sync time stamp and status
-        checkSyncState(syncId, target.dateForPosition(numberOfRecordsFetched-1).getTime(), SyncState.Status.STOPPED);
+        checkSyncState(syncId, target.dateForPosition(numberOfRecordsFetched-1).getTime(), STOPPED);
 
         // Stop sync manager
-        stopSyncManager(0);
+        stopSyncManager(1000);
 
         // Restarting sync manager restarting syncs
         syncManager.restart(true, queue);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, -1);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, numberOfRecordsLeft);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 16, numberOfRecordsLeft);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 33, numberOfRecordsLeft);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 50, numberOfRecordsLeft);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 66, numberOfRecordsLeft);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 83, numberOfRecordsLeft);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100, numberOfRecordsLeft);
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, RUNNING, 0, -1);
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, RUNNING, 0, numberOfRecordsLeft);
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, RUNNING, 16, numberOfRecordsLeft);
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, RUNNING, 33, numberOfRecordsLeft);
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, RUNNING, 50, numberOfRecordsLeft);
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, RUNNING, 66, numberOfRecordsLeft);
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, RUNNING, 83, numberOfRecordsLeft);
+        checkStatus(queue.getNextSyncUpdate(), syncDown, syncId, target, options, DONE, 100, numberOfRecordsLeft);
         checkDbForAfterTestSyncDown(target, ACCOUNTS_SOUP, numberOfRecords);
     }
 
@@ -957,7 +961,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         long syncId2 = SyncState.createSyncDown(smartStore, target2, options, ACCOUNTS_SOUP, syncName2).getId();
 
         // Run sync
-        SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+        final SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue(syncId1, syncId2);
         syncManager.reSync(syncName1, queue);
         try {
             // Sleeping a bit - to make sure it goes first
@@ -968,15 +972,15 @@ public class SyncManagerTest extends SyncManagerTestCase {
         syncManager.reSync(syncName2, queue);
 
         // Check status updates
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.RUNNING, 0, -1);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.RUNNING, 0, -1);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.RUNNING, 0, numberRecords1);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.RUNNING, 20, numberRecords1);
+        checkStatus(queue.getNextSyncUpdate(syncId1), syncDown, syncId1, target1, options, RUNNING, 0, -1);
+        checkStatus(queue.getNextSyncUpdate(syncId2), syncDown, syncId2, target2, options, RUNNING, 0, -1);
+        checkStatus(queue.getNextSyncUpdate(syncId1), syncDown, syncId1, target1, options, RUNNING, 0, numberRecords1);
+        checkStatus(queue.getNextSyncUpdate(syncId1), syncDown, syncId1, target1, options, RUNNING, 20, numberRecords1);
 
         // Stop sync manager
-        stopSyncManager(200);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.STOPPED, 20, numberRecords1);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.STOPPED, 0, -1);
+        stopSyncManager(1000);
+        checkStatus(queue.getNextSyncUpdate(syncId1), syncDown, syncId1, target1, options, STOPPED, 20, numberRecords1);
+        checkStatus(queue.getNextSyncUpdate(syncId2), syncDown, syncId2, target2, options, STOPPED, 0, -1);
         int numberOfRecordsFetched1 = (int) (numberRecords1 * 0.2);
         int numberRecordsLeft1 = numberRecords1-numberOfRecordsFetched1 + 1/* we refetch records at maxTimeStamp when a sync was stopped */;
 
@@ -985,8 +989,8 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkDbForAfterTestSyncDown(target2, ACCOUNTS_SOUP, 0);
 
         // Check sync time stamp and status
-        checkSyncState(syncId1, target1.dateForPosition(numberOfRecordsFetched1-1).getTime(), SyncState.Status.STOPPED);
-        checkSyncState(syncId2, -1, SyncState.Status.STOPPED);
+        checkSyncState(syncId1, target1.dateForPosition(numberOfRecordsFetched1-1).getTime(), STOPPED);
+        checkSyncState(syncId2, -1, STOPPED);
 
         // Restarting sync manager without restarting syncs
         syncManager.restart(false, queue);
@@ -994,20 +998,20 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Manually restart second sync
         syncManager.reSync(syncName2, queue);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.RUNNING, 0, -1);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.RUNNING, 0, numberRecords2);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.RUNNING, 25, numberRecords2);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.RUNNING, 50, numberRecords2);
+        checkStatus(queue.getNextSyncUpdate(syncId2), syncDown, syncId2, target2, options, RUNNING, 0, -1);
+        checkStatus(queue.getNextSyncUpdate(syncId2), syncDown, syncId2, target2, options, RUNNING, 0, numberRecords2);
+        checkStatus(queue.getNextSyncUpdate(syncId2), syncDown, syncId2, target2, options, RUNNING, 25, numberRecords2);
+        checkStatus(queue.getNextSyncUpdate(syncId2), syncDown, syncId2, target2, options, RUNNING, 50, numberRecords2);
 
         // Stop sync manager
-        stopSyncManager(200);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.STOPPED, 50, numberRecords2);
+        stopSyncManager(1000);
+        checkStatus(queue.getNextSyncUpdate(syncId2), syncDown, syncId2, target2, options, STOPPED, 50, numberRecords2);
         int numberRecordsFetched2 = (int) (numberRecords2 * 0.50);
         int numberRecordsLeft2 = numberRecords2-numberRecordsFetched2 + 1/* we refetch records at maxTimeStamp when a sync was stopped */;
 
         // Check sync time stamp and status
-        checkSyncState(syncId1, target1.dateForPosition(numberOfRecordsFetched1-1).getTime(), SyncState.Status.STOPPED);
-        checkSyncState(syncId2, target2.dateForPosition(numberRecordsFetched2-1).getTime(), SyncState.Status.STOPPED);
+        checkSyncState(syncId1, target1.dateForPosition(numberOfRecordsFetched1-1).getTime(), STOPPED);
+        checkSyncState(syncId2, target2.dateForPosition(numberRecordsFetched2-1).getTime(), STOPPED);
 
         // Check db
         checkDbForAfterTestSyncDown(target1, ACCOUNTS_SOUP, numberOfRecordsFetched1);
@@ -1015,20 +1019,20 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Restarting sync manager restarting syncs
         syncManager.restart(true, queue);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.RUNNING, 0, -1);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.RUNNING, 0, -1);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.RUNNING, 0, numberRecordsLeft1);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.RUNNING, 20, numberRecordsLeft1);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.RUNNING, 40, numberRecordsLeft1);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.RUNNING, 60, numberRecordsLeft1);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.RUNNING, 80, numberRecordsLeft1);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId1, target1, options, SyncState.Status.DONE, 100, numberRecordsLeft1);
+        checkStatus(queue.getNextSyncUpdate(syncId1), syncDown, syncId1, target1, options, RUNNING, 0, -1);
+        checkStatus(queue.getNextSyncUpdate(syncId2), syncDown, syncId2, target2, options, RUNNING, 0, -1);
+        checkStatus(queue.getNextSyncUpdate(syncId1), syncDown, syncId1, target1, options, RUNNING, 0, numberRecordsLeft1);
+        checkStatus(queue.getNextSyncUpdate(syncId1), syncDown, syncId1, target1, options, RUNNING, 20, numberRecordsLeft1);
+        checkStatus(queue.getNextSyncUpdate(syncId1), syncDown, syncId1, target1, options, RUNNING, 40, numberRecordsLeft1);
+        checkStatus(queue.getNextSyncUpdate(syncId1), syncDown, syncId1, target1, options, RUNNING, 60, numberRecordsLeft1);
+        checkStatus(queue.getNextSyncUpdate(syncId1), syncDown, syncId1, target1, options, RUNNING, 80, numberRecordsLeft1);
+        checkStatus(queue.getNextSyncUpdate(syncId1), syncDown, syncId1, target1, options, DONE, 100, numberRecordsLeft1);
 
         // sync1 is done, sync2 should run next
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.RUNNING, 0, numberRecordsLeft2);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.RUNNING, 33, numberRecordsLeft2);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.RUNNING, 66, numberRecordsLeft2);
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId2, target2, options, SyncState.Status.DONE, 100, numberRecordsLeft2);
+        checkStatus(queue.getNextSyncUpdate(syncId2), syncDown, syncId2, target2, options, RUNNING, 0, numberRecordsLeft2);
+        checkStatus(queue.getNextSyncUpdate(syncId2), syncDown, syncId2, target2, options, RUNNING, 33, numberRecordsLeft2);
+        checkStatus(queue.getNextSyncUpdate(syncId2), syncDown, syncId2, target2, options, RUNNING, 66, numberRecordsLeft2);
+        checkStatus(queue.getNextSyncUpdate(syncId2), syncDown, syncId2, target2, options, DONE, 100, numberRecordsLeft2);
 
         // Check db
         checkDbForAfterTestSyncDown(target1, ACCOUNTS_SOUP, numberRecords1);
@@ -1050,7 +1054,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         if (sleepDuration > 0) {
             // We expect stopping to take a while
-            Assert.assertTrue("Stopping should be true", syncManager.isStopping());
+            Assert.assertTrue("Stopped or stopping should be true", syncManager.isStopping() || syncManager.isStopped());
 
             try {
                 Thread.sleep(sleepDuration);

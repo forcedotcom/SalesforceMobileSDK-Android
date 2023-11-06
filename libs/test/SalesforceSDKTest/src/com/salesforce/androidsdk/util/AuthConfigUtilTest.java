@@ -30,6 +30,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+
+import androidx.core.content.ContextCompat;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -97,7 +99,7 @@ public class AuthConfigUtilTest {
         Assert.assertNotNull("Auth config should not be null", authConfig);
         Assert.assertNotNull("Auth config JSON should not be null", authConfig.getAuthConfig());
         Assert.assertNotNull("SSO URLs should not be null", authConfig.getSsoUrls());
-        Assert.assertEquals("SSO URLs should have 3 valid entries", 3, authConfig.getSsoUrls().size());
+        Assert.assertEquals("SSO URLs should have 2 valid entries", 2, authConfig.getSsoUrls().size());
     }
 
     @Test
@@ -128,8 +130,9 @@ public class AuthConfigUtilTest {
 
     private void testBroadcast(String endpoint, Boolean expected) throws InterruptedException, ExecutionException {
         final TestBroadcastReceiver receiver = new TestBroadcastReceiver();
-        SalesforceSDKManager.getInstance().getAppContext().registerReceiver(receiver,
-                new IntentFilter(AuthConfigUtil.AUTH_CONFIG_COMPLETE_INTENT_ACTION));
+        ContextCompat.registerReceiver(SalesforceSDKManager.getInstance().getAppContext(), receiver,
+                new IntentFilter(AuthConfigUtil.AUTH_CONFIG_COMPLETE_INTENT_ACTION), ContextCompat.RECEIVER_NOT_EXPORTED);
+
         try {
             AuthConfigUtil.getMyDomainAuthConfig(endpoint);
 

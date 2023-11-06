@@ -166,4 +166,12 @@ public class ContactObject extends SalesforceObject {
 		}
 		return text;
 	}
+
+	public String getObjectId() {
+		return objectId;
+	}
+
+	public String getName() {
+		return name;
+	}
 }

@@ -54,6 +54,7 @@ import android.webkit.WebSettings.LayoutAlgorithm;
 import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.Toast;
+import android.window.OnBackInvokedDispatcher;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
@@ -82,6 +83,7 @@ import com.salesforce.androidsdk.util.UriFragmentParser;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Login Activity: takes care of authenticating the user.
@@ -105,6 +107,7 @@ public class LoginActivity extends AppCompatActivity
     private AccountAuthenticatorResponse accountAuthenticatorResponse = null;
     private Bundle accountAuthenticatorResult = null;
     private Button biometricAuthenticationButton = null;
+    private long AUTH_CONFIG_TASK_TIMEOUT_MILLS = 5000;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -127,7 +130,8 @@ public class LoginActivity extends AppCompatActivity
 
         // Fetches auth config if required.
         try {
-            (new AuthConfigTask(null)).execute().get();
+            // If the task takes more than 5 seconds it can cause an ANR.
+            (new AuthConfigTask(null)).execute().get(AUTH_CONFIG_TASK_TIMEOUT_MILLS, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Exception occurred while fetching auth config", e);
         }
@@ -171,8 +175,17 @@ public class LoginActivity extends AppCompatActivity
         if (!receiverRegistered) {
             changeServerReceiver = new ChangeServerReceiver();
             final IntentFilter changeServerFilter = new IntentFilter(ServerPickerActivity.CHANGE_SERVER_INTENT);
-            registerReceiver(changeServerReceiver, changeServerFilter);
+            ContextCompat.registerReceiver(this, changeServerReceiver, changeServerFilter,
+                    ContextCompat.RECEIVER_NOT_EXPORTED);
             receiverRegistered = true;
+        }
+
+        // TODO:  Remove this when min API > 33
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                    this::handleBackBehavior
+            );
         }
     }
 
@@ -300,23 +313,7 @@ public class LoginActivity extends AppCompatActivity
      */
     protected boolean fixBackButtonBehavior(int keyCode) {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
-
-            if (!SalesforceSDKManager.getInstance().getBiometricAuthenticationManager().isLocked()) {
-
-                /*
-                 * If there are no accounts signed in, we need the login screen
-                 * to go away, and go back to the home screen. However, if the
-                 * login screen has been brought up from the switcher screen,
-                 * the back button should take the user back to the previous screen.
-                 */
-                final UserAccountManager accMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
-                wasBackgrounded = true;
-                if (accMgr.getAuthenticatedUsers() == null) {
-                    moveTaskToBack(true);
-                } else {
-                    finish();
-                }
-            }
+            handleBackBehavior();
 
             //  Do not execute back button behavior.
             return true;
@@ -324,6 +321,26 @@ public class LoginActivity extends AppCompatActivity
 
 		return false;
 	}
+
+    private void handleBackBehavior() {
+        // Do nothing if locked
+        if (!SalesforceSDKManager.getInstance().getBiometricAuthenticationManager().isLocked()) {
+
+            /*
+             * If there are no accounts signed in, we need the login screen
+             * to go away, and go back to the home screen. However, if the
+             * login screen has been brought up from the switcher screen,
+             * the back button should take the user back to the previous screen.
+             */
+            final UserAccountManager accMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
+            wasBackgrounded = true;
+            if (accMgr.getAuthenticatedUsers() == null) {
+                moveTaskToBack(true);
+            } else {
+                finish();
+            }
+        }
+    }
 
     /**************************************************************************************************
      *

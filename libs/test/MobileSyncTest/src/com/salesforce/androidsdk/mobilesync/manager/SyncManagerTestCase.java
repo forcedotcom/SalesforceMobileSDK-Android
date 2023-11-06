@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.mobilesync.manager;
 
 import android.text.TextUtils;
+
 import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget;
 import com.salesforce.androidsdk.mobilesync.target.SyncTarget;
 import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget;
@@ -42,6 +43,12 @@ import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.junit.Assert;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -50,10 +57,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.junit.Assert;
 
 /**
  * Abstract super class for all SyncManager test classes.
@@ -226,7 +229,7 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         checkStatus(sync, SyncState.Type.syncDown, syncId, target, options, SyncState.Status.NEW, 0, -1);
 
         // Runs sync.
-        final SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+        final SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue(syncId);
         syncManager.runSync(sync, queue);
 
         // Checks status updates.
@@ -607,7 +610,7 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
 		checkStatus(sync, SyncState.Type.syncUp, syncId, target, options, SyncState.Status.NEW, 0, -1);
 
 		// Run sync
-		SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+		final SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue(syncId);
 		syncManager.runSync(sync, queue);
 
 		// Check status updates

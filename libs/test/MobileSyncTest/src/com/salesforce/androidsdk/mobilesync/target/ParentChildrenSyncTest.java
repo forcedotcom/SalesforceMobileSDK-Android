@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.mobilesync.target;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
+
 import com.salesforce.androidsdk.mobilesync.target.ParentChildrenSyncTargetHelper.RelationshipType;
 import com.salesforce.androidsdk.mobilesync.util.ChildrenInfo;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
@@ -38,6 +39,14 @@ import com.salesforce.androidsdk.mobilesync.util.SyncState;
 import com.salesforce.androidsdk.mobilesync.util.SyncUpdateCallbackQueue;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -46,12 +55,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
 /**
  * Test class for ParentChildrenSyncDownTarget and ParentChildrenSyncUpTarget.
@@ -380,19 +383,6 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
     }
 
     /**
-     * Test ParentChildrenSyncDownTarget's constructor that takes only a SOQL query
-     * An exception is expected
-     */
-    @Test
-    public void testConstructorWithQuery() {
-        try {
-            new ParentChildrenSyncDownTarget("SELECT Name FROM Account");
-            Assert.fail("Exception should have been thrown");
-        } catch (UnsupportedOperationException e) {
-        }
-    }
-
-    /**
      * Sync down the test accounts and contacts, check smart store, check status during sync
      */
     @Test
@@ -520,7 +510,7 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         Map<String, Map<String, Object>> idToFieldsUpdated = makeRemoteChanges(accountIdToFields, Constants.ACCOUNT);
 
         // Call reSync
-        SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+        final SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue(syncId);
         syncManager.reSync(syncId, queue);
 
         // Check status updates
@@ -568,7 +558,7 @@ public class ParentChildrenSyncTest extends ParentChildrenSyncTestCase {
         Map<String, Map<String, Object>> otherContactIdToFieldsUpdated = makeRemoteChanges(accountIdContactIdToFields.get(otherAccountId), Constants.CONTACT);
 
         // Call reSync
-        SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+        final SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue(syncId);
         syncManager.reSync(syncId, queue);
 
         // Check status updates

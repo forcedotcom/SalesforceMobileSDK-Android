@@ -30,11 +30,11 @@ import android.app.Activity;
 import android.content.Context;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.mobilesync.R;
 import com.salesforce.androidsdk.mobilesync.config.SyncsConfig;
 import com.salesforce.androidsdk.mobilesync.manager.SyncManager;
 import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -42,41 +42,45 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 /**
  * SDK Manager for all native applications that use MobileSync.
  */
+
+// Note: keeping the java implementation
+//       otherwise calling MobileSyncSDKManager.init from java calls SmartStoreSDKManager.init
+//       see https://youtrack.jetbrains.com/issue/KT-12993
 public class MobileSyncSDKManager extends SmartStoreSDKManager {
 
-	private static final String TAG = "MobileSyncSDKManager";
+    private static final String TAG = "MobileSyncSDKManager";
 
-	/**
-	 * Protected constructor.
+    /**
+     * Protected constructor.
      *
-	 * @param context Application context.
-	 * @param mainActivity Activity that should be launched after the login flow.
-	 * @param loginActivity Login activity.
-	 */
-	protected MobileSyncSDKManager(Context context, Class<? extends Activity> mainActivity,
-								   Class<? extends Activity> loginActivity) {
-		super(context, mainActivity, loginActivity);
-	}
+     * @param context       Application context.
+     * @param mainActivity  Activity that should be launched after the login flow.
+     * @param loginActivity Login activity.
+     */
+    protected MobileSyncSDKManager(Context context, Class<? extends Activity> mainActivity,
+                                   Class<? extends Activity> loginActivity) {
+        super(context, mainActivity, loginActivity);
+    }
 
-	private static void init(Context context, Class<? extends Activity> mainActivity,
-							 Class<? extends Activity> loginActivity) {
-		if (INSTANCE == null) {
-    		INSTANCE = new MobileSyncSDKManager(context, mainActivity, loginActivity);
-    	}
+    private static void init(Context context, Class<? extends Activity> mainActivity,
+                             Class<? extends Activity> loginActivity) {
+        if (INSTANCE == null) {
+            INSTANCE = new MobileSyncSDKManager(context, mainActivity, loginActivity);
+        }
 
-		// Upgrade to the latest version.
-		MobileSyncUpgradeManager.getInstance().upgrade();
+        // Upgrade to the latest version.
+        MobileSyncUpgradeManager.getInstance().upgrade();
 
-		initInternal(context);
-		EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
-	}
+        initInternal(context);
+        EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
+    }
 
     /**
      * Initializes components required for this class
      * to properly function. This method should be called
      * by native apps using the Salesforce Mobile SDK.
      *
-     * @param context Application context.
+     * @param context      Application context.
      * @param mainActivity Activity that should be launched after the login flow.
      */
     public static void initNative(Context context, Class<? extends Activity> mainActivity) {
@@ -88,8 +92,8 @@ public class MobileSyncSDKManager extends SmartStoreSDKManager {
      * to properly function. This method should be called
      * by native apps using the Salesforce Mobile SDK.
      *
-     * @param context Application context.
-     * @param mainActivity Activity that should be launched after the login flow.
+     * @param context       Application context.
+     * @param mainActivity  Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
      */
     public static void initNative(Context context, Class<? extends Activity> mainActivity,
@@ -103,38 +107,38 @@ public class MobileSyncSDKManager extends SmartStoreSDKManager {
      * @return Singleton instance of MobileSyncSDKManager.
      */
     public static MobileSyncSDKManager getInstance() {
-    	if (INSTANCE != null) {
-    		return (MobileSyncSDKManager) INSTANCE;
-    	} else {
+        if (INSTANCE != null) {
+            return (MobileSyncSDKManager) INSTANCE;
+        } else {
             throw new RuntimeException("Applications need to call MobileSyncSDKManager.init() first.");
-    	}
+        }
     }
 
     @Override
     protected void cleanUp(UserAccount userAccount) {
-    	SyncManager.reset(userAccount);
+        SyncManager.reset(userAccount);
         super.cleanUp(userAccount);
     }
 
-	/**
-	 * Setup global syncs using config found in res/raw/globalsyncs.json
-	 */
-	public void setupGlobalSyncsFromDefaultConfig() {
-		MobileSyncLogger.d(TAG, "Setting up global syncs using config found in res/raw/globalsyncs.json");
-		SyncsConfig config = new SyncsConfig(context, R.raw.globalsyncs);
-		if (config.hasSyncs()) {
-			config.createSyncs(getGlobalSmartStore());
-		}
-	}
+    /**
+     * Setup global syncs using config found in res/raw/globalsyncs.json
+     */
+    public void setupGlobalSyncsFromDefaultConfig() {
+        MobileSyncLogger.d(TAG, "Setting up global syncs using config found in res/raw/globalsyncs.json");
+        SyncsConfig config = new SyncsConfig(context, R.raw.globalsyncs);
+        if (config.hasSyncs()) {
+            config.createSyncs(getGlobalSmartStore());
+        }
+    }
 
-	/**
-	 * Setup user syncs using config found in res/raw/usersyncs.json
-	 */
-	public void setupUserSyncsFromDefaultConfig() {
-		MobileSyncLogger.d(TAG, "Setting up user syncs using config found in res/raw/usersyncs.json");
-		SyncsConfig config = new SyncsConfig(context, R.raw.usersyncs);
-		if (config.hasSyncs()) {
-			config.createSyncs(getSmartStore());
-		}
-	}
+    /**
+     * Setup user syncs using config found in res/raw/usersyncs.json
+     */
+    public void setupUserSyncsFromDefaultConfig() {
+        MobileSyncLogger.d(TAG, "Setting up user syncs using config found in res/raw/usersyncs.json");
+        SyncsConfig config = new SyncsConfig(context, R.raw.usersyncs);
+        if (config.hasSyncs()) {
+            config.createSyncs(getSmartStore());
+        }
+    }
 }

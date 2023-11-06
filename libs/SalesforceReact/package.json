@@ -1,6 +1,6 @@
 {
     "name": "SalesforceReact",
-    "version": "11.0.1",
+    "version": "11.1.0",
     "private": true,
     "scripts": {
         "start": "node node_modules/react-native/local-cli/cli.js start"
@@ -8,8 +8,8 @@
     "dependencies": {
         "create-react-class": "^15.7.0",
         "react": "18.1.0",
-        "react-native": "0.70.6",
-        "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#v11.0.1"
+        "react-native": "0.70.14",
+        "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#dev"
     },
     "devDependencies": {
         "@babel/core": "^7.12.9",
@@ -18,7 +18,7 @@
         "@react-native-community/eslint-config": "^2.0.0",
         "@types/jest": "^26.0.24",
         "@types/react": "^18.0.21",
-        "@types/react-native": "^0.70.6",
+        "@types/react-native": "^0.70.14",
         "@types/react-test-renderer": "^18.0.0",
         "babel-jest": "^26.6.3",
         "chai": "4.2.0",

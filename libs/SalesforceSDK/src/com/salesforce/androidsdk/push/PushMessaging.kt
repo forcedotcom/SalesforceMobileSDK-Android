@@ -41,7 +41,7 @@ import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Deregister
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
-import com.salesforce.androidsdk.push.PushService.enqueuePushNotificationsRegistrationWork
+import com.salesforce.androidsdk.push.PushService.Companion.enqueuePushNotificationsRegistrationWork
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 
 

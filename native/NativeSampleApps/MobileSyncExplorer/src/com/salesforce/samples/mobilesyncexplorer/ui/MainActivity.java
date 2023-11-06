@@ -27,6 +27,8 @@
 package com.salesforce.samples.mobilesyncexplorer.ui;
 
 import static android.view.LayoutInflater.from;
+import static com.salesforce.androidsdk.R.style.SalesforceSDK;
+import static com.salesforce.androidsdk.R.style.SalesforceSDK_Dark;
 
 import android.accounts.Account;
 import android.annotation.SuppressLint;
@@ -55,6 +57,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -124,7 +127,7 @@ public class MainActivity extends SalesforceActivity implements
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
-		setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark : R.style.SalesforceSDK);
+		setTheme(isDarkTheme ? SalesforceSDK_Dark : SalesforceSDK);
 		// This makes the navigation bar visible on light themes.
 		SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
 
@@ -164,8 +167,10 @@ public class MainActivity extends SalesforceActivity implements
 		// Loader initialization and receiver registration
 		getLoaderManager().initLoader(CONTACT_LOADER_ID, null, this);
 		if (!isRegistered.get()) {
-			registerReceiver(loadCompleteReceiver,
-					new IntentFilter(ContactListLoader.LOAD_COMPLETE_INTENT_ACTION));
+			ContextCompat.registerReceiver(this,
+					loadCompleteReceiver,
+					new IntentFilter(ContactListLoader.LOAD_COMPLETE_INTENT_ACTION),
+					ContextCompat.RECEIVER_NOT_EXPORTED);
 		}
 		isRegistered.set(true);
 
