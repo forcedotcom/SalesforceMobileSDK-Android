@@ -58,6 +58,7 @@ public class HttpAccess {
 
     private String userAgent;
     private OkHttpClient okHttpClient;
+    private OkHttpClient.Builder okHttpBuilder;
 
     // Connection manager.
     private final ConnectivityManager conMgr;
@@ -99,15 +100,17 @@ public class HttpAccess {
      * @return okHttpClient.Builder with appropriate connection spec and user agent interceptor
      */
     public OkHttpClient.Builder getOkHttpClientBuilder() {
-        ConnectionSpec connectionSpec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
-                .tlsVersions(TlsVersion.TLS_1_1, TlsVersion.TLS_1_2)
-                .build();
-        OkHttpClient.Builder builder = new OkHttpClient.Builder()
-                .connectionSpecs(Collections.singletonList(connectionSpec))
-                .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
-                .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
-                .addNetworkInterceptor(new UserAgentInterceptor());
-        return builder;
+        if (okHttpBuilder == null) {
+            ConnectionSpec connectionSpec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+                    .tlsVersions(TlsVersion.TLS_1_1, TlsVersion.TLS_1_2)
+                    .build();
+            okHttpBuilder = new OkHttpClient.Builder()
+                    .connectionSpecs(Collections.singletonList(connectionSpec))
+                    .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
+                    .addNetworkInterceptor(new UserAgentInterceptor());
+        }
+        return okHttpBuilder;
     }
 
     /**
