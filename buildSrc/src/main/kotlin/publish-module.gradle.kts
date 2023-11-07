@@ -15,7 +15,6 @@ if (rootProject.name == "SalesforceMobileSDK-Android") {
     }
 
     val sourcesJar by tasks.creating(Jar::class) {
-        archiveClassifier.set("sources")
         from(android.sourceSets.getByName("main").java.srcDirs)
     }
 
