@@ -960,15 +960,11 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 accountOptions.csrfToken);
 
     	/*
-    	 * Registers for push notifications, if push notification client ID is present.
+    	 * Registers for push notifications, if setup by the app.
     	 * This step needs to happen after the account has been added by client
     	 * manager, so that the push service has all the account info it needs.
     	 */
-        final Context appContext = SalesforceSDKManager.getInstance().getAppContext();
-        final String pushNotificationId = BootConfig.getBootConfig(appContext).getPushNotificationClientId();
-        if (!TextUtils.isEmpty(pushNotificationId)) {
-            PushMessaging.register(appContext, account);
-        }
+        PushMessaging.register(SalesforceSDKManager.getInstance().getAppContext(), account);
 
         callback.onAccountAuthenticatorResult(extras);
         if (SalesforceSDKManager.getInstance().getIsTestRun()) {

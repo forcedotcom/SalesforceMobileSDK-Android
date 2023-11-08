@@ -13,7 +13,7 @@ plugins {
 dependencies {
     api(project(":libs:SalesforceAnalytics"))
     api("com.squareup.okhttp3:okhttp:4.10.0")
-    api("com.google.firebase:firebase-messaging:20.1.0")  // Must remain 20.1.0 until Mobile SDK 12.0
+    api("com.google.firebase:firebase-messaging:23.3.1")
     api("androidx.core:core:1.9.0")
     api("androidx.browser:browser:1.4.0")
     api("androidx.work:work-runtime-ktx:2.8.1")
