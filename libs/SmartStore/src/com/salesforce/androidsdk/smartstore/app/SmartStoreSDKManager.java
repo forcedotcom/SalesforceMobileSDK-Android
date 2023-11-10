@@ -47,7 +47,7 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.ManagedFilesHelper;
 
-import net.sqlcipher.database.SQLiteOpenHelper;
+import net.zetetic.database.sqlcipher.SQLiteOpenHelper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -159,9 +159,9 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         if (TextUtils.isEmpty(dbName)) {
             dbName = DBOpenHelper.DEFAULT_DB_NAME;
         }
-        final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(context,
+        final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(getEncryptionKey(), context,
                 dbName, null, null);
-        return new SmartStore(dbOpenHelper, getEncryptionKey());
+        return new SmartStore(dbOpenHelper);
     }
 
     /**
@@ -210,9 +210,9 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
             dbNamePrefix = DBOpenHelper.DEFAULT_DB_NAME;
         }
         SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_SMART_STORE_USER);
-        final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(context,
+        final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(getEncryptionKey(), context,
                 dbNamePrefix, account, communityId);
-        SmartStore store = new SmartStore(dbOpenHelper, getEncryptionKey());
+        SmartStore store = new SmartStore(dbOpenHelper);
 
         return store;
     }

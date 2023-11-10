@@ -37,7 +37,7 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 
-import net.sqlcipher.database.SQLiteDatabase;
+import net.zetetic.database.sqlcipher.SQLiteDatabase;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -87,8 +87,8 @@ public class DBOpenHelperTest {
 	 */
     @Test
 	public void testGetHelperForNullAccountNullCommunityId() {
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, "somedb", null, null);
-		SQLiteDatabase db = helper.getWritableDatabase("");
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper("", targetContext, "somedb", null, null);
+		SQLiteDatabase db = helper.getWritableDatabase();
 		String dbName = getBaseName(db);
         Assert.assertEquals("Database name is not correct.","somedb.db", dbName);
 	}
@@ -99,8 +99,8 @@ public class DBOpenHelperTest {
     @Test
 	public void testGetHelperForAccountNullCommunityId() {
 		UserAccount testAcct = getTestUserAccount();
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, "somedb", testAcct, null);
-		SQLiteDatabase db = helper.getWritableDatabase("");
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper("", targetContext, "somedb", testAcct, null);
+		SQLiteDatabase db = helper.getWritableDatabase();
 		String dbName = getBaseName(db);
         Assert.assertTrue("Database name does not contain org id.",dbName.contains(TEST_ORG_ID));
         Assert.assertTrue("Database name does not contain user id.",dbName.contains(TEST_USER_ID));
@@ -112,8 +112,8 @@ public class DBOpenHelperTest {
 	 */
     @Test
 	public void testGetHelperIsCached() {
-		DBOpenHelper helper1 = DBOpenHelper.getOpenHelper(targetContext, "somedb", null, null);
-		DBOpenHelper helper2 = DBOpenHelper.getOpenHelper(targetContext, "somedb", null, null);
+		DBOpenHelper helper1 = DBOpenHelper.getOpenHelper("", targetContext, "somedb", null, null);
+		DBOpenHelper helper2 = DBOpenHelper.getOpenHelper("", targetContext, "somedb", null, null);
         Assert.assertSame("Helpers should be cached.", helper1, helper2);
 	}
 
@@ -123,8 +123,8 @@ public class DBOpenHelperTest {
     @Test
 	public void testGetHelperUsesDefaultDatabaseName() {
 		UserAccount testAcct = getTestUserAccount();
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, testAcct, TEST_COMMUNITY_ID);
-		SQLiteDatabase db = helper.getWritableDatabase("");
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper("", targetContext, testAcct, TEST_COMMUNITY_ID);
+		SQLiteDatabase db = helper.getWritableDatabase();
 		String dbName = getBaseName(db);
         Assert.assertTrue("Database name is not correct.", dbName.startsWith(DBOpenHelper.DEFAULT_DB_NAME));
         Assert.assertTrue("Database name does not contain org id.",dbName.contains(TEST_ORG_ID));
@@ -139,8 +139,8 @@ public class DBOpenHelperTest {
 	public void testDeleteDatabaseDefault() {
 
 		// create db
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, null);
-		SQLiteDatabase db = helper.getWritableDatabase("");
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper("", targetContext, null);
+		SQLiteDatabase db = helper.getWritableDatabase();
 		String dbName = getBaseName(db);
 		DBOpenHelper.deleteDatabase(targetContext, null);
         Assert.assertFalse("Database should not exist.", databaseExists(targetContext, dbName));
@@ -155,20 +155,20 @@ public class DBOpenHelperTest {
 		final UserAccount testAcct = getTestUserAccount();
 
 		// Create a user database we want to ensure is deleted.
-		final DBOpenHelper helper1 = DBOpenHelper.getOpenHelper(targetContext,
+		final DBOpenHelper helper1 = DBOpenHelper.getOpenHelper("", targetContext,
 				testAcct, TEST_COMMUNITY_ID);
-		final SQLiteDatabase db1 = helper1.getWritableDatabase("");
+		final SQLiteDatabase db1 = helper1.getWritableDatabase();
 		final String dbName1 = getBaseName(db1);
 
 		// Create another user database we want to ensure is deleted.
-		final DBOpenHelper helper2 = DBOpenHelper.getOpenHelper(targetContext,
+		final DBOpenHelper helper2 = DBOpenHelper.getOpenHelper("", targetContext,
 				testAcct, "other_community_id");
-		final SQLiteDatabase db2 = helper2.getWritableDatabase("");
+		final SQLiteDatabase db2 = helper2.getWritableDatabase();
 		final String dbName2 = getBaseName(db2);
 
 		// Create a global database we want to ensure is not deleted.
-		final DBOpenHelper helper3 = DBOpenHelper.getOpenHelper(targetContext, null);
-		final SQLiteDatabase db3 = helper3.getWritableDatabase("");
+		final DBOpenHelper helper3 = DBOpenHelper.getOpenHelper("", targetContext, null);
+		final SQLiteDatabase db3 = helper3.getWritableDatabase();
 		final String dbName3 = getBaseName(db3);
 
 		// Delete all user databases.
@@ -195,9 +195,9 @@ public class DBOpenHelperTest {
 	 */
     @Test
 	public void testDeleteDatabaseRemovesFromCache() {
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, null);
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper("", targetContext, null);
 		DBOpenHelper.deleteDatabase(targetContext, null);
-		DBOpenHelper helperPostDelete = DBOpenHelper.getOpenHelper(targetContext, null);
+		DBOpenHelper helperPostDelete = DBOpenHelper.getOpenHelper("", targetContext, null);
         Assert.assertNotSame("Helpers should be different instances.", helper, helperPostDelete);
 	}
 
@@ -209,12 +209,12 @@ public class DBOpenHelperTest {
 		UserAccount testAcct = getTestUserAccount();
 
 		// create the database we want to ensure is deleted
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, testAcct, TEST_COMMUNITY_ID);
-		helper.getWritableDatabase("");
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper("", targetContext, testAcct, TEST_COMMUNITY_ID);
+		helper.getWritableDatabase();
 		
 		// create another database for this account which should not be deleted.
-		DBOpenHelper dontDeleteHelper = DBOpenHelper.getOpenHelper(targetContext, testAcct, "other_community_id");
-		SQLiteDatabase dontDeleteDb = dontDeleteHelper.getWritableDatabase("");
+		DBOpenHelper dontDeleteHelper = DBOpenHelper.getOpenHelper("", targetContext, testAcct, "other_community_id");
+		SQLiteDatabase dontDeleteDb = dontDeleteHelper.getWritableDatabase();
 		String dontDeleteDbName = getBaseName(dontDeleteDb);
 
 		// now, delete the first database and make sure we didn't remove the second.
@@ -222,9 +222,9 @@ public class DBOpenHelperTest {
         Assert.assertTrue("Database should not have been deleted.", databaseExists(targetContext, dontDeleteDbName));
 		
 		// 1st helper should not be cached, but 2nd should still be cached
-		DBOpenHelper helperNew = DBOpenHelper.getOpenHelper(targetContext, testAcct, TEST_COMMUNITY_ID);
+		DBOpenHelper helperNew = DBOpenHelper.getOpenHelper("", targetContext, testAcct, TEST_COMMUNITY_ID);
         Assert.assertNotSame("Helper should have been removed from cache.", helper, helperNew);
-		DBOpenHelper dontDeleteHelperCached = DBOpenHelper.getOpenHelper(targetContext, testAcct, "other_community_id");
+		DBOpenHelper dontDeleteHelperCached = DBOpenHelper.getOpenHelper("", targetContext, testAcct, "other_community_id");
         Assert.assertSame("Helper should be same instance.", dontDeleteHelper, dontDeleteHelperCached);
 	}
 
@@ -236,13 +236,13 @@ public class DBOpenHelperTest {
 		UserAccount testAcct = getTestUserAccount();
 
 		// create the database we want to ensure is deleted
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, testAcct, TEST_COMMUNITY_ID);
-		SQLiteDatabase db = helper.getWritableDatabase("");
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper("", targetContext, testAcct, TEST_COMMUNITY_ID);
+		SQLiteDatabase db = helper.getWritableDatabase();
 		String dbName = getBaseName(db);
 		
 		// create another database for this account which should not be deleted.
-		DBOpenHelper helper2 = DBOpenHelper.getOpenHelper(targetContext, testAcct, "other_community_id");
-		SQLiteDatabase db2 = helper2.getWritableDatabase("");
+		DBOpenHelper helper2 = DBOpenHelper.getOpenHelper("", targetContext, testAcct, "other_community_id");
+		SQLiteDatabase db2 = helper2.getWritableDatabase();
 		String dbName2 = getBaseName(db2);
 
 		// now, delete all databases related to accounts and ensure they no longer exist
@@ -251,8 +251,8 @@ public class DBOpenHelperTest {
         Assert.assertFalse("Database should not exist.", databaseExists(targetContext, dbName2));
 		
 		// also make sure references to the helpers no longer exist
-		DBOpenHelper helperNew = DBOpenHelper.getOpenHelper(targetContext, testAcct, TEST_COMMUNITY_ID);
-		DBOpenHelper helperNew2 = DBOpenHelper.getOpenHelper(targetContext, testAcct, "other_community_id");
+		DBOpenHelper helperNew = DBOpenHelper.getOpenHelper("", targetContext, testAcct, TEST_COMMUNITY_ID);
+		DBOpenHelper helperNew2 = DBOpenHelper.getOpenHelper("", targetContext, testAcct, "other_community_id");
         Assert.assertNotSame("Helper should have been removed from cache.", helper, helperNew);
         Assert.assertNotSame("Helper should have been removed from cache.", helper2, helperNew2);
 	}
@@ -263,8 +263,8 @@ public class DBOpenHelperTest {
     @Test
 	public void testHasSmartStoreIsTrueForDefaultDatabase() {
 		UserAccount testAcct = getTestUserAccount(); 
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, testAcct);
-		helper.getWritableDatabase("");
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper("", targetContext, testAcct);
+		helper.getWritableDatabase();
         Assert.assertTrue("SmartStore for account should exist.",
 				DBOpenHelper.smartStoreExists(targetContext, testAcct, null));
 	}
@@ -284,8 +284,8 @@ public class DBOpenHelperTest {
     @Test
 	public void testHasSmartStoreIsTrueForSpecifiedDatabase() {
 		UserAccount testAcct = getTestUserAccount(); 
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, "testdb", testAcct, null);
-		helper.getWritableDatabase("");
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper("", targetContext, "testdb", testAcct, null);
+		helper.getWritableDatabase();
         Assert.assertTrue("SmartStore for account should exist.",
 				DBOpenHelper.smartStoreExists(targetContext, "testdb", testAcct, null));
 	}

@@ -33,7 +33,7 @@ import androidx.test.filters.MediumTest;
 
 import com.salesforce.androidsdk.util.JSONTestHelper;
 
-import net.sqlcipher.database.SQLiteDatabase;
+import net.zetetic.database.sqlcipher.SQLiteDatabase;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -314,7 +314,7 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
 
         // Drop db indexes on created and lastModified to simulate soup having been created before SDK 4.2
         String dropIndexSqlFormat = "DROP INDEX %s_%s_idx";
-        final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
+        final SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
         db.execSQL(String.format(dropIndexSqlFormat, TEST_SOUP_TABLE_NAME, "created"));
         db.execSQL(String.format(dropIndexSqlFormat, TEST_SOUP_TABLE_NAME, "lastModified"));
 
@@ -393,7 +393,7 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         // Check rows of soup table
         Cursor c = null;
         try {
-            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
             c = DBHelper.getInstance(db).query(db, TEST_SOUP_TABLE_NAME, expectedColumnNames.toArray(new String[0]), "id ASC", null, null);
             Assert.assertTrue("Expected a row", c.moveToFirst());
             Assert.assertEquals("Wrong number of rows", expectedIds.length, c.getCount());
@@ -425,7 +425,7 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
 
         // Check rows of fts table
         try {
-            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
             expectedFtsColumnNames.add(0, "rowid");
             c = DBHelper.getInstance(db).query(db, TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX, expectedFtsColumnNames.toArray(new String[0]), "rowid ASC", null, null);
             Assert.assertTrue("Expected a row", c.moveToFirst());
@@ -473,7 +473,7 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         // Check DB
         Cursor c = null;
         try {
-            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
             String soupTableName = getSoupTableName(TEST_SOUP);
             Assert.assertEquals("Wrong table for test_soup", TEST_SOUP_TABLE_NAME, soupTableName);
             Assert.assertTrue("Table for test_soup should now exist", hasTable(TEST_SOUP_TABLE_NAME));
@@ -630,7 +630,7 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
      * @throws JSONException
      */
     private void tryAlterSoupInterruptResume(AlterSoupLongOperation.AlterSoupStep toStep) throws JSONException {
-        SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getEncryptionKey());
+        SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
         Assert.assertFalse("Soup test_soup should not exist", store.hasSoup(TEST_SOUP));
         IndexSpec[] indexSpecs = new IndexSpec[] {new IndexSpec("lastName", SmartStore.Type.string)};
         store.registerSoup(TEST_SOUP, indexSpecs);
@@ -710,8 +710,8 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         Assert.assertFalse("Database should be closed", db.isOpen());
 
         // Re-open db
-        dbHelper = DBHelper.getInstance(dbOpenHelper.getWritableDatabase(getEncryptionKey()));
-        store = new SmartStore(dbOpenHelper, getEncryptionKey());
+        dbHelper = DBHelper.getInstance(dbOpenHelper.getWritableDatabase());
+        store = new SmartStore(dbOpenHelper);
         SQLiteDatabase newDb = store.getDatabase(); // should trigger a resumeLongOperations
         Assert.assertTrue("Database should be opened", newDb.isOpen());
 
