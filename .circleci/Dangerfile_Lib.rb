@@ -10,8 +10,8 @@ else
   warn("Test results not available from Firebase.")
 end
 
-if File.file?("libs/#{ENV['CURRENT_LIB']}/build/reports/lint-results.xml")
-  android_lint.report_file = "libs/#{ENV['CURRENT_LIB']}/build/reports/lint-results.xml"
+if File.file?("libs/#{ENV['CURRENT_LIB']}/build/reports/lint-results-debug.xml")
+  android_lint.report_file = "libs/#{ENV['CURRENT_LIB']}/build/reports/lint-results-debug.xml"
   android_lint.filtering = true
   android_lint.lint(inline_mode: true)
 else
