@@ -78,7 +78,6 @@ jobs:
           command: |
             gem install danger
             danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
-          background: true
 
   run-tests:
     executor: linux
