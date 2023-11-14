@@ -1,6 +1,6 @@
 aliases:
   # Docker image tags can be found here: https://circleci.com/developer/images/image/cimg/android
-  - &cimg cimg/android:2023.08.1-node
+  - &cimg cimg/android:2023.11.1-node
   # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
   - &default-api-level 33
 
@@ -70,44 +70,13 @@ executors:
       GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx4096m -XX:+HeapDumpOnOutOfMemoryError" -Dorg.gradle.daemon=false'
 
 jobs:
-  static-analysis:
-    executor: linux
+  pr-danger:
+    docker:
+      - image: cimg/ruby:3.2.2
     steps:
-      - checkout
-      - restore_cache: *restore-gradle-cache
-      - restore_cache: *restore-node-cache
-      - restore_cache: *restore-ruby-cache
       - run:
-          name: Setup Environment
-          command: |
-            ./install.sh
-            sudo chmod -R a+w /var/lib/gems/ && sudo chmod -R a+w /usr/local/bin
-            gem install bundler
-            gem install danger
-            gem install danger-junit
-            gem install danger-android_lint
-            gem install danger-jacoco
-            echo $TEST_CREDENTIALS > ./shared/test/test_credentials.json
-      - run:
-          name: Run Android Lint
-          command: ./gradlew lint
-          when: always
-      - run:
-          name: Run Danger
-          command: |
-            if [[ $CIRCLE_BRANCH == *"pull"* ]]; then
-                # These env vars are not set properly on rebuilds
-                export CIRCLE_PULL_REQUEST="https://github.com/forcedotcom/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
-                export CIRCLE_PULL_REQUESTS="https://github.com/forcedotcom/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
-                export CI_PULL_REQUEST="https://github.com/forcedotcom/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
-                export CI_PULL_REQUESTS="https://github.com/forcedotcom/SalesforceMobileSDK-Android/${CIRCLE_BRANCH}"
-                danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
-            else
-                echo "No need to run Danger."
-            fi
-      - save_cache: *save-gradle-cache
-      - save_cache: *save-node-cache
-      - save_cache: *save-ruby-cache
+          command: danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
+          background: true
 
   run-tests:
     executor: linux
@@ -145,21 +114,21 @@ jobs:
                       circleci step halt
                   fi
       - run:
+          name: Static Analysis
+          command: ./gradlew libs:<< parameters.lib >>:lint
+      - run:
           name: Build for Testing
           command: |
-            ./gradlew libs:SalesforceAnalytics:assembleAndroidTest
-            ./gradlew libs:SalesforceSDK:assembleAndroidTest
-            ./gradlew libs:SmartStore:assembleAndroidTest
-            ./gradlew libs:MobileSync:assembleAndroidTest
-            ./gradlew libs:SalesforceHybrid:assembleAndroidTest
-            ./gradlew libs:SalesforceReact:assembleAndroidTest
+            ./gradlew libs:<< parameters.lib >>:assembleAndroidTest
             ./gradlew native:NativeSampleApps:RestExplorer:assembleDebug
+          when: always
       - run:
           name: Authorize gcloud and set config defaults
           command: |
             echo $GCLOUD_SERVICE_KEY | base64 --decode --ignore-garbage > ${HOME}/gcloud-service-key.json
             gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
             gcloud --quiet config set project mobile-apps-firebase-test
+          when: always
       - run:
           name: Run << parameters.lib >> Tests with API << parameters.api_level >>
           command: |
@@ -182,6 +151,7 @@ jobs:
                 --results-history-name=<< parameters.lib >>  \
                 --timeout=20m --no-auto-google-login --no-record-video --no-performance-metrics
           no_output_timeout: 20m
+          when: always
       - run:
           name: Copy test results data
           command: |
@@ -366,8 +336,7 @@ workflows:
             pattern: "^pull/\\d+$"
             value: << pipeline.git.branch >>
     jobs:
-      - static-analysis:
-          context: Android Unit Tests
+      - pr-danger
       - run-tests:
           name: << matrix.lib >>
           context: Android Unit Tests
