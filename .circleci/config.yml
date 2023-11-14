@@ -75,7 +75,9 @@ jobs:
       - image: cimg/ruby:3.2.2
     steps:
       - run:
-          command: danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
+          command: |
+            gem install danger
+            danger --dangerfile=.circleci/Dangerfile_PR.rb --danger_id=PR-Check --verbose
           background: true
 
   run-tests:
@@ -93,10 +95,6 @@ jobs:
         default: false
     steps:
       - checkout
-      - restore_cache: *restore-gradle-cache
-      - restore_cache: *restore-node-cache
-      - restore_cache: *restore-ruby-cache
-      - run: *setup-env
       - when:
           condition: << parameters.pr >>
           steps:
@@ -113,6 +111,10 @@ jobs:
                       echo -e "\n\nNo need to test << parameters.lib >> for this PR, stopping execution."
                       circleci step halt
                   fi
+      - restore_cache: *restore-gradle-cache
+      - restore_cache: *restore-node-cache
+      - restore_cache: *restore-ruby-cache
+      - run: *setup-env
       - run:
           name: Static Analysis
           command: ./gradlew libs:<< parameters.lib >>:lint
