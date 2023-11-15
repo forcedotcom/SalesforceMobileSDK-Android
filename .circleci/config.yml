@@ -118,8 +118,6 @@ jobs:
       - run:
           name: Static Analysis
           command: ./gradlew libs:<< parameters.lib >>:lint
-          environment:
-            CURRENT_LIB: << parameters.lib >>
       - run:
           name: Build for Testing
           command: |
@@ -188,6 +186,8 @@ jobs:
                   danger --dangerfile=.circleci/Dangerfile_Lib.rb --danger_id=<< parameters.lib >> --verbose
                 background: true
                 when: always
+                environment:
+                  CURRENT_LIB: << parameters.lib >>
       - store_artifacts:
           path: firebase/
       - store_artifacts:
