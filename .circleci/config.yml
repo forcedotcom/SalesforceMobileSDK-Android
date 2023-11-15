@@ -118,6 +118,8 @@ jobs:
       - run:
           name: Static Analysis
           command: ./gradlew libs:<< parameters.lib >>:lint
+          environment:
+            CURRENT_LIB: << parameters.lib >>
       - run:
           name: Build for Testing
           command: |
@@ -188,6 +190,8 @@ jobs:
                 when: always
       - store_artifacts:
           path: firebase/
+      - store_artifacts:
+          path: libs/<< parameters.lib >>/build/reports/
       - store_test_results:
           path: firebase/results
 
