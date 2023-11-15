@@ -55,7 +55,7 @@ android {
         }
     }
 
-    packagingOptions {
+    packaging {
         resources {
             excludes += setOf("META-INF/LICENSE", "META-INF/LICENSE.txt", "META-INF/DEPENDENCIES", "META-INF/NOTICE")
         }
@@ -75,4 +75,8 @@ android {
         renderScript = true
         aidl = true
     }
+}
+
+kotlin {
+    jvmToolchain(17)
 }
