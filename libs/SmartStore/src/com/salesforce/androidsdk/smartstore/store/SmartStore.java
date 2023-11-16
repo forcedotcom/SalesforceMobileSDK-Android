@@ -232,7 +232,7 @@ public class SmartStore  {
      */
     public int getDatabaseSize() {
 		// With WAL enabled we must force a WAL checkpoint if we want the actual DB file size.
-		getDatabase().query("PRAGMA wal_checkpoint(FULL);").moveToNext();
+		queryPragma("wal_checkpoint(FULL)");
     	int size =  (int) (new File(getDatabase().getPath()).length()); // XXX That cast will be trouble if the file is more than 2GB
     	return size;
     }
