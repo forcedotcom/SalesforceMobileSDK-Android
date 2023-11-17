@@ -39,9 +39,9 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 
-import net.sqlcipher.DatabaseUtils.InsertHelper;
-import net.sqlcipher.database.SQLiteDatabase;
-import net.sqlcipher.database.SQLiteStatement;
+import net.zetetic.database.DatabaseUtils.InsertHelper;
+import net.zetetic.database.sqlcipher.SQLiteDatabase;
+import net.zetetic.database.sqlcipher.SQLiteStatement;
 
 import org.json.JSONArray;
 import org.json.JSONException;
