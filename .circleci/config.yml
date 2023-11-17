@@ -186,8 +186,12 @@ jobs:
                   danger --dangerfile=.circleci/Dangerfile_Lib.rb --danger_id=<< parameters.lib >> --verbose
                 background: true
                 when: always
+                environment:
+                  CURRENT_LIB: << parameters.lib >>
       - store_artifacts:
           path: firebase/
+      - store_artifacts:
+          path: libs/<< parameters.lib >>/build/reports/
       - store_test_results:
           path: firebase/results
 

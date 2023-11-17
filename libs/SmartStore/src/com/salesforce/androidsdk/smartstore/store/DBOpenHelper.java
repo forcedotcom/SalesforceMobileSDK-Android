@@ -34,9 +34,11 @@ import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 import com.salesforce.androidsdk.util.ManagedFilesHelper;
 
-import net.sqlcipher.database.SQLiteDatabase;
-import net.sqlcipher.database.SQLiteDatabaseHook;
-import net.sqlcipher.database.SQLiteOpenHelper;
+import net.zetetic.database.DatabaseErrorHandler;
+import net.zetetic.database.sqlcipher.SQLiteConnection;
+import net.zetetic.database.sqlcipher.SQLiteDatabase;
+import net.zetetic.database.sqlcipher.SQLiteDatabaseHook;
+import net.zetetic.database.sqlcipher.SQLiteOpenHelper;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -45,6 +47,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Helper class to manage SmartStore's database creation and version management.
@@ -56,14 +59,13 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	// 3 --> starting at 4.3 (soup_names table changes to soup_attr)
 	public static final int DB_VERSION = 3;
 	public static final String DEFAULT_DB_NAME = "smartstore";
-	public static final String SOUP_ELEMENT_PREFIX = "soupelt_";
 	private static final String TAG = "DBOpenHelper";
 	private static final String DB_NAME_SUFFIX = ".db";
 	private static final String ORG_KEY_PREFIX = "00D";
-	private static final String EXTERNAL_BLOBS_SUFFIX = "_external_soup_blobs/";
 	public static final String DATABASES = "databases";
-	private static String dataDir;
 	private String dbName;
+
+	private static AtomicBoolean libsLoaded = new AtomicBoolean(false);
 
 	/*
 	 * Cache for the helper instances
@@ -103,43 +105,49 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	/**
 	 * Returns the DBOpenHelper instance associated with this user account.
 	 *
-	 * @param ctx Context.
-	 * @param account User account.
+	 * @param encryptionKey Password for database.
+	 * @param ctx           Context.
+	 * @param account       User account.
 	 * @return DBOpenHelper instance.
 	 */
-	public static synchronized DBOpenHelper getOpenHelper(Context ctx,
-			UserAccount account) {
-		return getOpenHelper(ctx, account, null);
+	public static synchronized DBOpenHelper getOpenHelper(String encryptionKey, Context ctx,
+														  UserAccount account) {
+		return getOpenHelper(encryptionKey, ctx, account, null);
 	}
 
 	/**
 	 * Returns the DBOpenHelper instance associated with this user and community.
 	 *
-	 * @param ctx Context.
-	 * @param account User account.
-	 * @param communityId Community ID.
+	 * @param encryptionKey Password for database.
+	 * @param ctx           Context.
+	 * @param account       User account.
+	 * @param communityId   Community ID.
 	 * @return DBOpenHelper instance.
 	 */
-	public static synchronized DBOpenHelper getOpenHelper(Context ctx,
-			UserAccount account, String communityId) {
-		return getOpenHelper(ctx, DEFAULT_DB_NAME, account, communityId);
+	public static synchronized DBOpenHelper getOpenHelper(String encryptionKey, Context ctx,
+														  UserAccount account, String communityId) {
+		return getOpenHelper(encryptionKey, ctx, DEFAULT_DB_NAME, account, communityId);
 	}
 
 	/**
 	 * Returns the DBOpenHelper instance for the given database name.
 	 *
-	 * @param ctx Context.
-	 * @param dbNamePrefix The database name. This must be a valid file name without a
-	 *                     filename extension such as ".db".
-	 * @param account User account. If this method is called before authentication,
-	 * 				we will simply return the smart store DB, which is not associated
-	 * 				with any user account. Otherwise, we will return a unique
-	 * 				database at the community level.
-	 * @param communityId Community ID.
+	 * @param encryptionKey password for database.
+	 * @param ctx           Context.
+	 * @param dbNamePrefix  The database name. This must be a valid file name without a
+	 *                      filename extension such as ".db".
+	 * @param account       User account. If this method is called before authentication,
+	 *                      we will simply return the smart store DB, which is not associated
+	 *                      with any user account. Otherwise, we will return a unique
+	 *                      database at the community level.
+	 * @param communityId   Community ID.
 	 * @return DBOpenHelper instance.
 	 */
-	public static DBOpenHelper getOpenHelper(Context ctx, String dbNamePrefix,
-			UserAccount account, String communityId) {
+	public static DBOpenHelper getOpenHelper(String encryptionKey,
+											 Context ctx,
+											 String dbNamePrefix,
+											 UserAccount account,
+											 String communityId) {
 		final StringBuilder dbName = new StringBuilder(dbNamePrefix);
 
 		// If we have account information, we will use it to create a database suffix for the user.
@@ -171,21 +179,22 @@ public class DBOpenHelper extends SQLiteOpenHelper {
                 SmartStoreLogger.e(TAG, "Error occurred while creating JSON", e);
 			}
 			EventBuilderHelper.createAndStoreEvent(eventName, account, TAG, storeAttributes);
-			helper = new DBOpenHelper(ctx, fullDBName);
+			loadLibsIfNeeded(ctx);
+			helper = new DBOpenHelper(encryptionKey, ctx, fullDBName);
 			openHelpers.put(fullDBName, helper);
 		}
 		return helper;
 	}
 
-	protected DBOpenHelper(Context context, String dbName) {
-		super(context, dbName, null, DB_VERSION, new DBHook());
-		this.loadLibs(context);
+	protected DBOpenHelper(String encryptionKey, Context context, String dbName) {
+ 		super(context, dbName, encryptionKey, null, DB_VERSION, DB_VERSION, new DBErrorHandler(), new DBHook(), false);
 		this.dbName = dbName;
-		dataDir = context.getApplicationInfo().dataDir;
 	}
 
-	protected void loadLibs(Context context) {
-		SQLiteDatabase.loadLibs(context);
+	protected static void loadLibsIfNeeded(Context context) {
+		if (libsLoaded.compareAndSet(false, true)) {
+			 System.loadLibrary("sqlcipher");
+		}
 	}
 
 	@Override
@@ -195,31 +204,11 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
-
-		/*
-		 * SQLCipher manages locking on the DB at a low level. However,
-		 * we explicitly lock on the DB as well, for all SmartStore
-		 * operations. This can lead to deadlocks or ReentrantLock
-		 * exceptions where a thread is waiting for itself. Hence, we
-		 * set the default SQLCipher locking to 'false', since we
-		 * manage locking at our level anyway.
-		 */
-		db.setLockingEnabled(false);
 		SmartStore.createMetaTables(db);
 	}
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-
-		/*
-		 * SQLCipher manages locking on the DB at a low level. However,
-		 * we explicitly lock on the DB as well, for all SmartStore
-		 * operations. This can lead to deadlocks or ReentrantLock
-		 * exceptions where a thread is waiting for itself. Hence, we
-		 * set the default SQLCipher locking to 'false', since we
-		 * manage locking at our level anyway.
-		 */
-		db.setLockingEnabled(false);
 	}
 
 	/**
@@ -362,18 +351,25 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		return ctx.getDatabasePath(dbName.toString()).exists();
 	}
 
+	static class DBErrorHandler implements DatabaseErrorHandler {
+		@Override
+		public void onCorruption(SQLiteDatabase dbObj) {
+			throw new SmartStore.SmartStoreException("Database is corrupted");
+		}
+	}
+
 	static class DBHook implements SQLiteDatabaseHook {
-		public void preKey(SQLiteDatabase database) {
+		public void preKey(SQLiteConnection connection) {
 		}
 
 		/**
 		 * Need to migrate for SqlCipher 4.x
-		 * @param database db being processed
+		 * @param connection db connection being processed
 		 */
-		public void postKey(SQLiteDatabase database) {
+		public void postKey(SQLiteConnection connection) {
 			// Using sqlcipher 2.x kdf iter because 3.x default (64000) and 4.x default (256000) are too slow
 			// => should open 2.x databases without any migration
-			database.rawExecSQL("PRAGMA kdf_iter = 4000");
+			connection.executeRaw("PRAGMA kdf_iter = 4000", new Object[]{}, null);
 		}
 	}
 
