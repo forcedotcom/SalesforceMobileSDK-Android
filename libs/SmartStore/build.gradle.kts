@@ -15,19 +15,19 @@ dependencies {
     //noinspection GradleDependency -  Needs to line up with supported SQLCipher version.
     api("androidx.sqlite:sqlite:2.2.0")
     api("net.zetetic:sqlcipher-android:4.5.5")
-    implementation("androidx.core:core-ktx:1.9.0")
+    implementation("androidx.core:core-ktx:1.12.0")
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    implementation("com.google.android.material:material:1.8.0")
+    implementation("com.google.android.material:material:1.10.0")
 }
 
 android {
     namespace = "com.salesforce.androidsdk.smartstore"
     testNamespace = "com.salesforce.androidsdk.smartstore.tests"
 
-    compileSdk = 33
+    compileSdk = 34
 
     defaultConfig {
         minSdk = 24
