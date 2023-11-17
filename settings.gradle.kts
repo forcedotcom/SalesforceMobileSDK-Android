@@ -15,7 +15,6 @@ if (hasNodeModules) {
 include("hybrid:HybridSampleApps:AccountEditor")
 include("native:NativeSampleApps:AppConfigurator")
 include("native:NativeSampleApps:ConfiguredApp")
-include("native:NativeSampleApps:MobileSyncExplorer")
 include("hybrid:HybridSampleApps:MobileSyncExplorerHybrid")
 include("native:NativeSampleApps:RestExplorer")
 

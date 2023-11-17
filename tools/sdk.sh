@@ -10,7 +10,7 @@ TEST_OUTPUT_FILTER='^BUILD '
 
 process_args()
 {
-    if [ $# -eq 0 ] 
+    if [ $# -eq 0 ]
     then
         usage
     fi
@@ -56,7 +56,6 @@ usage ()
     echo "        ConfiguredApp"
     echo "        RestExplorer"
     echo "        MobileSyncExplorerHybrid"
-    echo "        MobileSyncExplorer"
     echo "        SalesforceHybridTest"
     echo "    <test_target> can be "
     echo "        all"
@@ -91,7 +90,7 @@ should_do ()
     fi
 }
 
-header () 
+header ()
 {
     if [ $VERBOSE -eq $TRUE ]
     then
@@ -168,10 +167,9 @@ else
         build_project_if_requested    "MobileSync"                    :libs:MobileSync
         build_project_if_requested    "SalesforceHybrid"              :libs:SalesforceHybrid
         build_project_if_requested    "SalesforceReact"               :libs:SalesforceReact
-        build_project_if_requested    "RestExplorer"                  :native:NativeSampleApps:RestExplorer 
+        build_project_if_requested    "RestExplorer"                  :native:NativeSampleApps:RestExplorer
         build_project_if_requested    "AppConfigurator"               :native:NativeSampleApps:AppConfigurator
         build_project_if_requested    "ConfiguredApp"                 :native:NativeSampleApps:ConfiguredApp
-        build_project_if_requested    "MobileSyncExplorer"            :native:NativeSampleApps:MobileSyncExplorer
         build_project_if_requested    "AccountEditor"                 :hybrid:HybridSampleApps:AccountEditor
         build_project_if_requested    "MobileSyncExplorerHybrid"      :hybrid:HybridSampleApps:MobileSyncExplorerHybrid
     fi
