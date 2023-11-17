@@ -15,7 +15,7 @@ dependencies {
     api("com.squareup.okhttp3:okhttp:4.10.0")
     api("com.google.firebase:firebase-messaging:23.3.1")
     api("androidx.core:core:1.12.0")
-    api("androidx.browser:browser:1.6.0")
+    api("androidx.browser:browser:1.7.0")
     api("androidx.work:work-runtime-ktx:2.8.1")
     implementation("com.google.android.material:material:1.10.0")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
