@@ -151,7 +151,7 @@ jobs:
                 --directories-to-pull=/sdcard  \
                 --results-dir=<< parameters.lib >>-${CIRCLE_BUILD_NUM}  \
                 --results-history-name=<< parameters.lib >>  \
-                --timeout=20m --no-auto-google-login --no-record-video --no-performance-metrics
+                --timeout=20m --no-auto-google-login --no-record-video --no-performance-metrics --num-flaky-test-attempts=1
           no_output_timeout: 20m
           when: always
       - run:
