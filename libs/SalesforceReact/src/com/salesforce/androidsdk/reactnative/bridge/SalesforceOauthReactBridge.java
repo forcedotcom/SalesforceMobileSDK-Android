@@ -32,6 +32,18 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 import com.salesforce.androidsdk.reactnative.ui.SalesforceReactActivity;
+import com.salesforce.androidsdk.rest.RestClient;
+
+
+import android.util.Log;
+
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
 
@@ -73,6 +85,82 @@ public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
                 errorCallback.invoke("SalesforceReactActivity not found");
             }
         }
+    }
+    // Reference the function in your React Native module
+    @ReactMethod
+    public String updateAccessToken(ReadableMap args, Callback successCallback, Callback errorCallback) {
+        final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
+        if (currentActivity != null) {
+            try {
+                String salesforceEndpoint = currentActivity.getRestClient().getClientInfo().loginUrl.toString();
+RestClient client = currentActivity.getRestClient();
+                String clientId = "3MVG9ux34Ig8G5eqGtsZfUwvvvqAVW2Ud3PsVW_pN.4cd79XOOlxVeK315e2_F6fQyj0DMbKGtlXzPaIdKRtO";
+                String clientSecret = "81C0282B921F3361FC78D4A765332C670AC04CEF04D79EE25B51225DEC768284";
+                // Get the refresh token from secure storage
+                String refreshToken =currentActivity.getRestClient().getRefreshToken().toString();
+
+
+                // Construct the URL for token refresh
+                String tokenRefreshURL = salesforceEndpoint + "/services/oauth2/token";
+                // Construct the request parameters
+                String postParameters = "grant_type=refresh_token&client_id=" + clientId + "&client_secret=" + clientSecret + "&refresh_token=" + refreshToken;
+                // Create URL object
+                URL url = new URL(tokenRefreshURL);
+                // Create connection
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("POST");
+                connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                connection.setDoOutput(true);
+                // Send request
+                DataOutputStream outputStream = new DataOutputStream(connection.getOutputStream());
+                outputStream.writeBytes(postParameters);
+                outputStream.flush();
+                outputStream.close();
+                // Get the response
+                int responseCode = connection.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                    String inputLine;
+                  String response = null;
+                    while ((inputLine = in.readLine()) != null) {
+                        response=inputLine.toString();
+                    }
+                    in.close();
+
+                    response = response.substring(1, response.length() - 1); // remove curly brackets
+                    String[] keyValuePairs = response.split(","); // split the string to create key-value pairs
+                    Map<String, String> map = new HashMap<>();
+
+                    for (String pair : keyValuePairs) {
+                        String[] entry = pair.split(":");
+                        String key = entry[0].trim().replace("\"", ""); // remove quotes from the key
+                        String value = entry[1].trim().replace("\"", ""); // remove quotes from the value
+                        map.put(key, value);
+                    }
+
+                    String newAccessToken = map.get("access_token");
+          
+                    currentActivity.getRestClient().setAccessToken(newAccessToken);
+successCallback.invoke(response.toString());
+                } else {
+                    Log.e("TokenRefreshTask", "HTTP error code: " + responseCode);
+                }
+            } catch (Exception e) {
+
+                errorCallback.invoke(e.getMessage());
+            }
+        } else {
+            if (errorCallback != null) {
+                errorCallback.invoke("SalesforceReactActivity not found");
+            }
+        }
+        return null;
+    }
+
+    private static String extractAccessToken(String responseBody) {
+        // This is a simplified example, you should use a JSON library to properly parse the response
+        // In a real application, handle errors and extract the access token securely
+        return responseBody.split("\"access_token\" : \"")[1].split("\"")[0];
     }
 
     @ReactMethod
