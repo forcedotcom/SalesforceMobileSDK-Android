@@ -15,7 +15,7 @@ dependencies {
     //noinspection GradleDependency -  Needs to line up with supported SQLCipher version.
     api("androidx.sqlite:sqlite:2.2.0")
     api("net.zetetic:sqlcipher-android:4.5.5")
-    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.core:core-ktx:1.9.0")
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")

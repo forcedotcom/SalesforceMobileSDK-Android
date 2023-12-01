@@ -9,7 +9,7 @@
     "create-react-class": "^15.7.0",
     "react": "18.2.0",
     "react-native": "0.72.6",
-    "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#dev"
+    "react-native-force": "git+https://github.com/JohnsonEricAtSalesforce/SalesforceMobileSDK-ReactNative.git#feature/w-13557285-gradle-8-react-native-0.72.6"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
