@@ -77,7 +77,6 @@ public class ReactNativeTestHost extends ReactNativeHost {
         ReactInstanceManagerBuilder builder = ReactInstanceManager.builder()
                 .setApplication(mApplication)
                 .setJavaScriptExecutorFactory(getJavaScriptExecutorFactory())
-                .setUIImplementationProvider(getUIImplementationProvider())
                 .setInitialLifecycleState(LifecycleState.BEFORE_CREATE)
                 // Always reading from bundle
                 // NB: Bundle is generated during build

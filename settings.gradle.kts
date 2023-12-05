@@ -11,6 +11,9 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(FAIL_ON_PROJECT_REPOS)
     repositories {
+        // Android JSC is installed from NPM.
+        maven("${rootProject.projectDir}/libs/SalesforceReact/node_modules/jsc-android/dist") // For stand-alone MSDK builds.
+        maven("${rootProject.projectDir}/../../node_modules/jsc-android/dist") // For template app builds.
         google()
         mavenCentral()
     }

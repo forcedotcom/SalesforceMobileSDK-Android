@@ -137,12 +137,9 @@ task<Exec>("buildReactTestBundle") {
 }
 
 task("buildReactTestBundleIfNotExists") {
-    doLast {
-        if (!reactTestsBundleFile.exists()) {
-            assetsFolder.mkdirs()
-
-            dependsOn("buildReactTestBundle")
-        }
+    if (!reactTestsBundleFile.exists()) {
+        assetsFolder.mkdirs()
+        dependsOn("buildReactTestBundle")
     }
 }
 
