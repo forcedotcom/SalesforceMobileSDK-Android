@@ -7,7 +7,7 @@ plugins {
 
 dependencies {
     implementation(project(":libs:SalesforceSDK"))
-    implementation("androidx.core:core-ktx:1.9.0")
+    implementation("androidx.core:core-ktx:1.12.0")
     androidTestImplementation("androidx.test:runner:1.5.1") {
         exclude("com.android.support", "support-annotations")
     }
