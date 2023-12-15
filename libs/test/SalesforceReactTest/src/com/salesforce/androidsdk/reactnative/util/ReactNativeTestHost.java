@@ -42,11 +42,10 @@ import java.util.List;
 
 /**
  * Subclass of ReactNativeHost used for testing
- *
+ * <p>
  * In addition to the SalesforceReact react packages, it loads SalesforceReactTestPackage (which brings SalesforceTestBridge)
  * It creates an ReactInstanceManager which handles error through NativeModuleCallExceptionTestHandler
  * That way the current test running is marked as failed if any javascript error takes place
- *
  */
 public class ReactNativeTestHost extends ReactNativeHost {
 
@@ -65,7 +64,7 @@ public class ReactNativeTestHost extends ReactNativeHost {
 
     @Override
     protected List<ReactPackage> getPackages() {
-        return Arrays.<ReactPackage>asList(
+        return Arrays.asList(
                 new MainReactPackage(),
                 SalesforceReactSDKManager.getInstance().getReactPackage(),
                 new SalesforceReactTestPackage()
@@ -77,7 +76,6 @@ public class ReactNativeTestHost extends ReactNativeHost {
         ReactInstanceManagerBuilder builder = ReactInstanceManager.builder()
                 .setApplication(mApplication)
                 .setJavaScriptExecutorFactory(getJavaScriptExecutorFactory())
-                .setUIImplementationProvider(getUIImplementationProvider())
                 .setInitialLifecycleState(LifecycleState.BEFORE_CREATE)
                 // Always reading from bundle
                 // NB: Bundle is generated during build

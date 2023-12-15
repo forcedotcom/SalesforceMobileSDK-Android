@@ -16,7 +16,7 @@ dependencies {
     api("com.google.firebase:firebase-messaging:23.3.1")
     api("androidx.core:core:1.12.0")
     api("androidx.browser:browser:1.7.0")
-    api("androidx.work:work-runtime-ktx:2.8.1")
+    api("androidx.work:work-runtime-ktx:2.9.0")
     implementation("com.google.android.material:material:1.10.0")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
     implementation("androidx.lifecycle:lifecycle-extensions:2.2.0")
@@ -62,7 +62,7 @@ android {
         }
     }
 
-    packagingOptions {
+    packaging {
         resources {
             excludes += setOf("META-INF/LICENSE", "META-INF/LICENSE.txt", "META-INF/DEPENDENCIES", "META-INF/NOTICE")
         }
@@ -81,5 +81,10 @@ android {
     buildFeatures {
         renderScript = true
         aidl = true
+        buildConfig = true
     }
+}
+
+kotlin {
+    jvmToolchain(17)
 }

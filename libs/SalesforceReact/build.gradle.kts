@@ -23,7 +23,7 @@ plugins {
 
 dependencies {
     api(project(":libs:MobileSync"))
-    api("com.facebook.react:react-native:0.70.14")
+    api("com.facebook.react:react-android:0.72.7")
     implementation("androidx.core:core-ktx:1.12.0")
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")
@@ -73,7 +73,7 @@ android {
         }
     }
 
-    packagingOptions {
+    packaging {
         resources {
             excludes += setOf("META-INF/LICENSE", "META-INF/LICENSE.txt", "META-INF/DEPENDENCIES", "META-INF/NOTICE")
         }
@@ -137,12 +137,9 @@ task<Exec>("buildReactTestBundle") {
 }
 
 task("buildReactTestBundleIfNotExists") {
-    doLast {
-        if (!reactTestsBundleFile.exists()) {
-            assetsFolder.mkdirs()
-
-            dependsOn("buildReactTestBundle")
-        }
+    if (!reactTestsBundleFile.exists()) {
+        assetsFolder.mkdirs()
+        dependsOn("buildReactTestBundle")
     }
 }
 

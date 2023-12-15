@@ -15,7 +15,7 @@ dependencies {
     api("org.apache.cordova:framework:12.0.1")
     api("androidx.appcompat:appcompat:1.6.1")
     api("androidx.appcompat:appcompat-resources:1.6.1")
-    api("androidx.webkit:webkit:1.8.0")
+    api("androidx.webkit:webkit:1.9.0")
     api("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.core:core-ktx:1.12.0")
     androidTestImplementation("androidx.test:runner:1.5.2")
@@ -58,7 +58,7 @@ android {
         }
     }
 
-    packagingOptions {
+    packaging {
         resources {
             excludes += setOf("META-INF/LICENSE", "META-INF/LICENSE.txt", "META-INF/DEPENDENCIES", "META-INF/NOTICE")
         }
