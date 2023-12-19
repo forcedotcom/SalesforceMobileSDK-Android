@@ -627,7 +627,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         new CodeExchangeEndpointTask(code).execute();
     }
 
-    private class CodeExchangeEndpointTask extends AsyncTask<Void, Void, TokenEndpointResponse> {
+    private class CodeExchangeEndpointTask extends AsyncTask<Void, Void, TokenEndpointResponse> { // TODO: ECJ20231219
 
         private String code;
 
@@ -694,7 +694,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     /**
      * Base class with common code for the background task that finishes off the auth process.
      */
-    protected abstract class BaseFinishAuthFlowTask<RequestType> extends AsyncTask<RequestType, Boolean, TokenEndpointResponse> {
+    protected abstract class BaseFinishAuthFlowTask<RequestType> extends AsyncTask<RequestType, Boolean, TokenEndpointResponse> { // TODO: ECJ20231219
 
         protected volatile Exception backgroundException;
         protected volatile IdServiceResponse id = null;
@@ -901,7 +901,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
      * If it remains private we don't have to deprecate and wait for a major version to replace with
      * a proper (work manager) solution.
      */
-    private static class RevokeTokenTask extends AsyncTask<Void, Void, Void> {
+    private static class RevokeTokenTask extends AsyncTask<Void, Void, Void> { // TODO: ECJ20231219
 
         private final String refreshToken;
         private final String loginServer;

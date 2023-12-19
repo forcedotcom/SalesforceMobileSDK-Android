@@ -568,7 +568,7 @@ public class LoginActivity extends AppCompatActivity
                 });
     }
 
-    private class RefreshTokenTask extends AsyncTask<Void, Void, Void> {
+    private class RefreshTokenTask extends AsyncTask<Void, Void, Void> { // TODO: ECJ20231219
 
         private final LoginActivity activity;
 

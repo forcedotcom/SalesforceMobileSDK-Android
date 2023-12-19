@@ -78,4 +78,8 @@ android {
         renderScript = true
         aidl = true
     }
+
+    kotlin {
+        jvmToolchain(17)
+    }
 }

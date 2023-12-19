@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.phonegap;
 
 import android.app.Instrumentation;
 import android.content.Intent;
+
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -50,17 +51,17 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class JSTestCase {
 
-	private static final String TAG = "JSTestCase";
+    private static final String TAG = "JSTestCase";
 
     private static Map<String, Map<String, TestResult>> testResults;
 
     public static void runJSTestSuite(String jsSuite, Iterable<String> testNames, int timeout) throws InterruptedException {
-    	if (testResults == null || !testResults.containsKey(jsSuite)) {
+        if (testResults == null || !testResults.containsKey(jsSuite)) {
             if (testResults == null) {
                 testResults = new HashMap<>();
             }
             if (!testResults.containsKey(jsSuite)) {
-                testResults.put(jsSuite, new HashMap<String, TestResult>());
+                testResults.put(jsSuite, new HashMap<>());
             }
 
             // Wait for app initialization to complete
@@ -82,20 +83,13 @@ public abstract class JSTestCase {
             // Now run all the tests and collect the resuts in testResults
             for (String testName : testNames) {
                 final String jsCmd = "javascript:" + "navigator.testrunner.setTestSuite('" + jsSuite + "');" +
-                    "navigator.testrunner.startTest('" + testName + "');";
-                final CordovaWebView appView = activity.getAppView();
-                if (appView != null) {
-                    appView.getView().post(new Runnable() {
-                        @Override
-                        public void run() {
-                                appView.loadUrl(jsCmd);
-                        }
-                    });
-                }
+                        "navigator.testrunner.startTest('" + testName + "');";
+                final CordovaWebView appView = activity.getCordovaWebView();
+                appView.getView().post(() -> appView.loadUrl(jsCmd));
                 SalesforceHybridLogger.i(TAG, "Running test: " + testName);
 
                 // Block until test completes or times out
-                TestResult result = null;
+                TestResult result;
                 try {
                     result = TestRunnerPlugin.testResults.poll(timeout, TimeUnit.SECONDS);
                     if (result == null) {
@@ -114,16 +108,17 @@ public abstract class JSTestCase {
             eq.tearDown();
             activity.finish();
         }
-	}
+    }
 
-	/**
-	 * Helper method: no longer actually run the javascript test, instead asserts based on saved results
-     * @param jsSuite
-	 * @param testName the name of the test method in the test suite
-	 * @
-	 */
-    protected void runTest(String jsSuite, String testName)  {
-    	TestResult result = testResults.get(jsSuite).get(testName);
+    /**
+     * Helper method: no longer actually run the javascript test, instead asserts based on saved results
+     *
+     * @param jsSuite  The Javascript suite name
+     * @param testName the name of the test method in the test suite
+     * @
+     */
+    protected void runTest(String jsSuite, String testName) {
+        TestResult result = testResults.get(jsSuite).get(testName);
         Assert.assertNotNull("No test result", result);
         Assert.assertTrue(result.testName + " " + result.message, result.success);
     }

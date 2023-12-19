@@ -1349,7 +1349,7 @@ public class SalesforceSDKManager implements LifecycleObserver {
      *
      * @author bhariharan
      */
-    private static class RevokeTokenTask extends AsyncTask<Void, Void, Void> {
+    private static class RevokeTokenTask extends AsyncTask<Void, Void, Void> { // TODO: ECJ20231219
 
     	private final String refreshToken;
     	private final String loginServer;

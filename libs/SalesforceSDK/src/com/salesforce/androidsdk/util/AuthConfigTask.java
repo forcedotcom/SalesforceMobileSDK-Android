@@ -45,7 +45,7 @@ import okhttp3.HttpUrl;
  * superclass in Mobile SDK 12.0.
  */
 @Deprecated
-public class AuthConfigTask extends AsyncTask<Void, Void, Void> {
+public class AuthConfigTask extends AsyncTask<Void, Void, Void> { // TODO: ECJ20231219
 
     /**
      * A callback interface that is triggered after auth config has been fetched.
