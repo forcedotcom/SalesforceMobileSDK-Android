@@ -408,7 +408,7 @@ public class SalesforceAnalyticsManager {
         final DeviceAppAttributes deviceAppAttributes = getDeviceAppAttributes();
         final String filenameSuffix = (account != null) ? account.getCommunityLevelFilenameSuffix()
                 : UNAUTH_INSTANCE_KEY;
-        analyticsManager = new AnalyticsManager(filenameSuffix, sdkManager.getAppContext(),
+        analyticsManager = new AnalyticsManager(filenameSuffix, sdkManager.appContext,
                 SalesforceSDKManager.getEncryptionKey(), deviceAppAttributes);
         eventStoreManager = analyticsManager.getEventStoreManager();
         remotes = new HashMap<>();
@@ -426,7 +426,7 @@ public class SalesforceAnalyticsManager {
      */
     public static DeviceAppAttributes getDeviceAppAttributes() {
         final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
-        final Context context = sdkManager.getAppContext();
+        final Context context = sdkManager.appContext;
         final String osVersion = Build.VERSION.RELEASE;
         final String osName = "android";
         final String appType = sdkManager.getAppType();
@@ -440,7 +440,7 @@ public class SalesforceAnalyticsManager {
     }
 
     private synchronized void storeAnalyticsPolicy(boolean enabled) {
-        final Context context = SalesforceSDKManager.getInstance().getAppContext();
+        final Context context = SalesforceSDKManager.getInstance().appContext;
         final String filenameSuffix = (account != null) ? account.getUserLevelFilenameSuffix()
                 : UNAUTH_INSTANCE_KEY;
         final String filename = AILTN_POLICY_PREF + filenameSuffix;
@@ -452,7 +452,7 @@ public class SalesforceAnalyticsManager {
     }
 
     private void readAnalyticsPolicy() {
-        final Context context = SalesforceSDKManager.getInstance().getAppContext();
+        final Context context = SalesforceSDKManager.getInstance().appContext;
         final String filenameSuffix = (account != null) ? account.getUserLevelFilenameSuffix()
                 : UNAUTH_INSTANCE_KEY;
         final String filename = AILTN_POLICY_PREF + filenameSuffix;
@@ -464,7 +464,7 @@ public class SalesforceAnalyticsManager {
     }
 
     private void resetAnalyticsPolicy() {
-        final Context context = SalesforceSDKManager.getInstance().getAppContext();
+        final Context context = SalesforceSDKManager.getInstance().appContext;
         final String filenameSuffix = (account != null) ? account.getUserLevelFilenameSuffix()
                 : UNAUTH_INSTANCE_KEY;
         final String filename = AILTN_POLICY_PREF + filenameSuffix;
@@ -476,7 +476,7 @@ public class SalesforceAnalyticsManager {
 
     private static void recreateAnalyticsPublishPeriodicWorkRequest() {
         AnalyticsPublishingWorker.Companion.reEnqueueAnalyticsPublishPeriodicWorkRequest(
-                SalesforceSDKManager.getInstance().getAppContext(),
+                SalesforceSDKManager.getInstance().appContext,
                 sPublishFrequencyInHours
         );
     }

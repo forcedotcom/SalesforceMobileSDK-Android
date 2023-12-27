@@ -115,19 +115,19 @@ internal class SPManager(
         idpAppPackageName,
         object : SDKManager {
             override fun getCurrentUser(): UserAccount? {
-                return SalesforceSDKManager.getInstance().userAccountManager.currentUser
+                return SalesforceSDKManager.instance.userAccountManager.currentUser
             }
 
             override fun getUserFromOrgAndUserId(orgId: String, userId: String): UserAccount? {
-                return SalesforceSDKManager.getInstance().userAccountManager.getUserFromOrgAndUserId(orgId, userId)
+                return SalesforceSDKManager.instance.userAccountManager.getUserFromOrgAndUserId(orgId, userId)
             }
 
             override fun switchToUser(user: UserAccount) {
-                SalesforceSDKManager.getInstance().userAccountManager.switchToUser(user)
+                SalesforceSDKManager.instance.userAccountManager.switchToUser(user)
             }
 
-            override fun getMainActivityClass(): Class<out Activity>? {
-                return SalesforceSDKManager.getInstance().mainActivityClass
+            override fun getMainActivityClass(): Class<out Activity> {
+                return SalesforceSDKManager.instance.mainActivityClass
             }
 
             override fun loginWithAuthCode(

@@ -42,7 +42,7 @@ data class SPConfig (
     companion object {
         @JvmStatic
         fun forCurrentApp(): SPConfig {
-            val sdkMgr = SalesforceSDKManager.getInstance()
+            val sdkMgr = SalesforceSDKManager.instance
             return with(BootConfig.getBootConfig(sdkMgr.appContext)) {
                 SPConfig(
                     appPackageName = sdkMgr.appContext.packageName,

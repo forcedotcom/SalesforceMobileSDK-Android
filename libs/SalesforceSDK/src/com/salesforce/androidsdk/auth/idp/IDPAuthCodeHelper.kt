@@ -95,7 +95,7 @@ internal class IDPAuthCodeHelper private constructor(
      */
     private fun buildRestClient(): RestClient? {
         SalesforceSDKLogger.d(TAG, "Building rest client")
-        val context = SalesforceSDKManager.getInstance().appContext
+        val context = SalesforceSDKManager.instance.appContext
         val bootConfig = BootConfig.getBootConfig(context)
         val idpCallbackUrl = bootConfig.oauthRedirectURI
         val idpClientId = bootConfig.remoteAccessConsumerKey
@@ -103,7 +103,7 @@ internal class IDPAuthCodeHelper private constructor(
         val loginOptions = ClientManager.LoginOptions(
             userAccount.loginServer, idpCallbackUrl, idpClientId, idpScopes
         )
-        val idpAccountType = SalesforceSDKManager.getInstance().accountType
+        val idpAccountType = SalesforceSDKManager.instance.accountType
         val clientManager = ClientManager(
             context, idpAccountType,
             loginOptions, false
@@ -141,8 +141,8 @@ internal class IDPAuthCodeHelper private constructor(
      */
     fun makeFrontDoorRequest(accessToken: String, webView: WebView) {
         SalesforceSDKLogger.d(TAG, "Making front door request")
-        val context = SalesforceSDKManager.getInstance().appContext
-        val useHybridAuthentication = SalesforceSDKManager.getInstance().shouldUseHybridAuthentication()
+        val context = SalesforceSDKManager.instance.appContext
+        val useHybridAuthentication = SalesforceSDKManager.instance.useHybridAuthentication
         val frontdoorUrl = getFrontdoorUrl(
             getAuthorizationUrl(
                 true, // use web server flow

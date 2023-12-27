@@ -124,7 +124,7 @@ public class UserAccountManager {
 	 * Protected constructor.
 	 */
 	protected UserAccountManager() {
-		context = SalesforceSDKManager.getInstance().getAppContext();
+		context = SalesforceSDKManager.getInstance().appContext;
 		accountManager = AccountManager.get(context);
 		accountType = SalesforceSDKManager.getInstance().getAccountType();
 	}
@@ -179,7 +179,7 @@ public class UserAccountManager {
 
 	/**
 	 * Returns a cached value of the current user.
-	 *
+	 * <p>
 	 * NB: The oauth tokens might be outdated
 	 *     Should be used by methods that only care about the current user's identity (org id, user id etc)
 	 *     Is faster than getCurrentUser()
@@ -248,7 +248,7 @@ public class UserAccountManager {
         if (accounts.length == 0) {
         	return null;
         }
-        final List<UserAccount> userAccounts = new ArrayList<UserAccount>();
+        final List<UserAccount> userAccounts = new ArrayList<>();
         for (final Account account : accounts) {
         	final UserAccount userAccount = buildUserAccount(account);
         	if (userAccount != null) {
@@ -379,7 +379,7 @@ public class UserAccountManager {
 	 * @param showLoginPage True - if the login page should be shown, False - otherwise.
 	 */
 	public void signoutCurrentUser(Activity frontActivity, boolean showLoginPage) {
-		SalesforceSDKManager.getInstance().logout(frontActivity, showLoginPage);
+		SalesforceSDKManager.getInstance().logout(null, frontActivity, showLoginPage);
 	}
 
 	/**
@@ -450,7 +450,7 @@ public class UserAccountManager {
 			thumbnailUrl = SalesforceSDKManager.decrypt(encThumbnailUrl, encryptionKey);
 		}
         Map<String, String> additionalOauthValues = null;
-        final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
+        final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().additionalOauthKeys;
         if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
             additionalOauthValues = new HashMap<>();
             for (final String key : additionalOauthKeys) {
@@ -568,10 +568,10 @@ public class UserAccountManager {
 		final Intent intent = new Intent(USER_SWITCH_INTENT_ACTION);
 		intent.setPackage(context.getPackageName());
 		intent.putExtra(EXTRA_USER_SWITCH_TYPE, userSwitchType);
-        if (extras != null) {
-            intent.putExtras(extras);
-        }
-		SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
+		if (extras != null) {
+			intent.putExtras(extras);
+		}
+		SalesforceSDKManager.getInstance().appContext.sendBroadcast(intent);
 	}
 
     /**
@@ -622,7 +622,7 @@ public class UserAccountManager {
 
 	private void switchToNewUserWithOptions(Bundle options) {
 		final Bundle reply = new Bundle();
-		final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
+		final Intent i = new Intent(context, SalesforceSDKManager.getInstance().loginActivityClass);
 		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 		options.putBoolean(BiometricAuthenticationManager.SHOW_BIOMETRIC, false);
 		i.putExtras(options);

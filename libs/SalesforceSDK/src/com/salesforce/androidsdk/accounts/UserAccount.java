@@ -215,7 +215,7 @@ public class UserAccount {
 			contentSid = object.optString(CONTENT_SID, null);
 			csrfToken = object.optString(CSRF_TOKEN, null);
             additionalOauthValues = MapUtil.addJSONObjectToMap(object,
-                    SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), additionalOauthValues);
+                    SalesforceSDKManager.getInstance().additionalOauthKeys, additionalOauthValues);
 		}
 	}
 
@@ -237,12 +237,12 @@ public class UserAccount {
 			accountName = bundle.getString(ACCOUNT_NAME);
 			communityId = bundle.getString(COMMUNITY_ID);
 			communityUrl = bundle.getString(COMMUNITY_URL);
-            firstName = bundle.getString(FIRST_NAME);
-            lastName = bundle.getString(LAST_NAME);
+			firstName = bundle.getString(FIRST_NAME);
+			lastName = bundle.getString(LAST_NAME);
 			displayName = bundle.getString(DISPLAY_NAME);
 			email = bundle.getString(EMAIL);
-            photoUrl = bundle.getString(PHOTO_URL);
-            thumbnailUrl = bundle.getString(THUMBNAIL_URL);
+			photoUrl = bundle.getString(PHOTO_URL);
+			thumbnailUrl = bundle.getString(THUMBNAIL_URL);
 			lightningDomain = bundle.getString(LIGHTNING_DOMAIN);
 			lightningSid = bundle.getString(LIGHTNING_SID);
 			vfDomain = bundle.getString(VF_DOMAIN);
@@ -250,8 +250,8 @@ public class UserAccount {
 			contentDomain = bundle.getString(CONTENT_DOMAIN);
 			contentSid = bundle.getString(CONTENT_SID);
 			csrfToken = bundle.getString(CSRF_TOKEN);
-            additionalOauthValues = MapUtil.addBundleToMap(bundle,
-					SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), additionalOauthValues);
+			additionalOauthValues = MapUtil.addBundleToMap(bundle,
+					SalesforceSDKManager.getInstance().additionalOauthKeys, additionalOauthValues);
 		}
 	}
 
@@ -510,7 +510,7 @@ public class UserAccount {
 		}
 
         // Checks if DownloadManager is enabled on the device, to ensure it doesn't crash.
-        final PackageManager pm = SalesforceSDKManager.getInstance().getAppContext().getPackageManager();
+        final PackageManager pm = SalesforceSDKManager.getInstance().appContext.getPackageManager();
         int state = pm.getApplicationEnabledSetting("com.android.providers.downloads");
         if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
 			final DownloadManager.Request downloadReq = new DownloadManager.Request(srcUri);
@@ -518,7 +518,7 @@ public class UserAccount {
 			downloadReq.addRequestHeader(AUTHORIZATION, BEARER + authToken);
 			downloadReq.setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN);
 			downloadReq.setVisibleInDownloadsUi(false);
-			final DownloadManager downloadManager = (DownloadManager) SalesforceSDKManager.getInstance().getAppContext().getSystemService(Context.DOWNLOAD_SERVICE);
+			final DownloadManager downloadManager = (DownloadManager) SalesforceSDKManager.getInstance().appContext.getSystemService(Context.DOWNLOAD_SERVICE);
 			if (downloadManager != null) {
 				downloadManager.enqueue(downloadReq);
 			}
@@ -731,7 +731,7 @@ public class UserAccount {
             object.put(CONTENT_SID, contentSid);
             object.put(CSRF_TOKEN, csrfToken);
             object = MapUtil.addMapToJSONObject(additionalOauthValues,
-                    SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), object);
+                    SalesforceSDKManager.getInstance().additionalOauthKeys, object);
     	} catch (JSONException e) {
 			SalesforceSDKLogger.e(TAG, "Unable to convert to JSON", e);
     	}
@@ -770,13 +770,13 @@ public class UserAccount {
 		object.putString(CONTENT_SID, contentSid);
 		object.putString(CSRF_TOKEN, csrfToken);
         object = MapUtil.addMapToBundle(additionalOauthValues,
-                SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), object);
+                SalesforceSDKManager.getInstance().additionalOauthKeys, object);
     	return object;
     }
 
     private File getProfilePhotoFile() {
         final String filename = PROFILE_PHOTO_PATH_PREFIX + getUserLevelFilenameSuffix() + JPG;
-        File baseDir = SalesforceSDKManager.getInstance().getAppContext().getExternalCacheDir();
+        File baseDir = SalesforceSDKManager.getInstance().appContext.getExternalCacheDir();
         return baseDir != null ? new File(baseDir, filename) : null;
     }
 }

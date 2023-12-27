@@ -47,7 +47,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore
 
 /**
  * Provides an easy way to fetch metadata using [com.salesforce.androidsdk.mobilesync.target.MetadataSyncDownTarget].
- * This class handles creating a soup, storing synched data and reading it into
+ * This class handles creating a soup, storing synced data and reading it into
  * a meaningful data structure, i.e. [com.salesforce.androidsdk.mobilesync.model.Metadata].
  *
  * @author bhariharan
@@ -235,7 +235,7 @@ class MetadataSyncManager private constructor(
             val instance = INSTANCES[uniqueId] ?: MetadataSyncManager(store, syncManager).also {
                 INSTANCES[uniqueId] = it
             }
-            SalesforceSDKManager.getInstance()
+            SalesforceSDKManager.instance
                 .registerUsedAppFeature(Features.FEATURE_METADATA_SYNC)
             return instance
         }

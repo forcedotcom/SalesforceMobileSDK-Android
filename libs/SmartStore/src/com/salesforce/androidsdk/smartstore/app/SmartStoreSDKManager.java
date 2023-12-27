@@ -32,6 +32,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
+
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.R;
@@ -51,8 +53,8 @@ import net.zetetic.database.sqlcipher.SQLiteOpenHelper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * SDK Manager for all native applications that use SmartStore
@@ -117,6 +119,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      *
      * @return Singleton instance of SalesforceSDKManagerWithSmartStore.
      */
+    @NonNull
     public static SmartStoreSDKManager getInstance() {
         if (INSTANCE != null) {
             return (SmartStoreSDKManager) INSTANCE;
@@ -129,10 +132,10 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
     protected void cleanUp(UserAccount userAccount) {
         if (userAccount != null) {
             // NB if database file was already deleted, we still need to call DBOpenHelper.deleteDatabase to clean up the DBOpenHelper cache
-            DBOpenHelper.deleteAllDatabases(getAppContext(), userAccount);
+            DBOpenHelper.deleteAllDatabases(appContext, userAccount);
             removeAllKeyValueStores(userAccount);
         } else {
-            DBOpenHelper.deleteAllUserDatabases(getAppContext());
+            DBOpenHelper.deleteAllUserDatabases(appContext);
         }
         super.cleanUp(userAccount);
     }
@@ -159,7 +162,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         if (TextUtils.isEmpty(dbName)) {
             dbName = DBOpenHelper.DEFAULT_DB_NAME;
         }
-        final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(getEncryptionKey(), context,
+        final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(getEncryptionKey(), appContext,
                 dbName, null, null);
         return new SmartStore(dbOpenHelper);
     }
@@ -210,7 +213,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
             dbNamePrefix = DBOpenHelper.DEFAULT_DB_NAME;
         }
         SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_SMART_STORE_USER);
-        final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(getEncryptionKey(), context,
+        final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(getEncryptionKey(), appContext,
                 dbNamePrefix, account, communityId);
         SmartStore store = new SmartStore(dbOpenHelper);
 
@@ -228,7 +231,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         if (TextUtils.isEmpty(dbName)) {
             dbName = DBOpenHelper.DEFAULT_DB_NAME;
         }
-        return DBOpenHelper.smartStoreExists(context, dbName, null, null);
+        return DBOpenHelper.smartStoreExists(appContext, dbName, null, null);
     }
 
     /**
@@ -274,7 +277,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         if (TextUtils.isEmpty(dbNamePrefix)) {
             dbNamePrefix = DBOpenHelper.DEFAULT_DB_NAME;
         }
-        return DBOpenHelper.smartStoreExists(context, dbNamePrefix, account, communityId);
+        return DBOpenHelper.smartStoreExists(appContext, dbNamePrefix, account, communityId);
     }
 
     /**
@@ -287,7 +290,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         if (TextUtils.isEmpty(dbName)) {
             dbName = DBOpenHelper.DEFAULT_DB_NAME;
         }
-        DBOpenHelper.deleteDatabase(context, dbName, null, null);
+        DBOpenHelper.deleteDatabase(appContext, dbName, null, null);
     }
 
     /**
@@ -328,7 +331,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         if (TextUtils.isEmpty(dbNamePrefix)) {
             dbNamePrefix = DBOpenHelper.DEFAULT_DB_NAME;
         }
-        DBOpenHelper.deleteDatabase(context, dbNamePrefix, account, communityId);
+        DBOpenHelper.deleteDatabase(appContext, dbNamePrefix, account, communityId);
     }
 
     /**
@@ -338,7 +341,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
     public List<String> getGlobalStoresPrefixList(){
         UserAccount userAccount = getUserAccountManager().getCachedCurrentUser();
         String communityId = userAccount!=null?userAccount.getCommunityId():null;
-        List<String> globalDBNames = DBOpenHelper.getGlobalDatabasePrefixList(context,getUserAccountManager().getCachedCurrentUser(),communityId);
+        List<String> globalDBNames = DBOpenHelper.getGlobalDatabasePrefixList(appContext,getUserAccountManager().getCachedCurrentUser(),communityId);
         return globalDBNames;
     }
 
@@ -357,7 +360,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      */
     public List<String> getUserStoresPrefixList(UserAccount account) {
         if (account != null) {
-            return DBOpenHelper.getUserDatabasePrefixList(context, account, account.getCommunityId());
+            return DBOpenHelper.getUserDatabasePrefixList(appContext, account, account.getCommunityId());
         } else {
             return new ArrayList<>();
         }
@@ -387,7 +390,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @param account user account
      */
     public void removeAllUserStores(UserAccount account) {
-        DBOpenHelper.deleteAllDatabases(getAppContext(), account);
+        DBOpenHelper.deleteAllDatabases(appContext, account);
     }
 
     /**
@@ -395,7 +398,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      */
     public void setupGlobalStoreFromDefaultConfig() {
         SmartStoreLogger.d(TAG, "Setting up global store using config found in res/raw/globalstore.json");
-        StoreConfig config = new StoreConfig(context, R.raw.globalstore);
+        StoreConfig config = new StoreConfig(appContext, R.raw.globalstore);
         if (config.hasSoups()) {
             config.registerSoups(getGlobalSmartStore());
         }
@@ -406,34 +409,40 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      */
     public void setupUserStoreFromDefaultConfig() {
         SmartStoreLogger.d(TAG, "Setting up user store using config found in res/raw/userstore.json");
-        StoreConfig config = new StoreConfig(context, R.raw.userstore);
+        StoreConfig config = new StoreConfig(appContext, R.raw.userstore);
         if (config.hasSoups()) {
             config.registerSoups(getSmartStore());
         }
     }
 
+    @NonNull
     @Override
-    protected LinkedHashMap<String, DevActionHandler> getDevActions(final Activity frontActivity) {
-        LinkedHashMap<String, DevActionHandler> devActions = super.getDevActions(frontActivity);
+    protected Map<String, DevActionHandler> getDevActions(@NonNull final Activity frontActivity) {
+        Map<String, DevActionHandler> devActions = super.getDevActions(frontActivity);
 
         devActions.put(
-                "Inspect SmartStore", new DevActionHandler() {
-                    @Override
-                    public void onSelected() {
-                        frontActivity.startActivity(SmartStoreInspectorActivity.getIntent(frontActivity, false, DBOpenHelper.DEFAULT_DB_NAME));
-                    }
-                });
+                "Inspect SmartStore",
+                () -> frontActivity.startActivity(
+                        SmartStoreInspectorActivity.getIntent(
+                                frontActivity,
+                                false,
+                                DBOpenHelper.DEFAULT_DB_NAME)
+                )
+        );
 
-        devActions.put("Inspect KeyValue Store", new DevActionHandler() {
-            @Override
-            public void onSelected() {
-                frontActivity.startActivity(KeyValueStoreInspectorActivity.getIntent(frontActivity));
-            }
-        });
+        devActions.put(
+                "Inspect KeyValue Store",
+                () -> frontActivity.startActivity(
+                        KeyValueStoreInspectorActivity.getIntent(
+                                frontActivity
+                        )
+                )
+        );
 
         return devActions;
     }
 
+    @NonNull
     @Override
     public List<String> getDevSupportInfos() {
         List<String> devSupportInfos = new ArrayList<>(super.getDevSupportInfos());
@@ -478,7 +487,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
     public KeyValueEncryptedFileStore getKeyValueStore(String storeName, UserAccount account, String communityId) {
         String suffix = account.getCommunityLevelFilenameSuffix(communityId);
         return new KeyValueEncryptedFileStore(
-            getAppContext(),
+            appContext,
             storeName + suffix,
             getEncryptionKey());
     }
@@ -503,7 +512,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      */
     public boolean hasKeyValueStore(String storeName, UserAccount account, String communityId) {
         String suffix = account.getCommunityLevelFilenameSuffix(communityId);
-        return KeyValueEncryptedFileStore.hasKeyValueStore(getAppContext(), storeName + suffix);
+        return KeyValueEncryptedFileStore.hasKeyValueStore(appContext, storeName + suffix);
     }
 
     /**
@@ -525,7 +534,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      */
     public void removeKeyValueStore(String storeName, UserAccount account, String communityId) {
         String suffix = account.getCommunityLevelFilenameSuffix(communityId);
-        KeyValueEncryptedFileStore.removeKeyValueStore(getAppContext(), storeName + suffix);
+        KeyValueEncryptedFileStore.removeKeyValueStore(appContext, storeName + suffix);
     }
 
   /**
@@ -547,7 +556,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         if (account == null) {
             return new ArrayList<>();
         } else {
-            return ManagedFilesHelper.getPrefixList(getAppContext(), KEY_VALUE_STORES,
+            return ManagedFilesHelper.getPrefixList(appContext, KEY_VALUE_STORES,
                 account.getCommunityLevelFilenameSuffix(), "", null);
         }
     }
@@ -567,7 +576,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
     public void removeAllKeyValueStores(UserAccount account) {
         if (account != null) {
             ManagedFilesHelper.deleteFiles(ManagedFilesHelper
-                .getFiles(getAppContext(), KEY_VALUE_STORES,
+                .getFiles(appContext, KEY_VALUE_STORES,
                     account.getUserLevelFilenameSuffix(), "", null));
         }
     }
@@ -579,7 +588,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      */
     public KeyValueEncryptedFileStore getGlobalKeyValueStore(String storeName) {
         return new KeyValueEncryptedFileStore(
-            getAppContext(),
+            appContext,
             storeName + GLOBAL_SUFFIX,
             getEncryptionKey());
     }
@@ -588,14 +597,14 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * Return whether there is a global key value store with given name
      */
     public boolean hasGlobalKeyValueStore(String storeName) {
-        return KeyValueEncryptedFileStore.hasKeyValueStore(getAppContext(), storeName + GLOBAL_SUFFIX);
+        return KeyValueEncryptedFileStore.hasKeyValueStore(appContext, storeName + GLOBAL_SUFFIX);
     }
 
     /**
      * Remove global key value store with given name
      */
     public void removeGlobalKeyValueStore(String storeName) {
-        KeyValueEncryptedFileStore.removeKeyValueStore(getAppContext(), storeName + GLOBAL_SUFFIX);
+        KeyValueEncryptedFileStore.removeKeyValueStore(appContext, storeName + GLOBAL_SUFFIX);
     }
 
     /**
@@ -603,7 +612,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @return
      */
     public List<String> getGlobalKeyValueStoresPrefixList(){
-        return ManagedFilesHelper.getPrefixList(getAppContext(), KEY_VALUE_STORES,
+        return ManagedFilesHelper.getPrefixList(appContext, KEY_VALUE_STORES,
             GLOBAL_SUFFIX, "", null);
     }
 
@@ -613,7 +622,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      */
     public void removeAllGlobalKeyValueStores() {
         ManagedFilesHelper.deleteFiles(ManagedFilesHelper
-            .getFiles(getAppContext(), KEY_VALUE_STORES, GLOBAL_SUFFIX,"", null));
+            .getFiles(appContext, KEY_VALUE_STORES, GLOBAL_SUFFIX,"", null));
     }
 
 }

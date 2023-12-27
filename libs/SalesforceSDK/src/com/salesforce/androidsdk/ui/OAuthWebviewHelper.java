@@ -31,7 +31,6 @@ import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.BitmapFactory;
@@ -70,7 +69,6 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
-import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.push.PushMessaging;
@@ -79,7 +77,6 @@ import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
-import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.util.AuthConfigTask;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -298,18 +295,15 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 intent.putExtra(RESPONSE_ERROR_DESCRIPTION_INTENT, tokenErrorDesc);
             }
         }
-        SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
+        SalesforceSDKManager.getInstance().appContext.sendBroadcast(intent);
 
         // Displays the error in a Toast and reloads the login page after clearing cookies.
         activity.runOnUiThread(() -> {
             final Toast t = Toast.makeText(webview.getContext(), error + " : " + errorDesc,
                     Toast.LENGTH_LONG);
-            webview.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    clearCookies();
-                    loadLoginPage();
-                }
+            webview.postDelayed(() -> {
+                clearCookies();
+                loadLoginPage();
             }, t.getDuration());
             t.show();
         });
@@ -391,7 +385,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
          * - if getCustomTabBrowser() returns null
          * - or if the specified browser is not installed
          */
-        String customTabBrowser = SalesforceSDKManager.getInstance().getCustomTabBrowser();
+        String customTabBrowser = SalesforceSDKManager.getInstance().customTabBrowser;
         if (doesBrowserExist(customTabBrowser)) {
             customTabsIntent.intent.setPackage(customTabBrowser);
         }
@@ -527,7 +521,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
             // Check if user entered a custom domain
             String host = uri.getHost();
-            Pattern customDomainPattern = SalesforceSDKManager.getInstance().getCustomDomainInferencePattern();
+            Pattern customDomainPattern = SalesforceSDKManager.getInstance().customDomainInferencePattern;
             if (host != null && !getLoginUrl().contains(host) && customDomainPattern != null
                     && customDomainPattern.matcher(uri.toString()).find()) {
                 try {
@@ -827,8 +821,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             if (id.screenLockTimeout > 0) {
                 SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_SCREEN_LOCK);
                 int timeoutInMills = id.screenLockTimeout * 1000 * 60;
-                ((ScreenLockManager) mgr.getScreenLockManager())
-                        .storeMobilePolicy(account, id.screenLock, timeoutInMills);
+                mgr.getScreenLockManager().storeMobilePolicy(account, id.screenLock, timeoutInMills);
             }
 
             // Biometric Auth required by mobile policy.
@@ -859,13 +852,13 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     private class FinishAuthTask extends BaseFinishAuthFlowTask<TokenEndpointResponse> {
 
         @Override
-        protected TokenEndpointResponse performRequest(TokenEndpointResponse tr) throws Exception {
+        protected TokenEndpointResponse performRequest(TokenEndpointResponse tr) {
             try {
                 id = OAuth2.callIdentityService(
                     HttpAccess.DEFAULT, tr.idUrlWithInstance, tr.authToken);
 
                 // Request the authenticated user's information to determine if it is a Salesforce integration user.  This is a synchronous network request, so it must be performed here in the background stage.
-                shouldBlockSalesforceIntegrationUser = SalesforceSDKManager.getInstance().shouldBlockSalesforceIntegrationUser() && fetchIsSalesforceIntegrationUser(tr);
+                shouldBlockSalesforceIntegrationUser = SalesforceSDKManager.getInstance().getShouldBlockSalesforceIntegrationUser() && fetchIsSalesforceIntegrationUser(tr);
             } catch (Exception e) {
                 backgroundException = e;
             }
@@ -964,18 +957,13 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     	 * This step needs to happen after the account has been added by client
     	 * manager, so that the push service has all the account info it needs.
     	 */
-        PushMessaging.register(SalesforceSDKManager.getInstance().getAppContext(), account);
+        PushMessaging.register(SalesforceSDKManager.getInstance().appContext, account);
 
         callback.onAccountAuthenticatorResult(extras);
         if (SalesforceSDKManager.getInstance().getIsTestRun()) {
             logAddAccount(account);
         } else {
-            threadPool.execute(new Runnable() {
-                @Override
-                public void run() {
-                    logAddAccount(account);
-                }
-            });
+            threadPool.execute(() -> logAddAccount(account));
         }
     }
 
@@ -1122,7 +1110,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             bundle.putString(CONTENT_SID, contentSid);
             bundle.putString(CSRF_TOKEN, csrfToken);
             bundle = MapUtil.addMapToBundle(additionalOauthValues,
-                    SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), bundle);
+                    SalesforceSDKManager.getInstance().additionalOauthKeys, bundle);
         }
 
         public Bundle asBundle() {
@@ -1162,7 +1150,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
         private static Map<String, String> getAdditionalOauthValues(Bundle options) {
             return MapUtil.addBundleToMap(options,
-                    SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), null);
+                    SalesforceSDKManager.getInstance().additionalOauthKeys, null);
         }
     }
 
@@ -1172,13 +1160,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             SalesforceSDKLogger.d(TAG, "Keychain alias callback received");
 			certChain = KeyChain.getCertificateChain(activity, alias);
 			key = KeyChain.getPrivateKey(activity, alias);
-			activity.runOnUiThread(new Runnable() {
-
-                @Override
-                public void run() {
-                	loadLoginPage();
-                }
-            });
+			activity.runOnUiThread(() -> loadLoginPage());
 		} catch (KeyChainException | InterruptedException e) {
             SalesforceSDKLogger.e(TAG, "Exception thrown while retrieving X.509 certificate", e);
 		}

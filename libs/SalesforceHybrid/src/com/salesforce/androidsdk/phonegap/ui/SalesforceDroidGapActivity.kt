@@ -189,7 +189,7 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
             if (bootConfig?.shouldAuthenticate() == true) {
 
                 // Online
-                if (SalesforceSDKManager.getInstance().hasNetwork()) {
+                if (SalesforceSDKManager.instance.hasNetwork()) {
                     i(TAG, "onResumeNotLoggedIn - should authenticate/online - authenticating")
                     authenticate(null)
                 } else {
@@ -234,7 +234,7 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
         } else {
 
             // Online
-            if (SalesforceSDKManager.getInstance().hasNetwork()) {
+            if (SalesforceSDKManager.instance.hasNetwork()) {
                 i(TAG, "onResumeLoggedInNotLoaded - remote start page/online - loading web app")
                 bootConfig?.startPage?.let { startPage ->
                     loadRemoteStartPage(startPage, true)
@@ -277,7 +277,7 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
 
     fun logout(callbackContext: CallbackContext?) {
         i(TAG, "logout called")
-        SalesforceSDKManager.getInstance().logout(this)
+        SalesforceSDKManager.instance.logout(null, this)
         callbackContext?.success()
     }
 
@@ -506,7 +506,7 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
     }
 
     private fun doAuthConfig() {
-        val loginServer = SalesforceHybridSDKManager.getInstance().loginServerManager.selectedLoginServer.url.trim { it <= ' ' }
+        val loginServer = SalesforceHybridSDKManager.getInstance().loginServerManager?.selectedLoginServer?.url?.trim { it <= ' ' } ?: return
         if (loginServer == PRODUCTION_LOGIN_URL || loginServer == SANDBOX_LOGIN_URL ||
             !isHttpsUrl(loginServer) || parse(loginServer) == null
         ) {

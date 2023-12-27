@@ -98,7 +98,7 @@ public class SalesforceWebViewClient extends SystemWebViewClient {
 
     @Override
     public void onPageFinished(WebView view, String url) {
-        if (!this.foundHomeUrl && SalesforceWebViewClientHelper.onHomePage(SalesforceSDKManager.getInstance().getAppContext(), view, url)) {
+        if (!this.foundHomeUrl && SalesforceWebViewClientHelper.onHomePage(SalesforceSDKManager.getInstance().appContext, view, url)) {
             this.foundHomeUrl = true;
         }
         super.onPageFinished(view, url);

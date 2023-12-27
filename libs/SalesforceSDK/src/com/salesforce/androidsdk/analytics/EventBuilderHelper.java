@@ -56,7 +56,7 @@ public class EventBuilderHelper {
 
     /**
      * This method allows event creation/storage to be disabled across the board.
-     *
+     * <p>
      * It is meant for tests.
      * It allows tests to be run individually.
      * When running individual tests in Android Studio the SalesforceSDKManager.init() is not called
@@ -74,24 +74,19 @@ public class EventBuilderHelper {
      * @param name Event name.
      * @param userAccount User account.
      * @param className Class name or context where the event was generated.
-     * @param attributes Addiitonal attributes.
+     * @param attributes Additional attributes.
      */
     public static void createAndStoreEvent(final String name, final UserAccount userAccount, final String className,
             final JSONObject attributes) {
         // Do nothing if not enabled
         if (!enabled)
             return;
-        
+
         // don't run on background if this is a test run
         if (SalesforceSDKManager.getInstance().getIsTestRun()) {
             createAndStore(name, userAccount, className, attributes);
         } else {
-            threadPool.execute(new Runnable() {
-                @Override
-                public void run() {
-                    createAndStore(name, userAccount, className, attributes);
-                }
-            });
+            threadPool.execute(() -> createAndStore(name, userAccount, className, attributes));
         }
     }
 
@@ -101,7 +96,7 @@ public class EventBuilderHelper {
      * @param name Event name.
      * @param userAccount User account.
      * @param className Class name or context where the event was generated.
-     * @param attributes Addiitonal attributes.
+     * @param attributes Additional attributes.
      */
     public static void createAndStoreEventSync(String name, UserAccount userAccount, String className,
                                            JSONObject attributes) {
@@ -124,7 +119,7 @@ public class EventBuilderHelper {
         }
         final SalesforceAnalyticsManager manager = SalesforceAnalyticsManager.getInstance(account);
         final InstrumentationEventBuilder builder = InstrumentationEventBuilder.getInstance(manager.getAnalyticsManager(),
-                                                                                            SalesforceSDKManager.getInstance().getAppContext());
+                                                                                            SalesforceSDKManager.getInstance().appContext);
         builder.name(name);
 
         final JSONObject page = new JSONObject();

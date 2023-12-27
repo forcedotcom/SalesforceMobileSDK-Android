@@ -53,7 +53,7 @@ import okhttp3.Response;
 
 /**
  * Helper methods for common OAuth2 requests.
- *
+ * <p>
  * The typical OAuth2 flow is:
  *
  * <ol>
@@ -371,10 +371,7 @@ public class OAuth2 {
      *
      * @throws IOException See {@link IOException}.
      */
-    public static final IdServiceResponse callIdentityService(HttpAccess httpAccessor,
-                                                              String identityServiceIdUrl,
-                                                              String authToken)
-            throws IOException {
+    public static IdServiceResponse callIdentityService(HttpAccess httpAccessor, String identityServiceIdUrl, String authToken) throws IOException {
         final Request.Builder builder = new Request.Builder().url(identityServiceIdUrl).get();
         addAuthorizationHeader(builder, authToken);
         final Request request = builder.build();
@@ -388,7 +385,7 @@ public class OAuth2 {
      * @param builder Builder instance.
      * @param authToken Access token.
      */
-    public static final Request.Builder addAuthorizationHeader(Request.Builder builder, String authToken) {
+    public static Request.Builder addAuthorizationHeader(Request.Builder builder, String authToken) {
         return builder.header(AUTHORIZATION, BEARER + authToken);
     }
 
@@ -618,7 +615,7 @@ public class OAuth2 {
                 communityUrl = callbackUrlParams.get(SFDC_COMMUNITY_URL);
                 final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
                 if (sdkManager != null) {
-                    final List<String> additionalOauthKeys = sdkManager.getAdditionalOauthKeys();
+                    final List<String> additionalOauthKeys = sdkManager.additionalOauthKeys;
                     if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
                         additionalOauthValues = new HashMap<>();
                         for (final String key : additionalOauthKeys) {
@@ -664,7 +661,7 @@ public class OAuth2 {
                 }
                 final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
                 if (sdkManager != null) {
-                    final List<String> additionalOauthKeys = sdkManager.getAdditionalOauthKeys();
+                    final List<String> additionalOauthKeys = sdkManager.additionalOauthKeys;
                     if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
                         additionalOauthValues = new HashMap<>();
                         for (final String key : additionalOauthKeys) {

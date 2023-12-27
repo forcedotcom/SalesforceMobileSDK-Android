@@ -26,9 +26,9 @@ class IDPAuthCodeActivity : Activity(), IDPAuthCodeActivityInterface {
         window.setFlags(LayoutParams.FLAG_SECURE, LayoutParams.FLAG_SECURE)
 
         // Set theme
-        val isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme
+        val isDarkTheme = SalesforceSDKManager.instance.isDarkTheme
         setTheme(if (isDarkTheme) R.style.SalesforceSDK_Dark_Login else R.style.SalesforceSDK)
-        SalesforceSDKManager.getInstance().setViewNavigationVisibility(this)
+        SalesforceSDKManager.instance.setViewNavigationVisibility(this)
 
         // Set layout
         setContentView(R.layout.sf__idp_auth_code)
@@ -39,7 +39,7 @@ class IDPAuthCodeActivity : Activity(), IDPAuthCodeActivityInterface {
         webSettings.useWideViewPort = true
         webSettings.layoutAlgorithm = LayoutAlgorithm.NORMAL
 
-        (SalesforceSDKManager.getInstance().idpManager as? IDPManager)?.let { idpManager ->
+        (SalesforceSDKManager.instance.iDPManager as? IDPManager)?.let { idpManager ->
             val spAppPackageName = idpManager.getSrcAppPackageName(intent)
             idpManager.attachToActiveFlow(this, this, spAppPackageName)
             // Handing intent to IDPManager

@@ -73,7 +73,7 @@ public class OAuth2Test {
                 InstrumentationRegistry.getInstrumentation().getContext());
         InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
 		TestCredentials.init(InstrumentationRegistry.getInstrumentation().getContext());
-		httpAccess = new HttpAccess(null, "dummy-agent");		
+		httpAccess = new HttpAccess(null, "dummy-agent");
 	}
 
     @After
@@ -314,8 +314,7 @@ public class OAuth2Test {
         //empty scopes -- should not find scopes
         tryScopes(new String[] {}, null);
 	}
-	
-	
+
 	/**
 	 * Testing refreshAuthToken. Call refresh token, then try out the auth token by calling /services/data/vXX.
 	 *
@@ -342,7 +341,7 @@ public class OAuth2Test {
 		Response resourcesResponse = httpAccess.getOkHttpClient().newCall(request).execute();
         Assert.assertEquals("HTTP response status code should have been 200 (OK)", HttpURLConnection.HTTP_OK, resourcesResponse.code());
 	}
-	
+
 	/**
 	 * Testing callIdentityService. Call refresh token then call out to identity service and
      * check that username returned match the one in TestCredentials.

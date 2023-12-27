@@ -109,7 +109,7 @@ public class AILTNPublisher implements AnalyticsPublisher {
         RestResponse restResponse = null;
         try {
             final String apiPath = String.format(API_PATH,
-                    ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()));
+                    ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().appContext));
             final RestClient restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient();
 
             /*

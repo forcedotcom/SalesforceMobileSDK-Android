@@ -29,6 +29,8 @@ package com.salesforce.androidsdk.reactnative.app;
 import android.app.Activity;
 import android.content.Context;
 
+import androidx.annotation.NonNull;
+
 import com.facebook.react.ReactPackage;
 import com.facebook.react.bridge.JavaScriptModule;
 import com.facebook.react.bridge.NativeModule;
@@ -46,8 +48,8 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * SDK Manager for all react native applications
@@ -117,7 +119,8 @@ public class SalesforceReactSDKManager extends MobileSyncSDKManager {
     	}
     }
 
-	@Override
+	@NonNull
+    @Override
 	public String getAppType() {
 		return "ReactNative";
 	}
@@ -128,9 +131,10 @@ public class SalesforceReactSDKManager extends MobileSyncSDKManager {
 	 */
 	public ReactPackage getReactPackage() {
 		return new ReactPackage() {
-			@Override
+			@NonNull
+            @Override
 			public List<NativeModule> createNativeModules(
-					ReactApplicationContext reactContext) {
+					@NonNull ReactApplicationContext reactContext) {
 				List<NativeModule> modules = new ArrayList<>();
 				modules.add(new SalesforceOauthReactBridge(reactContext));
 				modules.add(new SalesforceNetReactBridge(reactContext));
@@ -143,23 +147,21 @@ public class SalesforceReactSDKManager extends MobileSyncSDKManager {
 				return Collections.emptyList();
 			}
 
-			@Override
-			public List<ViewManager> createViewManagers(ReactApplicationContext reactContext) {
+			@NonNull
+            @Override
+			public List<ViewManager> createViewManagers(@NonNull ReactApplicationContext reactContext) {
 				return Collections.emptyList();
 			}
 		};
 	}
 
+	@NonNull
 	@Override
-	protected LinkedHashMap<String, DevActionHandler> getDevActions(final Activity frontActivity) {
-		LinkedHashMap<String, DevActionHandler> devActions = super.getDevActions(frontActivity);
+	protected Map<String, DevActionHandler> getDevActions(@NonNull final Activity frontActivity) {
+		Map<String, DevActionHandler> devActions = super.getDevActions(frontActivity);
 		devActions.put(
-				"React Native Dev Support", new DevActionHandler() {
-					@Override
-					public void onSelected() {
-						((SalesforceReactActivity) frontActivity).showReactDevOptionsDialog();
-					}
-				});
+				"React Native Dev Support",
+				() -> ((SalesforceReactActivity) frontActivity).showReactDevOptionsDialog());
 
 		return devActions;
 	}

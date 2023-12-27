@@ -50,8 +50,8 @@ class CustomServerUrlEditor: DialogFragment() {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     lateinit var rootView: View
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        val isDarkTheme = SalesforceSDKManager.instance.isDarkTheme
         rootView = inflater.inflate(R.layout.sf__custom_server_url, container)
         rootView.context.setTheme(if (isDarkTheme) R.style.SalesforceSDK_Dialog_Dark else R.style.SalesforceSDK_Dialog)
         dialog?.setTitle(R.string.sf__server_url_add_title)
@@ -71,7 +71,7 @@ class CustomServerUrlEditor: DialogFragment() {
                 return@setOnClickListener
             }
 
-            SalesforceSDKManager.getInstance().loginServerManager.addCustomLoginServer(label.trim(), url.trim())
+            SalesforceSDKManager.instance.loginServerManager?.addCustomLoginServer(label.trim(), url.trim())
             rootView.findViewById<EditText>(R.id.sf__picker_custom_label).text.clear()
             rootView.findViewById<EditText>(R.id.sf__picker_custom_url).text.clear()
             dismiss()

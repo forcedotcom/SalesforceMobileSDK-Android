@@ -155,6 +155,6 @@ public class SmartStoreLogger {
 
     private static SalesforceLogger getLogger() {
         return SalesforceLogger.getLogger(COMPONENT_NAME,
-                SalesforceSDKManager.getInstance().getAppContext());
+                SalesforceSDKManager.getInstance().appContext);
     }
 }

@@ -80,13 +80,9 @@ public class SalesforceSDKUpgradeManager {
     }
 
     public SalesforceSDKUpgradeManager() {
-        this(new UserManager() {
-            @Override
-            public List<UserAccount> getAuthenticatedUsers() {
-                return SalesforceSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers();
-            }
-        });
+        this(() -> SalesforceSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers());
     }
+
     public SalesforceSDKUpgradeManager(UserManager userManager) {
         this.userManager = userManager;
     }
@@ -140,7 +136,7 @@ public class SalesforceSDKUpgradeManager {
      * @param value New version number.
      */
     protected synchronized void writeCurVersion(String key, String value) {
-        final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(VERSION_SHARED_PREF, Context.MODE_PRIVATE);
+        final SharedPreferences sp = SalesforceSDKManager.getInstance().appContext.getSharedPreferences(VERSION_SHARED_PREF, Context.MODE_PRIVATE);
         sp.edit().putString(key, value).commit();
     }
 
@@ -159,7 +155,7 @@ public class SalesforceSDKUpgradeManager {
      * @return Currently installed version of the specified key.
      */
     protected String getInstalledVersion(String key) {
-        final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(VERSION_SHARED_PREF,
+        final SharedPreferences sp = SalesforceSDKManager.getInstance().appContext.getSharedPreferences(VERSION_SHARED_PREF,
                 Context.MODE_PRIVATE);
         return sp.getString(key, "");
     }
@@ -174,7 +170,7 @@ public class SalesforceSDKUpgradeManager {
         final String KEY_BIOMETRIC_ALLOWED = "biometric_allowed";
         final String KEY_BIOMETRIC_ENROLLMENT = "biometric_enrollment";
         final String KEY_BIOMETRIC_ENABLED = "biometric_enabled";
-        final Context ctx = SalesforceSDKManager.getInstance().getAppContext();
+        final Context ctx = SalesforceSDKManager.getInstance().appContext;
 
         final SharedPreferences globalPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
         if (globalPrefs.contains(KEY_TIMEOUT) && globalPrefs.contains(KEY_PASSCODE_LENGTH)) {
@@ -232,7 +228,7 @@ public class SalesforceSDKUpgradeManager {
 
     // TODO: Remove upgrade step in Mobile SDK 12.0
     private void upgradeFromVersions9_2_0Thru10_1_1To10_1_1PasscodeFixes() {
-        final Context ctx = SalesforceSDKManager.getInstance().getAppContext();
+        final Context ctx = SalesforceSDKManager.getInstance().appContext;
         final SharedPreferences globalPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
         if (globalPrefs.contains(SCREEN_LOCK)) {
             final List<UserAccount> accounts = userManager.getAuthenticatedUsers();

@@ -81,7 +81,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
 
     // Api version
     val apiVersion: String =
-        ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().appContext)
+        ApiVersionStrings.getVersionNumber(SalesforceSDKManager.instance.appContext)
 
     init {
         this.smartStore = smartStore
@@ -627,7 +627,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
         )
         return restClient?.sendSync(
             restRequest,
-            UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(MOBILE_SYNC))
+            UserAgentInterceptor(SalesforceSDKManager.instance.getUserAgent(MOBILE_SYNC))
         ) ?: throw MobileSyncException("No rest client")
     }
 
@@ -820,14 +820,14 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
                  * RestClient should be set to the unauthenticated RestClient instance.
                  */
                 val restClient: RestClient? = if (user == null) {
-                    SalesforceSDKManager.getInstance().clientManager.peekUnauthenticatedRestClient()
+                    SalesforceSDKManager.instance.clientManager.peekUnauthenticatedRestClient()
                 } else {
-                    SalesforceSDKManager.getInstance().clientManager.peekRestClient(user)
+                    SalesforceSDKManager.instance.clientManager.peekRestClient(user)
                 }
                 instance = SyncManager(store, restClient)
                 instance.also { INSTANCES[uniqueId] = it }
             }
-            SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_MOBILE_SYNC)
+            SalesforceSDKManager.instance.registerUsedAppFeature(Features.FEATURE_MOBILE_SYNC)
             return instance
         }
 

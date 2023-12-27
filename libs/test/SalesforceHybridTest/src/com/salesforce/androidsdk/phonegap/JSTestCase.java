@@ -74,7 +74,7 @@ public abstract class JSTestCase {
             Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
             final Intent intent = new Intent(Intent.ACTION_MAIN);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            intent.setClassName(instrumentation.getTargetContext(), SalesforceSDKManager.getInstance().getMainActivityClass().getName());
+            intent.setClassName(instrumentation.getTargetContext(), SalesforceSDKManager.getInstance().mainActivityClass.getName());
             SalesforceDroidGapActivity activity = (SalesforceDroidGapActivity) instrumentation.startActivitySync(intent);
 
             // Block until the javascript has notified the container that it's ready

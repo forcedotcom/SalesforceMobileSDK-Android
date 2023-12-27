@@ -103,7 +103,7 @@ internal class IDPManager(
         allowedSPApps,
         object : SDKManager {
             override fun getCurrentUser(): UserAccount? {
-                return SalesforceSDKManager.getInstance().userAccountManager.currentUser
+                return SalesforceSDKManager.instance.userAccountManager.currentUser
             }
 
             override fun generateAuthCode(

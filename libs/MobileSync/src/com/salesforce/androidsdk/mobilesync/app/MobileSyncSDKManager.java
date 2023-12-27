@@ -125,7 +125,7 @@ public class MobileSyncSDKManager extends SmartStoreSDKManager {
      */
     public void setupGlobalSyncsFromDefaultConfig() {
         MobileSyncLogger.d(TAG, "Setting up global syncs using config found in res/raw/globalsyncs.json");
-        SyncsConfig config = new SyncsConfig(context, R.raw.globalsyncs);
+        SyncsConfig config = new SyncsConfig(appContext, R.raw.globalsyncs);
         if (config.hasSyncs()) {
             config.createSyncs(getGlobalSmartStore());
         }
@@ -136,7 +136,7 @@ public class MobileSyncSDKManager extends SmartStoreSDKManager {
      */
     public void setupUserSyncsFromDefaultConfig() {
         MobileSyncLogger.d(TAG, "Setting up user syncs using config found in res/raw/usersyncs.json");
-        SyncsConfig config = new SyncsConfig(context, R.raw.usersyncs);
+        SyncsConfig config = new SyncsConfig(appContext, R.raw.usersyncs);
         if (config.hasSyncs()) {
             config.createSyncs(getSmartStore());
         }

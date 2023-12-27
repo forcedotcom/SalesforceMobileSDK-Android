@@ -44,7 +44,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore
 
 /**
  * Provides an easy way to fetch layout data using [com.salesforce.androidsdk.mobilesync.target.LayoutSyncDownTarget].
- * This class handles creating a soup, storing synched data and reading it into
+ * This class handles creating a soup, storing synced data and reading it into
  * a meaningful data structure, i.e. [com.salesforce.androidsdk.mobilesync.model.Layout].
  *
  * @author bhariharan
@@ -307,7 +307,7 @@ class LayoutSyncManager private constructor(
                 store,
                 syncManager
             ).also { INSTANCES[uniqueId] = it }
-            SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_LAYOUT_SYNC)
+            SalesforceSDKManager.instance.registerUsedAppFeature(Features.FEATURE_LAYOUT_SYNC)
             return instance
         }
 

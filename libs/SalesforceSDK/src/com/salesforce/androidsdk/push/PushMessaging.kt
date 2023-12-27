@@ -76,7 +76,7 @@ object PushMessaging {
         if (isPushSetup(context)) {
             // Ensure Firebase is initialized
             getFirebaseApp(context)
-            val firebaseMessaging = SalesforceSDKManager.getInstance()
+            val firebaseMessaging = SalesforceSDKManager.instance
                 .pushNotificationReceiver?.supplyFirebaseMessaging() ?: FirebaseMessaging.getInstance()
             firebaseMessaging.isAutoInitEnabled = true
 
@@ -121,7 +121,7 @@ object PushMessaging {
             // Deletes InstanceID only if there are no other logged in accounts.
             if (isLastAccount) {
                 val firebaseApp = getFirebaseApp(context)
-                val firebaseMessaging = SalesforceSDKManager.getInstance()
+                val firebaseMessaging = SalesforceSDKManager.instance
                     .pushNotificationReceiver?.supplyFirebaseMessaging() ?: FirebaseMessaging.getInstance()
                 firebaseMessaging.isAutoInitEnabled = false
                 FirebaseInstallations.getInstance(firebaseApp).delete()
@@ -152,7 +152,6 @@ object PushMessaging {
             val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 context.packageManager.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0))
             } else {
-                @Suppress("DEPRECATION")
                 context.packageManager.getPackageInfo(context.packageName, 0)
             }
             appName = context.getString(packageInfo.applicationInfo.labelRes)
@@ -366,7 +365,7 @@ object PushMessaging {
      */
     private fun isPushSetup(context: Context): Boolean {
         // If an instance of PushNotificationInterface is not provided the app does not intent to use the feature.
-        SalesforceSDKManager.getInstance().pushNotificationReceiver ?: return false
+        SalesforceSDKManager.instance.pushNotificationReceiver ?: return false
 
         val firebaseOptions = FirebaseOptions.fromResource(context)
         @Suppress("UselessCallOnNotNull") // FirebaseOptions instance could be from an older version.

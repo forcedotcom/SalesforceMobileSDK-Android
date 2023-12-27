@@ -65,7 +65,7 @@ internal class ScreenLockManager: AppLockManager(
     }
 
     override fun lock() {
-        val ctx = SalesforceSDKManager.getInstance().appContext
+        val ctx = SalesforceSDKManager.instance.appContext
         val intent = Intent(ctx, ScreenLockActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
         intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
@@ -79,7 +79,7 @@ internal class ScreenLockManager: AppLockManager(
         super.cleanUp(account)
 
         // Determine if any other users still need Screen Lock.
-        val accounts = SalesforceSDKManager.getInstance()
+        val accounts = SalesforceSDKManager.instance
             .userAccountManager.authenticatedUsers
         var lowestTimeout = Int.MAX_VALUE
 
