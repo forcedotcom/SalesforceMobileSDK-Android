@@ -77,7 +77,6 @@ import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
-import com.salesforce.androidsdk.util.AuthConfigTask;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.MapUtil;
@@ -99,6 +98,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
+import kotlin.Unit;
 import okhttp3.Request;
 import okhttp3.Response;
 
@@ -469,7 +469,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
      * WebViewClient which intercepts the redirect to the oauth callback url.
      * That redirect marks the end of the user facing portion of the authentication flow.
      */
-    protected class AuthWebViewClient extends WebViewClient implements AuthConfigTask.AuthConfigCallbackInterface {
+    protected class AuthWebViewClient extends WebViewClient {
 
         @Override
 		public void onPageFinished(WebView view, String url) {
@@ -539,8 +539,12 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
                     // Set title to new login url
                     loginOptions.setLoginUrl(baseUrl);
+
                     // Checks the config for the selected login server
-                    (new AuthConfigTask(this)).execute();
+                    SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration(() -> {
+                        onAuthConfigFetched();
+                        return Unit.INSTANCE;
+                    });
                 } catch (Exception e) {
                     SalesforceSDKLogger.e(TAG, "Unable to retrieve auth config.");
                 }
@@ -598,7 +602,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         	request.proceed(key, certChain);
         }
 
-        @Override
         public void onAuthConfigFetched() {
             SalesforceSDKManager manager = SalesforceSDKManager.getInstance();
             if (manager.isBrowserLoginEnabled()) {
@@ -623,7 +626,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
     private class CodeExchangeEndpointTask extends AsyncTask<Void, Void, TokenEndpointResponse> { // TODO: ECJ20231219
 
-        private String code;
+        private final String code;
 
         public CodeExchangeEndpointTask(String code) {
             this.code = code;
@@ -1160,7 +1163,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             SalesforceSDKLogger.d(TAG, "Keychain alias callback received");
 			certChain = KeyChain.getCertificateChain(activity, alias);
 			key = KeyChain.getPrivateKey(activity, alias);
-			activity.runOnUiThread(() -> loadLoginPage());
+			activity.runOnUiThread(this::loadLoginPage);
 		} catch (KeyChainException | InterruptedException e) {
             SalesforceSDKLogger.e(TAG, "Exception thrown while retrieving X.509 certificate", e);
 		}

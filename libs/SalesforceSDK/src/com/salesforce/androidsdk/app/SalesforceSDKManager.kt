@@ -55,6 +55,7 @@ import android.text.TextUtils.join
 import android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
 import android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 import android.webkit.CookieManager
+import android.webkit.URLUtil.isHttpsUrl
 import androidx.core.content.ContextCompat.RECEIVER_EXPORTED
 import androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
 import androidx.core.content.ContextCompat.registerReceiver
@@ -91,6 +92,8 @@ import com.salesforce.androidsdk.config.AdminPermsManager
 import com.salesforce.androidsdk.config.AdminSettingsManager
 import com.salesforce.androidsdk.config.BootConfig.getBootConfig
 import com.salesforce.androidsdk.config.LoginServerManager
+import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
+import com.salesforce.androidsdk.config.LoginServerManager.SANDBOX_LOGIN_URL
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.IDPAppPackageName
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
 import com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier.Companion.BROADCAST_INTENT_ACTION_SHOW_DEVELOPER_SUPPORT
@@ -110,6 +113,7 @@ import com.salesforce.androidsdk.security.ScreenLockManager
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity
 import com.salesforce.androidsdk.ui.DevInfoActivity
 import com.salesforce.androidsdk.ui.LoginActivity
+import com.salesforce.androidsdk.util.AuthConfigUtil.getMyDomainAuthConfig
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.AppCreateComplete
 import com.salesforce.androidsdk.util.EventsObservable.EventType.LogoutComplete
@@ -119,6 +123,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.json.JSONObject
 import java.lang.String.CASE_INSENSITIVE_ORDER
 import java.net.URI
@@ -370,7 +376,7 @@ open class SalesforceSDKManager protected constructor(
                     packageInfo.applicationInfo.labelRes
                 )
             }
-            appName
+            field
         }.onFailure { e ->
             w(TAG, "Package info could not be retrieved", e)
         }.getOrDefault("")
@@ -506,7 +512,7 @@ open class SalesforceSDKManager protected constructor(
     fun shouldLogoutWhenTokenRevoked() = true
 
     /** The Salesforce SDK manager's user account manager */
-    val userAccountManager: UserAccountManager = UserAccountManager.getInstance()
+    val userAccountManager: UserAccountManager by lazy { UserAccountManager.getInstance() }
 
     /**
      * Sets authentication ability for Salesforce integration users.  When true,
@@ -1014,12 +1020,14 @@ open class SalesforceSDKManager protected constructor(
         """.trimIndent()
 
     /** The client manager */
-    val clientManager = ClientManager(
-        appContext,
-        accountType,
-        getLoginOptions(),
-        true
-    )
+    val clientManager by lazy {
+        ClientManager(
+            appContext,
+            accountType,
+            getLoginOptions(),
+            true
+        )
+    }
 
     /**
      * Returns a client manager for the provided parameters.
@@ -1321,9 +1329,7 @@ open class SalesforceSDKManager protected constructor(
     @OnLifecycleEvent(ON_STOP)
     protected fun onAppBackgrounded() {
         screenLockManager?.onAppBackgrounded()
-        (biometricAuthenticationManager as? BiometricAuthenticationManager)?.run {
-            onAppBackgrounded()
-        }
+        (biometricAuthenticationManager as? BiometricAuthenticationManager)?.onAppBackgrounded()
 
         // Hide the Salesforce Mobile SDK "Show Developer Support" notification
         authenticatedActivityForDeveloperSupport?.let {
@@ -1335,9 +1341,7 @@ open class SalesforceSDKManager protected constructor(
     @OnLifecycleEvent(ON_START)
     protected fun onAppForegrounded() {
         screenLockManager?.onAppForegrounded()
-        (biometricAuthenticationManager as? BiometricAuthenticationManager).run {
-            onAppForegrounded()
-        }
+        (biometricAuthenticationManager as? BiometricAuthenticationManager)?.onAppForegrounded()
 
         // Display the Salesforce Mobile SDK "Show Developer Support" notification
         if (userAccountManager.currentAccount != null && authenticatedActivityForDeveloperSupport != null) {
@@ -1472,7 +1476,9 @@ open class SalesforceSDKManager protected constructor(
          * @param context The Android context
          * @param mainActivity The app's main activity class
          */
-        fun initNative(
+        @Suppress("NON_FINAL_MEMBER_IN_OBJECT")
+        @JvmStatic
+        open fun initNative(
             context: Context,
             mainActivity: Class<out Activity>
         ) = init(
@@ -1601,7 +1607,7 @@ open class SalesforceSDKManager protected constructor(
         fun encrypt(
             data: String?,
             key: String?
-        ) = Encryptor.encrypt(data, key)
+        ): String = Encryptor.encrypt(data, key)
 
         /** The active encryption key */
         @JvmStatic
@@ -1619,6 +1625,43 @@ open class SalesforceSDKManager protected constructor(
         fun decrypt(
             data: String?,
             key: String?
-        ) = Encryptor.decrypt(data, key)
+        ): String = Encryptor.decrypt(data, key)
+    }
+
+    /**
+     * Fetches the authentication configuration, if required.
+     *
+     * If this takes more than five seconds it can cause Android's application
+     * not responding report.
+     *
+     * @param completion An optional function to invoke at the end of the action
+     */
+    fun fetchAuthenticationConfiguration(
+        completion: (() -> Unit)? = null
+    ) = CoroutineScope(Main).launch {
+        runCatching {
+            withTimeout(5000L) {
+                val loginServer = loginServerManager?.selectedLoginServer?.url?.trim { it <= ' ' } ?: return@withTimeout
+
+                if (loginServer == PRODUCTION_LOGIN_URL || loginServer == SANDBOX_LOGIN_URL || !isHttpsUrl(loginServer) || loginServer.toHttpUrlOrNull() == null
+                ) {
+                    setBrowserLoginEnabled(
+                        browserLoginEnabled = false,
+                        shareBrowserSessionEnabled = false
+                    )
+                }
+
+                getMyDomainAuthConfig(loginServer).let { authConfig ->
+                    setBrowserLoginEnabled(
+                        browserLoginEnabled = authConfig?.isBrowserLoginEnabled ?: false,
+                        shareBrowserSessionEnabled = authConfig?.isShareBrowserSessionEnabled ?: false
+                    )
+                }
+            }
+        }.onFailure { e ->
+            e(TAG, "Exception occurred while fetching authentication configuration", e)
+        }
+
+        completion?.invoke()
     }
 }

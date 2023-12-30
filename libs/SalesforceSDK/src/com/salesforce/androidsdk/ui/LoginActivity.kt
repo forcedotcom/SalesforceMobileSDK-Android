@@ -24,600 +24,643 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.ui;
+package com.salesforce.androidsdk.ui
 
-import static androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG;
-import static androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK;
-import static androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL;
-
-import android.accounts.AccountAuthenticatorResponse;
-import android.accounts.AccountManager;
-import android.app.admin.DevicePolicyManager;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.pm.PackageManager;
-import android.net.Uri;
-import android.os.AsyncTask;
-import android.os.Build;
-import android.os.Bundle;
-import android.provider.Settings;
-import android.security.KeyChain;
-import android.view.KeyEvent;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.WindowManager;
-import android.webkit.WebSettings;
-import android.webkit.WebSettings.LayoutAlgorithm;
-import android.webkit.WebView;
-import android.widget.Button;
-import android.widget.Toast;
-import android.window.OnBackInvokedDispatcher;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.biometric.BiometricManager;
-import androidx.biometric.BiometricPrompt;
-import androidx.core.content.ContextCompat;
-
-import com.salesforce.androidsdk.R;
-import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.auth.idp.interfaces.SPManager;
-import com.salesforce.androidsdk.config.RuntimeConfig;
-import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
-import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
-import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents;
-import com.salesforce.androidsdk.util.AuthConfigTask;
-import com.salesforce.androidsdk.util.EventsObservable;
-import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import com.salesforce.androidsdk.util.SalesforceSDKLogger;
-import com.salesforce.androidsdk.util.UriFragmentParser;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import android.accounts.AccountAuthenticatorResponse
+import android.accounts.AccountManager.ERROR_CODE_CANCELED
+import android.accounts.AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE
+import android.app.admin.DevicePolicyManager.ACTION_SET_NEW_PASSWORD
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageManager.FEATURE_FACE
+import android.content.pm.PackageManager.FEATURE_IRIS
+import android.os.Build.VERSION.SDK_INT
+import android.os.Build.VERSION_CODES.Q
+import android.os.Build.VERSION_CODES.R
+import android.os.Build.VERSION_CODES.TIRAMISU
+import android.os.Bundle
+import android.provider.Settings.ACTION_BIOMETRIC_ENROLL
+import android.provider.Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED
+import android.security.KeyChain.choosePrivateKeyAlias
+import android.view.KeyEvent
+import android.view.KeyEvent.KEYCODE_BACK
+import android.view.Menu
+import android.view.MenuItem
+import android.view.View
+import android.view.View.VISIBLE
+import android.view.WindowManager.LayoutParams.FLAG_SECURE
+import android.webkit.WebSettings.LayoutAlgorithm
+import android.webkit.WebView
+import android.widget.Button
+import android.widget.Toast.LENGTH_SHORT
+import android.widget.Toast.makeText
+import android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT
+import androidx.appcompat.app.AppCompatActivity
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
+import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
+import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
+import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE
+import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED
+import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE
+import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED
+import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_UNSUPPORTED
+import androidx.biometric.BiometricManager.BIOMETRIC_STATUS_UNKNOWN
+import androidx.biometric.BiometricManager.BIOMETRIC_SUCCESS
+import androidx.biometric.BiometricPrompt
+import androidx.biometric.BiometricPrompt.AuthenticationCallback
+import androidx.biometric.BiometricPrompt.AuthenticationResult
+import androidx.biometric.BiometricPrompt.PromptInfo
+import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.getMainExecutor
+import androidx.core.content.ContextCompat.registerReceiver
+import com.salesforce.androidsdk.R.id.sf__bio_login_button
+import com.salesforce.androidsdk.R.id.sf__idp_login_button
+import com.salesforce.androidsdk.R.id.sf__menu_clear_cookies
+import com.salesforce.androidsdk.R.id.sf__menu_pick_server
+import com.salesforce.androidsdk.R.id.sf__menu_reload
+import com.salesforce.androidsdk.R.id.sf__oauth_webview
+import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
+import com.salesforce.androidsdk.R.string.sf__login_with_biometric
+import com.salesforce.androidsdk.R.string.sf__screen_lock_error
+import com.salesforce.androidsdk.R.string.sf__setup_biometric_unlock
+import com.salesforce.androidsdk.R.style.SalesforceSDK
+import com.salesforce.androidsdk.R.style.SalesforceSDK_Dark_Login
+import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_DEFAULT
+import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN
+import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGIN
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
+import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.instance
+import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
+import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
+import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.ManagedAppCertAlias
+import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.RequireCertAuth
+import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
+import com.salesforce.androidsdk.rest.ClientManager.LoginOptions
+import com.salesforce.androidsdk.rest.ClientManager.LoginOptions.fromBundleWithSafeLoginUrl
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.SHOW_BIOMETRIC
+import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents
+import com.salesforce.androidsdk.ui.ServerPickerActivity.CHANGE_SERVER_INTENT
+import com.salesforce.androidsdk.util.EventsObservable
+import com.salesforce.androidsdk.util.EventsObservable.EventType.AuthWebViewCreateComplete
+import com.salesforce.androidsdk.util.EventsObservable.EventType.LoginActivityCreateComplete
+import com.salesforce.androidsdk.util.SalesforceSDKLogger.d
+import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
+import com.salesforce.androidsdk.util.UriFragmentParser.parse
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.launch
+import com.salesforce.androidsdk.R.layout.sf__login as sf__login_layout
+import com.salesforce.androidsdk.R.menu.sf__login as sf__login_menu
 
 /**
- * Login Activity: takes care of authenticating the user.
- * Authorization happens inside a web view. Once we get our authorization code,
- * we swap it for an access and refresh token a create an account through the
- * account manager to store them.
+ * Login activity authenticates a user. Authorization happens inside a web view.
+ * Once an authorization code is obtained, it is exchanged for access and
+ * refresh tokens to create an account via the account manager which stores
+ * them.
  *
- * The bulk of the work for this is actually managed by OAuthWebviewHelper class.
+ * Note, the majority of the work for authorization is actually managed by the
+ * OAuth web view helper class.
  */
-public class LoginActivity extends AppCompatActivity
-		implements OAuthWebviewHelperEvents {
+open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
 
-    public static final int PICK_SERVER_REQUEST_CODE = 10;
-    private static final int SETUP_REQUEST_CODE = 72;
-    private static final String TAG = "LoginActivity";
+    private var wasBackgrounded = false
 
-    private boolean wasBackgrounded;
-    private OAuthWebviewHelper webviewHelper;
-    private ChangeServerReceiver changeServerReceiver;
-    private boolean receiverRegistered;
-    private AccountAuthenticatorResponse accountAuthenticatorResponse = null;
-    private Bundle accountAuthenticatorResult = null;
-    private Button biometricAuthenticationButton = null;
-    private long AUTH_CONFIG_TASK_TIMEOUT_MILLS = 5000;
+    private var webviewHelper: OAuthWebviewHelper? = null
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-        accountAuthenticatorResponse = getIntent().getParcelableExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE);
-        if (accountAuthenticatorResponse != null) {
-            accountAuthenticatorResponse.onRequestContinued();
+    private var changeServerReceiver: ChangeServerReceiver? = null
+
+    private var receiverRegistered = false
+
+    private var accountAuthenticatorResponse: AccountAuthenticatorResponse? = null
+
+    private var accountAuthenticatorResult: Bundle? = null
+
+    private var biometricAuthenticationButton: Button? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        accountAuthenticatorResponse = intent.getParcelableExtra<AccountAuthenticatorResponse?>(
+            KEY_ACCOUNT_AUTHENTICATOR_RESPONSE
+        )?.apply {
+            onRequestContinued()
         }
 
-		boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
-        setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark_Login : R.style.SalesforceSDK);
-        SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
-
-        // Getting login options from intent's extras.
-        final LoginOptions loginOptions = LoginOptions.fromBundleWithSafeLoginUrl(getIntent().getExtras());
-
-        // Protect against screenshots.
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
-                WindowManager.LayoutParams.FLAG_SECURE);
-
-        // Fetches auth config if required.
-        try {
-            // If the task takes more than 5 seconds it can cause an ANR.
-            (new AuthConfigTask(null)).execute().get(AUTH_CONFIG_TASK_TIMEOUT_MILLS, TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
-            SalesforceSDKLogger.e(TAG, "Exception occurred while fetching auth config", e);
-        }
-
-        // Setup content view.
-        setContentView(R.layout.sf__login);
-        if (SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled()) {
-            final Button button = findViewById(R.id.sf__idp_login_button);
-            button.setVisibility(View.VISIBLE);
-        }
-
-        BiometricAuthenticationManager bioAuthManager =
-                (BiometricAuthenticationManager) SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
-        if (bioAuthManager.isLocked() && bioAuthManager.hasBiometricOptedIn()) {
-            if (bioAuthManager.isNativeBiometricLoginButtonEnabled()) {
-                biometricAuthenticationButton = findViewById(R.id.sf__bio_login_button);
-                biometricAuthenticationButton.setVisibility(View.VISIBLE);
+        setTheme(
+            when (instance.isDarkTheme) {
+                true -> SalesforceSDK_Dark_Login
+                else -> SalesforceSDK
             }
+        )
 
-            if (getIntent().getExtras().getBoolean(BiometricAuthenticationManager.SHOW_BIOMETRIC)) {
-                presentBiometric();
+        instance.setViewNavigationVisibility(this)
+
+        // Get login options from the intent's extras
+        val loginOptions = fromBundleWithSafeLoginUrl(intent.extras)
+
+        // Protect against screenshots
+        window.setFlags(
+            FLAG_SECURE,
+            FLAG_SECURE
+        )
+
+        // Fetch authentication configuration if required
+        instance.fetchAuthenticationConfiguration()
+
+        // Setup content view
+        setContentView(sf__login_layout)
+        if (instance.isIDPLoginFlowEnabled) {
+            findViewById<Button>(sf__idp_login_button).visibility = VISIBLE
+        }
+
+        val biometricAuthenticationManager = (instance.biometricAuthenticationManager as? BiometricAuthenticationManager)
+        if (biometricAuthenticationManager?.locked == true && biometricAuthenticationManager.hasBiometricOptedIn()) {
+            if (biometricAuthenticationManager.isNativeBiometricLoginButtonEnabled()) {
+                biometricAuthenticationButton = findViewById<Button>(sf__bio_login_button)?.apply {
+                    visibility = VISIBLE
+                }
+            }
+            if (intent.extras?.getBoolean(SHOW_BIOMETRIC) == true) {
+                presentBiometric()
             }
         }
 
-        // Setup the WebView.
-        final WebView webView = findViewById(R.id.sf__oauth_webview);
-        final WebSettings webSettings = webView.getSettings();
-        webSettings.setUseWideViewPort(true);
-        webSettings.setLayoutAlgorithm(LayoutAlgorithm.NORMAL);
-        webSettings.setJavaScriptEnabled(true);
-        webSettings.setAllowFileAccessFromFileURLs(true);
-        webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
-        webSettings.setDatabaseEnabled(true);
-        webSettings.setDomStorageEnabled(true);
-        EventsObservable.get().notifyEvent(EventType.AuthWebViewCreateComplete, webView);
-        webviewHelper = getOAuthWebviewHelper(this, loginOptions, webView, savedInstanceState);
+        // Set up the web view
+        val webView = findViewById<WebView>(sf__oauth_webview)
+        webView.settings.apply {
+            useWideViewPort = true
+            layoutAlgorithm = LayoutAlgorithm.NORMAL
+            javaScriptEnabled = true
+            allowFileAccessFromFileURLs = true
+            javaScriptCanOpenWindowsAutomatically = true
+            databaseEnabled = true
+            domStorageEnabled = true
+        }
+        EventsObservable.get().notifyEvent(AuthWebViewCreateComplete, webView)
+        webviewHelper = getOAuthWebviewHelper(
+            this,
+            loginOptions,
+            webView,
+            savedInstanceState
+        )
 
         // Let observers know
-        EventsObservable.get().notifyEvent(EventType.LoginActivityCreateComplete, this);
-        certAuthOrLogin();
+        EventsObservable.get().notifyEvent(
+            LoginActivityCreateComplete,
+            this
+        )
+        certAuthOrLogin()
         if (!receiverRegistered) {
-            changeServerReceiver = new ChangeServerReceiver();
-            final IntentFilter changeServerFilter = new IntentFilter(ServerPickerActivity.CHANGE_SERVER_INTENT);
-            ContextCompat.registerReceiver(this, changeServerReceiver, changeServerFilter,
-                    ContextCompat.RECEIVER_NOT_EXPORTED);
-            receiverRegistered = true;
+            changeServerReceiver = ChangeServerReceiver().also { changeServerReceiver ->
+                registerReceiver(
+                    this,
+                    changeServerReceiver,
+                    IntentFilter(CHANGE_SERVER_INTENT),
+                    ContextCompat.RECEIVER_NOT_EXPORTED
+                )
+            }
+            receiverRegistered = true
         }
 
         // TODO:  Remove this when min API > 33
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
-                    OnBackInvokedDispatcher.PRIORITY_DEFAULT,
-                    this::handleBackBehavior
-            );
+        if (SDK_INT >= TIRAMISU) {
+            onBackInvokedDispatcher.registerOnBackInvokedCallback(
+                PRIORITY_DEFAULT
+            ) { handleBackBehavior() }
         }
     }
 
-    @Override
-    protected void onDestroy() {
+    override fun onDestroy() {
         if (receiverRegistered) {
-            unregisterReceiver(changeServerReceiver);
-            receiverRegistered = false;
+            unregisterReceiver(changeServerReceiver)
+            receiverRegistered = false
         }
-        super.onDestroy();
+        super.onDestroy()
     }
 
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
 
-        // If this is a callback from Chrome, processes it and does nothing else.
+        // If the intent is a callback from Chrome, process it and do nothing else
         if (isChromeCallback(intent)) {
-            completeAuthFlow(intent);
-            return;
+            completeAuthFlow(intent)
+            return
         }
 
-        // Reloads login page for every new intent to ensure the correct login server is selected.
-        if (webviewHelper.shouldReloadPage()) {
-            webviewHelper.loadLoginPage();
-        }
-    }
-
-    // The code in this override was taken from the deprecated AccountAuthenticatorActivity
-    // class to replicate its functionality per the deprecation message.
-    @Override
-    public void finish() {
-        if (accountAuthenticatorResponse != null) {
-            // send the result bundle back if set, otherwise send an error.
-            if (accountAuthenticatorResult != null) {
-                accountAuthenticatorResponse.onResult(accountAuthenticatorResult);
-            } else {
-                accountAuthenticatorResponse.onError(AccountManager.ERROR_CODE_CANCELED, "canceled");
+        // Reload the login page for every new intent to ensure the correct login server is selected
+        webviewHelper?.run {
+            if (shouldReloadPage()) {
+                loadLoginPage()
             }
-            accountAuthenticatorResponse = null;
-        }
-
-        super.finish();
-    }
-
-    protected void certAuthOrLogin() {
-        if (shouldUseCertBasedAuth()) {
-            final String alias = RuntimeConfig.getRuntimeConfig(this).getString(ConfigKey.ManagedAppCertAlias);
-            SalesforceSDKLogger.d(TAG, "Cert based login flow being triggered with alias: " + alias);
-            KeyChain.choosePrivateKeyAlias(this, webviewHelper, null, null, null, -1, alias);
-        } else {
-            SalesforceSDKLogger.d(TAG, "User agent login flow being triggered");
-            webviewHelper.loadLoginPage();
         }
     }
 
-    private boolean isChromeCallback(Intent intent) {
+    // The code in this override was taken from the deprecated
+    // AccountAuthenticatorActivity class to replicate its functionality per the
+    // deprecation message
+    override fun finish() {
+        accountAuthenticatorResponse?.let { accountAuthenticatorResponse ->
+            // Send the result bundle back if set, otherwise send an error
+            accountAuthenticatorResult?.let { accountAuthenticatorResult ->
+                accountAuthenticatorResponse.onResult(accountAuthenticatorResult)
+            } ?: accountAuthenticatorResponse.onError(
+                ERROR_CODE_CANCELED,
+                "canceled"
+            )
+            this.accountAuthenticatorResponse = null
+        }
+        super.finish()
+    }
+
+    @Suppress("MemberVisibilityCanBePrivate")
+    protected fun certAuthOrLogin() {
+        when {
+            shouldUseCertBasedAuth() -> {
+                val alias = getRuntimeConfig(this).getString(ManagedAppCertAlias)
+                d(TAG, "Cert based login flow being triggered with alias: $alias")
+                choosePrivateKeyAlias(
+                    this,
+                    webviewHelper ?: return,
+                    null,
+                    null,
+                    null,
+                    -1,
+                    alias
+                )
+            }
+
+            else -> {
+                d(TAG, "User agent login flow being triggered")
+                webviewHelper?.loadLoginPage()
+            }
+        }
+    }
+
+    private fun isChromeCallback(intent: Intent?): Boolean {
         if (intent == null) {
-            return false;
+            return false
         }
-        final Uri uri = intent.getData();
-        return (uri != null);
+        return intent.data != null
     }
 
-    private void completeAuthFlow(Intent intent) {
-        final Uri uri = intent.getData();
-        final Map<String, String> params = UriFragmentParser.parse(uri);
-        final String error = params.get("error");
-        if (error != null) {
-            final String errorDesc = params.get("error_description");
-            webviewHelper.onAuthFlowError(error, errorDesc, null);
-        } else {
-            String code = params.get("code");
-            webviewHelper.onWebServerFlowComplete(code);
-        }
+    private fun completeAuthFlow(intent: Intent) {
+        val params = parse(intent.data)
+        params["error"]?.let { error ->
+            val errorDesc = params["error_description"]
+            webviewHelper?.onAuthFlowError(error, errorDesc, null)
+        } ?: webviewHelper?.onWebServerFlowComplete(params["code"])
     }
 
     /**
-     * Returns whether certificate based authentication flow should be used.
+     * Indicates if the certificate based authentication flow should be used.
      *
-     * @return True - if it should be used, False - otherwise.
+     * @return True if certificate based authentication flow should be used and
+     * false otherwise
      */
-    protected boolean shouldUseCertBasedAuth() {
-        return RuntimeConfig.getRuntimeConfig(this).getBoolean(ConfigKey.RequireCertAuth);
-    }
+    @Suppress("MemberVisibilityCanBePrivate")
+    protected fun shouldUseCertBasedAuth(): Boolean =
+        getRuntimeConfig(this).getBoolean(RequireCertAuth)
 
-    protected OAuthWebviewHelper getOAuthWebviewHelper(OAuthWebviewHelperEvents callback,
-            LoginOptions loginOptions, WebView webView, Bundle savedInstanceState) {
-        return new OAuthWebviewHelper(this, callback, loginOptions, webView, savedInstanceState);
-    }
+    @Suppress("MemberVisibilityCanBePrivate")
+    protected fun getOAuthWebviewHelper(
+        callback: OAuthWebviewHelperEvents?,
+        loginOptions: LoginOptions?,
+        webView: WebView?,
+        savedInstanceState: Bundle?
+    ) = OAuthWebviewHelper(
+        this,
+        callback,
+        loginOptions,
+        webView,
+        savedInstanceState
+    )
 
-    @Override
-    protected void onResume() {
-        super.onResume();
+    override fun onResume() {
+        super.onResume()
         if (wasBackgrounded) {
-            if (webviewHelper.shouldReloadPage()) {
-                webviewHelper.clearView();
-                webviewHelper.loadLoginPage();
+            webviewHelper?.run {
+                if (shouldReloadPage()) {
+                    clearView()
+                    loadLoginPage()
+                }
             }
-            wasBackgrounded = false;
+            wasBackgrounded = false
         }
     }
 
-    @Override
-    public void onSaveInstanceState(Bundle bundle) {
-        super.onSaveInstanceState(bundle);
-        webviewHelper.saveState(bundle);
+    public override fun onSaveInstanceState(bundle: Bundle) {
+        super.onSaveInstanceState(bundle)
+        webviewHelper?.saveState(bundle)
     }
 
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-
-        // This allows sub classes to override the behavior by returning false.
-        if (fixBackButtonBehavior(keyCode)) {
-            return true;
+    override fun onKeyDown(keyCode: Int, event: KeyEvent) =
+        // This allows sub classes to override the behavior by returning false
+        when {
+            fixBackButtonBehavior(keyCode) -> true
+            else -> super.onKeyDown(keyCode, event)
         }
-        return super.onKeyDown(keyCode, event);
-    }
 
     /**
-     * A fix for back button behavior
+     * A fix for the back button's behavior.
      *
-     * @return true if the fix was applied
-     *         false if the key code was not handled
+     * @return true if the fix was applied and false if the key code was not
+     * handled
      */
-    protected boolean fixBackButtonBehavior(int keyCode) {
-        if (keyCode == KeyEvent.KEYCODE_BACK) {
-            handleBackBehavior();
+    @Suppress("MemberVisibilityCanBePrivate")
+    protected fun fixBackButtonBehavior(keyCode: Int) =
+        when (keyCode) {
+            KEYCODE_BACK -> {
+                handleBackBehavior()
 
-            //  Do not execute back button behavior.
-            return true;
-		}
+                //  Do not execute back button behavior
+                true
+            }
 
-		return false;
-	}
+            else -> false
+        }
 
-    private void handleBackBehavior() {
+    private fun handleBackBehavior() {
         // Do nothing if locked
-        if (!SalesforceSDKManager.getInstance().getBiometricAuthenticationManager().isLocked()) {
+        if (instance.biometricAuthenticationManager?.locked == false) {
 
             /*
-             * If there are no accounts signed in, we need the login screen
-             * to go away, and go back to the home screen. However, if the
-             * login screen has been brought up from the switcher screen,
-             * the back button should take the user back to the previous screen.
+             * If there are no accounts signed in, the login screen needs to go
+             * away and go back to the home screen. However, if the login screen
+             * has been brought up from the switcher screen, the back button
+             * should take the user back to the previous screen.
              */
-            final UserAccountManager accMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
-            wasBackgrounded = true;
-            if (accMgr.getAuthenticatedUsers() == null) {
-                moveTaskToBack(true);
-            } else {
-                finish();
+            wasBackgrounded = true
+            when (instance.userAccountManager.authenticatedUsers) {
+                null -> moveTaskToBack(true)
+                else -> finish()
             }
         }
     }
 
-    /**************************************************************************************************
-     *
+    /**
      * Actions (Changer server / Clear cookies etc) are available through a menu
-     *
-     **************************************************************************************************/
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.sf__login, menu);
-        return super.onCreateOptionsMenu(menu);
+     */
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(sf__login_menu, menu)
+        return super.onCreateOptionsMenu(menu)
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int itemId = item.getItemId();
-        if (itemId == R.id.sf__menu_clear_cookies) {
-            onClearCookiesClick(null);
-            return true;
-        } else if (itemId == R.id.sf__menu_pick_server) {
-            onPickServerClick(null);
-            return true;
-        } else if (itemId == R.id.sf__menu_reload) {
-            onReloadClick(null);
-            return true;
-        } else {
-            return super.onOptionsItemSelected(item);
+    override fun onOptionsItemSelected(item: MenuItem) =
+        when (item.itemId) {
+            sf__menu_clear_cookies -> {
+                onClearCookiesClick(null)
+                true
+            }
+
+            sf__menu_pick_server -> {
+                onPickServerClick(null)
+                true
+            }
+
+            sf__menu_reload -> {
+                onReloadClick(null)
+                true
+            }
+
+            else -> super.onOptionsItemSelected(item)
         }
-    }
-
-    /**************************************************************************************************
-     *
-     * Callbacks from the OAuthWebviewHelper
-     *
-     **************************************************************************************************/
-
-    @Override
-    public void loadingLoginPage(String loginUrl) {
-        final ActionBar ab = getSupportActionBar();
-        if (ab != null) {
-            ab.setTitle(loginUrl);
-        }
-    }
-
-	@Override
-	public void onAccountAuthenticatorResult(Bundle authResult) {
-		accountAuthenticatorResult = authResult;
-	}
-
-    /**************************************************************************************************
-     *
-     * Buttons click handlers
-     *
-     **************************************************************************************************/
 
     /**
-     * Called when "Clear cookies" button is clicked.
-     * Clear cookies and reload login page.
-     * @param v
+     * Callbacks from the OAuth web view helper
      */
-    public void onClearCookiesClick(View v) {
-        webviewHelper.clearCookies();
-        webviewHelper.loadLoginPage();
+    override fun loadingLoginPage(loginUrl: String) {
+        supportActionBar?.title = loginUrl
+    }
+
+    /**
+     * Callbacks from the OAuth web view helper
+     */
+    override fun onAccountAuthenticatorResult(authResult: Bundle) {
+        accountAuthenticatorResult = authResult
+    }
+
+    /**
+     * Called when the "clear cookies" button is clicked to clear cookies and
+     * reload the login page.
+     * @param v The view that was clicked
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    fun onClearCookiesClick(@Suppress("UNUSED_PARAMETER") v: View?) {
+        webviewHelper?.clearCookies()
+        webviewHelper?.loadLoginPage()
     }
 
     /**
      * Called when the IDP login button is clicked.
      *
-     * @param v IDP login button.
+     * @param v IDP login button
      */
-    public void onIDPLoginClick(View v) {
-        SalesforceSDKManager.getInstance().getSPManager().kickOffSPInitiatedLoginFlow(
-                this,
-                new SPStatusCallback());
+    fun onIDPLoginClick(@Suppress("UNUSED_PARAMETER") v: View?) {
+        instance.sPManager?.kickOffSPInitiatedLoginFlow(
+            this,
+            SPStatusCallback()
+        )
     }
 
     /**
-     * Called when "Reload" button is clicked.
-     * Reloads login page.
-     * @param v
+     * Called when the "reload" button is clicked to reloads the login page.
+     * @param v The reload button
      */
-    public void onReloadClick(View v) {
-        webviewHelper.loadLoginPage();
+    @Suppress("MemberVisibilityCanBePrivate")
+    fun onReloadClick(@Suppress("UNUSED_PARAMETER") v: View?) {
+        webviewHelper?.loadLoginPage()
     }
 
     /**
-     * Called when "Pick server" button is clicked.
-     * Start ServerPickerActivity
-     * @param v
+     * Called when "pick server" button is clicked to start the server picker
+     * activity.
+     * @param v The pick server button
      */
-    public void onPickServerClick(View v) {
-        final Intent i = new Intent(this, ServerPickerActivity.class);
-        startActivityForResult(i, PICK_SERVER_REQUEST_CODE);
+    @Suppress("MemberVisibilityCanBePrivate")
+    fun onPickServerClick(@Suppress("UNUSED_PARAMETER") v: View?) {
+        Intent(this, ServerPickerActivity::class.java).also { intent ->
+            startActivityForResult(
+                intent,
+                PICK_SERVER_REQUEST_CODE
+            )
+        }
     }
 
-	@Override
-	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(
+        requestCode: Int,
+        resultCode: Int,
+        data: Intent?
+    ) {
+        super.onActivityResult(requestCode, resultCode, data)
 
         /*
-         * presentAuth again after the user has come back from security settings to ensure they
-         * actually set up a secure lock screen (pin/pattern/password/etc) instead of swipe or none.
+         * Present authentication again after the user has come back from
+         * security settings to ensure they actually set up a secure lock screen
+         * (pin/pattern/password/etc) instead of swipe or none.
          */
         if (requestCode == SETUP_REQUEST_CODE) {
-            biometricAuthenticationButton.setText(R.string.sf__login_with_biometric);
-            presentBiometric();
+            biometricAuthenticationButton?.setText(sf__login_with_biometric)
+            presentBiometric()
         }
     }
 
-	@Override
-	public void finish(UserAccount userAccount) {
-        initAnalyticsManager(userAccount);
-        final UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
-        final List<UserAccount> authenticatedUsers = userAccountManager.getAuthenticatedUsers();
-        final int numAuthenticatedUsers = authenticatedUsers == null ? 0 : authenticatedUsers.size();
+    override fun finish(userAccount: UserAccount) {
+        initAnalyticsManager(userAccount)
+        val userAccountManager = instance.userAccountManager
+        val authenticatedUsers = userAccountManager.authenticatedUsers
+        val numAuthenticatedUsers = authenticatedUsers?.size ?: 0
+        val userSwitchType = when {
+            // We've already authenticated the first user, so there should be one
+            numAuthenticatedUsers == 1 -> USER_SWITCH_TYPE_FIRST_LOGIN
 
-        final int userSwitchType;
-        if (numAuthenticatedUsers == 1) {
+            // Otherwise we're logging in with an additional user
+            numAuthenticatedUsers > 1 -> USER_SWITCH_TYPE_LOGIN
 
-            // We've already authenticated the first user, so there should be one.
-            userSwitchType = UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN;
-        } else if (numAuthenticatedUsers > 1) {
-
-            // Otherwise we're logging in with an additional user.
-            userSwitchType = UserAccountManager.USER_SWITCH_TYPE_LOGIN;
-        } else {
-
-            // This should never happen but if it does, pass in the "unknown" value.
-            userSwitchType = UserAccountManager.USER_SWITCH_TYPE_DEFAULT;
+            // This should never happen but if it does, pass in the "unknown" value
+            else -> USER_SWITCH_TYPE_DEFAULT
         }
-        userAccountManager.sendUserSwitchIntent(userSwitchType, null);
-
-        finish();
+        userAccountManager.sendUserSwitchIntent(userSwitchType, null)
+        finish()
     }
 
-    private void initAnalyticsManager(UserAccount account) {
-        final SalesforceAnalyticsManager analyticsManager = SalesforceAnalyticsManager.getInstance(account);
-        if (analyticsManager != null) {
-            analyticsManager.updateLoggingPrefs();
-        }
-    }
+    private fun initAnalyticsManager(account: UserAccount) =
+        SalesforceAnalyticsManager.getInstance(account)?.updateLoggingPrefs()
 
-    class SPStatusCallback implements SPManager.StatusUpdateCallback {
-        @Override
-        public void onStatusUpdate(@NonNull SPManager.Status status) {
-            runOnUiThread(() -> Toast.makeText(
-                    getApplicationContext(),
-                    getString(status.getResIdForDescription()),
-                    Toast.LENGTH_SHORT
-            ).show());
-        }
-    }
-
-    public class ChangeServerReceiver extends BroadcastReceiver {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent != null && intent.getAction() != null) {
-                final String action = intent.getAction();
-                if (ServerPickerActivity.CHANGE_SERVER_INTENT.equals(action)) {
-                    webviewHelper.loadLoginPage();
-                }
+    internal inner class SPStatusCallback : StatusUpdateCallback {
+        override fun onStatusUpdate(status: Status) {
+            runOnUiThread {
+                makeText(
+                    applicationContext,
+                    getString(status.resIdForDescription),
+                    LENGTH_SHORT
+                ).show()
             }
         }
     }
 
-    protected void presentBiometric() {
-        BiometricPrompt biometricPrompt = getBiometricPrompt();
-        BiometricManager biometricManager = BiometricManager.from(this);
-
-        switch (biometricManager.canAuthenticate(getAuthenticators())) {
-            case BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE:
-            case BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED:
-            case BiometricManager.BIOMETRIC_ERROR_UNSUPPORTED:
-            case BiometricManager.BIOMETRIC_STATUS_UNKNOWN:
-                // This should never happen.
-                String error = getString(R.string.sf__screen_lock_error);
-                SalesforceSDKLogger.e(TAG, "Biometric manager cannot authenticate. " + error);
-                break;
-            case BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE:
-            case BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED:
-                /*
-                 * Prompts the user to setup OS screen lock and biometric.
-                 * TODO: Remove when min API > 29.
-                 */
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    final Intent biometricIntent = new Intent(Settings.ACTION_BIOMETRIC_ENROLL);
-                    biometricIntent.putExtra(Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED, getAuthenticators());
-                    biometricAuthenticationButton.setOnClickListener(v ->
-                            startActivityForResult(biometricIntent, SETUP_REQUEST_CODE));
-                } else {
-                    final Intent lockScreenIntent = new Intent(DevicePolicyManager.ACTION_SET_NEW_PASSWORD);
-                    biometricAuthenticationButton.setOnClickListener(v ->
-                            startActivityForResult(lockScreenIntent, SETUP_REQUEST_CODE));
-                }
-                biometricAuthenticationButton.setText(getString(R.string.sf__setup_biometric_unlock));
-                break;
-            case BiometricManager.BIOMETRIC_SUCCESS:
-                biometricPrompt.authenticate(getPromptInfo());
-                break;
+    inner class ChangeServerReceiver : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent?) {
+            if (intent?.action == CHANGE_SERVER_INTENT) {
+                webviewHelper?.loadLoginPage()
+            }
         }
     }
 
-    private BiometricPrompt getBiometricPrompt() {
-        LoginActivity loginActivity = this;
-        return new BiometricPrompt(this, ContextCompat.getMainExecutor(this),
-                new BiometricPrompt.AuthenticationCallback() {
-                    @Override
-                    public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
-                        super.onAuthenticationError(errorCode, errString);
-                    }
+    fun presentBiometric() {
+        val biometricPrompt = biometricPrompt
+        val biometricManager = BiometricManager.from(this)
+        when (biometricManager.canAuthenticate(authenticators)) {
+            BIOMETRIC_ERROR_NO_HARDWARE, BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED, BIOMETRIC_ERROR_UNSUPPORTED, BIOMETRIC_STATUS_UNKNOWN -> {
+                // This should never happen
+                val error = getString(sf__screen_lock_error)
+                e(TAG, "Biometric manager cannot authenticate. $error")
+            }
 
-                    @Override
-                    public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
-                        super.onAuthenticationSucceeded(result);
-                        ((BiometricAuthenticationManager) SalesforceSDKManager.getInstance()
-                                .getBiometricAuthenticationManager()).setLocked(false);
-                        new RefreshTokenTask(loginActivity).execute();
-                    }
-
-                    @Override
-                    public void onAuthenticationFailed() {
-                        super.onAuthenticationFailed();
-                    }
-                });
-    }
-
-    private class RefreshTokenTask extends AsyncTask<Void, Void, Void> { // TODO: ECJ20231219
-
-        private final LoginActivity activity;
-
-        public RefreshTokenTask(LoginActivity activity) {
-            this.activity = activity;;
-        }
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-            SalesforceSDKManager.getInstance().getClientManager().getRestClient(activity,
-                    client -> {
-                        try {
-                            client.getOAuthRefreshInterceptor().refreshAccessToken();
-                        } catch (IOException e) {
-                            SalesforceSDKLogger.e(TAG, "Error encountered while unlocking.", e);
-                        } finally {
-                            activity.finish();
+            BIOMETRIC_ERROR_HW_UNAVAILABLE, BIOMETRIC_ERROR_NONE_ENROLLED ->
+                biometricAuthenticationButton?.let { biometricAuthenticationButton ->
+                    /*
+                     * Prompts the user to setup OS screen lock and biometric
+                     * TODO: Remove when min API > 29
+                     */
+                    when {
+                        SDK_INT >= R -> biometricAuthenticationButton.setOnClickListener {
+                            startActivityForResult(
+                                Intent(
+                                    ACTION_BIOMETRIC_ENROLL
+                                ).apply {
+                                    putExtra(
+                                        EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED,
+                                        authenticators
+                                    )
+                                },
+                                SETUP_REQUEST_CODE
+                            )
                         }
-                    });
 
-            return null;
+                        else -> biometricAuthenticationButton.setOnClickListener {
+                            startActivityForResult(
+                                Intent(ACTION_SET_NEW_PASSWORD),
+                                SETUP_REQUEST_CODE
+                            )
+                        }
+                    }
+                    biometricAuthenticationButton.text = getString(sf__setup_biometric_unlock)
+                }
+
+            BIOMETRIC_SUCCESS -> biometricPrompt.authenticate(promptInfo)
         }
     }
 
-    private int getAuthenticators() {
-        // TODO: Remove when min API > 29.
-        return (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-                ? BIOMETRIC_STRONG | DEVICE_CREDENTIAL
-                : BIOMETRIC_WEAK | DEVICE_CREDENTIAL;
+    private val biometricPrompt: BiometricPrompt
+        get() = BiometricPrompt(
+            this,
+            getMainExecutor(this),
+            object : AuthenticationCallback() {
+
+                override fun onAuthenticationSucceeded(result: AuthenticationResult) {
+                    super.onAuthenticationSucceeded(result)
+                    (instance.biometricAuthenticationManager as? BiometricAuthenticationManager?)?.run {
+                        locked = false
+                    }
+
+                    CoroutineScope(Main).launch {
+                        doTokenRefresh(this@LoginActivity)
+                    }
+                }
+            }
+        )
+
+    private fun doTokenRefresh(activity: LoginActivity) {
+        instance.clientManager.getRestClient(
+            activity
+        ) { client ->
+            runCatching {
+                client.oAuthRefreshInterceptor.refreshAccessToken()
+            }.onFailure { e ->
+                e(TAG, "Error encountered while unlocking.", e)
+            }
+            activity.finish()
+        }
     }
 
-    private BiometricPrompt.PromptInfo getPromptInfo() {
-        boolean hasFaceUnlock = false;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            hasFaceUnlock = getPackageManager().hasSystemFeature(PackageManager.FEATURE_FACE) ||
-                    (getPackageManager().hasSystemFeature(PackageManager.FEATURE_IRIS));
-        }
+    private val authenticators
+        get() = // TODO: Remove when min API > 29.
+            when {
+                SDK_INT >= R -> BIOMETRIC_STRONG or DEVICE_CREDENTIAL
+                else -> BIOMETRIC_WEAK or DEVICE_CREDENTIAL
+            }
+    private val promptInfo: PromptInfo
+        get() {
+            var hasFaceUnlock = false
+            if (SDK_INT >= Q) {
+                hasFaceUnlock = packageManager.hasSystemFeature(
+                    FEATURE_FACE
+                ) || packageManager.hasSystemFeature(
+                    FEATURE_IRIS
+                )
+            }
+            val subtitle = instance.userAccountManager.currentUser.username
 
-        String subtitle = SalesforceSDKManager.getInstance().getUserAccountManager()
-                .getCurrentUser().getUsername();
-        return new BiometricPrompt.PromptInfo.Builder()
-                .setTitle(getResources().getString(R.string.sf__biometric_opt_in_title))
+            return PromptInfo.Builder()
+                .setTitle(resources.getString(sf__biometric_opt_in_title))
                 .setSubtitle(subtitle)
-                .setAllowedAuthenticators(getAuthenticators())
+                .setAllowedAuthenticators(authenticators)
                 .setConfirmationRequired(hasFaceUnlock)
-                .build();
-    }
+                .build()
+        }
 
-    public void onBioAuthClick(View view) {
-        presentBiometric();
+    fun onBioAuthClick(@Suppress("UNUSED_PARAMETER") view: View?) =
+        presentBiometric()
+
+    companion object {
+        const val PICK_SERVER_REQUEST_CODE = 10
+        private const val SETUP_REQUEST_CODE = 72
+        private const val TAG = "LoginActivity"
     }
 }

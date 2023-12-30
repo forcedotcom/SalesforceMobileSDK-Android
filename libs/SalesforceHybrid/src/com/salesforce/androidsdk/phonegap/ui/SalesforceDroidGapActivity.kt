@@ -152,7 +152,7 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
         // will call this.onResume(RestClient client) with a null client
     }
 
-    override fun onResume(restClient: RestClient) {
+    override fun onResume(restClient: RestClient?) {
         // Called from delegate with null
 
         // Get client (if already logged in)

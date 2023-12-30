@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Build;
@@ -47,9 +48,10 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer;
 import com.salesforce.androidsdk.config.RuntimeConfig;
-import com.salesforce.androidsdk.util.AuthConfigTask;
 
 import java.util.List;
+
+import kotlin.Unit;
 
 /**
  * This class provides UI to change the login server URL to use
@@ -59,7 +61,7 @@ import java.util.List;
  * @author bhariharan
  */
 public class ServerPickerActivity extends AppCompatActivity implements
-        android.widget.RadioGroup.OnCheckedChangeListener, AuthConfigTask.AuthConfigCallbackInterface {
+        android.widget.RadioGroup.OnCheckedChangeListener {
 
     public static final String CHANGE_SERVER_INTENT = "com.salesforce.SERVER_CHANGED";
     private static final String SERVER_DIALOG_NAME = "custom_server_dialog";
@@ -71,8 +73,8 @@ public class ServerPickerActivity extends AppCompatActivity implements
      * Clears any custom URLs that may have been set.
      */
     private void clearCustomUrlSetting() {
-    	loginServerManager.reset();
-    	rebuildDisplay();
+        loginServerManager.reset();
+        rebuildDisplay();
         urlEditDialog = new CustomServerUrlEditor();
     }
 
@@ -80,6 +82,7 @@ public class ServerPickerActivity extends AppCompatActivity implements
      * Sets the return value of the activity. Selection is stored in the
      * shared prefs file, AuthActivity pulls from the file or a default value.
      */
+    @SuppressLint("MissingSuperCall")
     @Override
     public void onBackPressed() {
         reconfigureAuthorization();
@@ -87,16 +90,16 @@ public class ServerPickerActivity extends AppCompatActivity implements
 
     @Override
     public void onCheckedChanged(RadioGroup group, int checkedId) {
-    	if (group != null) {
-    		final SalesforceServerRadioButton rb = group.findViewById(checkedId);
-    		if (rb != null) {
-    			final String name = rb.getName();
-    			final String url = rb.getUrl();
-    			boolean isCustom = rb.isCustom();
-    			loginServerManager.setSelectedLoginServer(new LoginServer(name,
-    					url, isCustom));
-    		}
-    	}
+        if (group != null) {
+            final SalesforceServerRadioButton rb = group.findViewById(checkedId);
+            if (rb != null) {
+                final String name = rb.getName();
+                final String url = rb.getUrl();
+                boolean isCustom = rb.isCustom();
+                loginServerManager.setSelectedLoginServer(new LoginServer(name,
+                        url, isCustom));
+            }
+        }
     }
 
     @Override
@@ -125,7 +128,7 @@ public class ServerPickerActivity extends AppCompatActivity implements
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-    	super.onCreate(savedInstanceState);
+        super.onCreate(savedInstanceState);
         boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark : R.style.SalesforceSDK);
         // This makes the navigation bar visible on light themes.
@@ -162,8 +165,8 @@ public class ServerPickerActivity extends AppCompatActivity implements
 
     @Override
     public void onResume() {
-    	super.onResume();
-    	rebuildDisplay();
+        super.onResume();
+        rebuildDisplay();
     }
 
     @Override
@@ -221,23 +224,26 @@ public class ServerPickerActivity extends AppCompatActivity implements
      * Refreshes the authorization configuration.
      */
     private void reconfigureAuthorization() {
-        (new AuthConfigTask(this)).execute();
+        SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration(() -> {
+            onAuthConfigFetched();
+            return Unit.INSTANCE;
+        });
     }
 
     /**
      * Sets the radio state.
      *
      * @param radioGroup RadioGroup instance.
-     * @param server Login server.
+     * @param server     Login server.
      */
     private void setRadioState(RadioGroup radioGroup, LoginServer server) {
-    	final SalesforceServerRadioButton rb = new SalesforceServerRadioButton(this,
-    			server.name, server.url, server.isCustom);
+        final SalesforceServerRadioButton rb = new SalesforceServerRadioButton(this,
+                server.name, server.url, server.isCustom);
         boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         int textColor = getColor(isDarkTheme ? R.color.sf__text_color_dark : R.color.sf__text_color);
-    	rb.setTextColor(textColor);
-    	rb.getButtonDrawable().setTint(getColor(R.color.sf__primary_color));
-    	radioGroup.addView(rb);
+        rb.setTextColor(textColor);
+        rb.getButtonDrawable().setTint(getColor(R.color.sf__primary_color));
+        radioGroup.addView(rb);
         ((ScrollView) radioGroup.getParent()).scrollTo(0, radioGroup.getBottom());
     }
 
@@ -276,7 +282,6 @@ public class ServerPickerActivity extends AppCompatActivity implements
         }
     }
 
-    @Override
     public void onAuthConfigFetched() {
         setResult(Activity.RESULT_OK, null);
         final Intent changeServerIntent = new Intent(CHANGE_SERVER_INTENT);
