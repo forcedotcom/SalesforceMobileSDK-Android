@@ -46,7 +46,8 @@ import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import com.salesforce.androidsdk.util.UriFragmentParser
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.net.URI
@@ -79,7 +80,7 @@ internal class IDPAuthCodeHelper private constructor(
      */
     private fun generateAuthCode() {
         SalesforceSDKLogger.d(TAG, "Generating oauth code")
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(IO).launch {
             getValidAccessToken()?.let {accessToken ->
                 makeFrontDoorRequest(accessToken, webView)
             } ?: run {
@@ -159,7 +160,7 @@ internal class IDPAuthCodeHelper private constructor(
             userAccount.instanceServer,
             null
         )
-        CoroutineScope(Dispatchers.Main).launch {
+        CoroutineScope(Main).launch {
             webView.loadUrl(frontdoorUrl.toString())
         }
     }

@@ -254,7 +254,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
 
         // Reload the login page for every new intent to ensure the correct login server is selected
         webviewHelper?.run {
-            if (shouldReloadPage()) {
+            if (shouldReloadPage) {
                 loadLoginPage()
             }
         }
@@ -328,9 +328,9 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
 
     @Suppress("MemberVisibilityCanBePrivate")
     protected fun getOAuthWebviewHelper(
-        callback: OAuthWebviewHelperEvents?,
-        loginOptions: LoginOptions?,
-        webView: WebView?,
+        callback: OAuthWebviewHelperEvents,
+        loginOptions: LoginOptions,
+        webView: WebView,
         savedInstanceState: Bundle?
     ) = OAuthWebviewHelper(
         this,
@@ -344,7 +344,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         super.onResume()
         if (wasBackgrounded) {
             webviewHelper?.run {
-                if (shouldReloadPage()) {
+                if (shouldReloadPage) {
                     clearView()
                     loadLoginPage()
                 }
@@ -510,7 +510,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         }
     }
 
-    override fun finish(userAccount: UserAccount) {
+    override fun finish(userAccount: UserAccount?) {
         initAnalyticsManager(userAccount)
         val userAccountManager = instance.userAccountManager
         val authenticatedUsers = userAccountManager.authenticatedUsers
@@ -529,7 +529,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         finish()
     }
 
-    private fun initAnalyticsManager(account: UserAccount) =
+    private fun initAnalyticsManager(account: UserAccount?) =
         SalesforceAnalyticsManager.getInstance(account)?.updateLoggingPrefs()
 
     internal inner class SPStatusCallback : StatusUpdateCallback {

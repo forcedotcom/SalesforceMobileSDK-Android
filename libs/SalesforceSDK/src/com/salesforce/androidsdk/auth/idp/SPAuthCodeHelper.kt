@@ -38,41 +38,43 @@ import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents
 import com.salesforce.androidsdk.util.LogUtil
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import java.net.URI
 
 /**
  * Helper class used in SP app to get auth tokens and create user given auth code
  */
-internal class SPAuthCodeHelper private constructor (
+internal class SPAuthCodeHelper private constructor(
     val context: Context,
     val loginUrl: String,
     val code: String,
-    val codeVerifier: String,
-    val onResult:(result:Result) -> Unit
+    private val codeVerifier: String,
+    val onResult: (result: Result) -> Unit
 ) : OAuthWebviewHelperEvents {
     data class Result(
         val success: Boolean,
         val user: UserAccount? = null,
         val error: String? = null
     )
+
     companion object {
         private val TAG: String = SPAuthCodeHelper::class.java.simpleName
 
-        fun loginWithAuthCode(context:Context,
-                              loginUrl: String, code:
-                              String, codeVerifier: String,
-                              onResult: (Result) -> Unit
+        fun loginWithAuthCode(
+            context: Context,
+            loginUrl: String, code:
+            String, codeVerifier: String,
+            onResult: (Result) -> Unit
         ) {
             val spAuthCodeHelper = SPAuthCodeHelper(context, loginUrl, code, codeVerifier, onResult)
-            CoroutineScope(Dispatchers.IO).launch {
+            CoroutineScope(IO).launch {
                 spAuthCodeHelper.loginWithAuthCode()
             }
         }
     }
 
-    val spConfig: SPConfig = SPConfig.forCurrentApp()
+    private val spConfig: SPConfig = SPConfig.forCurrentApp()
 
     private fun getTokenResponse(): TokenEndpointResponse {
         val tokenResponse = OAuth2.exchangeCode(
@@ -103,7 +105,7 @@ internal class SPAuthCodeHelper private constructor (
     }
 
     private fun loginWithAuthCode() {
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(IO).launch {
             try {
                 completeLogin(getTokenResponse())
             } catch (e: Exception) {
@@ -113,17 +115,17 @@ internal class SPAuthCodeHelper private constructor (
         }
     }
 
-    override fun loadingLoginPage(loginUrl: String?) {
+    override fun loadingLoginPage(loginUrl: String) {
         SalesforceSDKLogger.d(TAG, "loadingLoginPage $loginUrl")
     }
 
-    override fun onAccountAuthenticatorResult(authResult: Bundle?) {
+    override fun onAccountAuthenticatorResult(authResult: Bundle) {
         SalesforceSDKLogger.d(TAG, "onAccountAuthenticatorResult ${LogUtil.bundleToString(authResult)}")
     }
 
-    override fun finish(user: UserAccount?) {
-        SalesforceSDKLogger.d(TAG, "finish $user")
-        user?.let {
+    override fun finish(userAccount: UserAccount?) {
+        SalesforceSDKLogger.d(TAG, "finish $userAccount")
+        userAccount?.let {
             onResult(Result(success = true, user = it))
         }
     }
